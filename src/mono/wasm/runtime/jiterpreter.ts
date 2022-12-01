@@ -3029,32 +3029,45 @@ export function jiterpreter_dump_stats (b?: boolean) {
             // Filter out noisy methods that we don't care about optimizing
             if (traces[i].name!.indexOf("Xunit.") >= 0)
                 continue;
+
             // FIXME: A single hot method can contain many failed traces. This creates a lot of noise
             //  here and also likely indicates the jiterpreter would add a lot of overhead to it
             // Filter out aborts that aren't meaningful since it is unlikely to ever make sense
             //  to fix them, either because they are rarely used or because putting them in
             //  traces would not meaningfully improve performance
-            if (traces[i].abortReason && traces[i].abortReason!.startsWith("mono_icall_"))
-                continue;
-            switch (traces[i].abortReason) {
-                case "trace-too-small":
-                case "call":
-                case "callvirt.fast":
-                case "calli.nat.fast":
-                case "calli.nat":
-                case "call.delegate":
-                case "newobj":
-                case "newobj_vt":
-                case "intrins_ordinal_ignore_case_ascii":
-                case "intrins_marvin_block":
-                case "intrins_ascii_chars_to_uppercase":
-                case "switch":
-                case "call_handler.s":
-                case "rethrow":
-                case "endfinally":
-                case "end-of-body":
+            if (traces[i].abortReason) {
+                if (traces[i].abortReason!.startsWith("mono_icall_") ||
+                    traces[i].abortReason!.startsWith("ret."))
                     continue;
+
+                switch (traces[i].abortReason) {
+                    // not feasible to fix
+                    case "trace-too-small":
+                    case "call":
+                    case "callvirt.fast":
+                    case "calli.nat.fast":
+                    case "calli.nat":
+                    case "call.delegate":
+                    case "newobj":
+                    case "newobj_vt":
+                    case "newobj_slow":
+                    case "switch":
+                    case "call_handler.s":
+                    case "rethrow":
+                    case "endfinally":
+                    case "end-of-body":
+                    case "ret":
+                        continue;
+
+                    // not worth implementing / too difficult
+                    case "intrins_ordinal_ignore_case_ascii":
+                    case "intrins_marvin_block":
+                    case "intrins_ascii_chars_to_uppercase":
+                    case "newarr":
+                        continue;
+                }
             }
+
             c++;
             console.log(`${traces[i].name} @${traces[i].ip} (${traces[i].hitCount} hits) ${traces[i].abortReason}`);
         }
