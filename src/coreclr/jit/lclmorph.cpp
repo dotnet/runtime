@@ -738,7 +738,7 @@ private:
             // say, 2 consecutive Int32 struct fields as Int64 has more practical value.
 
             LclVarDsc* varDsc    = m_compiler->lvaGetDesc(val.LclNum());
-            unsigned   indirSize = GetIndirSize(node, user);
+            unsigned   indirSize = GetIndirSize(node);
             bool       isWide;
 
             if ((indirSize == 0) || ((val.Offset() + indirSize) > UINT16_MAX))
@@ -800,57 +800,25 @@ private:
     //    user - the node that uses the indirection
     //
     // Notes:
-    //    This returns 0 for indirection of unknown size. GT_IND nodes that have type
-    //    TYP_STRUCT are expected to only appears on the RHS of an assignment, in which
-    //    case the LHS size will be used instead. Otherwise 0 is returned as well.
+    //    This returns 0 for indirection of unknown size, i. e. IND<struct>
+    //    nodes that are used as sources of STORE_DYN_BLKs.
     //
-    unsigned GetIndirSize(GenTree* indir, GenTree* user)
+    unsigned GetIndirSize(GenTree* indir)
     {
         assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
 
         if (indir->TypeGet() != TYP_STRUCT)
         {
-            return genTypeSize(indir->TypeGet());
+            return genTypeSize(indir);
         }
 
-        // A struct indir that is the RHS of an assignment needs special casing:
-        // - It can be a GT_IND of type TYP_STRUCT, in which case the size is given by the LHS.
-        // - It can be a GT_OBJ that has a correct size, but different than the size of the LHS.
-        //   The LHS size takes precedence.
-        // Just take the LHS size in all cases.
-        if (user != nullptr && user->OperIs(GT_ASG) && (indir == user->gtGetOp2()))
+        if (indir->OperIs(GT_IND))
         {
-            indir = user->gtGetOp1();
-
-            if (indir->TypeGet() != TYP_STRUCT)
-            {
-                return genTypeSize(indir->TypeGet());
-            }
-
-            // The LHS may be a LCL_VAR/LCL_FLD, these are not indirections so we need to handle them here.
-            switch (indir->OperGet())
-            {
-                case GT_LCL_VAR:
-                    return m_compiler->lvaGetDesc(indir->AsLclVar())->lvExactSize;
-                case GT_LCL_FLD:
-                    return indir->AsLclFld()->GetSize();
-                default:
-                    break;
-            }
+            // TODO-1stClassStructs: remove once "IND<struct>" nodes are no more.
+            return 0;
         }
 
-        switch (indir->OperGet())
-        {
-            case GT_FIELD:
-                return m_compiler->info.compCompHnd->getClassSize(
-                    m_compiler->info.compCompHnd->getFieldClass(indir->AsField()->gtFldHnd));
-            case GT_BLK:
-            case GT_OBJ:
-                return indir->AsBlk()->GetLayout()->GetSize();
-            default:
-                assert(indir->OperIs(GT_IND));
-                return 0;
-        }
+        return indir->GetLayout(m_compiler)->GetSize();
     }
 
     //------------------------------------------------------------------------
