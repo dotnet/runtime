@@ -9503,7 +9503,20 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     GenTree* optimizedTree = fgMorphModToZero(tree->AsOp());
                     if (optimizedTree != nullptr)
                     {
-                        return optimizedTree;
+                        tree = optimizedTree;
+
+                        if (tree->OperIs(GT_COMMA))
+                        {
+                            op1 = tree->gtGetOp1();
+                            op2 = tree->gtGetOp2();
+                        }
+                        else
+                        {
+                            assert(tree->IsCnsIntOrI());
+                            op1 = nullptr;
+                            op2 = nullptr;
+                        }
+                        break;
                     }
                 }
             }
@@ -9536,12 +9549,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
                 {
                     // Transformation: a % b = a & (b - 1);
-                    return fgMorphUModToAndSub(tree->AsOp());
+                    tree = fgMorphUModToAndSub(tree->AsOp());
+                    op1  = tree->AsOp()->gtOp1;
+                    op2  = tree->AsOp()->gtOp2;
                 }
 #ifdef TARGET_ARM64
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
-                else if (tree->OperIs(GT_MOD, GT_UMOD))
+                else
 #else
                 // XARCH only applies this transformation if we know
                 // that magic division will be used - which is determined
@@ -9552,7 +9567,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 #endif
                 {
                     // Transformation: a % b = a - (a / b) * b;
-                    return fgMorphModToSubMulDiv(tree->AsOp());
+                    tree = fgMorphModToSubMulDiv(tree->AsOp());
+                    op1  = tree->AsOp()->gtOp1;
+                    op2  = tree->AsOp()->gtOp2;
                 }
             }
             break;
@@ -12773,12 +12790,15 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 //
 // Returns:
 //    The morphed tree, will be a GT_COMMA or a zero constant node.
-//    Can return null if the transformation cannot happen.
+//    Can return null if the transformation did not happen.
 //
 GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_MOD, GT_UMOD));
     assert(tree->gtOp2->IsIntegralConst(1));
+
+    if (opts.OptimizationDisabled())
+        return nullptr;
 
     // Do not transform this if there are side effects and we are not in global morph.
     // If we want to allow this, we need to update value numbers for the GT_COMMA.
@@ -12790,15 +12810,7 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    if (op2->OperIs(GT_CNS_LNG))
-    {
-        op2->AsIntConCommon()->SetLngValue(0);
-    }
-    else
-    {
-        op2->AsIntConCommon()->SetIconValue(0);
-    }
-
+    op2->AsIntConCommon()->SetIntegralValue(0);
     fgUpdateConstTreeValueNumber(op2);
 
     GenTree* const zero = op2;
@@ -12816,7 +12828,7 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
 
         DEBUG_DESTROY_NODE(tree);
 
-        return fgMorphTree(comma);
+        return comma;
     }
     else
     {
@@ -12951,9 +12963,13 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
         result = gtNewOperNode(GT_COMMA, type, tempInfos[i].asg, result);
     }
 
+#ifdef DEBUG
+    result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
+
     div->CheckDivideByConstOptimized(this);
 
-    return fgMorphTree(result);
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -12983,10 +12999,12 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
     GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNode(cnsValue, type));
 
+    INDEBUG(newTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
     DEBUG_DESTROY_NODE(tree->gtOp2);
     DEBUG_DESTROY_NODE(tree);
 
-    return fgMorphTree(newTree);
+    return newTree;
 }
 
 //------------------------------------------------------------------------------
