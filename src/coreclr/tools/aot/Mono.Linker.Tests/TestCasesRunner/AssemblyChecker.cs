@@ -3,30 +3,44 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using FluentAssertions;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using Xunit;
+using MetadataType = Internal.TypeSystem.MetadataType;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class AssemblyChecker
 	{
-		private readonly AssemblyDefinition originalAssembly, linkedAssembly;
-		private HashSet<string> linkedMembers;
+		private readonly BaseAssemblyResolver originalsResolver;
+		private readonly ReaderParameters originalReaderParameters;
+		private readonly AssemblyDefinition originalAssembly;
+		private readonly ILCompilerTestCaseResult testResult;
+
+		private readonly Dictionary<string, TypeSystemEntity> linkedMembers;
 		private readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
 		private readonly HashSet<string> verifiedEventMethods = new HashSet<string> ();
 		private readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 		private bool checkNames;
 
-		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
+		public AssemblyChecker (
+			BaseAssemblyResolver originalsResolver,
+			ReaderParameters originalReaderParameters,
+			AssemblyDefinition original,
+			ILCompilerTestCaseResult testResult)
 		{
+			this.originalsResolver = originalsResolver;
+			this.originalReaderParameters = originalReaderParameters;
 			this.originalAssembly = original;
-			this.linkedAssembly = linked;
+			this.testResult = testResult;
 			this.linkedMembers = new (StringComparer.Ordinal);
 
 			checkNames = original.MainModule.GetTypeReferences ().Any (attr =>
@@ -35,20 +49,37 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public void Verify ()
 		{
-			VerifyExportedTypes (originalAssembly, linkedAssembly);
+			// There are no type forwarders left after compilation in Native AOT
+			// VerifyExportedTypes (originalAssembly, linkedAssembly);
 
-			VerifyCustomAttributes (originalAssembly, linkedAssembly);
-			VerifySecurityAttributes (originalAssembly, linkedAssembly);
+			// TODO
+			// VerifyCustomAttributes (originalAssembly, linkedAssembly);
+			// VerifySecurityAttributes (originalAssembly, linkedAssembly);
 
-			foreach (var originalModule in originalAssembly.Modules)
-				VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name));
+			// TODO - this is mostly attribute verification
+			// foreach (var originalModule in originalAssembly.Modules)
+			//   VerifyModule (originalModule, linkedAssembly.Modules.FirstOrDefault (m => m.Name == originalModule.Name));
 
-			VerifyResources (originalAssembly, linkedAssembly);
-			VerifyReferences (originalAssembly, linkedAssembly);
+			// TODO
+			// VerifyResources (originalAssembly, linkedAssembly);
 
-			foreach (var s in linkedAssembly.MainModule.AllMembers ().Select (s => s.FullName)) {
-				this.linkedMembers.Add (s);
-			}
+			// There are no assembly reference in Native AOT
+			// VerifyReferences (originalAssembly, linkedAssembly);
+
+			PopulateLinkedMembers ();
+
+			// Workaround for compiler injected attribute to describe the language version
+			linkedMembers.Remove ("Microsoft.CodeAnalysis.EmbeddedAttribute.EmbeddedAttribute()");
+			linkedMembers.Remove ("System.Runtime.CompilerServices.RefSafetyRulesAttribute.Version");
+			linkedMembers.Remove ("System.Runtime.CompilerServices.RefSafetyRulesAttribute.RefSafetyRulesAttribute(Int32)");
+
+			// Workaround for NativeAOT injected members
+			linkedMembers.Remove ("<Module>.StartupCodeMain(Int32,IntPtr)");
+			linkedMembers.Remove ("<Module>.MainMethodWrapper()");
+
+			// Workaround for compiler injected attribute to describe the language version
+			verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
+			verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
 
 			var membersToAssert = originalAssembly.MainModule.Types;
 			foreach (var originalMember in membersToAssert) {
@@ -58,8 +89,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						continue;
 					}
 
-					TypeDefinition linkedType = linkedAssembly.MainModule.GetType (originalMember.FullName);
-					VerifyTypeDefinition (td, linkedType);
+					linkedMembers.TryGetValue (
+						NameUtils.GetExpectedOriginDisplayName (originalMember),
+						out TypeSystemEntity? linkedMember);
+					VerifyTypeDefinition (td, linkedMember as TypeDesc);
 					linkedMembers.Remove (td.FullName);
 
 					continue;
@@ -68,7 +101,102 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				throw new NotImplementedException ($"Don't know how to check member of type {originalMember.GetType ()}");
 			}
 
-			Assert.Empty (linkedMembers);
+			// Filter out all members which are not from the main assembly
+			// The Kept attributes are "optional" for non-main assemblies
+			string mainModuleName = originalAssembly.Name.Name;
+			List<string> externalMembers = linkedMembers.Where (m => GetModuleName (m.Value) != mainModuleName).Select (m => m.Key).ToList ();
+			foreach (var externalMember in externalMembers) {
+				linkedMembers.Remove (externalMember);
+			}
+
+			if (linkedMembers.Count != 0)
+				Assert.True (
+					false,
+					"Linked output includes unexpected member:\n  " +
+					string.Join ("\n  ", linkedMembers.Keys));
+		}
+
+		private void PopulateLinkedMembers ()
+		{
+			foreach (TypeDesc? constructedType in testResult.TrimmingResults.ConstructedEETypes) {
+				AddType (constructedType);
+			}
+
+			foreach (MethodDesc? compiledMethod in testResult.TrimmingResults.CompiledMethodBodies) {
+				AddMethod (compiledMethod);
+			}
+
+			void AddMethod (MethodDesc method)
+			{
+				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
+
+				if (!ShouldIncludeType (methodDef.OwningType))
+					return;
+
+				if (!AddMember (methodDef))
+					return;
+
+				if (methodDef.OwningType is { } owningType)
+					AddType (owningType);
+			}
+
+			void AddType (TypeDesc type)
+			{
+				TypeDesc typeDef = type.GetTypeDefinition ();
+
+				if (!ShouldIncludeType (typeDef))
+					return;
+
+				if (!AddMember (typeDef))
+					return;
+
+				if (typeDef is MetadataType { ContainingType: { } containingType }) {
+					AddType (containingType);
+				}
+			}
+
+			bool AddMember (TypeSystemEntity entity)
+			{
+				if (NameUtils.GetActualOriginDisplayName (entity) is string fullName &&
+					!linkedMembers.ContainsKey (fullName)) {
+
+					linkedMembers.Add (fullName, entity);
+					return true;
+				}
+
+				return false;
+			}
+
+			bool ShouldIncludeType (TypeDesc type)
+			{
+				if (type is MetadataType metadataType) {
+					if (metadataType.ContainingType is { } containingType) {
+						if (!ShouldIncludeType (containingType))
+							return false;
+					}
+
+					if (metadataType.Namespace.StartsWith ("Internal"))
+						return false;
+
+					// Simple way to filter out system assemblies - the best way would be to get a list
+					// of input/reference assemblies and filter on that, but it's tricky and this should work for basically everything
+					if (metadataType.Namespace.StartsWith ("System"))
+						return false;
+
+					return true;
+				}
+
+				return false;
+			}
+		}
+
+		private static string? GetModuleName (TypeSystemEntity entity)
+		{
+			return entity switch {
+				MetadataType type => type.Module.ToString (),
+				MethodDesc { OwningType: MetadataType owningType } => owningType.Module.ToString (),
+				_ => null
+			};
 		}
 
 		protected virtual void VerifyModule (ModuleDefinition original, ModuleDefinition? linked)
@@ -92,12 +220,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyCustomAttributes (original, linked);
 		}
 
-		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDefinition? linked)
+		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDesc? linked)
 		{
-			if (linked != null && verifiedGeneratedTypes.Contains (linked.FullName))
+			if (linked != null && NameUtils.GetActualOriginDisplayName (linked) is string linkedDisplayName && verifiedGeneratedTypes.Contains (linkedDisplayName))
 				return;
 
-			ModuleDefinition? linkedModule = linked?.Module;
+			EcmaModule? linkedModule = (linked as MetadataType)?.Module as EcmaModule;
 
 			//
 			// Little bit complex check to allow easier test writing to match
@@ -106,9 +234,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// - It contains at least one member which has [Kept] attribute (not recursive)
 			//
 			bool expectedKept =
-				original.HasAttributeDerivedFrom (nameof (KeptAttribute)) ||
-				(linked != null && linkedModule!.Assembly.EntryPoint?.DeclaringType == linked) ||
-				original.AllMembers ().Any (l => l.HasAttribute (nameof (KeptAttribute)));
+				HasActiveKeptDerivedAttribute (original) ||
+				(linked != null && linkedModule?.EntryPoint?.OwningType == linked) ||
+				original.AllMembers ().Any (HasActiveKeptDerivedAttribute);
 
 			if (!expectedKept) {
 				if (linked != null)
@@ -128,19 +256,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
 					var newName = original.FullName + "::" + attr.ConstructorArguments[0].Value.ToString ();
 
-					if (linkedMembers!.RemoveWhere (l => l.Contains (newName)) != 1)
+					var linkedMemberName = linkedMembers.Keys.FirstOrDefault (l => l.Contains (newName));
+					if (linkedMemberName == null)
 						Assert.True (false, $"Newly created member '{newName}' was not found");
+
+					linkedMembers.Remove (linkedMemberName);
 				}
 			}
 		}
 
-		protected virtual void VerifyTypeDefinitionKept (TypeDefinition original, TypeDefinition? linked)
+		protected virtual void VerifyTypeDefinitionKept (TypeDefinition original, TypeDesc? linked)
 		{
 			if (linked == null) {
 				Assert.True (false, $"Type `{original}' should have been kept");
 				return;
 			}
 
+#if false
 			if (!original.IsInterface)
 				VerifyBaseType (original, linked);
 
@@ -151,13 +283,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifySecurityAttributes (original, linked);
 
 			VerifyFixedBufferFields (original, linked);
+#endif
 
 			foreach (var td in original.NestedTypes) {
-				VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName));
-				linkedMembers.Remove (td.FullName);
+				string originalFullName = NameUtils.GetExpectedOriginDisplayName (td);
+				linkedMembers.TryGetValue (
+					originalFullName,
+					out TypeSystemEntity? linkedMember);
+
+				VerifyTypeDefinition (td, linkedMember as TypeDesc);
+				linkedMembers.Remove (originalFullName);
 			}
 
-			// Need to check properties before fields so that the KeptBackingFieldAttribute is handled correctly
+#if false
+			//// Need to check properties before fields so that the KeptBackingFieldAttribute is handled correctly
 			foreach (var p in original.Properties) {
 				VerifyProperty (p, linked.Properties.FirstOrDefault (l => p.Name == l.Name), linked);
 				linkedMembers.Remove (p.FullName);
@@ -177,13 +316,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				VerifyField (f, linked.Fields.FirstOrDefault (l => f.Name == l.Name));
 				linkedMembers.Remove (f.FullName);
 			}
+#endif
 
 			foreach (var m in original.Methods) {
 				if (verifiedEventMethods.Contains (m.FullName))
 					continue;
-				var msign = m.GetSignature ();
-				VerifyMethod (m, linked.Methods.FirstOrDefault (l => msign == l.GetSignature ()));
-				linkedMembers.Remove (m.FullName);
+
+				string originalFullName = NameUtils.GetExpectedOriginDisplayName (m);
+				linkedMembers.TryGetValue (
+					originalFullName,
+					out TypeSystemEntity? linkedMember);
+
+				VerifyMethod (m, linkedMember as MethodDesc);
+				linkedMembers.Remove (originalFullName);
 			}
 		}
 
@@ -319,13 +464,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
-				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
+				//VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
 				verifiedEventMethods.Add (src.AddMethod.FullName);
 				linkedMembers.Remove (src.AddMethod.FullName);
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
-				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
+				//VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
 				verifiedEventMethods.Add (src.RemoveMethod.FullName);
 				linkedMembers.Remove (src.RemoveMethod.FullName);
 			}
@@ -334,17 +479,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyCustomAttributes (src, linked);
 		}
 
-		private void VerifyMethod (MethodDefinition src, MethodDefinition? linked)
+		private void VerifyMethod (MethodDefinition src, MethodDesc? linked)
 		{
 			bool expectedKept = ShouldMethodBeKept (src);
 			VerifyMethodInternal (src, linked, expectedKept);
 		}
 
-		private void VerifyMethodInternal (MethodDefinition src, MethodDefinition? linked, bool expectedKept)
+		private void VerifyMethodInternal (MethodDefinition src, MethodDesc? linked, bool expectedKept)
 		{
 			if (!expectedKept) {
 				if (linked != null)
-					Assert.True (false, $"Method `{src.FullName}' should have been removed");
+					Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been removed");
 
 				return;
 			}
@@ -381,13 +526,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			linkedMembers.Remove (srcField.FullName);
 		}
 
-		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDefinition? linked)
+		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDesc? linked)
 		{
 			if (linked == null) {
-				Assert.True (false, $"Method `{src.FullName}' should have been kept");
+				Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been kept");
 				return;
 			}
 
+#if false
 			VerifyPseudoAttributes (src, linked);
 			VerifyGenericParameters (src, linked);
 			VerifyCustomAttributes (src, linked);
@@ -395,7 +541,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyParameters (src, linked);
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
+
+			// Method bodies are not very different in Native AOT
 			VerifyMethodBody (src, linked);
+#endif
 		}
 
 		protected virtual void VerifyMethodBody (MethodDefinition src, MethodDefinition linked)
@@ -735,7 +884,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyFieldKept (src, linked);
 			verifiedGeneratedFields.Add (linked!.FullName);
 			linkedMembers.Remove (linked.FullName);
-			VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ());
+			//VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ());
 			linkedMembers.Remove (linked.FieldType.FullName);
 			linkedMembers.Remove (linked.DeclaringType.FullName);
 			verifiedGeneratedTypes.Add (linked.DeclaringType.FullName);
@@ -840,7 +989,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				verifiedGeneratedFields.Add (originalElementField.FullName);
 				linkedMembers.Remove (linkedField!.FullName);
 
-				VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType);
+				//VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType);
 				verifiedGeneratedTypes.Add (originalCompilerGeneratedBufferType.FullName);
 			}
 		}
@@ -915,14 +1064,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool ShouldBeKept<T> (T member, string? signature = null) where T : MemberReference, ICustomAttributeProvider
 		{
-			if (member.HasAttribute (nameof (KeptAttribute)))
+			if (HasActiveKeptAttribute (member))
 				return true;
 
 			ICustomAttributeProvider cap = (ICustomAttributeProvider) member.DeclaringType;
 			if (cap == null)
 				return false;
 
-			return GetCustomAttributeCtorValues<string> (cap, nameof (KeptMemberAttribute)).Any (a => a == (signature ?? member.Name));
+			return GetActiveKeptAttributes (cap, nameof (KeptMemberAttribute)).Any (ca => {
+				if (ca.Constructor.Parameters.Count != 1 ||
+					ca.ConstructorArguments[0].Value is not string a)
+					return false;
+
+				return a == (signature ?? member.Name);
+			});
 		}
 
 		protected static uint GetExpectedPseudoAttributeValue (ICustomAttributeProvider provider, uint sourceValue)
@@ -954,6 +1109,585 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected static IEnumerable<string>? GetStringArrayAttributeValue (CustomAttribute attribute)
 		{
 			return ((CustomAttributeArgument[]) attribute.ConstructorArguments[0].Value)?.Select (arg => arg.Value.ToString ()!);
+		}
+
+		private static IEnumerable<CustomAttribute> GetActiveKeptAttributes (ICustomAttributeProvider provider, string attributeName)
+		{
+			return provider.CustomAttributes.Where (ca => {
+				if (ca.AttributeType.Name != attributeName) {
+					return false;
+				}
+
+				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
+				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
+			});
+		}
+
+		private static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)
+		{
+			return GetActiveKeptAttributes (provider, nameof (KeptAttribute)).Any ();
+		}
+
+		private static IEnumerable<CustomAttribute> GetActiveKeptDerivedAttributes (ICustomAttributeProvider provider)
+		{
+			return provider.CustomAttributes.Where (ca => {
+				if (!ca.AttributeType.Resolve ().DerivesFrom (nameof (KeptAttribute))) {
+					return false;
+				}
+
+				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
+				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
+			});
+		}
+
+
+		private static bool HasActiveKeptDerivedAttribute (ICustomAttributeProvider provider)
+		{
+			return GetActiveKeptDerivedAttributes (provider).Any ();
+		}
+
+		private void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)
+		{
+			var checks = BuildOtherAssemblyCheckTable (original);
+
+			// TODO
+			// For now disable the code below by simply removing all checks
+			checks.Clear ();
+
+			try {
+				foreach (var assemblyName in checks.Keys) {
+					var linkedAssembly = ResolveLinkedAssembly (assemblyName);
+					foreach (var checkAttrInAssembly in checks[assemblyName]) {
+						var attributeTypeName = checkAttrInAssembly.AttributeType.Name;
+
+						switch (attributeTypeName) {
+						case nameof (KeptAllTypesAndMembersInAssemblyAttribute):
+							VerifyKeptAllTypesAndMembersInAssembly (linkedAssembly);
+							continue;
+						case nameof (KeptAttributeInAssemblyAttribute):
+							VerifyKeptAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+							continue;
+						case nameof (RemovedAttributeInAssembly):
+							VerifyRemovedAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+							continue;
+						default:
+							break;
+						}
+
+						var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ()!;
+						TypeDefinition? linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
+
+						if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
+							ExportedType? exportedType = linkedAssembly.MainModule.ExportedTypes
+									.FirstOrDefault (exported => exported.FullName == expectedTypeName);
+
+							// Note that copied assemblies could have dangling references.
+							if (exportedType != null && original.EntryPoint.DeclaringType.CustomAttributes.FirstOrDefault (
+								ca => ca.AttributeType.Name == nameof (RemovedAssemblyAttribute)
+								&& ca.ConstructorArguments[0].Value.ToString () == exportedType.Scope.Name + ".dll") != null)
+								continue;
+
+							linkedType = exportedType?.Resolve ();
+						}
+
+						switch (attributeTypeName) {
+						case nameof (RemovedTypeInAssemblyAttribute):
+							if (linkedType != null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been removed from assembly {assemblyName}");
+							GetOriginalTypeFromInAssemblyAttribute (checkAttrInAssembly);
+							break;
+						case nameof (KeptTypeInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+							break;
+						case nameof (RemovedInterfaceOnTypeInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+							VerifyRemovedInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (KeptInterfaceOnTypeInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+							VerifyKeptInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (RemovedMemberInAssemblyAttribute):
+							if (linkedType == null)
+								continue;
+
+							VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (KeptBaseOnTypeInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+							VerifyKeptBaseOnTypeInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (KeptMemberInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
+
+							VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (RemovedForwarderAttribute):
+							if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
+								Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed from assembly {assemblyName}");
+
+							break;
+
+						case nameof (RemovedAssemblyReferenceAttribute):
+							Assert.False (linkedAssembly.MainModule.AssemblyReferences.Any (l => l.Name == expectedTypeName),
+								$"AssemblyRef '{expectedTypeName}' should have been removed from assembly {assemblyName}");
+							break;
+
+						case nameof (KeptResourceInAssemblyAttribute):
+							VerifyKeptResourceInAssembly (checkAttrInAssembly);
+							break;
+						case nameof (RemovedResourceInAssemblyAttribute):
+							VerifyRemovedResourceInAssembly (checkAttrInAssembly);
+							break;
+						case nameof (KeptReferencesInAssemblyAttribute):
+							VerifyKeptReferencesInAssembly (checkAttrInAssembly);
+							break;
+						case nameof (ExpectedInstructionSequenceOnMemberInAssemblyAttribute):
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
+							VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						default:
+							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
+							break;
+						}
+					}
+				}
+			} catch (AssemblyResolutionException e) {
+				Assert.Fail ($"Failed to resolve linked assembly `{e.AssemblyReference.Name}`.  It must not exist in the output.");
+			}
+		}
+
+		private void VerifyKeptAttributeInAssembly (CustomAttribute inAssemblyAttribute, AssemblyDefinition linkedAssembly)
+		{
+			VerifyAttributeInAssembly (inAssemblyAttribute, linkedAssembly, VerifyCustomAttributeKept);
+		}
+
+		private void VerifyRemovedAttributeInAssembly (CustomAttribute inAssemblyAttribute, AssemblyDefinition linkedAssembly)
+		{
+			VerifyAttributeInAssembly (inAssemblyAttribute, linkedAssembly, VerifyCustomAttributeRemoved);
+		}
+
+		private void VerifyAttributeInAssembly (CustomAttribute inAssemblyAttribute, AssemblyDefinition linkedAssembly, Action<ICustomAttributeProvider, string> assertExpectedAttribute)
+		{
+			var assemblyName = (string) inAssemblyAttribute.ConstructorArguments[0].Value!;
+			string expectedAttributeTypeName;
+			var attributeTypeOrTypeName = inAssemblyAttribute.ConstructorArguments[1].Value!;
+			if (attributeTypeOrTypeName is TypeReference typeReference) {
+				expectedAttributeTypeName = typeReference.FullName;
+			} else {
+				expectedAttributeTypeName = attributeTypeOrTypeName.ToString ()!;
+			}
+
+			if (inAssemblyAttribute.ConstructorArguments.Count == 2) {
+				// Assembly
+				assertExpectedAttribute (linkedAssembly, expectedAttributeTypeName);
+				return;
+			}
+
+			// We are asserting on type or member
+			var typeOrTypeName = inAssemblyAttribute.ConstructorArguments[2].Value;
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!, typeOrTypeName);
+			if (originalType == null)
+				Assert.Fail ($"Invalid test assertion.  The original `{assemblyName}` does not contain a type `{typeOrTypeName}`");
+
+			var linkedType = linkedAssembly.MainModule.GetType (originalType.FullName);
+			if (linkedType == null)
+				Assert.Fail ($"Missing expected type `{typeOrTypeName}` in `{assemblyName}`");
+
+			if (inAssemblyAttribute.ConstructorArguments.Count == 3) {
+				assertExpectedAttribute (linkedType, expectedAttributeTypeName);
+				return;
+			}
+
+			// we are asserting on a member
+			string memberName = (string) inAssemblyAttribute.ConstructorArguments[3].Value;
+
+			// We will find the matching type from the original assembly first that way we can confirm
+			// that the name defined in the attribute corresponds to a member that actually existed
+			var originalFieldMember = originalType.Fields.FirstOrDefault (m => m.Name == memberName);
+			if (originalFieldMember != null) {
+				var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
+				if (linkedField == null)
+					Assert.Fail ($"Field `{memberName}` on Type `{originalType}` should have been kept");
+
+				assertExpectedAttribute (linkedField, expectedAttributeTypeName);
+				return;
+			}
+
+			var originalPropertyMember = originalType.Properties.FirstOrDefault (m => m.Name == memberName);
+			if (originalPropertyMember != null) {
+				var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
+				if (linkedProperty == null)
+					Assert.Fail ($"Property `{memberName}` on Type `{originalType}` should have been kept");
+
+				assertExpectedAttribute (linkedProperty, expectedAttributeTypeName);
+				return;
+			}
+
+			var originalMethodMember = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+			if (originalMethodMember != null) {
+				var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+				if (linkedMethod == null)
+					Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been kept");
+
+				assertExpectedAttribute (linkedMethod, expectedAttributeTypeName);
+				return;
+			}
+
+			Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
+		}
+
+		private static void VerifyCopyAssemblyIsKeptUnmodified (NPath outputDirectory, string assemblyName)
+		{
+			string inputAssemblyPath = Path.Combine (Directory.GetParent (outputDirectory)!.ToString (), "input", assemblyName);
+			string outputAssemblyPath = Path.Combine (outputDirectory, assemblyName);
+			Assert.True (File.ReadAllBytes (inputAssemblyPath).SequenceEqual (File.ReadAllBytes (outputAssemblyPath)),
+				$"Expected assemblies\n" +
+				$"\t{inputAssemblyPath}\n" +
+				$"\t{outputAssemblyPath}\n" +
+				$"binaries to be equal, since the input assembly has copy action.");
+		}
+
+		private void VerifyCustomAttributeKept (ICustomAttributeProvider provider, string expectedAttributeTypeName)
+		{
+			var match = provider.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.FullName == expectedAttributeTypeName);
+			if (match == null)
+				Assert.Fail ($"Expected `{provider}` to have an attribute of type `{expectedAttributeTypeName}`");
+		}
+
+		private void VerifyCustomAttributeRemoved (ICustomAttributeProvider provider, string expectedAttributeTypeName)
+		{
+			var match = provider.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.FullName == expectedAttributeTypeName);
+			if (match != null)
+				Assert.Fail ($"Expected `{provider}` to no longer have an attribute of type `{expectedAttributeTypeName}`");
+		}
+
+		private void VerifyRemovedInterfaceOnTypeInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+
+			var interfaceAssemblyName = inAssemblyAttribute.ConstructorArguments[2].Value.ToString ()!;
+			var interfaceType = inAssemblyAttribute.ConstructorArguments[3].Value;
+
+			var originalInterface = GetOriginalTypeFromInAssemblyAttribute (interfaceAssemblyName, interfaceType);
+			if (!originalType.HasInterfaces)
+				Assert.Fail ("Invalid assertion.  Original type does not have any interfaces");
+
+			var originalInterfaceImpl = GetMatchingInterfaceImplementationOnType (originalType, originalInterface.FullName);
+			if (originalInterfaceImpl == null)
+				Assert.Fail ($"Invalid assertion.  Original type never had an interface of type `{originalInterface}`");
+
+			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterface.FullName);
+			if (linkedInterfaceImpl != null)
+				Assert.Fail ($"Expected `{linkedType}` to no longer have an interface of type {originalInterface.FullName}");
+		}
+
+		private void VerifyKeptInterfaceOnTypeInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+
+			var interfaceAssemblyName = inAssemblyAttribute.ConstructorArguments[2].Value.ToString ()!;
+			var interfaceType = inAssemblyAttribute.ConstructorArguments[3].Value;
+
+			var originalInterface = GetOriginalTypeFromInAssemblyAttribute (interfaceAssemblyName, interfaceType);
+			if (!originalType.HasInterfaces)
+				Assert.Fail ("Invalid assertion.  Original type does not have any interfaces");
+
+			var originalInterfaceImpl = GetMatchingInterfaceImplementationOnType (originalType, originalInterface.FullName);
+			if (originalInterfaceImpl == null)
+				Assert.Fail ($"Invalid assertion.  Original type never had an interface of type `{originalInterface}`");
+
+			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterface.FullName);
+			if (linkedInterfaceImpl == null)
+				Assert.Fail ($"Expected `{linkedType}` to have interface of type {originalInterface.FullName}");
+		}
+
+		private void VerifyKeptBaseOnTypeInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+
+			var baseAssemblyName = inAssemblyAttribute.ConstructorArguments[2].Value.ToString ()!;
+			var baseType = inAssemblyAttribute.ConstructorArguments[3].Value;
+
+			var originalBase = GetOriginalTypeFromInAssemblyAttribute (baseAssemblyName, baseType);
+			if (originalType.BaseType.Resolve () != originalBase)
+				Assert.Fail ("Invalid assertion.  Original type's base does not match the expected base");
+
+			Assert.True (originalBase.FullName == linkedType.BaseType.FullName,
+				$"Incorrect base on `{linkedType.FullName}`.  Expected `{originalBase.FullName}` but was `{linkedType.BaseType.FullName}`");
+		}
+
+		private static InterfaceImplementation? GetMatchingInterfaceImplementationOnType (TypeDefinition type, string expectedInterfaceTypeName)
+		{
+			return type.Interfaces.FirstOrDefault (impl => {
+				var resolvedImpl = impl.InterfaceType.Resolve ();
+
+				if (resolvedImpl == null)
+					Assert.Fail ($"Failed to resolve interface : `{impl.InterfaceType}` on `{type}`");
+
+				return resolvedImpl.FullName == expectedInterfaceTypeName;
+			});
+		}
+
+		private void VerifyRemovedMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+			foreach (var memberNameAttr in (CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[2].Value) {
+				string memberName = (string) memberNameAttr.Value;
+
+				// We will find the matching type from the original assembly first that way we can confirm
+				// that the name defined in the attribute corresponds to a member that actually existed
+				var originalFieldMember = originalType.Fields.FirstOrDefault (m => m.Name == memberName);
+				if (originalFieldMember != null) {
+					var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
+					if (linkedField != null)
+						Assert.Fail ($"Field `{memberName}` on Type `{originalType}` should have been removed");
+
+					continue;
+				}
+
+				var originalPropertyMember = originalType.Properties.FirstOrDefault (m => m.Name == memberName);
+				if (originalPropertyMember != null) {
+					var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
+					if (linkedProperty != null)
+						Assert.Fail ($"Property `{memberName}` on Type `{originalType}` should have been removed");
+
+					continue;
+				}
+
+				var originalMethodMember = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+				if (originalMethodMember != null) {
+					var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+					if (linkedMethod != null)
+						Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been removed");
+
+					continue;
+				}
+
+				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
+			}
+		}
+
+		private void VerifyKeptMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+			var memberNames = (CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[2].Value;
+			Assert.True (memberNames.Length > 0, "Invalid KeptMemberInAssemblyAttribute. Expected member names.");
+			foreach (var memberNameAttr in memberNames) {
+				string memberName = (string) memberNameAttr.Value;
+
+				// We will find the matching type from the original assembly first that way we can confirm
+				// that the name defined in the attribute corresponds to a member that actually existed
+
+				if (TryVerifyKeptMemberInAssemblyAsField (memberName, originalType, linkedType))
+					continue;
+
+				if (TryVerifyKeptMemberInAssemblyAsProperty (memberName, originalType, linkedType))
+					continue;
+
+				if (TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType))
+					continue;
+
+				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
+			}
+		}
+
+		protected virtual bool TryVerifyKeptMemberInAssemblyAsField (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
+		{
+			var originalFieldMember = originalType.Fields.FirstOrDefault (m => m.Name == memberName);
+			if (originalFieldMember != null) {
+				var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
+				if (linkedField == null)
+					Assert.Fail ($"Field `{memberName}` on Type `{originalType}` should have been kept");
+
+				return true;
+			}
+
+			return false;
+		}
+
+		protected virtual bool TryVerifyKeptMemberInAssemblyAsProperty (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
+		{
+			var originalPropertyMember = originalType.Properties.FirstOrDefault (m => m.Name == memberName);
+			if (originalPropertyMember != null) {
+				var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
+				if (linkedProperty == null)
+					Assert.Fail ($"Property `{memberName}` on Type `{originalType}` should have been kept");
+
+				return true;
+			}
+
+			return false;
+		}
+
+		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
+		{
+			return TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out _, out _);
+		}
+
+		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType, out MethodDefinition? originalMethod, out MethodDefinition? linkedMethod)
+		{
+			originalMethod = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+			if (originalMethod != null) {
+				linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+				if (linkedMethod == null)
+					Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been kept");
+
+				return true;
+			}
+
+			linkedMethod = null;
+			return false;
+		}
+
+		private void VerifyKeptReferencesInAssembly (CustomAttribute inAssemblyAttribute)
+		{
+			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
+			var expectedReferenceNames = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[1].Value).Select (attr => (string) attr.Value).ToList ();
+			for (int i = 0; i < expectedReferenceNames.Count; i++)
+				if (expectedReferenceNames[i].EndsWith (".dll"))
+					expectedReferenceNames[i] = expectedReferenceNames[i].Substring (0, expectedReferenceNames[i].LastIndexOf ("."));
+
+			Assert.Equal (assembly.MainModule.AssemblyReferences.Select (asm => asm.Name), expectedReferenceNames);
+		}
+
+		private void VerifyKeptResourceInAssembly (CustomAttribute inAssemblyAttribute)
+		{
+			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
+			var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString ();
+
+			Assert.Contains (resourceName, assembly.MainModule.Resources.Select (r => r.Name));
+		}
+
+		private void VerifyRemovedResourceInAssembly (CustomAttribute inAssemblyAttribute)
+		{
+			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
+			var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString ();
+
+			Assert.DoesNotContain (resourceName, assembly.MainModule.Resources.Select (r => r.Name));
+		}
+
+		private void VerifyKeptAllTypesAndMembersInAssembly (AssemblyDefinition linked)
+		{
+			var original = ResolveOriginalsAssembly (linked.MainModule.Assembly.Name.Name);
+
+			if (original == null)
+				Assert.Fail ($"Failed to resolve original assembly {linked.MainModule.Assembly.Name.Name}");
+
+			var originalTypes = original.AllDefinedTypes ().ToDictionary (t => t.FullName);
+			var linkedTypes = linked.AllDefinedTypes ().ToDictionary (t => t.FullName);
+
+			var missingInLinked = originalTypes.Keys.Except (linkedTypes.Keys);
+
+			Assert.True (missingInLinked.Any (), $"Expected all types to exist in the linked assembly, but one or more were missing");
+
+			foreach (var originalKvp in originalTypes) {
+				var linkedType = linkedTypes[originalKvp.Key];
+
+				var originalMembers = originalKvp.Value.AllMembers ().Select (m => m.FullName);
+				var linkedMembers = linkedType.AllMembers ().Select (m => m.FullName);
+
+				var missingMembersInLinked = originalMembers.Except (linkedMembers);
+
+				Assert.True (missingMembersInLinked.Any (), $"Expected all members of `{originalKvp.Key}`to exist in the linked assembly, but one or more were missing");
+			}
+		}
+
+		private TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)
+		{
+			string assemblyName;
+			if (inAssemblyAttribute.HasProperties && inAssemblyAttribute.Properties[0].Name == "ExpectationAssemblyName")
+				assemblyName = inAssemblyAttribute.Properties[0].Argument.Value.ToString ()!;
+			else
+				assemblyName = inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!;
+
+			return GetOriginalTypeFromInAssemblyAttribute (assemblyName, inAssemblyAttribute.ConstructorArguments[1].Value);
+		}
+
+		private TypeDefinition GetOriginalTypeFromInAssemblyAttribute (string assemblyName, object typeOrTypeName)
+		{
+			if (typeOrTypeName is TypeReference attributeValueAsTypeReference)
+				return attributeValueAsTypeReference.Resolve ();
+
+			var assembly = ResolveOriginalsAssembly (assemblyName);
+
+			var expectedTypeName = typeOrTypeName.ToString ();
+			var originalType = assembly.MainModule.GetType (expectedTypeName);
+			if (originalType == null)
+				Assert.Fail ($"Invalid test assertion.  Unable to locate the original type `{expectedTypeName}.`");
+			return originalType;
+		}
+
+		private static Dictionary<string, List<CustomAttribute>> BuildOtherAssemblyCheckTable (AssemblyDefinition original)
+		{
+			var checks = new Dictionary<string, List<CustomAttribute>> ();
+
+			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
+				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (IsTypeInOtherAssemblyAssertion)) {
+					var assemblyName = (string) attr.ConstructorArguments[0].Value;
+					if (!checks.TryGetValue (assemblyName, out List<CustomAttribute>? checksForAssembly))
+						checks[assemblyName] = checksForAssembly = new List<CustomAttribute> ();
+
+					checksForAssembly.Add (attr);
+				}
+			}
+
+			return checks;
+		}
+
+		protected AssemblyDefinition ResolveLinkedAssembly (string assemblyName)
+		{
+			//var cleanAssemblyName = assemblyName;
+			//if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
+			//cleanAssemblyName = System.IO.Path.GetFileNameWithoutExtension (assemblyName);
+			//return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _linkedReaderParameters);
+			// TODO - adapt to Native AOT
+			return ResolveOriginalsAssembly (assemblyName);
+		}
+
+		protected AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)
+		{
+			var cleanAssemblyName = assemblyName;
+			if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
+				cleanAssemblyName = Path.GetFileNameWithoutExtension (assemblyName);
+			return originalsResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), originalReaderParameters);
+		}
+
+		private static bool IsTypeInOtherAssemblyAssertion (CustomAttribute attr)
+		{
+			return attr.AttributeType.Resolve ()?.DerivesFrom (nameof (BaseInAssemblyAttribute)) ?? false;
+		}
+
+		private void VerifyExpectedInstructionSequenceOnMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+			var memberName = (string) inAssemblyAttribute.ConstructorArguments[2].Value;
+
+			if (TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out MethodDefinition? originalMethod, out MethodDefinition? linkedMethod)) {
+				static string[] valueCollector (MethodDefinition m) => AssemblyChecker.FormatMethodBody (m.Body);
+				var linkedValues = valueCollector (linkedMethod!);
+				var srcValues = valueCollector (originalMethod!);
+
+				var expected = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[3].Value)?.Select (arg => arg.Value.ToString ()).ToArray ();
+				Assert.Equal (
+					linkedValues,
+					expected);
+
+				return;
+			}
+
+			Assert.Fail ($"Invalid test assertion.  No method named `{memberName}` exists on the original type `{originalType}`");
+		}
+
+		protected virtual void UnhandledOtherAssemblyAssertion (string expectedTypeName, CustomAttribute checkAttrInAssembly, TypeDefinition? linkedType)
+		{
+			throw new NotImplementedException ($"Type {expectedTypeName}, has an unknown other assembly attribute of type {checkAttrInAssembly.AttributeType}");
 		}
 	}
 }
