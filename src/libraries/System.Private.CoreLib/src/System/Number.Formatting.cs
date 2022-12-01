@@ -1699,7 +1699,6 @@ namespace System
             return bufferEnd;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe string UInt32ToDecStr(uint value)
         {
             // For small numbers, consult a lazily-populated cache.
@@ -1711,7 +1710,6 @@ namespace System
             return UInt32ToDecStr_NoSmallNumberCheck(value);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static string UInt32ToDecStrForKnownSmallNumber(uint value)
         {
             Debug.Assert(value < SmallNumberCacheLength);
