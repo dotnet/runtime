@@ -506,13 +506,12 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             else
             {
                 alc = AssemblyLoadContext.Default;
-                lock(s_loadedInDefaultContext)
+                lock (s_loadedInDefaultContext)
                 {
                     if (!s_loadedInDefaultContext.Contains(assemblyPath))
                     {
                         var resolver = new AssemblyDependencyResolver(assemblyPath);
                         AssemblyLoadContext.Default.Resolving +=
-                            [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
                             (context, assemblyName) =>
                             {
                                 string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);

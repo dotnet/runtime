@@ -49,7 +49,19 @@ using com_delegate_no_load_context_fn = int(STDMETHODCALLTYPE*)(com_activation_c
 
 namespace
 {
-    int get_com_delegate_no_load_context(hostfxr_delegate_type del_type, get_function_pointer_fn get_function_pointer, void **delegate)
+    struct com_delegates
+    {
+        com_delegate_fn delegate;
+
+        // Delegate that does not take a load context. This version has existed since COM support was
+        // added in .NET Core 3.0. It is used as a fallback when loading in an isolated load context
+        // in versions of .NET without the functions that take a load context.
+        com_delegate_no_load_context_fn delegate_no_load_cxt;
+    };
+
+    // Fallback for loading a COM server in an isolated context in versions of .NET that don't have the
+    // functions that take a load context.
+    int get_com_delegate_no_load_context(hostfxr_delegate_type del_type, get_function_pointer_fn get_function_pointer, com_delegate_no_load_context_fn *delegate)
     {
         const pal::char_t* method_name;
         switch (del_type)
@@ -73,12 +85,14 @@ namespace
             UNMANAGEDCALLERSONLY_METHOD,
             nullptr, // load context
             nullptr, // reserved
-            delegate);
+            reinterpret_cast<void**>(delegate));
     }
 
-    int get_com_delegate(hostfxr_delegate_type del_type, pal::string_t *app_path, com_delegate_fn *delegate, bool* del_has_load_context, void **load_context)
+    int get_com_delegate(hostfxr_delegate_type del_type, pal::string_t *app_path, com_delegates &delegates, void **load_context)
     {
-        *del_has_load_context = true;
+        delegates.delegate = nullptr;
+        delegates.delegate_no_load_cxt = nullptr;
+
         get_function_pointer_fn get_function_pointer;
         int status = load_fxr_and_get_delegate(
             hostfxr_delegate_type::hdt_get_function_pointer,
@@ -136,17 +150,20 @@ namespace
             UNMANAGEDCALLERSONLY_METHOD,
             nullptr, // load context
             nullptr, // reserved
-            (void**)delegate);
+            (void**)&delegates.delegate);
 
         if (status == StatusCode::Success)
             return status;
 
         // Newer methods with context not found and using isolated context.
-        // Fall back to methods without context
-        if (status == 0x80131513 /*MissingMethodException*/ && *load_context == ISOLATED_CONTEXT)
+        // Fall back to methods without context.
+        // The runtime will throw MissingMethodException, so we check for the corresponding COR_E_MISSINGMETHOD HRESULT.
+        // We also need to check for COR_E_MISSINGMEMBER due to a pre-7.0 bug where the HRESULT was not correctly set on
+        // MissingMethodException and it ended up with the HRESULT for MissingMemberException
+        if ((status == 0x80131513 /*COR_E_MISSINGMETHOD*/ || status == 0x80131512 /*COR_E_MISSINGMEMBER*/)
+            && *load_context == ISOLATED_CONTEXT)
         {
-            *del_has_load_context = false;
-            status = get_com_delegate_no_load_context(del_type, get_function_pointer, (void**)delegate);
+            status = get_com_delegate_no_load_context(del_type, get_function_pointer, &delegates.delegate_no_load_cxt);
         }
 
         return status;
@@ -190,8 +207,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
 
     HRESULT hr;
     pal::string_t app_path;
-    com_delegate_fn act;
-    bool del_has_load_context;
+    com_delegates act;
     void* load_context;
     {
         trace::setup();
@@ -199,7 +215,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
 
         error_writer_scope_t writer_scope(redirected_error_writer);
 
-        int ec = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &app_path, &act, &del_has_load_context, &load_context);
+        int ec = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &app_path, act, &load_context);
         if (ec != StatusCode::Success)
         {
             report_com_error_info(rclsid, std::move(get_redirected_error_string()));
@@ -207,7 +223,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
         }
     }
 
-    assert(del_has_load_context || load_context == ISOLATED_CONTEXT);
+    assert(act.delegate != nullptr || load_context == ISOLATED_CONTEXT);
 
     // Query the CLR for the type
 
@@ -221,14 +237,13 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
         iter->second.type.c_str(),
         (void**)&classFactory
     };
-    if (del_has_load_context)
+    if (act.delegate != nullptr)
     {
-        RETURN_IF_FAILED(act(&cxt, load_context));
+        RETURN_IF_FAILED(act.delegate(&cxt, load_context));
     }
     else
     {
-        com_delegate_no_load_context_fn act_no_load_cxt = (com_delegate_no_load_context_fn)act;
-        RETURN_IF_FAILED(act_no_load_cxt(&cxt));
+        RETURN_IF_FAILED(act.delegate_no_load_cxt(&cxt));
     }
     assert(classFactory != nullptr);
 
@@ -557,11 +572,10 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
 
     HRESULT hr;
     pal::string_t app_path;
-    com_delegate_fn reg;
-    bool del_has_load_context;
+    com_delegates reg;
     void* load_context;
-    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_register, &app_path, &reg, &del_has_load_context, &load_context));
-    assert(del_has_load_context || load_context == ISOLATED_CONTEXT);
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_register, &app_path, reg, &load_context));
+    assert(reg.delegate != nullptr || load_context == ISOLATED_CONTEXT);
 
     com_activation_context cxt
     {
@@ -583,14 +597,13 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
         cxt.class_id = p.first;
         cxt.assembly_name = p.second.assembly.c_str();
         cxt.type_name = p.second.type.c_str();
-        if (del_has_load_context)
+        if (reg.delegate != nullptr)
         {
-            RETURN_IF_FAILED(reg(&cxt, load_context));
+            RETURN_IF_FAILED(reg.delegate(&cxt, load_context));
         }
         else
         {
-            com_delegate_no_load_context_fn reg_no_load_cxt = (com_delegate_no_load_context_fn)reg;
-            RETURN_IF_FAILED(reg_no_load_cxt(&cxt));
+            RETURN_IF_FAILED(reg.delegate_no_load_cxt(&cxt));
         }
     }
 
@@ -612,11 +625,10 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
 
     HRESULT hr;
     pal::string_t app_path;
-    com_delegate_fn unreg;
-    bool del_has_load_context;
+    com_delegates unreg;
     void* load_context;
-    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_unregister, &app_path, &unreg, &del_has_load_context, &load_context));
-    assert(del_has_load_context || load_context == ISOLATED_CONTEXT);
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_unregister, &app_path, unreg, &load_context));
+    assert(unreg.delegate != nullptr || load_context == ISOLATED_CONTEXT);
 
     com_activation_context cxt
     {
@@ -635,14 +647,13 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
         cxt.class_id = p.first;
         cxt.assembly_name = p.second.assembly.c_str();
         cxt.type_name = p.second.type.c_str();
-        if (del_has_load_context)
+        if (unreg.delegate != nullptr)
         {
-            RETURN_IF_FAILED(unreg(&cxt, load_context));
+            RETURN_IF_FAILED(unreg.delegate(&cxt, load_context));
         }
         else
         {
-            com_delegate_no_load_context_fn unreg_no_load_cxt = (com_delegate_no_load_context_fn)unreg;
-            RETURN_IF_FAILED(unreg_no_load_cxt(&cxt));
+            RETURN_IF_FAILED(unreg.delegate_no_load_cxt(&cxt));
         }
 
         // Unregister the CLSID from registry
