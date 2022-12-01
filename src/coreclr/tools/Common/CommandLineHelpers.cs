@@ -184,7 +184,7 @@ namespace System.CommandLine
                     {
                         if (val is IEnumerable<string> || val is IDictionary<string, string>)
                         {
-                            if (!(val is IEnumerable<string> values))
+                            if (val is not IEnumerable<string> values)
                                 values = ((IDictionary<string, string>)val).Values;
 
                             if (inputOptionNames.Contains(option.Name))
@@ -219,7 +219,7 @@ namespace System.CommandLine
                     object val = res.CommandResult.GetValue(argument);
                     if (val is IEnumerable<string> || val is IDictionary<string, string>)
                     {
-                        if (!(val is IEnumerable<string> values))
+                        if (val is not IEnumerable<string> values)
                             values = ((IDictionary<string, string>)val).Values;
 
                         foreach (string optInList in values)
