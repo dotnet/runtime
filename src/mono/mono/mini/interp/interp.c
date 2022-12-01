@@ -2884,6 +2884,14 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
  * this/static * ret/void * 16 arguments -> 64 functions.
  */
 
+#if HOST_BROWSER
+#define INTERP_ENTRY_UPDATE_HIT_COUNT(_method) \
+	mono_interp_record_interp_entry (_method)
+#else
+#define INTERP_ENTRY_UPDATE_HIT_COUNT(_method)
+#endif
+
+
 #define INTERP_ENTRY_BASE(_method, _this_arg, _res) \
 	InterpEntryData data; \
 	(data).rmethod = (_method); \
@@ -2891,30 +2899,34 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	(data).this_arg = (_this_arg); \
 	(data).many_args = NULL;
 
+#define INTERP_ENTRY_BASE_WITH_HIT_COUNT(_method, _this_arg, _res) \
+	INTERP_ENTRY_BASE (_method, _this_arg, _res) \
+	INTERP_ENTRY_UPDATE_HIT_COUNT (_method);
+
 #define INTERP_ENTRY0(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY1(_this_arg, _res, _method) {	  \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY2(_this_arg, _res, _method) {  \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY3(_this_arg, _res, _method) { \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY4(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2922,7 +2934,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY5(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2931,7 +2943,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY6(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2941,7 +2953,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY7(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2952,7 +2964,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY8(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
