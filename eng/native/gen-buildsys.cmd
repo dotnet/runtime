@@ -56,6 +56,7 @@ if /i "%__Arch%" == "wasm" (
             set EMSDK_PATH=%__repoRoot%\src\mono\wasm\emsdk
         )
         set EMSDK_PATH=!EMSDK_PATH:\=/!
+        if not "%EMSDK_PATH:~-1%"=="/" set "EMSDK_PATH=%EMSDK_PATH%/"
 
         set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_TOOLCHAIN_FILE=!EMSDK_PATH!/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
         set __UseEmcmake=1
@@ -70,6 +71,7 @@ if /i "%__Arch%" == "wasm" (
             set WASI_SDK_PATH=%__repoRoot%src\mono\wasi\wasi-sdk
         )
         set WASI_SDK_PATH=!WASI_SDK_PATH:\=/!
+        if not "%WASI_SDK_PATH:~-1%"=="/" set "WASI_SDK_PATH=%WASI_SDK_PATH%/"
         set __CmakeGenerator=Ninja
         set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=WASI -DCLR_CMAKE_TARGET_ARCH=wasm "-DWASI_SDK_PREFIX=!WASI_SDK_PATH!" "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk.cmake" "-DCMAKE_SYSROOT=!WASI_SDK_PATH!/share/wasi-sysroot"
     )

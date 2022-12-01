@@ -62,7 +62,7 @@ elif [[ "$__TargetOS" == wasi ]]; then
             exit 1
         fi
     fi
-
+    export WASI_SDK_PATH="${WASI_SDK_PATH%/}/"
     export CLR_CC="$WASI_SDK_PATH"bin/clang
     export TARGET_BUILD_ARCH=wasm
     __CMakeArgs="-DCLR_CMAKE_TARGET_OS=WASI -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake"

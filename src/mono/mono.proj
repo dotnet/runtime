@@ -179,7 +179,7 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(WASI_SDK_PATH)" />
-    <Exec Command="curl -L -o- $(WasiSdkUrl) | tar --strip-components=1 -xvz -C $(WasiSdkPath) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)/wasi-sdk-version.txt"
+    <Exec Command="curl -L -o wasi-sdk-$WasiSdkVersion.0.tar.gz $(WasiSdkUrl) &amp;&amp; mkdir -p $(WASI_SDK_PATH) &amp;&amp; tar --strip-components=1 -xvzf wasi-sdk-$WasiSdkVersion.0.tar.gz -C $(WASI_SDK_PATH) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)/wasi-sdk-version.txt"
           Condition="'$(HostOS)' != 'windows'"
           WorkingDirectory="$(ArtifactsDir)"
           IgnoreStandardErrorWarningFormat="true" />
