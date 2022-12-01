@@ -1360,27 +1360,6 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderEnvironment.Instance.RegisterDynamicGenericTypesAndMethods(registrationData);
         }
 
-        /// <summary>
-        /// Publish generic type / method information to the data buffer read by the debugger. This supports
-        /// debugging dynamically created types / methods
-        /// </summary>
-        private void RegisterDebugDataForTypesAndMethods()
-        {
-            for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
-            {
-                DefType typeAsDefType;
-                if ((typeAsDefType = _typesThatNeedTypeHandles[i] as DefType) != null)
-                {
-                    SerializedDebugData.RegisterDebugDataForType(this, typeAsDefType, typeAsDefType.GetTypeBuilderState());
-                }
-            }
-
-            for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
-            {
-                SerializedDebugData.RegisterDebugDataForMethod(this, _methodsThatNeedDictionaries[i]);
-            }
-        }
-
         private void FinishTypeAndMethodBuilding()
         {
             // Once we start allocating EETypes and dictionaries, the only accepted failure is OOM.
@@ -1419,8 +1398,6 @@ namespace Internal.Runtime.TypeLoader
             {
                 FinishMethodDictionary(_methodsThatNeedDictionaries[i]);
             }
-
-            RegisterDebugDataForTypesAndMethods();
 
             int newArrayTypesCount = 0;
             int newPointerTypesCount = 0;
@@ -1524,21 +1501,6 @@ namespace Internal.Runtime.TypeLoader
             ProcessTypesNeedingPreparation();
 
             FinishTypeAndMethodBuilding();
-        }
-
-        internal static bool TryComputeFieldOffset(DefType declaringType, uint fieldOrdinal, out int fieldOffset)
-        {
-            TypeLoaderLogger.WriteLine("Computing offset of field #" + fieldOrdinal.LowLevelToString() + " on type " + declaringType.ToString());
-
-            // Get the computed field offset result
-            LayoutInt layoutFieldOffset = declaringType.GetFieldByNativeLayoutOrdinal(fieldOrdinal).Offset;
-            if (layoutFieldOffset.IsIndeterminate)
-            {
-                fieldOffset = 0;
-                return false;
-            }
-            fieldOffset = layoutFieldOffset.AsInt;
-            return true;
         }
 
         private void BuildMethod(InstantiatedMethod method)
@@ -1976,28 +1938,6 @@ namespace Internal.Runtime.TypeLoader
 
                 auxResult = IntPtr.Zero;
                 return IntPtr.Zero;
-            }
-        }
-
-        public static bool TryGetFieldOffset(RuntimeTypeHandle declaringTypeHandle, uint fieldOrdinal, out int fieldOffset)
-        {
-            try
-            {
-                TypeSystemContext context = TypeSystemContextFactory.Create();
-
-                DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-                Debug.Assert(declaringType.HasInstantiation);
-
-                bool success = TypeBuilder.TryComputeFieldOffset(declaringType, fieldOrdinal, out fieldOffset);
-
-                TypeSystemContextFactory.Recycle(context);
-
-                return success;
-            }
-            catch (MissingTemplateException)
-            {
-                fieldOffset = int.MinValue;
-                return false;
             }
         }
 

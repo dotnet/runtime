@@ -101,15 +101,6 @@ namespace Internal.Runtime.TypeLoader
         {
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, isMdArray, rank, out arrayTypeHandle);
         }
-
-        /// <summary>
-        /// Register a new runtime-allocated code thunk in the diagnostic stream.
-        /// </summary>
-        /// <param name="thunkAddress">Address of thunk to register</param>
-        public override void RegisterThunk(IntPtr thunkAddress)
-        {
-            SerializedDebugData.RegisterTailCallThunk(thunkAddress);
-        }
     }
 
     public static class RuntimeSignatureExtensions
@@ -509,20 +500,6 @@ namespace Internal.Runtime.TypeLoader
             using (LockHolder.Hold(_typeLoaderLock))
             {
                 return TypeBuilder.TryBuildGenericMethod(declaringTypeHandle, genericMethodArgHandles, nameAndSignature, out methodDictionary);
-            }
-        }
-
-        public bool TryGetFieldOffset(RuntimeTypeHandle declaringTypeHandle, uint fieldOrdinal, out int fieldOffset)
-        {
-            fieldOffset = int.MinValue;
-
-            // No use going further for non-generic types... TypeLoader doesn't have offset answers for non-generic types!
-            if (!declaringTypeHandle.IsGenericType())
-                return false;
-
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return TypeBuilder.TryGetFieldOffset(declaringTypeHandle, fieldOrdinal, out fieldOffset);
             }
         }
 
