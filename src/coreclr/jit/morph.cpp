@@ -12827,6 +12827,8 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
         op1SideEffects->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
 #endif // DEBUG
 
+        INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
         DEBUG_DESTROY_NODE(tree);
 
         return comma;
