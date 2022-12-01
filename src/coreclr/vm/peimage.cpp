@@ -594,7 +594,7 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
                         pCvInfo->path[MAX_LONGPATH - 1] = '\0';
 
                         //Find the filename from pdb full path
-                        char* fileName = strrchr(pCvInfo->path, DIRECTORY_SEPARATOR_CHAR_A);
+                        char* fileName = strrchr(pCvInfo->path, '\\');
                         if (fileName != NULL)
                             fileName++;
                         else
