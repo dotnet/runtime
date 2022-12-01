@@ -43,10 +43,10 @@ static bool IsHandshaking(int handshakeStatus)
 
 ARGS_NON_NULL(1, 2) static jobject GetSslSession(JNIEnv* env, SSLStream* sslStream, int handshakeStatus)
 {
-    jobject sslSession = IsHandshaking(handshakeStatus)
+    // SSLEngine.getHandshakeSession() is available since API 24
+    jobject sslSession = IsHandshaking(handshakeStatus) && g_SSLEngineGetHandshakeSession != NULL
         ? (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeSession)
         : (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
-
     if (CheckJNIExceptions(env))
         return NULL;
 
@@ -55,8 +55,7 @@ ARGS_NON_NULL(1, 2) static jobject GetSslSession(JNIEnv* env, SSLStream* sslStre
 
 ARGS_NON_NULL_ALL static jobject GetCurrentSslSession(JNIEnv* env, SSLStream* sslStream)
 {
-    int handshakeStatus =
-        GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
+    int handshakeStatus = GetEnumAsInt(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetHandshakeStatus));
     if (CheckJNIExceptions(env))
         return NULL;
 
@@ -831,8 +830,11 @@ int32_t AndroidCryptoNative_SSLStreamGetProtocol(SSLStream* sslStream, uint16_t*
     *out = NULL;
     INIT_LOCALS(loc, sslSession, protocol);
 
-    // String protocol = sslSession.getProtocol();
     loc[sslSession] = GetCurrentSslSession(env, sslStream);
+    if (loc[sslSession] == NULL)
+        goto cleanup;
+
+    // String protocol = sslSession.getProtocol();
     loc[protocol] = (*env)->CallObjectMethod(env, loc[sslSession], g_SSLSessionGetProtocol);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     *out = AllocateString(env, loc[protocol]);
@@ -846,15 +848,18 @@ cleanup:
 
 ARGS_NON_NULL_ALL static jobject GetPeerCertificates(JNIEnv* env, SSLStream* sslStream)
 {
-    jobject sslSession = GetCurrentSslSession(env, sslStream);
-    if (sslSession == NULL)
-        return NULL;
+    jobject certificates = NULL;
+    INIT_LOCALS(loc, sslSession);
 
-    jobject certificates = (*env)->CallObjectMethod(env, sslSession, g_SSLSessionGetPeerCertificates);
+    loc[sslSession] = GetCurrentSslSession(env, sslStream);
+    if (loc[sslSession] == NULL)
+        goto cleanup;
+
+    certificates = (*env)->CallObjectMethod(env, loc[sslSession], g_SSLSessionGetPeerCertificates);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
 cleanup:
-    ReleaseLRef(env, sslSession);
+    RELEASE_LOCALS(loc, env);
     return certificates;
 }
 
@@ -866,8 +871,10 @@ jobject /*X509Certificate*/ AndroidCryptoNative_SSLStreamGetPeerCertificate(SSLS
     jobject ret = NULL;
 
     // Certificate[] certs = sslSession.getPeerCertificates();
-    jobjectArray certs = GetPeerCertificates(env, sslStream);
-    if (certs == NULL)
+    jobject certs = GetPeerCertificates(env, sslStream);
+
+    // If there are no peer certificates, getPeerCertificates will throw. Return null to indicate no certificate.
+    if (TryClearJNIExceptions(env))
         goto cleanup;
 
     // out = certs[0];
@@ -915,7 +922,7 @@ void AndroidCryptoNative_SSLStreamGetPeerCertificates(SSLStream* sslStream, jobj
     }
 
 cleanup:
-    (*env)->DeleteLocalRef(env, certs);
+    ReleaseLRef(env, certs);
 }
 
 void AndroidCryptoNative_SSLStreamRequestClientAuthentication(SSLStream* sslStream)
@@ -1033,15 +1040,18 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
 
     loc[sslSession] = GetCurrentSslSession(env, sslStream);
     if (loc[sslSession] == NULL)
-        return false;
+        goto cleanup;
 
     // HostnameVerifier verifier = HttpsURLConnection.getDefaultHostnameVerifier();
     // return verifier.verify(hostname, sslSession);
     loc[name] = make_java_string(env, hostname);
-    loc[verifier] =
-        (*env)->CallStaticObjectMethod(env, g_HttpsURLConnection, g_HttpsURLConnectionGetDefaultHostnameVerifier);
-    ret = (*env)->CallBooleanMethod(env, loc[verifier], g_HostnameVerifierVerify, loc[name], loc[sslSession]);
+    loc[verifier] = (*env)->CallStaticObjectMethod(env, g_HttpsURLConnection, g_HttpsURLConnectionGetDefaultHostnameVerifier);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
+    ret = (*env)->CallBooleanMethod(env, loc[verifier], g_HostnameVerifierVerify, loc[name], loc[sslSession]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+cleanup:
     RELEASE_LOCALS(loc, env);
     return ret;
 }

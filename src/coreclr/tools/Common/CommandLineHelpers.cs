@@ -182,8 +182,11 @@ namespace System.CommandLine
                     object val = res.CommandResult.GetValue(option);
                     if (val is not null && !(descriptor.HasDefaultValue && descriptor.GetDefaultValue().Equals(val)))
                     {
-                        if (val is IEnumerable<string> values)
+                        if (val is IEnumerable<string> || val is IDictionary<string, string>)
                         {
+                            if (val is not IEnumerable<string> values)
+                                values = ((IDictionary<string, string>)val).Values;
+
                             if (inputOptionNames.Contains(option.Name))
                             {
                                 Dictionary<string, string> dictionary = new();
@@ -214,8 +217,11 @@ namespace System.CommandLine
                 foreach (var argument in res.CommandResult.Command.Arguments)
                 {
                     object val = res.CommandResult.GetValue(argument);
-                    if (val is IEnumerable<string> values)
+                    if (val is IEnumerable<string> || val is IDictionary<string, string>)
                     {
+                        if (val is not IEnumerable<string> values)
+                            values = ((IDictionary<string, string>)val).Values;
+
                         foreach (string optInList in values)
                         {
                             rspFile.Add($"{ConvertFromInputPathToReproPackagePath((string)optInList)}");
