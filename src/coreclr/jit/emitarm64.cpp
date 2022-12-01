@@ -16266,6 +16266,12 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStr(
         return eRO_none;
     }
 
+    if (emitForceNewIG)
+    {
+        // The next instruction will be forced into a new group
+        return eRO_none;
+    }
+
     regNumber prevReg1   = emitLastIns->idReg1();
     regNumber prevReg2   = emitLastIns->idReg2();
     insFormat lastInsFmt = emitLastIns->idInsFmt();
