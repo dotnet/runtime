@@ -90,7 +90,10 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 finally
                 {
+                    // Record the serialization size in both successful and failed operations,
+                    // since we want to immediately opt out of the fast path if it exceeds the threshold.
                     OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
+
                     Utf8JsonWriterCache.ReturnWriter(writer);
                 }
 
@@ -176,12 +179,14 @@ namespace System.Text.Json.Serialization.Metadata
                     await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
                     throw;
                 }
-                finally
+
+                if (CanUseSerializeHandler)
                 {
-                    if (CanUseSerializeHandler)
-                    {
-                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
-                    }
+                    // On sucessful serialization, record the serialization size
+                    // to determine potential suitability of the type for
+                    // fast-path serialization in streaming methods.
+                    Debug.Assert(writer.BytesPending == 0);
+                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
                 }
             }
         }
@@ -213,7 +218,10 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 finally
                 {
+                    // Record the serialization size in both successful and failed operations,
+                    // since we want to immediately opt out of the fast path if it exceeds the threshold.
                     OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
+
                     Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, bufferWriter);
                 }
             }
@@ -242,27 +250,26 @@ namespace System.Text.Json.Serialization.Metadata
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
-                try
+                do
                 {
-                    do
-                    {
-                        state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 
-                        isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue!, Options, ref state);
-                        writer.Flush();
+                    isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue!, Options, ref state);
+                    writer.Flush();
 
-                        bufferWriter.WriteToStream(utf8Json);
-                        bufferWriter.Clear();
+                    bufferWriter.WriteToStream(utf8Json);
+                    bufferWriter.Clear();
 
-                        Debug.Assert(state.PendingTask == null);
-                    } while (!isFinalBlock);
-                }
-                finally
+                    Debug.Assert(state.PendingTask == null);
+                } while (!isFinalBlock);
+
+                if (CanUseSerializeHandler)
                 {
-                    if (CanUseSerializeHandler)
-                    {
-                        OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted + writer.BytesPending);
-                    }
+                    // On sucessful serialization, record the serialization size
+                    // to determine potential suitability of the type for
+                    // fast-path serialization in streaming methods.
+                    Debug.Assert(writer.BytesPending == 0);
+                    OnRootLevelAsyncSerializationCompleted(writer.BytesCommitted);
                 }
             }
         }
