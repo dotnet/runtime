@@ -183,17 +183,11 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslS
         }
         case STATUS__BUFFER_OVERFLOW:
         {
-            jobject sslSession = GetSslSession(env, sslStream, *handshakeStatus);
-            if (sslSession == NULL)
-                return SSLStreamStatus_Error;
-
             // Expand buffer
             // int newCapacity = sslSession.getPacketBufferSize() + netOutBuffer.remaining();
-            int32_t newCapacity = (*env)->CallIntMethod(env, sslSession, g_SSLSessionGetPacketBufferSize) +
+            int32_t newCapacity = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize) +
                                   (*env)->CallIntMethod(env, sslStream->netOutBuffer, g_ByteBufferRemaining);
             sslStream->netOutBuffer = ExpandBuffer(env, sslStream->netOutBuffer, newCapacity);
-
-            ReleaseLRef(env, sslSession);
             return SSLStreamStatus_OK;
         }
         default:
@@ -263,32 +257,20 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         }
         case STATUS__BUFFER_UNDERFLOW:
         {
-            jobject sslSession = GetSslSession(env, sslStream, *handshakeStatus);
-            if (sslSession == NULL)
-                return SSLStreamStatus_Error;
-
             // Expand buffer
             // int newRemaining = sslSession.getPacketBufferSize();
-            int32_t newRemaining = (*env)->CallIntMethod(env, sslSession, g_SSLSessionGetPacketBufferSize);
+            int32_t newRemaining = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize);
             sslStream->netInBuffer = EnsureRemaining(env, sslStream->netInBuffer, newRemaining);
-
-            ReleaseLRef(env, sslSession);
             return SSLStreamStatus_OK;
         }
         case STATUS__BUFFER_OVERFLOW:
         {
-            jobject sslSession = GetSslSession(env, sslStream, *handshakeStatus);
-            if (sslSession == NULL)
-                return SSLStreamStatus_Error;
-
             // Expand buffer
             // int newCapacity = sslSession.getApplicationBufferSize() + appInBuffer.remaining();
             int32_t newCapacity =
-                (*env)->CallIntMethod(env, sslSession, g_SSLSessionGetApplicationBufferSize) +
+                (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSize) +
                 (*env)->CallIntMethod(env, sslStream->appInBuffer, g_ByteBufferRemaining);
             sslStream->appInBuffer = ExpandBuffer(env, sslStream->appInBuffer, newCapacity);
-
-            ReleaseLRef(env, sslSession);
             return SSLStreamStatus_OK;
         }
         default:
@@ -331,6 +313,7 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
 {
     ReleaseGRef(env, sslStream->sslContext);
     ReleaseGRef(env, sslStream->sslEngine);
+    ReleaseGRef(env, sslStream->sslSession);
     ReleaseGRef(env, sslStream->appOutBuffer);
     ReleaseGRef(env, sslStream->netOutBuffer);
     ReleaseGRef(env, sslStream->netInBuffer);
@@ -542,6 +525,7 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     abort_if_invalid_pointer_argument (sslStream);
     abort_unless(sslStream->sslContext != NULL, "sslContext is NULL in SSL stream");
     abort_unless(sslStream->sslEngine == NULL, "sslEngine is NOT NULL in SSL stream");
+    abort_unless(sslStream->sslSession == NULL, "sslSession is NOT NULL in SSL stream");
 
     int32_t ret = FAIL;
     JNIEnv* env = GetJNIEnv();
@@ -555,14 +539,12 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     ON_EXCEPTION_PRINT_AND_GOTO(exit);
 
     // SSLSession sslSession = sslEngine.getSession();
-    jobject sslSession = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession);
+    sslStream->sslSession = ToGRef(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession));
 
     // int applicationBufferSize = sslSession.getApplicationBufferSize();
     // int packetBufferSize = sslSession.getPacketBufferSize();
-    int32_t applicationBufferSize = (*env)->CallIntMethod(env, sslSession, g_SSLSessionGetApplicationBufferSize);
-    int32_t packetBufferSize = (*env)->CallIntMethod(env, sslSession, g_SSLSessionGetPacketBufferSize);
-
-    ReleaseLRef(env, sslSession);
+    int32_t applicationBufferSize = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetApplicationBufferSize);
+    int32_t packetBufferSize = (*env)->CallIntMethod(env, sslStream->sslSession, g_SSLSessionGetPacketBufferSize);
 
     // ByteBuffer appInBuffer =  ByteBuffer.allocate(Math.max(applicationBufferSize, appBufferSize));
     // ByteBuffer appOutBuffer = ByteBuffer.allocate(appBufferSize);
