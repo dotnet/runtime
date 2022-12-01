@@ -5679,7 +5679,7 @@ void emitter::emitIns_R_R_I(
 
         // If we have replaced an LDR or STR instruction with an LDP or STP then we do not want to carry on to
         // emit the second instruction.
-        if (ReplacedLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
+        if (TryReplaceLdrStrWithPairInstr(ins, attr, reg1, reg2, imm, size, fmt))
         {
             return;
         }
@@ -7682,7 +7682,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     // If we have replaced an LDR or STR instruction with an LDP or STP then we do not want to carry on to
     // emit the second instruction.
-    if (ReplacedLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
+    if (TryReplaceLdrStrWithPairInstr(ins, attr, reg1, reg2, imm, size, fmt))
     {
         return;
     }
@@ -7920,7 +7920,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     // If we have replaced an LDR or STR instruction with an LDP or STP then we do not want to carry on to
     // emit the second instruction.
-    if (ReplacedLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
+    if (TryReplaceLdrStrWithPairInstr(ins, attr, reg1, reg2, imm, size, fmt))
     {
         return;
     }
@@ -16153,9 +16153,9 @@ bool emitter::IsRedundantLdStr(
 }
 
 //-----------------------------------------------------------------------------------
-// ReplacedLdrStr: Potentially, overwrite a previously-emitted
-//                 "ldr" or "str" instruction with an "ldp" or
-//                 "stp" instruction.
+// TryReplaceLdrStrWithPairInstr: Potentially, overwrite a previously-emitted
+//                                "ldr" or "str" instruction with an "ldp" or
+//                                "stp" instruction.
 //
 // Arguments:
 //     ins      - The instruction code
@@ -16168,7 +16168,7 @@ bool emitter::IsRedundantLdStr(
 //
 // Return Value:
 //    "true" if the previous instruction HAS been overwritten.
-bool emitter::ReplacedLdrStr(
+bool emitter::TryReplaceLdrStrWithPairInstr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
     if (!emitComp->opts.OptimizationEnabled())
@@ -16255,7 +16255,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStr(
     bool          isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
     RegisterOrder optimisationOrder   = eRO_none;
 
-    if (((ins != INS_ldr) && (ins != INS_str)) || isFirstInstrInBlock || (emitLastIns == nullptr))
+    if (((ins != INS_ldr) && (ins != INS_str)) || !emitCanPeepholeLastIns())
     {
         return eRO_none;
     }

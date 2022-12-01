@@ -9156,7 +9156,8 @@ void emitter::emitRemoveLastInstruction()
 
     // We should assert it's not a jmp, as that would require updating the jump lists, e.g. emitCurIGjmpList.
 
-    BYTE* lastInsActualStartAddr = (BYTE*)emitLastIns - m_debugInfoSize;
+    BYTE*          lastInsActualStartAddr = (BYTE*)emitLastIns - m_debugInfoSize;
+    unsigned short lastCodeSize           = (unsigned short)emitLastIns->idCodeSize();
 
     if ((emitCurIGfreeBase <= (BYTE*)lastInsActualStartAddr) && ((BYTE*)lastInsActualStartAddr < emitCurIGfreeEndp))
     {
@@ -9170,7 +9171,7 @@ void emitter::emitRemoveLastInstruction()
 
         emitCurIGfreeNext = (BYTE*)lastInsActualStartAddr;
         emitCurIGinsCnt -= 1;
-        emitCurIGsize -= emitLastIns->idCodeSize();
+        emitCurIGsize -= lastCodeSize;
 
         // We're going to overwrite the memory; zero it.
         memset(emitCurIGfreeNext, 0, insSize);
@@ -9181,10 +9182,10 @@ void emitter::emitRemoveLastInstruction()
         assert((BYTE*)emitLastInsIG->igData + emitLastInsIG->igDataSize ==
                (BYTE*)emitLastIns + emitSizeOfInsDsc(emitLastIns));
         assert(emitLastInsIG->igInsCnt >= 1);
-        assert(emitLastInsIG->igSize >= emitLastIns->idCodeSize());
+        assert(emitLastInsIG->igSize >= lastCodeSize);
 
         emitLastInsIG->igInsCnt -= 1;
-        emitLastInsIG->igSize -= (unsigned short)emitLastIns->idCodeSize();
+        emitLastInsIG->igSize -= lastCodeSize;
 
         // We don't overwrite this memory; it's simply ignored. We could zero it to be sure nobody uses it,
         // but it's not necessary, and leaving it might be useful for debugging.
