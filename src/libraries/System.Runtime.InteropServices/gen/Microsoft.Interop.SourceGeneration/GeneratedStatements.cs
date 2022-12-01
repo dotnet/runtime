@@ -72,7 +72,7 @@ namespace Microsoft.Interop
         private static ImmutableArray<StatementSyntax> GenerateStatementsForStubContext(BoundGenerators marshallers, StubCodeContext context)
         {
             ImmutableArray<StatementSyntax>.Builder statementsToUpdate = ImmutableArray.CreateBuilder<StatementSyntax>();
-            foreach (BoundGenerator marshaller in marshallers.AllMarshallers)
+            foreach (BoundGenerator marshaller in marshallers.SignatureMarshallers)
             {
                 statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, context));
             }

@@ -68,9 +68,9 @@ namespace Microsoft.Interop
             }
 
             _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, generatorFactory, _context, new Forwarder());
+            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
 
-            foreach (var failure in _marshallers.GeneratorBindingFailures)
+            foreach (var failure in bindingFailures)
             {
                 marshallingNotSupportedCallback(failure.Info, failure.Exception);
             }
@@ -83,7 +83,7 @@ namespace Microsoft.Interop
 
             bool noMarshallingNeeded = true;
 
-            foreach (BoundGenerator generator in _marshallers.AllMarshallers)
+            foreach (BoundGenerator generator in _marshallers.SignatureMarshallers)
             {
                 // Check if marshalling info and generator support the current target framework.
                 SupportsTargetFramework &= generator.TypeInfo.MarshallingAttributeInfo is not MissingSupportMarshallingInfo

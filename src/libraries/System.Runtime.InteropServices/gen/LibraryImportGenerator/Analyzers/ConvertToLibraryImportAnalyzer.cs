@@ -99,7 +99,7 @@ namespace Microsoft.Interop.Analyzers
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
-            BoundGenerators generators = new(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
+            BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
             {
                 if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                 {
@@ -112,9 +112,9 @@ namespace Microsoft.Interop.Analyzers
                     return forwarder;
                 }
                 return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
-            }), stubCodeContext, forwarder);
+            }), stubCodeContext, forwarder, out var bindingFailures);
 
-            mayRequireAdditionalWork |= generators.GeneratorBindingFailures.Length > 0;
+            mayRequireAdditionalWork |= bindingFailures.Length > 0;
 
             if (anyExplicitlyUnsupportedInfo)
             {

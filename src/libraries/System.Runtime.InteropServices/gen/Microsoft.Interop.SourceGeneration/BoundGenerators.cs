@@ -16,26 +16,31 @@ namespace Microsoft.Interop
 {
     public readonly record struct BoundGenerator(TypePositionInfo TypeInfo, IMarshallingGenerator Generator);
 
-    public class BoundGenerators
+    public sealed class BoundGenerators
     {
-        public BoundGenerators(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorFactory generatorFactory, StubCodeContext context, IMarshallingGenerator fallbackGenerator)
+        private BoundGenerators() { }
+
+        public static BoundGenerators Create(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorFactory generatorFactory, StubCodeContext context, IMarshallingGenerator fallbackGenerator, out ImmutableArray<(TypePositionInfo Info, MarshallingNotSupportedException Exception)> generatorBindingFailures)
         {
-            ImmutableArray<BoundGenerator>.Builder allMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
+            BoundGenerator defaultBoundGenerator = new BoundGenerator(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
+            BoundGenerators result = new();
+
+            ImmutableArray<BoundGenerator>.Builder signatureMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
             ImmutableArray<BoundGenerator>.Builder nativeParamMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
             ImmutableArray<BoundGenerator>.Builder managedParamMarshallers = ImmutableArray.CreateBuilder<BoundGenerator>();
             ImmutableArray<(TypePositionInfo Info, MarshallingNotSupportedException Exception)>.Builder bindingFailures = ImmutableArray.CreateBuilder<(TypePositionInfo, MarshallingNotSupportedException)>();
-            bool foundNativeRetMarshaller = false;
-            bool foundManagedRetMarshaller = false;
+            BoundGenerator managedReturnMarshaller = defaultBoundGenerator;
+            BoundGenerator nativeReturnMarshaller = defaultBoundGenerator;
+            BoundGenerator managedExceptionMarshaller = defaultBoundGenerator;
+            bool foundManagedReturnMarshaller = false;
+            bool foundNativeReturnMarshaller = false;
             TypePositionInfo? managedExceptionInfo = null;
-            NativeReturnMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
-            ManagedReturnMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
-            ManagedExceptionMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
 
             foreach (TypePositionInfo argType in elementTypeInfo)
             {
                 if (argType.IsManagedExceptionPosition)
                 {
-                    Debug.Assert(managedExceptionInfo is null);
+                    Debug.Assert(managedExceptionInfo == null);
                     managedExceptionInfo = argType;
                     // The exception marshaller's selection might depend on the unmanaged type of the native return marshaller.
                     // Delay binding the generator until we've processed the native return marshaller.
@@ -44,18 +49,18 @@ namespace Microsoft.Interop
 
                 BoundGenerator generator = new BoundGenerator(argType, CreateGenerator(argType, generatorFactory));
 
-                allMarshallers.Add(generator);
+                signatureMarshallers.Add(generator);
                 if (argType.IsManagedReturnPosition)
                 {
-                    Debug.Assert(!foundManagedRetMarshaller);
-                    ManagedReturnMarshaller = generator;
-                    foundManagedRetMarshaller = true;
+                    Debug.Assert(!foundManagedReturnMarshaller);
+                    managedReturnMarshaller = generator;
+                    foundManagedReturnMarshaller = true;
                 }
                 if (argType.IsNativeReturnPosition)
                 {
-                    Debug.Assert(!foundNativeRetMarshaller);
-                    NativeReturnMarshaller = generator;
-                    foundNativeRetMarshaller = true;
+                    Debug.Assert(!foundNativeReturnMarshaller);
+                    nativeReturnMarshaller = generator;
+                    foundNativeReturnMarshaller = true;
                 }
                 if (!TypePositionInfo.IsSpecialIndex(argType.ManagedIndex))
                 {
@@ -71,9 +76,6 @@ namespace Microsoft.Interop
             managedParamMarshallers.Sort(static (m1, m2) => m1.TypeInfo.ManagedIndex.CompareTo(m2.TypeInfo.ManagedIndex));
             nativeParamMarshallers.Sort(static (m1, m2) => m1.TypeInfo.NativeIndex.CompareTo(m2.TypeInfo.NativeIndex));
 
-            NativeParameterMarshallers = nativeParamMarshallers.ToImmutable();
-            ManagedParameterMarshallers = managedParamMarshallers.ToImmutable();
-
             // Now that we've processed all of the signature marshallers,
             // we'll handle the special ones that might depend on them, like the exception marshaller.
             if (managedExceptionInfo is not null)
@@ -82,46 +84,51 @@ namespace Microsoft.Interop
                 {
                     managedExceptionInfo = managedExceptionInfo with
                     {
-                        MarshallingAttributeInfo = ComExceptionMarshalling.CreateSpecificMarshallingInfo(NativeReturnMarshaller.Generator.AsNativeType(NativeReturnMarshaller.TypeInfo))
+                        MarshallingAttributeInfo = ComExceptionMarshalling.CreateSpecificMarshallingInfo(nativeReturnMarshaller.Generator.AsNativeType(nativeReturnMarshaller.TypeInfo))
                     };
                 }
 
-                IMarshallingGeneratorFactory exceptionHandlerFactory = new ExtendedInvariantsValidator(NativeReturnMarshaller.Generator.AsNativeType(NativeReturnMarshaller.TypeInfo), generatorFactory);
+                IMarshallingGeneratorFactory exceptionHandlerFactory = new ExtendedInvariantsValidator(nativeReturnMarshaller.Generator.AsNativeType(nativeReturnMarshaller.TypeInfo), generatorFactory);
 
-                // We explicitly don't include exceptionMarshaller in the allMarshallers collection
+                // We explicitly don't include exceptionMarshaller in the signatureMarshallers collection
                 // as it needs to be specially emitted.
-                ManagedExceptionMarshaller = new(managedExceptionInfo, CreateGenerator(managedExceptionInfo, generatorFactory));
+                managedExceptionMarshaller = new(managedExceptionInfo, CreateGenerator(managedExceptionInfo, generatorFactory));
             }
 
-            // We are doing a topological sort of our marshallers to ensure that each parameter/return value's
-            // dependencies are unmarshalled before their dependents. This comes up in the case of contiguous
-            // collections, where the number of elements in a collection are provided via another parameter/return value.
-            // When using nested collections, the parameter that represents the number of elements of each element of the
-            // outer collection is another collection. As a result, there are two options on how to retrieve the size.
-            // Either we partially unmarshal the collection of counts while unmarshalling the collection of elements,
-            // or we unmarshal our parameters and return value in an order such that we can use the managed identifiers
-            // for our lengths.
-            // Here's an example signature where the dependency shows up:
-            //
-            // [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
-            // [return: MarshalUsing(CountElementName = "numColumns")]
-            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionDepth = 1)]
-            // public static partial int[][] TransposeMatrix(
-            //  int[][] matrix,
-            //  [MarshalUsing(CountElementName="numColumns")] ref int[] numRows,
-            //  int numColumns);
-            //
-            // In this scenario, we'd traditionally unmarshal the return value and then each parameter. However, since
-            // the return value has dependencies on numRows and numColumns and numRows has a dependency on numColumns,
-            // we want to unmarshal numColumns, then numRows, then the return value.
-            // A topological sort ensures we get this order correct.
-            AllMarshallers = MarshallerHelpers.GetTopologicallySortedElements(
-                allMarshallers,
-                static m => GetInfoIndex(m.TypeInfo),
-                static m => GetInfoDependencies(m.TypeInfo))
-                .ToImmutableArray();
+            generatorBindingFailures = bindingFailures.ToImmutable();
 
-            GeneratorBindingFailures = bindingFailures.ToImmutable();
+            return new BoundGenerators()
+            {
+                // We are doing a topological sort of our marshallers to ensure that each parameter/return value's
+                // dependencies are unmarshalled before their dependents. This comes up in the case of contiguous
+                // collections, where the number of elements in a collection are provided via another parameter/return value.
+                // When using nested collections, the parameter that represents the number of elements of each element of the
+                // outer collection is another collection. As a result, there are two options on how to retrieve the size.
+                // Either we partially unmarshal the collection of counts while unmarshalling the collection of elements,
+                // or we unmarshal our parameters and return value in an order such that we can use the managed identifiers
+                // for our lengths.
+                // Here's an example signature where the dependency shows up:
+                //
+                // [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
+                // [return: MarshalUsing(CountElementName = "numColumns")]
+                // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionDepth = 1)]
+                // public static partial int[][] TransposeMatrix(
+                //  int[][] matrix,
+                //  [MarshalUsing(CountElementName="numColumns")] ref int[] numRows,
+                //  int numColumns);
+                //
+                // In this scenario, we'd traditionally unmarshal the return value and then each parameter. However, since
+                // the return value has dependencies on numRows and numColumns and numRows has a dependency on numColumns,
+                // we want to unmarshal numColumns, then numRows, then the return value.
+                // A topological sort ensures we get this order correct.
+                SignatureMarshallers = MarshallerHelpers.GetTopologicallySortedElements(
+                    signatureMarshallers,
+                    static m => GetInfoIndex(m.TypeInfo),
+                    static m => GetInfoDependencies(m.TypeInfo))
+                    .ToImmutableArray(),
+                NativeParameterMarshallers = nativeParamMarshallers.ToImmutable(),
+                ManagedParameterMarshallers = managedParamMarshallers.ToImmutable()
+            };
 
             static IEnumerable<(bool IsManagedIndex, int Index)> GetInfoDependencies(TypePositionInfo info)
             {
@@ -161,19 +168,17 @@ namespace Microsoft.Interop
             }
         }
 
-        public BoundGenerator ManagedReturnMarshaller { get; }
+        public BoundGenerator ManagedReturnMarshaller { get; private init; }
 
-        public BoundGenerator NativeReturnMarshaller { get; }
+        public BoundGenerator NativeReturnMarshaller { get; private init; }
 
-        public BoundGenerator ManagedExceptionMarshaller { get; }
+        public BoundGenerator ManagedExceptionMarshaller { get; private init; }
 
-        public ImmutableArray<BoundGenerator> AllMarshallers { get; }
+        public ImmutableArray<BoundGenerator> SignatureMarshallers { get; private init; }
 
-        public ImmutableArray<BoundGenerator> ManagedParameterMarshallers { get; }
+        public ImmutableArray<BoundGenerator> ManagedParameterMarshallers { get; private init; }
 
-        public ImmutableArray<BoundGenerator> NativeParameterMarshallers { get; }
-
-        public ImmutableArray<(TypePositionInfo Info, MarshallingNotSupportedException Exception)> GeneratorBindingFailures { get; }
+        public ImmutableArray<BoundGenerator> NativeParameterMarshallers { get; private init; }
 
         public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData(StubCodeContext context)
         {
