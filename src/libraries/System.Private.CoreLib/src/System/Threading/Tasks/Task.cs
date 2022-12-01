@@ -5235,7 +5235,7 @@ namespace System.Threading.Tasks
             if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
             {
                 Task<bool> task = *(bool*)&result ? TaskCache.s_trueTask : TaskCache.s_falseTask;
-                return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
+                return *(Task<TResult>*)&task;
             }
 
             // For Int32, we cache a range of common values, [-1,9).
@@ -5246,7 +5246,7 @@ namespace System.Threading.Tasks
                 if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
                 {
                     Task<int> task = TaskCache.s_int32Tasks[value - TaskCache.InclusiveInt32Min];
-                    return Unsafe.As<Task<TResult>>(task); // Unsafe.As avoids a type check we know will succeed
+                    return *(Task<TResult>*)&task;
                 }
             }
             else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
