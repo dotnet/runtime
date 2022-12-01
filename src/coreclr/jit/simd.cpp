@@ -2334,10 +2334,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         GenTree* dest = new (this, GT_BLK)
             GenTreeBlk(GT_BLK, simdType, copyBlkDst, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
         dest->gtFlags |= GTF_GLOB_REF;
-        retVal = gtNewBlkOpNode(dest, simdTree,
-                                false, // not volatile
-                                true); // copyBlock
-        retVal->gtFlags |= ((simdTree->gtFlags | copyBlkDst->gtFlags) & GTF_ALL_EFFECT);
+        retVal = gtNewBlkOpNode(dest, simdTree);
     }
 
     return retVal;
