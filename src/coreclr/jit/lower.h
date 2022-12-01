@@ -90,8 +90,8 @@ private:
     bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
     void ContainCheckCompareChainForAnd(GenTree* tree);
     void ContainCheckConditionalCompare(GenTreeOp* cmp);
-    void ContainCheckSelect(GenTreeConditional* node);
 #endif
+    void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);

@@ -4028,7 +4028,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     // Copy the valuetype to the temp
     GenTree* dest    = gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet());
-    GenTree* copyBlk = gtNewBlkOpNode(dest, argx, false /* not volatile */, true /* copyBlock */);
+    GenTree* copyBlk = gtNewBlkOpNode(dest, argx);
     copyBlk          = fgMorphCopyBlock(copyBlk);
 
     call->gtArgs.SetTemp(arg, tmp);
@@ -7870,14 +7870,12 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                     GenTree* init = nullptr;
                     if (varTypeIsStruct(lclType))
                     {
-                        const bool isVolatile  = false;
-                        const bool isCopyBlock = false;
-                        init                   = gtNewBlkOpNode(lcl, gtNewIconNode(0), isVolatile, isCopyBlock);
-                        init                   = fgMorphInitBlock(init);
+                        init = gtNewBlkOpNode(lcl, gtNewIconNode(0));
+                        init = fgMorphInitBlock(init);
                     }
                     else
                     {
-                        GenTree* zero = gtNewZeroConNode(genActualType(lclType));
+                        GenTree* zero = gtNewZeroConNode(lclType);
                         init          = gtNewAssignNode(lcl, zero);
                     }
                     Statement* initStmt = gtNewStmt(init, callDI);
