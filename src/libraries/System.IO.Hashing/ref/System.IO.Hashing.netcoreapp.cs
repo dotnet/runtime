@@ -8,7 +8,9 @@ namespace System.IO.Hashing
 {
     public sealed partial class XxHash128 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
-        [System.CLSCompliantAttribute(false)] public UInt128 GetCurrentHashAsUInt128() { throw null; }
-        [System.CLSCompliantAttribute(false)] public static UInt128 HashToUInt128(ReadOnlySpan<byte> source, long seed = 0) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.UInt128 GetCurrentHashAsUInt128() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 HashToUInt128(System.ReadOnlySpan<byte> source, long seed = 0) { throw null; }
     }
 }
