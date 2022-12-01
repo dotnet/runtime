@@ -626,14 +626,10 @@ namespace System
         /// <param name="notification">delegate to invoke when operation occurs</param>s
         internal static void RegisterMemoryLoadChangeNotification(float lowMemoryPercent, float highMemoryPercent, Action notification)
         {
-            if (highMemoryPercent < 0 || highMemoryPercent > 1.0 || highMemoryPercent <= lowMemoryPercent)
-            {
-                throw new ArgumentOutOfRangeException(nameof(highMemoryPercent));
-            }
-            if (lowMemoryPercent < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(lowMemoryPercent));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(highMemoryPercent, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(highMemoryPercent, 1.0);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(highMemoryPercent, lowMemoryPercent);
+            ArgumentOutOfRangeException.ThrowIfLessThan(lowMemoryPercent, 0);
             ArgumentNullException.ThrowIfNull(notification);
 
             lock (s_notifications)
