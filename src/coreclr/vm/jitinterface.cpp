@@ -6236,6 +6236,34 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 }
 
 /***********************************************************************/
+CORINFO_CLASS_HANDLE CEEInfo::getRuntimeTypeHandle(CORINFO_OBJECT_HANDLE objHandle)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(objHandle != NULL);
+
+    CORINFO_CLASS_HANDLE handle = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    OBJECTREF obj = getObjectFromJitHandle(objHandle);
+    if (obj->GetMethodTable() == g_pRuntimeTypeClass)
+    {
+        handle = (CORINFO_CLASS_HANDLE)((REFLECTCLASSBASEREF)obj)->GetType().AsMethodTable();
+        _ASSERT(handle != NULL);
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return handle;
+}
+
+/***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_LOOKUP_KIND *           pGenericLookupKind,

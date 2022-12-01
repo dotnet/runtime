@@ -3789,17 +3789,37 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
     assert(GenTree::StaticOperIs(oper, GT_EQ, GT_NE));
 
     VNFuncApp  arg0Func;
-    const bool arg0IsFunc = GetVNFunc(arg0VN, &arg0Func);
-
-    if (!arg0IsFunc || (arg0Func.m_func != VNF_TypeHandleToRuntimeType))
-    {
-        return NoVN;
-    }
-
     VNFuncApp  arg1Func;
-    const bool arg1IsFunc = GetVNFunc(arg1VN, &arg1Func);
+    const bool arg0IsFunc = GetVNFunc(arg0VN, &arg0Func) && (arg0Func.m_func == VNF_TypeHandleToRuntimeType);
+    const bool arg1IsFunc = GetVNFunc(arg1VN, &arg1Func) && (arg1Func.m_func == VNF_TypeHandleToRuntimeType);
 
-    if (!arg1IsFunc || (arg1Func.m_func != VNF_TypeHandleToRuntimeType))
+    auto isKnownValueType = [&](ValueNum vn) -> bool {
+        if (IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_OBJ_HDL))
+        {
+            CORINFO_OBJECT_HANDLE handle = reinterpret_cast<CORINFO_OBJECT_HANDLE>(ConstantValue<ssize_t>(vn));
+            CORINFO_CLASS_HANDLE  cls    = m_pComp->info.compCompHnd->getRuntimeTypeHandle(handle);
+            return (cls != NO_CLASS_HANDLE) && m_pComp->eeIsValueClass(cls);
+        }
+        return false;
+    };
+
+    // Do we need to check that isFunc depends on generic context?
+
+    if (isKnownValueType(arg0VN) && arg1IsFunc)
+    {
+        VNFuncApp func;
+        bool      hasFunc = GetVNFunc(arg1Func.m_args[0], &func);
+
+        return VNForIntCon(oper == GT_EQ ? 0 : 1);
+    }
+    else if (isKnownValueType(arg1VN) && arg0IsFunc)
+    {
+        VNFuncApp func;
+        bool      hasFunc = GetVNFunc(arg0Func.m_args[0], &func);
+
+        return VNForIntCon(oper == GT_EQ ? 0 : 1);
+    }
+    else if (!arg0IsFunc || !arg1IsFunc)
     {
         return NoVN;
     }

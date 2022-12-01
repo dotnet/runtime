@@ -2219,6 +2219,28 @@ CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(CORINFO_OBJECT_HANDLE objPt
     return (CORINFO_CLASS_HANDLE)value;
 }
 
+void MethodContext::recGetRuntimeTypeHandle(CORINFO_OBJECT_HANDLE objPtr, CORINFO_CLASS_HANDLE result)
+{
+    if (GetRuntimeTypeHandle == nullptr)
+        GetRuntimeTypeHandle = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORDLONG value = (DWORDLONG)result;
+    GetRuntimeTypeHandle->Add(key, value);
+    DEBUG_REC(dmpGetRuntimeTypeHandle(key, value));
+}
+void MethodContext::dmpGetRuntimeTypeHandle(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetRuntimeTypeHandle key obj-%016llX, value res-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetRuntimeTypeHandle(CORINFO_OBJECT_HANDLE objPtr)
+{
+    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORDLONG value = LookupByKeyOrMiss(GetRuntimeTypeHandle, key, ": key %016llX", key);
+    DEBUG_REP(dmpGetRuntimeTypeHandle(key, value));
+    return (CORINFO_CLASS_HANDLE)value;
+}
+
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,

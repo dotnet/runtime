@@ -661,6 +661,13 @@ CORINFO_CLASS_HANDLE MyICJI::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
     return result;
 }
 
+CORINFO_CLASS_HANDLE MyICJI::getRuntimeTypeHandle(CORINFO_OBJECT_HANDLE objPtr)
+{
+    jitInstance->mc->cr->AddCall("getRuntimeTypeHandle");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetRuntimeTypeHandle(objPtr);
+    return result;
+}
+
 bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                  CorInfoHelpFunc         id,

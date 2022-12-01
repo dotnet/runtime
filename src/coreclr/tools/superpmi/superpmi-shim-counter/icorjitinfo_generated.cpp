@@ -567,6 +567,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
     return original_ICorJitInfo->getObjectType(objPtr);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getRuntimeTypeHandle(
+          CORINFO_OBJECT_HANDLE objPtr)
+{
+    mcs->AddCall("getRuntimeTypeHandle");
+    return original_ICorJitInfo->getRuntimeTypeHandle(objPtr);
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,

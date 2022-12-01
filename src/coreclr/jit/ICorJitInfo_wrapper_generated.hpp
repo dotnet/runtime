@@ -692,6 +692,15 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getRuntimeTypeHandle(
+          CORINFO_OBJECT_HANDLE objPtr)
+{
+    API_ENTER(getRuntimeTypeHandle);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getRuntimeTypeHandle(objPtr);
+    API_LEAVE(getRuntimeTypeHandle);
+    return temp;
+}
+
 bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
