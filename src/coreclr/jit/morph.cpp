@@ -9544,6 +9544,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             }
 #endif
 #endif // !TARGET_64BIT
+
             if (!optValnumCSE_phase)
             {
                 if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
