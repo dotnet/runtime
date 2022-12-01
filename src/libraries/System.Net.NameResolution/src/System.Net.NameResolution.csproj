@@ -79,8 +79,6 @@
              Link="Common\System\Net\Internals\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Unix.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.Unix" />
-    <Compile Include="$(CommonPath)Interop\Interop.CheckedAccess.cs"
-             Link="Common\System\Net\Internals\Interop.CheckedAccess.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\CoreLib\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
