@@ -379,7 +379,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle)
         goto cleanup;
 
     // Init trust managers
-    loc[trustManagers] = InitTrustManagersWithDotnetProxy(env, sslStreamProxyHandle);
+    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle);
     if (!loc[trustManagers])
         goto cleanup;
 
@@ -501,8 +501,8 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStrea
     loc[keyManagers] = (*env)->CallObjectMethod(env, loc[kmf], g_KeyManagerFactoryGetKeyManagers);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // TrustManager[] trustMangers = InitTrustManagersWithDotnetProxy(sslStreamProxyHandle);
-    loc[trustManagers] = InitTrustManagersWithDotnetProxy(env, sslStreamProxyHandle);
+    // Init trust managers
+    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle);
     if (!loc[trustManagers])
         goto cleanup;
 
