@@ -4193,7 +4193,15 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         {
             GenTree* index = indir->Index();
             assert(!index->isContained());
-            amIndxReg = index->GetRegNum();
+            if (index->OperIs(GT_CAST) && index->AsCast()->usedForIndexing &&
+                index->AsCast()->CastOp()->isUsedFromReg())
+            {
+                amIndxReg = index->AsCast()->CastOp()->GetReg();
+            }
+            else
+            {
+                amIndxReg = index->GetRegNum();
+            }
             assert(amIndxReg != REG_NA);
         }
 

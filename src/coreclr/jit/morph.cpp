@@ -4497,6 +4497,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         else
         {
             index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+            index->AsCast()->usedForIndexing = true;
         }
     }
 #endif // TARGET_64BIT
