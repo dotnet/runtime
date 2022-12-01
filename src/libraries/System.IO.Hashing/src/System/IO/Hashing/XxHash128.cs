@@ -241,9 +241,9 @@ namespace System.IO.Hashing
                 return HashLength1To3(source, length, seed);
             }
 
-            const ulong bitflipl = DefaultSecretUInt64_8 ^ DefaultSecretUInt64_9;
-            const ulong bitfliph = DefaultSecretUInt64_10 ^ DefaultSecretUInt64_11;
-            return new Hash128(XxHash64.Avalanche(seed ^ bitflipl), XxHash64.Avalanche(seed ^ bitfliph));
+            const ulong BitFlipL = DefaultSecretUInt64_8 ^ DefaultSecretUInt64_9;
+            const ulong BitFlipH = DefaultSecretUInt64_10 ^ DefaultSecretUInt64_11;
+            return new Hash128(XxHash64.Avalanche(seed ^ BitFlipL), XxHash64.Avalanche(seed ^ BitFlipH));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -261,10 +261,10 @@ namespace System.IO.Hashing
             uint combinedl = ((uint)c1 << 16) | ((uint)c2 << 24) | c3 | (length << 8);
 
             uint combinedh = BitOperations.RotateLeft(BinaryPrimitives.ReverseEndianness(combinedl), 13);
-            const uint secretXorl = (unchecked((uint)DefaultSecretUInt64_0) ^ (uint)(DefaultSecretUInt64_0 >> 32));
-            const uint secretXorh = (unchecked((uint)DefaultSecretUInt64_1) ^ (uint)(DefaultSecretUInt64_1 >> 32));
-            ulong bitflipl = secretXorl + seed;
-            ulong bitfliph = secretXorh - seed;
+            const uint SecretXorL = (unchecked((uint)DefaultSecretUInt64_0) ^ (uint)(DefaultSecretUInt64_0 >> 32));
+            const uint SecretXorH = (unchecked((uint)DefaultSecretUInt64_1) ^ (uint)(DefaultSecretUInt64_1 >> 32));
+            ulong bitflipl = SecretXorL + seed;
+            ulong bitfliph = SecretXorH - seed;
             ulong keyedLo = combinedl ^ bitflipl;
             ulong keyedHi = combinedh ^ bitfliph;
 
