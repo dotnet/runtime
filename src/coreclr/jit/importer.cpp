@@ -934,16 +934,9 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     assert(varTypeIsStruct(dest) && (dest->OperIsLocal() || dest->OperIsIndir() || dest->OperIs(GT_FIELD)));
 
     assert(dest->TypeGet() == src->TypeGet());
-    // TODO-1stClassStructs: delete the "!IND" condition once "IND<struct>" nodes are no more.
-    if (dest->TypeIs(TYP_STRUCT) && !src->gtEffectiveVal()->OperIs(GT_IND))
+    if (dest->TypeIs(TYP_STRUCT))
     {
         assert(ClassLayout::AreCompatible(dest->GetLayout(this), src->GetLayout(this)));
-    }
-
-    if (dest->OperIs(GT_FIELD) && dest->TypeIs(TYP_STRUCT))
-    {
-        // TODO-ADDR: delete this once FIELD<struct> nodes are transformed into OBJs (not INDs).
-        dest = gtNewObjNode(dest->GetLayout(this), gtNewOperNode(GT_ADDR, TYP_BYREF, dest));
     }
 
     DebugInfo usedDI = di;
