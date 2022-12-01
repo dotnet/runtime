@@ -171,7 +171,6 @@
     </ReadLinesFromFile>
 
     <PropertyGroup>
-      <WASI_SDK_PATH>$(ProvisionWasiSdkDir)</WASI_SDK_PATH>
       <WasiLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasi'))</WasiLocalPath>
       <WasiSdkVersion>%(_VersionLines.Identity)</WasiSdkVersion>
       <WasiSdkUrl>https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-linux.tar.gz</WasiSdkUrl>
@@ -180,20 +179,20 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(WASI_SDK_PATH)" />
-    <Exec Command="rm -rf wasi-sdk-*/ wasi-sdk/ &amp;&amp; curl -L -o- $(WasiSdkUrl) | tar -xvz &amp;&amp; mv wasi-sdk-$(WasiSdkVersion).*/ wasi-sdk/ &amp;&amp; cp wasi-sdk-version.txt wasi-sdk/wasi-sdk-version.txt"
+    <Exec Command="curl -L -o- $(WasiSdkUrl) | tar --strip-components=1 -xvz -C $(WasiSdkPath) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)/wasi-sdk-version.txt"
           Condition="'$(HostOS)' != 'windows'"
-          WorkingDirectory="$(WasiLocalPath)"
+          WorkingDirectory="$(ArtifactsDir)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <Exec Command="powershell -NonInteractive -command &quot;&amp; .\provision.ps1 -WasiSdkUrl $(WasiSdkUrl) -WasiSdkVersion $(WasiSdkVersion) ; Exit $LastExitCode &quot;"
+    <Exec Command="powershell -NonInteractive -command &quot;&amp; $(WasiLocalPath)\provision.ps1 -WasiSdkUrl $(WasiSdkUrl) -WasiSdkVersion $(WasiSdkVersion) -WasiSdkPath $(WASI_SDK_PATH) -WasiLocalPath $(WasiLocalPath); Exit $LastExitCode &quot;"
           Condition="'$(HostOS)' == 'windows'"
-          WorkingDirectory="$(WasiLocalPath)"
+          WorkingDirectory="$(ArtifactsDir)"
           IgnoreStandardErrorWarningFormat="true" />
 
   </Target>
 
   <Target Name="ValidateWasiSdk" Condition="'$(SkipMonoCrossJitConfigure)' != 'true'">
-    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)/wasi/wasi-sdk/wasi-sdk-version.txt">
+    <ReadLinesFromFile File="$(WASI_SDK_PATH)/wasi-sdk-version.txt">
       <Output TaskParameter="Lines" ItemName="_ActualVersionLines" />
     </ReadLinesFromFile>
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)/wasi/wasi-sdk-version.txt">
@@ -203,7 +202,7 @@
       <ActualWasiSdkVersion>%(_ActualVersionLines.Identity)</ActualWasiSdkVersion>
       <ExpectedWasiSdkVersion>%(_ExpectedVersionLines.Identity)</ExpectedWasiSdkVersion>
     </PropertyGroup>
-    <Error Text="Expected and actual version of WASI SDK is not matching. Please delete /src/mono/wasi/wasi-sdk/ folder to provision it new version" 
+    <Error Text="Expected and actual version of WASI SDK is not matching. Please delete $(WASI_SDK_PATH) folder to provision it new version" 
       Condition="'$(ActualWasiSdkVersion)' != '$(ExpectedWasiSdkVersion)'" />
   </Target>
 
@@ -577,8 +576,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))</EMSDK_PATH>
-      <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)'))</WASI_SDK_PATH>
+      <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)').Replace('\', '/'))</EMSDK_PATH>
+      <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(HostOS)' != 'windows'">bash -c 'source $(RepositoryEngineeringCommonDir)native/init-compiler.sh &quot;$(RepositoryEngineeringCommonDir)native&quot; &quot;$(_CompilerTargetArch)&quot; &quot;$(MonoCCompiler)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>

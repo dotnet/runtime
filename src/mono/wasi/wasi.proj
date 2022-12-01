@@ -154,6 +154,7 @@
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
+      <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
 
       <CMakeConfigurationWasiFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationWasiFlags>
       <CMakeConfigurationWasiFlags Condition="'$(Configuration)' == 'Release'">-Oz </CMakeConfigurationWasiFlags>

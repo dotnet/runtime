@@ -49,6 +49,7 @@
     <ProvisionWasiSdkDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasi', 'wasi-sdk'))</ProvisionWasiSdkDir>
     <WASI_SDK_PATH Condition="Exists('$(ProvisionWasiSdkDir)') and '$(WASI_SDK_PATH)' == ''">$(ProvisionWasiSdkDir.Replace('\', '/'))</WASI_SDK_PATH>
     <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' == '' and !Exists('$(ProvisionWasiSdkDir)')">true</ShouldProvisionWasiSdk>
+    <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' != '' and !Exists('$(WASI_SDK_PATH)')">true</ShouldProvisionWasiSdk>
   </PropertyGroup>
 
   <PropertyGroup>
