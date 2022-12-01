@@ -30,6 +30,19 @@
   <ItemGroup>
     <ProjectReference Include="..\BrowserDebugHost\BrowserDebugHost.csproj" />
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
+
+    <!--
+        - This project needs to use `$(AspNetCoreAppCurrent)` as it uses aspnetcore, and that
+          version can lag behind `$(NetCoreAppCurrent)`.
+        - `debugger-test.csproj` builds the test *apps* for `$(NetCoreAppCurrent)`, is not
+          directly referenced from the test assembly.
+          - so, the `ProjectReference` has `ReferenceOutputAssembly=false`
+          - it also has SkipGetTargetFrameworkProperties=true, which essentially
+            skips the target that would try to find a tfm for debugger-test.csproj
+            compatible with this project.
+          - But that would clash when $(AspNetCoreAppCurrent) != $(NetCoreAppCurrent), so skipping the
+            target ensures that the correct tfm is used.
+    -->
     <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj"
                       AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration)"
                       ReferenceOutputAssembly="false"
