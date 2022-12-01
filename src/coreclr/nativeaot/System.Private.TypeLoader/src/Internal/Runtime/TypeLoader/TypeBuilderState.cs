@@ -586,10 +586,10 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         private static unsafe TypeBuilder.GCLayout GetFieldGCLayout(TypeDesc fieldType)
         {
-            Debug.Assert(!fieldType.IsFunctionPointer && !fieldType.IsByRef);
             if (!fieldType.IsValueType)
             {
-                if (fieldType.IsPointer)
+                Debug.Assert(!fieldType.IsByRef);
+                if (fieldType.IsPointer || fieldType.IsFunctionPointer)
                     return TypeBuilder.GCLayout.None;
                 else
                     return TypeBuilder.GCLayout.SingleReference;
