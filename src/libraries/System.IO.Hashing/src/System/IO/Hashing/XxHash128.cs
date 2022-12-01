@@ -289,9 +289,9 @@ namespace System.IO.Hashing
             m128High += (m128Low << 1);
             m128Low ^= (m128High >> 3);
 
-            m128Low = XorShift64(m128Low, 35);
+            m128Low = XorShift(m128Low, 35);
             m128Low *= 0x9FB21C651E98DF25UL;
-            m128Low = XorShift64(m128Low, 28);
+            m128Low = XorShift(m128Low, 28);
             m128High = Avalanche(m128High);
 
             return new Hash128(m128Low, m128High);
@@ -422,13 +422,6 @@ namespace System.IO.Hashing
             h128Low = Avalanche(h128Low);
             h128High = 0ul - Avalanche(h128High);
             return new Hash128(h128Low, h128High);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong XorShift64(ulong v64, int shift)
-        {
-            Debug.Assert(0 <= shift && shift < 64);
-            return v64 ^ (v64 >> shift);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

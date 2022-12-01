@@ -773,7 +773,7 @@ namespace System.IO.Hashing
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong XorShift(ulong value, int shift)
+        public static ulong XorShift(ulong value, int shift)
         {
             Debug.Assert(shift >= 0 && shift < 64);
             return value ^ (value >> shift);
