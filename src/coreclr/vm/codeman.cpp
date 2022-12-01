@@ -390,7 +390,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     if (pRS != NULL)
     {
         for(int i = 0; i < unwindInfoCount; i++)
-            AddToUnwindInfoTable(&pRS->pUnwindInfoTable, &unwindInfo[i], pRS->_range.begin, pRS->_range.end);
+            AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, &unwindInfo[i], pRS->_range.begin, pRS->_range.end);
     }
 }
 
@@ -415,7 +415,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
             EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
             CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(entryPoint);
             for(ULONG i = 0; i < pHeader->GetNumberOfUnwindInfos(); i++)
-                RemoveFromUnwindInfoTable(&pRS->pUnwindInfoTable, pRS->_range.begin, pRS->_range.begin + pHeader->GetUnwindInfo(i)->BeginAddress);
+                RemoveFromUnwindInfoTable(&pRS->_pUnwindInfoTable, pRS->_range.begin, pRS->_range.begin + pHeader->GetUnwindInfo(i)->BeginAddress);
         }
     }
 }
@@ -460,7 +460,7 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
                     CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(methodEntry);
                     int unwindInfoCount = pHeader->GetNumberOfUnwindInfos();
                     for(int i = 0; i < unwindInfoCount; i++)
-                        AddToUnwindInfoTable(&pRS->pUnwindInfoTable, pHeader->GetUnwindInfo(i), pRS->_range.begin, pRS->_range.end);
+                        AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, pHeader->GetUnwindInfo(i), pRS->_range.begin, pRS->_range.end);
                 }
             }
         }
@@ -5059,7 +5059,7 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
 
 
 #if defined(TARGET_AMD64)
-    PTR_UnwindInfoTable unwindTable = pCurr->pUnwindInfoTable;
+    PTR_UnwindInfoTable unwindTable = pCurr->_pUnwindInfoTable;
 #endif
 
     {

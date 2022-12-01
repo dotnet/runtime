@@ -637,7 +637,10 @@ struct RangeSection
         _flags(flags),
         _pjit(pJit),
         _pR2RModule(pR2RModule),
-        _pHeapList(dac_cast<PTR_HeapList>((TADDR)0))
+        _pHeapList(dac_cast<PTR_HeapList>((TADDR)0)),
+#if defined(TARGET_AMD64)
+        _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+#endif
     {
         assert(!(flags & RANGE_SECTION_COLLECTIBLE));
         assert(pR2RModule != NULL);
@@ -649,7 +652,10 @@ struct RangeSection
         _flags(flags),
         _pjit(pJit),
         _pR2RModule(dac_cast<PTR_Module>((TADDR)0)),
-        _pHeapList(pHeapList)
+        _pHeapList(pHeapList),
+#if defined(TARGET_AMD64)
+        _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+#endif
     {}
 
 #ifdef DACCESS_COMPILE
@@ -663,7 +669,7 @@ struct RangeSection
     const PTR_HeapList _pHeapList;
 
 #if defined(TARGET_AMD64)
-    PTR_UnwindInfoTable pUnwindInfoTable; // Points to unwind information for this memory range.
+    PTR_UnwindInfoTable _pUnwindInfoTable; // Points to unwind information for this memory range.
 #endif // defined(TARGET_AMD64)
 
 
