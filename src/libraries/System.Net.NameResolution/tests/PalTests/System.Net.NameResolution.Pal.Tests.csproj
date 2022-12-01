@@ -76,8 +76,6 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
              Link="Common\System\Net\Internals\SocketAddressPal.Unix.cs" />
-    <Compile Include="$(CommonPath)Interop\Interop.CheckedAccess.cs"
-             Link="Common\System\Net\Internals\Interop.CheckedAccess.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="..\..\src\System\Net\NameResolutionPal.Unix.cs"
