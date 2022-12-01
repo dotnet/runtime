@@ -153,6 +153,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -183,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
             }, options: options);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
@@ -201,6 +202,12 @@ namespace System.Net.Http.Functional.Tests
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = address };
+
+            if (PlatformDetection.IsAndroid && options.UseSsl && address == IPAddress.IPv6Loopback)
+            {
+                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
+            }
+
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 _output.WriteLine(url.ToString());
@@ -268,7 +275,7 @@ namespace System.Net.Http.Functional.Tests
             where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
@@ -276,6 +283,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Host header is not supported on HTTP/2 and later.
                 return;
+            }
+
+            if (PlatformDetection.IsAndroid && useSsl && address == IPAddress.IPv6Loopback)
+            {
+                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl = useSsl };

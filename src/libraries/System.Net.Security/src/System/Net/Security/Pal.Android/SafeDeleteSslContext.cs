@@ -284,13 +284,7 @@ namespace System.Net
 
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost))
             {
-                // the Java SNIHostName class that's used internally to wrap the hostname
-                // doesn't support IPv6 addresses
-                var containsUnsupportedCharacters = authOptions.TargetHost.Contains(':');
-                if (!containsUnsupportedCharacters)
-                {
-                    Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
-                }
+                Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
             }
         }
     }

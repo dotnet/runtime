@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,13 +26,18 @@ namespace System.Net.Http.Functional.Tests
             from host in Hosts(scheme)
             select new object[] { scheme, useSsl, useAuth, host };
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(TestLoopbackAsync_MemberData))]
         public async Task TestLoopbackAsync(string scheme, bool useSsl, bool useAuth, string host)
         {
             if (useSsl && UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
             {
                 return;
+            }
+
+            if (PlatformDetection.IsAndroid && useSsl && host == "::1")
+            {
+                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
             }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(
