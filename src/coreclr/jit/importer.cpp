@@ -2900,6 +2900,10 @@ GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp)
             tree = gtNewCastNode(TYP_INT, tree, false, TYP_INT);
         }
 #endif // TARGET_64BIT
+        else if ((wantedType == TYP_I_IMPL) && (currType == TYP_BYREF))
+        {
+            tree = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
+        }
     }
 
     return tree;
