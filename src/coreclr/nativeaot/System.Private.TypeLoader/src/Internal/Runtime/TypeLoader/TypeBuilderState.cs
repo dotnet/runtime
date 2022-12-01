@@ -180,15 +180,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public NativeLayoutInfo R2RNativeLayoutInfo
-        {
-            get
-            {
-                EnsureNativeLayoutInfoComputed();
-                return _r2rnativeLayoutInfo;
-            }
-        }
-
         public NativeParser GetParserForNativeLayoutInfo()
         {
             EnsureNativeLayoutInfoComputed();
@@ -471,8 +462,6 @@ namespace Internal.Runtime.TypeLoader
         public IntPtr? ClassConstructorPointer;
         public IntPtr GcStaticDesc;
         public IntPtr ThreadStaticDesc;
-        public bool AllocatedStaticGCDesc;
-        public bool AllocatedThreadStaticGCDesc;
         public uint ThreadStaticOffset;
         public uint NumSealedVTableEntries;
         public GenericVariance[] GenericVarianceFlags;
@@ -503,7 +492,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (_instanceGCLayout == null)
                 {
-                    LowLevelList<bool> instanceGCLayout = null;
+                    LowLevelList<bool> instanceGCLayout;
 
                     if (TypeBeingBuilt is ArrayType)
                     {
@@ -524,72 +513,13 @@ namespace Internal.Runtime.TypeLoader
                             _instanceGCLayout = s_emptyLayout;
                         }
                     }
-                    else if (TypeBeingBuilt.RetrieveRuntimeTypeHandleIfPossible() ||
-                             TypeBeingBuilt.IsTemplateCanonical() ||
-                             (TypeBeingBuilt is PointerType) ||
-                             (TypeBeingBuilt is ByRefType))
-                    {
-                        _instanceGCLayout = s_emptyLayout;
-                    }
                     else
                     {
-                        // Generic Type Definitions have no gc layout
-                        if (!(TypeBeingBuilt.IsGenericDefinition))
-                        {
-                            // Copy in from base type
-                            if (!TypeBeingBuilt.IsValueType && (TypeBeingBuilt.BaseType != null))
-                            {
-                                DefType baseType = TypeBeingBuilt.BaseType;
-
-                                // Capture the gc layout from the base type
-                                TypeBuilder.GCLayout baseTypeLayout = GetInstanceGCLayout(baseType);
-                                if (!baseTypeLayout.IsNone)
-                                {
-                                    instanceGCLayout = new LowLevelList<bool>();
-                                    baseTypeLayout.WriteToBitfield(instanceGCLayout, IntPtr.Size /* account for the MethodTable pointer */);
-                                }
-                            }
-
-                            foreach (FieldDesc field in GetFieldsForGCLayout())
-                            {
-                                if (field.IsStatic)
-                                    continue;
-
-                                if (field.IsLiteral)
-                                    continue;
-
-                                TypeBuilder.GCLayout fieldGcLayout = GetFieldGCLayout(field.FieldType);
-                                if (!fieldGcLayout.IsNone)
-                                {
-                                    instanceGCLayout ??= new LowLevelList<bool>();
-
-                                    fieldGcLayout.WriteToBitfield(instanceGCLayout, field.Offset.AsInt);
-                                }
-                            }
-
-                            if ((instanceGCLayout != null) && instanceGCLayout.HasSetBits())
-                            {
-                                // When bits are set in the instance GC layout, it implies that the type contains GC refs,
-                                // which implies that the type size is pointer-aligned.  In this case consumers assume that
-                                // the type size can be computed by multiplying the bitfield size by the pointer size.  If
-                                // necessary, expand the bitfield to ensure that this invariant holds.
-
-                                // Valuetypes with gc fields must be aligned on at least pointer boundaries
-                                Debug.Assert(!TypeBeingBuilt.IsValueType || (FieldAlignment.Value >= TypeBeingBuilt.Context.Target.PointerSize));
-                                // Valuetypes with gc fields must have a type size which is aligned on an IntPtr boundary.
-                                Debug.Assert(!TypeBeingBuilt.IsValueType || ((TypeSize.Value & (IntPtr.Size - 1)) == 0));
-
-                                int impliedBitCount = (TypeSize.Value + IntPtr.Size - 1) / IntPtr.Size;
-                                Debug.Assert(instanceGCLayout.Count <= impliedBitCount);
-                                instanceGCLayout.Expand(impliedBitCount);
-                                Debug.Assert(instanceGCLayout.Count == impliedBitCount);
-                            }
-                        }
-
-                        if (instanceGCLayout == null)
-                            _instanceGCLayout = s_emptyLayout;
-                        else
-                            _instanceGCLayout = instanceGCLayout;
+                        Debug.Assert(TypeBeingBuilt.RetrieveRuntimeTypeHandleIfPossible() ||
+                             TypeBeingBuilt.IsTemplateCanonical() ||
+                             (TypeBeingBuilt is PointerType) ||
+                             (TypeBeingBuilt is ByRefType));
+                        _instanceGCLayout = s_emptyLayout;
                     }
                 }
 
@@ -599,10 +529,6 @@ namespace Internal.Runtime.TypeLoader
                     return _instanceGCLayout;
             }
         }
-
-
-        public LowLevelList<bool> StaticGCLayout;
-        public LowLevelList<bool> ThreadStaticGCLayout;
 
         private bool _staticGCLayoutPrepared;
 
@@ -622,8 +548,10 @@ namespace Internal.Runtime.TypeLoader
                 {
                     // Array/pointer types do not have static fields
                 }
-                else if (defType.IsTemplateCanonical())
+                else
                 {
+                    Debug.Assert(defType.IsTemplateCanonical());
+
                     // Canonical templates get their layout directly from the NativeLayoutInfo.
                     // Parse it and pull that info out here.
 
@@ -648,110 +576,6 @@ namespace Internal.Runtime.TypeLoader
                         }
                     }
                 }
-                else
-                {
-                    // Compute GC layout boolean array from field information.
-                    IEnumerable<FieldDesc> fields = GetFieldsForGCLayout();
-                    LowLevelList<bool> threadStaticLayout = null;
-                    LowLevelList<bool> gcStaticLayout = null;
-
-                    foreach (FieldDesc field in fields)
-                    {
-                        if (!field.IsStatic)
-                            continue;
-
-                        if (field.IsLiteral)
-                            continue;
-
-                        LowLevelList<bool> gcLayoutInfo = null;
-                        if (field.IsThreadStatic)
-                        {
-                            threadStaticLayout ??= new LowLevelList<bool>();
-                            gcLayoutInfo = threadStaticLayout;
-                        }
-                        else if (field.HasGCStaticBase)
-                        {
-                            gcStaticLayout ??= new LowLevelList<bool>();
-                            gcLayoutInfo = gcStaticLayout;
-                        }
-                        else
-                        {
-                            // Non-GC static  no need to record information
-                            continue;
-                        }
-
-                        TypeBuilder.GCLayout fieldGcLayout = GetFieldGCLayout(field.FieldType);
-                        fieldGcLayout.WriteToBitfield(gcLayoutInfo, field.Offset.AsInt);
-                    }
-
-                    if (gcStaticLayout != null && gcStaticLayout.Count > 0)
-                        StaticGCLayout = gcStaticLayout;
-
-                    if (threadStaticLayout != null && threadStaticLayout.Count > 0)
-                        ThreadStaticGCLayout = threadStaticLayout;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get an enumerable list of the fields used for dynamic gc layout calculation.
-        /// </summary>
-        private IEnumerable<FieldDesc> GetFieldsForGCLayout()
-        {
-            DefType defType = (DefType)TypeBeingBuilt;
-
-            IEnumerable<FieldDesc> fields;
-
-            if (defType.ComputeTemplate(false) != null)
-            {
-                // we have native layout and a template. Use the NativeLayoutFields as that is the only complete
-                // description of the fields available. (There may be metadata fields, but those aren't guaranteed
-                // to be a complete set of fields due to reflection reduction.
-                NativeLayoutFieldAlgorithm.EnsureFieldLayoutLoadedForGenericType(defType);
-                fields = defType.NativeLayoutFields;
-            }
-            else
-            {
-                // The metadata case. We're loading the type from regular metadata, so use the regular metadata fields
-                fields = defType.GetFields();
-            }
-
-            return fields;
-        }
-
-        // Get the GC layout of a type. Handles pre-created, universal template, and non-universal template cases
-        // Only to be used for getting the instance layout of non-valuetypes.
-        /// <summary>
-        /// Get the GC layout of a type. Handles pre-created, universal template, and non-universal template cases
-        /// Only to be used for getting the instance layout of non-valuetypes that are used as base types
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private static unsafe TypeBuilder.GCLayout GetInstanceGCLayout(TypeDesc type)
-        {
-            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
-            Debug.Assert(!type.IsValueType);
-
-            if (type.RetrieveRuntimeTypeHandleIfPossible())
-            {
-                return new TypeBuilder.GCLayout(type.RuntimeTypeHandle);
-            }
-
-            if (type.IsTemplateCanonical())
-            {
-                var templateType = type.ComputeTemplate();
-                bool success = templateType.RetrieveRuntimeTypeHandleIfPossible();
-                Debug.Assert(success && !templateType.RuntimeTypeHandle.IsNull());
-
-                return new TypeBuilder.GCLayout(templateType.RuntimeTypeHandle);
-            }
-            else
-            {
-                TypeBuilderState state = type.GetOrCreateTypeBuilderState();
-                if (state.InstanceGCLayout == null)
-                    return TypeBuilder.GCLayout.None;
-                else
-                    return new TypeBuilder.GCLayout(state.InstanceGCLayout, true);
             }
         }
 
@@ -762,6 +586,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         private static unsafe TypeBuilder.GCLayout GetFieldGCLayout(TypeDesc fieldType)
         {
+            Debug.Assert(!fieldType.IsFunctionPointer && !fieldType.IsByRef);
             if (!fieldType.IsValueType)
             {
                 if (fieldType.IsPointer)
@@ -778,24 +603,12 @@ namespace Internal.Runtime.TypeLoader
 
             // The type of the field must be a valuetype that is dynamically being constructed
 
-            if (fieldType.IsTemplateCanonical())
-            {
-                // Pull the GC Desc from the canonical instantiation
-                TypeDesc templateType = fieldType.ComputeTemplate();
-                bool success = templateType.RetrieveRuntimeTypeHandleIfPossible();
-                Debug.Assert(success);
-                return new TypeBuilder.GCLayout(templateType.RuntimeTypeHandle);
-            }
-            else
-            {
-                // Use the type builder state's computed InstanceGCLayout
-                var instanceGCLayout = fieldType.GetOrCreateTypeBuilderState().InstanceGCLayout;
-                if (instanceGCLayout == null)
-                    return TypeBuilder.GCLayout.None;
-
-                return new TypeBuilder.GCLayout(instanceGCLayout, false /* Always represents a valuetype as the reference type case
-                                                                           is handled above with the GCLayout.SingleReference return */);
-            }
+            Debug.Assert(fieldType.IsTemplateCanonical());
+            // Pull the GC Desc from the canonical instantiation
+            TypeDesc templateType = fieldType.ComputeTemplate();
+            bool success = templateType.RetrieveRuntimeTypeHandleIfPossible();
+            Debug.Assert(success);
+            return new TypeBuilder.GCLayout(templateType.RuntimeTypeHandle);
         }
 
 
@@ -969,34 +782,14 @@ namespace Internal.Runtime.TypeLoader
                 if (!TypeBeingBuilt.IsNullable)
                     return 0;
 
-                if (TypeBeingBuilt.IsTemplateCanonical())
+                Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
+                // Pull the GC Desc from the canonical instantiation
+                TypeDesc templateType = TypeBeingBuilt.ComputeTemplate();
+                bool success = templateType.RetrieveRuntimeTypeHandleIfPossible();
+                Debug.Assert(success);
+                unsafe
                 {
-                    // Pull the GC Desc from the canonical instantiation
-                    TypeDesc templateType = TypeBeingBuilt.ComputeTemplate();
-                    bool success = templateType.RetrieveRuntimeTypeHandleIfPossible();
-                    Debug.Assert(success);
-                    unsafe
-                    {
-                        return templateType.RuntimeTypeHandle.ToEETypePtr()->NullableValueOffset;
-                    }
-                }
-                else
-                {
-                    int fieldCount = 0;
-                    uint nullableValueOffset = 0;
-
-                    foreach (FieldDesc f in GetFieldsForGCLayout())
-                    {
-                        if (fieldCount == 1)
-                        {
-                            nullableValueOffset = checked((uint)f.Offset.AsInt);
-                        }
-                        fieldCount++;
-                    }
-
-                    // Nullable<T> only has two fields. HasValue and Value
-                    Debug.Assert(fieldCount == 2);
-                    return nullableValueOffset;
+                    return templateType.RuntimeTypeHandle.ToEETypePtr()->NullableValueOffset;
                 }
             }
         }
