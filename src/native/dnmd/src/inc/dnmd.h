@@ -109,6 +109,7 @@ bool md_cursor_next(mdcursor_t* c);
 // Convert between a token and location in metadata tables.
 bool md_token_to_cursor(mdhandle_t handle, mdToken tk, mdcursor_t* c);
 bool md_cursor_to_token(mdcursor_t c, mdToken* tk);
+mdhandle_t md_extract_handle_from_cursor(mdcursor_t c);
 
 // Walk the #US heap. The initial value should be set to 0 or
 // a valid offset into the #US heap - see RidFromToken in corhdr.h.

@@ -120,6 +120,14 @@ bool md_cursor_to_token(mdcursor_t c, mdToken* tk)
     return (row <= table->row_count);
 }
 
+mdhandle_t md_extract_handle_from_cursor(mdcursor_t c)
+{
+    mdtable_t* table = CursorTable(&c);
+    if (table == NULL)
+        return NULL;
+    return table->cxt;
+}
+
 bool md_walk_user_string_heap(mdhandle_t handle, mduserstringcursor_t* cursor, mduserstring_t* str, uint32_t* offset)
 {
     mdcxt_t* cxt = extract_mdcxt(handle);

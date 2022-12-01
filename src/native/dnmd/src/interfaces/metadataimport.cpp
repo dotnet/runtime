@@ -2184,7 +2184,9 @@ namespace
         ULONG data;
         sig += CorSigUncompressData(sig, &data);
 
-        while (sig < sigEnd && CorIsModifierElementType((CorElementType)data))
+        while (sig < sigEnd
+            && (CorIsModifierElementType((CorElementType)data)
+                || data == ELEMENT_TYPE_GENERICINST))
         {
             sig += CorSigUncompressData(sig, &data);
         }
@@ -2224,6 +2226,8 @@ namespace
             if (typeTk == mdTokenNil)
                 return S_FALSE;
 
+            if (!md_token_to_cursor(md_extract_handle_from_cursor(cursor), typeTk, &cursor))
+                return CLDB_E_FILE_CORRUPT;
             tokenType = TypeFromToken(typeTk);
         }
 
