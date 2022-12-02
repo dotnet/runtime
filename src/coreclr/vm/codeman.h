@@ -695,14 +695,6 @@ struct RangeSection
     RangeSection* _pRangeSectionNextForDelete = nullptr; // Used for adding to the cleanup list
 };
 
-enum class RangeSectionLockState
-{
-    None,
-    NeedsLock,
-    ReaderLocked,
-    WriteLocked,
-};
-
 // For 64bit, we work with 8KB chunks of memory holding pointers to the next level. This provides 10 bits of address resolution per level.
 // For *reasons* the X64 hardware is limited to 57bits of addressable address space, and the minimum granularity that makes sense for range lists is 64KB (or every 2^16 bits)
 // Similarly the Arm64 specification requires addresses to use at most 52 bits. Thus we use the maximum addressable range of X64 to provide the real max range
@@ -728,14 +720,6 @@ class RangeSectionMap
         uintptr_t FragmentToPtr(RangeSectionFragment* fragment)
         {
             uintptr_t ptr = (uintptr_t)fragment;
-            if (ptr == 0)
-                return ptr;
-
-            if (fragment->isCollectibleRangeSectionFragment)
-            {
-                ptr += 1;
-            }
-
             return ptr;
         }
 
@@ -746,32 +730,15 @@ class RangeSectionMap
         RangeSectionFragmentPointer(RangeSectionFragmentPointer &&) = delete;
         RangeSectionFragmentPointer& operator=(const RangeSectionFragmentPointer&) = delete;
 
-        bool PointerIsCollectible()
-        {
-            return ((_ptr & 1) == 1);
-        }
-
         bool IsNull()
         {
             return _ptr == 0;
         }
 
-        RangeSectionFragment* VolatileLoadWithoutBarrier(RangeSectionLockState *pLockState)
+        RangeSectionFragment* VolatileLoadWithoutBarrier()
         {
             uintptr_t ptr = ::VolatileLoadWithoutBarrier(&_ptr);
-            if ((ptr & 1) == 1)
-            {
-                if ((*pLockState == RangeSectionLockState::None) || (*pLockState == RangeSectionLockState::NeedsLock))
-                {
-                    *pLockState = RangeSectionLockState::NeedsLock;
-                    return NULL;
-                }
-                return (RangeSectionFragment*)(ptr - 1);
-            }
-            else
-            {
-                return (RangeSectionFragment*)(ptr);
-            }
+            return (RangeSectionFragment*)(ptr);
         }
 
         void VolatileStore(RangeSectionFragment* fragment)
@@ -898,7 +865,7 @@ class RangeSectionMap
         return result;
     }
 
-    RangeSectionFragment* GetRangeSectionForAddress(TADDR address, RangeSectionLockState *pLockState)
+    RangeSectionFragment* GetRangeSectionForAddress(TADDR address)
     {
 #ifdef TARGET_64BIT
         auto _RangeSectionL4 = VolatileLoad(&_topLevel);
@@ -917,7 +884,7 @@ class RangeSectionMap
         if (_RangeSectionL1 == NULL)
             return NULL;
 
-        return ((*_RangeSectionL1)[EffectiveBitsForLevel(address, 1)]).VolatileLoadWithoutBarrier(pLockState);
+        return ((*_RangeSectionL1)[EffectiveBitsForLevel(address, 1)]).VolatileLoadWithoutBarrier();
     }
 
     uintptr_t RangeSectionFragmentCount(PTR_RangeSection pRangeSection)
@@ -932,10 +899,8 @@ class RangeSectionMap
         return input + bytesAtLastLevel;
     }
 
-    bool AttachRangeSectionToMap(PTR_RangeSection pRangeSection, RangeSectionLockState *pLockState)
+    bool AttachRangeSectionToMap(PTR_RangeSection pRangeSection)
     {
-        assert(*pLockState == RangeSectionLockState::ReaderLocked); // Must be locked so that the cannot fail case, can't fail. NOTE: This only needs the reader lock, as the attach process can happen in parallel to reads.
-
         uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSection);
         RangeSectionFragment* fragments = (RangeSectionFragment*)calloc(rangeSectionFragmentCount, sizeof(RangeSectionFragment));
 
@@ -976,7 +941,7 @@ class RangeSectionMap
         {
             do
             {
-                RangeSectionFragment* initialFragmentInMap = entriesInMapToUpdate[iFragment]->VolatileLoadWithoutBarrier(pLockState);
+                RangeSectionFragment* initialFragmentInMap = entriesInMapToUpdate[iFragment]->VolatileLoadWithoutBarrier();
                 fragments[iFragment].pRangeSectionFragmentNext.VolatileStore(initialFragmentInMap);
                 if (entriesInMapToUpdate[iFragment]->AtomicReplace(&(fragments[iFragment]), initialFragmentInMap))
                     break;
@@ -1000,13 +965,13 @@ public:
     }
 
 #ifdef FEATURE_READYTORUN
-    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule, RangeSectionLockState* pLockState)
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule)
     {
         PTR_RangeSection pSection(new(nothrow)RangeSection(range, pJit, flags, pR2RModule));
         if (pSection == NULL)
             return NULL;
 
-        if (!AttachRangeSectionToMap(pSection, pLockState))
+        if (!AttachRangeSectionToMap(pSection))
         {
             delete pSection;
             return NULL;
@@ -1015,13 +980,13 @@ public:
     }
 #endif
 
-    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_HeapList pHeapList, RangeSectionLockState* pLockState)
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_HeapList pHeapList)
     {
         PTR_RangeSection pSection(new(nothrow)RangeSection(range, pJit, flags, pHeapList));
         if (pSection == NULL)
             return NULL;
 
-        if (!AttachRangeSectionToMap(pSection, pLockState))
+        if (!AttachRangeSectionToMap(pSection))
         {
             delete pSection;
             return NULL;
@@ -1029,13 +994,13 @@ public:
         return pSection;
     }
 
-    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_CodeRangeMapRangeList pRangeList, RangeSectionLockState* pLockState)
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_CodeRangeMapRangeList pRangeList)
     {
         PTR_RangeSection pSection(new(nothrow)RangeSection(range, pJit, flags, pRangeList));
         if (pSection == NULL)
             return NULL;
 
-        if (!AttachRangeSectionToMap(pSection, pLockState))
+        if (!AttachRangeSectionToMap(pSection))
         {
             delete pSection;
             return NULL;
@@ -1043,15 +1008,15 @@ public:
         return pSection;
     }
 
-    PTR_RangeSection LookupRangeSection(TADDR address, RangeSectionLockState *pLockState)
+    PTR_RangeSection LookupRangeSection(TADDR address)
     {
-        RangeSectionFragment* fragment = GetRangeSectionForAddress(address, pLockState);
+        RangeSectionFragment* fragment = GetRangeSectionForAddress(address);
         if (fragment == NULL)
             return NULL;
 
         while ((fragment != NULL) && !fragment->InRange(address))
         {
-            fragment = fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState);
+            fragment = fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier();
         }
 
         if (fragment != NULL)
@@ -1081,10 +1046,8 @@ public:
         } while (InterlockedCompareExchangeT(&_pCleanupList, pRangeSection, pLatestRemovedRangeSection) != pLatestRemovedRangeSection);
     }
 
-    void CleanupRangeSections(RangeSectionLockState *pLockState)
+    void CleanupRangeSections()
     {
-        assert(*pLockState == RangeSectionLockState::WriteLocked);
-
         while (this->_pCleanupList != EndOfCleanupListMarker())
         {
             PTR_RangeSection pRangeSectionToCleanup(this->_pCleanupList);
@@ -1101,12 +1064,12 @@ public:
                 RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForCleanup);
                 assert(entryInMapToUpdate != NULL);
 
-                while ((entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState))->pRangeSection != pRangeSectionToCleanup)
+                while ((entryInMapToUpdate->VolatileLoadWithoutBarrier())->pRangeSection != pRangeSectionToCleanup)
                 {
-                    entryInMapToUpdate = &(entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState))->pRangeSectionFragmentNext;
+                    entryInMapToUpdate = &(entryInMapToUpdate->VolatileLoadWithoutBarrier())->pRangeSectionFragmentNext;
                 }
 
-                RangeSectionFragment* fragment = entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState);
+                RangeSectionFragment* fragment = entryInMapToUpdate->VolatileLoadWithoutBarrier();
 
                 // The fragment associated with the start of the range has the address that was allocated earlier
                 if (iFragment == 0)
@@ -1115,7 +1078,7 @@ public:
                     assert(pRangeSectionFragmentToFree->isPrimaryRangeSectionFragment);
                 }
 
-                entryInMapToUpdate->VolatileStore(fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState));
+                entryInMapToUpdate->VolatileStore(fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier());
                 addressToPrepForCleanup = IncrementAddressByMaxSizeOfFragment(addressToPrepForCleanup);
             }
 
@@ -1817,9 +1780,9 @@ private:
     static RangeSection * FindCodeRangeWithLock(PCODE currentPC);
 
     static BOOL IsManagedCodeWithLock(PCODE currentPC);
-    static BOOL IsManagedCodeWorker(PCODE currentPC, RangeSectionLockState *pLockState);
+    static BOOL IsManagedCodeWorker(PCODE currentPC);
 
-    static RangeSection* GetRangeSection(TADDR addr, RangeSectionLockState *pLockState);
+    static RangeSection* GetRangeSection(TADDR addr);
 
     SPTR_DECL(EECodeManager, m_pDefaultCodeMan);
 

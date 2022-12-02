@@ -2119,6 +2119,19 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         return NULL;
     }
 
+    // Inlined fast path for fixup precode and stub precode from RangeList implementation
+    if (pRS->_flags == RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_FIXUPPRECODE)
+        {
+            return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+        }
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+        }
+    }
+
     MethodDesc* pMD;
     if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
         return pMD;

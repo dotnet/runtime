@@ -4700,9 +4700,7 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
     if (scanFlag == ScanReaderLock)
         return FindCodeRangeWithLock(currentPC);
 
-    // Since ScanReaderLock is not set, then we should behave AS IF the ReaderLock is held
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
-    return GetRangeSection(currentPC, &lockState);
+    return GetRangeSection(currentPC);
 }
 
 //**************************************************************************
@@ -4716,15 +4714,8 @@ ExecutionManager::FindCodeRangeWithLock(PCODE currentPC)
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    RangeSectionLockState lockState = RangeSectionLockState::None;
-    RangeSection *result = GetRangeSection(currentPC, &lockState);
-    if (lockState == RangeSectionLockState::NeedsLock)
-    {
-        ReaderLockHolder rlh;
-        lockState = RangeSectionLockState::ReaderLocked;
-        result = GetRangeSection(currentPC, &lockState);
-    }
-    return result;
+    ReaderLockHolder rlh;
+    return GetRangeSection(currentPC);
 }
 
 
@@ -4786,9 +4777,7 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC)
     if (GetScanFlags() == ScanReaderLock)
         return IsManagedCodeWithLock(currentPC);
 
-    // Since ScanReaderLock is not set, then we must assume that the ReaderLock is effectively taken.
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
-    return IsManagedCodeWorker(currentPC, &lockState);
+    return IsManagedCodeWorker(currentPC);
 }
 
 //**************************************************************************
@@ -4800,17 +4789,8 @@ BOOL ExecutionManager::IsManagedCodeWithLock(PCODE currentPC)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    RangeSectionLockState lockState = RangeSectionLockState::None;
-    BOOL result = IsManagedCodeWorker(currentPC, &lockState);
-
-    if (lockState == RangeSectionLockState::NeedsLock)
-    {
-        ReaderLockHolder rlh;
-        lockState = RangeSectionLockState::ReaderLocked;
-        result = IsManagedCodeWorker(currentPC, &lockState);
-    }
-
-    return result;
+    ReaderLockHolder rlh;
+    return IsManagedCodeWorker(currentPC);
 }
 
 //**************************************************************************
@@ -4837,15 +4817,14 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC, HostCallPreference hostCal
         return FALSE;
     }
 
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
-    return IsManagedCodeWorker(currentPC, &lockState);
+    return IsManagedCodeWorker(currentPC);
 #endif
 }
 
 //**************************************************************************
 // Assumes that the ExecutionManager reader/writer lock is taken or that
 // it is safe not to take it.
-BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockState *pLockState)
+BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
 {
     CONTRACTL {
         NOTHROW;
@@ -4856,7 +4835,7 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC, RangeSectionLockStat
     // taken over the call to JitCodeToMethodInfo too so that nobody pulls out
     // the range section from underneath us.
 
-    RangeSection * pRS = GetRangeSection(currentPC, pLockState);
+    RangeSection * pRS = GetRangeSection(currentPC);
     if (pRS == NULL)
         return FALSE;
 
@@ -4898,12 +4877,24 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
     // the range section from underneath us.
 
 #ifdef FEATURE_READYTORUN
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // TODO! Looking at users of this API I don't know that the lock structure here is safe. Needs checking.
-    RangeSection * pRS = GetRangeSection(currentPC, &lockState);
-    if (pRS != NULL && (pRS->_pR2RModule != NULL))
+    if (ExecutionManager::GetScanFlags() == ScanNoReaderLock)
     {
-        if (dac_cast<PTR_ReadyToRunJitManager>(pRS->_pjit)->JitCodeToMethodInfo(pRS, currentPC, NULL, NULL))
-            return TRUE;
+        RangeSection * pRS = GetRangeSection(currentPC);
+        if (pRS != NULL && (pRS->_pR2RModule != NULL))
+        {
+            if (dac_cast<PTR_ReadyToRunJitManager>(pRS->_pjit)->JitCodeToMethodInfo(pRS, currentPC, NULL, NULL))
+                return TRUE;
+        }
+    }
+    else
+    {
+        ReaderLockHolder rlh;
+        RangeSection * pRS = GetRangeSection(currentPC);
+        if (pRS != NULL && (pRS->_pR2RModule != NULL))
+        {
+            if (dac_cast<PTR_ReadyToRunJitManager>(pRS->_pjit)->JitCodeToMethodInfo(pRS, currentPC, NULL, NULL))
+                return TRUE;
+        }
     }
 #endif
 
@@ -4932,7 +4923,7 @@ LPCWSTR ExecutionManager::GetJitName()
 }
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
-RangeSection* ExecutionManager::GetRangeSection(TADDR addr, RangeSectionLockState *pLockState)
+RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
 {
     CONTRACTL {
         NOTHROW;
@@ -4941,7 +4932,7 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr, RangeSectionLockStat
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return g_pCodeRangeMap->LookupRangeSection(addr, pLockState);
+    return g_pCodeRangeMap->LookupRangeSection(addr);
 }
 
 /* static */
@@ -4958,10 +4949,9 @@ PTR_Module ExecutionManager::FindReadyToRunModule(TADDR currentData)
     CONTRACTL_END;
 
 #ifdef FEATURE_READYTORUN
-    RangeSectionLockState lockState = RangeSectionLockState::None;
-    RangeSection * pRS = GetRangeSection(currentData, &lockState);
-    if (lockState != RangeSectionLockState::NeedsLock)
+    if (ExecutionManager::GetScanFlags() == ScanNoReaderLock)
     {
+        RangeSection * pRS = GetRangeSection(currentData);
         if (pRS == NULL)
             return NULL;
 
@@ -4970,10 +4960,10 @@ PTR_Module ExecutionManager::FindReadyToRunModule(TADDR currentData)
     else
     {
         ReaderLockHolder rlh;
-        lockState = RangeSectionLockState::ReaderLocked;
-        pRS = GetRangeSection(currentData, &lockState);
+        RangeSection * pRS = GetRangeSection(currentData);
         if (pRS == NULL)
             return NULL;
+
         return pRS->_pR2RModule;
     }
 #else
@@ -5023,9 +5013,8 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     } CONTRACTL_END;
 
     ReaderLockHolder rlh;
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
 
-    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pModule, &lockState);
+    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pModule);
     if (pRange == NULL)
         ThrowOutOfMemory();
 }
@@ -5047,9 +5036,8 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     } CONTRACTL_END;
 
     ReaderLockHolder rlh;
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
 
-    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pHp, &lockState);
+    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pHp);
 
     if (pRange == NULL)
         ThrowOutOfMemory();
@@ -5072,9 +5060,8 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     } CONTRACTL_END;
 
     ReaderLockHolder rlh;
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
 
-    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pRangeList, &lockState);
+    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pRangeList);
 
     if (pRange == NULL)
         ThrowOutOfMemory();
@@ -5103,9 +5090,7 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
         // require the reader lock, which would cause a deadlock).
         WriterLockHolder wlh;
 
-        RangeSectionLockState lockState = RangeSectionLockState::WriteLocked;
-        
-        g_pCodeRangeMap->CleanupRangeSections(&lockState);
+        g_pCodeRangeMap->CleanupRangeSections();
         // Unlike the previous implementation, we no longer attempt to avoid freeing
         // the memory behind the RangeSection here, as we do not support the hosting
         // api taking over memory allocation.
