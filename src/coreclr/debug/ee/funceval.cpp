@@ -3301,7 +3301,7 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
         ThrowHR(COR_E_OVERFLOW);
     }
     FuncEvalArgInfo * pFEArgInfo = (FuncEvalArgInfo *)_alloca(cbAllocSize);
-    *pFEArgInfo = {};
+    memset(pFEArgInfo, 0, cbAllocSize);
 
     GatherFuncEvalArgInfo(pDE, mSig, argData, pFEArgInfo);
 
@@ -3483,7 +3483,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
         ThrowHR(COR_E_OVERFLOW);
     }
     OBJECTREF * pObjectRefArray = (OBJECTREF*)_alloca(cbAllocSize);
-    *pObjectRefArray = {};
+    memset(pObjectRefArray, 0, cbAllocSize);
     GCPROTECT_ARRAY_BEGIN(*pObjectRefArray, pDE->m_argCount);
 
     //
