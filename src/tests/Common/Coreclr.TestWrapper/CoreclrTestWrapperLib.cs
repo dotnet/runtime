@@ -444,12 +444,39 @@ namespace CoreclrTestLib
                 }
             }
 
-            outputWriter.WriteLine($"Invoking llvmSymbolizer -h");
+            outputWriter.WriteLine($"Invoking llvmSymbolizer --version");
             Process llvmSymbolizer = new Process()
             {
                 StartInfo = {
                     FileName = "llvm-symbolizer",
-                    Arguments = $"-h",
+                    Arguments = $"--version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                }
+            };
+
+            if(!llvmSymbolizer.Start())
+            {
+                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
+            }
+            outputWriter.WriteLine($"version output: {llvmSymbolizer.StandardOutput.ReadToEnd()}");
+            outputWriter.WriteLine($"version error : {llvmSymbolizer.StandardError.ReadToEnd()}");
+
+            if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
+            {
+                outputWriter.WriteLine("Errors while running llvm-symbolizer --version");
+                outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
+                llvmSymbolizer.Kill(true);
+                return false;
+            }
+
+            outputWriter.WriteLine($"Invoking llvmSymbolizer -help");
+            llvmSymbolizer = new Process()
+            {
+                StartInfo = {
+                    FileName = "llvm-symbolizer",
+                    Arguments = $"-help",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -465,7 +492,7 @@ namespace CoreclrTestLib
 
             if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
-                outputWriter.WriteLine("Errors while running llvm-symbolizer -h");
+                outputWriter.WriteLine("Errors while running llvm-symbolizer -help");
                 outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
                 llvmSymbolizer.Kill(true);
                 return false;
@@ -477,7 +504,7 @@ namespace CoreclrTestLib
             {
                 StartInfo = {
                     FileName = "llvm-symbolizer",
-                    Arguments = $"-p",
+                    Arguments = $"--pretty-print",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
