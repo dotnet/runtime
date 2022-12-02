@@ -102,6 +102,9 @@ struct FrameClauseArgs {
 	gboolean run_until_end;
 };
 
+static MONO_NEVER_INLINE void
+mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
+
 /*
  * This code synchronizes with interp_mark_stack () using compiler memory barriers.
  */
@@ -3698,7 +3701,7 @@ max_d (double lhs, double rhs)
  * to return error information.
  * FRAME is only valid until the next call to alloc_frame ().
  */
-MONO_NEVER_INLINE void
+static MONO_NEVER_INLINE void
 mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args)
 {
 	InterpMethod *cmethod;
@@ -3797,6 +3800,11 @@ main_loop:
 		MINT_IN_CASE(MINT_DEF)
 		MINT_IN_CASE(MINT_DUMMY_USE)
 		MINT_IN_CASE(MINT_TIER_PATCHPOINT_DATA)
+#ifndef HOST_BROWSER
+		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER)
+		MINT_IN_CASE(MINT_TIER_PREPARE_JITERPRETER)
+		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER)
+#endif
 			g_assert_not_reached ();
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
@@ -5761,13 +5769,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_INTRINS_U32_TO_DECSTR) {
-			MonoArray **cache_addr = (MonoArray**)frame->imethod->data_items [ip [3]];
-			MonoVTable *string_vtable = (MonoVTable*)frame->imethod->data_items [ip [4]];
-			LOCAL_VAR (ip [1], MonoObject*) = (MonoObject*)interp_intrins_u32_to_decstr (LOCAL_VAR (ip [2], guint32), *cache_addr, string_vtable);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_INTRINS_WIDEN_ASCII_TO_UTF16) {
 			LOCAL_VAR (ip [1], mono_u) = interp_intrins_widen_ascii_to_utf16 (LOCAL_VAR (ip [2], guint8*), LOCAL_VAR (ip [3], mono_unichar2*), LOCAL_VAR (ip [4], mono_u));
 			ip += 5;
@@ -7518,6 +7519,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 5;
 			MINT_IN_BREAK;
 		}
+
 #ifdef HOST_BROWSER
 		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER) {
 			ip += 3;
@@ -7606,21 +7608,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				SAFEPOINT;
 			}
 			ip = (guint16*) (((guint8*)ip) + offset);
-			MINT_IN_BREAK;
-		}
-#else
-		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER) {
-			g_assert_not_reached ();
-			MINT_IN_BREAK;
-		}
-
-		MINT_IN_CASE(MINT_TIER_PREPARE_JITERPRETER) {
-			g_assert_not_reached ();
-			MINT_IN_BREAK;
-		}
-
-		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
-			g_assert_not_reached ();
 			MINT_IN_BREAK;
 		}
 #endif
@@ -8291,7 +8278,7 @@ interp_add_imethod (gpointer method, gpointer user_data)
 static int
 imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
 {
-	long diff = (*(InterpMethod**)m2)->opcounts > (*(InterpMethod**)m1)->opcounts;
+	long diff = (*(InterpMethod**)m2)->opcounts - (*(InterpMethod**)m1)->opcounts;
 	if (diff > 0)
 		return 1;
 	else if (diff < 0)
@@ -8611,4 +8598,59 @@ mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method)
 {
 	return is_method_multicastdelegate_invoke (method);
 }
+
+// after interp_entry_prologue the wrapper will set up all the argument values
+//  in the correct place and compute the stack offset, then it passes that in to this
+//  function in order to actually enter the interpreter and process the return value
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
+{
+	JiterpEntryDataHeader header;
+	MonoType *type;
+
+	// Copy the scratch buffer into a local variable. This is necessary for us to be
+	//  reentrant-safe because mono_interp_exec_method could end up hitting the trampoline
+	//  again
+	g_assert(_data);
+	header = _data->header;
+
+	g_assert(header.rmethod);
+	g_assert(header.rmethod->method);
+	g_assert(sp_args);
+
+	stackval *sp = (stackval*)header.context->stack_pointer;
+
+	InterpFrame frame = {0};
+	frame.imethod = header.rmethod;
+	frame.stack = sp;
+	frame.retval = sp;
+
+	header.context->stack_pointer = (guchar*)sp_args;
+	g_assert ((guchar*)sp_args < header.context->stack_end);
+
+	MONO_ENTER_GC_UNSAFE;
+	mono_interp_exec_method (&frame, header.context, NULL);
+	MONO_EXIT_GC_UNSAFE;
+
+	header.context->stack_pointer = (guchar*)sp;
+
+	if (header.rmethod->needs_thread_attach)
+		mono_threads_detach_coop (header.orig_domain, &header.attach_cookie);
+
+	mono_jiterp_check_pending_unwind (header.context);
+
+	if (mono_llvm_only) {
+		if (header.context->has_resume_state)
+			/* The exception will be handled in a frame above us */
+			mono_llvm_cpp_throw_exception ();
+	} else {
+		g_assert (!header.context->has_resume_state);
+	}
+
+	// The return value is at the bottom of the stack, after the locals space
+	type = header.rmethod->rtype;
+	if (type->type != MONO_TYPE_VOID)
+		mono_jiterp_stackval_to_data (type, frame.stack, res);
+}
+
 #endif

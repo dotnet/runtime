@@ -201,7 +201,6 @@ set(SOURCES
   safecrt/wcsncpy_s.cpp
   safecrt/wcstok_s.cpp
   safecrt/wmakepath_s.cpp
-  safecrt/wsplitpath_s.cpp
   safecrt/xtoa_s.cpp
   safecrt/xtow_s.cpp
   sharedmemory/sharedmemory.cpp

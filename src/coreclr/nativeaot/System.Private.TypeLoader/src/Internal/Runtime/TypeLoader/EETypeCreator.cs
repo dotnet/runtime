@@ -143,8 +143,6 @@ namespace Internal.Runtime.TypeLoader
 
     internal static unsafe class EETypeCreator
     {
-        private static IntPtr s_emptyGCDesc;
-
         private static void CreateEETypeWorker(MethodTable* pTemplateEEType, uint hashCodeOfNewType,
             int arity, TypeBuilderState state)
         {
@@ -486,19 +484,6 @@ namespace Internal.Runtime.TypeLoader
                 {
                     nonGCStaticDataOffset = state.HasStaticConstructor ? -TypeBuilder.ClassConstructorOffset : 0;
 
-                    // create GC desc
-                    if (state.GcDataSize != 0 && state.GcStaticDesc == IntPtr.Zero)
-                    {
-                        int cbStaticGCDesc;
-                        state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
-                    }
-
-                    if (state.ThreadDataSize != 0 && state.ThreadStaticDesc == IntPtr.Zero)
-                    {
-                        int cbThreadStaticGCDesc;
-                        state.ThreadStaticDesc = CreateStaticGCDesc(state.ThreadStaticGCLayout, out state.AllocatedThreadStaticGCDesc, out cbThreadStaticGCDesc);
-                    }
-
                     // If we have a class constructor, our NonGcDataSize MUST be non-zero
                     Debug.Assert(!state.HasStaticConstructor || (state.NonGcDataSize != 0));
                 }
@@ -555,10 +540,6 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(state.HalfBakedSealedVTable);
                     if (state.HalfBakedDictionary != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(state.HalfBakedDictionary);
-                    if (state.AllocatedStaticGCDesc)
-                        MemoryHelpers.FreeMemory(state.GcStaticDesc);
-                    if (state.AllocatedThreadStaticGCDesc)
-                        MemoryHelpers.FreeMemory(state.ThreadStaticDesc);
                     if (gcStaticData != IntPtr.Zero)
                         RuntimeAugments.RhHandleFree(gcStaticData);
                     if (genericComposition != IntPtr.Zero)
@@ -571,38 +552,6 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(threadStaticIndex);
                 }
             }
-        }
-
-        private static IntPtr CreateStaticGCDesc(LowLevelList<bool> gcBitfield, out bool allocated, out int cbGCDesc)
-        {
-            if (gcBitfield != null)
-            {
-                int series = CreateGCDesc(gcBitfield, 0, false, true, null);
-                if (series > 0)
-                {
-                    cbGCDesc = sizeof(int) + series * sizeof(int) * 2;
-                    IntPtr result = MemoryHelpers.AllocateMemory(cbGCDesc);
-                    CreateGCDesc(gcBitfield, 0, false, true, (void**)result.ToPointer());
-                    allocated = true;
-                    return result;
-                }
-            }
-
-            allocated = false;
-
-            if (s_emptyGCDesc == IntPtr.Zero)
-            {
-                IntPtr ptr = MemoryHelpers.AllocateMemory(8);
-
-                long* gcdesc = (long*)ptr.ToPointer();
-                *gcdesc = 0;
-
-                if (Interlocked.CompareExchange(ref s_emptyGCDesc, ptr, IntPtr.Zero) != IntPtr.Zero)
-                    MemoryHelpers.FreeMemory(ptr);
-            }
-
-            cbGCDesc = IntPtr.Size;
-            return s_emptyGCDesc;
         }
 
         private static void CreateInstanceGCDesc(TypeBuilderState state, MethodTable* pTemplateEEType, MethodTable* pEEType, int baseSize, int cbGCDesc, bool isValueType, bool isArray, bool isSzArray, int arrayRank)

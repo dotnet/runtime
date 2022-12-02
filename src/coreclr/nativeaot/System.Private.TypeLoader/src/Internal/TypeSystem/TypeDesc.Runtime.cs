@@ -46,26 +46,6 @@ namespace Internal.TypeSystem
             return RuntimeTypeHandle;
         }
 
-        private NativeLayoutFieldDesc[] _nativeLayoutFields;
-        /// <summary>
-        /// The native layout fields of a type. This property is for the use of the NativeLayoutFieldAlgorithm,
-        /// DefType.GetFieldByNativeLayoutOrdinal, TypeBuilderState.PrepareStaticGCLayout and DefType.GetDiagnosticFields
-        /// only. Other uses should use the more general purpose GetFields api or similar.
-        /// </summary>
-        internal NativeLayoutFieldDesc[] NativeLayoutFields
-        {
-            get
-            {
-                return _nativeLayoutFields;
-            }
-            set
-            {
-                Debug.Assert(_nativeLayoutFields == null);
-                Debug.Assert(value != null);
-                _nativeLayoutFields = value;
-            }
-        }
-
         internal TypeBuilderState TypeBuilderState { get; set; }
 
 #if DEBUG
