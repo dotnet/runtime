@@ -2240,11 +2240,10 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U4 => TypeCode.UInt32,
                 CorElementType.ELEMENT_TYPE_I8 => TypeCode.Int64,
                 CorElementType.ELEMENT_TYPE_U8 => TypeCode.UInt64,
-                CorElementType.ELEMENT_TYPE_R4 => TypeCode.Single,
-                CorElementType.ELEMENT_TYPE_R8 => TypeCode.Double,
                 CorElementType.ELEMENT_TYPE_CHAR => TypeCode.Char,
                 CorElementType.ELEMENT_TYPE_BOOLEAN => TypeCode.Boolean,
-                // there's no TypeCode for nint or nuint
+                // There's no TypeCode for nint or nuint, and our VB support (or at least
+                // tests) needs to be updated in order to include float/double here.
                 _ => throw CreateUnknownEnumTypeException(),
             };
 
