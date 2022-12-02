@@ -444,18 +444,46 @@ namespace CoreclrTestLib
                 }
             }
 
-            string symbolizerOutput = null;
-
+            outputWriter.WriteLine($"Invoking llvmSymbolizer -h");
             Process llvmSymbolizer = new Process()
             {
                 StartInfo = {
-                FileName = "llvm-symbolizer",
-                Arguments = $"-p",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
+                    FileName = "llvm-symbolizer",
+                    Arguments = $"-h",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                }
+            };
+
+            if(!llvmSymbolizer.Start())
+            {
+                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
             }
+             if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
+            {
+                outputWriter.WriteLine("Errors while running llvm-symbolizer -h");
+                outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
+                llvmSymbolizer.Kill(true);
+                return false;
+            }
+            else
+            {
+                outputWriter.WriteLine($"help output: {llvmSymbolizer.StandardOutput.ReadToEnd()}");
+            }
+
+            string symbolizerOutput = null;
+
+            llvmSymbolizer = new Process()
+            {
+                StartInfo = {
+                    FileName = "llvm-symbolizer",
+                    Arguments = $"-p",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
+                }
             };
 
             outputWriter.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
@@ -480,7 +508,7 @@ namespace CoreclrTestLib
 
             if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
-                outputWriter.WriteLine("Errors while running llvm-symbolizer");
+                outputWriter.WriteLine("Errors while running llvm-symbolizer -p");
                 outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
                 llvmSymbolizer.Kill(true);
                 return false;
