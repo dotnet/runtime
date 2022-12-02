@@ -92,16 +92,23 @@ namespace System.Net
         // Check that local certificate was used by schannel.
         internal static bool IsLocalCertificateUsed(SafeDeleteContext securityContext)
         {
-            SafeFreeCertContext? localContext;
-            SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext);
-            if (localContext != null)
+            SafeFreeCertContext? localContext = null;
+            try
             {
-                bool result = !localContext.IsInvalid;
+                if (SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext) &&
+                    localContext != null)
+                {
+                    return !localContext.IsInvalid;
+                }
+            }
+            finally
+            {
                 localContext?.Dispose();
-                return result;
             }
 
-            return false;
+            // Some older Windows do not support that. This is only called when client certificate was provided
+            // so assume it was for a reason.
+            return true;
         }
 
         //
