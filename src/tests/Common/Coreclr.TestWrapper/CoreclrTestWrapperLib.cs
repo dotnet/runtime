@@ -270,28 +270,34 @@ namespace CoreclrTestLib
 
         static bool RunProcess(string fileName, string arguments)
         {
-            Process chownProcess = new Process();
+            Process proc = new Process();
 
-            chownProcess.StartInfo.FileName = fileName;
-            chownProcess.StartInfo.Arguments = arguments;
-            chownProcess.StartInfo.UseShellExecute = false;
-            chownProcess.StartInfo.RedirectStandardOutput = true;
-            chownProcess.StartInfo.RedirectStandardError = true;
+            proc.StartInfo.FileName = fileName;
+            proc.StartInfo.Arguments = arguments;
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.RedirectStandardError = true;
 
-            Console.WriteLine($"Invoking: {chownProcess.StartInfo.FileName} {chownProcess.StartInfo.Arguments}");
-            chownProcess.Start();
-            if (!chownProcess.WaitForExit(DEFAULT_TIMEOUT_MS))
+            Console.WriteLine($"Invoking: {proc.StartInfo.FileName} {proc.StartInfo.Arguments}");
+            proc.Start();
+            string stdout = proc.StandardOutput.ReadToEnd();
+            if (!string.IsNullOrEmpty(stdout) )
             {
-                Console.WriteLine("stderr:");
-                Console.WriteLine(chownProcess.StandardError.ReadToEnd());
-                chownProcess.Kill(true);
-                Console.WriteLine($"Failed to run '{fileName} {arguments}");
+                Console.WriteLine($"stdout: {stdout}");
+            }
+            string stderr = proc.StandardError.ReadToEnd();
+            if (!string.IsNullOrEmpty(stderr) )
+            {
+                Console.WriteLine($"stderr: {stderr}");
+            }
+
+            if (!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
+            {
+                proc.Kill(true);
+                Console.WriteLine($"Timedout: '{fileName} {arguments}");
                 return false;
             }
-            Console.WriteLine("stdout:");
-            Console.WriteLine(chownProcess.StandardOutput.ReadToEnd());
-            Console.WriteLine("stderr:");
-            Console.WriteLine(chownProcess.StandardError.ReadToEnd());
+
             return true;
         }
 
@@ -304,10 +310,6 @@ namespace CoreclrTestLib
         /// <returns>true, if we can print the stack trace, otherwise false.</returns>
         static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, StreamWriter outputWriter)
         {
-            Console.WriteLine($"Running TryPrintStackTraceFromCrashReport() for {crashReportJsonFile}");
-            Console.WriteLine($"Set the permission to make sure {crashReportJsonFile} can be read.");
-
-
             if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}"))
@@ -338,45 +340,17 @@ namespace CoreclrTestLib
                 }
             }
 
-            try
+            if (!File.Exists(crashReportJsonFile))
             {
-                if (!File.Exists(crashReportJsonFile))
-                {
-                    return false;
-                }
-            } catch (Exception ex)
-            {
-                Console.WriteLine($"Got exception when trying to check existance of {crashReportJsonFile}");
-                Console.WriteLine(ex.ToString());
                 return false;
             }
-            Console.WriteLine($"Printing stacktrace from '{crashReportJsonFile}'");
             outputWriter.WriteLine($"Printing stacktrace from '{crashReportJsonFile}'");
 
-            try
-            {
-                Console.WriteLine($"Checking permission of '{crashReportJsonFile}'");
-                // File.Open also returns FileStream
-                // there are also two "shortcut" methods: File.OpenRead, File.OpenWrite
-                using (var fs = File.Open(crashReportJsonFile, FileMode.Open)) {
-                    var canRead = fs.CanRead;
-                    var canWrite = fs.CanWrite;
-                    Console.WriteLine($"Permission: canRead: {canRead}, canWrite: {canWrite}.");
-                }
-            } catch (Exception ex)
-            {
-                Console.WriteLine($"Got exception while checking the permission '{ex.ToString()}'");
-            }
-
-            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
-
-            Console.WriteLine($"Reading file'{crashReportJsonFile}'");
             string contents = File.ReadAllText(crashReportJsonFile);
-            Console.WriteLine($"File read '{crashReportJsonFile}'");
-
             dynamic crashReport = JsonSerializer.Deserialize<JsonObject>(contents);
             var threads = crashReport["payload"]["threads"];
             StringBuilder addrBuilder = new StringBuilder();
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             foreach (var thread in threads)
             {
 
@@ -444,63 +418,9 @@ namespace CoreclrTestLib
                 }
             }
 
-            outputWriter.WriteLine($"Invoking llvmSymbolizer --version");
-            Process llvmSymbolizer = new Process()
-            {
-                StartInfo = {
-                    FileName = "llvm-symbolizer",
-                    Arguments = $"--version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                }
-            };
-
-            if(!llvmSymbolizer.Start())
-            {
-                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
-            }
-            outputWriter.WriteLine($"version output: {llvmSymbolizer.StandardOutput.ReadToEnd()}");
-            outputWriter.WriteLine($"version error : {llvmSymbolizer.StandardError.ReadToEnd()}");
-
-            if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
-            {
-                outputWriter.WriteLine("Errors while running llvm-symbolizer --version");
-                outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
-                llvmSymbolizer.Kill(true);
-                return false;
-            }
-
-            outputWriter.WriteLine($"Invoking llvmSymbolizer -help");
-            llvmSymbolizer = new Process()
-            {
-                StartInfo = {
-                    FileName = "llvm-symbolizer",
-                    Arguments = $"-help",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                }
-            };
-
-            if(!llvmSymbolizer.Start())
-            {
-                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
-            }
-            outputWriter.WriteLine($"help output: {llvmSymbolizer.StandardOutput.ReadToEnd()}");
-            outputWriter.WriteLine($"help error : {llvmSymbolizer.StandardError.ReadToEnd()}");
-
-            if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
-            {
-                outputWriter.WriteLine("Errors while running llvm-symbolizer -help");
-                outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
-                llvmSymbolizer.Kill(true);
-                return false;
-            }
-
             string symbolizerOutput = null;
 
-            llvmSymbolizer = new Process()
+            Process llvmSymbolizer = new Process()
             {
                 StartInfo = {
                     FileName = "llvm-symbolizer",
@@ -520,25 +440,14 @@ namespace CoreclrTestLib
 
             using (var symbolizerWriter = llvmSymbolizer.StandardInput)
             {
-                outputWriter.WriteLine($"Sending input: {addrBuilder.ToString()}");
-                try
-                {
-                    symbolizerWriter.WriteLine(addrBuilder.ToString());
-                }
-                catch (System.Exception ex)
-                {
-                    outputWriter.WriteLine($"Got exception while sending input: {ex.ToString()}");
-                    throw;
-                }
+                symbolizerWriter.WriteLine(addrBuilder.ToString());
             }
 
             symbolizerOutput = llvmSymbolizer.StandardOutput.ReadToEnd();
-            outputWriter.WriteLine($"symbolizerOutput: {symbolizerOutput}");
-            outputWriter.WriteLine($"symbolizerError : {llvmSymbolizer.StandardError.ReadToEnd()}");
 
             if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
-                outputWriter.WriteLine("Errors while running llvm-symbolizer -p");
+                outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
                 outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
                 llvmSymbolizer.Kill(true);
                 return false;
