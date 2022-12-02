@@ -333,22 +333,21 @@
 
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
-        Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
+        AppDir="$(BuildDir)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
-        RuntimeComponents="$(RuntimeComponents)"
         Assemblies="@(BundleAssemblies)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        EnableAppSandbox="$(EnableAppSandbox)"
-        UseConsoleUITemplate="True"
-        GenerateXcodeProject="True"
-        BuildAppBundle="True"
+        Arch="$(TargetArchitecture)"
+        OutputDirectory="$(BundleDir)"
         Optimized="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(BundleDir)"
-        AppDir="$(BuildDir)"
+        BuildAppBundle="True"
+        GenerateXcodeProject="True"
+        UseConsoleUITemplate="True"
+        RuntimeComponents="$(RuntimeComponents)"
         InvariantGlobalization="true"
-    >
+        ForceInterpreter="$(MonoForceInterpreter)"
+        EnableAppSandbox="$(EnableAppSandbox)">
       <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
       <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
