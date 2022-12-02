@@ -277,6 +277,8 @@
       <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
       <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
       <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+      <RunAOTCompilation>True</RunAOTCompilation>
+      <MonoForceInterpreter Condition="'$(TargetOS)' == 'iOSSimulator'">True</MonoForceInterpreter>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -417,7 +419,9 @@
         BuildAppBundle="True"
         GenerateXcodeProject="True"
         UseConsoleUITemplate="True"
+        ForceAOT="$(RunAOTCompilation)"
         RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         InvariantGlobalization="true"
         ForceInterpreter="$(MonoForceInterpreter)"
         EnableAppSandbox="$(EnableAppSandbox)">
