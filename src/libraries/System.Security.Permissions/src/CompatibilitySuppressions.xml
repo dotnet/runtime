@@ -50,42 +50,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Policy.Evidence.#ctor(System.Object[],System.Object[]):[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net6.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Policy.Evidence.AddAssembly(System.Object):[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net6.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Policy.Evidence.AddHost(System.Object):[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net6.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Policy.Evidence.CopyTo(System.Array,System.Int32):[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net6.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>M:System.Security.Policy.Evidence.GetEnumerator:[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net6.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>P:System.Security.Policy.Evidence.Count:[T:System.ObsoleteAttribute]</Target>
-    <Left>lib/net6.0/System.Security.Permissions.dll</Left>
-    <Right>lib/net7.0/System.Security.Permissions.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
     <Target>F:System.Security.Permissions.ReflectionPermissionFlag.AllFlags:[T:System.ObsoleteAttribute]</Target>
     <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
     <Right>lib/net462/System.Security.Permissions.dll</Right>
