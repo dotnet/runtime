@@ -56,17 +56,4 @@
                       IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <!-- Logic to prevent trying to restore an ILCompiler package for which there is no KnownILCompilerPack. -->
-  <Target Name="PreventKnownILCompilerPackRestore" BeforeTargets="ProcessFrameworkReferences">
-    <PropertyGroup>
-      <PublishAot>false</PublishAot>
-    </PropertyGroup>
-  </Target>
-
-  <Target Name="ResetPublishAot" AfterTargets="ProcessFrameworkReferences">
-    <PropertyGroup>
-      <PublishAot>{PublishAot}</PublishAot>
-    </PropertyGroup>
-  </Target>
-
 </Project>

@@ -60,6 +60,12 @@
                         Crossgen2PackVersion="$(ProductVersion)"
                         Crossgen2RuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm;win-arm64;win-x86"
                         Condition="'@(KnownCrossgen2Pack)' == '' or !@(KnownCrossgen2Pack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
+    <KnownILCompilerPack Include="Microsoft.DotNet.ILCompiler"
+                         ILCompilerPackNamePattern="runtime.**RID**.Microsoft.DotNet.ILCompiler"
+                         TargetFramework="$(NetCoreAppCurrent)"
+                         ILCompilerPackVersion="$(ProductVersion)"
+                         ILCompilerRuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm;win-arm64;win-x86"
+                         Condition="'@(KnownILCompilerPack)' == '' or !@(KnownILCompilerPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
   </ItemGroup>
 
   <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to the output. -->
@@ -98,6 +104,10 @@
                        Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Host'))" />
       <PackageReference Remove="@(PackageReference)"
                         Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Host'))" />
+      <PackageDownload Remove="@(PackageDownload)"
+                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
+      <PackageReference Remove="@(PackageReference)"
+                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
     </ItemGroup>
   </Target>
 
