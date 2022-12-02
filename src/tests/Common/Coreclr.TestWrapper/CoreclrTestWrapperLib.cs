@@ -459,11 +459,23 @@ namespace CoreclrTestLib
             };
 
             outputWriter.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
-            llvmSymbolizer.Start();
+            if(!llvmSymbolizer.Start())
+            {
+                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
+            }
 
             using (var symbolizerWriter = llvmSymbolizer.StandardInput)
             {
-                symbolizerWriter.WriteLine(addrBuilder.ToString());
+                outputWriter.WriteLine($"Sending input: {addrBuilder.ToString()}");
+                try
+                {
+                    symbolizerWriter.WriteLine(addrBuilder.ToString());
+                }
+                catch (System.Exception ex)
+                {
+                    outputWriter.WriteLine($"Got exception while sending input: {ex.ToString()}");
+                    throw;
+                }
             }
 
             if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
@@ -476,6 +488,7 @@ namespace CoreclrTestLib
             else
             {
                 symbolizerOutput = llvmSymbolizer.StandardOutput.ReadToEnd();
+                outputWriter.WriteLine($"symbolizerOutput: {symbolizerOutput}");
             }
 
             // Go through the output of llvm-symbolizer and strip all the markers we added initially.
