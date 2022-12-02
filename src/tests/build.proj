@@ -277,6 +277,7 @@
       <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
       <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
       <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
       <RunAOTCompilation>True</RunAOTCompilation>
       <MonoForceInterpreter Condition="'$(TargetOS)' == 'iOSSimulator'">True</MonoForceInterpreter>
     </PropertyGroup>
