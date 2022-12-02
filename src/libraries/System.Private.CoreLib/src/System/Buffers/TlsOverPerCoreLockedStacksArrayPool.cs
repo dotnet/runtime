@@ -105,9 +105,9 @@ namespace System.Buffers
                 // effectively infinite for empty arrays and we'll never allocate for rents and never store for returns.
                 return Array.Empty<T>();
             }
-            else if (minimumLength < 0)
+            else
             {
-                throw new ArgumentOutOfRangeException(nameof(minimumLength));
+                ArgumentOutOfRangeException.ThrowIfNegative(minimumLength);
             }
 
             buffer = GC.AllocateUninitializedArray<T>(minimumLength);

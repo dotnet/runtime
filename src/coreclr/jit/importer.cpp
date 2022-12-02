@@ -88,7 +88,7 @@ void Compiler::verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* msg) DEBUGARG
                                                    DEBUGARG(unsigned line))
 {
 #ifdef DEBUG
-    const char* tail = strrchr(file, '\\');
+    const char* tail = strrchr(file, DIRECTORY_SEPARATOR_CHAR_A);
     if (tail)
     {
         file = tail + 1;

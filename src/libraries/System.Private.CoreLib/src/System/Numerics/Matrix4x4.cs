@@ -885,14 +885,9 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             Matrix4x4 result;
 
@@ -929,17 +924,12 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (fieldOfView <= 0.0f || fieldOfView >= MathF.PI)
-                throw new ArgumentOutOfRangeException(nameof(fieldOfView));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, MathF.PI);
 
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             float yScale = 1.0f / MathF.Tan(fieldOfView * 0.5f);
             float xScale = yScale / aspectRatio;
@@ -978,14 +968,9 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             Matrix4x4 result;
 

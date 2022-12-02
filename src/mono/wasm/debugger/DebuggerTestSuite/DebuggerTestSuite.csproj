@@ -72,7 +72,7 @@
           BeforeTargets="CopyTestZipForHelix"
           DependsOnTargets="_GenerateRunSettingsFile">
 
-    <Exec Command="$(DotNetTool) test --no-build -s $(RunSettingsFilePath) -t --nologo -v:q" ConsoleToMSBuild="true">
+    <Exec Command="&quot;$(DotNetTool)&quot; test --no-build -s $(RunSettingsFilePath) -t --nologo -v:q" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" ItemName="_ListOfTestsLines" />
     </Exec>
 
