@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RuntimeComponents Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'Android'">diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TestETWNullEvent.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+    <ProjectReference Include="../../../../tests/tracing/eventpipe/common/common.csproj" />
+    <ProjectReference Include="../../../../tests/tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+  </ItemGroup>
+</Project>
