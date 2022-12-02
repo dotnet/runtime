@@ -9512,7 +9512,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                         }
                         else
                         {
-                            assert(tree->IsCnsIntOrI());
+                            assert(tree->IsIntegralConst());
                             op1 = nullptr;
                             op2 = nullptr;
                         }
