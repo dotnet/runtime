@@ -18,8 +18,8 @@ namespace CodeGenTests
         {
             // X64-NOT: movzx
 
-            // We expect 'or r8, r8'.
-            // X64: or [[REG0:[a-z]+[l|b]]], [[REG1:[a-z]+[l|b]]]
+            // We expect 'or reg8, reg8'.
+            // X64: or {{[a-z]+[l|b]}}, {{[a-z]+[l|b]}}
 
             if ((byte)((byte)x | y) == 0)
             {
@@ -34,8 +34,8 @@ namespace CodeGenTests
         {
             // X64-NOT: movzx
 
-            // We expect 'or r8, m8'.
-            // X64: or [[REG0:[a-z]+[l|b]]], byte ptr
+            // We expect 'or reg8, mem8'.
+            // X64: or {{[a-z]+[l|b]}}, byte ptr
 
             if ((byte)((byte)x | (byte)y) == 0)
             {

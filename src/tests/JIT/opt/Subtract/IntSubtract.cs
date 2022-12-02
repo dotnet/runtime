@@ -57,8 +57,11 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int Int32_Subtract(int x, int y)
         {
-            // X64: mov
+            // X64-NOT: movsx
+            
             // X64: sub
+            
+            // X64-NOT: movsx
 
             return x - y;
         }
@@ -66,8 +69,11 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static uint UInt32_Subtract(uint x, uint y)
         {
-            // X64: mov
+            // X64-NOT: movzx
+            
             // X64: sub
+            
+            // X64-NOT: movzx
 
             return x - y;
         }
@@ -75,8 +81,11 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long Int64_Subtract(long x, long y)
         {
-            // X64: mov
+            // X64-NOT: movsx
+            
             // X64: sub
+            
+            // X64-NOT: movsx
 
             return x - y;
         }
@@ -84,8 +93,11 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         static ulong UInt64_Subtract(ulong x, ulong y)
         {
-            // X64: mov
+            // X64-NOT: movzx
+            
             // X64: sub
+            
+            // X64-NOT: movzx
 
             return x - y;
         }
