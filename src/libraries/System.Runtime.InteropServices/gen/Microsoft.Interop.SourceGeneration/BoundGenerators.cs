@@ -127,7 +127,10 @@ namespace Microsoft.Interop
                     static m => GetInfoDependencies(m.TypeInfo))
                     .ToImmutableArray(),
                 NativeParameterMarshallers = nativeParamMarshallers.ToImmutable(),
-                ManagedParameterMarshallers = managedParamMarshallers.ToImmutable()
+                ManagedParameterMarshallers = managedParamMarshallers.ToImmutable(),
+                ManagedReturnMarshaller = managedReturnMarshaller,
+                NativeReturnMarshaller = nativeReturnMarshaller,
+                ManagedExceptionMarshaller = managedExceptionMarshaller,
             };
 
             static IEnumerable<(bool IsManagedIndex, int Index)> GetInfoDependencies(TypePositionInfo info)
