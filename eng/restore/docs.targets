@@ -6,10 +6,17 @@
 
   <!-- the intellisense package doesn't use nuget conventions so we need to select manually -->
   <Target Name="GetDocFiles"
-          AfterTargets="Restore">
+          AfterTargets="Build">
 
     <ItemGroup>
-      <DocFile Include="$(XmlDocFileRoot)**\*.xml"/>
+      <AssemblyWithDocsSourceOfTruth Include="System.Formats.Cbor" />
+      <AssemblyWithDocsSourceOfTruth Include="System.IO.Compression.Brotli" />
+      <AssemblyWithDocsSourceOfTruth Include="System.Numerics.Vectors" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <DocFile Include="$(XmlDocFileRoot)**\*.xml"
+               Exclude="@(AssemblyWithDocsSourceOfTruth->'$(XmlDocFileRoot)\**\%(Identity).xml')" />
       <DocFile>
         <!-- trim off slash since it differs by platform and we need to do a string compare -->
         <LCID>$([System.String]::new('%(RecursiveDir)').TrimEnd('\/'))</LCID>
@@ -30,17 +37,24 @@
         <Culture Condition="'%(LCID)' == '3082'">es/</Culture>
       </DocFile>
       <DocFile>
-        <SubFolder>%(Culture)/</SubFolder>
+        <SubFolder>%(Culture)</SubFolder>
       </DocFile>
     </ItemGroup>
 
     <Error Condition="'%(DocFile.Culture)' == 'unknown'" Text="Unknown language folder '%(LCID)' for doc files '@(DocFile)'" />
     
     <Copy SourceFiles="@(DocFile)"
-          DestinationFiles="$(XmlDocDir)\%(SubFolder)%(FileName)%(Extension)"
+          DestinationFiles="$(XmlDocDir)%(SubFolder)%(FileName)%(Extension)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 
+    <!-- No subfolder, do we only generate english? -->
+    <Copy SourceFiles="@(AssemblyWithDocsSourceOfTruth->'$(ArtifactsBinDir)%(Identity)/$(Configuration)/$(NetCoreAppCurrent)/%(Identity).xml')"
+          DestinationFiles="$(XmlDocDir)%(Identity).xml"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <!-- TODO: Look into tasks.proj, the first ProjectReference accesses the csproj files -->
   </Target>
 
 </Project>
