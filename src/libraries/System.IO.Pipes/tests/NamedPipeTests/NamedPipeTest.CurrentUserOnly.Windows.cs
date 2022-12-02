@@ -197,7 +197,7 @@ namespace System.IO.Pipes.Tests
                 {
                     // When CurrentUserOnly is only on client side and asks for ReadOnly access, the connection is not rejected
                     // but we get the UnauthorizedAccessException on the client regardless.
-                    serverTask.Wait(10_000);
+                    Assert.True(serverTask.Wait(TimeSpan.FromSeconds(10)));
                     Assert.True(serverTask.IsCompletedSuccessfully);
                 }
                 else
