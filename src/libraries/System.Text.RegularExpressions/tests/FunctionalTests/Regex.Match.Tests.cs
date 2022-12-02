@@ -382,6 +382,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a[^c]*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
                 yield return (@"a[^b]*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
                 yield return (@"a[^c]*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
+
+                yield return ("a[^b]*?[cdefgz]", "xyza123bc4", lineOption, 0, 10, false, "");
+                yield return ("a[^b]*?[bdefgz]", "xyza123bc4", lineOption, 0, 10, true, "a123b");
             }
 
             // Nested loops

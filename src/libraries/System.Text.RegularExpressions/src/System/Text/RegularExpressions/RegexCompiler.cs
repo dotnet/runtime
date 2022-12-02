@@ -3399,7 +3399,7 @@ namespace System.Text.RegularExpressions
                     !literal.Negated && // not negated; can't search for both the node.Ch and a negated subsequent char with an IndexOf* method
                     (literal.String is not null ||
                      literal.SetChars is not null ||
-                     literal.AsciiChars is not null ||
+                     (literal.AsciiChars is not null && node.Ch < 128) || // for ASCII sets, only allow when the target can be efficiently included in the set
                      literal.Range.LowInclusive == literal.Range.HighInclusive ||
                      (literal.Range.LowInclusive <= node.Ch && node.Ch <= literal.Range.HighInclusive))) // for ranges, only allow when the range overlaps with the target, since there's no accelerated way to search for the union
                 {
@@ -3474,8 +3474,15 @@ namespace System.Text.RegularExpressions
                     }
                     else if (literal.AsciiChars is not null) // set of only ASCII characters
                     {
-                        overlap = literal.AsciiChars.AsSpan().Contains(node.Ch);
-                        LoadIndexOfAnyValues(literal.AsciiChars);
+                        char[] asciiChars = literal.AsciiChars;
+                        overlap = asciiChars.AsSpan().Contains(node.Ch);
+                        if (!overlap)
+                        {
+                            Debug.Assert(node.Ch < 128);
+                            Array.Resize(ref asciiChars, asciiChars.Length + 1);
+                            asciiChars[asciiChars.Length - 1] = node.Ch;
+                        }
+                        LoadIndexOfAnyValues(asciiChars);
                         Call(s_spanIndexOfAnyIndexOfAnyValues);
                     }
                     else if (literal.Range.LowInclusive == literal.Range.HighInclusive) // single char from a RegexNode.One

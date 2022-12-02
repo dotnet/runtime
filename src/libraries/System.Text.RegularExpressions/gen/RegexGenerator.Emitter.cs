@@ -379,7 +379,6 @@ namespace System.Text.RegularExpressions.Generator
         private static string EmitIndexOfAnyValues(char[] asciiChars, Dictionary<string, string[]> requiredHelpers)
         {
             Debug.Assert(RegexCharClass.IsAscii(asciiChars));
-            Debug.Assert(asciiChars.AsSpan().SequenceEqual(asciiChars.OrderBy(c => c).ToArray()));
 
             // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
             byte[] bitmap = new byte[16];
@@ -404,6 +403,8 @@ namespace System.Text.RegularExpressions.Generator
 
             if (!requiredHelpers.ContainsKey(helperName))
             {
+                Array.Sort(asciiChars);
+
                 requiredHelpers.Add(helperName, new string[]
                 {
                     $"internal static readonly IndexOfAnyValues<char> {fieldName} = IndexOfAnyValues.Create({Literal(new string(asciiChars))});",
@@ -3168,8 +3169,8 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         else if (literal.AsciiChars is not null) // set of only ASCII characters
                         {
-                            overlap = literal.AsciiChars.Contains(node.Ch);
                             char[] asciiChars = literal.AsciiChars;
+                            overlap = asciiChars.Contains(node.Ch);
                             if (!overlap)
                             {
                                 Debug.Assert(node.Ch < 128);
