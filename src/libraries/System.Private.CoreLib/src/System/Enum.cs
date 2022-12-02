@@ -90,7 +90,7 @@ namespace System
             // of that type.  If it's not, it definitely doesn't match.  If it is, delegate
             // to GetName<TUnderlyingType> to look it up.
             Type underlyingType = enumType.GetEnumUnderlyingType();
-            switch (Type.GetTypeCode(underlyingType))
+            switch (Type.GetTypeCode(underlyingType)) // can't use InternalGetCorElementType as enumType may actually be the underlying type
             {
                 case TypeCode.SByte:
                     if ((long)uint64Value < sbyte.MinValue || (long)uint64Value > sbyte.MaxValue) return null;
@@ -246,25 +246,25 @@ namespace System
         /// <remarks>The returned array should not be exposed outside of this assembly.</remarks>
         internal static string[] GetNamesNoCopy(RuntimeType enumType)
         {
-            Type underlyingType = enumType.GetEnumUnderlyingType();
-            return Type.GetTypeCode(underlyingType) switch
+            Debug.Assert(enumType.IsActualEnum);
+
+            return InternalGetCorElementType(enumType) switch
             {
-                TypeCode.SByte => GetEnumInfo<sbyte>(enumType).Names,
-                TypeCode.Byte => GetEnumInfo<byte>(enumType).Names,
-                TypeCode.Int16 => GetEnumInfo<short>(enumType).Names,
-                TypeCode.UInt16 => GetEnumInfo<ushort>(enumType).Names,
-                TypeCode.Int32 => GetEnumInfo<int>(enumType).Names,
-                TypeCode.UInt32 => GetEnumInfo<uint>(enumType).Names,
-                TypeCode.Int64 => GetEnumInfo<long>(enumType).Names,
-                TypeCode.UInt64 => GetEnumInfo<ulong>(enumType).Names,
-                TypeCode.Single => GetEnumInfo<float>(enumType).Names,
-                TypeCode.Double => GetEnumInfo<double>(enumType).Names,
-                TypeCode.Char => GetEnumInfo<char>(enumType).Names,
-                TypeCode.Boolean => GetEnumInfo<byte>(enumType).Names,
-                _ =>
-                    underlyingType == typeof(nint) ? GetEnumInfo<nint>(enumType).Names :
-                    underlyingType == typeof(nuint) ? GetEnumInfo<nuint>(enumType).Names :
-                    throw CreateUnknownEnumTypeException(),
+                CorElementType.ELEMENT_TYPE_I1 => GetEnumInfo<sbyte>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_U1 => GetEnumInfo<byte>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_I2 => GetEnumInfo<short>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_U2 => GetEnumInfo<ushort>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_I4 => GetEnumInfo<int>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_U4 => GetEnumInfo<uint>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_I8 => GetEnumInfo<long>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_U8 => GetEnumInfo<ulong>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_R4 => GetEnumInfo<float>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_R8 => GetEnumInfo<double>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_U => GetEnumInfo<nuint>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_CHAR => GetEnumInfo<char>(enumType).Names,
+                CorElementType.ELEMENT_TYPE_BOOLEAN => GetEnumInfo<byte>(enumType).Names,
+                _ => throw CreateUnknownEnumTypeException(),
             };
         }
 
@@ -375,25 +375,25 @@ namespace System
         /// <summary>Retrieves an array of the values of the underlying type constants in a specified enumeration type.</summary>
         internal static Array GetValuesAsUnderlyingType(RuntimeType enumType)
         {
-            Type underlyingType = enumType.GetEnumUnderlyingType();
-            return Type.GetTypeCode(underlyingType) switch
+            Debug.Assert(enumType.IsActualEnum);
+
+            return InternalGetCorElementType(enumType) switch
             {
-                TypeCode.Byte => GetEnumInfo<byte>(enumType, getNames: false).CloneValues(),
-                TypeCode.SByte => GetEnumInfo<sbyte>(enumType, getNames: false).CloneValues(),
-                TypeCode.Int16 => GetEnumInfo<short>(enumType, getNames: false).CloneValues(),
-                TypeCode.UInt16 => GetEnumInfo<ushort>(enumType, getNames: false).CloneValues(),
-                TypeCode.Int32 => GetEnumInfo<int>(enumType, getNames: false).CloneValues(),
-                TypeCode.UInt32 => GetEnumInfo<uint>(enumType, getNames: false).CloneValues(),
-                TypeCode.Int64 => GetEnumInfo<long>(enumType, getNames: false).CloneValues(),
-                TypeCode.UInt64 => GetEnumInfo<ulong>(enumType, getNames: false).CloneValues(),
-                TypeCode.Char => GetEnumInfo<char>(enumType, getNames: false).CloneValues(),
-                TypeCode.Single => GetEnumInfo<float>(enumType, getNames: false).CloneValues(),
-                TypeCode.Double => GetEnumInfo<double>(enumType, getNames: false).CloneValues(),
-                TypeCode.Boolean => CopyByteArrayToNewBoolArray(GetEnumInfo<byte>(enumType, getNames: false).Values),
-                _ =>
-                    underlyingType == typeof(nint) ? GetEnumInfo<nint>(enumType, getNames: false).Values :
-                    underlyingType == typeof(nuint) ? GetEnumInfo<nuint>(enumType, getNames: false).Values :
-                    throw CreateUnknownEnumTypeException(),
+                CorElementType.ELEMENT_TYPE_I1 => GetEnumInfo<sbyte>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_U1 => GetEnumInfo<byte>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_I2 => GetEnumInfo<short>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_U2 => GetEnumInfo<ushort>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_I4 => GetEnumInfo<int>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_U4 => GetEnumInfo<uint>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_I8 => GetEnumInfo<long>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_U8 => GetEnumInfo<ulong>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_R4 => GetEnumInfo<float>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_R8 => GetEnumInfo<double>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_U => GetEnumInfo<nuint>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_CHAR => GetEnumInfo<char>(enumType, getNames: false).CloneValues(),
+                CorElementType.ELEMENT_TYPE_BOOLEAN => CopyByteArrayToNewBoolArray(GetEnumInfo<byte>(enumType, getNames: false).Values),
+                _ => throw CreateUnknownEnumTypeException(),
             };
         }
 
@@ -401,25 +401,25 @@ namespace System
         /// <remarks>The returned array should not be exposed outside of this assembly.</remarks>
         internal static Array GetValuesAsUnderlyingTypeNoCopy(RuntimeType enumType)
         {
-            Type underlyingType = enumType.GetEnumUnderlyingType();
-            return Type.GetTypeCode(underlyingType) switch
+            Debug.Assert(enumType.IsActualEnum);
+
+            return InternalGetCorElementType(enumType) switch
             {
-                TypeCode.Byte => GetEnumInfo<byte>(enumType, getNames: false).Values,
-                TypeCode.SByte => GetEnumInfo<sbyte>(enumType, getNames: false).Values,
-                TypeCode.Int16 => GetEnumInfo<short>(enumType, getNames: false).Values,
-                TypeCode.UInt16 => GetEnumInfo<ushort>(enumType, getNames: false).Values,
-                TypeCode.Int32 => GetEnumInfo<int>(enumType, getNames: false).Values,
-                TypeCode.UInt32 => GetEnumInfo<uint>(enumType, getNames: false).Values,
-                TypeCode.Int64 => GetEnumInfo<long>(enumType, getNames: false).Values,
-                TypeCode.UInt64 => GetEnumInfo<ulong>(enumType, getNames: false).Values,
-                TypeCode.Char => GetEnumInfo<char>(enumType, getNames: false).Values,
-                TypeCode.Single => GetEnumInfo<float>(enumType, getNames: false).Values,
-                TypeCode.Double => GetEnumInfo<double>(enumType, getNames: false).Values,
-                TypeCode.Boolean => CopyByteArrayToNewBoolArray(GetEnumInfo<byte>(enumType, getNames: false).Values), // this is the only case that clones, out of necessity
-                _ =>
-                    underlyingType == typeof(nint) ? GetEnumInfo<nint>(enumType, getNames: false).Values :
-                    underlyingType == typeof(nuint) ? GetEnumInfo<nuint>(enumType, getNames: false).Values :
-                    throw CreateUnknownEnumTypeException(),
+                CorElementType.ELEMENT_TYPE_I1 => GetEnumInfo<sbyte>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_U1 => GetEnumInfo<byte>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_I2 => GetEnumInfo<short>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_U2 => GetEnumInfo<ushort>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_I4 => GetEnumInfo<int>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_U4 => GetEnumInfo<uint>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_I8 => GetEnumInfo<long>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_U8 => GetEnumInfo<ulong>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_R4 => GetEnumInfo<float>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_R8 => GetEnumInfo<double>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_U => GetEnumInfo<nuint>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_CHAR => GetEnumInfo<char>(enumType, getNames: false).Values,
+                CorElementType.ELEMENT_TYPE_BOOLEAN => CopyByteArrayToNewBoolArray(GetEnumInfo<byte>(enumType, getNames: false).Values), // this is the only case that clones, out of necessity
+                _ => throw CreateUnknownEnumTypeException(),
             };
         }
 
@@ -756,142 +756,117 @@ namespace System
             TryParse(enumType, value, ignoreCase, throwOnFailure: false, out result);
 
         /// <summary>Core implementation for all non-generic {Try}Parse methods.</summary>
-        private static bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out object? result)
+        private static unsafe bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out object? result)
         {
+            bool parsed = false;
+            long longScratch = 0;
+
             // Validation on the enum type itself.  Failures here are considered non-parsing failures
             // and thus always throw rather than returning false.
             RuntimeType rt = ValidateRuntimeType(enumType);
-            value = value.TrimStart();
-            if (value.Length == 0)
+
+            switch (InternalGetCorElementType(rt))
             {
-                if (throwOnFailure)
-                {
-                    ThrowInvalidEmptyParseArgument();
-                }
+                case CorElementType.ELEMENT_TYPE_I1:
+                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out *(sbyte*)&longScratch);
+                    longScratch = *(sbyte*)&longScratch;
+                    break;
 
-                result = null;
-                return false;
-            }
+                case CorElementType.ELEMENT_TYPE_U1:
+                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out *(byte*)&longScratch);
+                    longScratch = *(byte*)&longScratch;
+                    break;
 
-            bool parsed;
+                case CorElementType.ELEMENT_TYPE_I2:
+                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out *(short*)&longScratch);
+                    longScratch = *(short*)&longScratch;
+                    break;
 
-            switch (Type.GetTypeCode(rt.GetEnumUnderlyingType()))
-            {
-                case TypeCode.SByte:
-                    {
-                        parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out sbyte localResult);
-                        result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                        return parsed;
-                    }
+                case CorElementType.ELEMENT_TYPE_U2:
+                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out *(ushort*)&longScratch);
+                    longScratch = *(ushort*)&longScratch;
+                    break;
 
-                case TypeCode.Byte:
-                    {
-                        parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out byte localResult);
-                        result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                        return parsed;
-                    }
+                case CorElementType.ELEMENT_TYPE_I4:
+                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out *(int*)&longScratch);
+                    longScratch = *(int*)&longScratch;
+                    break;
 
-                case TypeCode.Int16:
-                    {
-                        parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out short localResult);
-                        result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                        return parsed;
-                    }
+                case CorElementType.ELEMENT_TYPE_U4:
+                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out *(uint*)&longScratch);
+                    longScratch = *(uint*)&longScratch;
+                    break;
 
-                case TypeCode.UInt16:
-                    {
-                        parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out ushort localResult);
-                        result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                        return parsed;
-                    }
+                case CorElementType.ELEMENT_TYPE_I8:
+                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out longScratch);
+                    break;
 
-                case TypeCode.Int32:
-                    {
-                        parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out int localResult);
-                        result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                        return parsed;
-                    }
-
-                case TypeCode.UInt32:
-                    {
-                        parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out uint localResult);
-                        result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                        return parsed;
-                    }
-
-                case TypeCode.Int64:
-                    {
-                        parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out long localResult);
-                        result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                        return parsed;
-                    }
-
-                case TypeCode.UInt64:
-                    {
-                        parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out ulong localResult);
-                        result = parsed ? InternalBoxEnum(rt, (long)localResult) : null;
-                        return parsed;
-                    }
+                case CorElementType.ELEMENT_TYPE_U8:
+                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out *(ulong*)&longScratch);
+                    break;
 
                 default:
-                    return HandleRareTypes(rt, value, ignoreCase, throwOnFailure, out result);
+                    parsed = TryParseRareTypes(rt, value, ignoreCase, throwOnFailure, out longScratch);
+                    break;
             }
 
+            result = parsed ? InternalBoxEnum(rt, longScratch) : null;
+            return parsed;
+
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static bool HandleRareTypes(RuntimeType rt, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out object? result)
+            static bool TryParseRareTypes(RuntimeType rt, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out long result)
             {
-                Type underlyingType = rt.GetEnumUnderlyingType();
                 bool parsed;
 
-                if (underlyingType == typeof(float))
+                switch (InternalGetCorElementType(rt))
                 {
-                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out float localResult);
-                    result = parsed ? InternalBoxEnum(rt, BitConverter.SingleToInt32Bits(localResult)) : null;
-                    return parsed;
+                    case CorElementType.ELEMENT_TYPE_R4:
+                        {
+                            parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out float localResult);
+                            result = BitConverter.SingleToInt32Bits(localResult);
+                        }
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_R8:
+                        {
+                            parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out double localResult);
+                            result = BitConverter.DoubleToInt64Bits(localResult);
+                        }
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_I:
+                        {
+                            parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out nint localResult);
+                            result = localResult;
+                        }
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_U:
+                        {
+                            parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out nuint localResult);
+                            result = (long)localResult;
+                        }
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_CHAR:
+                        {
+                            parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out char localResult);
+                            result = localResult;
+                        }
+                        break;
+
+                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                        {
+                            parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out byte localResult);
+                            result = localResult;
+                        }
+                        break;
+
+                    default:
+                        throw CreateUnknownEnumTypeException();
                 }
 
-                if (underlyingType == typeof(double))
-                {
-                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out double localResult);
-                    result = parsed ? InternalBoxEnum(rt, BitConverter.DoubleToInt64Bits(localResult)) : null;
-                    return parsed;
-                }
-
-                if (underlyingType == typeof(char))
-                {
-                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out char localResult);
-                    result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                    return parsed;
-                }
-
-                if (underlyingType == typeof(bool))
-                {
-                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out byte localResult);
-                    result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                    return parsed;
-                }
-
-                if (underlyingType == typeof(nint))
-                {
-                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out nint localResult);
-                    result = parsed ? InternalBoxEnum(rt, localResult) : null;
-                    return parsed;
-                }
-
-                if (underlyingType == typeof(nuint))
-                {
-                    parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out nuint localResult);
-                    result = parsed ? InternalBoxEnum(rt, (long)localResult) : null;
-                    return parsed;
-                }
-
-                if (throwOnFailure)
-                {
-                    throw CreateUnknownEnumTypeException();
-                }
-
-                result = default;
-                return false;
+                return parsed;
             }
         }
 
@@ -986,53 +961,49 @@ namespace System
         }
 
         /// <summary>Core implementation for all {Try}Parse methods, both generic and non-generic, parsing either by value or by name.</summary>
-        private static bool TryParseByValueOrName<TUnderlyingValue>(
+        private static unsafe bool TryParseByValueOrName<TUnderlyingValue>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlyingValue result)
             where TUnderlyingValue : struct, INumber<TUnderlyingValue>, IBitwiseOperators<TUnderlyingValue, TUnderlyingValue, TUnderlyingValue>, IMinMaxValue<TUnderlyingValue>
         {
-            value = value.TrimStart();
-            if (value.IsEmpty)
+            if (!value.IsEmpty)
             {
-                if (throwOnFailure)
+                char c = value[0];
+                if (char.IsWhiteSpace(c))
                 {
-                    ThrowInvalidEmptyParseArgument();
+                    value = value.TrimStart();
+                    if (value.IsEmpty)
+                    {
+                        goto ParseFailure;
+                    }
+
+                    c = value[0];
                 }
 
-                result = default;
-                return false;
-            }
-
-            Number.ParsingStatus status = default;
-            NumberFormatInfo numberFormat = CultureInfo.InvariantCulture.NumberFormat;
-            const NumberStyles NumberStyle = NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite;
-
-            char c = value[0];
-            if (char.IsAsciiDigit(c) || c is '-' or '+')
-            {
-                if (typeof(TUnderlyingValue) == typeof(int) || typeof(TUnderlyingValue) == typeof(short) || typeof(TUnderlyingValue) == typeof(sbyte))
+                if (!char.IsAsciiDigit(c) && c != '-' && c != '+')
                 {
-                    status = Number.TryParseInt32IntegerStyle(value, NumberStyle, numberFormat, out int int32result);
+                    return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out result);
+                }
+
+                NumberFormatInfo numberFormat = CultureInfo.InvariantCulture.NumberFormat;
+                const NumberStyles NumberStyle = NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite;
+
+                Number.ParsingStatus status;
+                if (typeof(TUnderlyingValue) == typeof(int))
+                {
+                    Unsafe.SkipInit(out result);
+                    status = Number.TryParseInt32IntegerStyle(value, NumberStyle, numberFormat, out Unsafe.As<TUnderlyingValue, int>(ref result));
                     if (status == Number.ParsingStatus.OK)
                     {
-                        if (int32result >= int.CreateTruncating(TUnderlyingValue.MinValue) && int32result <= int.CreateTruncating(TUnderlyingValue.MaxValue))
-                        {
-                            result = TUnderlyingValue.CreateTruncating(int32result);
-                            return true;
-                        }
-                        status = Number.ParsingStatus.Overflow;
+                        return true;
                     }
                 }
-                else if (typeof(TUnderlyingValue) == typeof(uint) || typeof(TUnderlyingValue) == typeof(ushort) || typeof(TUnderlyingValue) == typeof(byte))
+                else if (typeof(TUnderlyingValue) == typeof(uint))
                 {
-                    status = Number.TryParseUInt32IntegerStyle(value, NumberStyle, numberFormat, out uint uint32result);
+                    Unsafe.SkipInit(out result);
+                    status = Number.TryParseUInt32IntegerStyle(value, NumberStyle, numberFormat, out Unsafe.As<TUnderlyingValue, uint>(ref result));
                     if (status == Number.ParsingStatus.OK)
                     {
-                        if (uint32result >= uint.CreateTruncating(TUnderlyingValue.MinValue) && uint32result <= uint.CreateTruncating(TUnderlyingValue.MaxValue))
-                        {
-                            result = TUnderlyingValue.CreateTruncating(uint32result);
-                            return true;
-                        }
-                        status = Number.ParsingStatus.Overflow;
+                        return true;
                     }
                 }
                 else if (typeof(TUnderlyingValue) == typeof(long))
@@ -1053,6 +1024,32 @@ namespace System
                         return true;
                     }
                 }
+                else if (typeof(TUnderlyingValue) == typeof(byte) || typeof(TUnderlyingValue) == typeof(ushort))
+                {
+                    status = Number.TryParseUInt32IntegerStyle(value, NumberStyle, numberFormat, out uint uint32result);
+                    if (status == Number.ParsingStatus.OK)
+                    {
+                        if (uint32result <= uint.CreateTruncating(TUnderlyingValue.MaxValue))
+                        {
+                            result = TUnderlyingValue.CreateTruncating(uint32result);
+                            return true;
+                        }
+                        status = Number.ParsingStatus.Overflow;
+                    }
+                }
+                else if (typeof(TUnderlyingValue) == typeof(sbyte) || typeof(TUnderlyingValue) == typeof(short))
+                {
+                    status = Number.TryParseInt32IntegerStyle(value, NumberStyle, numberFormat, out int int32result);
+                    if (status == Number.ParsingStatus.OK)
+                    {
+                        if (int32result >= int.CreateTruncating(TUnderlyingValue.MinValue) && int32result <= int.CreateTruncating(TUnderlyingValue.MaxValue))
+                        {
+                            result = TUnderlyingValue.CreateTruncating(int32result);
+                            return true;
+                        }
+                        status = Number.ParsingStatus.Overflow;
+                    }
+                }
                 else
                 {
                     // Rare types not expressible in C#
@@ -1064,24 +1061,29 @@ namespace System
                     }
                     catch (FormatException)
                     {
-                        // We need to Parse this as a String instead. There are cases when you tlbimp enums that can have values of the form "3D".
+                        status = Number.ParsingStatus.Failed; // e.g. tlbimp enums that can have values of the form "3D"
                     }
                     catch when (!throwOnFailure)
                     {
-                        result = default;
-                        return false;
+                        status = Number.ParsingStatus.Overflow; // fall through to returning failure
                     }
+                }
+
+                if (status != Number.ParsingStatus.Overflow)
+                {
+                    return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out result);
+                }
+
+                if (throwOnFailure)
+                {
+                    Number.ThrowOverflowException(Type.GetTypeCode(typeof(TUnderlyingValue)));
                 }
             }
 
-            if (status != Number.ParsingStatus.Overflow)
-            {
-                return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out result);
-            }
-
+            ParseFailure:
             if (throwOnFailure)
             {
-                Number.ThrowOverflowException(Type.GetTypeCode(typeof(TUnderlyingValue)));
+                ThrowInvalidEmptyParseArgument();
             }
 
             result = default;
@@ -1143,7 +1145,7 @@ namespace System
                 {
                     for (int i = 0; i < enumNames.Length; i++)
                     {
-                        if (subvalue.EqualsOrdinal(enumNames[i]))
+                        if (subvalue.SequenceEqual(enumNames[i]))
                         {
                             localResult |= enumValues[i];
                             success = true;
@@ -1218,18 +1220,18 @@ namespace System
             {
                 CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data),
                 CorElementType.ELEMENT_TYPE_U1 => data,
-                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.As<byte, bool>(ref data),
                 CorElementType.ELEMENT_TYPE_I2 => Unsafe.As<byte, short>(ref data),
                 CorElementType.ELEMENT_TYPE_U2 => Unsafe.As<byte, ushort>(ref data),
-                CorElementType.ELEMENT_TYPE_CHAR => Unsafe.As<byte, char>(ref data),
                 CorElementType.ELEMENT_TYPE_I4 => Unsafe.As<byte, int>(ref data),
                 CorElementType.ELEMENT_TYPE_U4 => Unsafe.As<byte, uint>(ref data),
-                CorElementType.ELEMENT_TYPE_R4 => Unsafe.As<byte, float>(ref data),
                 CorElementType.ELEMENT_TYPE_I8 => Unsafe.As<byte, long>(ref data),
                 CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data),
+                CorElementType.ELEMENT_TYPE_R4 => Unsafe.As<byte, float>(ref data),
                 CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data),
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data),
                 CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data),
+                CorElementType.ELEMENT_TYPE_CHAR => Unsafe.As<byte, char>(ref data),
+                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.As<byte, bool>(ref data),
                 _ => throw CreateUnknownEnumTypeException(),
             };
         }
@@ -1296,18 +1298,18 @@ namespace System
             {
                 CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U1 => data.GetHashCode(),
-                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.As<byte, bool>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_I2 => Unsafe.As<byte, short>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U2 => Unsafe.As<byte, ushort>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_CHAR => Unsafe.As<byte, char>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_I4 => Unsafe.As<byte, int>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U4 => Unsafe.As<byte, uint>(ref data).GetHashCode(),
-                CorElementType.ELEMENT_TYPE_R4 => Unsafe.As<byte, float>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_I8 => Unsafe.As<byte, long>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_R4 => Unsafe.As<byte, float>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_CHAR => Unsafe.As<byte, char>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.As<byte, bool>(ref data).GetHashCode(),
                 _ => throw CreateUnknownEnumTypeException(),
             };
         }
@@ -1385,8 +1387,7 @@ namespace System
         {
             RuntimeType enumType = (RuntimeType)GetType();
             ref byte rawData = ref this.GetRawData();
-            CorElementType corElementType = InternalGetCorElementType();
-            return corElementType switch
+            return InternalGetCorElementType() switch
             {
                 // Inlined for the most common base types
                 CorElementType.ELEMENT_TYPE_I1 => ToString<sbyte>(enumType, ref rawData),
@@ -1397,17 +1398,17 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U4 => ToString<uint>(enumType, ref rawData),
                 CorElementType.ELEMENT_TYPE_I8 => ToString<long>(enumType, ref rawData),
                 CorElementType.ELEMENT_TYPE_U8 => ToString<ulong>(enumType, ref rawData),
-                _ => HandleRareTypes(corElementType, enumType, ref rawData)
+                _ => HandleRareTypes(enumType, ref rawData)
             };
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static string HandleRareTypes(CorElementType corElementType, RuntimeType enumType, ref byte rawData) =>
-                corElementType switch
+            static string HandleRareTypes(RuntimeType enumType, ref byte rawData) =>
+                InternalGetCorElementType(enumType) switch
                 {
-                    CorElementType.ELEMENT_TYPE_I => ToString<nint>(enumType, ref rawData),
-                    CorElementType.ELEMENT_TYPE_U => ToString<nuint>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_R4 => ToString<float>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_R8 => ToString<double>(enumType, ref rawData),
+                    CorElementType.ELEMENT_TYPE_I => ToString<nint>(enumType, ref rawData),
+                    CorElementType.ELEMENT_TYPE_U => ToString<nuint>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_BOOLEAN => ToStringBool(enumType, null, ref rawData),
                     _ => throw CreateUnknownEnumTypeException(),
@@ -1431,8 +1432,7 @@ namespace System
                 char formatChar = format[0];
                 RuntimeType enumType = (RuntimeType)GetType();
                 ref byte rawData = ref this.GetRawData();
-                CorElementType corElementType = InternalGetCorElementType();
-                return corElementType switch
+                return InternalGetCorElementType() switch
                 {
                     // Inlined for the most common base types
                     CorElementType.ELEMENT_TYPE_I1 => ToString<sbyte>(enumType, formatChar, ref rawData),
@@ -1443,21 +1443,21 @@ namespace System
                     CorElementType.ELEMENT_TYPE_U4 => ToString<uint>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_I8 => ToString<long>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_U8 => ToString<ulong>(enumType, formatChar, ref rawData),
-                    _ => HandleRareTypes(corElementType, enumType, formatChar, ref rawData)
+                    _ => HandleRareTypes(enumType, formatChar, ref rawData)
                 };
             }
 
             throw CreateInvalidFormatSpecifierException();
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static string HandleRareTypes(CorElementType corElementType, RuntimeType enumType, char formatChar, ref byte rawData) =>
-                corElementType switch
+            static string HandleRareTypes(RuntimeType enumType, char formatChar, ref byte rawData) =>
+                InternalGetCorElementType(enumType) switch
                 {
-                    CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_R4 => ToString<float>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_R8 => ToString<double>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_I => ToString<nint>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_U => ToString<nuint>(enumType, formatChar, ref rawData),
+                    CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_BOOLEAN => ToStringBool(enumType, formatChar.ToString(), ref rawData),
                     _ => throw CreateUnknownEnumTypeException(),
                 };
@@ -1736,24 +1736,23 @@ namespace System
                 {
                     char formatChar = format[0];
                     ref byte rawData = ref value.GetRawData();
-                    return Type.GetTypeCode(underlyingType) switch
+                    return InternalGetCorElementType(rtType) switch
                     {
-                        TypeCode.SByte => ToString<sbyte>(rtType, formatChar, ref rawData),
-                        TypeCode.Byte => ToString<byte>(rtType, formatChar, ref rawData),
-                        TypeCode.Boolean => ToStringBool(rtType, format, ref rawData),
-                        TypeCode.Int16 => ToString<short>(rtType, formatChar, ref rawData),
-                        TypeCode.UInt16 => ToString<ushort>(rtType, formatChar, ref rawData),
-                        TypeCode.Char => ToString<char>(rtType, formatChar, ref rawData),
-                        TypeCode.Int32 => ToString<int>(rtType, formatChar, ref rawData),
-                        TypeCode.UInt32 => ToString<uint>(rtType, formatChar, ref rawData),
-                        TypeCode.Single => ToString<float>(rtType, formatChar, ref rawData),
-                        TypeCode.Int64 => ToString<long>(rtType, formatChar, ref rawData),
-                        TypeCode.UInt64 => ToString<ulong>(rtType, formatChar, ref rawData),
-                        TypeCode.Double => ToString<double>(rtType, formatChar, ref rawData),
-                        _ =>
-                            underlyingType == typeof(nint) ? ToString<nint>(rtType, formatChar, ref rawData) :
-                            underlyingType == typeof(nuint) ? ToString<nuint>(rtType, formatChar, ref rawData) :
-                            throw CreateUnknownEnumTypeException(),
+                        CorElementType.ELEMENT_TYPE_I1 => ToString<sbyte>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_U1 => ToString<byte>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_I2 => ToString<short>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_U2 => ToString<ushort>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_I4 => ToString<int>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_U4 => ToString<uint>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_I8 => ToString<long>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_U8 => ToString<ulong>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_R4 => ToString<float>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_R8 => ToString<double>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_I => ToString<nint>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_U => ToString<nuint>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(rtType, formatChar, ref rawData),
+                        CorElementType.ELEMENT_TYPE_BOOLEAN => ToStringBool(rtType, format, ref rawData),
+                        _ => throw CreateUnknownEnumTypeException(),
                     };
                 }
             }
@@ -1785,11 +1784,11 @@ namespace System
                     CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, uint>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, long>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, ulong>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, float>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, double>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, nuint>(ref rawData), destination, out charsWritten),
+                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_BOOLEAN => TryFormatBool(enumType, rawData != 0, destination, out charsWritten, format),
                     _ => throw CreateUnknownEnumTypeException(),
                 };
@@ -1806,11 +1805,11 @@ namespace System
                     CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, uint>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, long>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, ulong>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, float>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, double>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, nuint>(ref rawData), destination, out charsWritten, format),
+                    CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_BOOLEAN => TryFormatBool(enumType, rawData != 0, destination, out charsWritten, format),
                     _ => throw CreateUnknownEnumTypeException(),
                 };
@@ -2197,20 +2196,27 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(enumType);
 
-            if (enumType is not RuntimeType rtType)
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
-            if (!rtType.IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+            RuntimeType? rt = enumType as RuntimeType;
+            if (rt is null || !rt.IsActualEnum)
+            {
+                ThrowInvalidRuntimeType(enumType);
+            }
 
 #if NATIVEAOT
             // Check for the unfortunate "typeof(Outer<>.InnerEnum)" corner case.
             // https://github.com/dotnet/runtime/issues/7976
-            if (enumType.ContainsGenericParameters)
-                throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));
+            if (rt.ContainsGenericParameters)
+                throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, rt.ToString()));
 #endif
 
-            return rtType;
+            return rt;
         }
+
+        [DoesNotReturn]
+        private static void ThrowInvalidRuntimeType(Type enumType) =>
+            throw (enumType is not RuntimeType ?
+                new ArgumentException(SR.Arg_MustBeType, nameof(enumType)) :
+                new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType)));
 
         private static void ThrowInvalidEmptyParseArgument() =>
             throw new ArgumentException(SR.Arg_MustContainEnumInfo, "value");
@@ -2228,14 +2234,17 @@ namespace System
             {
                 CorElementType.ELEMENT_TYPE_I1 => TypeCode.SByte,
                 CorElementType.ELEMENT_TYPE_U1 => TypeCode.Byte,
-                CorElementType.ELEMENT_TYPE_BOOLEAN => TypeCode.Boolean,
                 CorElementType.ELEMENT_TYPE_I2 => TypeCode.Int16,
                 CorElementType.ELEMENT_TYPE_U2 => TypeCode.UInt16,
-                CorElementType.ELEMENT_TYPE_CHAR => TypeCode.Char,
                 CorElementType.ELEMENT_TYPE_I4 => TypeCode.Int32,
                 CorElementType.ELEMENT_TYPE_U4 => TypeCode.UInt32,
                 CorElementType.ELEMENT_TYPE_I8 => TypeCode.Int64,
                 CorElementType.ELEMENT_TYPE_U8 => TypeCode.UInt64,
+                CorElementType.ELEMENT_TYPE_R4 => TypeCode.Single,
+                CorElementType.ELEMENT_TYPE_R8 => TypeCode.Double,
+                CorElementType.ELEMENT_TYPE_CHAR => TypeCode.Char,
+                CorElementType.ELEMENT_TYPE_BOOLEAN => TypeCode.Boolean,
+                // there's no TypeCode for nint or nuint
                 _ => throw CreateUnknownEnumTypeException(),
             };
 

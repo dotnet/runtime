@@ -29,6 +29,12 @@ namespace System
             return res!;
         }
 
+        private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
+        {
+            Debug.Assert(rt.IsActualEnum);
+            return InternalGetCorElementType(new QCallTypeHandle(ref rt));
+        }
+
         private CorElementType InternalGetCorElementType()
         {
             RuntimeType this_type = (RuntimeType)GetType();

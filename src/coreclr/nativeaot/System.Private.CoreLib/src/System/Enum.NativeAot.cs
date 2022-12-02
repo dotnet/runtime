@@ -56,6 +56,12 @@ namespace System
             return ToObject(enumType.TypeHandle.ToEETypePtr(), value);
         }
 
+        private static CorElementType InternalGetCorElementType(RuntimeType rt)
+        {
+            Debug.Assert(rt.IsActualEnum);
+            return rt.TypeHandle.ToEETypePtr().CorElementType;
+        }
+
         private CorElementType InternalGetCorElementType()
         {
             return this.GetEETypePtr().CorElementType;

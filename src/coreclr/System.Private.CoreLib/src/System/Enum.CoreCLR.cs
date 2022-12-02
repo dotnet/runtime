@@ -21,6 +21,13 @@ namespace System
         private static extern unsafe CorElementType InternalGetCorElementType(MethodTable* pMT);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
+        {
+            Debug.Assert(rt.IsActualEnum);
+            return InternalGetCorElementType((MethodTable*)rt.GetUnderlyingNativeHandle());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe CorElementType InternalGetCorElementType()
         {
             CorElementType elementType = InternalGetCorElementType(RuntimeHelpers.GetMethodTable(this));
