@@ -203,7 +203,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release
+            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
@@ -225,7 +225,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release
+            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
@@ -249,7 +249,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release
+            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
