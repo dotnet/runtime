@@ -16,6 +16,10 @@ namespace System.Runtime.InteropServices.Marshalling
     [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionHResultMarshaller<>))]
     public static class SwallowExceptionMarshaller
     {
+        /// <summary>
+        /// Swallow the exception and return nothing.
+        /// </summary>
+        /// <param name="e">The exception.</param>
         public static void ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object

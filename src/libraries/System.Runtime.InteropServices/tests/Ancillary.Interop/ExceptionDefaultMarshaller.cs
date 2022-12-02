@@ -18,6 +18,11 @@ namespace System.Runtime.InteropServices.Marshalling
     public static class ExceptionDefaultMarshaller<T>
         where T : unmanaged
     {
+        /// <summary>
+        /// Converts the exception to the default value of the unmanaged type.
+        /// </summary>
+        /// <param name="e">The exception</param>
+        /// <returns>The default value of <typeparamref name="T"/>.</returns>
         public static T ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object

@@ -18,6 +18,11 @@ namespace System.Runtime.InteropServices.Marshalling
     public static class ExceptionHResultMarshaller<T>
         where T : unmanaged, INumber<T>
     {
+        /// <summary>
+        /// Marshals an exception object to the value of its <see cref="Exception.HResult"/> converted to <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="e">The exception.</param>
+        /// <returns>The HResult of the exception, converted to <typeparamref name="T"/>.</returns>
         public static T ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object

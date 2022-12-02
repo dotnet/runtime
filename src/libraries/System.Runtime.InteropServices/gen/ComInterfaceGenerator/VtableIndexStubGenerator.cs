@@ -49,6 +49,7 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            // Get all methods with the [VirtualMethdoIndex] attribute.
             var attributedMethods = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.VirtualMethodIndexAttribute,
@@ -65,6 +66,7 @@ namespace Microsoft.Interop
                 return new { data.Syntax, data.Symbol, Diagnostic = diagnostic };
             });
 
+            // Split the methods we want to generate and the ones we don't into two separate groups.
             var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
             var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
 
@@ -73,6 +75,8 @@ namespace Microsoft.Interop
                 context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
+            // Calculate all of information to generate both managed-to-unmanaged and unmanaged-to-managed stubs
+            // for each method.
             IncrementalValuesProvider<IncrementalStubGenerationContext> generateStubInformation = methodsToGenerate
                 .Combine(context.CreateStubEnvironmentProvider())
                 .Select(static (data, ct) => new
@@ -86,6 +90,7 @@ namespace Microsoft.Interop
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation);
 
+            // Generate the code for the managed-to-unmangaed stubs and the diagnostics from code-generation.
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateManagedToNativeStub = generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 .Select(
@@ -98,10 +103,12 @@ namespace Microsoft.Interop
 
             context.RegisterConcatenatedSyntaxOutputs(generateManagedToNativeStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
 
+            // Filter the list of all stubs to only the stubs that requested unmanaged-to-managed stub generation.
             IncrementalValuesProvider<IncrementalStubGenerationContext> nativeToManagedStubContexts =
                 generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional);
 
+            // Generate the code for the unmanaged-to-managed stubs and the diagnostics from code-generation.
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateNativeToManagedStub = nativeToManagedStubContexts
                 .Select(
                     static (data, ct) => GenerateNativeToManagedStub(data)
@@ -113,6 +120,7 @@ namespace Microsoft.Interop
 
             context.RegisterConcatenatedSyntaxOutputs(generateNativeToManagedStub.Select((data, ct) => data.Item1), "NativeToManagedStubs.g.cs");
 
+            // Generate the native interface metadata for each interface that contains a method with the [VirtualMethodIndex] attribute.
             IncrementalValuesProvider<MemberDeclarationSyntax> generateNativeInterface = generateStubInformation
                 .Select(static (context, ct) => context.ContainingSyntaxContext)
                 .Collect()
@@ -121,6 +129,9 @@ namespace Microsoft.Interop
 
             context.RegisterConcatenatedSyntaxOutputs(generateNativeInterface, "NativeInterfaces.g.cs");
 
+            // Generate a method named PopulateUnmanagedVirtualMethodTable on the native interface implementation
+            // that fills in a span with the addresses of the unmanaged-to-managed stub functions at their correct
+            // indices.
             IncrementalValuesProvider<MemberDeclarationSyntax> populateVTable =
                 nativeToManagedStubContexts
                 .Collect()
@@ -340,10 +351,12 @@ namespace Microsoft.Interop
             INamedTypeSymbol? iUnmanagedInterfaceTypeInstantiation = symbol.ContainingType.AllInterfaces.FirstOrDefault(iface => SymbolEqualityComparer.Default.Equals(iface.OriginalDefinition, iUnmanagedInterfaceTypeType));
             if (iUnmanagedInterfaceTypeInstantiation is null)
             {
-                // Report invalid configuration
+                // TODO: Report invalid configuration
             }
             else
             {
+                // The type key is the second generic type parameter, so we need to get the info for the
+                // second argument.
                 typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iUnmanagedInterfaceTypeInstantiation.TypeArguments[1]);
             }
 

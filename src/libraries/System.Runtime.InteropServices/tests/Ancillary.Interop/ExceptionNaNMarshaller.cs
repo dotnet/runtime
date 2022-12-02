@@ -18,6 +18,11 @@ namespace System.Runtime.InteropServices.Marshalling
     public static class ExceptionNaNMarshaller<T>
         where T : unmanaged, IFloatingPointIeee754<T>
     {
+        /// <summary>
+        /// Convert the exception to <see cref="T.NaN"/>.
+        /// </summary>
+        /// <param name="e">The exception</param>
+        /// <returns><see cref="T.NaN"/>.</returns>
         public static T ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object
