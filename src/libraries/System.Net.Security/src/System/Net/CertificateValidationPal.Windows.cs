@@ -89,6 +89,21 @@ namespace System.Net
             return result;
         }
 
+        // Check that local certificate was used by schannel.
+        internal static bool IsLocalCertificateUsed(SafeDeleteContext securityContext)
+        {
+            SafeFreeCertContext? localContext;
+            SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_LOCAL_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out localContext);
+            if (localContext != null)
+            {
+                bool result = !localContext.IsInvalid;
+                localContext?.Dispose();
+                return result;
+            }
+
+            return false;
+        }
+
         //
         // Used only by client SSL code, never returns null.
         //
