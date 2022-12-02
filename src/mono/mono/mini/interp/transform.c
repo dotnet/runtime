@@ -1856,7 +1856,7 @@ interp_emit_ldobj (TransformData *td, MonoClass *klass)
 }
 
 static void
-interp_emit_stobj (TransformData *td, MonoClass *klass)
+interp_emit_stobj (TransformData *td, MonoClass *klass, gboolean reverse_order)
 {
 	int mt = mint_type (m_class_get_byval_arg (klass));
 
@@ -1868,7 +1868,10 @@ interp_emit_stobj (TransformData *td, MonoClass *klass)
 		interp_add_ins (td, opcode);
 	}
 	td->sp -= 2;
-	interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+	if (reverse_order)
+		interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
+	else
+		interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
 }
 
 static void
@@ -1993,7 +1996,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			store_local (td, local);
 			interp_emit_ldelema (td, target_method->klass, value_class);
 			load_local (td, local);
-			interp_emit_stobj (td, element_class);
+			interp_emit_stobj (td, element_class, FALSE);
 			td->ip += 5;
 			return TRUE;
 		} else if (!strcmp (tm, "UnsafeStore")) {
@@ -2210,7 +2213,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			MonoClass *klass = mono_class_from_mono_type_internal (type);
 
 			interp_emit_ldobj (td, klass);
-			interp_emit_stobj (td, klass);
+			interp_emit_stobj (td, klass, FALSE);
 
 			td->ip += 5;
 			return TRUE;
@@ -4175,12 +4178,7 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			}
 		} else {
-			int opcode = (mt == MINT_TYPE_VT) ? MINT_STOBJ_VT : interp_get_stind_for_mt (mt);
-			interp_add_ins (td, opcode);
-			td->sp -= 2;
-			interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
-			if (mt == MINT_TYPE_VT)
-				td->last_ins->data [0] = get_data_item_index (td, field_class);
+			interp_emit_stobj (td, field_class, TRUE);
 		}
 	} else {
 		gpointer field_addr = mono_static_field_get_addr (vtable, field);
@@ -6201,7 +6199,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						interp_emit_metadata_update_ldflda (td, field, error);
 						goto_if_nok (error, exit);
 						load_local (td, local);
-						interp_emit_stobj (td, field_class);
+						interp_emit_stobj (td, field_class, FALSE);
 						td->ip += 5;
 						break;
 					}
@@ -6297,7 +6295,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			BARRIER_IF_VOLATILE (td, MONO_MEMORY_BARRIER_REL);
 
-			interp_emit_stobj (td, klass);
+			interp_emit_stobj (td, klass, FALSE);
 
 			td->ip += 5;
 			break;
