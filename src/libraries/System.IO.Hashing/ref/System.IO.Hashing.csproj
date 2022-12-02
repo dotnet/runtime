@@ -8,7 +8,7 @@
     <Compile Include="System.IO.Hashing.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="System.IO.Hashing.netcoreapp.cs" />
   </ItemGroup>
 
