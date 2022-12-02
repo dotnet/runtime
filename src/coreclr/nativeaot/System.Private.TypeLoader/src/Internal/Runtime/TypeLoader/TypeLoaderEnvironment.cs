@@ -593,60 +593,6 @@ namespace Internal.Runtime.TypeLoader
             return (targetMethod != IntPtr.Zero);
         }
 
-        public bool TryComputeHasInstantiationDeterminedSize(RuntimeTypeHandle typeHandle, out bool hasInstantiationDeterminedSize)
-        {
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-            bool success = TryComputeHasInstantiationDeterminedSize(typeHandle, context, out hasInstantiationDeterminedSize);
-            TypeSystemContextFactory.Recycle(context);
-
-            return success;
-        }
-
-        public bool TryComputeHasInstantiationDeterminedSize(RuntimeTypeHandle typeHandle, TypeSystemContext context, out bool hasInstantiationDeterminedSize)
-        {
-            Debug.Assert(RuntimeAugments.IsGenericType(typeHandle) || RuntimeAugments.IsGenericTypeDefinition(typeHandle));
-            DefType type = (DefType)context.ResolveRuntimeTypeHandle(typeHandle);
-
-            return TryComputeHasInstantiationDeterminedSize(type, out hasInstantiationDeterminedSize);
-        }
-
-        internal static bool TryComputeHasInstantiationDeterminedSize(DefType type, out bool hasInstantiationDeterminedSize)
-        {
-            Debug.Assert(type.HasInstantiation);
-
-            NativeLayoutInfoLoadContext loadContextUniversal;
-            NativeLayoutInfo universalLayoutInfo;
-            NativeParser parser = type.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out loadContextUniversal, out universalLayoutInfo);
-            if (parser.IsNull)
-            {
-                hasInstantiationDeterminedSize = false;
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                MetadataType typeDefinition = type.GetTypeDefinition() as MetadataType;
-                if (typeDefinition != null)
-                {
-                    TypeDesc [] universalCanonInstantiation = new TypeDesc[type.Instantiation.Length];
-                    TypeSystemContext context = type.Context;
-                    TypeDesc universalCanonType = context.UniversalCanonType;
-                    for (int i = 0 ; i < universalCanonInstantiation.Length; i++)
-                         universalCanonInstantiation[i] = universalCanonType;
-
-                    DefType universalCanonForm = typeDefinition.MakeInstantiatedType(universalCanonInstantiation);
-                    hasInstantiationDeterminedSize = universalCanonForm.InstanceFieldSize.IsIndeterminate;
-                    return true;
-                }
-#endif
-                return false;
-            }
-
-            int? flags = (int?)parser.GetUnsignedForBagElementKind(BagElementKind.TypeFlags);
-
-            hasInstantiationDeterminedSize = flags.HasValue ?
-                (((NativeFormat.TypeFlags)flags) & NativeFormat.TypeFlags.HasInstantiationDeterminedSize) != 0 :
-                false;
-
-            return true;
-        }
-
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
         public bool TryResolveSingleMetadataFixup(ModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
         {
