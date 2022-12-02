@@ -194,12 +194,7 @@ namespace System.CommandLine
                                 Dictionary<string, string> dictionary = new();
                                 foreach (string optInList in values)
                                 {
-                                    if (string.IsNullOrEmpty(optInList))
-                                        continue;
-
-                                    if (CheckOptionValueForAssemblyName(option.Name, optInList))
-                                        rspFile.Add($"--{option.Name}:{optInList}");
-                                    else
+                                    if (!string.IsNullOrEmpty(optInList))
                                         AppendExpandedPaths(dictionary, optInList, false);
                                 }
                                 foreach (string inputFile in dictionary.Values)
@@ -286,19 +281,6 @@ namespace System.CommandLine
                     {
                         return originalPath;
                     }
-                }
-
-                bool CheckOptionValueForAssemblyName(string optionName, string optionValue)
-                {
-                    // For the options accepting both assembly names and assembly paths as parameters,
-                    // we try to detect if the option value is an assembly name.
-                    // Since there is no predefined pattern to do this, we will simply verify that the value
-                    // does not exist as a file, and that is in the current directory (making sure it is not a wrong path).
-                    var optionsAcceptingAssemblyNames = new List<string> { "root", "conditionalroot", "trim" };
-                    if (!optionsAcceptingAssemblyNames.Contains(optionName))
-                        return false;
-                    else
-                        return Path.GetDirectoryName(optionValue) == string.Empty && !File.Exists(optionValue);
                 }
             }
         }
