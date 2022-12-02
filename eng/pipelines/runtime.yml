@@ -116,24 +116,24 @@ extends:
                 # eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 # eq(variables['isRollingBuild'], true))
 
-      # #
-      # # Build CoreCLR OSX_x64 checked
-      # # Only when CoreCLR or Libraries is changed
-      # #
-      # - template: /eng/pipelines/common/platform-matrix.yml
-        # parameters:
-          # jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-          # buildConfig: checked
-          # platforms:
-          # - OSX_x64
-          # jobParameters:
-            # testGroup: innerloop
-            # condition: >-
-              # or(
-                # eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                # eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                # eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                # eq(variables['isRollingBuild'], true))
+      #
+      # Build CoreCLR OSX_x64 checked
+      # Only when CoreCLR or Libraries is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: checked
+          platforms:
+          - OSX_x64
+          jobParameters:
+            testGroup: innerloop
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       # #
       # # Build CoreCLR release
@@ -806,7 +806,7 @@ extends:
           # - Linux_musl_x64
           - Linux_x64
           # - OSX_arm64
-          # - OSX_x64
+          - OSX_x64
           # - windows_x64
           # - FreeBSD_x64
           jobParameters:
@@ -975,7 +975,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
-          # - OSX_x64
+          - OSX_x64
           - Linux_x64
           # - Linux_arm64
           # - windows_x64
@@ -1335,22 +1335,22 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      # - template: /eng/pipelines/common/platform-matrix.yml
-        # parameters:
-          # jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          # buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-          # platforms:
-          # - OSX_x64
-          # helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          # helixQueueGroup: libraries
-          # jobParameters:
-            # testScope: innerloop
-            # liveRuntimeBuildConfig: checked
-            # condition: >-
-              # or(
-                # eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                # eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                # eq(variables['isRollingBuild'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - OSX_x64
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: libraries
+          jobParameters:
+            testScope: innerloop
+            liveRuntimeBuildConfig: checked
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       # #
       # # Sourcebuild legs
