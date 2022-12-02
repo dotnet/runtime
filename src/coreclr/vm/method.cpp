@@ -2109,17 +2109,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS == NULL)
     {
-        TADDR pInstr = PCODEToPINSTR(entryPoint);
-        if (PrecodeStubManager::g_pManager->GetStubPrecodeRangeList()->IsInRange(entryPoint))
-        {
-            return (MethodDesc*)((StubPrecode*)pInstr)->GetMethodDesc();
-        }
-
-        if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(entryPoint))
-        {
-            return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
-        }
-
         // Is it an FCALL?
         MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
         if (pFCallMD != NULL)
@@ -2134,8 +2123,17 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
         return pMD;
 
-    if (pRS->_pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
+    auto stubCodeBlockKind = pRS->_pjit->GetStubCodeBlockKind(pRS, entryPoint);
+
+    switch(stubCodeBlockKind)
+    {
+    case STUB_CODE_BLOCK_PRECODE:
         return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
+    case STUB_CODE_BLOCK_FIXUPPRECODE:
+        return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+    case STUB_CODE_BLOCK_STUBPRECODE:
+        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+    }   
 
     // We should never get here
     _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");

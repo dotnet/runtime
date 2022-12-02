@@ -100,6 +100,8 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_JUMPSTUB,
     STUB_CODE_BLOCK_PRECODE,
     STUB_CODE_BLOCK_DYNAMICHELPER,
+    STUB_CODE_BLOCK_STUBPRECODE,
+    STUB_CODE_BLOCK_FIXUPPRECODE,
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholders returned by code:GetStubCodeBlockKind
@@ -608,6 +610,7 @@ private:
 // address range to track the code heaps.
 
 typedef DPTR(struct RangeSection) PTR_RangeSection;
+typedef VPTR(class CodeRangeMapRangeList) PTR_CodeRangeMapRangeList;
 
 class RangeSectionMap;
 
@@ -629,6 +632,7 @@ struct RangeSection
         RANGE_SECTION_NONE          = 0x0,
         RANGE_SECTION_COLLECTIBLE   = 0x1,
         RANGE_SECTION_CODEHEAP      = 0x2,
+        RANGE_SECTION_RANGELIST     = 0x4,
     };
 
 #ifdef FEATURE_READYTORUN
@@ -638,6 +642,7 @@ struct RangeSection
         _pjit(pJit),
         _pR2RModule(pR2RModule),
         _pHeapList(dac_cast<PTR_HeapList>((TADDR)0)),
+        _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0)),
 #if defined(TARGET_AMD64)
         _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
 #endif
@@ -653,6 +658,19 @@ struct RangeSection
         _pjit(pJit),
         _pR2RModule(dac_cast<PTR_Module>((TADDR)0)),
         _pHeapList(pHeapList),
+        _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0)),
+#if defined(TARGET_AMD64)
+        _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+#endif
+    {}
+
+    RangeSection(Range range, IJitManager* pJit, RangeSectionFlags flags, PTR_CodeRangeMapRangeList pRangeList) :
+        _range(range),
+        _flags(flags),
+        _pjit(pJit),
+        _pR2RModule(dac_cast<PTR_Module>((TADDR)0)),
+        _pHeapList(dac_cast<PTR_HeapList>((TADDR)0)),
+        _pRangeList(pRangeList),
 #if defined(TARGET_AMD64)
         _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
 #endif
@@ -667,6 +685,7 @@ struct RangeSection
     const PTR_IJitManager _pjit;
     const PTR_Module _pR2RModule;
     const PTR_HeapList _pHeapList;
+    const PTR_CodeRangeMapRangeList _pRangeList;
 
 #if defined(TARGET_AMD64)
     PTR_UnwindInfoTable _pUnwindInfoTable; // Points to unwind information for this memory range.
@@ -999,6 +1018,20 @@ public:
     RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_HeapList pHeapList, RangeSectionLockState* pLockState)
     {
         PTR_RangeSection pSection(new(nothrow)RangeSection(range, pJit, flags, pHeapList));
+        if (pSection == NULL)
+            return NULL;
+
+        if (!AttachRangeSectionToMap(pSection, pLockState))
+        {
+            delete pSection;
+            return NULL;
+        }
+        return pSection;
+    }
+
+    RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_CodeRangeMapRangeList pRangeList, RangeSectionLockState* pLockState)
+    {
+        PTR_RangeSection pSection(new(nothrow)RangeSection(range, pJit, flags, pRangeList));
         if (pSection == NULL)
             return NULL;
 
@@ -1736,6 +1769,11 @@ public:
     static LPCWSTR         GetJitName();
 
     static void           Unload(LoaderAllocator *pLoaderAllocator);
+
+    static void           AddCodeRange(TADDR StartRange, TADDR EndRange,
+                                       IJitManager* pJit,
+                                       RangeSection::RangeSectionFlags flags,
+                                       PTR_CodeRangeMapRangeList pRangeList);
 
     static void           AddCodeRange(TADDR StartRange, TADDR EndRange,
                                        IJitManager* pJit,

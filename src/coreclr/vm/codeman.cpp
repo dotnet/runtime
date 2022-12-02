@@ -4180,6 +4180,9 @@ BOOL EEJitManager::JitCodeToMethodInfo(
 
     _ASSERTE(pRangeSection != NULL);
 
+    if (pRangeSection->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+        return FALSE;
+
     TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
     if (start == NULL)
         return FALSE;
@@ -4220,6 +4223,11 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
+    if (pRangeSection->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        return pRangeSection->_pRangeList->GetCodeBlockKind();
+    }
+
     TADDR start = dac_cast<PTR_EEJitManager>(pRangeSection->_pjit)->FindMethodCode(pRangeSection, currentPC);
     if (start == NULL)
         return STUB_CODE_BLOCK_NOCODE;
@@ -4249,6 +4257,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(pRangeSection != NULL);
+    _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
 
     HeapList *pHp = pRangeSection->_pHeapList;
 
@@ -5041,6 +5050,31 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
 
     PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pHp, &lockState);
+
+    if (pRange == NULL)
+        ThrowOutOfMemory();
+}
+
+NOINLINE
+void ExecutionManager::AddCodeRange(TADDR          pStartRange,
+                                    TADDR          pEndRange,
+                                    IJitManager *  pJit,
+                                    RangeSection::RangeSectionFlags flags,
+                                    PTR_CodeRangeMapRangeList   pRangeList)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        HOST_CALLS;
+        PRECONDITION(pStartRange < pEndRange);
+        PRECONDITION(CheckPointer(pJit));
+        PRECONDITION(CheckPointer(pRangeList));
+    } CONTRACTL_END;
+
+    ReaderLockHolder rlh;
+    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
+
+    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pRangeList, &lockState);
 
     if (pRange == NULL)
         ThrowOutOfMemory();
