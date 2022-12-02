@@ -92,6 +92,7 @@ namespace System.Net.Security.Tests
             var clientOptions = new SslClientAuthenticationOptions
             {
                 ClientCertificates = new X509CertificateCollection() { _clientCertificate },
+                EnabledSslProtocols = protocol,
                 RemoteCertificateValidationCallback = delegate { return true; },
                 TargetHost = Guid.NewGuid().ToString("N")
             };
