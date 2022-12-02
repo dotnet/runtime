@@ -1768,6 +1768,15 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         ins = aligned ? INS_stx_w : INS_st_w;
     else
         ins = aligned ? INS_stx_d : INS_st_d;
+#elif defined(TARGET_RISCV64)
+    if (varTypeIsByte(dstType))
+        ins = INS_sb;
+    else if (varTypeIsShort(dstType))
+        ins = INS_sh;
+    else if (TYP_INT == dstType)
+        ins = INS_sw;
+    else
+        ins = INS_sd;
 #else
     NYI("ins_Store");
 #endif

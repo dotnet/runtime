@@ -1119,15 +1119,14 @@ protected:
 #elif defined(TARGET_RISCV64)
         unsigned    idCodeSize() const
         {
-            _ASSERTE(!"TODO RISCV64 NYI");
-            return 0;
+            return _idCodeSize;
         }
         void idCodeSize(unsigned sz)
         {
             assert(sz <= 4);
             _idCodeSize = sz;
         }
-#endif // TARGET_LOONGARCH64
+#endif
 
         emitAttr idOpSize()
         {
@@ -1313,30 +1312,35 @@ protected:
 #ifdef TARGET_RISCV64
         insOpts idInsOpt() const
         {
-            _ASSERTE(!"RISCV64: NYI");
+            return (insOpts)_idInsOpt;
         }
         void idInsOpt(insOpts opt)
         {
-            _ASSERTE(!"RISCV64: NYI");
+            _idInsOpt = opt;
+            assert(opt == _idInsOpt);
         }
 
         regNumber idReg3() const
         {
-            _ASSERTE(!"RISCV64: NYI");
-            return REG_NA;
+            assert(!idIsSmallDsc());
+            return idAddr()->_idReg3;
         }
         void idReg3(regNumber reg)
         {
-            _ASSERTE(!"RISCV64: NYI");
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg3 = reg;
+            assert(reg == idAddr()->_idReg3);
         }
         regNumber idReg4() const
         {
-            _ASSERTE(!"RISCV64: NYI");
-            return REG_NA;
+            assert(!idIsSmallDsc());
+            return idAddr()->_idReg4;
         }
         void idReg4(regNumber reg)
         {
-            _ASSERTE(!"RISCV64: NYI");
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg4 = reg;
+            assert(reg == idAddr()->_idReg4);
         }
 
 #endif // TARGET_RISCV64
@@ -1443,12 +1447,11 @@ protected:
 #ifdef TARGET_RISCV64
         bool idIsLclVar() const
         {
-            _ASSERTE(!"RISCV64: NYI");
-            return true;
+            return _idLclVar != 0;
         }
         void idSetIsLclVar()
         {
-            _ASSERTE(!"RISCV64: NYI");
+            _idLclVar = 1;
         }
 #endif // TARGET_RISCV64
 
@@ -2111,9 +2114,9 @@ public:
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     unsigned int emitCounts_INS_OPTS_J;
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData);
     void emitAdvanceInstrDesc(instrDesc** id, size_t idSize);

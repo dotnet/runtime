@@ -99,6 +99,8 @@ INST(sw,            "sw",             ST,   0x00002023)
 //// R_I
 INST(jal,           "jal",            0,    0x0000006f)
 INST(j,             "j",              0,    0x0000006f)
+INST(beqz,          "beqz",           0,    0x00000063)
+INST(bnez,          "bnez",           0,    0x00001063)
 
 //// R_R_I
 INST(jalr,          "jalr",           0,    0x00000067)

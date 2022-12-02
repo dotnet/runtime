@@ -1204,7 +1204,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitFirstColdIG   = nullptr;
     emitTotalCodeSize = 0;
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     emitCounts_INS_OPTS_J = 0;
 #endif
 

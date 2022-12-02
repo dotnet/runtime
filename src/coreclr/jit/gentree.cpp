@@ -1322,7 +1322,7 @@ void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignmen
 //   is a HFA of doubles, since double and float registers overlap.
 void CallArgABIInformation::SetMultiRegNums()
 {
-#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
+#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     if (NumRegs == 1)
     {
         return;
@@ -1343,7 +1343,7 @@ void CallArgABIInformation::SetMultiRegNums()
         argReg = (regNumber)(argReg + regSize);
         SetRegNum(regIndex, argReg);
     }
-#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
+#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 }
 
 //---------------------------------------------------------------

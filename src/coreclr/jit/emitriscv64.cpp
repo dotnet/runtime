@@ -167,7 +167,13 @@ inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
 
 void emitter::emitIns(instruction ins)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    instrDesc* id = emitNewInstr(EA_8BYTE);
+
+    id->idIns(ins);
+    id->idAddr()->iiaSetInstrEncode(emitInsCode(ins));
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
@@ -179,7 +185,74 @@ void emitter::emitIns(instruction ins)
  */
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    ssize_t imm;
+
+    emitAttr size = EA_SIZE(attr);
+
+#ifdef DEBUG
+    switch (ins)
+    {
+        case INS_sd:
+        case INS_sw:
+        case INS_fsw:
+        case INS_fsd:
+        case INS_sb:
+        case INS_sh:
+            break;
+
+        default:
+            NYI("emitIns_S_R");
+            return;
+
+    } // end switch (ins)
+#endif
+
+    /* Figure out the variable's frame position */
+    int  base;
+    bool FPbased;
+
+    base = emitComp->lvaFrameAddress(varx, &FPbased);
+    imm  = offs < 0 ? -offs - 8 : base + offs;
+
+    regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
+    assert(offs >= 0);
+    // regNumber reg2 = offs < 0 ? REG_R21 : reg3;
+    regNumber reg2 = reg3;
+    offs           = offs < 0 ? -offs - 8 : offs;
+
+    if ((-2048 <= imm) && (imm < 2048))
+    {
+        // regs[1] = reg2;
+    }
+    else
+    {
+        assert(isValidSimm20((imm + 0x800) >> 12));
+        emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
+
+        emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
+
+        reg2 = REG_RA;
+    }
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idReg1(reg1);
+
+    id->idReg2(reg2);
+
+    id->idIns(ins);
+
+    code_t code = emitInsCode(ins);
+    code |= (code_t)reg1 << 7;
+    code |= (code_t)reg2 << 15;
+    code |= (code_t)(imm & 0xfff) << 20;
+
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+    id->idSetIsLclVar();
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 /*
@@ -187,7 +260,106 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
  */
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    ssize_t imm;
+
+    emitAttr size = EA_SIZE(attr);
+
+#ifdef DEBUG
+    switch (ins)
+    {
+        case INS_lb:
+        case INS_lbu:
+
+        case INS_lh:
+        case INS_lhu:
+
+        case INS_lw:
+        case INS_lwu:
+        case INS_flw:
+
+        case INS_ld:
+        case INS_fld:
+
+            break;
+
+        case INS_lea:
+            assert(size == EA_8BYTE);
+            break;
+
+        default:
+            NYI("emitIns_R_S");
+            return;
+
+    } // end switch (ins)
+#endif
+
+    /* Figure out the variable's frame position */
+    int  base;
+    bool FPbased;
+
+    base = emitComp->lvaFrameAddress(varx, &FPbased);
+    imm  = offs < 0 ? -offs - 8 : base + offs;
+
+    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
+    assert(offs >= 0);
+    //reg2           = offs < 0 ? REG_R21 : reg2; // TODO
+    offs           = offs < 0 ? -offs - 8 : offs;
+
+    reg1 = (regNumber)((char)reg1 & 0x1f);
+    code_t code;
+    if ((-2048 <= imm) && (imm < 2048))
+    {
+        if (ins == INS_lea)
+        {
+            ins = INS_addi;
+        }
+        code = emitInsCode(ins);
+        code |= (code_t)reg1 << 7;
+        code |= (code_t)reg2 << 15;
+        code |= (imm & 0xfff) << 20;
+    }
+    else
+    {
+        if (ins == INS_lea)
+        {
+            assert(isValidSimm20((imm + 0x800) >> 12));
+            emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm  + 0x800) >> 12);
+            ssize_t imm2 = imm & 0xfff;
+            emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_RA, imm2);
+
+            ins  = INS_add;
+            code = emitInsCode(ins);
+            code |= (code_t)reg1 << 7;
+            code |= (code_t)reg2 << 15;
+            code |= (code_t)REG_RA << 20;
+        }
+        else
+        {
+            assert(isValidSimm20((imm + 0x800) >> 12));
+            emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
+
+            emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
+
+            ssize_t imm2 = imm & 0xfff;
+            code = emitInsCode(ins);
+            code |= (code_t)reg1 << 7;
+            code |= (code_t)REG_RA << 15;
+            code |= (code_t)(imm2 & 0xfff) << 20;
+        }
+    }
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idReg1(reg1);
+
+    id->idIns(ins);
+
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+    id->idSetIsLclVar();
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
@@ -264,9 +436,17 @@ void emitter::emitIns_R_R_I(
         code |= reg2 << 15;          // rs1
         code |= imm << 25;           // imm
     }
+    else if (INS_beq <= ins && INS_bgeu >= ins)
+    {
+        code |= reg1 << 15;
+        code |= reg2 << 20;
+        code |= ((imm >> 11) & 0x1)  << 7;
+        code |= ((imm >> 1)  & 0xf)  << 8;
+        code |= ((imm >> 5)  & 0x3f) << 25;
+        code |= ((imm >> 12) & 0x1)  << 31;
+    }
     else
     {
-        fprintf(stderr, "[CLAMP] %x\n", code);
         _ASSERTE(!"TODO RISCV64 NYI");
     }
     instrDesc* id = emitNewInstr(attr);
@@ -382,7 +562,52 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(dst != nullptr);
+    //
+    // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JIRL.
+    //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dst
+
+    assert(dst->bbFlags & BBF_HAS_LABEL);
+
+    instrDescJmp* id = emitNewInstrJmp();
+    assert((INS_jal <= ins) && (ins <= INS_bgeu));
+    id->idIns(ins);
+    id->idReg1((regNumber)(instrCount & 0x1f));
+    id->idReg2((regNumber)((instrCount >> 5) & 0x1f));
+
+    id->idInsOpt(INS_OPTS_J);
+    emitCounts_INS_OPTS_J++;
+    id->idAddr()->iiaBBlabel = dst;
+
+    if (emitComp->opts.compReloc)
+    {
+        id->idSetIsDspReloc();
+    }
+
+    id->idjShort = false;
+
+    // TODO-RISCV64: maybe deleted this.
+    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+#ifdef DEBUG
+    if (emitComp->opts.compLongAddress) // Force long branches
+        id->idjKeepLong = 1;
+#endif // DEBUG
+
+    /* Record the jump's IG and offset within it */
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this jump to this IG's jump list */
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1, regNumber reg2)
@@ -470,7 +695,165 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            ssize_t          disp /* = 0     */,
                            bool             isJump /* = false */)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    /* Sanity check the arguments depending on callType */
+
+    assert(callType < EC_COUNT);
+    assert((callType != EC_FUNC_TOKEN) || (ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
+    assert(callType < EC_INDIR_R || addr == NULL);
+    assert(callType != EC_INDIR_R || (ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
+
+    // RISCV64 never uses these
+    assert(xreg == REG_NA && xmul == 0 && disp == 0);
+
+    // Our stack level should be always greater than the bytes of arguments we push. Just
+    // a sanity test.
+    assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
+
+    // Trim out any callee-trashed registers from the live set.
+    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    gcrefRegs &= savedSet;
+    byrefRegs &= savedSet;
+
+#ifdef DEBUG
+    if (EMIT_GC_VERBOSE)
+    {
+        printf("Call: GCvars=%s ", VarSetOps::ToString(emitComp, ptrVars));
+        dumpConvertedVarSet(emitComp, ptrVars);
+        printf(", gcrefRegs=");
+        printRegMaskInt(gcrefRegs);
+        emitDispRegSet(gcrefRegs);
+        printf(", byrefRegs=");
+        printRegMaskInt(byrefRegs);
+        emitDispRegSet(byrefRegs);
+        printf("\n");
+    }
+#endif
+
+    /* Managed RetVal: emit sequence point for the call */
+    if (emitComp->opts.compDbgInfo && di.GetLocation().IsValid())
+    {
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
+    }
+
+    /*
+        We need to allocate the appropriate instruction descriptor based
+        on whether this is a direct/indirect call, and whether we need to
+        record an updated set of live GC variables.
+     */
+    instrDesc* id;
+
+    assert(argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(argSize / (int)REGSIZE_BYTES);
+
+    if (callType >= EC_INDIR_R)
+    {
+        /* Indirect call, virtual calls */
+
+        assert(callType == EC_INDIR_R);
+
+        id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+    }
+    else
+    {
+        /* Helper/static/nonvirtual/function calls (direct or through handle),
+           and calls to an absolute addr. */
+
+        assert(callType == EC_FUNC_TOKEN);
+
+        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs, retSize, secondRetSize);
+    }
+
+    /* Update the emitter's live GC ref sets */
+
+    VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
+    emitThisGCrefRegs = gcrefRegs;
+    emitThisByrefRegs = byrefRegs;
+
+    id->idSetIsNoGC(emitNoGChelper(methHnd));
+
+    /* Set the instruction - special case jumping a function */
+    instruction ins;
+
+    ins = INS_jalr; // jalr
+    id->idIns(ins);
+
+    id->idInsOpt(INS_OPTS_C);
+    // TODO-RISCV64: maybe optimize.
+
+    // INS_OPTS_C: placeholders.  1/2/4-ins:
+    //   if (callType == EC_INDIR_R)
+    //      jalr REG_R0/REG_RA, ireg, 0   <---- 1-ins
+    //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
+    //     if reloc:
+    //             //pc + offset_38bits       # only when reloc.
+    //      auipc t2, addr-hi20
+    //      jalr r0/1, t2, addr-lo12
+    //
+    //     else:
+    //      lui  t2, dst_offset_lo32-hi
+    //      ori  t2, t2, dst_offset_lo32-lo
+    //      lui  t2, dst_offset_hi32-lo
+    //      jalr REG_R0/REG_RA, t2, 0
+
+    /* Record the address: method, indirection, or funcptr */
+    if (callType == EC_INDIR_R)
+    {
+        /* This is an indirect call (either a virtual call or func ptr call) */
+        // assert(callType == EC_INDIR_R);
+
+        id->idSetIsCallRegPtr();
+
+        regNumber reg_jalr = isJump ? REG_R0 : REG_RA;
+        id->idReg4(reg_jalr);
+        id->idReg3(ireg); // NOTE: for EC_INDIR_R, using idReg3.
+        assert(xreg == REG_NA);
+
+        id->idCodeSize(4);
+    }
+    else
+    {
+        /* This is a simple direct call: "call helper/method/addr" */
+
+        assert(callType == EC_FUNC_TOKEN);
+        assert(addr != NULL);
+        // assert((((size_t)addr) & 3) == 0); // TODO NEED TO CHECK ALIGNMENT (ex. Address of RNGCHKFAIL is 0x2033b32 in my test.)
+
+        addr = (void*)(((size_t)addr) + (isJump ? 0 : 1)); // NOTE: low-bit0 is used for jirl ra/r0,rd,0
+        id->idAddr()->iiaAddr = (BYTE*)addr;
+
+        if (emitComp->opts.compReloc)
+        {
+            id->idSetIsDspReloc();
+            id->idCodeSize(8);
+        }
+        else
+        {
+            id->idCodeSize(16);
+        }
+    }
+
+#ifdef DEBUG
+    if (EMIT_GC_VERBOSE)
+    {
+        if (id->idIsLargeCall())
+        {
+            printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
+                   VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
+        }
+    }
+
+    id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
+#endif // DEBUG
+
+#ifdef LATE_DISASM
+    if (addr != nullptr)
+    {
+        codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
+    }
+#endif // LATE_DISASM
+
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
@@ -865,8 +1248,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 //
 const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return nullptr;
+    assert(reg < REG_COUNT);
+
+    const char* rn = nullptr;
+
+    rn = RegNames[reg];
+    assert(rn != nullptr);
+
+    return rn;
 }
 #endif
 

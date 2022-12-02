@@ -1553,7 +1553,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
  * have set the flags. Check if the operation caused an overflow.
  */
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 // inline
 void CodeGen::genCheckOverflow(GenTree* tree)
 {

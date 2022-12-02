@@ -233,7 +233,7 @@ protected:
 
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
                                  instruction     ins,
                                  regNumber       reg1,
