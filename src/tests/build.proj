@@ -9,7 +9,7 @@
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
-    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);$(ArtifactsPackagesDir)</RestoreAdditionalProjectSources>
+    <RestoreAdditionalProjectSources Condition="$(TargetArchitecture) == 'loongarch64'">$(RestoreAdditionalProjectSources);$(ArtifactsPackagesDir)</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>
