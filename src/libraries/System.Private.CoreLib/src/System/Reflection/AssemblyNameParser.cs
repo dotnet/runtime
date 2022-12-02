@@ -193,7 +193,7 @@ namespace System.Reflection
             ReadOnlySpan<char> attributeValueSpan = attributeValue;
             Span<Range> parts = stackalloc Range[5];
             parts = parts.Slice(0, attributeValueSpan.Split(parts, '.'));
-            if (parts.Length is not (3 or 4))
+            if (parts.Length is < 2 or > 4)
             {
                 ThrowInvalidAssemblyName();
             }

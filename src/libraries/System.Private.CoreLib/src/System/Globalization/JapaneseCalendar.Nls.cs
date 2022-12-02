@@ -196,7 +196,7 @@ namespace System.Globalization
                 ReadOnlySpan<char> eraName = dataSpan[names[0]];
                 ReadOnlySpan<char> abbreviatedEraName = dataSpan[names[1]];
                 ReadOnlySpan<char> englishEraName = dataSpan[names[2]];
-                ReadOnlySpan<char> abbreviatedEnglishEraName = dataSpan[names[2]];
+                ReadOnlySpan<char> abbreviatedEnglishEraName = dataSpan[names[3]];
 
                 // Each part should have data in it
                 if (!eraName.IsEmpty && !abbreviatedEraName.IsEmpty && !englishEraName.IsEmpty && !abbreviatedEnglishEraName.IsEmpty)
