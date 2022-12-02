@@ -371,4 +371,8 @@ mono_jiterp_insert_ins (TransformData *td, InterpInst *prev_ins, int opcode);
 void
 mono_interp_print_td_code (TransformData *td);
 
+/* Forward definitions for simd methods */
+static gboolean
+interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature);
+
 #endif /* __MONO_MINI_INTERP_TRANSFORM_H__ */

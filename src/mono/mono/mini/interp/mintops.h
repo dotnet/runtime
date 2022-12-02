@@ -5,6 +5,7 @@
 #ifndef __INTERPRETER_MINTOPS_H
 #define __INTERPRETER_MINTOPS_H
 
+#include <config.h>
 #include <glib.h>
 
 typedef enum
@@ -37,6 +38,38 @@ typedef enum {
 	MINT_LASTOP
 } MintOpcode;
 #undef OPDEF
+
+/* SIMD opcodes, grouped by signature */
+
+#define INTERP_SIMD_INTRINSIC_P_P(a,b)
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
+
+#undef INTERP_SIMD_INTRINSIC_P_P
+#define INTERP_SIMD_INTRINSIC_P_P(a,b) a,
+typedef enum {
+#include "interp-simd-intrins.def"
+} MintSIMDOpsPP;
+#undef INTERP_SIMD_INTRINSIC_P_P
+#define INTERP_SIMD_INTRINSIC_P_P(a,b)
+
+#undef INTERP_SIMD_INTRINSIC_P_PP
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b) a,
+typedef enum {
+#include "interp-simd-intrins.def"
+	INTERP_SIMD_INTRINSIC_P_PP_LAST
+} MintSIMDOpsPPP;
+#undef INTERP_SIMD_INTRINSIC_P_PP
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b)
+
+#undef INTERP_SIMD_INTRINSIC_P_PPP
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b) a,
+typedef enum {
+#include "interp-simd-intrins.def"
+	INTERP_SIMD_INTRINSIC_P_PPP_LAST
+} MintSIMDOpsPPPP;
+#undef INTERP_SIMD_INTRINSIC_P_PPP
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
 
 #if NO_UNALIGNED_ACCESS
 #  if G_BYTE_ORDER == G_LITTLE_ENDIAN
