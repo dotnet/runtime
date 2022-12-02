@@ -114,7 +114,7 @@ namespace LOH_test
 
 
 
-        static int Main(string[] args)
+        static int Main()
         {
 
             // Display results for cases both with and without the larger blocks

@@ -97,7 +97,7 @@ namespace System
 
         /// <summary>Returns the absolute value of a native signed integer.</summary>
         /// <param name="value">A number that is greater than <see cref="IntPtr.MinValue" />, but less than or equal to <see cref="IntPtr.MaxValue" />.</param>
-        /// <returns>A native signed integer, x, such that 0 ≤ x ≤ <see cref="IntPtr.MaxValue" />.</returns>
+        /// <returns>A native signed integer, x, such that 0 \u2264 x \u2264 <see cref="IntPtr.MaxValue" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Abs(nint value)
         {
@@ -585,7 +585,7 @@ namespace System
         /// <param name="min">The lower bound of the result.</param>
         /// <param name="max">The upper bound of the result.</param>
         /// <returns>
-        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///   <paramref name="value" /> if <paramref name="min" /> \u2264 <paramref name="value" /> \u2264 <paramref name="max" />.
         ///
         ///   -or-
         ///
@@ -724,7 +724,7 @@ namespace System
         /// <param name="min">The lower bound of the result.</param>
         /// <param name="max">The upper bound of the result.</param>
         /// <returns>
-        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///   <paramref name="value" /> if <paramref name="min" /> \u2264 <paramref name="value" /> \u2264 <paramref name="max" />.
         ///
         ///   -or-
         ///

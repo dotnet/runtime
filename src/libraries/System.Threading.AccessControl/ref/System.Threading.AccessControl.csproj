@@ -6,7 +6,7 @@
   <ItemGroup>
     <Compile Include="System.Threading.AccessControl.Extensions.cs" />
     <Compile Include="System.Threading.AccessControl.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
-    <Compile Include="System.Threading.AccessControl.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == 'NETFramework'" />
+    <Compile Include="System.Threading.AccessControl.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

@@ -1113,7 +1113,7 @@ namespace System.Xml.Schema
                     XsdSimpleValue simpleValue = (XsdSimpleValue)unionTypedValue;
                     values.Add(new XmlAtomicValue(simpleValue.XmlType, simpleValue.TypedValue, nsmgr));
                 }
-                array = values.ToArray(typeof(XmlAtomicValue));
+                array = ToArray(values, typeof(XmlAtomicValue[]));
             }
             else
             { //Variety == List or Atomic

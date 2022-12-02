@@ -7,7 +7,7 @@ using System.Reflection;
 
 internal class test
 {
-    public static int Main(String[] args)
+    public static int Main()
     {
         Type t = typeof(int);
         Type t2 = typeof(long);

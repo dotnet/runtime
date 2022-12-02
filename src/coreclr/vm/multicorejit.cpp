@@ -155,7 +155,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     {
         CFileStream fileStream;
 
-        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName)))
+        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName.GetUnicode())))
         {
             hr = WriteOutput(& fileStream);
         }
@@ -995,9 +995,9 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         // Append separator if root does not end with one
         unsigned len = m_fullFileName.GetCount();
 
-        if ((len != 0) && (m_fullFileName[len - 1] != W('\\')))
+        if ((len != 0) && (m_fullFileName[len - 1] != DIRECTORY_SEPARATOR_CHAR_W))
         {
-            m_fullFileName.Append(W('\\'));
+            m_fullFileName.Append(DIRECTORY_SEPARATOR_CHAR_W);
         }
 
         m_fullFileName.Append(pFile);

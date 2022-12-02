@@ -927,7 +927,7 @@ void PEAssembly::PathToUrl(SString &string)
     }
 #else
     // Unix doesn't have a distinction between a network or a local path
-    _ASSERTE( i[0] == W('\\') || i[0] == W('/'));
+    _ASSERTE(i[0] == W('/'));
     SString sss(SString::Literal, W("file://"));
     string.Insert(i, sss);
     string.Skip(i, sss);
@@ -960,33 +960,19 @@ void PEAssembly::UrlToPath(SString &string)
     if (string.MatchCaseInsensitive(i, sss2))
         string.Delete(i, 7);
 
+#if !defined(TARGET_UNIX)
     while (string.Find(i, W('/')))
     {
         string.Replace(i, W('\\'));
     }
+#endif
 
     RETURN;
 }
 
 BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
 {
-#ifdef TARGET_UNIX
-    SString::Iterator slash = i;
-    SString::Iterator backSlash = i;
-    BOOL foundSlash = path.FindBack(slash, '/');
-    BOOL foundBackSlash = path.FindBack(backSlash, '\\');
-    if (!foundSlash && !foundBackSlash)
-        return FALSE;
-    else if (foundSlash && !foundBackSlash)
-        i = slash;
-    else if (!foundSlash && foundBackSlash)
-        i = backSlash;
-    else
-        i = (backSlash > slash) ? backSlash : slash;
-    return TRUE;
-#else
-    return path.FindBack(i, '\\');
-#endif //TARGET_UNIX
+    return path.FindBack(i, DIRECTORY_SEPARATOR_CHAR_A);
 }
 
 // ------------------------------------------------------------

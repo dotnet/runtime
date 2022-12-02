@@ -13,8 +13,7 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
-
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -39,7 +38,6 @@ namespace Internal.JitInterface
         private DebugVarInfo[] _debugVarInfos;
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private bool _isFallbackBodyCompilation;
-        private DependencyList _additionalDependencies;
 
         public CorInfoImpl(RyuJitCompilation compilation)
             : this()
@@ -1220,6 +1218,8 @@ namespace Internal.JitInterface
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
                     exactType = directMethod.OwningType;
+
+                    _compilation.NodeFactory.MetadataManager.NoteOverridingMethod(method, directMethod);
                 }
                 else if (method.Signature.IsStatic)
                 {
@@ -2214,17 +2214,24 @@ namespace Internal.JitInterface
             return index;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             Debug.Assert(buffer != null);
             Debug.Assert(bufferSize > 0);
+            Debug.Assert(valueOffset >= 0);
 
             FieldDesc field = HandleToObject(fieldHandle);
             Debug.Assert(field.IsStatic);
 
+
             if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
+                if (field.HasRva)
+                {
+                    return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
+                }
+
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
                 if (preinitManager.IsPreinitialized(owningType))
                 {
@@ -2235,6 +2242,7 @@ namespace Internal.JitInterface
 
                     if (value == null)
                     {
+                        Debug.Assert(valueOffset == 0);
                         Debug.Assert(bufferSize == targetPtrSize);
 
                         // Write "null" to buffer
@@ -2247,13 +2255,15 @@ namespace Internal.JitInterface
                         switch (data)
                         {
                             case byte[] bytes:
-                                Debug.Assert(bufferSize == bytes.Length);
-
-                                // Ensure we have enough room in the buffer, it can be a large struct
-                                bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
-                                return true;
+                                if (bytes.Length >= bufferSize && valueOffset <= bytes.Length - bufferSize)
+                                {
+                                    bytes.AsSpan(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
+                                    return true;
+                                }
+                                return false;
 
                             case FrozenObjectNode or FrozenStringNode:
+                                Debug.Assert(valueOffset == 0);
                                 Debug.Assert(bufferSize == targetPtrSize);
 
                                 // save handle's value to buffer
@@ -2297,14 +2307,24 @@ namespace Internal.JitInterface
             };
         }
 
+        private bool getStringChar(CORINFO_OBJECT_STRUCT_* strObj, int index, ushort* value)
+        {
+            if (HandleToObject(strObj) is FrozenStringNode frozenStr && (uint)frozenStr.Data.Length > (uint)index)
+            {
+                *value = frozenStr.Data[index];
+                return true;
+            }
+            return false;
+        }
+
         private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
             object obj = HandleToObject(objHnd);
             return obj switch
             {
                 FrozenStringNode frozenStr => frozenStr.Data.Length,
-                FrozenObjectNode frozenObj => frozenObj.GetArrayLength(),
-                _ => throw new NotImplementedException($"Unexpected object in getArrayOrStringLength: {obj}")
+                FrozenObjectNode frozenObj when frozenObj.ObjectType.IsArray => frozenObj.GetArrayLength(),
+                _ => -1
             };
         }
     }

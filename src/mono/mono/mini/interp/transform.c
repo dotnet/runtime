@@ -1919,6 +1919,27 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 }
 
+static void
+interp_emit_metadata_update_ldflda (TransformData *td, MonoClassField *field, MonoError *error)
+{
+	g_assert (m_field_is_from_update (field));
+	MonoType *field_type = field->type;
+	g_assert (!m_type_is_byref (field_type));
+	MonoClass *field_klass = mono_class_from_mono_type_internal (field_type);
+	/* get a heap-allocated version of the field type */
+	field_type = m_class_get_byval_arg (field_klass);
+	guint32 field_token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
+
+	interp_add_ins (td, MINT_METADATA_UPDATE_LDFLDA);
+	td->sp--;
+	interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+	push_simple_type (td, STACK_TYPE_MP);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	td->last_ins->data [0] = get_data_item_index (td, field_type);
+	td->last_ins->data [1] = get_data_item_index (td, GUINT_TO_POINTER (field_token));
+}
+
+
 /* Return TRUE if call transformation is finished */
 static gboolean
 interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClass *constrained_class, MonoMethodSignature *csignature, gboolean readonly, int *op)
@@ -2035,30 +2056,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Text") && !strcmp (klass_name, "ASCIIUtility")) {
 		if (!strcmp (tm, "WidenAsciiToUtf16"))
 			*op = MINT_INTRINS_WIDEN_ASCII_TO_UTF16;
-	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Number")) {
-		if (!strcmp (tm, "UInt32ToDecStr") && csignature->param_count == 1) {
-			ERROR_DECL(error);
-			MonoVTable *vtable = mono_class_vtable_checked (target_method->klass, error);
-			if (!is_ok (error)) {
-				mono_interp_error_cleanup (error);
-				return FALSE;
-			}
-			/* Don't use intrinsic if cctor not yet run */
-			if (!vtable->initialized)
-				return FALSE;
-			/* The cache is the first static field. Update this if bcl code changes */
-			MonoClassField *field = m_class_get_fields (target_method->klass);
-			g_assert (!strcmp (field->name, "s_singleDigitStringCache"));
-			interp_add_ins (td, MINT_INTRINS_U32_TO_DECSTR);
-			td->last_ins->data [0] = get_data_item_index (td, mono_static_field_get_addr (vtable, field));
-			td->last_ins->data [1] = get_data_item_index (td, mono_class_vtable_checked (mono_defaults.string_class, error));
-			td->sp--;
-			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			push_type (td, STACK_TYPE_O, mono_defaults.string_class);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			td->ip += 5;
-			return TRUE;
-		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") &&
 			(!strcmp (klass_name, "Math") || !strcmp (klass_name, "MathF"))) {
 		gboolean is_float = strcmp (klass_name, "MathF") == 0;
@@ -6051,9 +6048,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_emit_ldsflda (td, field, error);
 					goto_if_nok (error, exit);
 				} else {
+					if (G_UNLIKELY (m_field_is_from_update (field))) {
+						/* metadata-update: can't add byref fields */
+						g_assert (!m_type_is_byref (ftype));
+						interp_emit_metadata_update_ldflda (td, field, error);
+						goto_if_nok (error, exit);
+						td->ip += 5;
+						break;
+					}
 					td->sp--;
-					/* TODO: metadata-update: implement me. If it's an added field, emit a call to the helper method instead of MINT_LDFLDA_UNSAFE */
-					g_assert (!m_field_is_from_update (field));
 					int foffset = m_class_is_valuetype (klass) ? m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) : m_field_get_offset (field);
 					if (td->sp->type == STACK_TYPE_O || td->sp->type == STACK_TYPE_I) {
 						interp_add_ins (td, MINT_LDFLDA);
@@ -6098,7 +6101,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
-					/* TODO: metadata-update: implement me */
+					/* metadata-update: can't add fields to structs */
 					g_assert (!m_field_is_from_update (field));
 					int size = 0;
 					/* First we pop the vt object from the stack. Then we push the field */
@@ -6124,8 +6127,19 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						push_type (td, stack_type [mt], field_klass);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				} else {
-					/* TODO: metadata-update: implement me */
-					g_assert (!m_field_is_from_update (field));
+					if (G_UNLIKELY (m_field_is_from_update (field))) {
+						g_assert (!m_type_is_byref (ftype));
+						MonoClass *field_class = mono_class_from_mono_type_internal (ftype);
+						interp_emit_metadata_update_ldflda (td, field, error);
+						goto_if_nok (error, exit);
+						interp_add_ins (td, interp_get_ldind_for_mt (mt));
+						interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+						td->sp--;
+						push_type (td, stack_type [mt], field_class);
+						interp_ins_set_dreg (td->last_ins, td->sp[-1].local);
+						td->ip += 5;
+						break;
+					}
 					int opcode = MINT_LDFLD_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
 					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)
@@ -6177,8 +6191,20 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					mono_class_vtable_checked (field_klass, error);
 					goto_if_nok (error, exit);
 				} else {
-					/* TODO: metadata-update: implement me */
-					g_assert (!m_field_is_from_update (field));
+					if (G_UNLIKELY (m_field_is_from_update (field))) {
+						// metadata-update: Can't add byref fields
+						g_assert (!m_type_is_byref (ftype));
+						MonoClass *field_class = mono_class_from_mono_type_internal (ftype);
+						MonoType *local_type = m_class_get_byval_arg (field_class);
+						int local = create_interp_local (td, local_type);
+						store_local (td, local);
+						interp_emit_metadata_update_ldflda (td, field, error);
+						goto_if_nok (error, exit);
+						load_local (td, local);
+						interp_emit_stobj (td, field_class);
+						td->ip += 5;
+						break;
+					}
 					int opcode = MINT_STFLD_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
 					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)

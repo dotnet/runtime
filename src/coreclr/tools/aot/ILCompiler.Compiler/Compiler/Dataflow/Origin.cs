@@ -81,5 +81,7 @@ namespace ILCompiler.Dataflow
         {
             GenericParameter = genericParam;
         }
+
+        public string GetDisplayName() => GenericParameter.GetDisplayName();
     }
 }

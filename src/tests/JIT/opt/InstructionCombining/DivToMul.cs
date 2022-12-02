@@ -12,7 +12,7 @@ public class Program
 {
     private static int resultCode = 100;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         // Some corner cases
         var testValues = new List<double>(new []
@@ -160,6 +160,13 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void AssertEquals(float expected, float actual)
     {
+        if (Single.IsNaN(expected) && Single.IsNaN(actual))
+        {
+            // There can be multiple configurations for NaN values
+            // verifying that these values are NaNs should be enough
+            return;
+        }
+
         int expectedi = BitConverter.SingleToInt32Bits(expected);
         int actuali = BitConverter.SingleToInt32Bits(actual);
         if (expectedi != actuali)
@@ -172,6 +179,13 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void AssertEquals(double expected, double actual)
     {
+        if (Double.IsNaN(expected) && Double.IsNaN(actual))
+        {
+            // There can be multiple configurations for NaN values
+            // verifying that these values are NaNs should be enough
+            return;
+        }
+
         long expectedi = BitConverter.DoubleToInt64Bits(expected);
         long actuali = BitConverter.DoubleToInt64Bits(actual);
         if (expectedi != actuali)

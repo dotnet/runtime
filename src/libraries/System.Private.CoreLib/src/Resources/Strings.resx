@@ -1862,6 +1862,27 @@
   <data name="ArgumentOutOfRange_Year" xml:space="preserve">
     <value>Year must be between 1 and 9999.</value>
   </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
+    <value>'{0}' must be a non-zero value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
+    <value>'{0}' must be a non-negative value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
+    <value>'{0}' must be a non-negative and non-zero value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
+    <value>'{0}' must be less than or equal to '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
+    <value>'{0}' must be less than '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
+    <value>'{0}' must be greater than or equal to '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreater" xml:space="preserve">
+    <value>'{0}' must be greater than '{1}'.</value>
+  </data>
   <data name="Arithmetic_NaN" xml:space="preserve">
     <value>Function does not accept floating point Not-a-Number values.</value>
   </data>
@@ -2734,9 +2755,6 @@
   </data>
   <data name="Lazy_Value_RecursiveCallsToValue" xml:space="preserve">
     <value>ValueFactory attempted to access the Value property of this instance.</value>
-  </data>
-  <data name="ManualResetEventSlim_ctor_SpinCountOutOfRange" xml:space="preserve">
-    <value>The spinCount argument must be in the range 0 to {0}, inclusive.</value>
   </data>
   <data name="ManualResetEventSlim_ctor_TooManyWaiters" xml:space="preserve">
     <value>There are too many threads currently waiting on the event. A maximum of {0} waiting threads are supported.</value>

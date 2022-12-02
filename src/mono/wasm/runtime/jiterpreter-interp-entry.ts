@@ -12,7 +12,7 @@ import cwraps from "./cwraps";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, counters, getRawCwrap, importDef,
-    getWasmFunctionTable
+    getWasmFunctionTable, recordFailure
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -323,7 +323,8 @@ function flush_wasm_entry_trampoline_jit_queue () {
         rejected = false;
         // console.error(`${traceName} failed: ${exc} ${exc.stack}`);
         // HACK: exc.stack is enormous garbage in v8 console
-        console.error(`MONO_WASM: interp_entry trampoline jit failed: ${exc}`);
+        console.error(`MONO_WASM: interp_entry code generation failed: ${exc}`);
+        recordFailure();
     } finally {
         const finished = _now();
         if (compileStarted) {

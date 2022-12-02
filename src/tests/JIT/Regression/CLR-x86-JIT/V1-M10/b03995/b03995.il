@@ -13,7 +13,7 @@
 //Simple program that demonstrates wrong results from JitEnable
 .class _simple
 {
-	.method static int32 main(class System.String[])
+	.method static int32 main()
 	{
 		.entrypoint
 		.maxstack	5

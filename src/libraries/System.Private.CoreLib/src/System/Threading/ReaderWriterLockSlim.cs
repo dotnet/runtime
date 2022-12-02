@@ -249,8 +249,7 @@ namespace System.Threading
 
             public TimeoutTracker(int millisecondsTimeout)
             {
-                if (millisecondsTimeout < -1)
-                    throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
+                ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
                 _total = millisecondsTimeout;
                 if (_total != -1 && _total != 0)
                     _start = Environment.TickCount;

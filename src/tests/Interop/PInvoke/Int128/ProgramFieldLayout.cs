@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 unsafe partial class Int128NativeFieldLayout
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {
