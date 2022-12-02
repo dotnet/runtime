@@ -642,9 +642,9 @@ struct RangeSection
         _pjit(pJit),
         _pR2RModule(pR2RModule),
         _pHeapList(dac_cast<PTR_HeapList>((TADDR)0)),
-        _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0)),
+        _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0))
 #if defined(TARGET_AMD64)
-        _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+        , _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
 #endif
     {
         assert(!(flags & RANGE_SECTION_COLLECTIBLE));
@@ -658,9 +658,9 @@ struct RangeSection
         _pjit(pJit),
         _pR2RModule(dac_cast<PTR_Module>((TADDR)0)),
         _pHeapList(pHeapList),
-        _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0)),
+        _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0))
 #if defined(TARGET_AMD64)
-        _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+        , _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
 #endif
     {}
 
@@ -670,9 +670,9 @@ struct RangeSection
         _pjit(pJit),
         _pR2RModule(dac_cast<PTR_Module>((TADDR)0)),
         _pHeapList(dac_cast<PTR_HeapList>((TADDR)0)),
-        _pRangeList(pRangeList),
+        _pRangeList(pRangeList)
 #if defined(TARGET_AMD64)
-        _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
+        , _pUnwindInfoTable(dac_cast<PTR_UnwindInfoTable>((TADDR)0))
 #endif
     {}
 
@@ -712,14 +712,17 @@ struct RangeSection
 class RangeSectionMap
 {
     class RangeSectionFragment;
+
+    // Helper structure which forces all access to the various pointers to be handled via volatile/interlocked operations
+    // The copy/move constructors are all deleted to forbid accidental reads into temporaries, etc.
     class RangeSectionFragmentPointer
     {
     private:
-        uintptr_t _ptr;
+        TADDR _ptr;
 
-        uintptr_t FragmentToPtr(RangeSectionFragment* fragment)
+        TADDR FragmentToPtr(RangeSectionFragment* fragment)
         {
-            uintptr_t ptr = (uintptr_t)fragment;
+            TADDR ptr = (TADDR)fragment;
             return ptr;
         }
 
@@ -756,7 +759,7 @@ class RangeSectionMap
     };
 
     // Unlike a RangeSection, a RangeSectionFragment cannot span multiple elements of the last level of the RangeSectionMap
-    // Always allocated via calloc
+    // Always allocated via memset/free
     class RangeSectionFragment
     {
     public:
@@ -801,7 +804,13 @@ class RangeSectionMap
 
     RangeSection* EndOfCleanupListMarker() { return (RangeSection*)1; }
 
-    void* AllocateLevel() { return calloc(entriesPerMapLevel, sizeof(void*)); }
+    void* AllocateLevel()
+    {
+        size_t size = entriesPerMapLevel * sizeof(void*);
+        void *buf = malloc(size);
+        memset(buf, 0, size);
+        return buf;
+    }
 
     uintptr_t EffectiveBitsForLevel(TADDR address, uintptr_t level)
     {
@@ -852,7 +861,7 @@ class RangeSectionMap
         if (_RangeSectionL2 == NULL)
             return NULL; // Failure case
 #else
-        auto _RangeSectionL2 = &topLevel;
+        auto _RangeSectionL2 = &_topLevel;
 #endif
         auto _RangeSectionL1 = EnsureLevel(address, _RangeSectionL2, --level);
         if (_RangeSectionL1 == NULL)
