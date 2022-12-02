@@ -1861,8 +1861,13 @@ interp_emit_stobj (TransformData *td, MonoClass *klass, gboolean reverse_order)
 	int mt = mint_type (m_class_get_byval_arg (klass));
 
 	if (mt == MINT_TYPE_VT) {
-		interp_add_ins (td, MINT_STOBJ_VT);
-		td->last_ins->data [0] = get_data_item_index (td, klass);
+		if (m_class_has_references (klass)) {
+			interp_add_ins (td, MINT_STOBJ_VT);
+			td->last_ins->data [0] = get_data_item_index (td, klass);
+		} else {
+			interp_add_ins (td, MINT_STOBJ_VT_NOREF);
+			td->last_ins->data [0] = GINT32_TO_UINT16 (mono_class_value_size (klass, NULL));
+		}
 	} else {
 		int opcode = interp_get_stind_for_mt (mt);
 		interp_add_ins (td, opcode);
