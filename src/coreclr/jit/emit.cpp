@@ -33,6 +33,14 @@ void emitLocation::CaptureLocation(emitter* emit)
     assert(Valid());
 }
 
+void emitLocation::SetLocation(insGroup* _ig, unsigned _codePos)
+{
+    ig      = _ig;
+    codePos = _codePos;
+
+    assert(Valid());
+}
+
 bool emitLocation::IsCurrentLocation(emitter* emit) const
 {
     assert(Valid());
@@ -48,6 +56,11 @@ UNATIVE_OFFSET emitLocation::CodeOffset(emitter* emit) const
 int emitLocation::GetInsNum() const
 {
     return emitGetInsNumFromCodePos(codePos);
+}
+
+int emitLocation::GetInsOffset() const
+{
+    return emitGetInsOfsFromCodePos(codePos);
 }
 
 // Get the instruction offset in the current instruction group, which must be a funclet prolog group.
@@ -1021,27 +1034,25 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
     }
 
-    // Fix the last instruction field
+    // Fix the last instruction field, if set. Note that even if there are instructions in the IG,
+    // emitLastIns might not be set if an optimization has just deleted it, and the new instruction
+    // being adding causes a new EXTEND IG to be created. Also, emitLastIns might not be in this IG
+    // at all if this IG is empty.
 
-    if (sz != 0)
+    assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
+    if ((emitLastIns != nullptr) && (sz != 0))
     {
-        assert(emitLastIns != nullptr);
+        // If we get here, emitLastIns must be in the current IG we are saving.
         assert(emitLastInsIG == emitCurIG);
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
 
 #if defined(TARGET_XARCH)
-        assert(emitLastIns != nullptr);
         if (emitLastIns->idIns() == INS_jmp)
         {
             ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
         }
 #endif
-
-        // Make a copy of "emitLastIns", to be used in the event that a future
-        // optimisation call for the removal of a previously-emitted instruction.
-
-        emitPrevLastIns = emitLastIns;
 
         emitLastIns   = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
         emitLastInsIG = ig;
@@ -1193,9 +1204,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastIns     = nullptr;
-    emitLastInsIG   = nullptr;
-    emitPrevLastIns = nullptr;
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
@@ -1515,11 +1525,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     }
 
     /* Grab the space for the instruction */
-
-    // Make a copy of "emitLastIns", to be used in the event that a future
-    // optimisation calls for the removal of a previously-emitted instruction.
-
-    emitPrevLastIns = emitLastIns;
 
     emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitLastInsIG    = emitCurIG;
@@ -9131,6 +9136,19 @@ void emitter::emitNxtIG(bool extend)
 // The `emitLastIns` is set to nullptr after this function. It is expected that a new instruction
 // will be immediately generated after this, which will set it again.
 //
+// Removing an instruction can invalidate any captured emitter location (using emitLocation::CaptureLocation())
+// after the instruction was generated. This is because the emitLocation stores the current IG instruction
+// number and code size. If the instruction is removed and not replaced (e.g., it is at the end of the IG,
+// and any replacement creates a new EXTEND IG), then the saved instruction number is incorrect. One way to
+// work around this problem might be to make emitter::emitCodeOffset() tolerant of too-large instruction numbers.
+// However, this doesn't fix the real problem. If an instruction is generated, then an emitLocation is captured,
+// then the instruction is removed and replaced, the captured emitLocation will be pointing *after* the new
+// instruction. Semantically, it probably should be pointing *before* the new instruction. The main case
+// where emitLocations are captured, and this problem occurs, is in genIPmappingAdd(). So, if the removed
+// instruction is just before the last added IP mapping, then update the IP mapping. This assumes that there
+// will be only one such mapping (and not a set of equivalent, same-location mappings), which would require
+// looping over the mappings.
+//
 // NOTE: It is expected that the GC effect of the removed instruction will be handled by the newly
 // generated replacement(s).
 //
@@ -9139,7 +9157,7 @@ void emitter::emitRemoveLastInstruction()
     assert(emitLastIns != nullptr);
     assert(emitLastInsIG != nullptr);
 
-    JITDUMP("Removing saved instruction in %s:\n", emitLabelString(emitLastInsIG));
+    JITDUMP("Removing saved instruction in %s:\n> ", emitLabelString(emitLastInsIG));
     JITDUMPEXEC(dispIns(emitLastIns))
 
     // We should assert it's not a jmp, as that would require updating the jump lists, e.g. emitCurIGjmpList.
@@ -9147,17 +9165,20 @@ void emitter::emitRemoveLastInstruction()
     BYTE*          lastInsActualStartAddr = (BYTE*)emitLastIns - m_debugInfoSize;
     unsigned short lastCodeSize           = (unsigned short)emitLastIns->idCodeSize();
 
-    if ((emitCurIGfreeBase <= (BYTE*)lastInsActualStartAddr) && ((BYTE*)lastInsActualStartAddr < emitCurIGfreeEndp))
+    if ((emitCurIGfreeBase <= lastInsActualStartAddr) && (lastInsActualStartAddr < emitCurIGfreeEndp))
     {
         // The last instruction is in the current buffer. That means the current IG is non-empty.
         assert(emitCurIGnonEmpty());
-        assert((BYTE*)lastInsActualStartAddr < emitCurIGfreeNext);
+        assert(lastInsActualStartAddr < emitCurIGfreeNext);
         assert(emitCurIGinsCnt >= 1);
         assert(emitCurIGsize >= emitLastIns->idCodeSize());
 
-        size_t insSize = emitCurIGfreeNext - (BYTE*)lastInsActualStartAddr;
+        // Use an emit location representing the current location (before the instruction is removed).
+        codeGen->genIPmappingUpdateForRemovedInstruction(emitLocation(this), emitLastIns->idCodeSize());
 
-        emitCurIGfreeNext = (BYTE*)lastInsActualStartAddr;
+        size_t insSize = emitCurIGfreeNext - lastInsActualStartAddr;
+
+        emitCurIGfreeNext = lastInsActualStartAddr;
         emitCurIGinsCnt -= 1;
         emitCurIGsize -= lastCodeSize;
 
@@ -9167,10 +9188,13 @@ void emitter::emitRemoveLastInstruction()
     else
     {
         // The last instruction has already been saved. It must be the last instruction in the group.
-        assert((BYTE*)emitLastInsIG->igData + emitLastInsIG->igDataSize ==
-               (BYTE*)emitLastIns + emitSizeOfInsDsc(emitLastIns));
+        assert(emitLastInsIG->igData + emitLastInsIG->igDataSize == (BYTE*)emitLastIns + emitSizeOfInsDsc(emitLastIns));
         assert(emitLastInsIG->igInsCnt >= 1);
         assert(emitLastInsIG->igSize >= lastCodeSize);
+
+        // Create an emit location representing the end of the saved IG.
+        emitLocation loc(emitLastInsIG, emitSpecifiedOffset(emitLastInsIG->igInsCnt, emitLastInsIG->igSize));
+        codeGen->genIPmappingUpdateForRemovedInstruction(loc, emitLastIns->idCodeSize());
 
         emitLastInsIG->igInsCnt -= 1;
         emitLastInsIG->igSize -= lastCodeSize;
@@ -9179,11 +9203,8 @@ void emitter::emitRemoveLastInstruction()
         // but it's not necessary, and leaving it might be useful for debugging.
     }
 
-    // As we are removing the instruction, so we need to wind back
-    // "emitLastIns" to its previous value.
-
-    emitLastIns     = emitPrevLastIns;
-    emitPrevLastIns = nullptr;
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
 }
 
 /*****************************************************************************

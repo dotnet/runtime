@@ -131,6 +131,16 @@ public:
     {
     }
 
+    emitLocation(insGroup* _ig, unsigned _codePos)
+    {
+        SetLocation(_ig, _codePos);
+    }
+
+    emitLocation(emitter* emit)
+    {
+        CaptureLocation(emit);
+    }
+
     emitLocation(void* emitCookie) : ig((insGroup*)emitCookie), codePos(0)
     {
     }
@@ -142,6 +152,7 @@ public:
     }
 
     void CaptureLocation(emitter* emit);
+    void SetLocation(insGroup* _ig, unsigned _codePos);
 
     bool IsCurrentLocation(emitter* emit) const;
 
@@ -160,6 +171,7 @@ public:
     }
 
     int GetInsNum() const;
+    int GetInsOffset() const;
 
     bool operator!=(const emitLocation& other) const
     {
@@ -2181,20 +2193,23 @@ private:
 
     instrDesc* emitLastIns;
     insGroup*  emitLastInsIG;
-    instrDesc* emitPrevLastIns;
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
-    // We must have a lastInstr to consult.
+    // We must have a non-null emitLastIns to consult.
     // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
     // The final check prevents looking across an IG boundary unless we're in an extension IG.
     bool emitCanPeepholeLastIns()
     {
-        return (emitLastIns != nullptr) &&                 // there is an emitLastInstr
-               !emitForceNewIG &&                          // and we're not about to start a new IG
-               ((emitCurIGinsCnt > 0) ||                   // and we're not at the start of a new IG
-                ((emitCurIG->igFlags & IGF_EXTEND) != 0)); //    or we are at the start of a new IG,
-                                                           //    and it's an extension IG
+        assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
+
+        return (emitLastIns != nullptr) &&                   // there is an emitLastInstr
+               !emitForceNewIG &&                            // and we're not about to start a new IG
+               ((emitCurIGinsCnt > 0) ||                     // and we're not at the start of a new IG
+                ((emitCurIG->igFlags & IGF_EXTEND) != 0)) && //    or we are at the start of a new IG,
+                                                             //    and it's an extension IG
+               ((emitLastInsIG->igFlags & IGF_NOGCINTERRUPT) == (emitCurIG->igFlags & IGF_NOGCINTERRUPT));
+        // and the last instr IG has the same GC interrupt status as the current IG
     }
 
 #ifdef TARGET_ARMARCH
@@ -2824,12 +2839,15 @@ inline unsigned emitGetInsOfsFromCodePos(unsigned codePos)
 
 inline unsigned emitter::emitCurOffset()
 {
-    unsigned codePos = emitCurIGinsCnt + (emitCurIGsize << 16);
+    return emitSpecifiedOffset(emitCurIGinsCnt, emitCurIGsize);
+}
 
-    assert(emitGetInsOfsFromCodePos(codePos) == emitCurIGsize);
-    assert(emitGetInsNumFromCodePos(codePos) == emitCurIGinsCnt);
+inline unsigned emitter::emitSpecifiedOffset(unsigned insCount, unsigned igSize)
+{
+    unsigned codePos = insCount + (igSize << 16);
 
-    // printf("[IG=%02u;ID=%03u;OF=%04X] => %08X\n", emitCurIG->igNum, emitCurIGinsCnt, emitCurIGsize, codePos);
+    assert(emitGetInsOfsFromCodePos(codePos) == igSize);
+    assert(emitGetInsNumFromCodePos(codePos) == insCount);
 
     return codePos;
 }

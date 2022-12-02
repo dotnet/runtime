@@ -7166,7 +7166,7 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
  *  Display a IPmappingDsc. Pass -1 as mappingNum to not display a mapping number.
  */
 
-void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
+void CodeGen::genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMapping)
 {
     if (mappingNum != unsigned(-1))
     {
@@ -7316,6 +7316,57 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
         genIPmappingDisp(unsigned(-1), &addMapping);
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// genIPmappingUpdateForRemovedInstruction: Update the IP mapping table for a removed instruction.
+// If the last IP mapping corresponds to the location immediately after the removed instruction, then
+// update the mapping to the location before the removed instruction.
+//
+// Arguments:
+//    loc - the emitter location we compare against
+//    removedCodeSize - the size of the instruction being removed
+//
+void CodeGen::genIPmappingUpdateForRemovedInstruction(emitLocation loc, unsigned removedCodeSize)
+{
+    if (!compiler->opts.compDbgInfo)
+    {
+        return;
+    }
+
+    if (compiler->genIPmappings.size() <= 0)
+    {
+        return;
+    }
+
+    IPmappingDsc& prev = compiler->genIPmappings.back();
+    if (prev.ipmdNativeLoc == loc)
+    {
+        assert(prev.ipmdKind == IPmappingDscKind::Normal);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("Updating last IP mapping: ");
+            genIPmappingDisp(unsigned(-1), &prev);
+        }
+#endif // DEBUG
+
+        int newInsCount  = prev.ipmdNativeLoc.GetInsNum() - 1;
+        int newInsOffset = prev.ipmdNativeLoc.GetInsOffset() - removedCodeSize;
+        assert(newInsCount >= 0);
+        assert(newInsOffset >= 0);
+        unsigned newLoc = GetEmitter()->emitSpecifiedOffset(newInsCount, newInsOffset);
+        prev.ipmdNativeLoc.SetLocation(prev.ipmdNativeLoc.GetIG(), newLoc);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("                      to: ");
+            genIPmappingDisp(unsigned(-1), &prev);
+        }
+#endif // DEBUG
+    }
 }
 
 /*****************************************************************************/
