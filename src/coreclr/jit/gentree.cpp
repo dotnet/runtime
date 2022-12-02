@@ -15683,7 +15683,8 @@ GenTree* Compiler::gtNewTempAssign(
         {
             ok = true;
         }
-        else if ((dstTyp == TYP_I_IMPL) && varTypeIsGC(valTyp))
+        // - TYP_I_IMPL = TYP_BYREF
+        else if ((dstTyp == TYP_I_IMPL) && (valTyp == TYP_BYREF))
         {
             ok = true;
         }
