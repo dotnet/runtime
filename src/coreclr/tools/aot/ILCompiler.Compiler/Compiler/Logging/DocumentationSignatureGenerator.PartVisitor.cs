@@ -17,9 +17,9 @@ namespace ILCompiler.Logging
         ///  Adapted from Roslyn's DocumentattionCommentIDVisitor.PartVisitor:
         ///  https://github.com/dotnet/roslyn/blob/master/src/Compilers/CSharp/Portable/DocumentationComments/DocumentationCommentIDVisitor.PartVisitor.cs
         /// </summary>
-        internal sealed class PartVisitor : TypeNameFormatter
+        public sealed class PartVisitor : TypeNameFormatter
         {
-            internal static readonly PartVisitor Instance = new PartVisitor();
+            public static readonly PartVisitor Instance = new PartVisitor();
 
             private PartVisitor()
             {
@@ -146,7 +146,7 @@ namespace ILCompiler.Logging
 
             protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
             {
-                AppendName(sb, containingType);
+                AppendName(sb, InstantiateContainingType(nestedType));
                 sb.Append('.');
                 sb.Append(nestedType.Name);
             }
@@ -162,10 +162,11 @@ namespace ILCompiler.Logging
             protected override void AppendNameForInstantiatedType(StringBuilder builder, DefType type)
             {
                 int containingArity = 0;
-                DefType containingType = type.ContainingType;
+                TypeDesc containingType = InstantiateContainingType(type);
                 if (containingType != null)
                 {
                     AppendName(builder, containingType);
+                    builder.Append('.');
                     containingArity = containingType.Instantiation.Length;
                 }
                 else
@@ -177,7 +178,8 @@ namespace ILCompiler.Logging
 
                 string unmangledName = type.Name;
                 int totalArity = type.Instantiation.Length;
-                string expectedSuffix = $"`{totalArity}";
+                int nestedArity = totalArity - containingArity;
+                string expectedSuffix = $"`{nestedArity}";
                 if (unmangledName.EndsWith(expectedSuffix))
                     unmangledName = unmangledName.Substring(0, unmangledName.Length - expectedSuffix.Length);
 
@@ -218,6 +220,18 @@ namespace ILCompiler.Logging
                 return name.Replace('<', '{').Replace('>', '}');
             }
 #endif
+
+            private static TypeDesc InstantiateContainingType(DefType type)
+            {
+                DefType containingType = type.ContainingType;
+                if (containingType is null)
+                    return null;
+
+                if (!containingType.HasInstantiation)
+                    return containingType;
+
+                return containingType.InstantiateAsOpen().InstantiateSignature(type.Instantiation, default(Instantiation));
+            }
         }
     }
 }
