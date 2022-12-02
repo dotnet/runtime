@@ -4085,8 +4085,13 @@ interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
 	} else {
 		interp_add_ins (td, MINT_LDSFLDA);
 		interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+		gpointer field_addr = mono_static_field_get_addr (vtable, field);
+		if (field_addr == 0) {
+			mono_error_set_generic_error (error, "System", "MissingFieldException", "");
+			return;
+		}
 		td->last_ins->data [0] = get_data_item_index (td, vtable);
-		td->last_ins->data [1] = get_data_item_index (td, mono_static_field_get_addr (vtable, field));
+		td->last_ins->data [1] = get_data_item_index (td, field_addr);
 	}
 }
 
@@ -4184,6 +4189,10 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 		}
 	} else {
 		gpointer field_addr = mono_static_field_get_addr (vtable, field);
+		if (field_addr == 0) {
+			mono_error_set_generic_error (error, "System", "MissingFieldException", "");
+			return;
+		}
 		int size = 0;
 		if (mt == MINT_TYPE_VT)
 			size = mono_class_value_size (field_class, NULL);
