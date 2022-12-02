@@ -293,8 +293,7 @@ namespace System.Threading
 
         private bool TryEnterReadLockCore(TimeoutTracker timeout)
         {
-            if (_fDisposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_fDisposed, this);
 
             ReaderWriterCount lrwc;
             int id = Environment.CurrentManagedThreadId;
@@ -440,8 +439,7 @@ namespace System.Threading
 
         private bool TryEnterWriteLockCore(TimeoutTracker timeout)
         {
-            if (_fDisposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_fDisposed, this);
 
             int id = Environment.CurrentManagedThreadId;
             ReaderWriterCount? lrwc;
@@ -648,8 +646,7 @@ namespace System.Threading
 
         private bool TryEnterUpgradeableReadLockCore(TimeoutTracker timeout)
         {
-            if (_fDisposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_fDisposed, this);
 
             int id = Environment.CurrentManagedThreadId;
             ReaderWriterCount? lrwc;
