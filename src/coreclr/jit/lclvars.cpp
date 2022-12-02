@@ -1823,6 +1823,14 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 
         noway_assert(fieldInfo.fldOffset < structSize);
 
+#ifdef FEATURE_SIMD
+        if ((fieldInfo.fldType == TYP_SIMD12) && ((structSize - fieldInfo.fldOffset) < genTypeSize(TYP_SIMD16)))
+        {
+            // Conservatively disable promotion if we can't load a SIMD12 field via 16-bytes load
+            return false;
+        }
+#endif
+
         if (fieldInfo.fldSize == 0)
         {
             // Not a scalar type.
