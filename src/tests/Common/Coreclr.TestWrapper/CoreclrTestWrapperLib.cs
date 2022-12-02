@@ -461,6 +461,7 @@ namespace CoreclrTestLib
                 outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
             }
             outputWriter.WriteLine($"help output: {llvmSymbolizer.StandardOutput.ReadToEnd()}");
+            outputWriter.WriteLine($"help error : {llvmSymbolizer.StandardError.ReadToEnd()}");
 
             if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
@@ -506,6 +507,7 @@ namespace CoreclrTestLib
 
             symbolizerOutput = llvmSymbolizer.StandardOutput.ReadToEnd();
             outputWriter.WriteLine($"symbolizerOutput: {symbolizerOutput}");
+            outputWriter.WriteLine($"symbolizerError : {llvmSymbolizer.StandardError.ReadToEnd()}");
 
             if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
