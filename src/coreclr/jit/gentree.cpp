@@ -15683,6 +15683,10 @@ GenTree* Compiler::gtNewTempAssign(
         {
             ok = true;
         }
+        else if ((dstTyp == TYP_I_IMPL) && varTypeIsGC(valTyp))
+        {
+            ok = true;
+        }
         // - TYP_BYREF = TYP_REF when object stack allocation is enabled
         else if (JitConfig.JitObjectStackAllocation() && (dstTyp == TYP_BYREF) && (valTyp == TYP_REF))
         {
