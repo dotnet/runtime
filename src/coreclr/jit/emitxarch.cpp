@@ -4010,6 +4010,15 @@ void emitter::emitIns(instruction ins, emitAttr attr)
 //
 emitter::insFormat emitter::emitMapFmtForIns(insFormat fmt, instruction ins)
 {
+    if (IsMovInstruction(ins))
+    {
+        // A `mov` instruction is always "write"
+        // and not "read/write".
+        if (fmt == IF_RRW_ARD)
+        {
+            return IF_RWR_ARD;
+        }
+    }
     switch (ins)
     {
         case INS_rol_N:
@@ -4034,7 +4043,6 @@ emitter::insFormat emitter::emitMapFmtForIns(insFormat fmt, instruction ins)
                     unreached();
             }
         }
-
         default:
             return fmt;
     }
