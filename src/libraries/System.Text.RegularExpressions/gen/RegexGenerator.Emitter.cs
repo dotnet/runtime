@@ -392,12 +392,12 @@ namespace System.Text.RegularExpressions.Generator
 
             string fieldName = hexBitmap switch
             {
-                "0000000000000000FEFFFF07FEFFFF07" => "AsciiLetter",
-                "000000000000FF03FEFFFF07FEFFFF07" => "AsciiLetterOrDigit",
-                "000000000000FF037E0000007E000000" => "AsciiHexDigit",
-                "000000000000FF03000000007E000000" => "AsciiHexDigitLower",
-                "000000000000FF037E00000000000000" => "AsciiHexDigitUpper",
-                _ => $"Ascii_{hexBitmap.TrimStart('0')}"
+                "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
+                "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
+                "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
+                "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
+                "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
+                _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
             };
 
             string helperName = $"IndexOfAnyValues_{fieldName}";
@@ -406,8 +406,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 requiredHelpers.Add(helperName, new string[]
                 {
-                    $"internal static readonly IndexOfAnyValues<char> {fieldName} =",
-                    $"    IndexOfAnyValues.Create({Literal(new string(asciiChars))});",
+                    $"internal static readonly IndexOfAnyValues<char> {fieldName} = IndexOfAnyValues.Create({Literal(new string(asciiChars))});",
                 });
             }
 

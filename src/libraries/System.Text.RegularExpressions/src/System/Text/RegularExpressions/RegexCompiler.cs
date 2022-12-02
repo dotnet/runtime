@@ -5994,8 +5994,8 @@ namespace System.Text.RegularExpressions
 
             // this._indexOfAnyValues[index]
             Ldthisfld(s_indexOfAnyValuesArrayField);
-            _ilg!.Emit(OpCodes.Ldc_I4_S, index);
-            _ilg.Emit(OpCodes.Ldelem_Ref);
+            Ldc(index);
+            _ilg!.Emit(OpCodes.Ldelem_Ref);
         }
     }
 }
