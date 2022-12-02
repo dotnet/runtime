@@ -42,7 +42,7 @@ namespace DefaultNamespace
 
     public class bug
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
 
             int size = 32;

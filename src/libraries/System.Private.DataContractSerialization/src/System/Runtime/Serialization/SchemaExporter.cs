@@ -348,7 +348,7 @@ namespace System.Runtime.Serialization
             if (_dataContractSet.SerializationExtendedSurrogateProvider != null)
                 DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
             DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject,
-                SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes, int.MaxValue,
+                SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes,
                 ignoreExtensionDataObject: false, preserveObjectReferences: true);
             serializer.WriteObject(xmlWriter, surrogateData);
             xmlWriter.Flush();

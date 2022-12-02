@@ -6,9 +6,12 @@ set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
 set(MONO_HOT_RELOAD_COMPONENT_NAME "hot_reload")
 set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
 set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
+set(MONO_MARSHAL_ILGEN_COMPONENT_NAME "marshal-ilgen")
 
 # a list of every component.
 set(components "")
+# a list of components needed by the AOT compiler
+set(components_for_aot "")
 
 # the sources for each individiable component define a new
 # component_name-sources list for each component, and a
@@ -79,17 +82,51 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-dependencies
   ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources
 )
 
+# marshal-ilgen
+list(APPEND components
+  ${MONO_MARSHAL_ILGEN_COMPONENT_NAME}
+)
+list(APPEND components_for_aot
+  ${MONO_MARSHAL_ILGEN_COMPONENT_NAME}
+)
+
+set(${MONO_MARSHAL_ILGEN_COMPONENT_NAME}-sources
+  ${MONO_COMPONENT_PATH}/marshal-ilgen.c
+  ${MONO_COMPONENT_PATH}/marshal-ilgen.h
+)
+
+# For every component not build into the AOT compiler, build the stub instead
+set(stubs_for_aot "")
+foreach (component IN LISTS components)
+  if (NOT (component IN_LIST components_for_aot))
+    list(APPEND stubs_for_aot "${component}")
+  endif()
+endforeach()
+
+
+set(${MONO_MARSHAL_ILGEN_COMPONENT_NAME}-stub-sources
+  ${MONO_COMPONENT_PATH}/marshal-ilgen-stub.c
+)
+
+if (AOT_COMPONENTS)
+  set(components_to_build  ${components_for_aot})
+  set(stubs_to_build ${stubs_for_aot})
+else()
+  set(components_to_build  ${components})
+  set(stubs_to_build ${components})
+endif()
+
 # from here down, all the components are treated in the same way
 
 #define a library for each component and component stub
 function(define_component_libs)
   # NOTE: keep library naming pattern in sync with RuntimeComponentManifest.targets
-  if (NOT DISABLE_LIBS)
-    foreach(component IN LISTS components)
+  if (AOT_COMPONENTS OR NOT DISABLE_LIBS )
+    foreach(component IN LISTS components_to_build)
       add_library("mono-component-${component}-static" STATIC $<TARGET_OBJECTS:${component}-objects>)
       install(TARGETS "mono-component-${component}-static" LIBRARY)
     endforeach()
-    foreach(component IN LISTS components)
+    foreach(component IN LISTS stubs_to_build)
       add_library("mono-component-${component}-stub-static" STATIC $<TARGET_OBJECTS:${component}-stub-objects>)
       install(TARGETS "mono-component-${component}-stub-static" LIBRARY)
     endforeach()
@@ -103,7 +140,7 @@ target_sources(component_base INTERFACE
 )
 target_link_libraries(component_base INTERFACE monoapi)
 
-if(DISABLE_COMPONENTS OR DISABLE_LIBS)
+if(NOT AOT_COMPONENTS AND (DISABLE_COMPONENTS OR DISABLE_LIBS))
   set(DISABLE_COMPONENT_OBJECTS 1)
 endif()
 
@@ -123,7 +160,7 @@ endforeach()
 
 if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
   # define a shared library for each component
-  foreach(component IN LISTS components)
+  foreach(component IN LISTS components_to_build)
     # NOTE: keep library naming pattern in sync with RuntimeComponentManifest.targets
     if(HOST_WIN32)
       add_library("mono-component-${component}" SHARED "${${component}-sources}")
@@ -155,14 +192,14 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
   #define a library for each component and component stub
   define_component_libs()
 
-elseif(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
+elseif(AOT_COMPONENTS OR (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS))
 
   #define a library for each component and component stub
   define_component_libs()
 
   # define a list of mono-components objects for mini if building a shared libmono with static-linked components
   set(mono-components-objects "")
-  foreach(component IN LISTS components)
+  foreach(component IN LISTS components_to_build)
     list(APPEND mono-components-objects $<TARGET_OBJECTS:${component}-objects>)
   endforeach()
 

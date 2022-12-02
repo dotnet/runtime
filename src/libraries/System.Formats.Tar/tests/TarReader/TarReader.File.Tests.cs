@@ -241,6 +241,14 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<EndOfStreamException>(() => reader.GetNextEntry());
         }
 
+        [Fact]
+        public void ReadDataStreamOfGoLangTarGzGnu()
+        {
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.GZip, "golang_tar", "pax-bad-hdr-large");
+            using GZipStream decompressor = new GZipStream(archiveStream, CompressionMode.Decompress);
+            VerifyDataStreamOfTarInternal(decompressor, copyData: false);
+        }
+
         [Theory]
         [InlineData("tar-rs", "spaces")]
         [InlineData("golang_tar", "v7")]
@@ -323,6 +331,30 @@ namespace System.Formats.Tar.Tests
             // The extended attribute 'size' has the value 17179869184
             // Exception message: Stream length must be non-negative and less than 2^31 - 1 - origin
             Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("key", "value")]
+        [InlineData("key    ", "value    ")]
+        [InlineData("    key", "    value")]
+        [InlineData("    key   ", "    value    ")]
+        [InlineData("    key spaced   ", "    value spaced    ")]
+        [InlineData("many sla/s\\hes", "/////////////\\\\\\///////////")]
+        public void PaxExtendedAttribute_Roundtrips(string key, string value)
+        {
+            var stream = new MemoryStream();
+            using (var writer = new TarWriter(stream, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "entryName", new Dictionary<string, string>() { { key, value } }));
+            }
+
+            stream.Position = 0;
+            using (var reader = new TarReader(stream))
+            {
+                PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+                Assert.Equal(5, entry.ExtendedAttributes.Count);
+                Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
+            }
         }
 
         private static void VerifyDataStreamOfTarUncompressedInternal(string testFolderName, string testCaseName, bool copyData)

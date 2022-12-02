@@ -556,12 +556,15 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
     }
     else
     {
-        assert(varTypeIsArithmetic(argType));
+        assert(varTypeIsArithmetic(argType) || ((argType == TYP_BYREF) && (newobjThis == nullptr)));
 
         arg = impPopStack().val;
-        assert(varTypeIsArithmetic(arg->TypeGet()));
+        assert(varTypeIsArithmetic(arg->TypeGet()) || ((argType == TYP_BYREF) && arg->TypeIs(TYP_BYREF)));
 
-        assert(genActualType(arg->gtType) == genActualType(argType));
+        if (!impCheckImplicitArgumentCoercion(argType, arg->gtType))
+        {
+            BADCODE("the hwintrinsic argument has a type that can't be implicitly converted to the signature type");
+        }
     }
 
     return arg;

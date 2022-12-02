@@ -2,7 +2,7 @@
 
 This package provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers. The metadata format is defined by the [ECMA-335 - Common Language Infrastructure (CLI)](http://www.ecma-international.org/publications/standards/Ecma-335.htm) specification and [its amendments](https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md).
 
-The `System.Reflection.Metadata` library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.
+The `System.Reflection.Metadata` library is included in the .NET Runtime shared framework. The package can be installed when you need to use it in other target frameworks.
 
 For more information, see the documentation:
 
@@ -32,8 +32,8 @@ class Program
 
         // Display PE header information
         PEHeader header = peReader.PEHeaders.PEHeader;
-        Console.WriteLine($"Image base:     0x{header.ImageBase.ToString("X")}");
-        Console.WriteLine($"File alignment: 0x{header.FileAlignment.ToString("X")}");
+        Console.WriteLine($"Image base:     0x{header.ImageBase:X}");
+        Console.WriteLine($"File alignment: 0x{header.FileAlignment:X}");
         Console.WriteLine($"Subsystem:      {header.Subsystem}");
 
         // Display .NET metadata information

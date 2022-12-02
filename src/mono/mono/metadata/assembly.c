@@ -268,7 +268,7 @@ mono_assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, MonoA
  * if \p r is a lower version than \p l, or zero if \p l and \p r are equal
  * versions (comparing upto \p maxcomps components).
  *
- * Components are \c major, \c minor, \c revision, and \c build. \p maxcomps 1 means just compare
+ * Components are \c major, \c minor, \c build, and \c revision. \p maxcomps 1 means just compare
  * majors. 2 means majors then minors. etc.
  */
 static int
@@ -284,9 +284,9 @@ assembly_names_compare_versions (MonoAssemblyName *l, MonoAssemblyName *r, int m
 	++i;
 	CMP (minor);
 	++i;
-	CMP (revision);
-	++i;
 	CMP (build);
+	++i;
+	CMP (revision);
 #undef CMP
 	return 0;
 }
@@ -2680,7 +2680,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 }
 
 MonoAssembly*
-mono_assembly_load_corlib ()
+mono_assembly_load_corlib (void)
 {
 	MonoAssemblyName *aname;
 	MonoAssemblyOpenRequest req;

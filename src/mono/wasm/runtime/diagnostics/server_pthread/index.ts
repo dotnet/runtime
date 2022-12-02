@@ -179,7 +179,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     parseCommand(message: ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
         console.debug("MONO_WASM: parsing byte command: ", message.data, connNum);
         const result = parseProtocolCommand(message.data);
-        console.debug("MONO_WASM: parsied byte command: ", result, connNum);
+        console.debug("MONO_WASM: parsed byte command: ", result, connNum);
         if (result.success) {
             return result.result;
         } else {
@@ -230,7 +230,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     async stopEventPipe(ws: WebSocket | MockRemoteSocket, sessionID: EventPipeSessionIDImpl): Promise<void> {
-        console.debug("MONO_WASM: stopEventPipe", sessionID);
+        console.info("MONO_WASM: stopEventPipe", sessionID);
         cwraps.mono_wasm_event_pipe_session_disable(sessionID);
         // we might send OK before the session is actually stopped since the websocket is async
         // but the client end should be robust to that.

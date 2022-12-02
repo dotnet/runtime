@@ -1030,7 +1030,7 @@ namespace System.Net.Security.Tests
                     }
 
                     Assert.Equal(bufferSize, totalLength);
-                    AssertExtensions.SequenceEqual(dataToCopy.AsSpan(), dataReceived.AsSpan().Slice(0, totalLength));
+                    AssertExtensions.SequenceEqual(dataToCopy.AsSpan(), dataReceived.AsSpan(0, totalLength));
                 });
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(writer, reader);

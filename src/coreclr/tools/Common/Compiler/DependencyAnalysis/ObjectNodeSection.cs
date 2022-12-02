@@ -7,7 +7,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         ReadOnly,
         Writeable,
-        Executable
+        Executable,
+        Uninitialized,
     }
 
     /// <summary>
@@ -46,10 +47,20 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection FoldableReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection TextSection = new ObjectNodeSection("text", SectionType.Executable);
         public static readonly ObjectNodeSection TLSSection = new ObjectNodeSection("TLS", SectionType.Writeable);
-        public static readonly ObjectNodeSection BssSection = new ObjectNodeSection("bss", SectionType.Writeable);
+        public static readonly ObjectNodeSection BssSection = new ObjectNodeSection("bss", SectionType.Uninitialized);
+        public static readonly ObjectNodeSection HydrationTargetSection = new ObjectNodeSection("hydrated", SectionType.Uninitialized);
         public static readonly ObjectNodeSection ManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
         public static readonly ObjectNodeSection FoldableManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
         public static readonly ObjectNodeSection ManagedCodeUnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
         public static readonly ObjectNodeSection FoldableManagedCodeUnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
+
+        // Section name on Windows has to be alphabetically less than the ending WindowsUnboxingStubsRegionNode node, and larger than
+        // the begining WindowsUnboxingStubsRegionNode node, in order to have proper delimiters to the begining/ending of the
+        // stubs region, in order for the runtime to know where the region starts and ends.
+        public static readonly ObjectNodeSection UnboxingStubWindowsContentSection = new ObjectNodeSection(".unbox$M", SectionType.Executable);
+        public static readonly ObjectNodeSection UnboxingStubUnixContentSection = new ObjectNodeSection("__unbox", SectionType.Executable);
+
+        public static readonly ObjectNodeSection ModulesWindowsContentSection = new ObjectNodeSection(".modules$I", SectionType.ReadOnly);
+        public static readonly ObjectNodeSection ModulesUnixContentSection = new ObjectNodeSection("__modules", SectionType.Writeable);
     }
 }

@@ -56,7 +56,7 @@ namespace System.Text.RegularExpressions.Generator
             context.RegisterCodeFix(
                 CodeAction.Create(
                     SR.UseRegexSourceGeneratorTitle,
-                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, context.Diagnostics[0], cancellationToken),
+                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, cancellationToken),
                     equivalenceKey: SR.UseRegexSourceGeneratorTitle),
                 context.Diagnostics);
         }
@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="diagnostic">The diagnostic to fix.</param>
         /// <param name="cancellationToken">The cancellation token for the async operation.</param>
         /// <returns>The new document with the replaced nodes after applying the code fix.</returns>
-        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, Diagnostic diagnostic, CancellationToken cancellationToken)
+        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, CancellationToken cancellationToken)
         {
             // We first get the compilation object from the document
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
@@ -273,6 +273,10 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value).ToString());
                     return SyntaxFactory.ParseExpression(optionsLiteral);
+                }
+                else if (argument.Value is ILiteralOperation literalOperation)
+                {
+                    return literalOperation.Syntax;
                 }
                 else
                 {

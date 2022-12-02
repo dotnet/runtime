@@ -1867,10 +1867,6 @@ private:
             if (head->bbJumpDest->bbNum <= bottom->bbNum && head->bbJumpDest->bbNum >= top->bbNum)
             {
                 // OK - we enter somewhere within the loop.
-
-                // Cannot enter at the top - should have being caught by redundant jumps
-                assert((head->bbJumpDest != top) || (head->bbFlags & BBF_KEEP_BBJ_ALWAYS));
-
                 return head->bbJumpDest;
             }
             else
@@ -2951,10 +2947,38 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 {
     bool              modified = false;
-    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+    BasicBlock*       h        = optLoopTable[loopInd].lpHead;
     BasicBlock* const t        = optLoopTable[loopInd].lpTop;
-    BasicBlock* const h        = optLoopTable[loopInd].lpHead;
     BasicBlock* const e        = optLoopTable[loopInd].lpEntry;
+    BasicBlock* const b        = optLoopTable[loopInd].lpBottom;
+
+    // Normally, `head` either falls through to the `top` or branches to a non-`top` middle
+    // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
+    // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
+    // head block. See FindEntry() for the logic that allows this.
+    if ((h->bbJumpKind == BBJ_ALWAYS) && (h->bbJumpDest == t) && (h->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    {
+        // Insert new head
+
+        BasicBlock* const newH = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
+        newH->inheritWeight(h);
+        newH->bbNatLoopNum = h->bbNatLoopNum;
+        h->bbJumpDest      = newH;
+
+        fgRemoveRefPred(t, h);
+        fgAddRefPred(newH, h);
+        fgAddRefPred(t, newH);
+
+        optUpdateLoopHead(loopInd, h, newH);
+
+        JITDUMP("in optCanonicalizeLoop: " FMT_LP " head " FMT_BB
+                " is BBJ_ALWAYS of BBJ_CALLFINALLY/BBJ_ALWAYS pair that targets top " FMT_BB
+                ". Replacing with new BBJ_NONE head " FMT_BB ".",
+                loopInd, h->bbNum, t->bbNum, newH->bbNum);
+
+        h        = newH;
+        modified = true;
+    }
 
     // Look for case (1)
     //
@@ -4201,11 +4225,17 @@ PhaseStatus Compiler::optUnrollLoops()
             // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
             unrollLimitSz = INT_MAX;
         }
-        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
         {
-            // Otherwise unroll only if limit is Vector_.Length
-            // (as a heuristic, not for correctness/structural reasons)
-            JITDUMP("Failed to unroll loop " FMT_LP ": constant limit isn't Vector<T>.Length (heuristic)\n", lnum);
+            // We can unroll this
+        }
+        else if ((loopFlags & LPFLG_SIMD_LIMIT) != 0)
+        {
+            // We can unroll this
+        }
+        else
+        {
+            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
             continue;
         }
 
@@ -6270,6 +6300,80 @@ bool Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefK
     return false;
 }
 
+//------------------------------------------------------------------------
+// optRecordSsaUses: note any SSA uses within tree
+//
+// Arguments:
+//   tree     - tree to examine
+//   block    - block that does (or will) contain tree
+//
+// Notes:
+//   Ignores SSA defs. We assume optimizations that modify trees with
+//   SSA defs are introducing new defs for locals that do not require PHIs
+//   or updating existing defs in place.
+//
+//   Currently does not examine PHI_ARG nodes as no opt phases introduce new PHIs.
+//
+//   Assumes block is a block that was rewritten by SSA or introduced post-SSA
+//   (in particular, block is not unreachable).
+//
+void Compiler::optRecordSsaUses(GenTree* tree, BasicBlock* block)
+{
+    class SsaRecordingVisitor : public GenTreeVisitor<SsaRecordingVisitor>
+    {
+    private:
+        BasicBlock* const m_block;
+
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true
+        };
+
+        SsaRecordingVisitor(Compiler* compiler, BasicBlock* block)
+            : GenTreeVisitor<SsaRecordingVisitor>(compiler), m_block(block)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTreeLclVarCommon* const tree  = (*use)->AsLclVarCommon();
+            const bool                 isUse = (tree->gtFlags & GTF_VAR_DEF) == 0;
+
+            if (isUse)
+            {
+                if (tree->HasSsaName())
+                {
+                    unsigned const      lclNum    = tree->GetLclNum();
+                    unsigned const      ssaNum    = tree->GetSsaNum();
+                    LclVarDsc* const    varDsc    = m_compiler->lvaGetDesc(lclNum);
+                    LclSsaVarDsc* const ssaVarDsc = varDsc->GetPerSsaData(ssaNum);
+                    ssaVarDsc->AddUse(m_block);
+                }
+                else
+                {
+                    assert(!m_compiler->lvaInSsa(tree->GetLclNum()));
+                    assert(!tree->HasCompositeSsaName());
+                }
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    SsaRecordingVisitor srv(this, block);
+    srv.WalkTree(&tree, nullptr);
+}
+
+//------------------------------------------------------------------------
+// optPerformHoistExpr: hoist an expression into the preheader of a loop
+//
+// Arguments:
+//   origExpr - tree to hoist
+//   exprBb   - block containing the tree
+//   lnum     - loop that we're hoisting origExpr out of
+//
 void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsigned lnum)
 {
     assert(exprBb != nullptr);
@@ -6319,6 +6423,10 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     // (or in this case, will contain) the expression.
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
+
+    // Scan the tree for any new SSA uses.
+    //
+    optRecordSsaUses(hoist, preHead);
 
     preHead->bbFlags |= exprBb->bbFlags & BBF_COPY_PROPAGATE;
 
@@ -7243,7 +7351,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 // To be invariant a LclVar node must not be the LHS of an assignment ...
                 bool isInvariant = !user->OperIs(GT_ASG) || (user->AsOp()->gtGetOp1() != tree);
                 // and the variable must be in SSA ...
-                isInvariant = isInvariant && m_compiler->lvaInSsa(lclNum) && lclVar->HasSsaName();
+                isInvariant = isInvariant && lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
                 isInvariant = isInvariant &&
                               !m_compiler->optLoopTable[m_loopNum].lpContains(
@@ -8434,7 +8542,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         // If it's a local byref for which we recorded a value number, use that...
                         GenTreeLclVar* argLcl = arg->AsLclVar();
-                        if (lvaInSsa(argLcl->GetLclNum()) && argLcl->HasSsaName())
+                        if (argLcl->HasSsaName())
                         {
                             ValueNum argVN =
                                 lvaTable[argLcl->GetLclNum()].GetPerSsaData(argLcl->GetSsaNum())->m_vnPair.GetLiberal();
@@ -8512,7 +8620,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     if (rhsVN != ValueNumStore::NoVN)
                     {
                         rhsVN = vnStore->VNNormalValue(rhsVN);
-                        if (lvaInSsa(lhsLcl->GetLclNum()) && lhsLcl->HasSsaName())
+                        if (lhsLcl->HasSsaName())
                         {
                             lvaTable[lhsLcl->GetLclNum()]
                                 .GetPerSsaData(lhsLcl->GetSsaNum())
@@ -9019,7 +9127,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         foldType = TYP_I_IMPL;
     }
 
-    assert(m_testInfo1.compTree->gtOper == GT_EQ || m_testInfo1.compTree->gtOper == GT_NE);
+    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE));
 
     if (m_sameTarget)
     {
@@ -9038,6 +9146,18 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_AND;
             cmpOp  = GT_EQ;
         }
+        else if (m_testInfo1.compTree->gtOper == GT_LT)
+        {
+            // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
+            // So we will branch to BX if (c1|c2)<0
+
+            foldOp = GT_OR;
+            cmpOp  = GT_LT;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_GE)
+        {
+            return false;
+        }
         else
         {
             // t1:c1!=0 t2:c2!=0 ==> Branch to BX if either value is non-0
@@ -9049,15 +9169,12 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     }
     else
     {
-        // The m_b1 condition must be the reverse of the m_b2 condition because the only operators
-        // that we will see here are GT_EQ and GT_NE. So, if they are not the same, we have one of each.
-
         if (m_testInfo1.compTree->gtOper == m_testInfo2.compTree->gtOper)
         {
             return false;
         }
 
-        if (m_testInfo1.compTree->gtOper == GT_EQ)
+        if (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE)
         {
             // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
             // So we will branch to BX if (c1&c2)!=0
@@ -9065,13 +9182,29 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             foldOp = GT_AND;
             cmpOp  = GT_NE;
         }
-        else
+        else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE)
+        {
+            // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
+            // So we will branch to BX if (c1|c2)>=0
+
+            foldOp = GT_OR;
+            cmpOp  = GT_GE;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_GE)
+        {
+            return false;
+        }
+        else if (m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ)
         {
             // t1:c1!=0 t2:c2==0 ==> Branch to BX if both values are 0
             // So we will branch to BX if (c1|c2)==0
 
             foldOp = GT_OR;
             cmpOp  = GT_EQ;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -9214,8 +9347,8 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
 //
 bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 {
-    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE) && m_testInfo1.compTree->AsOp()->gtOp1 == m_c1);
-    assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE) && m_testInfo2.compTree->AsOp()->gtOp1 == m_c2);
+    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE) && m_testInfo1.compTree->AsOp()->gtOp1 == m_c1);
+    assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE) && m_testInfo2.compTree->AsOp()->gtOp1 == m_c2);
 
     //
     // Leave out floats where the bit-representation is more complicated
@@ -9486,7 +9619,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     }
 
     // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
-    // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE)
+    // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE/GT_GE/GT_LT)
 
     var_types foldType = m_c1->TypeGet();
     if (varTypeIsGC(foldType))
@@ -9523,6 +9656,16 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         foldOp = GT_AND;
         cmpOp  = GT_NE;
     }
+    else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE) &&
+             (it1val == 0 && it2val == 0 && it3val == 0))
+    {
+        // Case: x >= 0 && y >= 0
+        //      t1:c1<0 t2:c2>=0 t3:c3==0
+        //      ==> true if (c1|c2)>=0
+
+        foldOp = GT_OR;
+        cmpOp  = GT_GE;
+    }
     else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ) &&
              (it1val == 0 && it2val == 0 && it3val == 1))
     {
@@ -9541,13 +9684,23 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         foldOp = GT_OR;
         cmpOp  = GT_NE;
     }
+    else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT) &&
+             (it1val == 0 && it2val == 0 && it3val == 1))
+    {
+        // Case: x < 0 || y < 0
+        //      t1:c1<0 t2:c2<0 t3:c3==1
+        //      ==> true if (c1|c2)<0
+
+        foldOp = GT_OR;
+        cmpOp  = GT_LT;
+    }
     else
     {
         // Require NOT operation for operand(s). Do Not fold.
         return false;
     }
 
-    if ((foldOp == GT_AND || cmpOp == GT_NE) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
+    if ((foldOp == GT_AND || (cmpOp == GT_NE && foldOp != GT_OR)) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
     {
         // x == 1 && y == 1: Skip cases where x or y is greater than 1, e.g., x=3, y=1
         // x == 0 || y == 0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
@@ -9646,15 +9799,15 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
 //
 // Notes:
 //      On entry, testTree is set.
-//      On success, compTree is set to the compare node (i.e. GT_EQ or GT_NE) of the testTree.
+//      On success, compTree is set to the compare node (i.e. GT_EQ or GT_NE or GT_LT or GT_GE) of the testTree.
 //      isBool is set to true if the comparand (i.e., operand 1 of compTree is boolean. Otherwise, false.
 //
 //      Given a GT_JTRUE or GT_RETURN node, this method checks if it is a boolean comparison
-//      of the form "if (boolVal ==/!=  0/1)".This is translated into
-//      a GT_EQ/GT_NE node with "opr1" being a boolean lclVar and "opr2" the const 0/1.
+//      of the form "if (boolVal ==/!=/>=/<  0/1)".This is translated into
+//      a GT_EQ/GT_NE/GT_GE/GT_LT node with "opr1" being a boolean lclVar and "opr2" the const 0/1.
 //
 //      When isBool == true, if the comparison was against a 1 (i.e true)
-//      then we morph the tree by reversing the GT_EQ/GT_NE and change the 1 to 0.
+//      then we morph the tree by reversing the GT_EQ/GT_NE/GT_GE/GT_LT and change the 1 to 0.
 //
 GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 {
@@ -9663,9 +9816,9 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     assert(pOptTest->testTree->gtOper == GT_JTRUE || pOptTest->testTree->gtOper == GT_RETURN);
     GenTree* cond = pOptTest->testTree->AsOp()->gtOp1;
 
-    // The condition must be "!= 0" or "== 0"
-
-    if ((cond->gtOper != GT_EQ) && (cond->gtOper != GT_NE))
+    // The condition must be "!= 0" or "== 0" or >=0 or <0
+    // we don't optimize unsigned < and >= operations
+    if (!cond->OperIs(GT_EQ, GT_NE) && (!cond->OperIs(GT_LT, GT_GE) || cond->IsUnsigned()))
     {
         return nullptr;
     }
@@ -9742,9 +9895,9 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //    suitable phase status
 //
 // Notes:
-//      If the operand of GT_JTRUE/GT_RETURN node is GT_EQ/GT_NE of the form
-//      "if (boolVal ==/!=  0/1)", the GT_EQ/GT_NE nodes are translated into a
-//      GT_EQ/GT_NE node with
+//      If the operand of GT_JTRUE/GT_RETURN node is GT_EQ/GT_NE/GT_GE/GT_LT of the form
+//      "if (boolVal ==/!=/>=/<  0/1)", the GT_EQ/GT_NE/GT_GE/GT_LT nodes are translated into a
+//      GT_EQ/GT_NE/GT_GE/GT_LT node with
 //          "op1" being a boolean GT_OR/GT_AND lclVar and
 //          "op2" the const 0/1.
 //      For example, the folded tree for the below boolean optimization is shown below:
@@ -9785,6 +9938,30 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //              |  |  \--*  LCL_VAR   int    V02 arg2
 //              |  \--*  LCL_VAR   int    V03 arg3
 //              \--*  CNS_INT   int    0
+//
+//      Case 5:     (x != 0 && y != 0) => (x | y) != 0
+//          *  RETURN   int
+//          \--*  NE        int
+//             +--*  OR         int
+//             |  +--*  LCL_VAR     int     V00 arg0
+//             |  \--*  LCL_VAR     int     V01 arg1
+//             \--*  CNS_INT    int     0
+//
+//      Case 6:     (x >= 0 && y >= 0) => (x | y) >= 0
+//          *  RETURN   int
+//          \--*  GE        int
+//             +--*  OR         int
+//             |  +--*  LCL_VAR     int     V00 arg0
+//             |  \--*  LCL_VAR     int     V01 arg1
+//             \--*  CNS_INT    int     0
+//
+//      Case 7:     (x < 0 || y < 0) => (x & y) < 0
+//          *  RETURN   int
+//          \--*  LT        int
+//             +--*  AND         int
+//             |  +--*  LCL_VAR     int     V00 arg0
+//             |  \--*  LCL_VAR     int     V01 arg1
+//             \--*  CNS_INT    int     0
 //
 //      Patterns that are not optimized include (x == 1 && y == 1), (x == 1 || y == 1),
 //      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.
@@ -10160,6 +10337,104 @@ void Compiler::optRemoveRedundantZeroInits()
     }
 }
 
+//------------------------------------------------------------------------
+// optVNBasedDeadStoreRemoval: VN(value)-based dead store removal.
+//
+// The phase iterates over partial stores referenced by the SSA
+// descriptors and deletes those which do not change the local's value.
+//
+// Return Value:
+//    A suitable phase status.
+//
+PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
+{
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableVNBasedDeadStoreRemovalRange;
+    JitEnableVNBasedDeadStoreRemovalRange.EnsureInit(JitConfig.JitEnableVNBasedDeadStoreRemovalRange());
+
+    if (!JitEnableVNBasedDeadStoreRemovalRange.Contains(info.compMethodHash()))
+    {
+        JITDUMP("VN-based dead store removal disabled by JitEnableVNBasedDeadStoreRemovalRange\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
+    bool madeChanges = false;
+
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        if (!lvaInSsa(lclNum))
+        {
+            continue;
+        }
+
+        LclVarDsc* varDsc   = lvaGetDesc(lclNum);
+        unsigned   defCount = varDsc->lvPerSsaData.GetCount();
+        if (defCount <= 2)
+        {
+            continue;
+        }
+
+        for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
+        {
+            LclSsaVarDsc* defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
+            GenTreeOp*    store  = defDsc->GetAssignment();
+
+            if (store != nullptr)
+            {
+                assert(store->OperIs(GT_ASG) && defDsc->m_vnPair.BothDefined());
+
+                JITDUMP("Considering [%06u] for removal...\n", dspTreeID(store));
+
+                GenTree* lhs = store->gtGetOp1();
+                if (!lhs->OperIs(GT_LCL_FLD) || ((lhs->gtFlags & GTF_VAR_USEASG) == 0) ||
+                    (lhs->AsLclFld()->GetLclNum() != lclNum))
+                {
+                    continue;
+                }
+
+                ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
+                ValueNum oldStoreValue =
+                    vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
+                                       lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
+
+                GenTree* rhs = store->gtGetOp2();
+                ValueNum storeValue;
+                if (lhs->TypeIs(TYP_STRUCT) && rhs->IsIntegralConst(0))
+                {
+                    storeValue = vnStore->VNForZeroObj(lhs->AsLclFld()->GetLayout());
+                }
+                else
+                {
+                    storeValue = rhs->GetVN(VNK_Conservative);
+                }
+
+                if (oldStoreValue == storeValue)
+                {
+                    JITDUMP("Removed dead store:\n");
+                    DISPTREE(store);
+
+                    lhs->gtFlags &= ~(GTF_VAR_DEF | GTF_VAR_USEASG);
+
+                    store->ChangeOper(GT_COMMA);
+                    if (store->IsReverseOp())
+                    {
+                        std::swap(store->gtOp1, store->gtOp2);
+                        store->ClearReverseOp();
+                    }
+                    store->gtType = store->gtGetOp2()->TypeGet();
+                    store->SetAllEffectsFlags(store->gtOp1, store->gtOp2);
+                    gtUpdateTreeAncestorsSideEffects(store);
+
+                    madeChanges = true;
+                }
+            }
+        }
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
@@ -10400,15 +10675,4 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 // Assume the caller is going to fix up the table and `bbNatLoopNum` block annotations before the next time
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
-}
-
-ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
-{
-    if (optLocalAssertionProp)
-    {
-        return ValueNumStore::NoVN;
-    }
-
-    assert(vnStore != nullptr);
-    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
 }

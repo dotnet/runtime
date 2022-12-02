@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Avx2_Vector128
 {
     public static partial class Program
     {
-        private static void BlendInt324()
+        [Fact]
+        public static void BlendInt324()
         {
             var test = new ImmBinaryOpTest__BlendInt324();
 

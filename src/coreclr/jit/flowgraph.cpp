@@ -936,98 +936,91 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 //
 bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 {
-    addr = addr->gtEffectiveVal();
-    if (addr->IsIconHandle())
+    switch (addr->OperGet())
     {
-        return false;
-    }
-    else if (addr->OperIs(GT_CNS_STR, GT_CLS_VAR_ADDR))
-    {
-        return false;
-    }
-    else if (addr->OperIs(GT_INDEX_ADDR))
-    {
-        return !addr->AsIndexAddr()->IsNotNull();
-    }
-    else if (addr->OperIs(GT_ARR_ADDR))
-    {
-        return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
-    }
-    else if (addr->gtOper == GT_LCL_VAR)
-    {
-        unsigned varNum = addr->AsLclVarCommon()->GetLclNum();
+        case GT_CNS_INT:
+            return !addr->IsIconHandle();
 
-        if (lvaIsImplicitByRefLocal(varNum))
-        {
+        case GT_CNS_STR:
+        case GT_ADDR:
+        case GT_FIELD_ADDR:
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
+        case GT_CLS_VAR_ADDR:
+            // A GT_ADDR node, by itself, never requires null checking.  The expression whose address is being
+            // taken is either a local or static variable, whose address is necessarily non-null, or else it is
+            // a field dereference, which will do its own bounds checking if necessary.
             return false;
-        }
-    }
-    else if (addr->gtOper == GT_ADDR)
-    {
-        if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
-        {
-            GenTree* cns1Tree = addr->AsOp()->gtOp1;
-            if (!cns1Tree->IsIconHandle())
-            {
-                // Indirection of some random constant...
-                // It is safest just to return true
-                return true;
-            }
-        }
 
-        return false; // we can't have a null address
-    }
-    else if (addr->gtOper == GT_ADD)
-    {
-        if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
-        {
-            GenTree* cns1Tree = addr->AsOp()->gtOp1;
-            if (!cns1Tree->IsIconHandle())
+        case GT_IND:
+            return (addr->gtFlags & GTF_IND_NONNULL) == 0;
+
+        case GT_INDEX_ADDR:
+            return !addr->AsIndexAddr()->IsNotNull();
+
+        case GT_ARR_ADDR:
+            return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
+
+        case GT_LCL_VAR:
+            return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
+
+        case GT_COMMA:
+            return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+
+        case GT_ADD:
+            if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
             {
-                if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
+                GenTree* cns1Tree = addr->AsOp()->gtOp1;
+                if (!cns1Tree->IsIconHandle())
                 {
-                    // Op1 was an ordinary small constant
-                    return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+                    if (!fgIsBigOffset(cns1Tree->AsIntCon()->gtIconVal))
+                    {
+                        // Op1 was an ordinary small constant
+                        return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+                    }
+                }
+                else // Op1 was a handle represented as a constant
+                {
+                    // Is Op2 also a constant?
+                    if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
+                    {
+                        GenTree* cns2Tree = addr->AsOp()->gtOp2;
+                        // Is this an addition of a handle and constant
+                        if (!cns2Tree->IsIconHandle())
+                        {
+                            if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
+                            {
+                                // Op2 was an ordinary small constant
+                                return false; // we can't have a null address
+                            }
+                        }
+                    }
                 }
             }
-            else // Op1 was a handle represented as a constant
+            else
             {
-                // Is Op2 also a constant?
+                // Op1 is not a constant. What about Op2?
                 if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
                 {
                     GenTree* cns2Tree = addr->AsOp()->gtOp2;
-                    // Is this an addition of a handle and constant
+                    // Is this an addition of a small constant
                     if (!cns2Tree->IsIconHandle())
                     {
                         if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
                         {
                             // Op2 was an ordinary small constant
-                            return false; // we can't have a null address
+                            return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
                         }
                     }
                 }
             }
-        }
-        else
-        {
-            // Op1 is not a constant
-            // What about Op2?
-            if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
-            {
-                GenTree* cns2Tree = addr->AsOp()->gtOp2;
-                // Is this an addition of a small constant
-                if (!cns2Tree->IsIconHandle())
-                {
-                    if (!fgIsBigOffset(cns2Tree->AsIntCon()->gtIconVal))
-                    {
-                        // Op2 was an ordinary small constant
-                        return fgAddrCouldBeNull(addr->AsOp()->gtOp1);
-                    }
-                }
-            }
-        }
+            break;
+
+        default:
+            break;
     }
-    return true; // default result: addr could be null
+
+    return true; // default result: addr could be null.
 }
 
 //------------------------------------------------------------------------------
@@ -2293,34 +2286,27 @@ private:
         {
             // There is a return value, so create a temp for it.  Real returns will store the value in there and
             // it'll be reloaded by the single return.
-            unsigned returnLocalNum   = comp->lvaGrabTemp(true DEBUGARG("Single return block return value"));
-            comp->genReturnLocal      = returnLocalNum;
-            LclVarDsc& returnLocalDsc = comp->lvaTable[returnLocalNum];
+            unsigned retLclNum   = comp->lvaGrabTemp(true DEBUGARG("Single return block return value"));
+            comp->genReturnLocal = retLclNum;
+            LclVarDsc* retVarDsc = comp->lvaGetDesc(retLclNum);
+            var_types  retLclType =
+                comp->compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(comp->info.compRetType);
 
-            if (comp->compMethodReturnsNativeScalarType())
+            if (varTypeIsStruct(retLclType))
             {
-                returnLocalDsc.lvType = genActualType(comp->info.compRetType);
-                if (varTypeIsStruct(returnLocalDsc.lvType))
+                comp->lvaSetStruct(retLclNum, comp->info.compMethodInfo->args.retTypeClass, false);
+
+                if (comp->compMethodReturnsMultiRegRetType())
                 {
-                    comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, false);
+                    retVarDsc->lvIsMultiRegRet = true;
                 }
-            }
-            else if (comp->compMethodReturnsRetBufAddr())
-            {
-                returnLocalDsc.lvType = TYP_BYREF;
-            }
-            else if (comp->compMethodReturnsMultiRegRetType())
-            {
-                returnLocalDsc.lvType = TYP_STRUCT;
-                comp->lvaSetStruct(returnLocalNum, comp->info.compMethodInfo->args.retTypeClass, true);
-                returnLocalDsc.lvIsMultiRegRet = true;
             }
             else
             {
-                assert(!"unreached");
+                retVarDsc->lvType = retLclType;
             }
 
-            if (varTypeIsFloating(returnLocalDsc.lvType))
+            if (varTypeIsFloating(retVarDsc->TypeGet()))
             {
                 comp->compFloatingPointUsed = true;
             }
@@ -2328,19 +2314,18 @@ private:
 #ifdef DEBUG
             // This temporary should not be converted to a double in stress mode,
             // because we introduce assigns to it after the stress conversion
-            returnLocalDsc.lvKeepType = 1;
+            retVarDsc->lvKeepType = 1;
 #endif
 
-            GenTree* retTemp = comp->gtNewLclvNode(returnLocalNum, returnLocalDsc.TypeGet());
+            GenTree* retTemp = comp->gtNewLclvNode(retLclNum, retVarDsc->TypeGet());
 
             // make sure copy prop ignores this node (make sure it always does a reload from the temp).
             retTemp->gtFlags |= GTF_DONT_CSE;
-            returnExpr = comp->gtNewOperNode(GT_RETURN, retTemp->gtType, retTemp);
+            returnExpr = comp->gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
         }
-        else
+        else // Return void.
         {
-            // return void
-            noway_assert(comp->info.compRetType == TYP_VOID || varTypeIsStruct(comp->info.compRetType));
+            assert((comp->info.compRetType == TYP_VOID) || varTypeIsStruct(comp->info.compRetType));
             comp->genReturnLocal = BAD_VAR_NUM;
 
             returnExpr = new (comp, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
@@ -3522,6 +3507,8 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     }
     else
     {
+        bool inFuncletSection = false;
+
         for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->bbNext)
         {
             bool blockMustBeInHotSection = false;
@@ -3532,6 +3519,15 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 blockMustBeInHotSection = true;
             }
 #endif // HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
+
+#ifdef FEATURE_EH_FUNCLETS
+            // Make note of if we're in the funclet section,
+            // so we can stop the search early.
+            if (block == fgFirstFuncletBB)
+            {
+                inFuncletSection = true;
+            }
+#endif // FEATURE_EH_FUNCLETS
 
             // Do we have a candidate for the first cold block?
             if (firstColdBlock != nullptr)
@@ -3544,6 +3540,21 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // We have to restart the search for the first cold block
                     firstColdBlock       = nullptr;
                     prevToFirstColdBlock = nullptr;
+
+#ifdef FEATURE_EH_FUNCLETS
+                    // If we're already in the funclet section, try to split
+                    // at fgFirstFuncletBB, and stop the search.
+                    if (inFuncletSection)
+                    {
+                        if (fgFuncletsAreCold())
+                        {
+                            firstColdBlock       = fgFirstFuncletBB;
+                            prevToFirstColdBlock = fgFirstFuncletBB->bbPrev;
+                        }
+
+                        break;
+                    }
+#endif // FEATURE_EH_FUNCLETS
                 }
             }
             else // (firstColdBlock == NULL) -- we don't have a candidate for first cold block
@@ -3555,7 +3566,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                 // consider splitting at the first funclet; do not consider splitting between funclets,
                 // as this may break unwind info.
                 //
-                if (block == fgFirstFuncletBB)
+                if (inFuncletSection)
                 {
                     if (fgFuncletsAreCold())
                     {

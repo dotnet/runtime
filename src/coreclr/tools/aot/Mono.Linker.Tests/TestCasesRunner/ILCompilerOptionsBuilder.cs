@@ -119,6 +119,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddAssemblyAction (string action, string assembly)
 		{
+			switch (action) {
+			case "copy":
+				Options.AdditionalRootAssemblies.Add (assembly);
+				break;
+			}
 		}
 
 		public virtual void AddSkipUnresolved (bool skipUnresolved)

@@ -140,6 +140,57 @@ public class CBoolTest
         return (x == 1 || y == 1);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool BothGreatThanZero(int x, int y)
+    {
+        return x >= 0 && y >= 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool EitherLessThanZero(int x, int y)
+    {
+        return x < 0 || y < 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool EitherNonZero(int x, int y)
+    {
+        return x != 0 || y != 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool AreBothGreatThanZero(int x, int y)
+    {
+        bool b = x >= 0 && y >= 0;
+        if (b)
+        {
+            Console.WriteLine("AreBothGreatThanZero true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsEitherLessThanZero(int x, int y)
+    {
+        bool b = x < 0 || y < 0;
+        if (b)
+        {
+            Console.WriteLine("IsEitherLessThanZero true");
+        }
+        return b;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsEitherNonZero(int x, int y)
+    {
+        bool b = x != 0 || y != 0;
+        if (b)
+        {
+            Console.WriteLine("IsEitherNonZero true");
+        }
+        return b;
+    }
+
     public static int Main()
     {
         // Optimize boolean
@@ -234,6 +285,114 @@ public class CBoolTest
             return 101;
         }
 
+        if (!BothGreatThanZero(45, 23))
+        {
+            Console.WriteLine("CBoolTest:BothGreatThanZero(45, 23) failed");
+            return 101;
+        }
+
+        if (!BothGreatThanZero(0, 23))
+        {
+            Console.WriteLine("CBoolTest:BothGreatThanZero(0, 23) failed");
+            return 101;
+        }
+
+        if (!BothGreatThanZero(45, 0))
+        {
+            Console.WriteLine("CBoolTest:BothGreatThanZero(45, 0) failed");
+            return 101;
+        }
+
+        if (!BothGreatThanZero(0, 0))
+        {
+            Console.WriteLine("CBoolTest:BothGreatThanZero(0, 0) failed");
+            return 101;
+        }
+
+        if (BothGreatThanZero(-22, 23))
+        {
+            Console.WriteLine("CBoolTest:BothGreatThanZero(-22, 23) failed");
+            return 101;
+        }
+
+        if (BothGreatThanZero(45, -36))
+        {
+            Console.WriteLine("CBoolTest:BothGreatThanZero(45, -36) failed");
+            return 101;
+        }
+
+        if (BothGreatThanZero(-22, -36))
+        {
+            Console.WriteLine("CBoolTest:BothGreatThanZero(-22, -36) failed");
+            return 101;
+        }
+
+        if (EitherLessThanZero(45, 23))
+        {
+            Console.WriteLine("CBoolTest:EitherLessThanZero(45, 23) failed");
+            return 101;
+        }
+
+        if (EitherLessThanZero(0, 23))
+        {
+            Console.WriteLine("CBoolTest:EitherLessThanZero(0, 23) failed");
+            return 101;
+        }
+
+        if (EitherLessThanZero(45, 0))
+        {
+            Console.WriteLine("CBoolTest:EitherLessThanZero(45, 0) failed");
+            return 101;
+        }
+
+        if (EitherLessThanZero(0, 0))
+        {
+            Console.WriteLine("CBoolTest:EitherLessThanZero(0, 0) failed");
+            return 101;
+        }
+
+        if (!EitherLessThanZero(-22, 23))
+        {
+            Console.WriteLine("CBoolTest:EitherLessThanZero(-22, 23) failed");
+            return 101;
+        }
+
+        if (!EitherLessThanZero(45, -36))
+        {
+            Console.WriteLine("CBoolTest:EitherLessThanZero(45, -36) failed");
+            return 101;
+        }
+
+        if (!EitherLessThanZero(-22, -36))
+        {
+            Console.WriteLine("CBoolTest:EitherLessThanZero(-22, -36) failed");
+            return 101;
+        }
+
+        if (!EitherNonZero(45, 23))
+        {
+            Console.WriteLine("CBoolTest:EitherNonZero(45, 23) failed");
+            return 101;
+        }
+
+        if (!EitherNonZero(0, 23))
+        {
+            Console.WriteLine("CBoolTest:EitherNonZero(0, 23) failed");
+            return 101;
+        }
+
+        if (!EitherNonZero(45, 0))
+        {
+            Console.WriteLine("CBoolTest:EitherNonZero(45, 0) failed");
+            return 101;
+        }
+
+        if (EitherNonZero(0, 0))
+        {
+            Console.WriteLine("CBoolTest:EitherNonZero(0, 0) failed");
+            return 101;
+        }
+
         if (!AreZero3(0, 0, 0))
         {
             Console.WriteLine("CBoolTest:AreZero3(0, 0, 0) failed");
@@ -305,6 +464,114 @@ public class CBoolTest
         if (AreZeroWithOutput(1, 0))
         {
             Console.WriteLine("CBoolTest:AreZeroWithOutput(1, 0) failed");
+            return 101;
+        }
+
+        if (!AreBothGreatThanZero(45, 23))
+        {
+            Console.WriteLine("CBoolTest:AreBothGreatThanZero(45, 23) failed");
+            return 101;
+        }
+
+        if (!AreBothGreatThanZero(0, 23))
+        {
+            Console.WriteLine("CBoolTest:AreBothGreatThanZero(0, 23) failed");
+            return 101;
+        }
+
+        if (!AreBothGreatThanZero(45, 0))
+        {
+            Console.WriteLine("CBoolTest:AreBothGreatThanZero(45, 0) failed");
+            return 101;
+        }
+
+        if (!AreBothGreatThanZero(0, 0))
+        {
+            Console.WriteLine("CBoolTest:AreBothGreatThanZero(0, 0) failed");
+            return 101;
+        }
+
+        if (AreBothGreatThanZero(-22, 23))
+        {
+            Console.WriteLine("CBoolTest:AreBothGreatThanZero(-22, 23) failed");
+            return 101;
+        }
+
+        if (AreBothGreatThanZero(45, -36))
+        {
+            Console.WriteLine("CBoolTest:AreBothGreatThanZero(45, -36) failed");
+            return 101;
+        }
+
+        if (AreBothGreatThanZero(-22, -36))
+        {
+            Console.WriteLine("CBoolTest:AreBothGreatThanZero(-22, -36) failed");
+            return 101;
+        }
+
+        if (IsEitherLessThanZero(45, 23))
+        {
+            Console.WriteLine("CBoolTest:IsEitherLessThanZero(45, 23) failed");
+            return 101;
+        }
+
+        if (IsEitherLessThanZero(0, 23))
+        {
+            Console.WriteLine("CBoolTest:IsEitherLessThanZero(0, 23) failed");
+            return 101;
+        }
+
+        if (IsEitherLessThanZero(45, 0))
+        {
+            Console.WriteLine("CBoolTest:IsEitherLessThanZero(45, 0) failed");
+            return 101;
+        }
+
+        if (IsEitherLessThanZero(0, 0))
+        {
+            Console.WriteLine("CBoolTest:IsEitherLessThanZero(0, 0) failed");
+            return 101;
+        }
+
+        if (!IsEitherLessThanZero(-22, 23))
+        {
+            Console.WriteLine("CBoolTest:IsEitherLessThanZero(-22, 23) failed");
+            return 101;
+        }
+
+        if (!IsEitherLessThanZero(45, -36))
+        {
+            Console.WriteLine("CBoolTest:IsEitherLessThanZero(45, -36) failed");
+            return 101;
+        }
+
+        if (!IsEitherLessThanZero(-22, -36))
+        {
+            Console.WriteLine("CBoolTest:IsEitherLessThanZero(-22, -36) failed");
+            return 101;
+        }
+
+        if (!IsEitherNonZero(45, 23))
+        {
+            Console.WriteLine("CBoolTest:IsEitherNonZero(45, 23) failed");
+            return 101;
+        }
+
+        if (!IsEitherNonZero(0, 23))
+        {
+            Console.WriteLine("CBoolTest:IsEitherNonZero(0, 23) failed");
+            return 101;
+        }
+
+        if (!IsEitherNonZero(45, 0))
+        {
+            Console.WriteLine("CBoolTest:IsEitherNonZero(45, 0) failed");
+            return 101;
+        }
+
+        if (IsEitherNonZero(0, 0))
+        {
+            Console.WriteLine("CBoolTest:IsEitherNonZero(0, 0) failed");
             return 101;
         }
 

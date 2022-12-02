@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.SpanTests
@@ -169,6 +172,182 @@ namespace System.SpanTests
 
             Assert.Equal(expected, theStrings.SequenceEqual(secondInput, EqualityComparer<string>.Default));
             Assert.Equal(expected, theStrings.SequenceEqual((ReadOnlySpan<string>)secondInput, EqualityComparer<string>.Default));
+        }
+
+        [Theory]
+        [InlineData(100)]
+        public static void SequenceEquals_OverriddenEqualsReturnsFalse_EqualsFalse(int length)
+        {
+            Span<StructOverridingEqualsToAlwaysReturnFalse> span1 = Enumerable.Range(0, length).Select(i => new StructOverridingEqualsToAlwaysReturnFalse()).ToArray();
+            Assert.False(span1.SequenceEqual(span1.ToArray()));
+
+            Span<StructImplementingIEquatableToAlwaysReturnFalse> span2 = Enumerable.Range(0, length).Select(i => new StructImplementingIEquatableToAlwaysReturnFalse()).ToArray();
+            Assert.False(span2.SequenceEqual(span2.ToArray()));
+        }
+
+        private struct StructOverridingEqualsToAlwaysReturnFalse
+        {
+            public override bool Equals([NotNullWhen(true)] object? obj) => false;
+            public override int GetHashCode() => 0;
+        }
+
+        private struct StructImplementingIEquatableToAlwaysReturnFalse : IEquatable<StructImplementingIEquatableToAlwaysReturnFalse>
+        {
+            public bool Equals(StructImplementingIEquatableToAlwaysReturnFalse other) => false;
+        }
+
+        [Theory]
+        [InlineData(100)]
+        public static void SequenceEquals_StructWithOddFieldSize_EqualsAsExpected(int length)
+        {
+            Span<StructWithOddFieldSize> span1 = new StructWithOddFieldSize[length];
+            Span<StructWithOddFieldSize> span2 = new StructWithOddFieldSize[length];
+
+            MemoryMarshal.AsBytes(span1).Fill(0);
+            MemoryMarshal.AsBytes(span2).Fill(0xFF);
+
+            for (int i = 0; i < length; i++)
+            {
+                span1[i].Value1 = span2[i].Value1 = (byte)i;
+                span1[i].Value2 = span2[i].Value2 = (byte)(i * 2);
+                span1[i].Value3 = span2[i].Value3 = (byte)(i * 3);
+            }
+
+            Assert.True(span1.SequenceEqual(span2));
+            Assert.True(span2.SequenceEqual(span1));
+
+            span1[length / 2].Value2++;
+
+            Assert.False(span1.SequenceEqual(span2));
+            Assert.False(span2.SequenceEqual(span1));
+        }
+
+        private struct StructWithOddFieldSize
+        {
+            public byte Value1, Value2, Value3;
+        }
+
+        [Theory]
+        [InlineData(100)]
+        public static void SequenceEquals_StructWithOddFieldSizeAndIEquatable_EqualsAsExpected(int length)
+        {
+            Span<StructWithOddFieldSizeAndIEquatable> span1 = new StructWithOddFieldSizeAndIEquatable[length];
+            Span<StructWithOddFieldSizeAndIEquatable> span2 = new StructWithOddFieldSizeAndIEquatable[length];
+
+            MemoryMarshal.AsBytes(span1).Fill(0);
+            MemoryMarshal.AsBytes(span2).Fill(0xFF);
+
+            for (int i = 0; i < length; i++)
+            {
+                span1[i].Value1 = span2[i].Value1 = (byte)i;
+                span1[i].Value2 = span2[i].Value2 = (byte)(i * 2);
+                span1[i].Value3 = span2[i].Value3 = (byte)(i * 3);
+            }
+
+            Assert.True(span1.SequenceEqual(span2));
+            Assert.True(span2.SequenceEqual(span1));
+
+            span1[length / 2].Value2++;
+
+            Assert.False(span1.SequenceEqual(span2));
+            Assert.False(span2.SequenceEqual(span1));
+        }
+
+        private struct StructWithOddFieldSizeAndIEquatable : IEquatable<StructWithOddFieldSizeAndIEquatable>
+        {
+            public int Value1;
+            public short Value2;
+            public byte Value3;
+
+            public bool Equals(StructWithOddFieldSizeAndIEquatable other) =>
+                Value1 == other.Value1 &&
+                Value2 == other.Value2 &&
+                Value3 == other.Value3;
+
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
+                obj is StructWithOddFieldSizeAndIEquatable other &&
+                Equals(other);
+
+            public override int GetHashCode() =>
+                HashCode.Combine(Value1, Value2, Value3);
+        }
+
+        [Theory]
+        [InlineData(100)]
+        public static void SequenceEquals_StructWithExplicitFieldSizeAndNoFields_EqualsAsExpected(int length)
+        {
+            Span<StructWithExplicitFieldSizeAndNoFields> span1 = new StructWithExplicitFieldSizeAndNoFields[length];
+            Span<StructWithExplicitFieldSizeAndNoFields> span2 = new StructWithExplicitFieldSizeAndNoFields[length];
+
+            MemoryMarshal.AsBytes(span1).Fill(0);
+            MemoryMarshal.AsBytes(span2).Fill(0xFF);
+
+            Assert.True(span1.SequenceEqual(span2));
+            Assert.True(span2.SequenceEqual(span1));
+        }
+
+        [StructLayout(LayoutKind.Sequential, Size = 64)]
+        private struct StructWithExplicitFieldSizeAndNoFields
+        {
+        }
+
+        [Theory]
+        [InlineData(100)]
+        public static void SequenceEquals_StructWithExplicitFieldSizeAndFields_EqualsAsExpected(int length)
+        {
+            Span<StructWithExplicitFieldSizeAndFields> span1 = new StructWithExplicitFieldSizeAndFields[length];
+            Span<StructWithExplicitFieldSizeAndFields> span2 = new StructWithExplicitFieldSizeAndFields[length];
+
+            MemoryMarshal.AsBytes(span1).Fill(0);
+            MemoryMarshal.AsBytes(span2).Fill(0xFF);
+
+            for (int i = 0; i < length; i++)
+            {
+                span1[i].Value = span2[i].Value = i;
+            }
+
+            Assert.True(span1.SequenceEqual(span2));
+            Assert.True(span2.SequenceEqual(span1));
+
+            span1[length / 2].Value++;
+
+            Assert.False(span1.SequenceEqual(span2));
+            Assert.False(span2.SequenceEqual(span1));
+        }
+
+        [StructLayout(LayoutKind.Sequential, Size = 64)]
+        private struct StructWithExplicitFieldSizeAndFields
+        {
+            public int Value;
+        }
+
+        [Theory]
+        [InlineData(100)]
+        public static void SequenceEquals_StructWithDoubleField_EqualsAsExpected(int length)
+        {
+            Span<StructWithDoubleField> span1 = new StructWithDoubleField[length];
+            Span<StructWithDoubleField> span2 = new StructWithDoubleField[length];
+
+            MemoryMarshal.AsBytes(span1).Fill(0);
+            MemoryMarshal.AsBytes(span2).Fill(0xFF);
+
+            for (int i = 0; i < length; i++)
+            {
+                span1[i].Value = span2[i].Value = i;
+            }
+
+            Assert.True(span1.SequenceEqual(span2));
+            Assert.True(span2.SequenceEqual(span1));
+
+            span1[length / 2].Value++;
+
+            Assert.False(span1.SequenceEqual(span2));
+            Assert.False(span2.SequenceEqual(span1));
+        }
+
+        private struct StructWithDoubleField
+        {
+            public double Value;
         }
     }
 }

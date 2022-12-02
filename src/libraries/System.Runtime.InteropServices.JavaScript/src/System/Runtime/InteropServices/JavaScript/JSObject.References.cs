@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public partial class JSObject
     {
-        internal IntPtr JSHandle;
+        internal nint JSHandle;
 
         internal GCHandle? InFlight;
         internal int InFlightCounter;
@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
 
-        private void Dispose(bool disposing)
+        private void DisposeThis()
         {
             if (!_isDisposed)
             {
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         ~JSObject()
         {
-            Dispose(disposing: false);
+            DisposeThis();
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         public void Dispose()
         {
-            Dispose(disposing: true);
+            DisposeThis();
             GC.SuppressFinalize(this);
         }
     }

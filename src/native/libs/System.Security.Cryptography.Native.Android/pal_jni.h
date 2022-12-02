@@ -71,6 +71,9 @@ extern jmethodID g_cipherInitMethod;
 extern jmethodID g_cipherInit2Method;
 extern jmethodID g_getBlockSizeMethod;
 
+// javax/crypto/spec/AEADBadTagException
+extern jclass    g_AEADBadTagExceptionClass;
+
 // javax/crypto/spec/IvParameterSpec
 extern jclass    g_ivPsClass;
 extern jmethodID g_ivPsCtor;
@@ -430,6 +433,7 @@ extern jmethodID g_SSLEngineBeginHandshake;
 extern jmethodID g_SSLEngineCloseOutbound;
 extern jmethodID g_SSLEngineGetApplicationProtocol;
 extern jmethodID g_SSLEngineGetHandshakeStatus;
+extern jmethodID g_SSLEngineGetHandshakeSession;
 extern jmethodID g_SSLEngineGetSession;
 extern jmethodID g_SSLEngineGetSSLParameters;
 extern jmethodID g_SSLEngineGetSupportedProtocols;

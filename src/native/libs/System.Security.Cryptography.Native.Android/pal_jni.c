@@ -88,6 +88,9 @@ jclass    g_sslCtxClass;
 jmethodID g_sslCtxGetDefaultMethod;
 jmethodID g_sslCtxGetDefaultSslParamsMethod;
 
+// javax/crypto/spec/AEADBadTagException
+jclass    g_AEADBadTagExceptionClass;
+
 // javax/crypto/spec/GCMParameterSpec
 jclass    g_GCMParameterSpecClass;
 jmethodID g_GCMParameterSpecCtor;
@@ -416,6 +419,7 @@ jmethodID g_SSLEngineBeginHandshake;
 jmethodID g_SSLEngineCloseOutbound;
 jmethodID g_SSLEngineGetApplicationProtocol;
 jmethodID g_SSLEngineGetHandshakeStatus;
+jmethodID g_SSLEngineGetHandshakeSession;
 jmethodID g_SSLEngineGetSession;
 jmethodID g_SSLEngineGetSSLParameters;
 jmethodID g_SSLEngineGetSupportedProtocols;
@@ -616,12 +620,12 @@ static pthread_key_t threadLocalEnvKey;
 static pthread_once_t threadLocalEnvInitKey = PTHREAD_ONCE_INIT;
 
 static void
-make_key()
+make_key(void)
 {
     (void) pthread_key_create(&threadLocalEnvKey, &DetachThreadFromJNI);
 }
 
-JNIEnv* GetJNIEnv()
+JNIEnv* GetJNIEnv(void)
 {
     JNIEnv *env = NULL;
     (*gJvm)->GetEnv(gJvm, (void**)&env, JNI_VERSION_1_6);
@@ -703,6 +707,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");
     g_ivPsCtor =                GetMethod(env, false, g_ivPsClass, "<init>", "([B)V");
+
+    g_AEADBadTagExceptionClass = GetClassGRef(env, "javax/crypto/AEADBadTagException");
 
     g_GCMParameterSpecClass =   GetClassGRef(env, "javax/crypto/spec/GCMParameterSpec");
     g_GCMParameterSpecCtor =    GetMethod(env, false, g_GCMParameterSpecClass, "<init>", "(I[B)V");
@@ -997,6 +1003,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineGetApplicationProtocol = GetOptionalMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
+    g_SSLEngineGetHandshakeSession =    GetOptionalMethod(env, false, g_SSLEngine, "getHandshakeSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetSSLParameters =       GetMethod(env, false, g_SSLEngine, "getSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
     g_SSLEngineGetSupportedProtocols =  GetMethod(env, false, g_SSLEngine, "getSupportedProtocols", "()[Ljava/lang/String;");
     g_SSLEngineSetEnabledProtocols =    GetMethod(env, false, g_SSLEngine, "setEnabledProtocols", "([Ljava/lang/String;)V");
