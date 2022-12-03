@@ -18073,6 +18073,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                         }
                     }
                 }
+                else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
+                {
+                    // Check if we have IND(ICON_HANDLE) that represents a static field
+                    FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
+                    if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
+                    {
+                        CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
+                        objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
+                    }
+                }
             }
 
             break;

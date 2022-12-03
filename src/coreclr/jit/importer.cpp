@@ -1443,9 +1443,9 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 // In case of a chained GT_COMMA case, we sink the last
                 // GT_COMMA below the blockNode addr.
                 GenTree* blockNodeAddr = blockNode->AsOp()->gtOp1;
-                assert(blockNodeAddr->gtType == TYP_BYREF);
+                assert(blockNodeAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
                 GenTree* commaNode       = parent;
-                commaNode->gtType        = TYP_BYREF;
+                commaNode->gtType        = blockNodeAddr->gtType;
                 commaNode->AsOp()->gtOp2 = blockNodeAddr;
                 blockNode->AsOp()->gtOp1 = commaNode;
                 if (parent == structVal)
@@ -4199,6 +4199,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     FieldSeq::FieldKind fieldKind =
         isSharedStatic ? FieldSeq::FieldKind::SharedStatic : FieldSeq::FieldKind::SimpleStatic;
 
+    bool hasConstAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
+                        (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
+
     FieldSeq* innerFldSeq;
     FieldSeq* outerFldSeq;
     if (isBoxedStatic)
@@ -4208,18 +4211,15 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     }
     else
     {
-        bool hasKnownAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
-                            (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
-
         ssize_t offset;
-        if (hasKnownAddr)
+        if (hasConstAddr)
         {
             // Change SimpleStatic to SimpleStaticKnownAddress
             assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
             fieldKind = FieldSeq::FieldKind::SimpleStaticKnownAddress;
 
-            offset = reinterpret_cast<ssize_t>(info.compCompHnd->getFieldAddress(pResolvedToken->hField));
-            assert(offset != 0);
+            assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
+            offset = reinterpret_cast<ssize_t>(pFieldInfo->fieldLookup.addr);
         }
         else
         {
@@ -4230,6 +4230,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         outerFldSeq = nullptr;
     }
 
+    bool     isStaticReadOnlyInitedRef = false;
     GenTree* op1;
     switch (pFieldInfo->fieldAccessor)
     {
@@ -4322,53 +4323,41 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
-            // Do we need the address of a static field?
-            //
-            if (access & CORINFO_ACCESS_ADDRESS)
+// TODO-CQ: enable this optimization for 32 bit targets.
+#ifdef TARGET_64BIT
+            if (!isBoxedStatic && (lclTyp == TYP_REF) && ((access & CORINFO_ACCESS_ADDRESS) == 0))
             {
-                void** pFldAddr = nullptr;
-                void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
-
-                // We should always be able to access this static's address directly.
-                assert(pFldAddr == nullptr);
-
-                // Create the address node.
-                GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
-                op1                     = gtNewIconHandleNode((size_t)fldAddr, handleKind, innerFldSeq);
-                INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
-
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
+                bool isSpeculative = true;
+                if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=
+                     NO_CLASS_HANDLE))
                 {
-                    op1->gtFlags |= GTF_ICON_INITCLASS;
+                    isStaticReadOnlyInitedRef = !isSpeculative;
                 }
             }
-            else // We need the value of a static field
+#endif // TARGET_64BIT
+
+            assert(hasConstAddr);
+            assert(pFieldInfo->fieldLookup.addr != nullptr);
+            assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
+            size_t       fldAddr = reinterpret_cast<size_t>(pFieldInfo->fieldLookup.addr);
+            GenTreeFlags handleKind;
+            if (isBoxedStatic)
             {
-                op1 = gtNewFieldRef(lclTyp, pResolvedToken->hField);
-
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-                {
-                    op1->gtFlags |= GTF_FLD_INITCLASS;
-                }
-
-                if (isBoxedStatic)
-                {
-                    op1->ChangeType(TYP_REF); // points at boxed object
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
-
-                    if (varTypeIsStruct(lclTyp))
-                    {
-                        // Constructor adds GTF_GLOB_REF.  Note that this is *not* GTF_EXCEPT.
-                        op1 = gtNewObjNode(pFieldInfo->structType, op1);
-                    }
-                    else
-                    {
-                        op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-                        op1->gtFlags |= (GTF_GLOB_REF | GTF_IND_NONFAULTING);
-                    }
-                }
-
-                return op1;
+                handleKind = GTF_ICON_STATIC_BOX_PTR;
+            }
+            else if (isStaticReadOnlyInitedRef)
+            {
+                handleKind = GTF_ICON_CONST_PTR;
+            }
+            else
+            {
+                handleKind = GTF_ICON_STATIC_HDL;
+            }
+            op1 = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
+            INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
+            if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
+            {
+                op1->gtFlags |= GTF_ICON_INITCLASS;
             }
             break;
         }
@@ -4391,6 +4380,10 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         {
             op1 = gtNewOperNode(GT_IND, lclTyp, op1);
             op1->gtFlags |= GTF_GLOB_REF;
+        }
+        if (isStaticReadOnlyInitedRef)
+        {
+            op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
         }
     }
 
