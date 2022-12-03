@@ -940,8 +940,8 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
     treeNode->SetRegNum(REG_STK); // we always store the result on stack
     const GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
-    unsigned offs   = lclVar->GetLclOffs();
-    unsigned varNum = lclVar->GetLclNum();
+    unsigned                   offs   = lclVar->GetLclOffs();
+    unsigned                   varNum = lclVar->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     GenTree* op1 = lclVar->gtOp1;
