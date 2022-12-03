@@ -255,8 +255,6 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
 
         if (qcxt.col_details & mdtc_idx_table)
         {
-            assert(ExtractTable(qcxt.col_details) != 0);
-
             // The raw value is the row index into the table that
             // is embedded in the column details.
             table_row = RidFromToken(raw);
@@ -275,7 +273,7 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
         mdtable_t* table;
         if (tk != NULL)
         {
-            tk[read_in] = CreateTokenType(table_id) | RidFromToken(table_row);
+            tk[read_in] = CreateTokenType(table_id) | table_row;
         }
         else
         {
