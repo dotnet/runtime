@@ -658,8 +658,10 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        bool hasHiddenStructArg = false;
-        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer)
+        GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
+        bool         hasHiddenStructArg = false;
+        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
+            IsValidLclAddr(lclNum, val.Offset()))
         {
             // We will only attempt this optimization for locals that are:
             // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
@@ -674,14 +676,12 @@ private:
             }
 #endif // TARGET_X86
 
-            GenTreeCall* callTree = user->IsCall() ? user->AsCall() : nullptr;
-
-            if (isSuitableLocal && (callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
-                (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
+            if (isSuitableLocal && callUser->gtArgs.HasRetBuffer() &&
+                (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
             {
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                 hasHiddenStructArg = true;
-                callTree->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
             }
         }
 
@@ -690,13 +690,14 @@ private:
             m_compiler->lvaSetVarAddrExposed(
                 varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         }
+
 #ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
         // is 32 bits we will quirk the size to 64 bits. Some PInvoke signatures incorrectly specify
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
         // overwriting these extra 4 bytes corrupts some data (such as a saved register) that leads
         // to A/V. Whereas previously the JIT64 codegen did not lead to an A/V.
-        if (user->IsCall() && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc))
+        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc))
         {
             varDsc->lvQuirkToLong = true;
             JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
@@ -704,12 +705,7 @@ private:
         }
 #endif // TARGET_64BIT
 
-        // For now, we will maintain the invariant that local address nodes are only used for address-exposed locals.
-        //
-        if (!hasHiddenStructArg)
-        {
-            MorphLocalAddress(val.Node(), lclNum, val.Offset());
-        }
+        MorphLocalAddress(val.Node(), lclNum, val.Offset());
 
         INDEBUG(val.Consume();)
     }
@@ -850,16 +846,14 @@ private:
     void MorphLocalAddress(GenTree* addr, unsigned lclNum, unsigned offset)
     {
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-        assert(m_compiler->lvaVarAddrExposed(lclNum));
+        assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
 
-        if ((offset > UINT16_MAX) || (offset >= m_compiler->lvaLclExactSize(lclNum)))
+        if (offset == 0)
         {
-            // The offset is too large to store in a LCL_FLD_ADDR node, use ADD(LCL_VAR_ADDR, offset) instead.
-            addr->ChangeOper(GT_ADD);
-            addr->AsOp()->gtOp1 = m_compiler->gtNewLclVarAddrNode(lclNum);
-            addr->AsOp()->gtOp2 = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
+            addr->ChangeOper(GT_LCL_VAR_ADDR);
+            addr->AsLclVar()->SetLclNum(lclNum);
         }
-        else if (offset != 0)
+        else if (IsValidLclAddr(lclNum, offset))
         {
             addr->ChangeOper(GT_LCL_FLD_ADDR);
             addr->AsLclFld()->SetLclNum(lclNum);
@@ -868,8 +862,10 @@ private:
         }
         else
         {
-            addr->ChangeOper(GT_LCL_VAR_ADDR);
-            addr->AsLclVar()->SetLclNum(lclNum);
+            // The offset was too large to store in a LCL_FLD_ADDR node, use ADD(LCL_VAR_ADDR, offset) instead.
+            addr->ChangeOper(GT_ADD);
+            addr->AsOp()->gtOp1 = m_compiler->gtNewLclVarAddrNode(lclNum);
+            addr->AsOp()->gtOp2 = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
@@ -1371,6 +1367,24 @@ private:
                     varDsc->lvRefCntWtd(RCS_EARLY), varDsc->lvRefCntWtd(RCS_EARLY) + 1, lclNum);
             varDsc->incLvRefCntWtd(1, RCS_EARLY);
         }
+    }
+
+    //------------------------------------------------------------------------
+    // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
+    //
+    // Local address nodes cannot point beyond the local and can only store
+    // 16 bits worth of offset.
+    //
+    // Arguments:
+    //    lclNum - The local's number
+    //    offset - The address' offset
+    //
+    // Return Value:
+    //    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
+    //
+    bool IsValidLclAddr(unsigned lclNum, unsigned offset) const
+    {
+        return (offset < UINT16_MAX) && (offset < m_compiler->lvaLclExactSize(lclNum));
     }
 
     //------------------------------------------------------------------------

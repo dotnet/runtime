@@ -18361,12 +18361,6 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 // Returns:
 //   A tree representing the address of a local.
 //
-// Remarks:
-//   This function should not be used until after morph when local address
-//   nodes have been normalized. However, before that IsOptimizingRetBufAsLocal
-//   can be used to at least check if the call has a retbuf that we are
-//   optimizing.
-//
 GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 {
     if (!call->IsOptimizingRetBufAsLocal())
@@ -18393,10 +18387,7 @@ GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-#ifdef DEBUG
-    GenTreeLclVarCommon* lcl;
-    assert(node->DefinesLocalAddr(&lcl) && lvaGetDesc(lcl)->lvHiddenBufferStructArg);
-#endif
+    assert(node->OperIsLocalAddr() && lvaGetDesc(node->AsLclVarCommon())->lvHiddenBufferStructArg);
 
     return node;
 }

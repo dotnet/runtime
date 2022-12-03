@@ -8823,7 +8823,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 unsigned lclOffs = tree->AsLclVarCommon()->GetLclOffs();
                 tree->gtVNPair.SetBoth(vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
                                                           vnStore->VNForIntPtrCon(lclOffs)));
-                assert(lvaGetDesc(lclNum)->IsAddressExposed());
+                assert(lvaGetDesc(lclNum)->IsAddressExposed() || lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
             }
             break;
 
