@@ -938,8 +938,8 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 {
     assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
+    treeNode->SetRegNum(REG_STK); // we always store the result on stack
     const GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
-
     unsigned offs   = lclVar->GetLclOffs();
     unsigned varNum = lclVar->GetLclNum();
     assert(varNum < compiler->lvaCount);
@@ -964,6 +964,8 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
     // Store upper 4 bytes
     GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, operandReg, varNum, offs + 8);
+    // do varDsc and liveness update
+    genUpdateLife(treeNode);
 }
 
 //-----------------------------------------------------------------------------
