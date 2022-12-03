@@ -3527,7 +3527,6 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress
     // Grab field's type handle before we enter lock
     MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
     bool hasFixedAddr = HasFixedAddressVTStatics();
-    pFieldMT->EnsureInstanceActive();
 
     // Taking a lock since we might come here from multiple threads/places
     CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());

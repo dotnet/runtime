@@ -242,7 +242,7 @@ int g_rgCrstLevelMap[] =
     5,          // CrstSingleUseLock
     0,          // CrstSpecialStatics
     0,          // CrstStackSampler
-    4,          // CrstStaticBoxInit
+    13,         // CrstStaticBoxInit
     -1,         // CrstStressLog
     5,          // CrstStubCache
     0,          // CrstStubDispatchCache
