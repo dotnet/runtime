@@ -100,8 +100,7 @@ bool compose_coded_index(mdToken tk, mdtcol_t col_details, uint32_t* coded_index
 
     // Use the embedded index into the coded index map.
     size_t ci_idx = ExtractCodedIndex(col_details);
-    if (ci_idx >= ARRAY_SIZE(coded_index_map))
-        return false;
+    assert(ci_idx < ARRAY_SIZE(coded_index_map));
     coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
 
     // Verify the supplied table type is valid for encoding.
@@ -127,8 +126,7 @@ bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* ta
 
     // Use the embedded index into the coded index map.
     size_t ci_idx = ExtractCodedIndex(col_details);
-    if (ci_idx >= ARRAY_SIZE(coded_index_map))
-        return false;
+    assert(ci_idx < ARRAY_SIZE(coded_index_map));
     coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
 
     // Create a mask to extract the index into the entry.

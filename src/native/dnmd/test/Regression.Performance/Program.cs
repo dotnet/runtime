@@ -39,6 +39,7 @@ namespace Regression.Performance
                 "EnumTypeDefs",
                 "GetScopeProps",
                 "EnumUserStrings",
+                "GetCustomAttributeByName",
             };
 
             // Look up each scenario test export.

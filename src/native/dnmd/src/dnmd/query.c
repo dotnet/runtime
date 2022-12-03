@@ -592,7 +592,26 @@ static bool create_find_context(mdtable_t* table, col_index_t col_idx, find_cxt_
     return true;
 }
 
-static int32_t col_compare(void const* key, void const* row, void* cxt)
+static int32_t col_compare_2bytes(void const* key, void const* row, void* cxt)
+{
+    assert(key != NULL && row != NULL && cxt != NULL);
+
+    find_cxt_t* fcxt = (find_cxt_t*)cxt;
+    uint8_t const* col_data = (uint8_t const*)row + fcxt->col_offset;
+
+    uint16_t const lhs = *(uint16_t*)key;
+    uint16_t rhs = 0;
+    size_t col_len = fcxt->data_len;
+    assert(col_len == 2);
+    bool success = read_u16(&col_data, &col_len, &rhs);
+    assert(success && col_len == 0);
+
+    return (lhs == rhs) ? 0
+        : (lhs < rhs) ? -1
+        : 1;
+}
+
+static int32_t col_compare_4bytes(void const* key, void const* row, void* cxt)
 {
     assert(key != NULL && row != NULL && cxt != NULL);
 
@@ -602,9 +621,8 @@ static int32_t col_compare(void const* key, void const* row, void* cxt)
     uint32_t const lhs = *(uint32_t*)key;
     uint32_t rhs = 0;
     size_t col_len = fcxt->data_len;
-    bool success = (col_len == 2)
-        ? read_u16(&col_data, &col_len, (uint16_t*)&rhs)
-        : read_u32(&col_data, &col_len, &rhs);
+    assert(col_len == 4);
+    bool success = read_u32(&col_data, &col_len, &rhs);
     assert(success && col_len == 0);
 
     return (lhs == rhs) ? 0
@@ -643,10 +661,11 @@ static bool find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t* va
 
     // Compute the starting row.
     void const* starting_row = cursor_to_row_bytes(&begin);
+    md_bcompare_t cmp_func = fcxt.data_len == 2 ? col_compare_2bytes : col_compare_4bytes;
     // Add +1 for inclusive count - use binary search if sorted, otherwise linear.
     void const* row_maybe = (table->is_sorted)
-        ? md_bsearch(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, col_compare, &fcxt)
-        : md_lsearch(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, col_compare, &fcxt);
+        ? md_bsearch(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, cmp_func, &fcxt)
+        : md_lsearch(value, starting_row, (table->row_count - first_row) + 1, table->row_size_bytes, cmp_func, &fcxt);
     if (row_maybe == NULL)
         return false;
 
@@ -683,6 +702,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
     // This was already created and validated when the row was found.
     // We assume the data is still valid.
     (void)create_find_context(table, idx, &fcxt);
+    md_bcompare_t cmp_func = fcxt.data_len == 2 ? col_compare_2bytes : col_compare_4bytes;
 
     // A valid value was found, so we are at least within the range.
     // Now find the extrema.
@@ -691,7 +711,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
     {
         // Since we are moving backwards in a sorted column,
         // the value should match or be greater.
-        res = col_compare(&value, cursor_to_row_bytes(start), &fcxt);
+        res = cmp_func(&value, cursor_to_row_bytes(start), &fcxt);
         assert(res >= 0);
         if (res > 0)
         {
@@ -706,7 +726,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
     {
         // Since we are moving forwards in a sorted column,
         // the value should match or be less.
-        res = col_compare(&value, cursor_to_row_bytes(&end), &fcxt);
+        res = cmp_func(&value, cursor_to_row_bytes(&end), &fcxt);
         assert(res <= 0);
         if (res < 0)
             break;
@@ -718,25 +738,26 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
 }
 
 // Modeled after C11's bsearch_s. This API performs a binary search
-// and instead of returning NULL if the value isn't found, a cursor
-// to the last element checked and compare result are returned.
-static mdcursor_t mdtable_bsearch_closest(
+// and instead of returning NULL if the value isn't found, the last
+// compare result and row is returned.
+static int32_t mdtable_bsearch_closest(
     void const* key,
     mdtable_t* table,
     find_cxt_t* fcxt,
-    int32_t* last_result)
+    uint32_t* found_row)
 {
-    assert(table != NULL && last_result != NULL);
+    assert(table != NULL && found_row != NULL);
     void const* base = table->data.ptr;
     rsize_t count = table->row_count;
     rsize_t element_size = table->row_size_bytes;
 
     int32_t res = 0;
     void const* row = base;
+    md_bcompare_t cmp_func = fcxt->data_len == 2 ? col_compare_2bytes : col_compare_4bytes;
     while (count > 0)
     {
         row = (uint8_t const*)base + (element_size * (count / 2));
-        res = col_compare(key, row, fcxt);
+        res = cmp_func(key, row, fcxt);
         if (res == 0 || count == 1)
             break;
 
@@ -751,12 +772,10 @@ static mdcursor_t mdtable_bsearch_closest(
         }
     }
 
-    *last_result = res;
-
     // Compute the found row.
     // Indices into tables begin at 1 - see II.22.
-    uint32_t idx = (uint32_t)(((intptr_t)row - (intptr_t)table->data.ptr) / element_size) + 1;
-    return create_cursor(table, idx);
+    *found_row = (uint32_t)(((intptr_t)row - (intptr_t)table->data.ptr) / element_size) + 1;
+    return res;
 }
 
 // This function is used to validate the mapping logic between
@@ -807,40 +826,42 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
         return false;
 
     uint32_t row = CursorRow(&element);
-    mdtable_t* tgt_table;
+    mdtable_id_t tgt_table_id;
     col_index_t tgt_col;
     switch (table->table_id)
     {
     case mdtid_Field:
-        tgt_table = type_to_table(table->cxt, mdtid_TypeDef);
+        tgt_table_id = mdtid_TypeDef;
         tgt_col = mdtTypeDef_FieldList;
         break;
     case mdtid_MethodDef:
-        tgt_table = type_to_table(table->cxt, mdtid_TypeDef);
+        tgt_table_id = mdtid_TypeDef;
         tgt_col = mdtTypeDef_MethodList;
         break;
     case mdtid_Param:
-        tgt_table = type_to_table(table->cxt, mdtid_MethodDef);
+        tgt_table_id = mdtid_MethodDef;
         tgt_col = mdtMethodDef_ParamList;
         break;
     case mdtid_Event:
-        tgt_table = type_to_table(table->cxt, mdtid_EventMap);
+        tgt_table_id = mdtid_EventMap;
         tgt_col = mdtEventMap_EventList;
         break;
     case mdtid_Property:
-        tgt_table = type_to_table(table->cxt, mdtid_PropertyMap);
+        tgt_table_id = mdtid_PropertyMap;
         tgt_col = mdtPropertyMap_PropertyList;
         break;
     default:
         return false;
     }
 
+    mdtable_t* tgt_table = type_to_table(table->cxt, tgt_table_id);
+
     find_cxt_t fcxt;
     if (!create_find_context(tgt_table, tgt_col, &fcxt))
         return false;
 
-    int32_t last_cmp;
-    mdcursor_t pos = mdtable_bsearch_closest(&row, tgt_table, &fcxt, &last_cmp);
+    uint32_t found_row;
+    int32_t last_cmp = mdtable_bsearch_closest(&row, tgt_table, &fcxt, &found_row);
 
     // The three result cases are handled as follows.
     // If last < 0, then the cursor is greater than the value so we must move back one.
@@ -848,17 +869,18 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
     //    instance of the value in a run of rows. We are only interested in the
     //    last row with this value.
     // If last > 0, then the cursor is less than the value and begins the list, use it.
+    mdcursor_t pos;
     mdcursor_t tmp;
     mdToken tmp_tk;
     if (last_cmp < 0)
     {
-        (void)cursor_move_no_checks(&pos, -1);
+        pos = create_cursor(tgt_table, found_row - 1);
     }
     else if (last_cmp == 0)
     {
-        tmp = pos;
+        tmp = create_cursor(tgt_table, found_row);
         tmp_tk = row;
-        while (RidFromToken(tmp_tk) == row)
+        do
         {
             pos = tmp;
             if (!cursor_move_no_checks(&tmp, 1)
@@ -867,6 +889,11 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
                 break;
             }
         }
+        while (RidFromToken(tmp_tk) == row);
+    }
+    else
+    {
+        pos = create_cursor(tgt_table, found_row);
     }
 
     switch (table->table_id)

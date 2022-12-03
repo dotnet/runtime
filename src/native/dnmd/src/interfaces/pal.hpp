@@ -32,7 +32,7 @@ namespace pal
         HRESULT ConvertWorker(A const* c, B* buffer, uint32_t& bufferLength);
 
     public:
-        StringConvert(A const* c, B* buffer = nullptr, uint32_t bufferLength = 0) noexcept
+        StringConvert(A const* c, B* buffer, uint32_t bufferLength) noexcept
             : _owner{}
             , _charLength{}
             , _converted{}
@@ -65,6 +65,10 @@ namespace pal
                 _charLength = neededLength;
             }
         }
+
+        StringConvert(A const* c) noexcept
+            : StringConvert(c, nullptr, 0)
+        { }
 
         template<int32_t N>
         StringConvert(A const* c, B(&buffer)[N]) noexcept

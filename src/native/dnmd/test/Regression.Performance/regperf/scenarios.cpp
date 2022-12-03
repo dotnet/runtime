@@ -4,8 +4,10 @@
 #include <dnmd_interfaces.hpp>
 
 #ifdef _MSC_VER
+#define W(str)  L##str
 #define EXPORT extern "C" __declspec(dllexport)
 #else
+#define W(str)  u##str
 #define EXPORT extern "C" __attribute__((__visibility__("default")))
 #endif // !_MSC_VER
 
@@ -66,6 +68,15 @@ namespace
         {
         }
         return hr;
+    }
+
+    HRESULT GetCustomAttributeByName(IMetaDataImport* import)
+    {
+        assert(import != nullptr);
+        mdToken tk = TokenFromRid(2, mdtTypeDef);
+        void const* data;
+        uint32_t dataLen;
+        return import->GetCustomAttributeByName(tk, W("NotAnAttribute"), &data, (ULONG*)&dataLen);
     }
 }
 
@@ -193,6 +204,28 @@ HRESULT CurrentEnumUserStrings(int iter)
     {
         if (FAILED(hr = EnumUserStrings(g_currentImport)))
             return hr;
+    }
+    return S_OK;
+}
+
+EXPORT
+HRESULT BaselineGetCustomAttributeByName(int iter)
+{
+    for (int i = 0; i < iter; ++i)
+    {
+        if (S_FALSE != GetCustomAttributeByName(g_baselineImport))
+            return E_FAIL;
+    }
+    return S_OK;
+}
+
+EXPORT
+HRESULT CurrentGetCustomAttributeByName(int iter)
+{
+    for (int i = 0; i < iter; ++i)
+    {
+        if (S_FALSE != GetCustomAttributeByName(g_currentImport))
+            return E_FAIL;
     }
     return S_OK;
 }
