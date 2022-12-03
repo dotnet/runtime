@@ -488,7 +488,16 @@ namespace System.IO
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
-                _strategy.Seek(value, SeekOrigin.Begin);
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+                else if (!CanSeek)
+                {
+                    ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+                }
+
+                _strategy.Position = value;
             }
         }
 
