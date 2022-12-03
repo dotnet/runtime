@@ -1479,7 +1479,7 @@ dump_interp_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, i
 		g_string_append_printf (str, " %u", *(guint16*)data);
 		break;
 	case MintOpTwoShorts:
-		g_string_append_printf (str, " %u,%u", *(guint16*)data, *(guint16 *)(data + 1));
+		g_string_append_printf (str, " %d,%d", *(gint16*)data, *(gint16 *)(data + 1));
 		break;
 	case MintOpTwoInts:
 		g_string_append_printf (str, " %u,%u", (guint32)READ32(data), (guint32)READ32(data + 2));
@@ -9584,6 +9584,27 @@ interp_super_instructions (TransformData *td)
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						dump_interp_inst (new_inst);
+					}
+				}
+			} else if (opcode == MINT_MUL_I4_IMM || opcode == MINT_MUL_I8_IMM) {
+				int sreg = ins->sregs [0];
+				InterpInst *def = td->locals [sreg].def;
+				if (def != NULL && td->local_ref_count [sreg] == 1) {
+					gboolean is_i4 = opcode == MINT_MUL_I4_IMM;
+					if ((is_i4 && def->opcode == MINT_ADD_I4_IMM) ||
+							(!is_i4 && def->opcode == MINT_ADD_I8_IMM)) {
+						InterpInst *new_inst = interp_insert_ins (td, ins, is_i4 ? MINT_ADD_MUL_I4_IMM : MINT_ADD_MUL_I8_IMM);
+						new_inst->dreg = ins->dreg;
+						new_inst->sregs [0] = def->sregs [0];
+						new_inst->data [0] = def->data [0];
+						new_inst->data [1] = ins->data [0];
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						local_ref_count [sreg]--;
+						if (td->verbose_level) {
+							g_print ("superins: ");
+							dump_interp_inst (new_inst);
+						}
 					}
 				}
 			} else if (MINT_IS_BINOP_SHIFT (opcode)) {
