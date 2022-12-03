@@ -3525,7 +3525,8 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress
     }
 
     // Grab field's type handle before we enter lock
-    TypeHandle th = pField->GetFieldTypeHandleThrowing();
+    MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+    bool hasFixedAddr = HasFixedAddressVTStatics();
 
     // Taking a lock since we might come here from multiple threads/places
     CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
@@ -3537,7 +3538,6 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress
         return;
     }
 
-    MethodTable* pFieldMT = th.GetMethodTable();
     LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
     bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -3547,7 +3547,7 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress
         canBeFrozen = false;
     }
 #endif
-    OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, canBeFrozen);
+    OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, canBeFrozen);
     SetObjectReference((OBJECTREF*)boxedStaticHandle, obj);
 }
 
