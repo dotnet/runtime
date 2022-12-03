@@ -487,8 +487,7 @@ namespace System.IO
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
                 }
-
-                if (_strategy.IsClosed)
+                else if (_strategy.IsClosed)
                 {
                     ThrowHelper.ThrowObjectDisposedException_FileClosed();
                 }
