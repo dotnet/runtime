@@ -1523,7 +1523,65 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNameFromToken(            // Not 
     mdToken     tk,
     MDUTF8CSTR* pszUtf8NamePtr)
 {
-    return E_NOTIMPL;
+    if (pszUtf8NamePtr == nullptr)
+        return E_INVALIDARG;
+
+    mdtable_id_t table_id;
+    col_index_t col_idx;
+    switch (TypeFromToken(tk))
+    {
+    case mdtModule:
+        table_id = mdtid_Module;
+        col_idx = mdtModule_Name;
+        break;
+    case mdtTypeRef:
+        table_id = mdtid_TypeRef;
+        col_idx = mdtTypeRef_TypeName;
+        break;
+    case mdtTypeDef:
+        table_id = mdtid_TypeDef;
+        col_idx = mdtTypeDef_TypeName;
+        break;
+    case mdtFieldDef:
+        table_id = mdtid_Field;
+        col_idx = mdtField_Name;
+        break;
+    case mdtMethodDef:
+        table_id = mdtid_MethodDef;
+        col_idx = mdtMethodDef_Name;
+        break;
+    case mdtParamDef:
+        table_id = mdtid_Param;
+        col_idx = mdtParam_Name;
+        break;
+    case mdtMemberRef:
+        table_id = mdtid_MemberRef;
+        col_idx = mdtMemberRef_Name;
+        break;
+    case mdtEvent:
+        table_id = mdtid_Event;
+        col_idx = mdtEvent_Name;
+        break;
+    case mdtProperty:
+        table_id = mdtid_Property;
+        col_idx = mdtProperty_Name;
+        break;
+    case mdtModuleRef:
+        table_id = mdtid_ModuleRef;
+        col_idx = mdtModuleRef_Name;
+        break;
+    default:
+        return E_INVALIDARG;
+    }
+
+    mdcursor_t cursor;
+    if (!md_token_to_cursor(_md_ptr.get(), tk, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+     if (!md_get_column_value_as_utf8(cursor, col_idx, 1, pszUtf8NamePtr))
+        return CLDB_E_FILE_CORRUPT;
+
+     return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUnresolvedMethods(
