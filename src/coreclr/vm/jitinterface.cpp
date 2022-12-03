@@ -1562,6 +1562,29 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                 pResult->fieldLookup.addr = pField->GetStaticAddressHandle((void*)pField->GetBase());
                 pResult->fieldLookup.accessType = IAT_VALUE;
+
+                if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                {
+                    Object* frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
+
+                    if (frozenObj == nullptr)
+                    {
+                        // Boxed static is not yet set, allocate it
+                        pFieldMT->AllocateRegularStaticBox(pField, (BYTE*)pResult->fieldLookup.addr);
+                        frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
+                    }
+
+                    _ASSERT(frozenObj != nullptr);
+
+                    // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
+                    // for structs containing gc handles
+                    if (!frozenObj->GetMethodTable()->ContainsPointers() &&
+                        GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
+                    {
+                        pResult->fieldLookup.addr = frozenObj->GetData();
+                        fieldFlags &= ~CORINFO_FLG_FIELD_STATIC_IN_HEAP;
+                    }
+                }
             }
         }
 
