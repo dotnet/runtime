@@ -2967,7 +2967,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     break;
                 }
-                if ((retType == TYP_REF) && impStackTop().val->IsIntegralConst(0))
+                if ((retType == TYP_REF) && impStackTop(1).val->IsIntegralConst(0))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
@@ -3006,6 +3006,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
+                    assert(ni == NI_System_Threading_Interlocked_Exchange);
                 }
                 else if ((retType != TYP_INT) && (retType != TYP_LONG))
                 {
