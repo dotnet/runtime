@@ -179,14 +179,16 @@ vtableDecl: '.vtable' '=' '(' bytes ')' /* deprecated */;
 /*  Namespace and class declaration  */
 nameSpaceHead: '.namespace' dottedName;
 
-classHeadBegin: '.class' classAttr* dottedName typarsClause;
-classHead: classHeadBegin extendsClause implClause;
+classHead: '.class' classAttr* dottedName typarsClause extendsClause implClause;
+
+VALUE: 'value';
+ENUM: 'enum';
 
 classAttr:
 	'public'
 	| 'private'
-	| 'value'
-	| 'enum'
+	| VALUE
+	| ENUM
 	| 'interface'
 	| 'sealed'
 	| 'abstract'

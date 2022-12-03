@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -40,11 +43,14 @@ namespace ILAssembler
     internal sealed class GrammarVisitor : ICILVisitor<GrammarResult>
     {
         private readonly ImmutableArray<Diagnostic>.Builder _diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+        private readonly EntityRegistry _entityRegistry = new();
         private readonly SourceText _document;
+        private readonly Options _options;
 
-        public GrammarVisitor(SourceText document)
+        public GrammarVisitor(SourceText document, Options options)
         {
             _document = document;
+            _options = options;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -94,7 +100,12 @@ namespace ILAssembler
             };
         }
 
-        public GrammarResult VisitBounds(CILParser.BoundsContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitBounds(CILParser.BoundsContext context) => VisitBounds(context);
+        public GrammarResult.Sequence<ImmutableArray<int>> VisitBounds(CILParser.BoundsContext context)
+        {
+            return new(context.bound().Select(bound => VisitBound(bound).Value).ToImmutableArray());
+        }
+
         GrammarResult ICILVisitor<GrammarResult>.VisitBytes(CILParser.BytesContext context) => VisitBytes(context);
         public static GrammarResult.Sequence<byte> VisitBytes(CILParser.BytesContext context)
         {
@@ -115,11 +126,155 @@ namespace ILAssembler
         {
             throw new NotImplementedException("Generic child visitor");
         }
-        public GrammarResult VisitClassAttr(CILParser.ClassAttrContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitClassAttr(CILParser.ClassAttrContext context) => VisitClassAttr(context);
+
+        public GrammarResult.Literal<(TypeAttributes Attribute, EntityRegistry.WellKnownBaseType? FallbackBase, bool RequireSealed, bool ShouldMask)> VisitClassAttr(CILParser.ClassAttrContext context)
+        {
+            if (context.int32() is CILParser.Int32Context int32)
+            {
+                int value = VisitInt32(int32).Value;
+                // COMPAT: The VALUE and ENUM keywords use sentinel values to pass through the fallback base type
+                // in ILASM. These sentinel values can be provided through the "pass the value of the flag" feature,
+                // so we detect those old flags here and provide the correct fallback type.
+                bool requireSealed = false;
+                EntityRegistry.WellKnownBaseType? fallbackBase = null;
+                if ((value & 0x80000000) != 0)
+                {
+                    requireSealed = true;
+                    fallbackBase = EntityRegistry.WellKnownBaseType.System_ValueType;
+                }
+                if ((value & 0x40000000) != 0)
+                {
+                    fallbackBase = EntityRegistry.WellKnownBaseType.System_Enum;
+                }
+                // Mask off the sentinel bits
+                value &= unchecked((int)~0xC0000000);
+                // COMPAT: When explicit flags are provided they always supercede previously set flags
+                // (other than the sentinel values)
+                return new(((TypeAttributes)value, fallbackBase, requireSealed, ShouldMask: false));
+            }
+
+            if (context.ENUM() is not null)
+            {
+                // COMPAT: ilasm implies the Sealed flag when using the 'value' keyword in a type declaration
+                // even when the 'enum' keyword is used.
+                return new((context.VALUE() is not null ? TypeAttributes.Sealed : 0, EntityRegistry.WellKnownBaseType.System_Enum, false, ShouldMask: true));
+            }
+            else if (context.VALUE() is not null)
+            {
+                // COMPAT: ilasm implies the Sealed flag when using the 'value' keyword in a type declaration
+                return new((TypeAttributes.Sealed, EntityRegistry.WellKnownBaseType.System_ValueType, true, ShouldMask: true));
+            }
+            // TODO: We should probably do this based on each token instead of just parsing all values.
+            return new(((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true), null, false, ShouldMask: true));
+        }
+
         public GrammarResult VisitClassDecl(CILParser.ClassDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitClassDecls(CILParser.ClassDeclsContext context) => throw new NotImplementedException();
-        public GrammarResult VisitClassHead(CILParser.ClassHeadContext context) => throw new NotImplementedException();
-        public GrammarResult VisitClassHeadBegin(CILParser.ClassHeadBeginContext context) => throw new NotImplementedException();
+
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitClassHead(ILAssembler.CILParser.ClassHeadContext context) => VisitClassHead(context);
+        public GrammarResult.Literal<EntityRegistry.TypeDefinitionEntity> VisitClassHead(CILParser.ClassHeadContext context)
+        {
+            string typeFullName = VisitDottedName(context.dottedName()).Value;
+            int typeFullNameLastDot = typeFullName.LastIndexOf('.');
+            string typeNS;
+            if (_currentTypeDefinition.Count != 0)
+            {
+                if (typeFullNameLastDot != -1)
+                {
+                    typeNS = string.Empty;
+                }
+                else
+                {
+                    typeNS = typeFullName.Substring(0, typeFullNameLastDot);
+                }
+            }
+            else
+            {
+                if (typeFullNameLastDot != -1)
+                {
+                    typeNS = _currentNamespace.PeekOrDefault() ?? string.Empty;
+                }
+                else
+                {
+                    typeNS = $"{_currentNamespace.PeekOrDefault()}{typeFullName.Substring(0, typeFullNameLastDot)}";
+                }
+            }
+            var typeDefinition = _entityRegistry.GetOrCreateTypeDefinition(
+                _currentTypeDefinition.PeekOrDefault(),
+                typeNS,
+                typeFullNameLastDot != -1
+                    ? typeFullName.Substring(typeFullNameLastDot)
+                    : typeFullName,
+                (newTypeDef) =>
+                {
+                    EntityRegistry.WellKnownBaseType? fallbackBase = _options.NoAutoInherit ? null : EntityRegistry.WellKnownBaseType.System_Object;
+                    bool requireSealed = false;
+                    newTypeDef.ContainingType = _currentTypeDefinition.PeekOrDefault();
+                    newTypeDef.Attributes = context.classAttr().Select(VisitClassAttr).Aggregate(
+                        (TypeAttributes)0,
+                        (acc, result) =>
+                        {
+                            var (attribute, implicitBase, attrRequireSealed, shouldMask) = result.Value;
+                            if (implicitBase is not null)
+                            {
+                                fallbackBase = implicitBase;
+                            }
+                            // COMPAT: When a flags value is specified as an integer, it overrides
+                            // all of the provided flags, including any compat sentinel flags that will require
+                            // the sealed modifier to be provided.
+                            if (!shouldMask)
+                            {
+                                requireSealed = attrRequireSealed;
+                                return attribute;
+                            }
+                            requireSealed |= attrRequireSealed;
+                            if (TypeAttributes.LayoutMask.HasFlag(attribute))
+                            {
+                                return (acc & ~TypeAttributes.LayoutMask) | attribute;
+                            }
+                            if (TypeAttributes.StringFormatMask.HasFlag(attribute))
+                            {
+                                return (acc & ~TypeAttributes.StringFormatMask) | attribute;
+                            }
+                            if (TypeAttributes.VisibilityMask.HasFlag(attribute))
+                            {
+                                return (acc & ~TypeAttributes.VisibilityMask) | attribute;
+                            }
+                            if (attribute == TypeAttributes.RTSpecialName)
+                            {
+                                // COMPAT: ILASM ignores the rtspecialname directive on a type.
+                                return acc;
+                            }
+                            if (attribute == TypeAttributes.Interface)
+                            {
+                                // COMPAT: interface implies abstract
+                                return acc | TypeAttributes.Interface | TypeAttributes.Abstract;
+                            }
+
+                            return acc | attribute;
+                        });
+
+                    newTypeDef.BaseType = VisitExtendsClause(context.extendsClause()).Value ?? _entityRegistry.ResolveImplicitBaseType(fallbackBase);
+
+                    // When the user has provided a type definition for a type that directly inherits
+                    // System.ValueType but has not sealed it, emit a warning and add the 'sealed' modifier.
+                    if (!newTypeDef.Attributes.HasFlag(TypeAttributes.Sealed) &&
+                        (requireSealed // COMPAT: when both the sentinel values for 'value' and 'enum' are explicitly
+                                       // specified, the sealed modifier is required even though
+                                       // the base type isn't System.ValueType.
+                        || _entityRegistry.SystemValueTypeType.Equals(newTypeDef.BaseType)))
+                    {
+                        // TODO: Emit warning about value-class not having sealed
+                        newTypeDef.Attributes |= TypeAttributes.Sealed;
+                    }
+                    // TODO: Handle type parameter list
+                });
+
+            return new(typeDefinition);
+        }
+
         public GrammarResult VisitClassName(CILParser.ClassNameContext context) => throw new NotImplementedException();
         GrammarResult ICILVisitor<GrammarResult>.VisitClassSeq(CILParser.ClassSeqContext context) => VisitClassSeq(context);
         public static GrammarResult.FormattedBlob VisitClassSeq(CILParser.ClassSeqContext context)
@@ -183,7 +338,31 @@ namespace ILAssembler
         public GrammarResult VisitDdItem(CILParser.DdItemContext context) => throw new NotImplementedException();
         public GrammarResult VisitDdItemCount(CILParser.DdItemCountContext context) => throw new NotImplementedException();
         public GrammarResult VisitDdItemList(CILParser.DdItemListContext context) => throw new NotImplementedException();
-        public GrammarResult VisitDecl(CILParser.DeclContext context) => throw new NotImplementedException();
+
+        private readonly Stack<string> _currentNamespace = new();
+
+        private readonly Stack<EntityRegistry.TypeDefinitionEntity> _currentTypeDefinition = new();
+
+        public GrammarResult VisitDecl(CILParser.DeclContext context)
+        {
+            if (context.nameSpaceHead() is CILParser.NameSpaceHeadContext ns)
+            {
+                string namespaceName = VisitNameSpaceHead(ns).Value;
+                _currentNamespace.Push($"{_currentNamespace.PeekOrDefault()}.{namespaceName}");
+                VisitDecls(context.decls());
+                _currentNamespace.Pop();
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.classHead() is CILParser.ClassHeadContext classHead)
+            {
+                _currentTypeDefinition.Push(VisitClassHead(classHead).Value);
+                VisitClassDecls(context.classDecls());
+                _currentTypeDefinition.Pop();
+                return GrammarResult.SentinelValue.Result;
+            }
+            throw new NotImplementedException();
+        }
+
         public GrammarResult VisitDecls(CILParser.DeclsContext context) => throw new NotImplementedException();
 
         GrammarResult ICILVisitor<GrammarResult>.VisitDottedName(CILParser.DottedNameContext context)
@@ -212,7 +391,20 @@ namespace ILAssembler
         public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitExptypeDecls(CILParser.ExptypeDeclsContext context) => throw new NotImplementedException();
         public GrammarResult VisitExptypeHead(CILParser.ExptypeHeadContext context) => throw new NotImplementedException();
-        public GrammarResult VisitExtendsClause(CILParser.ExtendsClauseContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitExtendsClause(CILParser.ExtendsClauseContext context) => VisitExtendsClause(context);
+
+        public GrammarResult.Literal<EntityRegistry.TypeEntity?> VisitExtendsClause(CILParser.ExtendsClauseContext context)
+        {
+            if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
+            {
+                return new(VisitTypeSpec(typeSpec).Value);
+            }
+            else
+            {
+                return new(null);
+            }
+        }
+
         public GrammarResult VisitExtSourceSpec(CILParser.ExtSourceSpecContext context) => throw new NotImplementedException();
         GrammarResult ICILVisitor<GrammarResult>.VisitF32seq(CILParser.F32seqContext context) => VisitF32seq(context);
         public GrammarResult.FormattedBlob VisitF32seq(CILParser.F32seqContext context)
@@ -578,7 +770,11 @@ namespace ILAssembler
         public GrammarResult VisitMethodSpec(CILParser.MethodSpecContext context) => throw new NotImplementedException();
         public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context) => throw new NotImplementedException();
         public GrammarResult VisitMscorlib(CILParser.MscorlibContext context) => throw new NotImplementedException();
-        public GrammarResult VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => throw new NotImplementedException();
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitNameSpaceHead(ILAssembler.CILParser.NameSpaceHeadContext context) => VisitNameSpaceHead(context);
+
+        public static GrammarResult.String VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => VisitDottedName(context.dottedName());
+
         public GrammarResult VisitNameValPair(CILParser.NameValPairContext context) => throw new NotImplementedException();
         public GrammarResult VisitNameValPairs(CILParser.NameValPairsContext context) => throw new NotImplementedException();
         public GrammarResult VisitNativeType(CILParser.NativeTypeContext context) => throw new NotImplementedException();
@@ -772,7 +968,12 @@ namespace ILAssembler
         public GrammarResult VisitTypelist(CILParser.TypelistContext context) => throw new NotImplementedException();
         public GrammarResult VisitTypeList(CILParser.TypeListContext context) => throw new NotImplementedException();
         public GrammarResult VisitTypeListNotEmpty(CILParser.TypeListNotEmptyContext context) => throw new NotImplementedException();
-        public GrammarResult VisitTypeSpec(CILParser.TypeSpecContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitTypeSpec(CILParser.TypeSpecContext context) => VisitTypeSpec(context);
+        public GrammarResult.Literal<EntityRegistry.TypeEntity> VisitTypeSpec(CILParser.TypeSpecContext context)
+        {
+            throw new NotImplementedException();
+        }
+
         public GrammarResult VisitVariantType(CILParser.VariantTypeContext context) => throw new NotImplementedException();
         public GrammarResult VisitVariantTypeElement(CILParser.VariantTypeElementContext context) => throw new NotImplementedException();
         public GrammarResult VisitVtableDecl(CILParser.VtableDeclContext context) => throw new NotImplementedException();
