@@ -708,7 +708,7 @@ private:
         //
         if (!hasHiddenStructArg)
         {
-            MorphLocalAddress(val);
+            MorphLocalAddress(val.Node(), lclNum, val.Offset());
         }
 
         INDEBUG(val.Consume();)
@@ -798,6 +798,7 @@ private:
                 m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField
                                                      ? varDsc->lvParentLcl
                                                      : val.LclNum() DEBUGARG(AddressExposedReason::WIDE_INDIR));
+                MorphWideLocalIndir(val);
             }
             else
             {
@@ -842,36 +843,33 @@ private:
     //    to a single LCL_VAR_ADDR or LCL_FLD_ADDR node.
     //
     // Arguments:
-    //    val - a value that represents the local address
+    //    addr   - The address tree
+    //    lclNum - Local number of the variable in question
+    //    offset - Offset for the address
     //
-    void MorphLocalAddress(const Value& val)
+    void MorphLocalAddress(GenTree* addr, unsigned lclNum, unsigned offset)
     {
-        assert(val.IsAddress());
-        assert(val.Node()->TypeIs(TYP_BYREF, TYP_I_IMPL));
-        assert(m_compiler->lvaVarAddrExposed(val.LclNum()));
+        assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
+        assert(m_compiler->lvaVarAddrExposed(lclNum));
 
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
-        GenTree*   addr   = val.Node();
-
-        if (val.Offset() > UINT16_MAX)
+        if ((offset > UINT16_MAX) || (offset >= m_compiler->lvaLclExactSize(lclNum)))
         {
-            // The offset is too large to store in a LCL_FLD_ADDR node,
-            // use ADD(LCL_VAR_ADDR, offset) instead.
+            // The offset is too large to store in a LCL_FLD_ADDR node, use ADD(LCL_VAR_ADDR, offset) instead.
             addr->ChangeOper(GT_ADD);
-            addr->AsOp()->gtOp1 = m_compiler->gtNewLclVarAddrNode(val.LclNum());
-            addr->AsOp()->gtOp2 = m_compiler->gtNewIconNode(val.Offset(), TYP_I_IMPL);
+            addr->AsOp()->gtOp1 = m_compiler->gtNewLclVarAddrNode(lclNum);
+            addr->AsOp()->gtOp2 = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
         }
-        else if (val.Offset() != 0)
+        else if (offset != 0)
         {
             addr->ChangeOper(GT_LCL_FLD_ADDR);
-            addr->AsLclFld()->SetLclNum(val.LclNum());
-            addr->AsLclFld()->SetLclOffs(val.Offset());
+            addr->AsLclFld()->SetLclNum(lclNum);
+            addr->AsLclFld()->SetLclOffs(offset);
             addr->AsLclFld()->SetLayout(nullptr);
         }
         else
         {
             addr->ChangeOper(GT_LCL_VAR_ADDR);
-            addr->AsLclVar()->SetLclNum(val.LclNum());
+            addr->AsLclVar()->SetLclNum(lclNum);
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
@@ -880,8 +878,50 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // MorphLocalIndir: Change a tree that represents an indirect access to a struct
-    //    variable to a canonical shape (one of "IndirTransform"s).
+    // MorphLocalIndir: Change a tree that represents indirect access to a
+    //    local variable to OBJ/BLK/IND(LCL_ADDR).
+    //
+    // Arguments:
+    //    val  - a value that represents the local indirection
+    //
+    // Notes:
+    //    This morphing is performed when the access cannot be turned into a
+    //    a local node, e. g. it is volatile or "wide".
+    //
+    void MorphWideLocalIndir(const Value& val)
+    {
+        assert(val.Node()->OperIsIndir() || val.Node()->OperIs(GT_FIELD));
+
+        GenTree* node = val.Node();
+        GenTree* addr = node->gtGetOp1();
+
+        MorphLocalAddress(addr, val.LclNum(), val.Offset());
+
+        if (node->OperIs(GT_FIELD))
+        {
+            if (node->TypeIs(TYP_STRUCT))
+            {
+                ClassLayout* layout = node->GetLayout(m_compiler);
+                node->SetOper(GT_OBJ);
+                node->AsBlk()->SetLayout(layout);
+                node->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
+#ifndef JIT32_GCENCODER
+                node->AsBlk()->gtBlkOpGcUnsafe = false;
+#endif // !JIT32_GCENCODER
+            }
+            else
+            {
+                node->SetOper(GT_IND);
+            }
+        }
+
+        // GLOB_REF may not be set already in the "large offset" case. Add it.
+        node->gtFlags |= GTF_GLOB_REF;
+    }
+
+    //------------------------------------------------------------------------
+    // MorphLocalIndir: Change a tree that represents indirect access to a
+    //    local variable to a canonical shape (one of "IndirTransform"s).
     //
     // Arguments:
     //    val - a value that represents the local indirection
