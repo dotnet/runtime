@@ -248,7 +248,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         // Arguments:
         //    val       - the input value
         //    addOffset - the offset to add
-        //    field     - the FIELD node that uses the input address value
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
@@ -467,6 +466,29 @@ public:
                 assert(TopValue(0).Node() == node->gtGetOp1());
 
                 TopValue(1).Address(TopValue(0));
+                PopValue();
+                break;
+
+            case GT_ADD:
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->gtGetOp1());
+                assert(TopValue(0).Node() == node->gtGetOp2());
+
+                if (node->gtGetOp2()->IsCnsIntOrI())
+                {
+                    ssize_t offset = node->gtGetOp2()->AsIntCon()->IconValue();
+                    if (FitsIn<unsigned>(offset) && TopValue(2).AddOffset(TopValue(1), static_cast<unsigned>(offset)))
+                    {
+                        INDEBUG(TopValue(0).Consume());
+                        PopValue();
+                        PopValue();
+                        break;
+                    }
+                }
+
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                EscapeValue(TopValue(0), node);
                 PopValue();
                 break;
 
