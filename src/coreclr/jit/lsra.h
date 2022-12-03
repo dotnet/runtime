@@ -1016,8 +1016,11 @@ private:
     bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
-    void clearAssignedInterval(RegRecord* reg, Interval* interval);
+    void clearAssignedInterval(RegRecord* reg);
+    void clearAssignedIntervalForConflict(RegRecord* reg, Interval* conflictingInterval);
     void updateAssignedInterval(RegRecord* reg, Interval* interval);
+    void restorePreviousInterval(RegRecord* reg);
+    void clearPreviousInterval(RegRecord* reg, RegisterType regType);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
@@ -1195,14 +1198,11 @@ private:
     }
 
     bool isAssigned(RegRecord* regRec, Interval* newInterval);
-    void checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefPosition);
     void unassignPhysRegForNewInterval(RegRecord* regRec, Interval* newInterval);
+
+    template <bool consecutiveRegisters = true>
     void unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPosition);
     void unassignPhysRegNoSpill(RegRecord* reg);
-    void unassignPhysReg(regNumber reg)
-    {
-        unassignPhysReg(getRegisterRecord(reg), nullptr);
-    }
 
     void setIntervalAsSpilled(Interval* interval);
     void setIntervalAsSplit(Interval* interval);
@@ -2114,6 +2114,7 @@ public:
     unsigned int varNum; // This is the "variable number": the index into the lvaTable array
 
     // The register to which it is currently assigned.
+    // TODO-consecutive-reg: This should be named currReg.
     regNumber physReg;
 
     // Is this Interval currently in a register and live?

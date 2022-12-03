@@ -3179,37 +3179,54 @@ bool LinearScan::isAssigned(RegRecord* regRec, Interval* newInterval)
 //
 void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 {
-    Interval* assignedInterval = regRec->assignedInterval;
+    RegRecord* regRecToUnassign   = regRec;
+    int        regCountToUnassign = regRec->regCount;
 
-    if ((assignedInterval != nullptr && (assignedInterval != interval)))
+    if (regCountToUnassign > 1)
     {
-        // This is allocated to another interval.  Either it is inactive, or it was allocated as a
-        // copyReg and is therefore not the "assignedReg" of the other interval.  In the latter case,
-        // we simply unassign it - in the former case we need to set the physReg on the interval to
-        // REG_NA to indicate that it is no longer in that register.
-        // The lack of checking for this case resulted in an assert in the retail version of System.dll,
-        // in method SerialStream.GetDcbFlag.
-        // Note that we can't check for the copyReg case, because we may have seen a more recent
-        // RefPosition for the Interval that was NOT a copyReg.
-        RegRecord* firstRegRec        = getFirstRegRec(regRec);
-        
-        bool       intervalIsAssigned = false;
-        int        regCount           = regRec->regCount;
+        // If this register is part of consecutive-registers, make sure
+        // to pick the 1st register to unassign and then we will iterate
+        // through all the other registers following it.
+        regRecToUnassign = getFirstRegRec(regRec);
+    }
+    else if (interval->regCount > 1)
+    {
+        // If the newInterval needs consecutive registers, then the regRec we need to
+        // unassign first should be either be not part of consecutive-registers or be
+        // the first one of that series.
+        assert(isFirstRegNum(regRec));
+        regCountToUnassign  = interval->regCount;
+    }
 
-        RegRecord* currRegRec = firstRegRec;
-        regNumber  currReg    = currRegRec->regNum;
-        do
+    // TODO-consecutive-reg: Use this more
+    assert(isFirstRegNum(regRecToUnassign));
+    regNumber  currReg    = regRecToUnassign->regNum;
+    RegRecord* currRegRec = getRegisterRecord(currReg);
+    do
+    {
+        Interval* assignedInterval = currRegRec->assignedInterval;
+        if ((assignedInterval != nullptr) && (assignedInterval != interval))
         {
+            // This is allocated to another interval.  Either it is inactive, or it was allocated as a
+            // copyReg and is therefore not the "assignedReg" of the other interval.  In the latter case,
+            // we simply unassign it - in the former case we need to set the physReg on the interval to
+            // REG_NA to indicate that it is no longer in that register.
+            // The lack of checking for this case resulted in an assert in the retail version of System.dll,
+            // in method SerialStream.GetDcbFlag.
+            // Note that we can't check for the copyReg case, because we may have seen a more recent
+            // RefPosition for the Interval that was NOT a copyReg.
             if (assignedInterval->assignedReg == currRegRec)
             {
                 assert(assignedInterval->isActive == false);
                 assignedInterval->physReg = REG_NA;
             }
-            currReg = REG_NEXT(currReg);
-        } while (--regCount > 0);
+            unassignPhysReg<false>(currRegRec, nullptr);
+        }
 
-        unassignPhysReg(firstRegRec->regNum);
-    }
+        currReg    = REG_NEXT(currReg);
+        currRegRec = getRegisterRecord(currReg);
+    } while (--regCountToUnassign > 0);
+
     updateAssignedInterval(regRec, interval);
 }
 
@@ -3417,44 +3434,6 @@ void LinearScan::unassignPhysRegNoSpill(RegRecord* regRec)
 }
 
 //------------------------------------------------------------------------
-// checkAndClearInterval: Clear the assignedInterval for the given
-//                        physical register record
-//
-// Arguments:
-//    regRec           - the physical RegRecord to be unassigned
-//    spillRefPosition - The RefPosition at which the assignedInterval is to be spilled
-//                       or nullptr if we aren't spilling
-//
-// Return Value:
-//    None.
-//
-// Assumptions:
-//    see unassignPhysReg
-//
-void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefPosition)
-{
-    Interval* assignedInterval = regRec->assignedInterval;
-    assert(assignedInterval != nullptr);
-    regNumber thisRegNum = regRec->regNum;
-
-    if (spillRefPosition == nullptr)
-    {
-        // Note that we can't assert  for the copyReg case
-        //
-        if (assignedInterval->physReg == thisRegNum)
-        {
-            assert(assignedInterval->isActive == false);
-        }
-    }
-    else
-    {
-        assert(spillRefPosition->getInterval() == assignedInterval);
-    }
-
-    clearAssignedInterval(regRec, assignedInterval);
-}
-
-//------------------------------------------------------------------------
 // unassignPhysRegForNewInterval: Unassign the given physical register record, and spill the
 //                  assignedInterval at the most recent RefPosition of an interval, if any.
 //
@@ -3471,23 +3450,35 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 //
 void LinearScan::unassignPhysRegForNewInterval(RegRecord* regRec, Interval* newInterval)
 {
-    // If either of the new interval (being assigned) or existing interval (being unassigned)
-    // has consecutive registers, make sure to unassign both.
-    RegRecord* regRecToUnassign = regRec;
-    int        regCountToUnassign     = regRec->regCount;
+    RegRecord* regRecToUnassign   = regRec;
+    int        regCountToUnassign = regRec->regCount;
+
     if (regCountToUnassign > 1)
     {
+        // If this register is part of consecutive-registers, make sure
+        // to pick the 1st register to unassign and then we will iterate
+        // through all the other registers following it.
         regRecToUnassign = getFirstRegRec(regRec);
     }
     else if (newInterval->regCount > 1)
     {
+        // If the newInterval needs consecutive registers, then the regRec we need to
+        // unassign first should be either be not part of consecutive-registers or be
+        // the first one of that series.
+        assert(isFirstRegNum(regRec));
         regCountToUnassign = newInterval->regCount;
     }
 
-    if (regRecToUnassign->assignedInterval != nullptr)
+    regNumber  regToUnassign    = regRecToUnassign->regNum;
+    do
     {
-        unassignPhysReg(regRecToUnassign, regRecToUnassign->assignedInterval->recentRefPosition);
-    }
+        if (regRecToUnassign->assignedInterval != nullptr)
+        {
+            unassignPhysReg<false>(regRecToUnassign, regRecToUnassign->assignedInterval->recentRefPosition);
+        }
+        regToUnassign    = REG_NEXT(regToUnassign);
+        regRecToUnassign = getRegisterRecord(regToUnassign);
+    } while (--regCountToUnassign > 0);
 }
 
 //------------------------------------------------------------------------
@@ -3507,6 +3498,7 @@ void LinearScan::unassignPhysRegForNewInterval(RegRecord* regRec, Interval* newI
 //    assigned to this register (e.g. this is a copyReg for that Interval).
 //    Otherwise, spillRefPosition must be associated with the assignedInterval.
 //
+template <bool consecutiveRegisters>
 void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPosition)
 {
     Interval* assignedInterval = regRec->assignedInterval;
@@ -3514,49 +3506,64 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     assert(spillRefPosition == nullptr || spillRefPosition->getInterval() == assignedInterval);
     regNumber thisRegNum = regRec->regNum;
 
+    if (spillRefPosition == nullptr)
+    {
+        // Note that we can't assert for the copyReg case
+        //
+        if (assignedInterval->physReg == thisRegNum)
+        {
+            assert(assignedInterval->isActive == false);
+        }
+    }
+    else
+    {
+        assert(spillRefPosition->getInterval() == assignedInterval);
+    }
+
     // Is assignedInterval actually still assigned to this register?
     bool      intervalIsAssigned = (assignedInterval->physReg == thisRegNum);
     regNumber regToUnassign      = thisRegNum;
 
-    int newRegCount = assignedInterval->regCount;
-    //int oldRegCount = reg->assignedInterval == nullptr ? 0 : reg->assignedInterval->regCount;
+    int regCount;
+    regNumber currReg;
 
-    regNumber firstRegNum = getFirstRegNum(regToUnassign);
-    regNumber currReg     = firstRegNum;
+    if (consecutiveRegisters)
+    {
+        regCount = assignedInterval->regCount;
+        currReg  = getFirstRegNum(regToUnassign);
+    }
+    else
+    {
+        regCount = 1;
+        currReg  = regToUnassign;
+    }
+    
     regMaskTP regsAvailable = 0;
 
     do
     {
-        //TODO: get quick method to get regMask of consecutive register
+        // TODO-consecutive-reg: get quick method to get regMask of consecutive register
         // something like getRegMask(currReg, 3) <-- meaning get mask starting from
         // currReg and then further 3 more registers.
+
         regsAvailable |= getRegMask(currReg);
         intervalIsAssigned |= (assignedInterval->physReg == getRegisterRecord(currReg)->regNum);
 
-        currReg = REG_NEXT(currReg);
-    } while (--newRegCount > 0);
+        // TODO-consecutive-reg: Move this to new method like clearRegisterRecord()
+        RegRecord* regRec = getRegisterRecord(currReg);
 
-    checkAndClearInterval(getRegisterRecord(firstRegNum), spillRefPosition);
+        // If reg was part of consecutive-registers, make sure that regCount reflects that.
+        assert(regCount == 1 || regRec->regCount != 1);
 
-#ifdef DEBUG
-    newRegCount = assignedInterval->regCount;
-    currReg = firstRegNum;
-    do
-    {
-        // Verify all regRecord's assignedInterval has been reset.
-        RegRecord* regRec        = getRegisterRecord(currReg);
-        assert(regRec->assignedInterval == nullptr);
+        regRec->reset();
+        clearNextIntervalRef(currReg);
+        clearSpillCost(currReg);
+        clearConstantReg(currReg);
+
         currReg = REG_NEXT(currReg);
-    } while (--newRegCount > 0);
-#endif
+    } while (--regCount > 0);
 
     makeRegsAvailable(regsAvailable);
-
-    RefPosition* nextRefPosition = nullptr;
-    if (spillRefPosition != nullptr)
-    {
-        nextRefPosition = spillRefPosition->nextRefPosition;
-    }
 
     if (!intervalIsAssigned && assignedInterval->physReg != REG_NA)
     {
@@ -3571,13 +3578,15 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     // regNumber victimAssignedReg = assignedInterval->physReg;
     assignedInterval->physReg = REG_NA;
 
+    RefPosition* nextRefPosition = nullptr;
+    if (spillRefPosition != nullptr)
+    {
+        nextRefPosition = spillRefPosition->nextRefPosition;
+    }
+
     bool spill = assignedInterval->isActive && nextRefPosition != nullptr;
     if (spill)
     {
-        // If this is an active interval, it must have a recentRefPosition,
-        // otherwise it would not be active
-        assert(spillRefPosition != nullptr);
-
 #if 0
         // TODO-CQ: Enable this and insert an explicit GT_COPY (otherwise there's no way to communicate
         // to codegen that we want the copyReg to be the new home location).
@@ -3636,6 +3645,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
             spillInterval(assignedInterval, spillRefPosition DEBUGARG(nextRefPosition));
         }
     }
+
     // Maintain the association with the interval, if it has more references.
     // Or, if we "remembered" an interval assigned to this register, restore it.
     if (nextRefPosition != nullptr)
@@ -3644,9 +3654,8 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     }
     else if (canRestorePreviousInterval(regRec, assignedInterval))
     {
-        //TODO: Update regCount and regIdx for RegRecord?
-        regRec->assignedInterval = regRec->previousInterval;
-        regRec->previousInterval = nullptr;
+        restorePreviousInterval(regRec);
+
         if (regRec->assignedInterval->physReg != thisRegNum)
         {
             clearNextIntervalRef(thisRegNum, regRec->assignedInterval);
@@ -3655,22 +3664,6 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         {
             updateNextIntervalRef(thisRegNum, regRec->assignedInterval);
         }
-
-#ifdef TARGET_ARM
-        // Note:
-        //   We can not use updateAssignedInterval() and updatePreviousInterval() here,
-        //   because regRec may not be a even-numbered float register.
-
-        // Update second half RegRecord of a double register for TYP_DOUBLE
-        if (regRec->assignedInterval->registerType == TYP_DOUBLE)
-        {
-            RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(regRec);
-
-            // TODO: Update regCount and regIdx for RegRecord?
-            anotherHalfRegRec->assignedInterval = regRec->assignedInterval;
-            anotherHalfRegRec->previousInterval = nullptr;
-        }
-#endif // TARGET_ARM
 
 #ifdef DEBUG
         if (spill)
@@ -3686,8 +3679,9 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     }
     else
     {
-        clearAssignedInterval(regRec, assignedInterval);
-        updatePreviousInterval(regRec, nullptr, assignedInterval->registerType);
+        // this should be already nullptr from checkAndClearInterval()
+        assert(regRec->assignedInterval == nullptr);
+        clearPreviousInterval(regRec, assignedInterval->registerType);
     }
 }
 
@@ -3845,7 +3839,7 @@ regNumber LinearScan::getFirstRegNum(regNumber regNum, int regIdx)
             regNum = REG_PREV(regNum);
             break;
         default:
-            printf("%d registers are not supported.\n", regIdx);
+            printf("%d consecutive-registers are not supported.\n", regIdx);
             assert(false);
             break;
     }
@@ -4055,7 +4049,7 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
         else
         {
             // This interval is no longer assigned to this register.
-            clearAssignedInterval(regRecord, assignedInterval);
+            clearAssignedInterval(regRecord);
         }
     }
 }
@@ -4363,7 +4357,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 {
                     // This interval may still be active, but was in another register in an
                     // intervening block.
-                    clearAssignedInterval(physRegRecord, assignedInterval);
+                    clearAssignedInterval(physRegRecord);
                 }
 
 #ifdef TARGET_ARM
@@ -5756,33 +5750,64 @@ void LinearScan::allocateRegisters()
 }
 
 //-----------------------------------------------------------------------------
-// updateAssignedInterval: Clear assigned interval of register.
+// clearAssignedInterval: Clear assigned interval of register(s).
 //
 // Arguments:
-//    reg      -    register to be updated
-//    interval -    interval to be cleared
+//    reg      -   register to be updated or first register in register set that
+//
+// Return Value:
+//    None
+//
+void LinearScan::clearAssignedInterval(RegRecord* reg)
+{
+    assert(reg->assignedInterval != nullptr);
+
+    int       regCount    = reg->assignedInterval->regCount;
+    regNumber firstRegNum = getFirstRegNum(reg->regNum);
+    regNumber currReg     = firstRegNum;
+    INDEBUG(unsigned int regIdx = 0);
+
+    // Clear the assignedInterval of all related registers associated with this.
+    do
+    {
+        RegRecord* regRec = getRegisterRecord(currReg);
+
+        // If reg was part of consecutive-registers, make sure that regCount reflects that.
+        //TODO-consecutive-reg: Make this as some macro or function call
+        assert(regCount == 1 || regRec->regCount != 1);
+        assert(regRec->regIdx == regIdx);
+
+        regRec->reset();
+
+        clearNextIntervalRef(currReg);
+        clearSpillCost(currReg);
+        clearConstantReg(currReg);
+
+        currReg = REG_NEXT(currReg);
+        INDEBUG(regIdx++);
+    } while (--regCount > 0);
+}
+
+//-----------------------------------------------------------------------------
+// clearAssignedInterval: Clear assigned interval of register `reg` when a conflicting
+//                        interval might get assigned to it.
+//
+// Arguments:
+//    reg                 -    register to be updated
+//    conflictingInterval -    interval that is conflicting.
 //
 // Return Value:
 //    None
 //
 // Note:
-//    For ARM32, two float registers consisting a double register are updated
-//    together when "regType" is TYP_DOUBLE.
+//    This one is only called from resolveLocalRef() when we need to clear the
+//    assignedInterval depending on the regCount of Interval.
+//    TODO: Check what updateAssignedInterval() is doing in base_repo.
 //
-void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
+void LinearScan::clearAssignedIntervalForConflict(RegRecord* reg, Interval* interval /*conflictingInterval*/)
 {
     assert(interval != nullptr);
-    // Need to have following cases for interval->regCount > 1
-    //  1.  If reg->regIdx == 0, we are start of the consecutive registers,
-    //      just iterate over regCount and `reg->assignedInterval = interval`.
-    //  2.  If reg->regIdx != 0, we need to find the starting regX of this series where regX->regIdx == 0
-    //      and then just iterate over regCount and `reg->assignedInterval = interval`.
-    //
-    // Need to have following cases for interval->regCount == 1 and oldAssignedInterval->regCount > 1
-    //  3.  If reg->regIdx == 0, we are start of consecutive registers,
-    //      just iterate over regCount and `reg->assignedInterval = nullptr`.
-    //  4.  If reg->regIdx != 0, we need to find the starting regX of this series where regX->regIdx == 0
-    //      and then just iterate over regCount and `reg->assignedInterval = nullptr`.
+    //assert((reg->assignedInterval == nullptr) || (interval == reg->assignedInterval));
 
     int newRegCount = interval->regCount;
     int oldRegCount = reg->assignedInterval == nullptr ? 0 : reg->assignedInterval->regCount;
@@ -5809,6 +5834,7 @@ void LinearScan::clearAssignedInterval(RegRecord* reg, Interval* interval)
     // then reset them.
     while (oldRegCount > 0)
     {
+        assert(false);
         RegRecord* regRec        = getRegisterRecord(currReg);
         regRec->reset();
 
@@ -5903,6 +5929,84 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval)
 }
 
 //-----------------------------------------------------------------------------
+// restorePreviousInterval: Restores previous interval of register.
+//
+// Arguments:
+//    reg      -    register to be updated
+//
+// Return Value:
+//    None
+//
+// Assumptions:
+//    For ARM32, when "regType" is TYP_DOUBLE, "reg" should be a even-numbered
+//    float register, i.e. lower half of double register.
+//
+// Note:
+//    For ARM32, two float registers consisting a double register are updated
+//    together when "regType" is TYP_DOUBLE.
+//
+void LinearScan::restorePreviousInterval(RegRecord* reg)
+{
+    reg->assignedInterval = reg->previousInterval;
+    reg->regCount         = reg->previousInterval->regCount;
+    reg->regIdx           = 0;
+
+    reg->previousInterval = nullptr;
+
+#ifdef TARGET_ARM
+    // Update second half RegRecord of a double register for TYP_DOUBLE
+    if (reg->assignedInterval->registerType == TYP_DOUBLE)
+    {
+        RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(reg);
+
+        // TODO: Update regCount and regIdx for RegRecord?
+        anotherHalfRegRec->assignedInterval = reg->assignedInterval;
+        anotherHalfRegRec->regCount         = reg->assignedInterval->regCount;
+        anotherHalfRegRec->regIdx           = 1;
+
+        anotherHalfRegRec->previousInterval = nullptr;
+    }
+#endif // TARGET_ARM
+}
+
+//-----------------------------------------------------------------------------
+// clearPreviousInterval: Clears previous interval of register.
+//
+// Arguments:
+//    reg      -    register to be updated
+//    regType  -    register type
+//
+// Return Value:
+//    None
+//
+// Assumptions:
+//    For ARM32, when "regType" is TYP_DOUBLE, "reg" should be a even-numbered
+//    float register, i.e. lower half of double register.
+//
+// Note:
+//    For ARM32, two float registers consisting a double register are updated
+//    together when "regType" is TYP_DOUBLE.
+//
+void LinearScan::clearPreviousInterval(RegRecord* reg, RegisterType regType)
+{
+    reg->previousInterval = nullptr;
+    //reg->regCount         = 1;
+    //reg->regIdx           = 0;
+
+#ifdef TARGET_ARM
+    // Update overlapping floating point register for TYP_DOUBLE
+    if (regType == TYP_DOUBLE)
+    {
+        RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
+
+        anotherHalfReg->previousInterval = nullptr;
+        //anotherHalfReg->regCount         = 1;
+        //anotherHalfReg->regIdx           = 0;
+    }
+#endif
+}
+
+//-----------------------------------------------------------------------------
 // updatePreviousInterval: Update previous interval of register.
 //
 // Arguments:
@@ -5923,7 +6027,10 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval)
 //
 void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType)
 {
+    assert(interval != nullptr);
     reg->previousInterval = interval;
+    //reg->regCount      = interval->regCount;
+    //reg->regIdx        = 0;
 
 #ifdef TARGET_ARM
     // Update overlapping floating point register for TYP_DOUBLE
@@ -5932,6 +6039,8 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, Regi
         RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
 
         anotherHalfReg->previousInterval = interval;
+        //anotherHalfReg->regCount         = interval->regCount;
+        //anotherHalfReg->regIdx           = 0;
     }
 #endif
 }
@@ -6053,7 +6162,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         varDsc->SetRegNum(REG_STK);
         if (interval->assignedReg != nullptr && interval->assignedReg->assignedInterval == interval)
         {
-            clearAssignedInterval(interval->assignedReg, interval);
+            clearAssignedInterval(interval->assignedReg);
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
@@ -6086,7 +6195,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             RegRecord* oldRegRecord = getRegisterRecord(oldAssignedReg);
             if (oldRegRecord->assignedInterval == interval)
             {
-                clearAssignedInterval(oldRegRecord, interval);
+                clearAssignedInterval(oldRegRecord);
             }
         }
     }
@@ -6293,7 +6402,20 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
 
-        clearAssignedInterval(physRegRecord, interval);
+#ifdef TARGET_ARM
+        if ((physRegRecord->assignedInterval != nullptr) && (interval->registerType == TYP_DOUBLE))
+        {
+            if (physRegRecord->assignedInterval != interval)
+            {
+                if (physRegRecord->assignedInterval->registerType != TYP_DOUBLE)
+                {
+                    printf("found the case");
+                }
+            }
+        }
+#endif
+
+        clearAssignedIntervalForConflict(physRegRecord, interval);
     }
     else
     {
