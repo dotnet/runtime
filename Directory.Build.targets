@@ -94,6 +94,7 @@
       <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
       <ProductionVersion Condition="'$(ProductionVersion)' == ''">$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
       <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
+      <SdkBandVersion>$(SdkBandVersion)$(ProductVersionSuffix)</SdkBandVersion>
 
       <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
       <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
