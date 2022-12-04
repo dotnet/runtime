@@ -3684,7 +3684,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
 {
     // If we have a var definition then bail or
     // If this is the address of the var then it will have the GTF_DONT_CSE
-    // flag set and we don't want to to assertion prop on it.
+    // flag set and we don't want to assertion prop on it.
     if (tree->gtFlags & (GTF_VAR_DEF | GTF_DONT_CSE))
     {
         return nullptr;
@@ -3789,7 +3789,7 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
 {
     // If we have a var definition then bail or
     // If this is the address of the var then it will have the GTF_DONT_CSE
-    // flag set and we don't want to to assertion prop on it.
+    // flag set and we don't want to assertion prop on it.
     if (tree->gtFlags & (GTF_VAR_DEF | GTF_DONT_CSE))
     {
         return nullptr;

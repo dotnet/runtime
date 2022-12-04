@@ -1940,8 +1940,10 @@ JIT_LOAD_DATA g_JitLoadData;
 //  load a JIT from the root of the drive.
 //
 //  The minimal set of characters that we must check for and exclude are:
-//     '\\' - (backslash)
+//  On all platforms:
 //     '/'  - (forward slash)
+//  On Windows:
+//     '\\' - (backslash)
 //     ':'  - (colon)
 //
 //  Returns false if we find any of these characters in 'pwzJitName'
@@ -1954,7 +1956,11 @@ static bool ValidateJitName(LPCWSTR pwzJitName)
     wchar_t curChar;
     do {
         curChar = *pCurChar;
-        if ((curChar == '\\') || (curChar == '/') || (curChar == ':'))
+        if (curChar == '/'
+#ifdef TARGET_WINDOWS
+            || (curChar == '\\') || (curChar == ':')
+#endif
+        )
         {
             //  Return false if we find any of these character in 'pwzJitName'
             return false;

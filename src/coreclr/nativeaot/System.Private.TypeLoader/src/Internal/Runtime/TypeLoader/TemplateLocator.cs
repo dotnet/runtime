@@ -50,62 +50,6 @@ namespace Internal.Runtime.TypeLoader
 #endif
 
         /// <summary>
-        /// Get the NativeLayout for a type from a ReadyToRun image.
-        /// </summary>
-        public static bool TryGetMetadataNativeLayout(TypeDesc concreteType, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
-        {
-            nativeLayoutInfoModule = null;
-            nativeLayoutInfoToken = 0;
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            var nativeMetadataType = concreteType.GetTypeDefinition() as TypeSystem.NativeFormat.NativeFormatType;
-            if (nativeMetadataType == null)
-                return false;
-
-            var canonForm = concreteType.ConvertToCanonForm(CanonicalFormKind.Specific);
-            var hashCode = canonForm.GetHashCode();
-
-#if SUPPORTS_R2R_LOADING
-            foreach (var moduleInfo in ModuleList.EnumerateModules())
-            {
-                if (moduleInfo.MetadataReader == null)
-                    continue;
-
-                ExternalReferencesTable externalFixupsTable;
-                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.MetadataBasedTypeTemplateMap, out externalFixupsTable);
-
-                if (typeTemplatesHashtable.IsNull)
-                    continue;
-
-                var enumerator = typeTemplatesHashtable.Lookup(hashCode);
-                var nativeMetadataUnit = nativeMetadataType.Context.ResolveMetadataUnit(moduleInfo);
-
-                NativeParser entryParser;
-                while (!(entryParser = enumerator.GetNext()).IsNull)
-                {
-                    var entryTypeHandle = entryParser.GetUnsigned().AsHandle();
-                    TypeDesc typeDesc = nativeMetadataUnit.GetType(entryTypeHandle);
-                    Debug.Assert(typeDesc != null);
-                    if (typeDesc == canonForm)
-                    {
-                        TypeLoaderLogger.WriteLine("Found metadata template for type " + concreteType.ToString() + ": " + typeDesc.ToString());
-                        nativeLayoutInfoToken = entryParser.GetUnsigned();
-                        if (nativeLayoutInfoToken == BadTokenFixupValue)
-                        {
-                            throw new BadImageFormatException();
-                        }
-
-                        nativeLayoutInfoModule = moduleHandle;
-                        return true;
-                    }
-                }
-            }
-#endif
-#endif
-
-            return false;
-        }
-
-        /// <summary>
         /// Get the NativeLayout for a method from a ReadyToRun image.
         /// </summary>
         public static bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)

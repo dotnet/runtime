@@ -77,7 +77,7 @@ namespace System.Threading
         {
             get
             {
-                ThrowIfDisposed();
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
                 if (m_eventObj == null)
                 {
                     // Lazily initialize the event object if needed.
@@ -318,7 +318,7 @@ namespace System.Threading
         /// </remarks>
         public void Reset()
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             // If there's an event, reset it.
             m_eventObj?.Reset();
@@ -470,7 +470,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
@@ -624,14 +624,7 @@ namespace System.Threading
             }
         }
 
-        /// <summary>
-        /// Throw ObjectDisposedException if the MRES is disposed
-        /// </summary>
-        private void ThrowIfDisposed()
-        {
-            if ((m_combinedState & Dispose_BitMask) != 0)
-                throw new ObjectDisposedException(SR.ManualResetEventSlim_Disposed);
-        }
+        private bool IsDisposed => (m_combinedState & Dispose_BitMask) != 0;
 
         /// <summary>
         /// Private helper method to wake up waiters when a cancellationToken gets canceled.
