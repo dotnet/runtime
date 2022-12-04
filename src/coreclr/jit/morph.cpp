@@ -5651,7 +5651,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #ifdef TARGET_ARM
         if (arg.AbiInfo.IsSplit())
         {
-            reportFastTailCallDecision("Splitted argument in callee is not supported on ARM32");
+            reportFastTailCallDecision("Argument splitting in callee is not supported on ARM32");
             return false;
         }
 #endif // TARGET_ARM
@@ -5662,7 +5662,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #ifdef TARGET_ARM
     if (compHasSplitParam)
     {
-        reportFastTailCallDecision("Splitted argument in caller is not supported on ARM32");
+        reportFastTailCallDecision("Argument splitting in caller is not supported on ARM32");
         return false;
     }
 

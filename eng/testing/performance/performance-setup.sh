@@ -193,7 +193,7 @@ while (($# > 0)); do
       echo ""
       echo "Advanced settings:"
       echo "  --framework <value>            The framework to run, if not running in master"
-      echo "  --compliationmode <value>      The compilation mode if not passing --configurations"
+      echo "  --compilationmode <value>      The compilation mode if not passing --configurations"
       echo "  --sourcedirectory <value>      The directory of the sources. Defaults to env:BUILD_SOURCESDIRECTORY"
       echo "  --repository <value>           The name of the repository in the <owner>/<repository name> format. Defaults to env:BUILD_REPOSITORY_NAME"
       echo "  --branch <value>               The name of the branch. Defaults to env:BUILD_SOURCEBRANCH"
