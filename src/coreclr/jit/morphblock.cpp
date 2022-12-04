@@ -135,7 +135,7 @@ GenTree* MorphInitBlockHelper::Morph()
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
         GenTree* oneAsgTree = nullptr;
-        if (!m_initBlock && (m_dst != m_dstLclNode))
+        if (!m_initBlock)
         {
             oneAsgTree = m_comp->fgMorphOneAsgBlockOp(m_asg);
         }
@@ -176,10 +176,6 @@ GenTree* MorphInitBlockHelper::Morph()
 // PrepareDst: Transform the asg destination to an appropriate form and initialize member fields
 //    with information about it.
 //
-// Notes:
-//    When assertion propagation is enabled this method kills assertions about the dst local,
-//    so the correctness depends on `IsLocalAddrExpr` recognizing all patterns.
-//
 void MorphInitBlockHelper::PrepareDst()
 {
     GenTree* origDst = m_asg->gtGetOp1();
@@ -202,58 +198,8 @@ void MorphInitBlockHelper::PrepareDst()
     {
         m_dstLclNode   = m_dst->AsLclVarCommon();
         m_dstLclOffset = m_dstLclNode->GetLclOffs();
-
-        if (m_dst->TypeIs(TYP_STRUCT))
-        {
-            m_blockLayout = m_dstLclNode->GetLayout(m_comp);
-        }
-    }
-    else
-    {
-        assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
-        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
-
-        GenTree* dstAddr = m_dst->AsIndir()->Addr();
-        noway_assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-
-        ssize_t dstLclOffset = 0;
-        if (dstAddr->DefinesLocalAddr(&m_dstLclNode, &dstLclOffset))
-        {
-            // Treat out-of-bounds access to locals opaquely to simplify downstream logic.
-            unsigned dstLclSize = m_comp->lvaLclExactSize(m_dstLclNode->GetLclNum());
-
-            if (!FitsIn<unsigned>(dstLclOffset) ||
-                ((static_cast<uint64_t>(dstLclOffset) + m_dst->AsIndir()->Size()) > dstLclSize))
-            {
-                assert(m_comp->lvaGetDesc(m_dstLclNode)->IsAddressExposed());
-                m_dstLclNode = nullptr;
-            }
-            else
-            {
-                m_dstLclOffset = static_cast<unsigned>(dstLclOffset);
-            }
-        }
-
-        if (m_dst->TypeIs(TYP_STRUCT))
-        {
-            m_blockLayout = m_dst->AsBlk()->GetLayout();
-        }
-    }
-
-    if (m_dst->TypeIs(TYP_STRUCT))
-    {
-        m_blockSize = m_blockLayout->GetSize();
-    }
-    else
-    {
-        assert(m_blockLayout == nullptr);
-        m_blockSize = genTypeSize(m_dst);
-    }
-
-    if (m_dstLclNode != nullptr)
-    {
-        m_dstLclNum = m_dstLclNode->GetLclNum();
-        m_dstVarDsc = m_comp->lvaGetDesc(m_dstLclNum);
+        m_dstLclNum    = m_dstLclNode->GetLclNum();
+        m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNum);
 
         assert((m_dstVarDsc->TypeGet() != TYP_STRUCT) ||
                (m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize));
@@ -263,6 +209,21 @@ void MorphInitBlockHelper::PrepareDst()
         {
             m_comp->fgKillDependentAssertions(m_dstLclNum DEBUGARG(m_asg));
         }
+    }
+    else
+    {
+        assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
+        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
+    }
+
+    if (m_dst->TypeIs(TYP_STRUCT))
+    {
+        m_blockLayout = m_dst->GetLayout(m_comp);
+        m_blockSize   = m_blockLayout->GetSize();
+    }
+    else
+    {
+        m_blockSize = genTypeSize(m_dst);
     }
 
 #if defined(DEBUG)
@@ -362,13 +323,9 @@ void MorphInitBlockHelper::MorphStructCases()
 
         if (m_dstVarDsc != nullptr)
         {
-            if (m_dst != m_dstLclNode)
+            if (m_dst->OperIs(GT_LCL_FLD))
             {
-                // If we access the dst as a whole but not directly, for example, with OBJ(ADDR(LCL_VAR))
-                // then set doNotEnreg.
-                // TODO-1stClassStructs: remove it when we can represent narowing struct cast
-                // without taking address of the lcl.
-                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
+                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
             }
             else if (m_dstVarDsc->lvPromoted)
             {
@@ -792,31 +749,8 @@ void MorphCopyBlockHelper::PrepareSrc()
     {
         m_srcLclNode   = m_src->AsLclVarCommon();
         m_srcLclOffset = m_srcLclNode->GetLclOffs();
-    }
-    else if (m_src->OperIsIndir())
-    {
-        ssize_t srcLclOffset = 0;
-        if (m_src->AsIndir()->Addr()->DefinesLocalAddr(&m_srcLclNode, &srcLclOffset))
-        {
-            // Treat out-of-bounds access to locals opaquely to simplify downstream logic.
-            unsigned srcLclSize = m_comp->lvaLclExactSize(m_srcLclNode->GetLclNum());
-
-            if (!FitsIn<unsigned>(srcLclOffset) || ((static_cast<uint64_t>(srcLclOffset) + m_blockSize) > srcLclSize))
-            {
-                assert(m_comp->lvaGetDesc(m_srcLclNode)->IsAddressExposed());
-                m_srcLclNode = nullptr;
-            }
-            else
-            {
-                m_srcLclOffset = static_cast<unsigned>(srcLclOffset);
-            }
-        }
-    }
-
-    if (m_srcLclNode != nullptr)
-    {
-        m_srcLclNum = m_srcLclNode->GetLclNum();
-        m_srcVarDsc = m_comp->lvaGetDesc(m_srcLclNum);
+        m_srcLclNum    = m_srcLclNode->GetLclNum();
+        m_srcVarDsc    = m_comp->lvaGetDesc(m_srcLclNum);
     }
 
     // Verify that the types on the LHS and RHS match and morph away "IND<struct>" nodes.
@@ -1131,10 +1065,9 @@ void MorphCopyBlockHelper::MorphStructCases()
     //
     if (!m_dstDoFldAsg && (m_dstVarDsc != nullptr) && !m_dstSingleLclVarAsg)
     {
-        if (m_dst != m_dstLclNode)
+        if (m_dst->OperIs(GT_LCL_FLD))
         {
-            // Mark it as DoNotEnregister.
-            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
+            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
         else if (m_dstVarDsc->lvPromoted)
         {
@@ -1145,9 +1078,9 @@ void MorphCopyBlockHelper::MorphStructCases()
 
     if (!m_srcDoFldAsg && (m_srcVarDsc != nullptr) && !m_srcSingleLclVarAsg)
     {
-        if (m_src != m_srcLclNode)
+        if (m_src->OperIs(GT_LCL_FLD))
         {
-            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
+            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
         else if (m_srcVarDsc->lvPromoted)
         {
@@ -1571,9 +1504,8 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
     if (tree->gtDynamicSize->IsIntegralConst())
     {
         int64_t size = tree->gtDynamicSize->AsIntConCommon()->IntegralValue();
-        assert(FitsIn<int32_t>(size));
 
-        if (size != 0)
+        if ((size != 0) && FitsIn<int32_t>(size))
         {
             GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
             GenTree* asg = gtNewAssignNode(lhs, tree->Data());

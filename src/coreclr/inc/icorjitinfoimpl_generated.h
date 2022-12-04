@@ -617,10 +617,6 @@ unsigned getClassDomainID(
           CORINFO_CLASS_HANDLE cls,
           void** ppIndirection) override;
 
-void* getFieldAddress(
-          CORINFO_FIELD_HANDLE field,
-          void** ppIndirection) override;
-
 bool getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,

@@ -7,7 +7,6 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
-using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 

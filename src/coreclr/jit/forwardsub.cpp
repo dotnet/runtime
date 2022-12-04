@@ -641,6 +641,15 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
+    // A "CanBeReplacedWithItsField" SDSU can serve as a sort of "BITCAST<primitive>(struct)"
+    // device, forwarding it risks forcing things to memory.
+    //
+    if (fwdSubNode->IsCall() && varDsc->CanBeReplacedWithItsField(this))
+    {
+        JITDUMP(" fwd sub local is 'CanBeReplacedWithItsField'\n");
+        return false;
+    }
+
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //
