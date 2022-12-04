@@ -22,9 +22,6 @@ namespace Mono.Linker.Tests
 		[ClassData (typeof (MemberAssertions))]
 		public void TestSignatureParsing (TypeSystemEntity member, MemberAssertionsCollector.CustomAttribute customAttribute)
 		{
-			if (member.ToString ()!.Contains ("NG`1<A"))
-				Debug.WriteLine ("");
-
 			var attributeString = (string) customAttribute.Value.FixedArguments[0].Value!;
 			switch (customAttribute.AttributeType.Name) {
 			case nameof (ExpectExactlyResolvedDocumentationSignatureAttribute):
