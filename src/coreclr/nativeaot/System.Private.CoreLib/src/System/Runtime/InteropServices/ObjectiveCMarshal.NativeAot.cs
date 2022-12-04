@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
     public static unsafe partial class ObjectiveCMarshal
     {
         private static readonly IntPtr[] s_ObjcMessageSendFunctions = new IntPtr[(int)MessageSendFunction.MsgSendSuperStret + 1];
-        private static int s_initialized;
+        private static bool s_initialized;
         private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
         private static IntPtr s_IsTrackedReferenceCallback;
         private static IntPtr s_OnEnteredFinalizerQueueCallback;
@@ -87,20 +87,14 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
         {
-            if (Interlocked.CompareExchange(ref s_initialized, 1, 0) != 0)
-            {
-                return false;
-            }
-
             if (!RuntimeImports.RhRegisterObjectiveCMarshalBeginEndCallback((IntPtr)beginEndCallback))
             {
-                // Prevent the creation of tracking handles by resetting the initialized state.
-                s_initialized = 0;
                 return false;
             }
 
             s_IsTrackedReferenceCallback = (IntPtr)isReferencedCallback;
             s_OnEnteredFinalizerQueueCallback = (IntPtr)trackedObjectEnteredFinalization;
+            s_initialized = true;
 
             return true;
         }
@@ -110,7 +104,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out int memInSizeT,
             out IntPtr mem)
         {
-            if (s_initialized == 0)
+            if (!s_initialized)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
             }
