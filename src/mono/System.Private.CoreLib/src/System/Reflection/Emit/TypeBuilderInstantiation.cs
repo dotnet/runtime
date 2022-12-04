@@ -558,7 +558,7 @@ namespace System.Reflection.Emit
 	{
 		internal static Type MakeGenericType (Type type, Type[] typeArguments)
 		{
-			throw new NotSupportedException(SR.NotSupported_UserTypesNotSupportedUnderFullAot);
+			throw new NotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
 		}
 	}
 }

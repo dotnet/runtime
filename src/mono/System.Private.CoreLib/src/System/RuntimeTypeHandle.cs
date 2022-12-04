@@ -124,11 +124,10 @@ namespace System
 
         public ModuleHandle GetModuleHandle()
         {
-            // Although MS' runtime is crashing here, we prefer throwing an exception.
             // The check is needed because Type.GetTypeFromHandle returns null
             // for zero handles.
             if (value == IntPtr.Zero)
-                throw new InvalidOperationException(SR.InvalidOperation_ObjectFieldsNotProperlyInitialized);
+                throw new ArgumentException(SR.Arg_InvalidHandle);
 
             return Type.GetTypeFromHandle(this)!.Module.ModuleHandle;
         }

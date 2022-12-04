@@ -406,13 +406,13 @@ namespace System
                     {
                         case '&':
                             if (data.is_byref)
-                                throw new ArgumentException(SR.Argument_CannotHaveAByrefOfByref, "typeName");
+                                throw new ArgumentException(SR.Format(SR.CannotCreatePointerOfByRef, data.TypeName), "typeName");
 
                             data.is_byref = true;
                             break;
                         case '*':
                             if (data.is_byref)
-                                throw new ArgumentException(SR.Argument_CannotPointToByrefType, "typeName");
+                                throw new ArgumentException(SR.Format(SR.CannotCreatePointerOfByRef, data.TypeName), "typeName");
                             // take subsequent '*'s too
                             int pointer_level = 1;
                             while (pos + 1 < name.Length && name[pos + 1] == '*')
@@ -457,7 +457,7 @@ namespace System
                             {//generic args
                                 List<TypeSpec> args = new List<TypeSpec>();
                                 if (data.HasModifiers)
-                                    throw new ArgumentException(SR.Arg_GenericArguments, "typeName");
+                                    throw new ArgumentException(SR.Arg_GenericArgumentsAfterArrayOrPointerType, "typeName");
 
                                 while (pos < name.Length)
                                 {
@@ -497,7 +497,7 @@ namespace System
                                     if (name[pos] == '*')
                                     {
                                         if (bound)
-                                            throw new ArgumentException(SR.Argument_ArrayCannotBeBoundTo2Dimensions, "typeName");
+                                            throw new ArgumentException(SR.Argument_MultiDimensionalArrayCannotBeBound, "typeName");
                                         bound = true;
                                     }
                                     else if (name[pos] != ',')

@@ -72,7 +72,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetFieldSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException(SR.ArgumentException_ModuleBuilderExpected);
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_FIELD);
         }
@@ -80,7 +80,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetLocalVarSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException(SR.ArgumentException_ModuleBuilderExpected);
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_LOCAL);
         }
@@ -389,17 +389,17 @@ namespace System.Reflection.Emit
                                                            Type[]? parameters)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException(SR.ArgumentException_ModuleBuilderExpected);
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             returnType ??= typeof(void);
 
             if (returnType.IsUserType)
-                throw new NotSupportedException(SR.NotSupported_UserDefinedSubClassesOfSystemTypeNotSupported);
+                throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
             if (parameters != null)
             {
                 for (int i = 0; i < parameters.Length; ++i)
                     if (parameters[i].IsUserType)
-                        throw new NotSupportedException(SR.NotSupported_UserDefinedSubClassesOfSystemTypeNotSupported);
+                        throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
 
             }
 

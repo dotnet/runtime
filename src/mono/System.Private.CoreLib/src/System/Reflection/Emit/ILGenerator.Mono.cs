@@ -346,13 +346,13 @@ namespace System.Reflection.Emit
         public virtual void BeginCatchBlock(Type? exceptionType)
         {
             if (!InExceptionBlock)
-                throw new NotSupportedException(SR.NotSupported_NotInAnExceptionBlock);
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             if (exceptionType != null && exceptionType.IsUserType)
-                throw new NotSupportedException(SR.NotSupported_UserDefinedSubClassesOfSystemTypeNotSupported);
+                throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
             {
                 if (exceptionType != null)
-                    throw new ArgumentException(SR.Argument_ExceptionSuppliedForFilterClause);
+                    throw new ArgumentException(SR.Argument_ShouldNotSpecifyExceptionType);
                 Emit(OpCodes.Endfilter);
                 ex_handlers[cur_block].PatchFilterClause(code_len);
             }
@@ -372,7 +372,7 @@ namespace System.Reflection.Emit
         public virtual void BeginExceptFilterBlock()
         {
             if (!InExceptionBlock)
-                throw new NotSupportedException(SR.NotSupported_NotInAnExceptionBlock);
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             InternalEndClause();
 
             ex_handlers![cur_block].AddFilter(code_len);
@@ -403,7 +403,7 @@ namespace System.Reflection.Emit
         public virtual void BeginFaultBlock()
         {
             if (!InExceptionBlock)
-                throw new NotSupportedException(SR.NotSupported_NotInAnExceptionBlock);
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
             {
@@ -419,7 +419,7 @@ namespace System.Reflection.Emit
         public virtual void BeginFinallyBlock()
         {
             if (!InExceptionBlock)
-                throw new NotSupportedException(SR.NotSupported_NotInAnExceptionBlock);
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
             InternalEndClause();
 
@@ -446,7 +446,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(localType);
             if (localType.IsUserType)
-                throw new NotSupportedException(SR.NotSupported_UserDefinedSubClassesOfSystemTypeNotSupported);
+                throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
             LocalBuilder res = new LocalBuilder(localType, this);
             res.is_pinned = pinned;
 
@@ -848,7 +848,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(localBuilder);
             if (localBuilder.LocalType is TypeBuilder)
-                throw new ArgumentException(SR.Argument_OutputStreamsNotSupportingTypeBuilders);
+                throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             // The MS implementation does not check for valuetypes here but it
             // should.
             Emit(OpCodes.Ldloc, localBuilder);
@@ -866,7 +866,7 @@ namespace System.Reflection.Emit
         public virtual void EndExceptionBlock()
         {
             if (!InExceptionBlock)
-                throw new NotSupportedException(SR.NotSupported_NotInAnExceptionBlock);
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
                 throw new InvalidOperationException(SR.Argument_BadExceptionCodeGen);
@@ -901,7 +901,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_TypeMustBeOfExceptionType, nameof(excType));
             ConstructorInfo? ctor = excType.GetConstructor(Type.EmptyTypes);
             if (ctor == null)
-                throw new ArgumentException(SR.Argument_TypeMustHaveDefaultConstructor, nameof(excType));
+                throw new ArgumentException(SR.Argument_MissingDefaultConstructor, nameof(excType));
             Emit(OpCodes.Newobj, ctor);
             Emit(OpCodes.Throw);
         }

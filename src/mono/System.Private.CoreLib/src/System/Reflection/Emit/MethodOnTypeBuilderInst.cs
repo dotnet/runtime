@@ -251,7 +251,7 @@ namespace System.Reflection.Emit
         public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
         {
             if (!base_method.IsGenericMethodDefinition || (method_arguments != null))
-                throw new InvalidOperationException(SR.Argument_MethodIsNotAGenericMethodDefinition);
+                throw new InvalidOperationException(SR.Argument_NeedGenericMethodDefinition);
 
             ArgumentNullException.ThrowIfNull(methodInstantiation);
 

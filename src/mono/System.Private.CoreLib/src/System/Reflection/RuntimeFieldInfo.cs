@@ -201,7 +201,7 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException(SR.Target_NonStaticFieldRequirement);
+                    throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
                     throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
@@ -225,12 +225,12 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException(SR.Target_NonStaticFieldRequirement);
+                    throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
                     throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
             if (IsLiteral)
-                throw new FieldAccessException(SR.FieldAccess_CannotSetConstantField);
+                throw new FieldAccessException(SR.Acc_ReadOnly);
 
             binder ??= Type.DefaultBinder;
             CheckGeneric();

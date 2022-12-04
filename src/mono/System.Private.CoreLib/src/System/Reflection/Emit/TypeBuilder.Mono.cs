@@ -854,7 +854,7 @@ namespace System.Reflection.Emit
             {
                 t = t.UnderlyingSystemType;
                 if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
-                    throw new NotSupportedException(SR.NotSupported_UserDefinedSubClassesOfSystemTypeNotSupported);
+                    throw new NotSupportedException(SR.PlatformNotSupported_ITypeInfo);
                 return t;
             }
             else
@@ -1308,7 +1308,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (generic_params!.Length != typeArguments.Length)
-                throw new ArgumentException(SR.Format(SR.Argument_GenericArgumentsOverflow, generic_params.Length, typeArguments.Length), nameof(typeArguments));
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, generic_params.Length, typeArguments.Length), nameof(typeArguments));
 
             foreach (Type t in typeArguments)
             {
@@ -1351,7 +1351,7 @@ namespace System.Reflection.Emit
                     LayoutKind.Auto => TypeAttributes.AutoLayout,
                     LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
                     LayoutKind.Sequential => TypeAttributes.SequentialLayout,
-                    _ => throw new Exception(SR.Exception_ErrorInCustomAttr), // we should ignore it since it can be any value anyway...
+                    _ => throw new Exception(SR.Argument_InvalidKindOfTypeForCA), // we should ignore it since it can be any value anyway...
                 };
 
                 Type ctor_type = customBuilder.Ctor is ConstructorBuilder builder ? builder.parameters![0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
@@ -1750,8 +1750,8 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
             ConstructorInfo res = type.GetConstructor(constructor);
-            if (res == null)
-                throw new ArgumentException(SR.Argument_ConstructorNotFound);
+
+            Debug.Assert(res != null);
 
             return res;
         }
@@ -1800,8 +1800,8 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_InvalidMethodDeclaringType, nameof(type));
 
             MethodInfo res = type.GetMethod(method);
-            if (res == null)
-                throw new ArgumentException(SR.Format(SR.Argument_MethodNotFoundInType, method.Name, type));
+
+            Debug.Assert(res != null);
 
             return res;
         }
@@ -1821,9 +1821,7 @@ namespace System.Reflection.Emit
 
             if (field.DeclaringType != type.GetGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
-
-            if (field is FieldOnTypeBuilderInst)
-                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
+            Debug.Assert((field is FieldOnTypeBuilderInst));
 
             FieldInfo res = type.GetField(field);
             if (res == null)

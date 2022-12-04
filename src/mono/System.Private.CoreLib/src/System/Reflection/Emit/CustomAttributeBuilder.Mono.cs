@@ -256,7 +256,7 @@ namespace System.Reflection.Emit
                             if (!paramType.IsArray)
                                 throw new ArgumentException(SR.Format(SR.Argument_ParameterHasUnmatchedArgumentValue, i, paramType, constructorArgs[i]));
                         if (!IsValidParam(constructorArgs[i]!, paramType))
-                            throw new ArgumentException(SR.Format(SR.Argument_CustomAttributeInvalidType, constructorArgs[i]!.GetType()));
+                            throw new ArgumentException(SR.Format(SR.Argument_BadParameterTypeForCAB, constructorArgs[i]!.GetType()));
                     }
                 }
                 i++;
@@ -449,7 +449,7 @@ namespace System.Reflection.Emit
                 0x0c => typeof(float),
                 0x0d => typeof(double),
                 0x0e => typeof(string),
-                _ => throw new Exception(SR.Format(SR.Exception_UnknownElementType, elementType)),
+                _ => throw new Exception(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType)),
             };
 
         private static object? decode_cattr_value(Type t, byte[] data, int pos, out int rpos)
@@ -478,9 +478,9 @@ namespace System.Reflection.Emit
                     if (subtype >= 0x02 && subtype <= 0x0e)
                         return decode_cattr_value(elementTypeToType(subtype), data, pos, out rpos);
                     else
-                        throw new Exception(SR.Format(SR.Exception_UnhandledSubType, subtype));
+                        throw new Exception(SR.Exception_UnhandledSubType);
                 default:
-                    throw new Exception(SR.Format(SR.Exception_UnhandledFixMeType, t));
+                    throw new Exception("FIXME: Type " + t + " not yet handled in decode_cattr_value.");
             }
         }
 

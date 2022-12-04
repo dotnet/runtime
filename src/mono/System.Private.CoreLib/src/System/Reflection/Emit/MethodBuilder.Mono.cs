@@ -93,7 +93,7 @@ namespace System.Reflection.Emit
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
                     if (parameterTypes[i] == null)
-                        throw new ArgumentException(SR.Argument_NullParameterTypes, nameof(parameterTypes));
+                        throw new ArgumentException(SR.ArgumentNull_TypeRequiredByResourceScope, nameof(parameterTypes));
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
@@ -418,7 +418,7 @@ namespace System.Reflection.Emit
 
                     pi_dll = (string?)attr.ctorArgs[0];
                     if (pi_dll == null || pi_dll.Length == 0)
-                        throw new ArgumentException(SR.Arg_DllNameNotFound);
+                        throw new ArgumentException(SR.Arg_DllNotFoundException);
 
                     native_cc = Runtime.InteropServices.CallingConvention.Winapi;
 
@@ -545,7 +545,7 @@ namespace System.Reflection.Emit
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException(SR.Argument_MethodIsNotAGenericMethodDefinition);
+                throw new InvalidOperationException(SR.Argument_NeedGenericMethodDefinition);
             ArgumentNullException.ThrowIfNull(typeArguments);
             foreach (Type type in typeArguments)
             {

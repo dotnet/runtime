@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
                     if (parameterTypes[i] == null)
-                        throw new ArgumentException(SR.Argument_NullParameterTypes, nameof(parameterTypes));
+                        throw new ArgumentException(SR.ArgumentNull_TypeRequiredByResourceScope, nameof(parameterTypes));
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
@@ -319,7 +319,7 @@ namespace System.Reflection.Emit
             if (((attrs & (MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)) == 0) && ((iattrs & (MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall)) == 0))
             {
                 if ((ilgen == null) || (ilgen.ILOffset == 0))
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_MethodDoesNotHaveBody, Name));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
             }
             if (IsStatic &&
                 ((call_conv & CallingConventions.VarArgs) != 0 ||

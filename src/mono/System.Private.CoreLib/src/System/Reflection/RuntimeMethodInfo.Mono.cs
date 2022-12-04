@@ -642,12 +642,12 @@ namespace System.Reflection
                 if (RuntimeFeature.IsDynamicCodeSupported)
                     return new MethodOnTypeBuilderInst(this, methodInstantiation);
 
-                throw new NotSupportedException(SR.NotSupported_UserTypesNotSupportedUnderFullAot);
+                throw new NotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
             }
 
             MethodInfo ret = MakeGenericMethod_impl(methodInstantiation);
             if (ret == null)
-                throw new ArgumentException(SR.Format(SR.Argument_GenericArgumentsOverflow, GetGenericArguments().Length, methodInstantiation.Length));
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, GetGenericArguments().Length, methodInstantiation.Length));
             return ret;
         }
 
