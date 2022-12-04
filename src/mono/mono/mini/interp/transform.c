@@ -145,6 +145,8 @@ MonoInterpStats mono_interp_stats;
 #define MINT_STIND_I MINT_STIND_I8
 #define MINT_LDELEM_I MINT_LDELEM_I8
 #define MINT_STELEM_I MINT_STELEM_I8
+#define MINT_MUL_P_IMM MINT_MUL_I8_IMM
+#define MINT_ADD_MUL_P_IMM MINT_ADD_MUL_I8_IMM
 #else
 #define MINT_MOV_P MINT_MOV_4
 #define MINT_LDNULL MINT_LDC_I4_0
@@ -152,6 +154,8 @@ MonoInterpStats mono_interp_stats;
 #define MINT_STIND_I MINT_STIND_I4
 #define MINT_LDELEM_I MINT_LDELEM_I4
 #define MINT_STELEM_I MINT_STELEM_I4
+#define MINT_MUL_P_IMM MINT_MUL_I4_IMM
+#define MINT_ADD_MUL_P_IMM MINT_ADD_MUL_I4_IMM
 #endif
 
 static const char *stack_type_string [] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
@@ -9650,6 +9654,43 @@ interp_super_instructions (TransformData *td)
 						mono_interp_stats.super_instructions++;
 						if (td->verbose_level) {
 							g_print ("superins: ");
+							dump_interp_inst (new_inst);
+						}
+					}
+				}
+			} else if (MINT_IS_LDIND_OFFSET (opcode)) {
+				int sreg_off = ins->sregs [1];
+				InterpInst *def = td->locals [sreg_off].def;
+				if (def != NULL && td->local_ref_count [sreg_off] == 1) {
+					if (def->opcode == MINT_MUL_P_IMM || def->opcode == MINT_ADD_P_IMM || def->opcode == MINT_ADD_MUL_P_IMM) {
+						int ldind_offset_op = MINT_LDIND_OFFSET_ADD_MUL_IMM_I1 + (opcode - MINT_LDIND_OFFSET_I1);
+						InterpInst *new_inst = interp_insert_ins (td, ins, ldind_offset_op);
+						new_inst->dreg = ins->dreg;
+						new_inst->sregs [0] = ins->sregs [0]; // base
+						new_inst->sregs [1] = def->sregs [0]; // off
+
+						// set the add and mul immediates
+						switch (def->opcode) {
+							case MINT_ADD_P_IMM:
+								new_inst->data [0] = def->data [0];
+								new_inst->data [1] = 1;
+								break;
+							case MINT_MUL_P_IMM:
+								new_inst->data [0] = 0;
+								new_inst->data [1] = def->data [0];
+								break;
+							case MINT_ADD_MUL_P_IMM:
+								new_inst->data [0] = def->data [0];
+								new_inst->data [1] = def->data [1];
+								break;
+						}
+
+						interp_clear_ins (def);
+						interp_clear_ins (ins);
+						local_ref_count [sreg_off]--;
+						mono_interp_stats.super_instructions++;
+						if (td->verbose_level) {
+							g_print ("method %s:%s, superins: ", m_class_get_name (td->method->klass), td->method->name);
 							dump_interp_inst (new_inst);
 						}
 					}
