@@ -136,7 +136,7 @@ namespace System.Collections.Generic
                     return;
                 }
 
-                // Comparers differ need to rehash all the entires via Add
+                // Comparers differ need to rehash all the entries via Add
                 int count = source._count;
                 for (int i = 0; i < count; i++)
                 {
