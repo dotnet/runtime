@@ -750,23 +750,11 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
 {
     GenTreeLclVar* res = nullptr;
-    if (tree->OperIsIndir())
+    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
     {
-        GenTree* addr = tree->AsIndir()->Addr();
-
-        if (addr->OperGet() == GT_ADDR)
-        {
-            GenTree* lclvar = addr->AsOp()->gtOp1;
-            if (lclvar->OperGet() == GT_LCL_VAR)
-            {
-                res = lclvar->AsLclVar();
-            }
-        }
-        else if (addr->OperGet() == GT_LCL_VAR_ADDR)
-        {
-            res = addr->AsLclVar();
-        }
+        res = tree->AsIndir()->Addr()->AsLclVar();
     }
+
     return res;
 }
 
@@ -919,14 +907,10 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsIconHandle();
 
         case GT_CNS_STR:
-        case GT_ADDR:
         case GT_FIELD_ADDR:
         case GT_LCL_VAR_ADDR:
         case GT_LCL_FLD_ADDR:
         case GT_CLS_VAR_ADDR:
-            // A GT_ADDR node, by itself, never requires null checking.  The expression whose address is being
-            // taken is either a local or static variable, whose address is necessarily non-null, or else it is
-            // a field dereference, which will do its own bounds checking if necessary.
             return false;
 
         case GT_IND:

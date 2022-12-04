@@ -666,22 +666,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_FIELD:
             case GT_IND:
-            {
-                int grandParentIndex = parentIndex + 1;
-                if ((parentStack->Height() > grandParentIndex) &&
-                    (parentStack->Top(grandParentIndex)->OperGet() == GT_ADDR))
-                {
-                    // Check if the address of the field/ind escapes.
-                    parentIndex += 2;
-                    keepChecking = true;
-                }
-                else
-                {
-                    // Address of the field/ind is not taken so the local doesn't escape.
-                    canLclVarEscapeViaParentStack = false;
-                }
+                // Address of the field/ind is not taken so the local doesn't escape.
+                canLclVarEscapeViaParentStack = false;
                 break;
-            }
 
             case GT_CALL:
             {
@@ -785,22 +772,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                     // to this field/indirection since the address is not pointing to the heap.
                     // It's either null or points to inside a stack-allocated object.
                     parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
-                }
-
-                int grandParentIndex = parentIndex + 1;
-
-                if (parentStack->Height() > grandParentIndex)
-                {
-                    GenTree* grandParent = parentStack->Top(grandParentIndex);
-                    if (grandParent->OperGet() == GT_ADDR)
-                    {
-                        if (grandParent->TypeGet() == TYP_REF)
-                        {
-                            grandParent->ChangeType(newType);
-                        }
-                        parentIndex += 2;
-                        keepChecking = true;
-                    }
                 }
                 break;
             }

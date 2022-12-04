@@ -5018,18 +5018,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     level++;
                     break;
 
-                case GT_ADDR:
-                    if (op1->OperIsLocalRead())
-                    {
-                        costEx = 3;
-                        costSz = 3;
-                        goto DONE;
-                    }
-
-                    costEx = 0;
-                    costSz = 1;
-                    break;
-
                 case GT_ARR_LENGTH:
                 case GT_MDARR_LENGTH:
                 case GT_MDARR_LOWER_BOUND:
@@ -5345,16 +5333,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         bool bReverseInAssignment = false;
         if (oper == GT_ASG && (!optValnumCSE_phase || optCSE_canSwap(op1, op2)))
         {
-            GenTree* op1Val = op1;
-
-            // Skip over the GT_IND/GT_ADDR tree (if one exists)
-            //
-            if ((op1->gtOper == GT_IND) && (op1->AsOp()->gtOp1->gtOper == GT_ADDR))
-            {
-                op1Val = op1->AsOp()->gtOp1->AsOp()->gtOp1;
-            }
-
-            switch (op1Val->gtOper)
+            switch (op1->gtOper)
             {
                 case GT_IND:
                 case GT_BLK:
@@ -5365,12 +5344,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // itself. As such, we can discard any side effects "induced" by it in
                     // this logic.
                     //
-                    // Note that for local "addr"s, liveness depends on seeing the defs and
-                    // uses in correct order, and so we MUST reverse the ASG in that case.
-                    //
                     GenTree* op1Addr = op1->AsIndir()->Addr();
 
-                    if (op1Addr->IsLocalAddrExpr() || op1Addr->IsInvariant())
+                    if (op1Addr->IsInvariant())
                     {
                         bReverseInAssignment = true;
                         tree->gtFlags |= GTF_REVERSE_OPS;
@@ -5399,8 +5375,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
-
-                    // We evaluate op2 before op1
+                    // Note that for local stores, liveness depends on seeing the defs and
+                    // uses in correct order, and so we MUST reverse the ASG in that case.
                     bReverseInAssignment = true;
                     tree->gtFlags |= GTF_REVERSE_OPS;
                     break;
@@ -6066,7 +6042,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BITCAST:
         case GT_CKFINITE:
         case GT_LCLHEAP:
-        case GT_ADDR:
         case GT_IND:
         case GT_OBJ:
         case GT_BLK:
@@ -8064,16 +8039,7 @@ GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVo
         GenTree* currSrc = srcOrFillVal;
         GenTree* currDst = dst;
 
-        if (currSrc->OperIsBlk() && (currSrc->AsBlk()->Addr()->OperGet() == GT_ADDR))
-        {
-            currSrc = currSrc->AsBlk()->Addr()->gtGetOp1();
-        }
-        if (currDst->OperIsBlk() && (currDst->AsBlk()->Addr()->OperGet() == GT_ADDR))
-        {
-            currDst = currDst->AsBlk()->Addr()->gtGetOp1();
-        }
-
-        if (currSrc->OperGet() == GT_LCL_VAR && currDst->OperGet() == GT_LCL_VAR &&
+        if (currSrc->OperIs(GT_LCL_VAR) && currDst->OperIs(GT_LCL_VAR) &&
             currSrc->AsLclVarCommon()->GetLclNum() == currDst->AsLclVarCommon()->GetLclNum())
         {
             result->gtBashToNOP(); // Make this a NOP.
@@ -8383,15 +8349,6 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 {
                     return nullptr;
                 }
-            }
-            else if (tree->gtOper == GT_ADDR)
-            {
-                GenTree* op1 = gtClone(tree->AsOp()->gtOp1);
-                if (op1 == nullptr)
-                {
-                    return nullptr;
-                }
-                copy = gtNewOperNode(GT_ADDR, tree->TypeGet(), op1);
             }
             else
             {
@@ -9472,7 +9429,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BITCAST:
         case GT_CKFINITE:
         case GT_LCLHEAP:
-        case GT_ADDR:
         case GT_IND:
         case GT_OBJ:
         case GT_BLK:
@@ -16170,18 +16126,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
 
-                if ((m_flags & GTF_EXCEPT) != 0)
-                {
-                    // Special case - GT_ADDR of GT_IND nodes of TYP_STRUCT have to be kept together.
-                    if (node->OperIs(GT_ADDR) && node->gtGetOp1()->OperIsIndir() &&
-                        (node->gtGetOp1()->TypeGet() == TYP_STRUCT))
-                    {
-                        JITDUMP("Keep the GT_ADDR and GT_IND together:\n");
-                        PushSideEffects(node);
-                        return Compiler::WALK_SKIP_SUBTREES;
-                    }
-                }
-
                 // Generally all GT_CALL nodes are considered to have side-effects.
                 // So if we get here it must be a helper call that we decided it does
                 // not have side effects that we needed to keep.
@@ -16805,28 +16749,18 @@ bool GenTree::DefinesLocal(
 //
 bool GenTree::DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset)
 {
-    if (OperIs(GT_ADDR) || OperIsLocalAddr())
+    if (OperIsLocalAddr())
     {
-        GenTree* lclNode = this;
-        if (OperGet() == GT_ADDR)
+        *pLclVarTree = AsLclVarCommon();
+
+        if (pOffset != nullptr)
         {
-            lclNode = AsOp()->gtOp1;
+            *pOffset += AsLclVarCommon()->GetLclOffs();
         }
 
-        if (lclNode->IsLocal() || lclNode->OperIsLocalAddr())
-        {
-            *pLclVarTree = lclNode->AsLclVarCommon();
-
-            if (pOffset != nullptr)
-            {
-                *pOffset += lclNode->AsLclVarCommon()->GetLclOffs();
-            }
-
-            return true;
-        }
+        return true;
     }
 
-    // Otherwise...
     return false;
 }
 
@@ -16835,17 +16769,7 @@ bool GenTree::DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffs
 
 const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 {
-    if (OperGet() == GT_ADDR)
-    {
-        return AsOp()->gtOp1->IsLocal() ? AsOp()->gtOp1->AsLclVarCommon() : nullptr;
-    }
-    else if (OperIsLocalAddr())
-    {
-        return this->AsLclVarCommon();
-    }
-
-    // Otherwise...
-    return nullptr;
+    return OperIsLocalAddr() ? AsLclVarCommon() : nullptr;
 }
 
 //------------------------------------------------------------------------

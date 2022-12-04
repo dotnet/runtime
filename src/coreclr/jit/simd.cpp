@@ -1227,13 +1227,17 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
         tree = gtNewOperNode(GT_IND, type, tree);
     }
 
-    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_ADDR))
+    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
     {
-        GenTree* location = tree->AsIndir()->Addr()->gtGetOp1();
-        if (location->OperIs(GT_LCL_VAR) && location->TypeIs(type))
+        GenTreeLclVar* lclAddr = tree->AsIndir()->Addr()->AsLclVar();
+        LclVarDsc*     varDsc  = lvaGetDesc(lclAddr);
+        if (varDsc->TypeGet() == type)
         {
             assert(type != TYP_STRUCT);
-            tree = location;
+            lclAddr->ChangeType(type);
+            lclAddr->SetOper(GT_LCL_VAR);
+
+            tree = lclAddr;
         }
     }
 

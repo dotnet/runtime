@@ -10834,7 +10834,6 @@ public:
             case GT_BITCAST:
             case GT_CKFINITE:
             case GT_LCLHEAP:
-            case GT_ADDR:
             case GT_IND:
             case GT_OBJ:
             case GT_BLK:

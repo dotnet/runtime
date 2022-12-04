@@ -9191,26 +9191,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
-                    case GT_ADDR:
-                    {
-                        GenTree* location = tree->AsUnOp()->gtGetOp1();
-
-                        if (location->OperIsLocalRead())
-                        {
-                            GenTreeLclVarCommon* lclNode = location->AsLclVarCommon();
-                            ValueNum             addrVN =
-                                vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNode->GetLclNum()),
-                                                   vnStore->VNForIntPtrCon(lclNode->GetLclOffs()));
-                            tree->gtVNPair.SetBoth(addrVN); // No exceptions for local addresses.
-                        }
-                        else
-                        {
-                            tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(),
-                                                                       vnStore->VNPExceptionSet(location->gtVNPair));
-                        }
-                    }
-                    break;
-
                     case GT_ARR_ADDR:
                         fgValueNumberArrIndexAddr(tree->AsArrAddr());
                         break;

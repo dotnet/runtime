@@ -8877,17 +8877,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             op1->gtFlags |= GTF_DONT_CSE;
             break;
 
-        case GT_ADDR:
-            if (op1->OperIs(GT_FIELD) && op1->AsField()->IsInstance())
-            {
-                op1->SetOper(GT_FIELD_ADDR);
-                return fgMorphField(op1, mac);
-            }
-
-            // Location nodes cannot be CSEd.
-            op1->gtFlags |= GTF_DONT_CSE;
-            break;
-
         case GT_QMARK:
         case GT_JTRUE:
 
@@ -9490,15 +9479,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
         // Propagate the new flags
         tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
-
-        // addresses of locals do not need GTF_GLOB_REF, even if the child has
-        // it (is address exposed). Note that general addressing may still need
-        // GTF_GLOB_REF, for example if the subtree has a comma that involves a
-        // global reference.
-        if (tree->OperIs(GT_ADDR) && ((tree->gtFlags & GTF_GLOB_REF) != 0) && tree->IsLocalAddrExpr())
-        {
-            tree->gtFlags &= ~GTF_GLOB_REF;
-        }
     } // if (op1)
 
     /*-------------------------------------------------------------------------
@@ -10070,14 +10050,6 @@ DONE_MORPHING_CHILDREN:
         case GT_BLK:
         case GT_IND:
         {
-            // If we have IND(ADDR(X)) and X has GTF_GLOB_REF, we must set GTF_GLOB_REF on
-            // the OBJ. Note that the GTF_GLOB_REF will have been cleared on ADDR(X) where X
-            // is a local, even if it has been address-exposed.
-            if (op1->OperIs(GT_ADDR))
-            {
-                tree->gtFlags |= (op1->AsUnOp()->gtGetOp1()->gtFlags & GTF_GLOB_REF);
-            }
-
             if (!tree->OperIs(GT_IND))
             {
                 break;
@@ -10169,53 +10141,6 @@ DONE_MORPHING_CHILDREN:
             }
         }
         break;
-
-        case GT_ADDR:
-            // Can not remove a GT_ADDR if it is currently a CSE candidate.
-            if (gtIsActiveCSE_Candidate(tree))
-            {
-                break;
-            }
-
-            // Perform the transform ADDR(IND(...)) == (...).
-            if (op1->OperIsIndir())
-            {
-                GenTree* addr = op1->AsIndir()->Addr();
-
-                noway_assert(varTypeIsI(genActualType(addr)));
-
-                DEBUG_DESTROY_NODE(op1);
-                DEBUG_DESTROY_NODE(tree);
-
-                return addr;
-            }
-            // Perform the transform ADDR(COMMA(x, ..., z)) == COMMA(x, ..., ADDR(z)).
-            else if (op1->OperIs(GT_COMMA) && !optValnumCSE_phase)
-            {
-                ArrayStack<GenTree*> commas(getAllocator(CMK_ArrayStack));
-                for (GenTree* comma = op1; comma != nullptr && comma->gtOper == GT_COMMA; comma = comma->gtGetOp2())
-                {
-                    commas.Push(comma);
-                }
-
-                GenTree* commaNode       = commas.Top();
-                GenTree* addr            = gtNewOperNode(GT_ADDR, TYP_BYREF, commaNode->AsOp()->gtOp2);
-                commaNode->AsOp()->gtOp2 = addr;
-
-                // Retype the comma nodes to match "addr" and update their side effects.
-                while (!commas.Empty())
-                {
-                    GenTree* comma = commas.Pop();
-                    comma->gtType  = addr->TypeGet();
-#ifdef DEBUG
-                    comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-                    gtUpdateNodeSideEffects(comma);
-                }
-
-                return op1;
-            }
-            break;
 
         case GT_COLON:
             if (fgGlobalMorph)

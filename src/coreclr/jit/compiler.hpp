@@ -860,8 +860,16 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
                 return op1->AsIndir()->Addr();
 
             case GT_FIELD:
-                op1->SetDoNotCSE();
-                break;
+            {
+                GenTreeField* fieldAddr = new (this, GT_FIELD_ADDR)
+                    GenTreeField(GT_FIELD_ADDR, type, op1->AsField()->GetFldObj(), op1->AsField()->gtFldHnd,
+                                 op1->AsField()->gtFldOffset);
+                fieldAddr->gtFldMayOverlap = op1->AsField()->gtFldMayOverlap;
+#ifdef FEATURE_READYTORUN
+                fieldAddr->gtFieldLookup = op1->AsField()->gtFieldLookup;
+#endif
+                return fieldAddr;
+            }
 
             default:
                 unreached();
@@ -4092,7 +4100,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_BITCAST:
         case GT_CKFINITE:
         case GT_LCLHEAP:
-        case GT_ADDR:
         case GT_IND:
         case GT_OBJ:
         case GT_BLK:

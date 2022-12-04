@@ -14,23 +14,8 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     //     actually produce values in IR) in order to support the invariant that every
     //     node produces a value.
     //
-    // The existence of GT_ADDR nodes and their use together with GT_FIELD to form
-    // FIELD/ADDR/FIELD/ADDR/LCL_VAR sequences complicate things a bit. A typical
-    // GT_FIELD node acts like an indirection and should produce an unknown value,
-    // local address analysis doesn't know or care what value the field stores.
-    // But a GT_FIELD can also be used as an operand for a GT_ADDR node and then
-    // the GT_FIELD node does not perform an indirection, it's just represents a
-    // location, similar to GT_LCL_VAR and GT_LCL_FLD.
-    //
-    // To avoid this issue, the semantics of GT_FIELD (and for simplicity's sake any other
-    // indirection) nodes slightly deviates from the IR semantics - an indirection does not
-    // actually produce an unknown value but a location value, if the indirection address
-    // operand is an address value.
-    //
-    // The actual indirection is performed when the indirection's user node is processed:
-    //   - A GT_ADDR user turns the location value produced by the indirection back
-    //     into an address value.
-    //   - Any other user node performs the indirection and produces an unknown value.
+    // Each value is processed ("escaped") when visiting (in post-order) its parent,
+    // to achieve uniformity between how address and location values are handled.
     //
     class Value
     {
@@ -169,32 +154,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             m_lclNum  = lclFld->GetLclNum();
             m_offset  = lclFld->GetLclOffs();
             m_address = true;
-        }
-
-        //------------------------------------------------------------------------
-        // Address: Produce an address value from a location value.
-        //
-        // Arguments:
-        //    val - the input value
-        //
-        // Notes:
-        //   - LOCATION(lclNum, offset) => ADDRESS(lclNum, offset)
-        //   - ADDRESS(lclNum, offset) => invalid, we should never encounter something like ADDR(ADDR(...))
-        //   - UNKNOWN => UNKNOWN
-        //
-        void Address(Value& val)
-        {
-            assert(!IsLocation() && !IsAddress());
-            assert(!val.IsAddress());
-
-            if (val.IsLocation())
-            {
-                m_address = true;
-                m_lclNum  = val.m_lclNum;
-                m_offset  = val.m_offset;
-            }
-
-            INDEBUG(val.Consume();)
         }
 
         //------------------------------------------------------------------------
@@ -459,14 +418,6 @@ public:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclFld());
-                break;
-
-            case GT_ADDR:
-                assert(TopValue(1).Node() == node);
-                assert(TopValue(0).Node() == node->gtGetOp1());
-
-                TopValue(1).Address(TopValue(0));
-                PopValue();
                 break;
 
             case GT_ADD:
@@ -1189,21 +1140,13 @@ private:
                     node->ChangeOper(GT_LCL_VAR_ADDR);
                     node->AsLclVar()->SetLclNum(fieldLclNum);
                 }
-                else if ((node->TypeGet() == fieldType) || ((user != nullptr) && user->OperIs(GT_ADDR)))
+                else if (node->TypeGet() == fieldType)
                 {
                     GenTreeFlags lclVarFlags = node->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
 
-                    if (user != nullptr)
+                    if ((user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtOp1 == node))
                     {
-                        if (user->OperIs(GT_ASG) && (user->AsOp()->gtOp1 == node))
-                        {
-                            lclVarFlags |= GTF_VAR_DEF;
-                        }
-                        else if (user->OperIs(GT_ADDR))
-                        {
-                            // TODO-ADDR: delete this quirk.
-                            lclVarFlags &= ~GTF_DONT_CSE;
-                        }
+                        lclVarFlags |= GTF_VAR_DEF;
                     }
 
                     node->ChangeOper(GT_LCL_VAR);
