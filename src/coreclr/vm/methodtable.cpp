@@ -3517,38 +3517,27 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress
     _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
 
     Object** boxedStaticHandle = reinterpret_cast<Object**>(fieldAddress);
-
-    if (VolatileLoad(boxedStaticHandle) != nullptr)
+    GCPROTECT_BEGININTERIOR(boxedStaticHandle);
+    if (VolatileLoad(boxedStaticHandle) == nullptr)
     {
         // Boxed static is already initialized
-        return;
+
+        // Grab field's type handle before we enter lock
+        MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+        bool hasFixedAddr = HasFixedAddressVTStatics();
+
+        // Taking a lock since we might come here from multiple threads/places
+        CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
+
+        // double-checked locking
+        if (VolatileLoad(boxedStaticHandle) == nullptr)
+        {
+            LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
+            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, false);
+            SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
+        }
     }
-
-    // Grab field's type handle before we enter lock
-    MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
-    bool hasFixedAddr = HasFixedAddressVTStatics();
-
-    // Taking a lock since we might come here from multiple threads/places
-    CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
-
-    // double-checked locking
-    if (VolatileLoad(boxedStaticHandle) != nullptr)
-    {
-        // Boxed static is already initialized
-        return;
-    }
-
-    LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-    bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (pFieldMT->RequiresAlign8())
-    {
-        // 64bit alignment is not yet supported in FOH for 32bit targets
-        canBeFrozen = false;
-    }
-#endif
-    OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, false);
-    SetObjectReference((OBJECTREF*)boxedStaticHandle, obj);
+    GCPROTECT_END();
 }
 
 //==========================================================================================

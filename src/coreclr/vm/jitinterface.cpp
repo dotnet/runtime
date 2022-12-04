@@ -1563,7 +1563,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pResult->fieldLookup.addr = pField->GetStaticAddressHandle((void*)pField->GetBase());
                 pResult->fieldLookup.accessType = IAT_VALUE;
 
-                /*if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
                 {
                     Object* frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
 
@@ -1584,7 +1584,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                         pResult->fieldLookup.addr = frozenObj->GetData();
                         fieldFlags &= ~CORINFO_FLG_FIELD_STATIC_IN_HEAP;
                     }
-                }*/
+                }
             }
         }
 
