@@ -2449,6 +2449,7 @@ AGAIN:
         switch (oper)
         {
             case GT_LCL_VAR:
+            case GT_LCL_VAR_ADDR:
                 if (op1->AsLclVarCommon()->GetLclNum() != op2->AsLclVarCommon()->GetLclNum())
                 {
                     break;
@@ -2457,6 +2458,7 @@ AGAIN:
                 return true;
 
             case GT_LCL_FLD:
+            case GT_LCL_FLD_ADDR:
                 if ((op1->AsLclFld()->GetLclNum() != op2->AsLclFld()->GetLclNum()) ||
                     (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()) ||
                     (op1->AsLclFld()->GetLayout() != op2->AsLclFld()->GetLayout()))
