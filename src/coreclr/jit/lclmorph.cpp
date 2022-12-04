@@ -395,7 +395,7 @@ public:
             MorphLocalField(node, user);
         }
 
-        if (node->OperIsLocal())
+        if (node->OperIsLocal() || node->OperIsLocalAddr())
         {
             unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
@@ -1162,12 +1162,11 @@ private:
         assert(node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR));
 
         GenTree* objRef = node->AsUnOp()->gtOp1;
-        GenTree* obj    = ((objRef != nullptr) && objRef->OperIs(GT_ADDR)) ? objRef->AsOp()->gtOp1 : nullptr;
 
         // TODO-Bug: this code does not pay attention to "GTF_IND_VOLATILE".
-        if ((obj != nullptr) && obj->OperIs(GT_LCL_VAR) && varTypeIsStruct(obj))
+        if ((objRef != nullptr) && objRef->OperIs(GT_LCL_VAR_ADDR))
         {
-            const LclVarDsc* varDsc = m_compiler->lvaGetDesc(obj->AsLclVarCommon());
+            const LclVarDsc* varDsc = m_compiler->lvaGetDesc(objRef->AsLclVarCommon());
 
             if (varDsc->lvPromoted)
             {
@@ -1181,21 +1180,19 @@ private:
                     return;
                 }
 
-                const LclVarDsc* fieldDsc    = m_compiler->lvaGetDesc(fieldLclNum);
-                var_types        fieldType   = fieldDsc->TypeGet();
-                GenTree*         lclVarNode  = nullptr;
-                GenTreeFlags     lclVarFlags = node->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
+                const LclVarDsc* fieldDsc  = m_compiler->lvaGetDesc(fieldLclNum);
+                var_types        fieldType = fieldDsc->TypeGet();
                 assert(fieldType != TYP_STRUCT); // Promoted LCL_VAR can't have a struct type.
 
                 if (node->OperIs(GT_FIELD_ADDR))
                 {
-                    node->ChangeOper(GT_ADDR);
-                    node->AsUnOp()->gtOp1 = obj;
-
-                    lclVarNode = obj;
+                    node->ChangeOper(GT_LCL_VAR_ADDR);
+                    node->AsLclVar()->SetLclNum(fieldLclNum);
                 }
                 else if ((node->TypeGet() == fieldType) || ((user != nullptr) && user->OperIs(GT_ADDR)))
                 {
+                    GenTreeFlags lclVarFlags = node->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
+
                     if (user != nullptr)
                     {
                         if (user->OperIs(GT_ASG) && (user->AsOp()->gtOp1 == node))
@@ -1209,9 +1206,12 @@ private:
                         }
                     }
 
-                    lclVarNode = node;
+                    node->ChangeOper(GT_LCL_VAR);
+                    node->AsLclVar()->SetLclNum(fieldLclNum);
+                    node->gtType  = fieldType;
+                    node->gtFlags = lclVarFlags;
                 }
-                else // Here we will turn "FIELD/IND(ADDR(LCL_VAR<parent>))" into "OBJ/IND(ADDR(LCL_VAR<field>))".
+                else // Here we will turn "FIELD/IND(LCL_ADDR_VAR<parent>)" into "OBJ/IND(LCL_ADDR_VAR<field>)".
                 {
                     // This type mismatch is somewhat common due to how we retype fields of struct type that
                     // recursively simplify down to a primitive. E. g. for "struct { struct { int a } A, B }",
@@ -1247,13 +1247,8 @@ private:
                         node->SetOper(GT_IND);
                     }
 
-                    lclVarNode = obj;
+                    objRef->AsLclVar()->SetLclNum(fieldLclNum);
                 }
-
-                lclVarNode->SetOper(GT_LCL_VAR);
-                lclVarNode->AsLclVarCommon()->SetLclNum(fieldLclNum);
-                lclVarNode->gtType  = fieldType;
-                lclVarNode->gtFlags = lclVarFlags;
 
                 JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);
                 m_stmtModified = true;
@@ -1320,7 +1315,7 @@ private:
         // But the pattern should at least subset the implicit byref cases that are
         // handled in fgCanFastTailCall and fgMakeOutgoingStructArgCopy.
         //
-        // CALL(OBJ(ADDR(LCL_VAR...)))
+        // CALL(OBJ(LCL_VAR_ADDR...))
         bool isArgToCall   = false;
         bool keepSearching = true;
         for (int i = 0; i < m_ancestors.Height() && keepSearching; i++)
@@ -1330,23 +1325,17 @@ private:
             {
                 case 0:
                 {
-                    keepSearching = node->OperIs(GT_LCL_VAR);
+                    keepSearching = node->OperIs(GT_LCL_VAR_ADDR);
                 }
                 break;
 
                 case 1:
                 {
-                    keepSearching = node->OperIs(GT_ADDR);
-                }
-                break;
-
-                case 2:
-                {
                     keepSearching = node->OperIs(GT_OBJ);
                 }
                 break;
 
-                case 3:
+                case 2:
                 {
                     keepSearching = false;
                     isArgToCall   = node->IsCall();
@@ -1492,9 +1481,9 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     unsigned    index           = 0;
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
     unsigned    simdSize        = 0;
-    GenTree*    simdStructNode  = getSIMDStructFromField(prevRHS, &simdBaseJitType, &index, &simdSize, true);
+    GenTree*    simdLclAddr     = getSIMDStructFromField(prevRHS, &simdBaseJitType, &index, &simdSize, true);
 
-    if ((simdStructNode == nullptr) || (index != 0) || (simdBaseJitType != CORINFO_TYPE_FLOAT))
+    if ((simdLclAddr == nullptr) || (index != 0) || (simdBaseJitType != CORINFO_TYPE_FLOAT))
     {
         // if the RHS is not from a SIMD vector field X, then there is no need to check further.
         return false;
@@ -1562,10 +1551,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     JITDUMP("\n" FMT_BB " " FMT_STMT " (before):\n", block->bbNum, stmt->GetID());
     DISPSTMT(stmt);
 
-    assert(!simdStructNode->CanCSE() && varTypeIsSIMD(simdStructNode));
-    simdStructNode->ClearDoNotCSE();
-
-    tree = gtNewAssignNode(dstNode, simdStructNode);
+    tree = gtNewAssignNode(dstNode, gtNewLclvNode(simdLclAddr->AsLclVarCommon()->GetLclNum(), simdType));
 
     stmt->SetRootNode(tree);
 

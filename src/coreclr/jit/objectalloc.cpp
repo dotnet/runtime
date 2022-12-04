@@ -169,25 +169,29 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTree* tree = *use;
-            assert(tree != nullptr);
-            assert(tree->IsLocal());
+            GenTree* tree       = *use;
+            unsigned lclNum     = tree->AsLclVarCommon()->GetLclNum();
+            bool     lclEscapes = true;
 
-            var_types type = tree->TypeGet();
-            if ((tree->OperGet() == GT_LCL_VAR) && (type == TYP_REF || type == TYP_BYREF || type == TYP_I_IMPL))
+            if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
             {
-                unsigned int lclNum = tree->AsLclVar()->GetLclNum();
                 assert(tree == m_ancestors.Top());
 
-                if (m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum))
+                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum))
                 {
-                    if (!m_allocator->CanLclVarEscape(lclNum))
-                    {
-                        JITDUMP("V%02u first escapes via [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
-                    }
-                    m_allocator->MarkLclVarAsEscaping(lclNum);
+                    lclEscapes = false;
                 }
             }
+
+            if (lclEscapes)
+            {
+                if (!m_allocator->CanLclVarEscape(lclNum))
+                {
+                    JITDUMP("V%02u first escapes via [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
+                }
+                m_allocator->MarkLclVarAsEscaping(lclNum);
+            }
+
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }
     };

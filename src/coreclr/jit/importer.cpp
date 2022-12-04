@@ -1199,30 +1199,20 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 {
     assert(varTypeIsStruct(structVal) || eeIsValueClass(structHnd));
 
-    var_types type = structVal->TypeGet();
-
+    var_types  type = structVal->TypeGet();
     genTreeOps oper = structVal->gtOper;
 
-    if (oper == GT_OBJ && willDeref)
-    {
-        assert(structVal->AsObj()->GetLayout()->GetClassHandle() == structHnd);
-        return (structVal->AsObj()->Addr());
-    }
-    else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY ||
-             structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
+    if (oper == GT_CALL || oper == GT_RET_EXPR || (oper == GT_OBJ && !willDeref) || oper == GT_MKREFANY ||
+        structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
         impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
 
-        // The 'return value' is now the temp itself
-
-        type          = genActualType(lvaTable[tmpNum].TypeGet());
-        GenTree* temp = gtNewLclvNode(tmpNum, type);
-        temp          = gtNewOperNode(GT_ADDR, TYP_BYREF, temp);
-        return temp;
+        // The 'return value' is now address of the temp itself.
+        return gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
     }
-    else if (oper == GT_COMMA)
+    if (oper == GT_COMMA)
     {
         assert(structVal->AsOp()->gtOp2->gtType == type); // Second thing is the struct
 
@@ -1255,7 +1245,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         return (structVal);
     }
 
-    return (gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+    return gtNewOperNode(GT_ADDR, TYP_BYREF, structVal);
 }
 
 //------------------------------------------------------------------------
@@ -2155,7 +2145,7 @@ void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(con
 
     if ((tree->gtFlags & spillFlags) != 0 ||
         (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
-         !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
+         !impIsAddressInLocal(tree) && // No need to spill the LCL_ADDR nodes.
          gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
                                        // lvAddrTaken flag.
     {
@@ -6947,8 +6937,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     lclNum = impInlineFetchLocal(lclNum DEBUGARG("Inline ldloca(s) first use temp"));
 
                     assert(!lvaGetDesc(lclNum)->lvNormalizeOnLoad());
-                    op1 = gtNewLclvNode(lclNum, lvaGetActualType(lclNum));
-
+                    op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -6978,8 +6967,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         return;
                     }
 
-                    assert(op1->gtOper == GT_LCL_VAR);
-
+                    op1->ChangeType(TYP_BYREF);
+                    op1->SetOper(GT_LCL_VAR_ADDR);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -6994,22 +6983,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ADRVAR;
 
             ADRVAR:
-
-                op1 = impCreateLocalNode(lclNum DEBUGARG(opcodeOffs + sz + 1));
+                // Note that this is supposed to create the transient type "*"
+                // which may be used as a TYP_I_IMPL. However we catch places
+                // where it is used as a TYP_I_IMPL and change the node if needed.
+                // Thus we are pessimistic and may report byrefs in the GC info
+                // where it was not absolutely needed, but doing otherwise would
+                // require careful rethinking of the importer routines which use
+                // the IL validity model (e. g. "impGetByRefResultType").
+                op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
 
             _PUSH_ADRVAR:
-                assert(op1->gtOper == GT_LCL_VAR);
-
-                /* Note that this is supposed to create the transient type "*"
-                   which may be used as a TYP_I_IMPL. However we catch places
-                   where it is used as a TYP_I_IMPL and change the node if needed.
-                   Thus we are pessimistic and may report byrefs in the GC info
-                   where it was not absolutely needed, but it is safer this way.
-                 */
-                op1 = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
-
-                // &aliasedVar doesnt need GTF_GLOB_REF, though alisasedVar does
-                assert((op1->gtFlags & GTF_GLOB_REF) == 0);
+                assert(op1->OperIs(GT_LCL_VAR_ADDR));
 
                 tiRetVal = typeInfo(TI_BYTE).MakeByRef();
                 impPushOnStack(op1, tiRetVal);
@@ -8970,8 +8954,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lclDsc->lvHasLdAddrOp = true;
 
                         // Obtain the address of the temp
-                        newObjThisPtr =
-                            gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
+                        newObjThisPtr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
                     }
                     else
                     {
@@ -12732,11 +12715,11 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
         op = op->AsField()->GetFldObj();
     }
 
-    if (op->OperIs(GT_ADDR) && op->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
+    if (op->OperIs(GT_LCL_VAR_ADDR))
     {
         if (lclVarTreeOut != nullptr)
         {
-            *lclVarTreeOut = op->AsUnOp()->gtOp1;
+            *lclVarTreeOut = const_cast<GenTree*>(op);
         }
 
         return true;
@@ -13119,7 +13102,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     {
         LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
 
-        if (varTypeIsStruct(lclVarTree))
+        if (varTypeIsStruct(varDsc))
         {
             inlCurArgInfo->argIsByRefToStructLocal = true;
 #ifdef FEATURE_SIMD

@@ -8630,34 +8630,29 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
                                           unsigned*    simdSizeOut,
                                           bool         ignoreUsedInSIMDIntrinsic /*false*/)
 {
-    if (tree->OperIs(GT_FIELD))
+    if (tree->OperIs(GT_FIELD) && tree->AsField()->IsInstance())
     {
         GenTree* objRef = tree->AsField()->GetFldObj();
-        if ((objRef != nullptr) && objRef->OperIs(GT_ADDR))
+        if (objRef->OperIs(GT_LCL_VAR_ADDR))
         {
-            GenTree* obj = objRef->AsOp()->gtOp1;
-
-            if (isSIMDTypeLocal(obj))
+            LclVarDsc* varDsc = lvaGetDesc(objRef->AsLclVarCommon());
+            if (varTypeIsSIMD(varDsc) && (varDsc->lvIsUsedInSIMDIntrinsic() || ignoreUsedInSIMDIntrinsic))
             {
-                LclVarDsc* varDsc = lvaGetDesc(obj->AsLclVarCommon());
-                if (varDsc->lvIsUsedInSIMDIntrinsic() || ignoreUsedInSIMDIntrinsic)
+                CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
+                var_types   simdBaseType    = JITtype2varType(simdBaseJitType);
+                unsigned    fieldOffset     = tree->AsField()->gtFldOffset;
+                unsigned    baseTypeSize    = genTypeSize(simdBaseType);
+
+                // Below condition is convervative. We don't actually need the two types to
+                // match (only the tree type is relevant), but we don't have a convenient way
+                // to turn the tree type into "CorInfoType".
+                if ((tree->TypeGet() == simdBaseType) && ((fieldOffset % baseTypeSize) == 0))
                 {
-                    CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
-                    var_types   simdBaseType    = JITtype2varType(simdBaseJitType);
-                    unsigned    fieldOffset     = tree->AsField()->gtFldOffset;
-                    unsigned    baseTypeSize    = genTypeSize(simdBaseType);
+                    *simdSizeOut        = varDsc->lvExactSize;
+                    *simdBaseJitTypeOut = simdBaseJitType;
+                    *indexOut           = fieldOffset / baseTypeSize;
 
-                    // Below condition is convervative. We don't actually need the two types to
-                    // match (only the tree type is relevant), but we don't have a convenient way
-                    // to turn the tree type into "CorInfoType".
-                    if ((tree->TypeGet() == simdBaseType) && ((fieldOffset % baseTypeSize) == 0))
-                    {
-                        *simdSizeOut        = varDsc->lvExactSize;
-                        *simdBaseJitTypeOut = simdBaseJitType;
-                        *indexOut           = fieldOffset / baseTypeSize;
-
-                        return obj;
-                    }
+                    return objRef;
                 }
             }
         }

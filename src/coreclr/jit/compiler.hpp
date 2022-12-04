@@ -846,14 +846,26 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
 
     if (oper == GT_ADDR)
     {
-        if (op1->OperIsIndir())
+        switch (op1->OperGet())
         {
-            assert(op1->IsValue());
-            return op1->AsIndir()->Addr();
-        }
+            case GT_LCL_VAR:
+                return gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), type);
 
-        assert(op1->OperIsLocalRead() || op1->OperIs(GT_FIELD));
-        op1->SetDoNotCSE();
+            case GT_LCL_FLD:
+                return gtNewLclFldAddrNode(op1->AsLclFld()->GetLclNum(), op1->AsLclFld()->GetLclOffs(), type);
+
+            case GT_BLK:
+            case GT_OBJ:
+            case GT_IND:
+                return op1->AsIndir()->Addr();
+
+            case GT_FIELD:
+                op1->SetDoNotCSE();
+                break;
+
+            default:
+                unreached();
+        }
     }
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
