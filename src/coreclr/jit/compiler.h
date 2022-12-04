@@ -986,16 +986,13 @@ public:
     regMaskTP lvRegMask() const
     {
         regMaskTP regMask = RBM_NONE;
-        if (varTypeUsesFloatReg(TypeGet()))
+        if (GetRegNum() != REG_STK)
         {
-            if (GetRegNum() != REG_STK)
+            if (varTypeUsesFloatReg(TypeGet()))
             {
                 regMask = genRegMaskFloat(GetRegNum(), TypeGet());
             }
-        }
-        else
-        {
-            if (GetRegNum() != REG_STK)
+            else
             {
                 regMask = genRegMask(GetRegNum());
             }
@@ -2357,14 +2354,11 @@ public:
 
     GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
 
-    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
+    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile = false);
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
-
-protected:
-    void gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVal, bool isVolatile);
 
 public:
     GenTreeObj* gtNewObjNode(ClassLayout* layout, GenTree* addr);
@@ -3882,13 +3876,12 @@ public:
                           CORINFO_CLASS_HANDLE structHnd,
                           unsigned             curLevel,
                           Statement** pAfterStmt DEBUGARG(const char* reason));
-    GenTree* impAssignStruct(GenTree*             dest,
-                             GenTree*             src,
-                             CORINFO_CLASS_HANDLE structHnd,
-                             unsigned             curLevel,
-                             Statement**          pAfterStmt = nullptr,
-                             const DebugInfo&     di         = DebugInfo(),
-                             BasicBlock*          block      = nullptr);
+    GenTree* impAssignStruct(GenTree*         dest,
+                             GenTree*         src,
+                             unsigned         curLevel,
+                             Statement**      pAfterStmt = nullptr,
+                             const DebugInfo& di         = DebugInfo(),
+                             BasicBlock*      block      = nullptr);
     GenTree* impAssignStructPtr(GenTree*             dest,
                                 GenTree*             src,
                                 CORINFO_CLASS_HANDLE structHnd,
@@ -4156,10 +4149,6 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
-
-#ifdef TARGET_ARM
-    void impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* op, CORINFO_CLASS_HANDLE hClass);
-#endif
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
     struct BlockListNode
@@ -5681,22 +5670,9 @@ private:
     // know will be dereferenced.  To know that reliance on implicit null checking is sound, we must further know that
     // all offsets between the top-level indirection and the bottom are constant, and that their sum is sufficiently
     // small; hence the other fields of MorphAddrContext.
-    enum MorphAddrContextKind
-    {
-        MACK_Ind,
-        MACK_Addr,
-    };
     struct MorphAddrContext
     {
-        MorphAddrContextKind m_kind;
-        bool                 m_allConstantOffsets; // Valid only for "m_kind == MACK_Ind".  True iff all offsets between
-                                                   // top-level indirection and here have been constants.
-        size_t m_totalOffset; // Valid only for "m_kind == MACK_Ind", and if "m_allConstantOffsets" is true.
-                              // In that case, is the sum of those constant offsets.
-
-        MorphAddrContext(MorphAddrContextKind kind) : m_kind(kind), m_allConstantOffsets(true), m_totalOffset(0)
-        {
-        }
+        size_t m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
     };
 
 #ifdef FEATURE_SIMD
@@ -5705,8 +5681,6 @@ private:
                                     unsigned*    indexOut,
                                     unsigned*    simdSizeOut,
                                     bool         ignoreUsedInSIMDIntrinsic = false);
-    GenTree* fgMorphFieldAssignToSimdSetElement(GenTree* tree);
-    GenTree* fgMorphFieldToSimdGetElement(GenTree* tree);
     bool fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt);
     void impMarkContiguousSIMDFieldAssignments(Statement* stmt);
 
@@ -5727,7 +5701,7 @@ private:
     GenTree* fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode);
 #endif // TARGET_X86
     GenTree* fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode);
-    GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
+    GenTree* fgMorphLocalVar(GenTree* tree);
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
@@ -5737,7 +5711,6 @@ private:
     GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
     GenTree* fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac);
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
-    GenTree* fgMorphExpandStaticField(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
     bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
@@ -7058,7 +7031,7 @@ public:
         O1K_COUNT
     };
 
-    enum optOp2Kind
+    enum optOp2Kind : uint16_t
     {
         O2K_INVALID,
         O2K_LCLVAR_COPY,
@@ -7096,14 +7069,17 @@ public:
         struct AssertionDscOp2
         {
             optOp2Kind kind; // a const or copy assignment
-            ValueNum   vn;
+        private:
+            uint16_t m_encodedIconFlags; // encoded icon gtFlags, don't use directly
+        public:
+            ValueNum vn;
             struct IntVal
             {
                 ssize_t iconVal; // integer
 #if !defined(HOST_64BIT)
                 unsigned padding; // unused; ensures iconFlags does not overlap lconVal
 #endif
-                GenTreeFlags iconFlags; // gtFlags
+                FieldSeq* fieldSeq;
             };
             union {
                 SsaVar        lcl;
@@ -7112,6 +7088,29 @@ public:
                 double        dconVal;
                 IntegralRange u2;
             };
+
+            bool HasIconFlag()
+            {
+                assert(m_encodedIconFlags <= 0xFF);
+                return m_encodedIconFlags != 0;
+            }
+            GenTreeFlags GetIconFlag()
+            {
+                // number of trailing zeros in GTF_ICON_HDL_MASK
+                const uint16_t iconMaskTzc = 24;
+                static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
+
+                GenTreeFlags flags = (GenTreeFlags)(m_encodedIconFlags << iconMaskTzc);
+                assert((flags & ~GTF_ICON_HDL_MASK) == 0);
+                return flags;
+            }
+            void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
+            {
+                const uint16_t iconMaskTzc = 24;
+                assert((flags & ~GTF_ICON_HDL_MASK) == 0);
+                m_encodedIconFlags = flags >> iconMaskTzc;
+                u1.fieldSeq        = fieldSeq;
+            }
         } op2;
 
         bool IsCheckedBoundArithBound()
@@ -7220,7 +7219,7 @@ public:
             {
                 case O2K_IND_CNS_INT:
                 case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.u1.iconFlags == that->op2.u1.iconFlags));
+                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.GetIconFlag() == that->op2.GetIconFlag()));
 
                 case O2K_CONST_LONG:
                     return (op2.lconVal == that->op2.lconVal);

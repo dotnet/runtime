@@ -237,7 +237,7 @@ namespace System.Net.Sockets
                 socketError = (SocketError)(packedResult & 0xFFFFFFFF);
                 if (socketError != SocketError.Success)
                 {
-                    GetOverlappedResultOnError(ref socketError, ref Unsafe.As<int, uint>(ref bytesTransferred), ref socketFlags, overlapped);
+                    GetOverlappedResultOnError(ref socketError, ref *(uint*)&bytesTransferred, ref socketFlags, overlapped);
                 }
                 FreeNativeOverlapped(ref overlapped);
             }

@@ -569,7 +569,7 @@ void Compiler::gsParamsToShadows()
         {
             assert(shadowVarDsc->GetLayout() != nullptr);
             assert(shadowVarDsc->lvExactSize != 0);
-            opAssign = gtNewBlkOpNode(dst, src, false, true);
+            opAssign = gtNewBlkOpNode(dst, src);
         }
         else
         {
@@ -618,7 +618,7 @@ void Compiler::gsParamsToShadows()
                 GenTree* opAssign = nullptr;
                 if (varDsc->TypeGet() == TYP_STRUCT)
                 {
-                    opAssign = gtNewBlkOpNode(dst, src, false, true);
+                    opAssign = gtNewBlkOpNode(dst, src);
                 }
                 else
                 {

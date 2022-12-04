@@ -1304,6 +1304,55 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_SELECT/GT_SELECT_HI node.
+//
+// Arguments:
+//    select - the node
+//
+void CodeGen::genCodeForSelect(GenTreeOp* select)
+{
+#ifdef TARGET_X86
+    assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
+#else
+    assert(select->OperIs(GT_SELECT));
+#endif
+
+    regNumber dstReg = select->GetRegNum();
+    if (select->OperIs(GT_SELECT))
+    {
+        genConsumeReg(select->AsConditional()->gtCond);
+    }
+
+    genConsumeOperands(select);
+
+    instruction cmovKind = INS_cmovne;
+    GenTree*    trueVal  = select->gtOp1;
+    GenTree*    falseVal = select->gtOp2;
+
+    // If the 'true' operand was allocated the same register as the target
+    // register then flip it to the false value so we can skip a reg-reg mov.
+    if (trueVal->isUsedFromReg() && (trueVal->GetRegNum() == dstReg))
+    {
+        std::swap(trueVal, falseVal);
+        cmovKind = INS_cmove;
+    }
+
+    if (select->OperIs(GT_SELECT))
+    {
+        // TODO-CQ: Support contained relops here.
+        assert(select->AsConditional()->gtCond->isUsedFromReg());
+
+        regNumber condReg = select->AsConditional()->gtCond->GetRegNum();
+        GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+    }
+
+    inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
+    inst_RV_TT(cmovKind, emitTypeSize(select), dstReg, trueVal);
+
+    genProduceReg(select);
+}
+
+//------------------------------------------------------------------------
 // genCodeForBT: Generates code for a GT_BT node.
 //
 // Arguments:
@@ -1736,6 +1785,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_SETCC:
             genCodeForSetcc(treeNode->AsCC());
             break;
+
+        case GT_SELECT:
+            genCodeForSelect(treeNode->AsConditional());
+            break;
+
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
+            genCodeForSelect(treeNode->AsOp());
+            break;
+#endif
 
         case GT_BT:
             genCodeForBT(treeNode->AsOp());

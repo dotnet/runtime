@@ -9,11 +9,13 @@ using System.Runtime.Intrinsics;
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
+#pragma warning disable 8500 // sizeof of managed types
+
 namespace System
 {
     internal static partial class SpanHelpers // .T
     {
-        public static void Fill<T>(ref T refData, nuint numElements, T value)
+        public static unsafe void Fill<T>(ref T refData, nuint numElements, T value)
         {
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.
             // - T cannot contain references (GC can't track references in vectors)
@@ -23,39 +25,39 @@ namespace System
 
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) { goto CannotVectorize; }
             if (!Vector.IsHardwareAccelerated) { goto CannotVectorize; }
-            if (Unsafe.SizeOf<T>() > Vector<byte>.Count) { goto CannotVectorize; }
-            if (!BitOperations.IsPow2(Unsafe.SizeOf<T>())) { goto CannotVectorize; }
+            if (sizeof(T) > Vector<byte>.Count) { goto CannotVectorize; }
+            if (!BitOperations.IsPow2(sizeof(T))) { goto CannotVectorize; }
 
-            if (numElements >= (uint)(Vector<byte>.Count / Unsafe.SizeOf<T>()))
+            if (numElements >= (uint)(Vector<byte>.Count / sizeof(T)))
             {
                 // We have enough data for at least one vectorized write.
 
                 T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loops below.
                 Vector<byte> vector;
 
-                if (Unsafe.SizeOf<T>() == 1)
+                if (sizeof(T) == 1)
                 {
                     vector = new Vector<byte>(Unsafe.As<T, byte>(ref tmp));
                 }
-                else if (Unsafe.SizeOf<T>() == 2)
+                else if (sizeof(T) == 2)
                 {
                     vector = (Vector<byte>)(new Vector<ushort>(Unsafe.As<T, ushort>(ref tmp)));
                 }
-                else if (Unsafe.SizeOf<T>() == 4)
+                else if (sizeof(T) == 4)
                 {
                     // special-case float since it's already passed in a SIMD reg
                     vector = (typeof(T) == typeof(float))
                         ? (Vector<byte>)(new Vector<float>((float)(object)tmp!))
                         : (Vector<byte>)(new Vector<uint>(Unsafe.As<T, uint>(ref tmp)));
                 }
-                else if (Unsafe.SizeOf<T>() == 8)
+                else if (sizeof(T) == 8)
                 {
                     // special-case double since it's already passed in a SIMD reg
                     vector = (typeof(T) == typeof(double))
                         ? (Vector<byte>)(new Vector<double>((double)(object)tmp!))
                         : (Vector<byte>)(new Vector<ulong>(Unsafe.As<T, ulong>(ref tmp)));
                 }
-                else if (Unsafe.SizeOf<T>() == 16)
+                else if (sizeof(T) == 16)
                 {
                     Vector128<byte> vec128 = Unsafe.As<T, Vector128<byte>>(ref tmp);
                     if (Vector<byte>.Count == 16)
@@ -72,7 +74,7 @@ namespace System
                         goto CannotVectorize;
                     }
                 }
-                else if (Unsafe.SizeOf<T>() == 32)
+                else if (sizeof(T) == 32)
                 {
                     if (Vector<byte>.Count == 32)
                     {
@@ -91,7 +93,7 @@ namespace System
                 }
 
                 ref byte refDataAsBytes = ref Unsafe.As<T, byte>(ref refData);
-                nuint totalByteLength = numElements * (nuint)Unsafe.SizeOf<T>(); // get this calculation ready ahead of time
+                nuint totalByteLength = numElements * (nuint)sizeof(T); // get this calculation ready ahead of time
                 nuint stopLoopAtOffset = totalByteLength & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
                 nuint offset = 0;
 
@@ -99,7 +101,7 @@ namespace System
                 // Compare 'numElements' rather than 'stopLoopAtOffset' because we don't want a dependency
                 // on the very recently calculated 'stopLoopAtOffset' value.
 
-                if (numElements >= (uint)(2 * Vector<byte>.Count / Unsafe.SizeOf<T>()))
+                if (numElements >= (uint)(2 * Vector<byte>.Count / sizeof(T)))
                 {
                     do
                     {
@@ -1302,23 +1304,23 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool CanVectorizeAndBenefit<T>(int length) where T : IEquatable<T>?
+        internal static unsafe bool CanVectorizeAndBenefit<T>(int length) where T : IEquatable<T>?
         {
             if (Vector128.IsHardwareAccelerated && RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                if (sizeof(T) == sizeof(byte))
                 {
                     return length >= Vector128<byte>.Count;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                else if (sizeof(T) == sizeof(short))
                 {
                     return length >= Vector128<short>.Count;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                else if (sizeof(T) == sizeof(int))
                 {
                     return length >= Vector128<int>.Count;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                else if (sizeof(T) == sizeof(long))
                 {
                     return length >= Vector128<long>.Count;
                 }
@@ -2844,19 +2846,19 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct
+        private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
+            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector256<T> equals) where T : struct
+        private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector256<T> equals) where T : struct
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
+            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

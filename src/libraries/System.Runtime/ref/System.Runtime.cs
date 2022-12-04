@@ -301,6 +301,13 @@ namespace System
         public virtual object? ActualValue { get { throw null; } }
         public override string Message { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static void ThrowIfZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfNegative<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfNegativeOrZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfGreaterThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
+        public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
+        public static void ThrowIfLessThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
+        public static void ThrowIfLessThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
     }
     public partial class ArithmeticException : System.SystemException
     {
@@ -1745,6 +1752,7 @@ namespace System
         public int Second { get { throw null; } }
         public long Ticks { get { throw null; } }
         public System.TimeSpan TimeOfDay { get { throw null; } }
+        public int TotalOffsetMinutes { get { throw null; } }
         public System.DateTime UtcDateTime { get { throw null; } }
         public static System.DateTimeOffset UtcNow { get { throw null; } }
         public long UtcTicks { get { throw null; } }
@@ -7055,6 +7063,7 @@ namespace System.Buffers
     public class IndexOfAnyValues<T> where T : System.IEquatable<T>?
     {
         internal IndexOfAnyValues() { }
+        public bool Contains(T value) { throw null; }
     }
     public static class IndexOfAnyValues
     {
@@ -9681,8 +9690,8 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3, string path4) { throw null; }
         public static string Combine(params string[] paths) { throw null; }
         public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
-        public static bool EndsInDirectorySeparator(string path) { throw null; }
-        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path) { throw null; }
+        public static bool EndsInDirectorySeparator([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetDirectoryName(System.ReadOnlySpan<char> path) { throw null; }
         public static string? GetDirectoryName(string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetExtension(System.ReadOnlySpan<char> path) { throw null; }

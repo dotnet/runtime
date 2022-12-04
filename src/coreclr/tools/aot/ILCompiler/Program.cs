@@ -182,14 +182,6 @@ namespace ILCompiler
                     compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
-                string[] runtimeOptions = Get(_command.RuntimeOptions);
-                if (entrypointModule != null)
-                {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
-                    compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                }
-
                 bool nativeLib = Get(_command.NativeLib);
                 if (multiFile)
                 {
@@ -219,11 +211,18 @@ namespace ILCompiler
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
+                string[] runtimeOptions = Get(_command.RuntimeOptions);
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
+                }
+                else if (entrypointModule != null)
+                {
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                 }
@@ -657,7 +656,7 @@ namespace ILCompiler
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILCompilerRootCommand(args))
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("-v")
+                .UseVersionOption("--version", "-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(ILCompilerRootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
                 .Build()
