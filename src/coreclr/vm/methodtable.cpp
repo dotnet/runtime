@@ -3547,7 +3547,7 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress
         canBeFrozen = false;
     }
 #endif
-    OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, canBeFrozen);
+    OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, false);
     SetObjectReference((OBJECTREF*)boxedStaticHandle, obj);
 }
 
