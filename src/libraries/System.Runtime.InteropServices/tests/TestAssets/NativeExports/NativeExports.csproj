@@ -7,6 +7,9 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
+    <!-- NativeExports should use the live built apphost. We need to define a dependency
+         to the apphost to make sure that it is built before this project invokes DNNE. -->
+    <UseLocalAppHostPack>false</UseLocalAppHostPack>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
@@ -15,12 +18,9 @@
       '$(TargetOS)' == 'tvOSSimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
 
-  <!-- NativeExports should use the live built apphost. We need to define a dependency
-       to the apphost to make sure that it is built before this project invokes DNNE.
-       Meanwhile, use a prebuilt apphost from the 7.0 SDK.
-       Remove this hack when the SDK understands the net8.0 tfm.
+  <!-- Until we use the live app host, use a prebuilt from the 7.0 SDK.
        Issue: https://github.com/dotnet/runtime/issues/58109. -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true'">
     <KnownAppHostPack Include="Microsoft.NETCore.App"
                       ExcludedRuntimeIdentifiers="android"
                       AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
@@ -123,7 +123,7 @@
                             GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
     <PropertyGroup>
-      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
+      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(  )'))</DnneNetHostDir>
     </PropertyGroup>
   </Target>
 </Project>

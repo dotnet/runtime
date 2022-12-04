@@ -51,7 +51,7 @@
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
     <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'armel' and '$(BuildArchitecture)' != 'armel' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
 
-    <AppHostSourcePath Condition="'$(UseLiveAppHost)' == 'true'">$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', 'apphost$(ExeSuffix)'))</AppHostSourcePath>
+    <AppHostSourcePath Condition="'$(UseLocalAppHostPack)' == 'true'">$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', 'apphost$(ExeSuffix)'))</AppHostSourcePath>
     <SingleFileHostSourcePath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))</SingleFileHostSourcePath>
   </PropertyGroup>
 
