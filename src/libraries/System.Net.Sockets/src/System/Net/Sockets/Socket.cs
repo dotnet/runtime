@@ -1544,7 +1544,7 @@ namespace System.Net.Sockets
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
-            SocketPal.CheckDualModeReceiveSupport(this);
+            SocketPal.CheckDualModePacketInfoSupport(this);
             ValidateBlockingMode();
 
             // We don't do a CAS demand here because the contents of remoteEP aren't used by
@@ -1632,7 +1632,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustbind);
             }
 
-            SocketPal.CheckDualModeReceiveSupport(this);
+            SocketPal.CheckDualModePacketInfoSupport(this);
             ValidateBlockingMode();
 
             // We don't do a CAS demand here because the contents of remoteEP aren't used by
@@ -1687,8 +1687,6 @@ namespace System.Net.Sockets
             ValidateBufferArguments(buffer, offset, size);
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
-            SocketPal.CheckDualModeReceiveSupport(this);
-
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
 
@@ -1726,7 +1724,15 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    remoteEP = endPointSnapshot.Create(socketAddress);
+                    if (endPointSnapshot.AddressFamily == socketAddress.Family)
+                    {
+                        remoteEP = _remoteEndPoint != null ? _remoteEndPoint.Create(socketAddress) : socketAddress.GetIPEndPoint();
+                    }
+                    else if (endPointSnapshot.AddressFamily == AddressFamily.InterNetworkV6 && socketAddress.Family == AddressFamily.InterNetwork)
+                    {
+                        // We expect IPv6 on DualMode sockets but we can also get plain old IPv4
+                        remoteEP = new IPEndPoint(socketAddress.GetIPAddress().MapToIPv6(), socketAddress.GetPort());
+                    }
                 }
                 catch
                 {
@@ -1789,8 +1795,6 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
             ValidateReceiveFromEndpointAndState(remoteEP, nameof(remoteEP));
 
-            SocketPal.CheckDualModeReceiveSupport(this);
-
             ValidateBlockingMode();
 
             // We don't do a CAS demand here because the contents of remoteEP aren't used by
@@ -1827,7 +1831,15 @@ namespace System.Net.Sockets
             {
                 try
                 {
-                    remoteEP = endPointSnapshot.Create(socketAddress);
+                    if (endPointSnapshot.AddressFamily == socketAddress.Family)
+                    {
+                        remoteEP = _remoteEndPoint != null ? _remoteEndPoint.Create(socketAddress) : socketAddress.GetIPEndPoint();
+                    }
+                    else if (endPointSnapshot.AddressFamily == AddressFamily.InterNetworkV6 && socketAddress.Family == AddressFamily.InterNetwork)
+                    {
+                        // We expect IPv6 on DalMode sockets but we can also get plain old IPv4
+                        remoteEP = new IPEndPoint(socketAddress.GetIPAddress().MapToIPv6(), socketAddress.GetPort());
+                    }
                 }
                 catch
                 {
@@ -2875,8 +2887,6 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), nameof(e));
             }
 
-            SocketPal.CheckDualModeReceiveSupport(this);
-
             // We don't do a CAS demand here because the contents of remoteEP aren't used by
             // WSARecvFrom; all that matters is that we generate a unique-to-this-call SocketAddress
             // with the right address family.
@@ -2921,7 +2931,7 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.Format(SR.net_InvalidEndPointAddressFamily, e.RemoteEndPoint.AddressFamily, _addressFamily), nameof(e));
             }
 
-            SocketPal.CheckDualModeReceiveSupport(this);
+            SocketPal.CheckDualModePacketInfoSupport(this);
 
             // We don't do a CAS demand here because the contents of remoteEP aren't used by
             // WSARecvMsg; all that matters is that we generate a unique-to-this-call SocketAddress

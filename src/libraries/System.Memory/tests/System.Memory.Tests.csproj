@@ -87,6 +87,7 @@
     <Compile Include="Span\IndexOfAny.T.cs" />
     <Compile Include="Span\IndexOfAnyExcept.T.cs" />
     <Compile Include="Span\IndexOfAnyInRange.cs" />
+    <Compile Include="Span\IndexOfAnyValues.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
     <Compile Include="Span\IndexOfSequence.T.cs" />

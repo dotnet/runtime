@@ -13,7 +13,7 @@ namespace System.Collections.Frozen
         internal EmptyFrozenSet() : base(EqualityComparer<T>.Default) { }
 
         /// <inheritdoc />
-        private protected override ImmutableArray<T> ItemsCore => ImmutableArray<T>.Empty;
+        private protected override T[] ItemsCore => Array.Empty<T>();
 
         /// <inheritdoc />
         private protected override int CountCore => 0;

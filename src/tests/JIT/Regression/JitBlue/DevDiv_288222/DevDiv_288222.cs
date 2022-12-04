@@ -21,7 +21,7 @@ internal class Program
         doCopy(array, start);
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         try
         {

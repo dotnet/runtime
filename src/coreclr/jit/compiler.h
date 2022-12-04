@@ -986,16 +986,13 @@ public:
     regMaskTP lvRegMask() const
     {
         regMaskTP regMask = RBM_NONE;
-        if (varTypeUsesFloatReg(TypeGet()))
+        if (GetRegNum() != REG_STK)
         {
-            if (GetRegNum() != REG_STK)
+            if (varTypeUsesFloatReg(TypeGet()))
             {
                 regMask = genRegMaskFloat(GetRegNum(), TypeGet());
             }
-        }
-        else
-        {
-            if (GetRegNum() != REG_STK)
+            else
             {
                 regMask = genRegMask(GetRegNum());
             }
@@ -2357,14 +2354,11 @@ public:
 
     GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
 
-    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
+    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile = false);
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
-
-protected:
-    void gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVal, bool isVolatile);
 
 public:
     GenTreeObj* gtNewObjNode(ClassLayout* layout, GenTree* addr);
@@ -2545,7 +2539,13 @@ public:
                                  bool        isSimdAsHWIntrinsic);
 
     GenTree* gtNewSimdCreateBroadcastNode(
-        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
+
+    GenTree* gtNewSimdCreateScalarNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
+
+    GenTree* gtNewSimdCreateScalarUnsafeNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic = false);
 
     GenTree* gtNewSimdDotProdNode(var_types   type,
                                   GenTree*    op1,
@@ -3876,13 +3876,12 @@ public:
                           CORINFO_CLASS_HANDLE structHnd,
                           unsigned             curLevel,
                           Statement** pAfterStmt DEBUGARG(const char* reason));
-    GenTree* impAssignStruct(GenTree*             dest,
-                             GenTree*             src,
-                             CORINFO_CLASS_HANDLE structHnd,
-                             unsigned             curLevel,
-                             Statement**          pAfterStmt = nullptr,
-                             const DebugInfo&     di         = DebugInfo(),
-                             BasicBlock*          block      = nullptr);
+    GenTree* impAssignStruct(GenTree*         dest,
+                             GenTree*         src,
+                             unsigned         curLevel,
+                             Statement**      pAfterStmt = nullptr,
+                             const DebugInfo& di         = DebugInfo(),
+                             BasicBlock*      block      = nullptr);
     GenTree* impAssignStructPtr(GenTree*             dest,
                                 GenTree*             src,
                                 CORINFO_CLASS_HANDLE structHnd,
@@ -4150,10 +4149,6 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
-
-#ifdef TARGET_ARM
-    void impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* op, CORINFO_CLASS_HANDLE hClass);
-#endif
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
     struct BlockListNode
@@ -4827,6 +4822,8 @@ public:
     void fgValueNumberFieldStore(
         GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
 
+    bool fgValueNumberConstLoad(GenTreeIndir* tree);
+
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
 
@@ -4878,10 +4875,6 @@ public:
 
     void fgValueNumberAssignment(GenTreeOp* tree);
 
-    // Does value-numbering for a block assignment.
-    void fgValueNumberBlockAssignment(GenTree* tree);
-
-    // Does value-numbering for a variable definition that has SSA.
     void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
 
     // Does value-numbering for a cast tree.
@@ -5677,22 +5670,9 @@ private:
     // know will be dereferenced.  To know that reliance on implicit null checking is sound, we must further know that
     // all offsets between the top-level indirection and the bottom are constant, and that their sum is sufficiently
     // small; hence the other fields of MorphAddrContext.
-    enum MorphAddrContextKind
-    {
-        MACK_Ind,
-        MACK_Addr,
-    };
     struct MorphAddrContext
     {
-        MorphAddrContextKind m_kind;
-        bool                 m_allConstantOffsets; // Valid only for "m_kind == MACK_Ind".  True iff all offsets between
-                                                   // top-level indirection and here have been constants.
-        size_t m_totalOffset; // Valid only for "m_kind == MACK_Ind", and if "m_allConstantOffsets" is true.
-                              // In that case, is the sum of those constant offsets.
-
-        MorphAddrContext(MorphAddrContextKind kind) : m_kind(kind), m_allConstantOffsets(true), m_totalOffset(0)
-        {
-        }
+        size_t m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
     };
 
 #ifdef FEATURE_SIMD
@@ -5701,8 +5681,6 @@ private:
                                     unsigned*    indexOut,
                                     unsigned*    simdSizeOut,
                                     bool         ignoreUsedInSIMDIntrinsic = false);
-    GenTree* fgMorphFieldAssignToSimdSetElement(GenTree* tree);
-    GenTree* fgMorphFieldToSimdGetElement(GenTree* tree);
     bool fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt);
     void impMarkContiguousSIMDFieldAssignments(Statement* stmt);
 
@@ -5723,7 +5701,7 @@ private:
     GenTree* fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode);
 #endif // TARGET_X86
     GenTree* fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode);
-    GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
+    GenTree* fgMorphLocalVar(GenTree* tree);
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
@@ -6059,10 +6037,6 @@ protected:
 
     // Mark a loop as removed.
     void optMarkLoopRemoved(unsigned loopNum);
-
-    // During global assertion prop, returns the conservative normal VN for a tree;
-    // otherwise returns NoVN
-    ValueNum optConservativeNormalVN(GenTree* tree);
 
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
@@ -6838,6 +6812,8 @@ public:
         }
     };
 
+    PhaseStatus optVNBasedDeadStoreRemoval();
+
 // clang-format off
 
 #define OMF_HAS_NEWARRAY                       0x00000001 // Method contains 'new' of an SD array
@@ -7055,7 +7031,7 @@ public:
         O1K_COUNT
     };
 
-    enum optOp2Kind
+    enum optOp2Kind : uint16_t
     {
         O2K_INVALID,
         O2K_LCLVAR_COPY,
@@ -7093,14 +7069,17 @@ public:
         struct AssertionDscOp2
         {
             optOp2Kind kind; // a const or copy assignment
-            ValueNum   vn;
+        private:
+            uint16_t m_encodedIconFlags; // encoded icon gtFlags, don't use directly
+        public:
+            ValueNum vn;
             struct IntVal
             {
                 ssize_t iconVal; // integer
 #if !defined(HOST_64BIT)
                 unsigned padding; // unused; ensures iconFlags does not overlap lconVal
 #endif
-                GenTreeFlags iconFlags; // gtFlags
+                FieldSeq* fieldSeq;
             };
             union {
                 SsaVar        lcl;
@@ -7109,6 +7088,29 @@ public:
                 double        dconVal;
                 IntegralRange u2;
             };
+
+            bool HasIconFlag()
+            {
+                assert(m_encodedIconFlags <= 0xFF);
+                return m_encodedIconFlags != 0;
+            }
+            GenTreeFlags GetIconFlag()
+            {
+                // number of trailing zeros in GTF_ICON_HDL_MASK
+                const uint16_t iconMaskTzc = 24;
+                static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
+
+                GenTreeFlags flags = (GenTreeFlags)(m_encodedIconFlags << iconMaskTzc);
+                assert((flags & ~GTF_ICON_HDL_MASK) == 0);
+                return flags;
+            }
+            void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
+            {
+                const uint16_t iconMaskTzc = 24;
+                assert((flags & ~GTF_ICON_HDL_MASK) == 0);
+                m_encodedIconFlags = flags >> iconMaskTzc;
+                u1.fieldSeq        = fieldSeq;
+            }
         } op2;
 
         bool IsCheckedBoundArithBound()
@@ -7217,7 +7219,7 @@ public:
             {
                 case O2K_IND_CNS_INT:
                 case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.u1.iconFlags == that->op2.u1.iconFlags));
+                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.GetIconFlag() == that->op2.GetIconFlag()));
 
                 case O2K_CONST_LONG:
                     return (op2.lconVal == that->op2.lconVal);
@@ -7339,6 +7341,10 @@ public:
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
+    ValueNum optConservativeNormalVN(GenTree* tree);
+
+    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
+
     // Assertion creation functions.
     AssertionIndex optCreateAssertion(GenTree*         op1,
                                       GenTree*         op2,
@@ -7346,7 +7352,6 @@ public:
                                       bool             helperCallArgs = false);
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
-    ssize_t optCastConstantSmall(ssize_t iconVal, var_types smallType);
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
@@ -7587,36 +7592,50 @@ public:
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
+    template <typename TPrint>
+    void eeAppendPrint(class StringPrinter* printer, TPrint print);
+    // Conventions: the "base" primitive printing functions take StringPrinter*
+    // and do not do any SPMI handling. There are then convenience printing
+    // functions exposed on top that have SPMI handling and additional buffer
+    // handling. Note that the strings returned are never truncated here.
     void eePrintJitType(class StringPrinter* printer, var_types jitType);
-    void eePrintType(class StringPrinter* printer,
-                     CORINFO_CLASS_HANDLE clsHnd,
-                     bool                 includeNamespaces,
-                     bool                 includeInstantiation);
-    void eePrintTypeOrJitAlias(class StringPrinter* printer,
-                               CORINFO_CLASS_HANDLE clsHnd,
-                               bool                 includeNamespaces,
-                               bool                 includeInstantiation);
+    void eePrintType(class StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
+    void eePrintTypeOrJitAlias(class StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
     void eePrintMethod(class StringPrinter*  printer,
                        CORINFO_CLASS_HANDLE  clsHnd,
                        CORINFO_METHOD_HANDLE methodHnd,
                        CORINFO_SIG_INFO*     sig,
-                       bool                  includeNamespaces,
                        bool                  includeClassInstantiation,
                        bool                  includeMethodInstantiation,
                        bool                  includeSignature,
                        bool                  includeReturnType,
                        bool                  includeThisSpecifier);
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
-    const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
+    void eePrintField(class StringPrinter* printer, CORINFO_FIELD_HANDLE fldHnd, bool includeType);
+
     const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd,
                                     bool                  includeReturnType    = true,
-                                    bool                  includeThisSpecifier = true);
-    unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
+                                    bool                  includeThisSpecifier = true,
+                                    char*                 buffer               = nullptr,
+                                    size_t                bufferSize           = 0);
 
-    bool eeIsNativeMethod(CORINFO_METHOD_HANDLE method);
-    CORINFO_METHOD_HANDLE eeGetMethodHandleForNative(CORINFO_METHOD_HANDLE method);
+    const char* eeGetMethodName(CORINFO_METHOD_HANDLE methHnd, char* buffer = nullptr, size_t bufferSize = 0);
+
+    const char* eeGetFieldName(CORINFO_FIELD_HANDLE fldHnd,
+                               bool                 includeType,
+                               char*                buffer     = nullptr,
+                               size_t               bufferSize = 0);
+
+    const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd, char* buffer = nullptr, size_t bufferSize = 0);
+
+    void eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
+    const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
+
+#if defined(DEBUG)
+    unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
 #endif
+
+    unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
 
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig);
     var_types eeGetArgType(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* sig, bool* isPinned);
@@ -7638,10 +7657,6 @@ public:
                           CORINFO_SIG_INFO*      retSig);
 
     void eeGetMethodSig(CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* retSig, CORINFO_CLASS_HANDLE owner = nullptr);
-
-    // Method entry-points, instrs
-
-    CORINFO_METHOD_HANDLE eeMarkNativeTarget(CORINFO_METHOD_HANDLE method);
 
     CORINFO_EE_INFO eeInfo;
     bool            eeInfoInitialized;
@@ -7846,16 +7861,6 @@ public:
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
 
     // Utility functions
-
-    const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
-
-#if defined(DEBUG)
-    void eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle);
-    unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
-    const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
-#endif
-
-    const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd);
 
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
     static CorInfoHelpFunc eeGetHelperNum(CORINFO_METHOD_HANDLE method);

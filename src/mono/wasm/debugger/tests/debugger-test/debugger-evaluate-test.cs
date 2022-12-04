@@ -391,9 +391,9 @@ namespace DebuggerTests
                 return str + parm;
             }
 
-            public string CallMethodWithParmString_λ(string parm)
+            public string CallMethodWithParmString_\u03BB(string parm)
             {
-                return "λ_" + parm;
+                return "\u03BB_" + parm;
             }
 
             public string CallMethodWithParmBool(bool parm)
@@ -1933,7 +1933,7 @@ namespace DebuggerTests
 
             public bool GetBool(bool param = true) => param;
             public char GetChar(char param = 'T') => param;
-            public char GetUnicodeChar(char param = 'ą') => param;
+            public char GetUnicodeChar(char param = '\u0105') => param;
             public byte GetByte(byte param = 1) => param;
             public sbyte GetSByte(sbyte param = 1) => param;
             public short GetInt16(short param = 1) => param;
@@ -1945,7 +1945,7 @@ namespace DebuggerTests
             public float GetSingle(float param = 1.23f) => param;
             public double GetDouble(double param = 1.23) => param;
             public string GetString(string param = "1.23") => param;
-            public string GetUnicodeString(string param = "żółć") => param;
+            public string GetUnicodeString(string param = "\u017C\u00F3\u0142\u0107") => param;
 
 #nullable enable
             public bool? GetBoolNullable(bool? param = true) => param;

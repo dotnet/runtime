@@ -62,6 +62,10 @@
 #include "mini-runtime.h"
 #include "interp/interp.h"
 
+#if HOST_BROWSER
+#include "interp/jiterpreter.h"
+#endif
+
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
@@ -1843,6 +1847,9 @@ mono_jit_parse_options (int argc, char * argv[])
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
 			mini_add_profiler_argument (argv [i] + 10);
 		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mini_parse_debug_option (argv [i] + 2)) {
+#if HOST_BROWSER
+		} else if (argv [i][0] == '-' && argv [i][1] == '-' && mono_jiterp_parse_option (argv [i] + 2)) {
+#endif
 		} else {
 			fprintf (stderr, "Unsupported command line option: '%s'\n", argv [i]);
 			exit (1);
@@ -2279,14 +2286,14 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
-			char **splitted;
+			char **split;
 
-			splitted = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
-			while (*splitted) {
-				char *tmp = *splitted;
+			split = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
+			while (*split) {
+				char *tmp = *split;
 				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
 				g_free (tmp);
-				splitted++;
+				split++;
 			}
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {
 			action = DO_COMPILE;

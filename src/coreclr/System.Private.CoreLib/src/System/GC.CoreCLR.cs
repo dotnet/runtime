@@ -626,14 +626,10 @@ namespace System
         /// <param name="notification">delegate to invoke when operation occurs</param>s
         internal static void RegisterMemoryLoadChangeNotification(float lowMemoryPercent, float highMemoryPercent, Action notification)
         {
-            if (highMemoryPercent < 0 || highMemoryPercent > 1.0 || highMemoryPercent <= lowMemoryPercent)
-            {
-                throw new ArgumentOutOfRangeException(nameof(highMemoryPercent));
-            }
-            if (lowMemoryPercent < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(lowMemoryPercent));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(highMemoryPercent, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(highMemoryPercent, 1.0);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(highMemoryPercent, lowMemoryPercent);
+            ArgumentOutOfRangeException.ThrowIfLessThan(lowMemoryPercent, 0);
             ArgumentNullException.ThrowIfNull(notification);
 
             lock (s_notifications)
@@ -677,7 +673,7 @@ namespace System
         /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
+        public static unsafe T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             if (!pinned)
             {
@@ -689,10 +685,13 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-                if (length < 2048 / Unsafe.SizeOf<T>())
+#pragma warning disable 8500 // sizeof of managed types
+                if (length < 2048 / sizeof(T))
+#pragma warning restore 8500
                 {
                     return new T[length];
                 }
+
 #endif
             }
             else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())

@@ -31,7 +31,7 @@ class Program
         return new DisposableObject();
     }
     
-    static int Main(string[] args)
+    static int Main()
     {
         int result = 0;
 

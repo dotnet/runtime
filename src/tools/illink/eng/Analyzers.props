@@ -1,0 +1,20 @@
+<Project>
+  <ItemGroup Condition="'$(RunAnalyzers)' == 'true'">
+    <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="$(MicrosoftCodeAnalysisCSharpCodeStyleVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" PrivateAssets="all" />
+    <!-- <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.205" PrivateAssets="all" /> -->
+  </ItemGroup>
+
+  <Import Project="$(BootstrapBuildPath)/Microsoft.NET.ILLink.Analyzers.props" Condition="'$(BootstrapBuildPath)' != ''" />
+
+  <!-- Don't enable for Cecil, as they can't be suppressed -->
+  <PropertyGroup Condition="'$(BootstrapBuildPath)' != '' and '$(MSBuildProjectName)' != 'Mono.Cecil.Pdb'">
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(BootstrapBuildPath)' != ''">
+    <Analyzer Include="$(BootstrapBuildPath)/ILLink.RoslynAnalyzer.dll" />
+  </ItemGroup>
+
+</Project>

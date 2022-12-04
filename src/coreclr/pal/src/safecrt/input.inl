@@ -351,6 +351,7 @@ static int __check_float_string(size_t nFloatStrUsed,
                             break;
 
 #if _INTEGRAL_MAX_BITS >= 64
+                        case _T('z'):
                         case _T('I'):
                             if ( (*(format + 1) == _T('6')) &&
                                  (*(format + 2) == _T('4')) )

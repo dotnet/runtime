@@ -3933,9 +3933,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
     return alloc;
 }
 
-// ETW TODO: need to fire create seg events for these methods.
-// FIRE_EVENT(GCCreateSegment_V1
-bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn)
+bool region_allocator::allocate_region (int gen_num, size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn)
 {
     size_t alignment = region_alignment;
     size_t alloc_size = align_region_up (size);
@@ -3950,17 +3948,36 @@ bool region_allocator::allocate_region (size_t size, uint8_t** start, uint8_t** 
     *end = alloc + alloc_size;
     ret = (alloc != NULL);
 
+    gc_etw_segment_type segment_type;
+
+    if (gen_num == loh_generation)
+    {
+        segment_type = gc_etw_segment_large_object_heap;
+    }
+    else if (gen_num == poh_generation)
+    {
+        segment_type = gc_etw_segment_pinned_object_heap;
+    }
+    else
+    {
+        segment_type = gc_etw_segment_small_object_heap;
+    }
+
+    FIRE_EVENT(GCCreateSegment_V1, (alloc + sizeof (aligned_plug_and_gap)),
+                                  size - sizeof (aligned_plug_and_gap),
+                                  segment_type);
+
     return ret;
 }
 
-bool region_allocator::allocate_basic_region (uint8_t** start, uint8_t** end, region_allocator_callback_fn fn)
+bool region_allocator::allocate_basic_region (int gen_num, uint8_t** start, uint8_t** end, region_allocator_callback_fn fn)
 {
-    return allocate_region (region_alignment, start, end, allocate_forward, fn);
+    return allocate_region (gen_num, region_alignment, start, end, allocate_forward, fn);
 }
 
 // Large regions are 8x basic region sizes by default. If you need a larger region than that,
 // call allocate_region with the size.
-bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn)
+bool region_allocator::allocate_large_region (int gen_num, uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn)
 {
     if (size == 0)
         size = large_region_alignment;
@@ -3971,7 +3988,7 @@ bool region_allocator::allocate_large_region (uint8_t** start, uint8_t** end, al
         assert (round_up_power2(large_region_alignment) == large_region_alignment);
         size = (size + (large_region_alignment - 1)) & ~(large_region_alignment - 1);
     }
-    return allocate_region (size, start, end, direction, fn);
+    return allocate_region (gen_num, size, start, end, direction, fn);
 }
 
 void region_allocator::delete_region (uint8_t* region_start)
@@ -5903,7 +5920,6 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
         assert ((res->flags & (heap_segment_flags_loh | heap_segment_flags_poh)) == flags);
 #else //USE_REGIONS
         res->flags |= flags;
-#endif //USE_REGIONS
 
         FIRE_EVENT(GCCreateSegment_V1,
             heap_segment_mem(res),
@@ -5912,13 +5928,12 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
                 gc_etw_segment_pinned_object_heap :
                 gc_etw_segment_large_object_heap);
 
-#ifndef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
         hp->thread_uoh_segment (gen_number, res);
 #else
         thread_uoh_segment (gen_number, res);
 #endif //MULTIPLE_HEAPS
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
         GCToEEInterface::DiagAddNewRegion(
                             gen_number,
                             heap_segment_mem (res),
@@ -11774,7 +11789,7 @@ void gc_heap::clear_gen1_cards()
 heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_heap* hp, int gen_num)
 {
     gc_oh_num oh = gen_to_oh (gen_num);
-    size_t initial_commit = SEGMENT_INITIAL_COMMIT;
+    size_t initial_commit = use_large_pages_p ? size : SEGMENT_INITIAL_COMMIT;
     int h_number =
 #ifdef MULTIPLE_HEAPS
         hp->heap_number;
@@ -11799,8 +11814,7 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
     heap_segment_mem (new_segment) = start;
     heap_segment_used (new_segment) = start;
     heap_segment_reserved (new_segment) = new_pages + size;
-    heap_segment_committed (new_segment) = (use_large_pages_p ?
-        heap_segment_reserved(new_segment) : (new_pages + initial_commit));
+    heap_segment_committed (new_segment) = new_pages + initial_commit;
 
     init_heap_segment (new_segment, hp
 #ifdef USE_REGIONS
@@ -13519,23 +13533,26 @@ bool allocate_initial_regions(int number_of_heaps)
     for (int i = 0; i < number_of_heaps; i++)
     {
         bool succeed = global_region_allocator.allocate_large_region(
+            poh_generation,
             &initial_regions[i][poh_generation][0],
             &initial_regions[i][poh_generation][1], allocate_forward, 0, nullptr);
         assert(succeed);
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
-        for (int gen = max_generation; gen >= 0; gen--)
+        for (int gen_num = max_generation; gen_num >= 0; gen_num--)
         {
             bool succeed = global_region_allocator.allocate_basic_region(
-                &initial_regions[i][gen][0],
-                &initial_regions[i][gen][1], nullptr);
+                gen_num,
+                &initial_regions[i][gen_num][0],
+                &initial_regions[i][gen_num][1], nullptr);
             assert(succeed);
         }
     }
     for (int i = 0; i < number_of_heaps; i++)
     {
         bool succeed = global_region_allocator.allocate_large_region(
+            loh_generation,
             &initial_regions[i][loh_generation][0],
             &initial_regions[i][loh_generation][1], allocate_forward, 0, nullptr);
         assert(succeed);
@@ -21768,7 +21785,7 @@ void gc_heap::gc1()
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
 #ifdef USE_REGIONS
-    if (!(settings.concurrent))
+    if (!(settings.concurrent) && (settings.condemned_generation == max_generation))
     {
         last_gc_before_oom = FALSE;
     }
@@ -24152,12 +24169,17 @@ BOOL ref_p (uint8_t* r)
     return (straight_ref_p (r) || partial_object_p (r));
 }
 
-mark_queue_t::mark_queue_t() : curr_slot_index(0)
+mark_queue_t::mark_queue_t()
+#ifdef MARK_PHASE_PREFETCH
+    : curr_slot_index(0)
+#endif //MARK_PHASE_PREFETCH
 {
+#ifdef MARK_PHASE_PREFETCH
     for (size_t i = 0; i < slot_count; i++)
     {
         slot_table[i] = nullptr;
     }
+#endif //MARK_PHASE_PREFETCH
 }
 
 // place an object in the mark queue
@@ -24167,6 +24189,7 @@ mark_queue_t::mark_queue_t() : curr_slot_index(0)
 FORCEINLINE
 uint8_t *mark_queue_t::queue_mark(uint8_t *o)
 {
+#ifdef MARK_PHASE_PREFETCH
     Prefetch (o);
 
     // while the prefetch is taking effect, park our object in the queue
@@ -24179,6 +24202,9 @@ uint8_t *mark_queue_t::queue_mark(uint8_t *o)
     curr_slot_index = (slot_index + 1) % slot_count;
     if (old_o == nullptr)
         return nullptr;
+#else //MARK_PHASE_PREFETCH
+    uint8_t* old_o = o;
+#endif //MARK_PHASE_PREFETCH
 
     // this causes us to access the method table pointer of the old object
     BOOL already_marked = marked (old_o);
@@ -24230,6 +24256,7 @@ uint8_t *mark_queue_t::queue_mark(uint8_t *o, int condemned_gen)
 // returns nullptr if there is no such object
 uint8_t* mark_queue_t::get_next_marked()
 {
+#ifdef MARK_PHASE_PREFETCH
     size_t slot_index = curr_slot_index;
     size_t empty_slot_count = 0;
     while (empty_slot_count < slot_count)
@@ -24249,15 +24276,18 @@ uint8_t* mark_queue_t::get_next_marked()
         }
         empty_slot_count++;
     }
+#endif //MARK_PHASE_PREFETCH
     return nullptr;
 }
 
 void mark_queue_t::verify_empty()
 {
+#ifdef MARK_PHASE_PREFETCH
     for (size_t slot_index = 0; slot_index < slot_count; slot_index++)
     {
         assert(slot_table[slot_index] == nullptr);
     }
+#endif //MARK_PHASE_PREFETCH
 }
 
 void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL)
@@ -25954,6 +25984,7 @@ BOOL gc_heap::process_mark_overflow(int condemned_gen_number)
 
     BOOL  overflow_p = FALSE;
 recheck:
+    drain_mark_queue();
     if ((! (max_overflow_address == 0) ||
          ! (min_overflow_address == MAX_PTR)))
     {
@@ -26218,7 +26249,8 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
         if (process_mark_overflow(condemned_gen_number))
             fUnscannedPromotions = true;
 
-        drain_mark_queue();
+        // mark queue must be empty after process_mark_overflow
+        mark_queue.verify_empty();
 
         // Perform the scan and set the flag if any promotions resulted.
         if (GCScan::GcDhReScan(sc))
@@ -26849,7 +26881,9 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // handle table has been fully promoted.
     GCScan::GcDhInitialScan(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
     scan_dependent_handles(condemned_gen_number, &sc, true);
-    drain_mark_queue();
+
+    // mark queue must be empty after scan_dependent_handles
+    mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
 #ifdef MULTIPLE_HEAPS
@@ -26939,7 +26973,9 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // Scan dependent handles again to promote any secondaries associated with primaries that were promoted
     // for finalization. As before scan_dependent_handles will also process any mark stack overflow.
     scan_dependent_handles(condemned_gen_number, &sc, false);
-    drain_mark_queue();
+
+    // mark queue must be empty after scan_dependent_handles
+    mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 #endif //FEATURE_PREMORTEM_FINALIZATION
 
@@ -31656,8 +31692,8 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
 
     // REGIONS TODO: allocate POH regions on the right
     bool allocated_p = (uoh_p ?
-        global_region_allocator.allocate_large_region (&start, &end, allocate_forward, size, on_used_changed) :
-        global_region_allocator.allocate_basic_region (&start, &end, on_used_changed));
+        global_region_allocator.allocate_large_region (gen_num, &start, &end, allocate_forward, size, on_used_changed) :
+        global_region_allocator.allocate_basic_region (gen_num, &start, &end, on_used_changed));
 
     if (!allocated_p)
     {

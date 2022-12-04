@@ -9,7 +9,7 @@ internal class AllocBug
     {
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         AllocBug ab = new AllocBug();
 

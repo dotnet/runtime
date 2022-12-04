@@ -176,11 +176,6 @@ namespace Internal.Runtime.Augments
                 throwing ? RuntimeHelperKind.CastClass : RuntimeHelperKind.IsInst);
         }
 
-        public static IntPtr GetDispatchMapForType(RuntimeTypeHandle typeHandle)
-        {
-            return CreateEETypePtr(typeHandle).DispatchMap;
-        }
-
         public static IntPtr GetFallbackDefaultConstructor()
         {
             return Activator.GetFallbackDefaultConstructor();
@@ -846,14 +841,6 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(obj.GetEETypePtr());
         }
 
-        // Move memory which may be on the heap which may have object references in it.
-        // In general, a memcpy on the heap is unsafe, but this is able to perform the
-        // correct write barrier such that the GC is not incorrectly impacted.
-        public static unsafe void BulkMoveWithWriteBarrier(IntPtr dmem, IntPtr smem, int size)
-        {
-            RuntimeImports.RhBulkMoveWithWriteBarrier(ref *(byte*)dmem.ToPointer(), ref *(byte*)smem.ToPointer(), (uint)size);
-        }
-
         public static IntPtr GetUniversalTransitionThunk()
         {
             return RuntimeImports.RhGetUniversalTransitionThunk();
@@ -872,7 +859,6 @@ namespace Internal.Runtime.Augments
             IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
             if (newThunk == IntPtr.Zero)
                 throw new OutOfMemoryException();
-            TypeLoaderCallbacks.RegisterThunk(newThunk);
             return newThunk;
         }
 
