@@ -3561,15 +3561,12 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     {
         // In case if we don't plan to collect this handle we may try to allocate it on FOH
         _ASSERT(!pFieldMT->ContainsPointers());
+        _ASSERT(pHandle == nullptr);
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
         // obj can be null in case if struct is huge (>64kb)
         if (obj != NULL)
         {
-            if (pHandle)
-            {
-                *pHandle = fPinned ? (OBJECTHANDLE)OBJECTREFToObject(obj) : nullptr;
-            }
             return obj;
         }
     }
