@@ -7,7 +7,7 @@ parameters:
   buildId: ''
   branchName: ''
   pipeline: ''
-  project: 'public' # 'internal' or 'public'
+  project: 'dnceng-public' # 'internal' or 'public'
 
 steps:
   # Download artifact
