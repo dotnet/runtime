@@ -11,6 +11,7 @@
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
+      GetProductVersions;
       _SetPackageVersionForWorkloadsTesting;
       _GetNuGetsToBuild;
       _PreparePackagesForWorkloadInstall;
