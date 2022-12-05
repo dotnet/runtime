@@ -34,8 +34,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				(AssemblyName, Token) = entity switch {
 					EcmaType type => (type.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (type.Handle)),
 					EcmaMethod method => (method.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (method.Handle)),
-					PropertyPseudoDesc property => (((EcmaType)property.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (property.Handle)),
-					EventPseudoDesc @event => (((EcmaType)@event.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (@event.Handle)),
+					PropertyPseudoDesc property => (((EcmaType) property.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (property.Handle)),
+					EventPseudoDesc @event => (((EcmaType) @event.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (@event.Handle)),
 					_ => (null, 0)
 				};
 
@@ -154,7 +154,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.True (
 					false,
 					"Linked output includes unexpected member:\n  " +
-					string.Join ("\n  ", linkedMembers.Values.Select (e => e.GetDisplayName())));
+					string.Join ("\n  ", linkedMembers.Values.Select (e => e.GetDisplayName ())));
 		}
 
 		private void PopulateLinkedMembers ()
@@ -563,13 +563,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
 				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
 				verifiedEventMethods.Add (src.AddMethod.FullName);
-				linkedMembers.Remove (new AssemblyQualifiedToken(src.AddMethod));
+				linkedMembers.Remove (new AssemblyQualifiedToken (src.AddMethod));
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
 				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
 				verifiedEventMethods.Add (src.RemoveMethod.FullName);
-				linkedMembers.Remove (new AssemblyQualifiedToken(src.RemoveMethod));
+				linkedMembers.Remove (new AssemblyQualifiedToken (src.RemoveMethod));
 			}
 
 #if false
