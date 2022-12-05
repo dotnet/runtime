@@ -4154,6 +4154,12 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 	MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	return_if_nok (error);
 
+	MonoType *ftype = mono_field_get_type_internal (field);
+	if (ftype->attrs & FIELD_ATTRIBUTE_LITERAL) {
+		mono_error_set_generic_error (error, "System", "MissingFieldException", "Using static instructions with literal field");
+		return;
+	}
+
 	if (mono_class_field_is_special_static (field)) {
 		guint32 offset = GPOINTER_TO_UINT (mono_special_static_field_get_offset (field, error));
 		mono_error_assert_ok (error);
@@ -4191,7 +4197,6 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 		if (mt == MINT_TYPE_VT)
 			size = mono_class_value_size (field_class, NULL);
 		if (is_load) {
-			MonoType *ftype = mono_field_get_type_internal (field);
 			if (ftype->attrs & FIELD_ATTRIBUTE_INIT_ONLY && vtable->initialized) {
 				if (interp_emit_load_const (td, field_addr, mt))
 					return;

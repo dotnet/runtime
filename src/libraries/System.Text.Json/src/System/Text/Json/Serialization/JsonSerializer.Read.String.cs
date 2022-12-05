@@ -51,8 +51,8 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(json));
             }
 
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadFromSpan<TValue>(json.AsSpan(), jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return ReadFromSpan(json.AsSpan(), jsonTypeInfo);
         }
 
         /// <summary>
@@ -83,10 +83,8 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, JsonSerializerOptions? options = null)
         {
-            // default/null span is treated as empty
-
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadFromSpan<TValue>(json, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return ReadFromSpan(json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -130,7 +128,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadFromSpan<object?>(json.AsSpan(), jsonTypeInfo)!;
+            return ReadFromSpanAsObject(json.AsSpan(), jsonTypeInfo);
         }
 
         /// <summary>
@@ -172,7 +170,7 @@ namespace System.Text.Json
             // default/null span is treated as empty
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadFromSpan<object?>(json, jsonTypeInfo)!;
+            return ReadFromSpanAsObject(json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -218,7 +216,7 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return ReadFromSpan<TValue?>(json.AsSpan(), jsonTypeInfo);
+            return ReadFromSpan(json.AsSpan(), jsonTypeInfo);
         }
 
         /// <summary>
@@ -260,7 +258,7 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return ReadFromSpan<TValue?>(json, jsonTypeInfo);
+            return ReadFromSpan(json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -314,7 +312,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadFromSpan<object?>(json.AsSpan(), jsonTypeInfo);
+            return ReadFromSpanAsObject(json.AsSpan(), jsonTypeInfo);
         }
 
         /// <summary>
@@ -364,10 +362,10 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadFromSpan<object?>(json, jsonTypeInfo);
+            return ReadFromSpanAsObject(json, jsonTypeInfo);
         }
 
-        private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
+        private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
             byte[]? tempArray = null;
@@ -384,7 +382,36 @@ namespace System.Text.Json
             {
                 int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8);
                 utf8 = utf8.Slice(0, actualByteCount);
-                return ReadFromSpan<TValue>(utf8, jsonTypeInfo, actualByteCount);
+                return ReadFromSpan(utf8, jsonTypeInfo, actualByteCount);
+            }
+            finally
+            {
+                if (tempArray != null)
+                {
+                    utf8.Clear();
+                    ArrayPool<byte>.Shared.Return(tempArray);
+                }
+            }
+        }
+
+        private static object? ReadFromSpanAsObject(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+            byte[]? tempArray = null;
+
+            // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
+            Span<byte> utf8 = json.Length <= (JsonConstants.ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ?
+                // Use a pooled alloc.
+                tempArray = ArrayPool<byte>.Shared.Rent(json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) :
+                // Use a normal alloc since the pool would create a normal alloc anyway based on the threshold (per current implementation)
+                // and by using a normal alloc we can avoid the Clear().
+                new byte[JsonReaderHelper.GetUtf8ByteCount(json)];
+
+            try
+            {
+                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8);
+                utf8 = utf8.Slice(0, actualByteCount);
+                return ReadFromSpanAsObject(utf8, jsonTypeInfo, actualByteCount);
             }
             finally
             {
