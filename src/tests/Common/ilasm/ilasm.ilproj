@@ -5,6 +5,6 @@
 
   <PropertyGroup>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
-    <NoWarn>$(NoWarn);NU1603</NoWarn>
+    <NoWarn Condition="$(TargetArchitecture) == 'loongarch64'">$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
 </Project>
