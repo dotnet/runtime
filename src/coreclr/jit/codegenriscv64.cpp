@@ -142,7 +142,11 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
 void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
-    NYI("unimplemented on RISCV64 yet");
+#if !FEATURE_FIXED_OUT_ARGS
+    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
+#endif // !FEATURE_FIXED_OUT_ARGS
+
+    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
@@ -552,7 +556,73 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 //
 void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+#ifdef FEATURE_SIMD
+    // Storing Vector3 of size 12 bytes through indirection
+    if (tree->TypeGet() == TYP_SIMD12)
+    {
+        genStoreIndTypeSIMD12(tree);
+        return;
+    }
+#endif // FEATURE_SIMD
+
+    GenTree* data = tree->Data();
+    GenTree* addr = tree->Addr();
+
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
+    if (writeBarrierForm != GCInfo::WBF_NoBarrier)
+    {
+        // data and addr must be in registers.
+        // Consume both registers so that any copies of interfering
+        // registers are taken care of.
+        genConsumeOperands(tree);
+
+        // At this point, we should not have any interference.
+        // That is, 'data' must not be in REG_WRITE_BARRIER_DST,
+        //  as that is where 'addr' must go.
+        noway_assert(data->GetRegNum() != REG_WRITE_BARRIER_DST);
+
+        // 'addr' goes into REG_T6 (REG_WRITE_BARRIER_DST)
+        genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
+
+        // 'data' goes into REG_T7 (REG_WRITE_BARRIER_SRC)
+        genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
+
+        genGCWriteBarrier(tree, writeBarrierForm);
+    }
+    else // A normal store, not a WriteBarrier store
+    {
+        // We must consume the operands in the proper execution order,
+        // so that liveness is updated appropriately.
+        genConsumeAddress(addr);
+
+        if (!data->isContained())
+        {
+            genConsumeRegs(data);
+        }
+
+        regNumber dataReg;
+        if (data->isContainedIntOrIImmed())
+        {
+            assert(data->IsIntegralConst(0));
+            dataReg = REG_R0;
+        }
+        else // data is not contained, so evaluate it into a register
+        {
+            assert(!data->isContained());
+            dataReg = data->GetRegNum();
+        }
+
+        var_types   type = tree->TypeGet();
+        instruction ins  = ins_Store(type);
+
+        if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+        {
+            // issue a full memory barrier before a volatile StInd
+            instGen_MemoryBarrier();
+        }
+
+        GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -629,7 +699,360 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 //
 void CodeGen::genCodeForCompare(GenTreeOp* jtree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    emitter* emit = GetEmitter();
+
+    GenTreeOp* tree = nullptr;
+    regNumber  targetReg;
+    if (jtree->OperIs(GT_JTRUE))
+    {
+        tree      = jtree->gtGetOp1()->AsOp();
+        targetReg = REG_RA;
+        assert(tree->GetRegNum() == REG_NA);
+
+        jtree->gtOp2 = (GenTree*)REG_RA; // targetReg
+        jtree->SetRegNum((regNumber)INS_bnez);
+    }
+    else
+    {
+        tree      = jtree;
+        targetReg = tree->GetRegNum();
+    }
+    assert(targetReg != REG_NA);
+
+    GenTree*  op1     = tree->gtOp1;
+    GenTree*  op2     = tree->gtOp2;
+    var_types op1Type = genActualType(op1->TypeGet());
+    var_types op2Type = genActualType(op2->TypeGet());
+
+    assert(!op1->isUsedFromMemory());
+    assert(!op2->isUsedFromMemory());
+
+    genConsumeOperands(tree);
+
+    emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+
+    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
+
+    assert(!varTypeIsFloating(op1Type));
+#if 0
+    if (varTypeIsFloating(op1Type))
+    {
+        assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
+        bool IsUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
+
+        if (IsUnordered)
+        {
+            if (tree->OperIs(GT_LT))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cult_s : INS_fcmp_cult_d, cmpSize, op1->GetRegNum(),
+                                    op2->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_LE))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cule_s : INS_fcmp_cule_d, cmpSize, op1->GetRegNum(),
+                                    op2->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_EQ))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cueq_s : INS_fcmp_cueq_d, cmpSize, op1->GetRegNum(),
+                                    op2->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_NE))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cune_s : INS_fcmp_cune_d, cmpSize, op1->GetRegNum(),
+                                    op2->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_GT))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cult_s : INS_fcmp_cult_d, cmpSize, op2->GetRegNum(),
+                                    op1->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_GE))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cule_s : INS_fcmp_cule_d, cmpSize, op2->GetRegNum(),
+                                    op1->GetRegNum(), 1 /*cc*/);
+            }
+        }
+        else
+        {
+            if (tree->OperIs(GT_LT))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_clt_s : INS_fcmp_clt_d, cmpSize, op1->GetRegNum(),
+                                    op2->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_LE))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cle_s : INS_fcmp_cle_d, cmpSize, op1->GetRegNum(),
+                                    op2->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_EQ))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_ceq_s : INS_fcmp_ceq_d, cmpSize, op1->GetRegNum(),
+                                    op2->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_NE))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cne_s : INS_fcmp_cne_d, cmpSize, op1->GetRegNum(),
+                                    op2->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_GT))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_clt_s : INS_fcmp_clt_d, cmpSize, op2->GetRegNum(),
+                                    op1->GetRegNum(), 1 /*cc*/);
+            }
+            else if (tree->OperIs(GT_GE))
+            {
+                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cle_s : INS_fcmp_cle_d, cmpSize, op2->GetRegNum(),
+                                    op1->GetRegNum(), 1 /*cc*/);
+            }
+        }
+
+        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_R0);
+        emit->emitIns_R_I(INS_movcf2gr, EA_PTRSIZE, targetReg, 1 /*cc*/);
+    }
+    else
+#endif
+    {
+        if (op1->isContainedIntOrIImmed())
+        {
+            op1 = tree->gtOp2;
+            op2 = tree->gtOp1;
+            switch (tree->OperGet())
+            {
+                case GT_LT:
+                    tree->SetOper(GT_GT);
+                    break;
+                case GT_LE:
+                    tree->SetOper(GT_GE);
+                    break;
+                case GT_GT:
+                    tree->SetOper(GT_LT);
+                    break;
+                case GT_GE:
+                    tree->SetOper(GT_LE);
+                    break;
+                default:
+                    break;
+            }
+        }
+        assert(!op1->isContainedIntOrIImmed());
+        assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
+
+        bool      IsUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
+        regNumber regOp1     = op1->GetRegNum();
+
+        if (op2->isContainedIntOrIImmed())
+        {
+            ssize_t imm = op2->AsIntCon()->gtIconVal;
+
+            switch (cmpSize)
+            {
+                case EA_4BYTE:
+                    if (IsUnsigned)
+                    {
+                        imm = static_cast<uint32_t>(imm);
+
+                        regNumber tmpRegOp1 = rsGetRsvdReg();
+                        assert(regOp1 != tmpRegOp1);
+
+                        emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
+                        emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
+                        regOp1 = tmpRegOp1;
+                    }
+                    else
+                    {
+                        imm = static_cast<int32_t>(imm);
+                    }
+                    break;
+                case EA_8BYTE:
+                    break;
+                case EA_1BYTE:
+                    if (IsUnsigned)
+                    {
+                        imm = static_cast<uint8_t>(imm);
+                    }
+                    else
+                    {
+                        imm = static_cast<int8_t>(imm);
+                    }
+                    break;
+                // case EA_2BYTE:
+                //    if (IsUnsigned)
+                //    {
+                //        imm = static_cast<uint16_t>(imm);
+                //    }
+                //    else
+                //    {
+                //        imm = static_cast<int16_t>(imm);
+                //    }
+                //    break;
+                default:
+                    unreached();
+            }
+
+            if (tree->OperIs(GT_LT))
+            {
+                if (!IsUnsigned && emitter::isValidSimm12(imm))
+                {
+                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
+                }
+                else if (IsUnsigned && emitter::isValidUimm11(imm))
+                {
+                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm);
+                }
+                else
+                {
+                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                }
+            }
+            else if (tree->OperIs(GT_LE))
+            {
+                if (!IsUnsigned && emitter::isValidSimm12(imm + 1))
+                {
+                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
+                }
+                else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
+                {
+                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
+                }
+                else
+                {
+                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm + 1);
+                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                }
+            }
+            else if (tree->OperIs(GT_GT))
+            {
+                if (!IsUnsigned && emitter::isValidSimm12(imm + 1))
+                {
+                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
+                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
+                }
+                else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
+                {
+                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
+                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
+                }
+                else
+                {
+                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
+                }
+            }
+            else if (tree->OperIs(GT_GE))
+            {
+                if (!IsUnsigned && emitter::isValidSimm12(imm))
+                {
+                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
+                }
+                else if (IsUnsigned && emitter::isValidUimm11(imm))
+                {
+                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm);
+                }
+                else
+                {
+                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                }
+                emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
+            }
+            else if (tree->OperIs(GT_NE))
+            {
+                if (!imm)
+                {
+                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, regOp1);
+                }
+                else if (emitter::isValidUimm12(imm))
+                {
+                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
+                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+                }
+                else
+                {
+                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+                }
+            }
+            else if (tree->OperIs(GT_EQ))
+            {
+                if (!imm)
+                {
+                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, 1);
+                }
+                else if (emitter::isValidUimm12(imm))
+                {
+                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
+                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
+                }
+                else
+                {
+                    emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+                    emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
+                }
+            }
+        }
+        else
+        {
+            regNumber regOp2 = op2->GetRegNum();
+
+            if (cmpSize == EA_4BYTE)
+            {
+                regNumber tmpRegOp1 = REG_RA;
+                regNumber tmpRegOp2 = rsGetRsvdReg();
+                assert(regOp1 != tmpRegOp2);
+                assert(regOp2 != tmpRegOp2);
+
+                if (IsUnsigned)
+                {
+                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
+                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
+
+                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp2, regOp2, 32);
+                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp2, tmpRegOp2, 32);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp1, regOp1, 0);
+                    emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp2, regOp2, 0);
+                }
+
+                regOp1 = tmpRegOp1;
+                regOp2 = tmpRegOp2;
+            }
+
+            if (tree->OperIs(GT_LT))
+            {
+                emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp1, regOp2);
+            }
+            else if (tree->OperIs(GT_LE))
+            {
+                emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp2, regOp1);
+                emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
+            }
+            else if (tree->OperIs(GT_GT))
+            {
+                emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp2, regOp1);
+            }
+            else if (tree->OperIs(GT_GE))
+            {
+                emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp1, regOp2);
+                emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
+            }
+            else if (tree->OperIs(GT_NE))
+            {
+                emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, regOp2);
+                emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+            }
+            else if (tree->OperIs(GT_EQ))
+            {
+                emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, regOp2);
+                emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -676,6 +1099,8 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 
         assert(targetReg == REG_NA);
 
+        assert(!varTypeIsFloating(op1Type));
+#if 0
         if (varTypeIsFloating(op1Type))
         {
             assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
@@ -764,6 +1189,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
             }
         }
         else
+#endif
         {
             int SaveCcResultReg = (int)REG_RA << 5;
             if (op1->isContainedIntOrIImmed())
@@ -1820,7 +2246,34 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 //
 void CodeGen::genPutArgReg(GenTreeOp* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(tree->OperIs(GT_PUTARG_REG));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    assert(targetType != TYP_STRUCT);
+
+    GenTree* op1 = tree->gtOp1;
+    genConsumeReg(op1);
+
+    // If child node is not already in the register we need, move it
+    if (targetReg != op1->GetRegNum())
+    {
+        if (emitter::isFloatReg(targetReg) == emitter::isFloatReg(op1->GetRegNum()))
+        {
+            inst_RV_RV(ins_Copy(targetType), targetReg, op1->GetRegNum(), targetType);
+        }
+        else if (emitter::isFloatReg(targetReg))
+        {
+            GetEmitter()->emitIns_R_R(INS_fcvt_d_l, EA_8BYTE, targetReg, op1->GetRegNum());
+        }
+        else
+        {
+            assert(!emitter::isFloatReg(targetReg));
+            GetEmitter()->emitIns_R_R(INS_fcvt_l_d, EA_8BYTE, targetReg, op1->GetRegNum());
+        }
+    }
+    genProduceReg(tree);
 }
 
 //---------------------------------------------------------------------
@@ -1943,7 +2396,23 @@ void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
 //
 void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(tree->OperIs(GT_LCL_FLD));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+    emitter*  emit       = GetEmitter();
+
+    NYI_IF(targetType == TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
+    assert(targetReg != REG_NA);
+
+    emitAttr size   = emitTypeSize(targetType);
+    unsigned offs   = tree->GetLclOffs();
+    unsigned varNum = tree->GetLclNum();
+    assert(varNum < compiler->lvaCount);
+
+    emit->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -1952,7 +2421,33 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert((scale >> 5) == 0);
+    emitter* emit = GetEmitter();
+    if (scale == 0)
+    {
+        instruction ins = attr == EA_4BYTE ? INS_addw : INS_add;
+        // target = base + index
+        emit->emitIns_R_R_R(ins, attr, targetReg, baseReg, indexReg);
+    }
+    else
+    {
+        instruction ins;
+        instruction ins2;
+        if (attr == EA_4BYTE)
+        {
+            ins  = INS_slliw;
+            ins2 = INS_addw;
+        }
+        else
+        {
+            ins  = INS_slli;
+            ins2 = INS_add;
+        }
+
+        // target = base + index << scale
+        emit->emitIns_R_R_I(ins, attr, REG_RA, indexReg, scale); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+        emit->emitIns_R_R_R(ins2, attr, targetReg, baseReg, REG_RA);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2572,7 +3067,81 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    NYI("unimplemented on RISCV64 yet");
+    genConsumeRegs(cast->gtGetOp1());
+
+    emitter*            emit    = GetEmitter();
+    var_types           dstType = cast->CastToType();
+    var_types           srcType = genActualType(cast->gtGetOp1()->TypeGet());
+    const regNumber     srcReg  = cast->gtGetOp1()->GetRegNum();
+    const regNumber     dstReg  = cast->GetRegNum();
+    const unsigned char size    = 32;
+
+    assert(genIsValidIntReg(srcReg));
+    assert(genIsValidIntReg(dstReg));
+
+    GenIntCastDesc desc(cast);
+
+    if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
+    {
+        genIntCastOverflowCheck(cast, desc, srcReg);
+    }
+
+    if ((desc.ExtendKind() != GenIntCastDesc::COPY) || (srcReg != dstReg))
+    {
+        instruction ins;
+
+        switch (desc.ExtendKind())
+        {
+            case GenIntCastDesc::ZERO_EXTEND_SMALL_INT:
+                if (desc.ExtendSrcSize() == 1)
+                {
+                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 8);
+                    emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 64 - 8);
+                }
+                else
+                {
+
+                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 16);
+                    emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 64 - 16);
+                }
+                break;
+            case GenIntCastDesc::SIGN_EXTEND_SMALL_INT:
+                if (desc.ExtendSrcSize() == 1)
+                {
+                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 8);
+                    emit->emitIns_R_R_I(INS_srai, EA_PTRSIZE, dstReg, dstReg, 64 - 8);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 64 - 16);
+                    emit->emitIns_R_R_I(INS_srai, EA_PTRSIZE, dstReg, dstReg, 64 - 16);
+                }
+                break;
+
+            case GenIntCastDesc::ZERO_EXTEND_INT:
+
+                emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstReg, srcReg, 32);
+                emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, dstReg, dstReg, 32);
+                break;
+            case GenIntCastDesc::SIGN_EXTEND_INT:
+                emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dstReg, srcReg, 0);
+                break;
+
+            default:
+                assert(desc.ExtendKind() == GenIntCastDesc::COPY);
+                if (srcType == TYP_INT)
+                {
+                    emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, dstReg, srcReg, 0);
+                }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstReg, srcReg, 0);
+                }
+                break;
+        }
+    }
+
+    genProduceReg(cast);
 }
 
 //------------------------------------------------------------------------

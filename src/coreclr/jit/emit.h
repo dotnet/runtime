@@ -1123,7 +1123,7 @@ protected:
         }
         void idCodeSize(unsigned sz)
         {
-            assert(sz <= 4);
+            assert(sz <= 16);
             _idCodeSize = sz;
         }
 #endif

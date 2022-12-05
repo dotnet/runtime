@@ -46,7 +46,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ instruction emitter::emitJumpKindToIns(emitJumpKind jumpKind)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
     assert((unsigned)jumpKind < ArrLen(emitJumpKindInstructions));
     return emitJumpKindInstructions[jumpKind];
 }
@@ -401,7 +400,15 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
 void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // assert(IsMovInstruction(ins));
+
+    if (!canSkip || (dstReg != srcReg))
+    {
+        if ((EA_4BYTE == attr) && (INS_mov == ins))
+            emitIns_R_R_I(INS_addiw, attr, dstReg, srcReg, 0);
+        else
+            emitIns_R_R_I(INS_addi, attr, dstReg, srcReg, 0);
+    }
 }
 
 /*****************************************************************************
@@ -424,7 +431,7 @@ void emitter::emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt /* = INS_OPTS_NONE */)
 {
     code_t code = emitInsCode(ins);
-    if (INS_addi == ins || INS_slli == ins || INS_ld == ins || INS_lw == ins)
+    if ((INS_addi <= ins && INS_srai >= ins) || INS_ld == ins || INS_lw == ins)
     {
         code |= reg1 << 7;           // rd
         code |= reg2 << 15;          // rs1
@@ -447,6 +454,7 @@ void emitter::emitIns_R_R_I(
     }
     else
     {
+        fprintf(stderr, "[RISCV64] CODE %x\n", code);
         _ASSERTE(!"TODO RISCV64 NYI");
     }
     instrDesc* id = emitNewInstr(attr);
@@ -466,7 +474,51 @@ void emitter::emitIns_R_R_I(
 void emitter::emitIns_R_R_R(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt) /* = INS_OPTS_NONE */
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    code_t code = emitInsCode(ins);
+
+    if (((INS_add <= ins) && (ins <= INS_and)))
+    {
+#ifdef DEBUG
+        switch (ins)
+        {
+            case INS_add:
+            case INS_sub:
+            case INS_sll:
+            case INS_slt:
+            case INS_sltu:
+            case INS_xor:
+            case INS_srl:
+            case INS_sra:
+            case INS_or:
+            case INS_and:
+            default:
+                NYI_LOONGARCH64("illegal ins within emitIns_R_R_R --1!");
+        }
+        assert(isGeneralRegister(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        assert(isGeneralRegisterOrR0(reg3));
+
+        code |= (reg1 << 7);
+        code |= (reg2 << 15);
+        code |= (reg3 << 20);
+#endif
+    }
+    else
+    {
+        fprintf(stderr, "[RISCV64] %x\n", code);
+        _ASSERTE(!"TODO RISCV64 NYI");
+    }
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
@@ -824,11 +876,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
         if (emitComp->opts.compReloc)
         {
             id->idSetIsDspReloc();
-            id->idCodeSize(8);
+            id->idCodeSize(8); // TODO NEED TO CHECK LATER
         }
         else
         {
-            id->idCodeSize(16);
+            id->idCodeSize(16); // TODO NEED TO CHECK LATER
         }
     }
 

@@ -924,10 +924,12 @@ void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTr
             break;
 
         case OperandKind::Reg:
+#if !defined(TARGET_RISCV64)
             if (emit->IsMovInstruction(ins))
             {
                 emit->emitIns_Mov(ins, size, op1Reg, op2Desc.GetReg(), /* canSkip */ true);
             }
+#endif // !TARGET_RISCV64
             else
             {
                 emit->emitIns_R_R(ins, size, op1Reg, op2Desc.GetReg());
@@ -1601,8 +1603,18 @@ instruction CodeGen::ins_Copy(var_types dstType)
         return INS_mov;
     }
 #elif defined(TARGET_RISCV64)
-    NYI_RISCV64("TODO RISCV64");
-    return INS_invalid;
+    assert(!varTypeIsFloating(dstType));
+    /*
+    if (varTypeIsFloating(dstType))
+    {
+        assert(false);
+        // return dstType == TYP_FLOAT ? INS_fadd_s : INS_fadd_d;
+    }
+    else
+    */
+    {
+        return INS_mov;
+    }
 #else // TARGET_*
 #error "Unknown TARGET"
 #endif
