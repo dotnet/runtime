@@ -343,6 +343,10 @@ else
     else
         git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
     fi
+
+    echo "Performance repo HEAD:"
+    (cd $performance_directory && git show --stat HEAD)
+
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
@@ -358,7 +362,6 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     using_wasm=true
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
-    find $wasm_bundle_directory_path -type d
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
     if [[ "$wasmaot" == "true" ]]; then
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --aotcompilermode wasm --buildTimeout 3600"
