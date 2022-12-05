@@ -26,6 +26,9 @@ namespace HostApiInvokerApp
                 throw new Exception("HOST_RUNTIME_CONTRACT not found");
 
             host_runtime_contract* contract = (host_runtime_contract*)Convert.ToUInt64(contractString, 16);
+            if (contract->size != sizeof(host_runtime_contract))
+                throw new Exception($"Unexpected contract size {contract->size}. Expected: {sizeof(host_runtime_contract)}");
+
             return *contract;
         }
 
