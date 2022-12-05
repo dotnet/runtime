@@ -7,11 +7,7 @@
     <CallTarget Targets="VSTest" Condition="'$(IsTestProject)' == 'true'" />
   </Target>
 
-  <!-- Import refererence assembly and ApiCompat logic --> 
-  <PropertyGroup> 
-    <IsSourceProject>true</IsSourceProject> 
-  </PropertyGroup> 
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" /> 
+  <!-- Import reference assembly and ApiCompat logic --> 
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" /> 
 
   <!-- The default pack logic will include the implementation assembly in lib.

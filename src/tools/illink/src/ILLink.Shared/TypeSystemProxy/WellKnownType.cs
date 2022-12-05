@@ -27,7 +27,6 @@ namespace ILLink.Shared.TypeSystemProxy
 	{
 		public static (string Namespace, string Name) GetNamespaceAndName (this WellKnownType type)
 		{
-			#pragma warning disable CS8524 // The switch expression does not handle some values of its input type
 			return type switch {
 				WellKnownType.System_String => ("System", "String"),
 				WellKnownType.System_Nullable_T => ("System", "Nullable`1"),
@@ -40,7 +39,6 @@ namespace ILLink.Shared.TypeSystemProxy
 				WellKnownType.System_Runtime_CompilerServices_DisablePrivateReflectionAttribute => ("System.Runtime.CompilerServices", "DisablePrivateReflectionAttribute"),
 				WellKnownType.System_Void => ("System", "Void"),
 			};
-			#pragma warning restore CS8524 // The switch expression does not handle some values of its input type
 		}
 		public static string GetNamespace (this WellKnownType type) => GetNamespaceAndName (type).Namespace;
 		public static string GetName (this WellKnownType type) => GetNamespaceAndName (type).Name;
