@@ -82,7 +82,7 @@ namespace System.IO
                     if (overwrite)
                     {
                         //Get a lock to the dest file for compat reasons, and then delete it.
-                        using SafeFileHandle dstHandle = OpenCopyFileDstHandle(destFullPath, true, startedCopyFile);
+                        using SafeFileHandle dstHandle = OpenCopyFileDstHandle(destFullPath, true, startedCopyFile, false);
                         File.Delete(destFullPath);
                         goto tryAgainWithReadLink;
                     }
@@ -104,9 +104,9 @@ namespace System.IO
                 throwError:
                 if (directoryExist)
                 {
-                    throw new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
+                    throw new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, destFullPath));
                 }
-                throw Interop.GetExceptionForIoErrno(new ErrorInfo(error));
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error));
 
                 //Fallback to the standard unix implementation for when cloning is not supported
                 fallback:
@@ -127,7 +127,7 @@ namespace System.IO
             {
                 try
                 {
-                    return ResolveLinkTargetString(sourceFullPath, true, false);
+                    return ResolveLinkTargetString(path, true, false);
                 }
                 catch
                 {
@@ -138,7 +138,7 @@ namespace System.IO
             //Checks if a file or directory exists without caring which it was
             static bool FileOrDirectoryExists(string path)
             {
-                return Interop.Sys.Stat(fullPath, out _) >= 0;
+                return Interop.Sys.Stat(path, out _) >= 0;
             }
         }
     }
