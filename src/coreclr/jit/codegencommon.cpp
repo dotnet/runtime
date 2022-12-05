@@ -5356,7 +5356,7 @@ void CodeGen::genFinalizeFrame()
     maskCalleeRegsPushed &= ~RBM_FLT_CALLEE_SAVED;
 #endif // defined(TARGET_XARCH)
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (isFramePointerUsed())
     {
         // For a FP based frame we have to push/pop the FP register

@@ -32,17 +32,87 @@ void Compiler::unwindPush(regNumber reg)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+#if defined(FEATURE_CFI_SUPPORT)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            unwindAllocStackCFI(size);
+        }
+
+        return;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
+
+    assert(size % 16 == 0);
+    unsigned x = size / 16;
+
+    if (x <= 0x1F)
+    {
+        // alloc_s: 000xxxxx: allocate small stack with size < 128 (2^5 * 16)
+        // TODO-Review: should say size < 512
+
+        pu->AddCode((BYTE)x);
+    }
+    else if (x <= 0x7F)
+    {
+        // alloc_m: 11000xxx | xxxxxxxx: allocate large stack with size < 2k (2^7 * 16)
+
+        pu->AddCode(0xC0 | (BYTE)(x >> 8), (BYTE)x);
+    }
+    else
+    {
+        // alloc_l: 11100000 | xxxxxxxx | xxxxxxxx | xxxxxxxx : allocate large stack with size < 256M (2^24 * 16)
+        //
+        // For large stack size, the most significant bits
+        // are stored first (and next to the opCode) per the unwind spec.
+
+        pu->AddCode(0xE0, (BYTE)(x >> 16), (BYTE)(x >> 8), (BYTE)x);
+    }
 }
 
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+#if defined(FEATURE_CFI_SUPPORT)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            unwindSetFrameRegCFI(reg, offset);
+        }
+
+        return;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
+
+    if (offset == 0)
+    {
+        assert(reg == REG_FP);
+
+        // set_fp: 11100001 : set up fp : with : move fp, sp
+        pu->AddCode(0xE1);
+    }
+    else
+    {
+        // add_fp: 11100010 | 000xxxxx | xxxxxxxx : set up fp with : addi.d fp, sp, #x * 8
+
+        assert(reg == REG_FP);
+        assert((offset % 8) == 0);
+
+        unsigned x = offset / 8;
+        assert(x <= 0x1FF);
+
+        pu->AddCode(0xE2, (BYTE)(x >> 8), (BYTE)x);
+    }
 }
 
 void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    unwindSaveReg(reg, (int)offset);
 }
 
 void Compiler::unwindNop()
@@ -52,7 +122,54 @@ void Compiler::unwindNop()
 
 void Compiler::unwindSaveReg(regNumber reg, int offset)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+
+    // sd reg, sp, offset
+
+    // offset for store in prolog must be positive and a multiple of 8.
+    assert(0 <= offset && offset <= 2047);
+    assert((offset % 8) == 0);
+
+#if defined(FEATURE_CFI_SUPPORT)
+    if (generateCFIUnwindCodes())
+    {
+        if (compGeneratingProlog)
+        {
+            FuncInfoDsc*   func     = funCurrentFunc();
+            UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
+
+            createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), offset);
+        }
+
+        return;
+    }
+#endif // FEATURE_CFI_SUPPORT
+    int z = offset / 8;
+    // assert(0 <= z && z <= 0xFF);
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
+
+    if (emitter::isGeneralRegister(reg))
+    {
+        // save_reg: 11010000 | 000xxxxx | zzzzzzzz: save reg r(1 + #X) at [sp + #Z * 8], offset <= 2047
+
+        assert(reg == REG_RA || (REG_FP <= reg && reg <= REG_S11));  // first legal register: RA, last legal register: S11
+
+        BYTE x = (BYTE)(reg - REG_RA);
+        assert(0 <= x && x <= 0x1B);
+
+        pu->AddCode(0xD0, (BYTE)x, (BYTE)z);
+    }
+    else
+    {
+        // save_freg: 1101110x | xxxxzzzz | zzzzzzzz : save reg f(8 + #X) at [sp + #Z * 8], offset <= 2047
+        assert(REG_F8 == reg || REG_F9 == reg || // first legal register: F8
+               (REG_F18 <= reg && reg <= REG_F27));  // last legal register: F27
+
+        BYTE x = (BYTE)(reg - REG_F8);
+        assert(0 <= x && x <= 0x13);
+
+        pu->AddCode(0xDC | (BYTE)(x >> 3), (BYTE)(x << 4) | (BYTE)(z >> 8), (BYTE)z); // TODO NEED TO CHECK LATER
+    }
 }
 
 void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
@@ -161,7 +278,29 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::unwindBegProlog()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(compGeneratingProlog);
+
+#if defined(FEATURE_CFI_SUPPORT)
+    if (generateCFIUnwindCodes())
+    {
+        unwindBegPrologCFI();
+        return;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+    FuncInfoDsc* func = funCurrentFunc();
+
+    // There is only one prolog for a function/funclet, and it comes first. So now is
+    // a good time to initialize all the unwind data structures.
+
+    emitLocation* startLoc;
+    emitLocation* endLoc;
+    unwindGetFuncLocations(func, true, &startLoc, &endLoc);
+
+    func->uwi.InitUnwindInfo(this, startLoc, endLoc);
+    func->uwi.CaptureLocation();
+
+    func->uwiCold = NULL; // No cold data yet
 }
 
 void Compiler::unwindEndProlog()
@@ -353,7 +492,11 @@ UnwindFragmentInfo::UnwindFragmentInfo(Compiler* comp, emitLocation* emitLoc, bo
     , ufiSize(0)
     , ufiStartOffset(UFI_ILLEGAL_OFFSET)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+#ifdef DEBUG
+    ufiNum         = 1;
+    ufiInProlog    = true;
+    ufiInitialized = UFI_INITIALIZED_PATTERN;
+#endif // DEBUG
 }
 
 void UnwindFragmentInfo::FinalizeOffset()
@@ -449,7 +592,29 @@ void UnwindFragmentInfo::Dump(int indent)
 
 void UnwindInfo::InitUnwindInfo(Compiler* comp, emitLocation* startLoc, emitLocation* endLoc)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    uwiComp = comp;
+
+    // The first fragment is a member of UnwindInfo, so it doesn't need to be allocated.
+    // However, its constructor needs to be explicitly called, since the constructor for
+    // UnwindInfo is not called.
+
+    new (&uwiFragmentFirst, jitstd::placement_t()) UnwindFragmentInfo(comp, startLoc, false);
+
+    uwiFragmentLast = &uwiFragmentFirst;
+
+    uwiEndLoc = endLoc;
+
+    // Allocate an emitter location object. It is initialized to something
+    // invalid: it has a null 'ig' that needs to get set before it can be used.
+    // Note that when we create an UnwindInfo for the cold section, this never
+    // gets initialized with anything useful, since we never add unwind codes
+    // to the cold section; we simply distribute the existing (previously added) codes.
+    uwiCurLoc = new (uwiComp, CMK_UnwindInfo) emitLocation();
+
+#ifdef DEBUG
+    uwiInitialized = UWI_INITIALIZED_PATTERN;
+    uwiAddingNOP   = false;
+#endif // DEBUG
 }
 
 // Split the unwind codes in 'puwi' into those that are in the hot section (leave them in 'puwi')
@@ -495,7 +660,9 @@ void UnwindInfo::AddEpilog()
 
 void UnwindInfo::CaptureLocation()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+    assert(uwiCurLoc != NULL);
+    uwiCurLoc->CaptureLocation(uwiComp->GetEmitter());
 }
 
 void UnwindInfo::AddFragment(emitLocation* emitLoc)
