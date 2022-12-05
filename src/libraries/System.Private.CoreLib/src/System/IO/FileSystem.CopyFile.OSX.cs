@@ -7,7 +7,7 @@ namespace System.IO
 {
 	partial class FileSystem
 	{
-		public static unsafe partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+		public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
 		{
 			//Attempt to clone the file:
 
@@ -55,9 +55,12 @@ namespace System.IO
 
 				//Attempt to clone the file
 				tryAgain:
-				if (Interop.@libc.copyfile(fullSource, destFullPath, null, Interop.@libc.COPYFILE_CLONE_FORCE) == 0)
+				unsafe
 				{
-					return;
+					if (Interop.@libc.copyfile(fullSource, destFullPath, null, Interop.@libc.COPYFILE_CLONE_FORCE) == 0)
+					{
+						return;
+					}
 				}
 
 				//Check the error
