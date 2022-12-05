@@ -12967,11 +12967,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         else
         {
-            addr = (BYTE*)emitComp->info.compCompHnd->getFieldAddress(fldh, nullptr);
-            if (addr == nullptr)
-            {
-                NO_WAY("could not obtain address of static field");
-            }
+            assert(jitStaticFldIsGlobAddr(fldh));
+            addr = nullptr;
         }
     }
 

@@ -971,7 +971,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <remarks>
         /// This function will rebuild concatenations because it pushes the FixedLengthMarker into the rightmost element.
-        /// Due to this this function should not be called on every character.
+        /// Due to this function should not be called on every character.
         /// </remarks>
         /// <param name="builder">the builder that owns this node</param>
         /// <param name="lengthSoFar">accumulater used in the recursion for lengths of paths</param>

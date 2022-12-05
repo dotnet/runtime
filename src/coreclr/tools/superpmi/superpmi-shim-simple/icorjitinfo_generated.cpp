@@ -1058,13 +1058,6 @@ unsigned interceptor_ICJI::getClassDomainID(
     return original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
 }
 
-void* interceptor_ICJI::getFieldAddress(
-          CORINFO_FIELD_HANDLE field,
-          void** ppIndirection)
-{
-    return original_ICorJitInfo->getFieldAddress(field, ppIndirection);
-}
-
 bool interceptor_ICJI::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
