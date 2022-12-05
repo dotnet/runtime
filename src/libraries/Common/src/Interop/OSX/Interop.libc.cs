@@ -45,7 +45,7 @@ internal static partial class Interop
             }
         }
 
-        [LibraryImport(Libraries.libc, EntryPoint = "copyfile", SetLastError = true)]
+        [LibraryImport(Libraries.libc, EntryPoint = "copyfile", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static unsafe partial int copyfile(string from, string to, void* state, uint flags);
         internal const uint COPYFILE_CLONE_FORCE = 0x02000000;
     }

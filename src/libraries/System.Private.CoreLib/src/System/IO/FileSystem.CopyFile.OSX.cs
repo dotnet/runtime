@@ -7,7 +7,7 @@ namespace System.IO
 {
 	partial class FileSystem
 	{
-		public static unsafe void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+		public static unsafe partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
 		{
 			//Attempt to clone the file:
 

@@ -5,7 +5,7 @@ namespace System.IO
 {
 	partial class FileSystem
 	{
-		public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+		public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
 		{
 			//Start the file copy and prepare for finalization
 			using StartedCopyFileState startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite);
