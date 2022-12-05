@@ -3505,7 +3505,7 @@ void MethodTable::AllocateRegularStaticBoxes()
     GCPROTECT_END();
 }
 
-void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress)
+void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle)
 {
     CONTRACTL
     {
@@ -3521,8 +3521,6 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress
     GCPROTECT_BEGININTERIOR(boxedStaticHandle);
     if (VolatileLoad(boxedStaticHandle) == nullptr)
     {
-        // Boxed static is already initialized
-
         // Grab field's type handle before we enter lock
         MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
         bool hasFixedAddr = HasFixedAddressVTStatics();
