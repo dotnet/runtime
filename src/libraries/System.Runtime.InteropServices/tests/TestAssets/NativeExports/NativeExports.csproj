@@ -123,7 +123,7 @@
                             GetUnixCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
     <PropertyGroup>
-      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(  )'))</DnneNetHostDir>
+      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
     </PropertyGroup>
   </Target>
 </Project>
