@@ -1345,6 +1345,7 @@ void Compiler::fgInitBlockVarSets()
     for (BasicBlock* const block : Blocks())
     {
         block->InitVarSets(this);
+        block->bbComputeLiveness = true;
     }
 
     fgBBVarSetsInited = true;
