@@ -70,24 +70,24 @@ public class MiscTests2 : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void Net50Projects_NativeReference(string config)
-        => BuildNet50Project(config, aot: false, expectError: true, @"<NativeFileReference Include=""native-lib.o"" />");
+    public void NetProjects_NativeReference(string config)
+        => BuildNetProject(config, aot: false, @"<NativeFileReference Include=""native-lib.o"" />");
 
-    public static TheoryData<string, bool, bool> Net50TestData = new()
+    public static TheoryData<string, bool, bool> NetTestData = new()
     {
-        { "Debug", /*aot*/ true, /*expectError*/ true },
-        { "Debug", /*aot*/ false, /*expectError*/ false },
-        { "Release", /*aot*/ true, /*expectError*/ true },
-        { "Release", /*aot*/ false, /*expectError*/ false }
+        { "Debug", /*aot*/ true },
+        { "Debug", /*aot*/ false },
+        { "Release", /*aot*/ true },
+        { "Release", /*aot*/ false }
     };
 
     // FIXME: test for WasmBuildNative=true?
     [Theory]
-    [MemberData(nameof(Net50TestData))]
-    public void Net50Projects_AOT(string config, bool aot, bool expectError)
-        => BuildNet50Project(config, aot: aot, expectError: expectError);
+    [MemberData(nameof(NetTestData))]
+    public void NetProjects_AOT(string config, bool aot)
+        => BuildNetProject(config, aot: aot);
 
-    private void BuildNet50Project(string config, bool aot, bool expectError, string? extraItems=null)
+    private void BuildNetProject(string config, bool aot, string? extraItems=null)
     {
         string id = $"BlazorApp_{config}_{aot}_{Path.GetRandomFileName()}";
         InitBlazorWasmProjectDir(id);
@@ -116,20 +116,12 @@ public class MiscTests2 : BuildTestBase
                                                                     (aot ? "-p:RunAOTCompilation=true" : ""),
                                                                     $"-p:Configuration={config}");
 
-        if (expectError)
-        {
-            result.EnsureExitCode(1);
-            Assert.Contains("are only supported for projects targeting net6.0+", result.Output);
-        }
-        else
-        {
-            result.EnsureSuccessful();
-            Assert.Contains("** UsingBrowserRuntimeWorkload: 'false'", result.Output);
+        result.EnsureSuccessful();
+        Assert.Contains("** UsingBrowserRuntimeWorkload: 'false'", result.Output);
 
-            string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true, framework: "net5.0");
-            AssertBlazorBootJson(config, isPublish: true, binFrameworkDir: binFrameworkDir);
-            // dotnet.wasm here would be from 5.0 nuget like:
-            // /Users/radical/.nuget/packages/microsoft.netcore.app.runtime.browser-wasm/5.0.9/runtimes/browser-wasm/native/dotnet.wasm
-        }
+        string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true, framework: "net7.0");
+        AssertBlazorBootJson(config, isPublish: true, binFrameworkDir: binFrameworkDir);
+        // dotnet.wasm here would be from nuget like:
+        // /Users/radical/.nuget/packages/microsoft.netcore.app.runtime.browser-wasm/<tfm>/runtimes/browser-wasm/native/dotnet.wasm
     }
 }
