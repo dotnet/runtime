@@ -462,7 +462,7 @@ namespace System.Collections.Generic
                 // _index represents the 0-based index into the queue, however the queue
                 // doesn't have to start from 0 and it may not even be stored contiguously in memory.
 
-                int arrayIndex = _q._head + _index; // this is the actual index into the queue's backing array
+                uint arrayIndex = (uint)(_q._head + _index); // this is the actual index into the queue's backing array
                 if (arrayIndex >= capacity)
                 {
                     // NOTE: Originally we were using the modulo operator here, however
@@ -471,7 +471,7 @@ namespace System.Collections.Generic
                     // Replacing it with simple comparison/subtraction operations sped up
                     // the average foreach loop by 2x.
 
-                    arrayIndex -= capacity; // wrap around if needed
+                    arrayIndex -= (uint)capacity; // wrap around if needed
                 }
 
                 _currentElement = array[arrayIndex];

@@ -1,0 +1,160 @@
+[*.cs]
+indent_style = tab
+indent_size = 4
+csharp_new_line_before_open_brace = types,methods
+csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_finally = false
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_name_and_open_parenthesis = true
+csharp_space_between_method_call_name_and_opening_parenthesis = true
+csharp_space_before_open_square_brackets = false
+csharp_space_after_cast = true
+
+csharp_indent_switch_labels = false
+
+# Sort using and Import directives with System.* appearing first
+dotnet_sort_system_directives_first = true
+
+# Prefer property-like constructs to have an expression-body
+csharp_style_expression_bodied_properties = true:none
+csharp_style_expression_bodied_indexers = true:none
+csharp_style_expression_bodied_accessors = true:none
+
+# Suggest more modern language features when available
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_inlined_variable_declaration = true:suggestion
+csharp_style_throw_expression = true:suggestion
+csharp_style_conditional_delegate_call = true:suggestion
+
+# Avoid redundant accessibility modifiers when they're default
+dotnet_style_require_accessibility_modifiers = omit_if_default:suggestion
+
+### Code Style Analyzers
+
+# IDE0004: Remove unnecessary cast
+dotnet_diagnostic.IDE0004.severity = warning
+
+# IDE0005: Remove unnecessary usings/imports
+dotnet_diagnostic.IDE0005.severity = warning
+
+# IDE0019: Use pattern matching
+dotnet_diagnostic.IDE0019.severity = warning
+
+# IDE0020: Use pattern matching
+dotnet_diagnostic.IDE0020.severity = warning
+
+# IDE0029: Null check can be simplified
+dotnet_diagnostic.IDE0029.severity = warning
+
+# IDE0031: Null check can be simplified
+dotnet_diagnostic.IDE0031.severity = warning
+
+# IDE0035: Remove unreachable code
+dotnet_diagnostic.IDE0035.severity = warning
+
+# IDE0036: Order modifiers
+dotnet_diagnostic.IDE0036.severity = warning
+
+# IDE0039: Prefer local functions over anonymous functions
+dotnet_diagnostic.IDE0039.severity = warning
+
+# IDE0041: Null check can be simplified
+dotnet_diagnostic.IDE0041.severity = warning
+
+# IDE0043: Format string contains invalid placeholder
+dotnet_diagnostic.IDE0043.severity = warning
+
+# IDE0044: Make field readonly
+dotnet_diagnostic.IDE0044.severity = warning
+
+# IDE0047: Parentheses can be removed
+dotnet_diagnostic.IDE0047.severity = warning
+
+# IDE0051: Remove unused private members (no reads or writes)
+dotnet_diagnostic.IDE0051.severity = warning
+
+# IDE0052: Remove unread private member
+dotnet_diagnostic.IDE0052.severity = warning
+
+# IDE0053: Prefer expression bodies for lambdas
+dotnet_diagnostic.IDE0053.severity = warning
+
+# IDE0054: Use compound assignment
+dotnet_diagnostic.IDE0054.severity = warning
+
+# IDE0059: Unnecessary assignment to a value
+dotnet_diagnostic.IDE0059.severity = warning
+
+# IDE0060: Remove unused parameter
+dotnet_diagnostic.IDE0060.severity = warning
+
+# IDE0065: Using directives to be placed outside the namespace
+dotnet_diagnostic.IDE0065.severity = warning
+
+# IDE0073: File header
+dotnet_diagnostic.IDE0073.severity = warning
+file_header_template = Copyright (c) .NET Foundation and contributors. All rights reserved.\nLicensed under the MIT license. See LICENSE file in the project root for full license information.
+
+# IDE0074: Use compound assignment
+dotnet_diagnostic.IDE0074.severity = warning
+
+# IDE0082: Convert typeof to nameof
+dotnet_diagnostic.IDE0082.severity = warning
+
+# IDE0083: Use is not pattern matching
+#dotnet_diagnostic.IDE0083.severity = warning // requires new C# for Mono
+
+# IDE0110: Remove unnecessary discard
+dotnet_diagnostic.IDE0110.severity = warning
+
+## CA analyzer rules
+dotnet_analyzer_diagnostic.category-performance.severity = warning
+dotnet_analyzer_diagnostic.category-maintainability.severity = warning
+dotnet_analyzer_diagnostic.category-reliability.severity = warning
+dotnet_analyzer_diagnostic.category-usage.severity = warning
+#dotnet_analyzer_diagnostic.category-style.severity = warning
+
+# call GC.SuppressFinalize(object)
+dotnet_diagnostic.CA1816.severity = none
+
+# CA1834: Use 'StringBuilder.Append(char)'
+dotnet_diagnostic.CA1834.severity = none
+
+# RS2008 Ignore analyzer release tracking
+dotnet_diagnostic.RS2008.severity = none
+
+# Exception type is not sufficiently specific
+dotnet_diagnostic.CA2201.severity = none
+
+# xUnit1004: Test methods should not be skipped
+dotnet_diagnostic.xUnit1004.severity = none
+
+# CA1805: Member is explicitly initialized to it's default value
+dotnet_diagnostic.CA1805.severity = none
+
+[src/linker/ref/**/*.cs]
+
+# CA1822: Mark members as static
+dotnet_diagnostic.CA1822.severity = none
+
+# IDE0060: Remove unused parameter
+dotnet_diagnostic.IDE0060.severity = none
+
+[test/**/*.cs]
+dotnet_diagnostic.IDE0060.severity = none
+
+[test/Mono.Linker.Tests/TestCases/Dependencies/WarningSuppressionExpectations*.cs]
+dotnet_diagnostic.IDE0073.severity = none
+
+[external**]
+dotnet_diagnostic.IDE0073.severity = none
+
+[external**]
+dotnet_analyzer_diagnostic.severity = none
+generated_code = true

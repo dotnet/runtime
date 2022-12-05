@@ -53,9 +53,6 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
 
-    // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
-    indir->gtFlags &= ~GTF_IND_ASG_LHS;
-
     if (varTypeIsSIMD(indir))
     {
         if (indir->OperIs(GT_BLK, GT_OBJ))
@@ -574,8 +571,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // args as these have now been sequenced.
             for (CallArg& arg : node->AsCall()->gtArgs.EarlyArgs())
             {
-                if (!arg.GetEarlyNode()->IsValue())
+                if (arg.GetLateNode() != nullptr)
                 {
+                    if (arg.GetEarlyNode()->IsValue())
+                    {
+                        arg.GetEarlyNode()->SetUnusedValue();
+                    }
                     arg.SetEarlyNode(nullptr);
                 }
             }

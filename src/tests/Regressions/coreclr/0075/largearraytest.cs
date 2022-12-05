@@ -12,7 +12,7 @@ using System;
 public class LargeArrayTest
 {
 	
-	public static int Main(string[] args) 
+	public static int Main() 
 	{
 		int lowerBound = 100;
 

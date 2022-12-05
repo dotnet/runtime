@@ -155,14 +155,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             _inputFilesToCompare = Get(command.InputFilesToCompare);
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
-        private T Get<T>(Argument<T> argument) => _command.Result.GetValueForArgument(argument);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
         private bool IsSet<T>(Option<T> option) => _command.Result.FindResultFor(option) != null;
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new PgoRootCommand(args))
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("-v")
+                .UseVersionOption("--version", "-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(PgoRootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
                 .Build()
@@ -428,13 +428,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(mibcReaders);
 
-                bool partialNgen = false;
                 Dictionary<MethodDesc, MethodProfileData> mergedProfileData = new Dictionary<MethodDesc, MethodProfileData>();
                 for (int i = 0; i < mibcReaders.Length; i++)
                 {
                     var peReader = mibcReaders[i];
                     PrintDetailedMessage($"Merging {paths[i]}");
-                    ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
+                    ProfileData.MergeProfileData(mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
                 MibcConfig mergedConfig = ParseMibcConfigsAndMerge(tsc, mibcReaders);
@@ -777,7 +776,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 int shareWidth = (int)(Math.Round(share * tableWidth));
                 bool lastRow = (i == rows.Length - 1);
 
-                Console.Write($"        {(lastRow ? "≥" : " ")}{i,2}: [");
+                Console.Write($"        {(lastRow ? "\u2265" : " ")}{i,2}: [");
                 Console.Write(new string('#', shareWidth));
                 Console.Write(new string('.', tableWidth - shareWidth));
                 Console.Write("] ");

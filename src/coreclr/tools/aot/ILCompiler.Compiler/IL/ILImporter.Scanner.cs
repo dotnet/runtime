@@ -421,6 +421,8 @@ namespace Internal.IL
                     resolvedConstraint = true;
 
                     exactType = directMethod.OwningType;
+
+                    _factory.MetadataManager.NoteOverridingMethod(method, directMethod);
                 }
                 else if (method.Signature.IsStatic)
                 {

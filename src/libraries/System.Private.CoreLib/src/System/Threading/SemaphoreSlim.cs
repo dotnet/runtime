@@ -913,10 +913,7 @@ namespace System.Threading
         /// </summary>
         private void CheckDispose()
         {
-            if (m_lockObjAndDisposed.Value)
-            {
-                throw new ObjectDisposedException(null, SR.SemaphoreSlim_Disposed);
-            }
+            ObjectDisposedException.ThrowIf(m_lockObjAndDisposed.Value, this);
         }
         #endregion
     }

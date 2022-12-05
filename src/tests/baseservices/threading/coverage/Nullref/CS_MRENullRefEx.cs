@@ -4,7 +4,7 @@ using System;
 using System.Threading;
 
 public class mytest {
-	public static int Main(String [] args) {
+	public static int Main() {
 		int 		  rValue = 100;
 		ManualResetEvent  mre  = null;
 		
