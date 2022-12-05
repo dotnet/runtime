@@ -229,34 +229,46 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
         }
 
-        [Fact]
-        public void ConfigurationSettingCanInfluenceEnvironment()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ConfigurationSettingCanInfluenceEnvironment(bool disableDefaults)
         {
+            var tempPath = Path.GetTempPath();
+
             using var config = new ConfigurationManager();
 
             config.AddInMemoryCollection(new KeyValuePair<string, string>[]
             {
                 new(HostDefaults.ApplicationKey, "AppA" ),
                 new(HostDefaults.EnvironmentKey, "EnvA" ),
+                new(HostDefaults.ContentRootKey, tempPath)
             });
 
             var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
             {
-                DisableDefaults = true,
+                DisableDefaults = disableDefaults,
                 Configuration = config,
             });
 
             Assert.Equal("AppA", builder.Configuration[HostDefaults.ApplicationKey]);
             Assert.Equal("EnvA", builder.Configuration[HostDefaults.EnvironmentKey]);
+            Assert.Equal(tempPath, builder.Configuration[HostDefaults.ContentRootKey]);
 
             Assert.Equal("AppA", builder.Environment.ApplicationName);
             Assert.Equal("EnvA", builder.Environment.EnvironmentName);
+            Assert.Equal(tempPath, builder.Environment.ContentRootPath);
+            var fileProviderFromBuilder = Assert.IsType<PhysicalFileProvider>(builder.Environment.ContentRootFileProvider);
+            Assert.Equal(tempPath, fileProviderFromBuilder.Root);
 
             using IHost host = builder.Build();
 
             var hostEnvironmentFromServices = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal("AppA", hostEnvironmentFromServices.ApplicationName);
             Assert.Equal("EnvA", hostEnvironmentFromServices.EnvironmentName);
+            Assert.Equal(tempPath, hostEnvironmentFromServices.ContentRootPath);
+            var fileProviderFromServices = Assert.IsType<PhysicalFileProvider>(hostEnvironmentFromServices.ContentRootFileProvider);
+            Assert.Equal(tempPath, fileProviderFromServices.Root);
         }
 
         [Fact]
