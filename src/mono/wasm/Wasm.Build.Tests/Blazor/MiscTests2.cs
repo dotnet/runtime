@@ -117,7 +117,7 @@ public class MiscTests2 : BuildTestBase
                                                                     $"-p:Configuration={config}");
 
         result.EnsureSuccessful();
-        Assert.Contains("** UsingBrowserRuntimeWorkload: 'false'", result.Output);
+        Assert.Contains("** UsingBrowserRuntimeWorkload: 'true'", result.Output);
 
         string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true, framework: "net7.0");
         AssertBlazorBootJson(config, isPublish: true, binFrameworkDir: binFrameworkDir);
