@@ -109,12 +109,6 @@ jobs:
       include:
       - src/tools/illink/*
 
-    - subset: non_runtimetests
-      exclude:
-      - src/tests/*
-      - ${{ parameters._const_paths._wasm_pipelines }}
-      - ${{ parameters._const_paths._always_exclude }}
-
     - subset: installer
       include:
       - docs/manpages/*
@@ -198,6 +192,23 @@ jobs:
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
       - src/mono/nuget/*
+      - ${{ parameters._const_paths._always_exclude }}
+
+    # wasm/runtimetests need to be run
+    - subset: wasm_runtimetests
+      combined: true
+      include:
+      - src/tests/*
+      - src/mono/*
+      exclude:
+      - src/mono/nuget/*
+      - src/mono/sample/*
+      - src/mono/tests/*
+      - src/mono/tools/*
+      - src/mono/wasi/*
+      - src/mono/wasm/debugger/*
+      - src/mono/wasm/Wasm.Build.Tests/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
     - subset: any_other_than_wasm_wbt_dbg
