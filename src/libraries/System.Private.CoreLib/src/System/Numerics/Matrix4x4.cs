@@ -1187,10 +1187,13 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
+
             result.M11 = xScale;
             result.M22 = yScale;
             result.M33 = zScale;
+            result.M44 = 1;
+
             return result;
         }
 
@@ -1202,7 +1205,7 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
             float tx = centerPoint.X * (1 - xScale);
             float ty = centerPoint.Y * (1 - yScale);
@@ -1211,9 +1214,12 @@ namespace System.Numerics
             result.M11 = xScale;
             result.M22 = yScale;
             result.M33 = zScale;
+            result.M44 = 1;
+
             result.M41 = tx;
             result.M42 = ty;
             result.M43 = tz;
+
             return result;
         }
 
@@ -1222,10 +1228,13 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
+
             result.M11 = scales.X;
             result.M22 = scales.Y;
             result.M33 = scales.Z;
+            result.M44 = 1;
+
             return result;
         }
 
@@ -1235,18 +1244,19 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
-            float tx = centerPoint.X * (1 - scales.X);
-            float ty = centerPoint.Y * (1 - scales.Y);
-            float tz = centerPoint.Z * (1 - scales.Z);
+            Vector3 t = centerPoint * (Vector3.One - scales);
 
             result.M11 = scales.X;
             result.M22 = scales.Y;
             result.M33 = scales.Z;
-            result.M41 = tx;
-            result.M42 = ty;
-            result.M43 = tz;
+            result.M44 = 1;
+
+            result.M41 = t.X;
+            result.M42 = t.Y;
+            result.M43 = t.Z;
+
             return result;
         }
 
@@ -1255,11 +1265,12 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
             result.M11 = scale;
             result.M22 = scale;
             result.M33 = scale;
+            result.M44 = 1;
 
             return result;
         }
@@ -1270,19 +1281,18 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
-            float tx = centerPoint.X * (1 - scale);
-            float ty = centerPoint.Y * (1 - scale);
-            float tz = centerPoint.Z * (1 - scale);
+            Vector3 t = centerPoint * (Vector3.One - new Vector3(scale));
 
             result.M11 = scale;
             result.M22 = scale;
             result.M33 = scale;
+            result.M44 = 1;
 
-            result.M41 = tx;
-            result.M42 = ty;
-            result.M43 = tz;
+            result.M41 = t.X;
+            result.M42 = t.Y;
+            result.M43 = t.Z;
 
             return result;
         }

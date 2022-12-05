@@ -129,12 +129,6 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal bool IsInternalConverterForNumberType { get; init; }
 
-        /// <summary>
-        /// Loosely-typed ReadCore() that forwards to strongly-typed ReadCore().
-        /// </summary>
-        internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state);
-
-
         internal static bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
         {
             // If surpassed flush threshold then return false which will flush stream.
@@ -148,11 +142,6 @@ namespace System.Text.Json.Serialization
         internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state, out object? value);
 
         internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
-
-        /// <summary>
-        /// Loosely-typed WriteCore() that forwards to strongly-typed WriteCore().
-        /// </summary>
-        internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
         /// <summary>
         /// Loosely-typed WriteToPropertyName() that forwards to strongly-typed WriteToPropertyName().
