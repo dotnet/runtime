@@ -10,8 +10,11 @@ parameters:
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
         eng/testing/tests.wasm.targets
         src/libraries/sendtohelix-wasm.targets
+        src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
+        src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
+        src/mono/nuget/Microsoft.NET.Workload*
         src/mono/sample/wasm/*
         src/mono/wasi/*
         src/mono/wasm/*
