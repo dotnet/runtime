@@ -30,6 +30,7 @@ extern "C" DLL_EXPORT void* Alloc(uintptr_t size)
         {
             return ptr;
         }
+        munmap(ptr, size * 2);
     }
 #endif
     return nullptr;
