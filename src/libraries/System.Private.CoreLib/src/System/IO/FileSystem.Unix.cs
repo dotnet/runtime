@@ -28,16 +28,72 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+        //Helper type to facilitate returning values from StartCopyFile without having
+        //to declare a massive tuple multiple times, and making it easier to dispose.
+        private struct StartedCopyFileState : IDisposable
         {
-            long fileLength;
-            UnixFileMode filePermissions;
-            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
-            using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
-                                            CreateOpenException);
+            public long fileLength;
+            public UnixFileMode filePermissions;
+            public SafeFileHandle? src;
+            public SafeFileHandle? dst;
 
-            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
+            public StartedCopyFileState(long fileLength, UnixFileMode filePermissions, SafeFileHandle src, SafeFileHandle dst)
+            {
+                this.fileLength = fileLength;
+                this.filePermissions = filePermissions;
+                this.src = src;
+                this.dst = dst;
+            }
+
+            public void Dispose()
+            {
+                src?.Dispose();
+                dst?.Dispose();
+            }
+        }
+
+        private static StartedCopyFileState StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+        {
+            //The return value is expected to be Disposed by the caller (unless this method throws) once the copy is complete.
+            //Begins 'CopyFile' by locking and creating the relevant file handles.
+
+            StartedCopyFileState startedCopyFile = default;
+            try
+            {
+                startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out startedCopyFile.fileLength, out startedCopyFile.filePermissions);
+                startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, true);
+            }
+            catch
+            {
+                startedCopyFile.Dispose();
+                throw;
+            }
+
+            //Return the collection of information we have gotten back.
+            return startedCopyFile;
+        }
+
+        private static SafeFileHandle? OpenCopyFileDstHandle(string destFullPath, bool overwrite, StartedCopyFileState startedCopyFile, bool openNewFile)
+        {
+            //This function opens the 'dst' file handle for 'CopyFile', it is
+            //split out since the logic on OSX-like OSes is a bit different.
+            //'openNewFile' = false is used when we want to try to find the file only.
+            if (!openNewFile)
+            {
+                try
+                {
+                    return SafeFileHandle.Open(destFullPath, FileMode.Open,
+                                                    FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, startedCopyFile.filePermissions,
+                                                    CreateOpenException);
+                }
+                catch (FileNotFoundException)
+                {
+                    return null;
+                }
+            }
+            return SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
+                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
+                                            CreateOpenException);
 
             static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
             {
@@ -50,6 +106,18 @@ namespace System.IO
                 return null; // Let SafeFileHandle create the exception for this error.
             }
         }
+
+        private static void StandardCopyFile(StartedCopyFileState startedCopyFile)
+        {
+            //Copy the file in a way that works on all Unix Operating Systems.
+            //The 'startedCopyFile' parameter should take the output from 'StartCopyFile'.
+            //'startedCopyFile' should be disposed by the caller.
+            Interop.CheckIo(Interop.Sys.CopyFile(startedCopyFile.src, startedCopyFile.dst, startedCopyFile.fileLength));
+        }
+
+        //CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs
+        //The implementations on OSX-like Operating Systems attempts to clone the file first.
+        static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite);
 
 #pragma warning disable IDE0060
         public static void Encrypt(string path)
@@ -660,6 +728,16 @@ namespace System.IO
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
+            string? linkTarget = ResolveLinkTargetString(linkPath, returnFinalTarget, isDirectory);
+            if (linkTarget == null) return null;
+
+            return isDirectory ?
+                    new DirectoryInfo(linkTarget) :
+                    new FileInfo(linkTarget);
+        }
+
+        private static string? ResolveLinkTargetString(string linkPath, bool returnFinalTarget, bool isDirectory)
+        {
             ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
             sb.Append(linkPath);
 
@@ -704,9 +782,7 @@ namespace System.IO
             Debug.Assert(sb.Length > 0);
             linkTarget = sb.ToString(); // ToString disposes
 
-            return isDirectory ?
-                    new DirectoryInfo(linkTarget) :
-                    new FileInfo(linkTarget);
+            return linkTarget;
 
             // In case of link target being relative:
             // Preserve the full path of the directory of the previous path

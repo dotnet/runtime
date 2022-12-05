@@ -44,5 +44,9 @@ internal static partial class Interop
                     handle.DangerousRelease();
             }
         }
+
+        [LibraryImport(Libraries.libc, EntryPoint = "copyfile", SetLastError = true)]
+        internal static unsafe partial int copyfile(string from, string to, void* state, uint flags);
+        internal const uint COPYFILE_CLONE_FORCE = 0x02000000;
     }
 }
