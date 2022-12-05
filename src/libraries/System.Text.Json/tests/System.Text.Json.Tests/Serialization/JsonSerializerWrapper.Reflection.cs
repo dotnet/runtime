@@ -124,6 +124,7 @@ namespace System.Text.Json.Serialization.Tests
             private readonly bool _forceBomInsertions;
 
             public override bool IsAsyncSerializer => true;
+            public override bool ForceSmallBufferInOptions => _forceSmallBufferInOptions;
 
             public AsyncStreamSerializerWrapper(bool forceSmallBufferInOptions = false, bool forceBomInsertions = false)
             {
@@ -184,6 +185,7 @@ namespace System.Text.Json.Serialization.Tests
             private readonly bool _forceBomInsertions;
 
             public override bool IsAsyncSerializer => false;
+            public override bool ForceSmallBufferInOptions => _forceSmallBufferInOptions;
 
             public SyncStreamSerializerWrapper(bool forceSmallBufferInOptions = false, bool forceBomInsertions = false)
             {
