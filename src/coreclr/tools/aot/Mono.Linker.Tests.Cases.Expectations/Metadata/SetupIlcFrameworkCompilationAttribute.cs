@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	/// Adding this attribute modifies the runner to compile all framework assemblies as well.
 	/// </summary>
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true)]
-	public class SetupIlcFrameworkCompilationAttribute : BaseMetadataAttribute
+	public class SetupIlcWholeProgramAnalysisAttribute : BaseMetadataAttribute
 	{
 	}
 }
