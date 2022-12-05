@@ -90,8 +90,7 @@ namespace
 
     // Calls a managed classlib function to potentially get an unmanaged callback.
     // Not for use with ObjectiveCMarshalTryGetTaggedMemory.
-    template <typename T>
-    T GetCallbackViaClasslibCallback(_In_ Object * object, _In_ ClasslibFunctionId id)
+    void * GetCallbackViaClasslibCallback(_In_ Object * object, _In_ ClasslibFunctionId id)
     {
         void* fn = object->get_EEType()
                         ->GetTypeManagerPtr()
@@ -106,7 +105,7 @@ namespace
 
         ASSERT(fn != nullptr);
 
-        return (T)fn;
+        return fn;
     }
 }
 
@@ -129,7 +128,7 @@ bool ObjCMarshalNative::IsTrackedReference(_In_ Object * object, _Out_ bool* isR
     if (!object->GetGCSafeMethodTable()->IsTrackedReferenceWithFinalizer())
         return false;
 
-    auto pIsReferencedCallbackCallback = GetCallbackViaClasslibCallback<ObjCMarshalNative::IsReferencedCallback>(
+    auto pIsReferencedCallbackCallback = (ObjCMarshalNative::IsReferencedCallback)GetCallbackViaClasslibCallback(
         object, ClasslibFunctionId::ObjectiveCMarshalGetIsTrackedReferenceCallback);
 
     void* taggedMemory;
@@ -161,7 +160,7 @@ void ObjCMarshalNative::AfterRefCountedHandleCallbacks()
 
 void ObjCMarshalNative::OnEnteredFinalizerQueue(_In_ Object * object)
 {
-    auto pOnEnteredFinalizerQueueCallback = GetCallbackViaClasslibCallback<ObjCMarshalNative::EnteredFinalizationCallback>(
+    auto pOnEnteredFinalizerQueueCallback = (ObjCMarshalNative::EnteredFinalizationCallback)GetCallbackViaClasslibCallback(
         object, ClasslibFunctionId::ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback);
 
     void* taggedMemory;

@@ -13,8 +13,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static readonly IntPtr[] s_ObjcMessageSendFunctions = new IntPtr[(int)MessageSendFunction.MsgSendSuperStret + 1];
         private static bool s_initialized;
         private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
-        private static IntPtr s_IsTrackedReferenceCallback;
-        private static IntPtr s_OnEnteredFinalizerQueueCallback;
+        private static delegate* unmanaged<IntPtr, int> s_IsTrackedReferenceCallback;
+        private static delegate* unmanaged<IntPtr, void> s_OnEnteredFinalizerQueueCallback;
 
         [ThreadStatic]
         private static Exception? t_pendingExceptionObject;
@@ -71,13 +71,13 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         [RuntimeExport("ObjectiveCMarshalGetIsTrackedReferenceCallback")]
-        static IntPtr GetIsTrackedReferenceCallback()
+        static delegate* unmanaged<IntPtr, int> GetIsTrackedReferenceCallback()
         {
             return s_IsTrackedReferenceCallback;
         }
 
         [RuntimeExport("ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback")]
-        static IntPtr GetOnEnteredFinalizerQueueCallback()
+        static delegate* unmanaged<IntPtr, void> GetOnEnteredFinalizerQueueCallback()
         {
             return s_OnEnteredFinalizerQueueCallback;
         }
@@ -92,8 +92,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 return false;
             }
 
-            s_IsTrackedReferenceCallback = (IntPtr)isReferencedCallback;
-            s_OnEnteredFinalizerQueueCallback = (IntPtr)trackedObjectEnteredFinalization;
+            s_IsTrackedReferenceCallback = isReferencedCallback;
+            s_OnEnteredFinalizerQueueCallback = trackedObjectEnteredFinalization;
             s_initialized = true;
 
             return true;
@@ -122,6 +122,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
         class ObjcTrackingInformation
         {
+            // This matches the CoreCLR implementation. See
+            // InteropSyncBlockInfo::m_taggedAlloc in syncblk.h .
             const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
 
             internal IntPtr _memory;
