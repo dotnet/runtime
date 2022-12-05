@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Net.Http;
 using System.Collections.Generic;
@@ -8,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Blazor_net50
+namespace BlazorApp
 {
     public class Program
     {
@@ -19,7 +22,7 @@ namespace Blazor_net50
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-            await builder.Build().RunAsync();
+            await builder.Build().RunAsync().ConfigureAwait(false);
         }
     }
 }

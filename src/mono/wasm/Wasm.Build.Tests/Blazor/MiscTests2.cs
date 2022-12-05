@@ -89,7 +89,7 @@ public class MiscTests2 : BuildTestBase
 
     private void BuildNet50Project(string config, bool aot, bool expectError, string? extraItems=null)
     {
-        string id = $"Blazor_net50_{config}_{aot}_{Path.GetRandomFileName()}";
+        string id = $"BlazorApp_{config}_{aot}_{Path.GetRandomFileName()}";
         InitBlazorWasmProjectDir(id);
 
         string directoryBuildTargets = @"<Project>
@@ -102,9 +102,9 @@ public class MiscTests2 : BuildTestBase
         File.WriteAllText(Path.Combine(_projectDir!, "Directory.Build.targets"), directoryBuildTargets);
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, id);
-        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "Blazor_net50"), Path.Combine(_projectDir!));
+        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "BlazorApp"), Path.Combine(_projectDir!));
 
-        string projectFile = Path.Combine(_projectDir!, "Blazor_net50.csproj");
+        string projectFile = Path.Combine(_projectDir!, "BlazorApp.csproj");
         AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
 
         string publishLogPath = Path.Combine(logPath, $"{id}.binlog");
