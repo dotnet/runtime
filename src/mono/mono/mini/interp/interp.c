@@ -1145,15 +1145,27 @@ INTERP_GET_EXCEPTION(array_type_mismatch)
 INTERP_GET_EXCEPTION(arithmetic)
 INTERP_GET_EXCEPTION_CHAR_ARG(argument_out_of_range)
 
+// Inlining throw logic into interp_exec_method makes it bigger and could push us up against
+//  internal limits in things like WASM compilers
+#if HOST_BROWSER
+static MONO_NEVER_INLINE void interp_throw_ex_general (
+#else
+static MONO_ALWAYS_INLINE void interp_throw_ex_general (
+#endif
+	MonoException *__ex, ThreadContext *context, InterpFrame *frame, const guint16 *ex_ip, gboolean rethrow
+) {
+	HANDLE_FUNCTION_ENTER ();
+	MonoExceptionHandle tmp_handle = MONO_HANDLE_NEW (MonoException, __ex);
+	interp_throw (context, __ex, (frame), (ex_ip), (rethrow));
+	HANDLE_FUNCTION_RETURN ();
+}
+
 // We conservatively pin exception object here to avoid tweaking the
 // numerous call sites of this macro, even though, in a few cases,
 // this is not needed.
 #define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
 	do {							\
-		MonoException *__ex = (exception);		\
-		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)__ex); \
-		interp_throw (context, __ex, (frame), (ex_ip), (rethrow)); \
-		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)NULL); \
+		interp_throw_ex_general(exception, context, frame, ex_ip, rethrow); \
 		goto resume;							  \
 	} while (0)
 
@@ -3794,19 +3806,28 @@ main_loop:
 			memset (locals + ip [1], 0, ip [2]);
 			ip += 3;
 			MINT_IN_BREAK;
+#if HOST_BROWSER
+#else
 		MINT_IN_CASE(MINT_NOP)
 		MINT_IN_CASE(MINT_IL_SEQ_POINT)
 		MINT_IN_CASE(MINT_NIY)
 		MINT_IN_CASE(MINT_DEF)
 		MINT_IN_CASE(MINT_DUMMY_USE)
 		MINT_IN_CASE(MINT_TIER_PATCHPOINT_DATA)
+		MINT_IN_CASE(MINT_CALLRUN)
+		// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
+		MINT_IN_CASE(MINT_MOV_SRC_OFF)
+		// Ditto
+		MINT_IN_CASE(MINT_MOV_DST_OFF)
 #ifndef HOST_BROWSER
+		// Only used in WASM builds
 		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER)
 		MINT_IN_CASE(MINT_TIER_PREPARE_JITERPRETER)
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER)
 #endif
 			g_assert_not_reached ();
 			MINT_IN_BREAK;
+#endif
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
 			SAVE_INTERP_STATE (frame);
@@ -4260,11 +4281,6 @@ call:
 #else
 			g_error ("MINT_JIT_ICALL2 shouldn't be used");
 #endif
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_CALLRUN) {
-			g_assert_not_reached ();
-
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_RET)
@@ -7281,12 +7297,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDLOCA_S)
 			LOCAL_VAR (ip [1], gpointer) = locals + ip [2];
 			ip += 3;
-			MINT_IN_BREAK;
-
-		MINT_IN_CASE(MINT_MOV_SRC_OFF)
-		MINT_IN_CASE(MINT_MOV_DST_OFF)
-			// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
-			g_assert_not_reached ();
 			MINT_IN_BREAK;
 
 #define MOV(argtype1,argtype2) \
