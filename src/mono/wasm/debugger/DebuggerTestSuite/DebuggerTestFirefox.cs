@@ -14,6 +14,7 @@ namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
+    private new TimeSpan TestTimeout => base.TestTimeout * 4;
     internal FirefoxInspectorClient _client;
     public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html"):base(testOutput, driver)
     {
@@ -37,7 +38,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
             };
 
         await Ready();
-        await insp.OpenSessionAsync(fn, TestTimeout*4);
+        await insp.OpenSessionAsync(fn, TestTimeout);
     }
 
     internal override Dictionary<string, string> SubscribeToScripts(Inspector insp)

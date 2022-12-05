@@ -73,11 +73,12 @@ class FirefoxInspectorClient : InspectorClient
     }
     public async Task<bool> ProcessTabInfo(Result command, CancellationToken token)
     {
-        if (command.Value?["result"]?["value"]?["tabs"] == null ||
-            command.Value?["result"]?["value"]?["tabs"]?.Value<JArray>()?.Count == 0 ||
-            command.Value?["result"]?["value"]?["tabs"]?[0]?["url"]?.Value<string>()?.StartsWith("about:") == true)
+        var resultTabs = command.Value?["result"]?["value"]?["tabs"];
+        if (resultTabs == null ||
+            resultTabs.Value<JArray>()?.Count == 0 ||
+            resultTabs[0]?["url"]?.Value<string>()?.StartsWith("about:") == true)
             return false;
-        var toCmd = command.Value?["result"]?["value"]?["tabs"]?[0]?["actor"]?.Value<string>();
+        var toCmd = resultTabs[0]?["actor"]?.Value<string>();
         var res = await SendCommand("getWatcher", JObject.FromObject(new { type = "getWatcher", isServerTargetSwitchingEnabled = true, to = toCmd}), token);
         var watcherId = res.Value?["result"]?["value"]?["actor"]?.Value<string>();
         res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);
@@ -110,7 +111,7 @@ class FirefoxInspectorClient : InspectorClient
     {
         if (await ProcessTabInfo(command, token))
             return;
-        do            
+        do
         {
             command = await SendCommand("listTabs", JObject.FromObject(new { type = "listTabs", to = "root"}), token);
         } while (!await ProcessTabInfo(command, token));
