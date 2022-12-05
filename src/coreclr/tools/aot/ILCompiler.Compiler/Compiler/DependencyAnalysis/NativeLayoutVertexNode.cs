@@ -1188,8 +1188,6 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.DictionaryLayout, dictionaryLayout.WriteVertex(factory));
             }
 
-            Internal.NativeFormat.TypeFlags typeFlags = default(Internal.NativeFormat.TypeFlags);
-
             if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
             {
                 MethodDesc cctorMethod = _type.GetStaticConstructor();
@@ -1197,8 +1195,6 @@ namespace ILCompiler.DependencyAnalysis
                 ISymbolNode cctorSymbol = factory.MethodEntrypoint(canonCctorMethod);
                 uint cctorStaticsIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(cctorSymbol);
                 layoutInfo.AppendUnsigned(BagElementKind.ClassConstructorPointer, cctorStaticsIndex);
-
-                typeFlags |= Internal.NativeFormat.TypeFlags.HasClassConstructor;
             }
 
             if (!_isUniversalCanon)
@@ -1227,31 +1223,11 @@ namespace ILCompiler.DependencyAnalysis
                     layoutInfo.AppendUnsigned(threadStaticDescBagType, threadStaticsSymbolIndex);
                 }
             }
-            else
-            {
-                Debug.Assert(_isUniversalCanon);
-                // Determine if type has instantiation determined size
-                if (!_type.IsInterface && HasInstantiationDeterminedSize())
-                {
-                    typeFlags |= Internal.NativeFormat.TypeFlags.HasInstantiationDeterminedSize;
-                }
-            }
 
             if (_type.BaseType != null && _type.BaseType.IsRuntimeDeterminedSubtype)
             {
                 layoutInfo.Append(BagElementKind.BaseType, factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(_type.BaseType)).WriteVertex(factory));
             }
-            else if (_type.IsDelegate && _isUniversalCanon)
-            {
-                // For USG delegate, we need to write the signature of the Invoke method to the native layout.
-                // This signature is used by the calling convention converter to marshal parameters during delegate calls.
-                MethodDesc delegateInvokeMethod = _type.GetMethod("Invoke", null).GetTypicalMethodDefinition();
-                NativeLayoutMethodSignatureVertexNode invokeSignatureVertexNode = factory.NativeLayout.MethodSignatureVertex(delegateInvokeMethod.Signature);
-                layoutInfo.Append(BagElementKind.DelegateInvokeSignature, invokeSignatureVertexNode.WriteVertex(factory));
-            }
-
-            if (typeFlags != default(Internal.NativeFormat.TypeFlags))
-                layoutInfo.AppendUnsigned(BagElementKind.TypeFlags, (uint)typeFlags);
 
             if (!_type.IsArrayTypeWithoutGenericInterfaces() && ConstructedEETypeNode.CreationAllowed(_type))
             {
@@ -1336,39 +1312,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     Vertex placedFieldsLayout = factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(fieldsSequence);
                     layoutInfo.Append(BagElementKind.FieldLayout, placedFieldsLayout);
-                }
-
-                // We also need to write out the signatures of interesting methods in the type's vtable, which
-                // will be needed by the calling convention translation logic at runtime, when the type's methods
-                // get invoked.
-                int currentVTableIndexUnused = 0;
-                VertexSequence vtableSignaturesSequence = null;
-
-                ProcessVTableEntriesForCallingConventionSignatureGeneration(factory, VTableEntriesToProcess.AllInVTable, ref currentVTableIndexUnused,
-                    (int vtableIndex, bool isSealedVTableSlot, MethodDesc declMethod, MethodDesc implMethod) =>
-                    {
-                        if (implMethod.IsAbstract)
-                            return;
-
-                        if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
-                        {
-                            vtableSignaturesSequence ??= new VertexSequence();
-
-                            NativeLayoutVertexNode methodSignature = factory.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature);
-                            Vertex signatureVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(methodSignature.WriteVertex(factory));
-
-                            Vertex vtableSignatureEntry = writer.GetTuple(
-                                writer.GetUnsignedConstant((uint)((vtableIndex << 1) | (isSealedVTableSlot ? 1 : 0))),
-                                factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(signatureVertex));
-
-                            vtableSignaturesSequence.Append(vtableSignatureEntry);
-                        }
-                    }, _type, _type, _type);
-
-                if (vtableSignaturesSequence != null)
-                {
-                    Vertex placedVtableSigs = factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(vtableSignaturesSequence);
-                    layoutInfo.Append(BagElementKind.VTableMethodSignatures, placedVtableSigs);
                 }
             }
 
@@ -2167,35 +2110,6 @@ namespace ILCompiler.DependencyAnalysis
         protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
             return writer.GetUnsignedConstant((uint)_value);
-        }
-
-        public override void CheckIfMarkedEnoughToWrite()
-        {
-            // Do nothing, this node does not need marking
-        }
-    }
-
-    public sealed class NativeLayoutPointerToOtherSlotDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
-    {
-        private int _otherSlotIndex;
-
-        public NativeLayoutPointerToOtherSlotDictionarySlotNode(int otherSlotIndex)
-        {
-            _otherSlotIndex = otherSlotIndex;
-        }
-
-        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.PointerToOtherSlot;
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
-        {
-            return null;
-        }
-
-        protected override string GetName(NodeFactory context) => "NativeLayoutPointerToOtherSlotDictionarySlotNode_" + _otherSlotIndex.ToStringInvariant();
-
-        protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
-        {
-            return writer.GetUnsignedConstant((uint)_otherSlotIndex);
         }
 
         public override void CheckIfMarkedEnoughToWrite()

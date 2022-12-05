@@ -176,11 +176,6 @@ namespace Internal.Runtime.Augments
                 throwing ? RuntimeHelperKind.CastClass : RuntimeHelperKind.IsInst);
         }
 
-        public static IntPtr GetDispatchMapForType(RuntimeTypeHandle typeHandle)
-        {
-            return CreateEETypePtr(typeHandle).DispatchMap;
-        }
-
         public static IntPtr GetFallbackDefaultConstructor()
         {
             return Activator.GetFallbackDefaultConstructor();
@@ -864,7 +859,6 @@ namespace Internal.Runtime.Augments
             IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
             if (newThunk == IntPtr.Zero)
                 throw new OutOfMemoryException();
-            TypeLoaderCallbacks.RegisterThunk(newThunk);
             return newThunk;
         }
 

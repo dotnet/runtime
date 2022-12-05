@@ -1372,7 +1372,8 @@ DONE_CALL:
             if (varTypeIsStruct(callRetTyp))
             {
                 // Need to treat all "split tree" cases here, not just inline candidates
-                call = impFixupCallStructReturn(call->AsCall(), sig->retTypeClass);
+                call       = impFixupCallStructReturn(call->AsCall(), sig->retTypeClass);
+                callRetTyp = call->TypeGet();
             }
 
             // TODO: consider handling fatcalli cases this way too...?
@@ -1577,6 +1578,18 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 
     call->gtRetClsHnd = retClsHnd;
 
+    // Recognize SIMD types as we do for LCL_VARs,
+    // note it could be not the ABI specific type, for example, on x64 we can set 'TYP_SIMD8`
+    // for `System.Numerics.Vector2` here but lower will change it to long as ABI dictates.
+    var_types simdReturnType = impNormStructType(call->gtRetClsHnd);
+    if (simdReturnType != call->TypeGet())
+    {
+        assert(varTypeIsSIMD(simdReturnType));
+        JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
+                varTypeName(simdReturnType));
+        call->ChangeType(simdReturnType);
+    }
+
 #if FEATURE_MULTIREG_RET
     call->InitializeStructReturnType(this, retClsHnd, call->GetUnmanagedCallConv());
     const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
@@ -1604,18 +1617,6 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         }
 
         return call;
-    }
-
-    // Recognize SIMD types as we do for LCL_VARs,
-    // note it could be not the ABI specific type, for example, on x64 we can set 'TYP_SIMD8`
-    // for `System.Numerics.Vector2` here but lower will change it to long as ABI dictates.
-    var_types simdReturnType = impNormStructType(call->gtRetClsHnd);
-    if (simdReturnType != call->TypeGet())
-    {
-        assert(varTypeIsSIMD(simdReturnType));
-        JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
-                varTypeName(simdReturnType));
-        call->ChangeType(simdReturnType);
     }
 
     if (retRegCount == 1)
@@ -2163,10 +2164,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
 #endif
 
-    return gtNewBlkOpNode(dst,   // dst
-                          src,   // src
-                          false, // volatile
-                          true); // copyBlock
+    return gtNewBlkOpNode(dst, src);
 }
 
 GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
@@ -2728,6 +2726,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
                 assert(resultType == result->TypeGet());
+                // Add an ordering dependency between the bounds check and
+                // forming the byref to prevent these from being reordered. The
+                // JIT is not allowed to create arbitrary illegal byrefs.
+                boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
+                result->gtFlags |= GTF_ORDER_SIDEEFF;
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
                 break;
