@@ -1147,9 +1147,11 @@ INTERP_GET_EXCEPTION_CHAR_ARG(argument_out_of_range)
 
 // Inlining throw logic into interp_exec_method makes it bigger and could push us up against
 //  internal limits in things like WASM compilers
-static MONO_NEVER_INLINE void interp_throw_ex_general (
+static MONO_NEVER_INLINE void
+interp_throw_ex_general (
 	MonoException *__ex, ThreadContext *context, InterpFrame *frame, const guint16 *ex_ip, gboolean rethrow
-) {
+)
+{
 	HANDLE_FUNCTION_ENTER ();
 	MonoExceptionHandle tmp_handle = MONO_HANDLE_NEW (MonoException, __ex);
 	interp_throw (context, __ex, (frame), (ex_ip), (rethrow));
@@ -1161,7 +1163,7 @@ static MONO_NEVER_INLINE void interp_throw_ex_general (
 // this is not needed.
 #define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
 	do {							\
-		interp_throw_ex_general(exception, context, frame, ex_ip, rethrow); \
+		interp_throw_ex_general (exception, context, frame, ex_ip, rethrow); \
 		goto resume;							  \
 	} while (0)
 
