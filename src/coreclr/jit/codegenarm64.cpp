@@ -2519,12 +2519,12 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    // The arithmetic node must be sitting in a register (since it's not contained)
-    assert(targetReg != REG_NA);
-
     // Handles combined operations: 'madd', 'msub'
     if (op2->OperIs(GT_MUL) && op2->isContained())
     {
+        // The arithmetic node must be sitting in a register (since it's not contained)
+        assert(targetReg != REG_NA);
+
         // In the future, we might consider enabling this for floating-point "unsafe" math.
         assert(varTypeIsIntegral(tree));
 
@@ -2720,10 +2720,16 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         assert(chain);
 
         // Move the result from flags into a register.
-        inst_SETCC(cond, tree->TypeGet(), targetReg);
-        genProduceReg(tree);
+        if (targetReg != REG_NA)
+        {
+            inst_SETCC(cond, tree->TypeGet(), targetReg);
+            genProduceReg(tree);
+        }
         return;
     }
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(targetReg != REG_NA);
 
     instruction ins = genGetInsForOper(tree->OperGet(), targetType);
 

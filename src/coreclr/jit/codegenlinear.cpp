@@ -2592,8 +2592,43 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
     assert(jtrue->OperIs(GT_JTRUE));
 
-    GenTreeOp*   relop     = jtrue->gtGetOp1()->AsOp();
-    GenCondition condition = GenCondition::FromRelop(relop);
+    GenTreeOp*   relop = jtrue->gtGetOp1()->AsOp();
+    GenCondition condition;
+
+    // Operands should never be contained inside a jtrue.
+    assert(!relop->isContained());
+
+#if defined(TARGET_ARM64)
+    if (relop->OperIs(GT_AND))
+    {
+        if ((relop->gtFlags & GTF_SET_FLAGS) == 0)
+        {
+            // The condition was generated into a register.
+            regNumber reg  = relop->GetRegNum();
+            emitAttr  attr = emitActualTypeSize(relop->TypeGet());
+            GetEmitter()->emitIns_J_R(INS_cbnz, attr, compiler->compCurBB->bbJumpDest, reg);
+            return;
+        }
+        else
+        {
+            // Find the last contained compare in the chain.
+            GenTreeOp* lastCompare = relop->gtGetOp2()->AsOp();
+            assert(lastCompare->isContained());
+            while (!lastCompare->OperIsCompare())
+            {
+                assert(lastCompare->OperIs(GT_AND));
+                lastCompare = lastCompare->gtGetOp2()->AsOp();
+                assert(lastCompare->isContained());
+            }
+            condition = GenCondition::FromRelop(lastCompare);
+        }
+    }
+    else
+#endif
+    {
+        assert(relop->OperIsCompare());
+        condition = GenCondition::FromRelop(relop);
+    }
 
     if (condition.PreferSwap())
     {

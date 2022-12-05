@@ -214,7 +214,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_OR:
         case GT_XOR:
-        case GT_AND:
         case GT_AND_NOT:
             assert(varTypeIsIntegralOrI(treeNode));
 
@@ -227,6 +226,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_SUB_HI:
 #endif // !defined(TARGET_64BIT)
 
+        case GT_AND:
         case GT_ADD:
         case GT_SUB:
         case GT_MUL:

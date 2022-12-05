@@ -82,7 +82,7 @@ public class FullRangeComparisonTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Eq_byte_consume(byte a1, byte a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
         if (a1 == a2) { a1 = 10; }
         consume<byte>(a1, a2);
     }
@@ -91,7 +91,7 @@ public class FullRangeComparisonTest
     public static void Ne_short_consume(short a1, short a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
         if (a1 != a2) { a1 = 11; }
         consume<short>(a1, a2);
     }
@@ -100,7 +100,7 @@ public class FullRangeComparisonTest
     public static void Lt_int_consume(int a1, int a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ge
         if (a1 < a2) { a1 = 12; }
         consume<int>(a1, a2);
     }
@@ -109,7 +109,7 @@ public class FullRangeComparisonTest
     public static void Le_long_consume(long a1, long a2)
     {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, le
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, gt
         if (a1 <= a2) { a1 = 13; }
         consume<long>(a1, a2);
     }
@@ -118,7 +118,7 @@ public class FullRangeComparisonTest
     public static void Gt_ushort_consume(ushort a1, ushort a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
         if (a1 > a2) { a1 = 14; }
         consume<ushort>(a1, a2);
     }
@@ -127,7 +127,7 @@ public class FullRangeComparisonTest
     public static void Ge_uint_consume(uint a1, uint a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ge
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
         if (a1 >= a2) { a1 = 15; }
         consume<uint>(a1, a2);
     }
@@ -136,7 +136,7 @@ public class FullRangeComparisonTest
     public static void Eq_ulong_consume(ulong a1, ulong a2)
     {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, eq
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ne
         if (a1 == a2) { a1 = 16; }
         consume<ulong>(a1, a2);
     }
@@ -145,7 +145,7 @@ public class FullRangeComparisonTest
     public static void Ne_float_int_consume(float f1, float f2, int a1, int a2)
     {
         //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
         if (f1 != f2) { a1 = 17; }
         consume<float>(a1, a2);
     }
@@ -154,7 +154,7 @@ public class FullRangeComparisonTest
     public static void Lt_double_long_consume(double f1, double f2, long a1, long a2)
     {
         //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, lt
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, ge
         if (f1 < f2) { a1 = 18; }
         consume<double>(a1, a2);
     }
@@ -163,7 +163,7 @@ public class FullRangeComparisonTest
     public static void Eq_double_long_consume(double f1, double f2, long a1, long a2)
     {
         //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, eq
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, ne
         if (f1 == f2) { a1 = 18; }
         consume<double>(a1, a2);
     }
@@ -172,7 +172,7 @@ public class FullRangeComparisonTest
     public static void Ne_double_int_consume(double f1, double f2, int a1, int a2)
     {
         //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
         if (f1 != f2) { a1 = 18; }
         consume<double>(a1, a2);
     }
@@ -183,7 +183,7 @@ public class FullRangeComparisonTest
     public static void Ne_else_byte_consume(byte a1, byte a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
         if (a1 != a2) { a1 = 10; } else { a1 = 100; }
         consume<byte>(a1, a2);
     }
@@ -192,7 +192,7 @@ public class FullRangeComparisonTest
     public static void Lt_else_short_consume(short a1, short a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ge
         if (a1 < a2) { a1 = 11; } else { a1 = 101; }
         consume<short>(a1, a2);
     }
@@ -201,7 +201,7 @@ public class FullRangeComparisonTest
     public static void Le_else_int_consume(int a1, int a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
         if (a1 <= a2) { a1 = 12; } else { a1 = 102; }
         consume<int>(a1, a2);
     }
@@ -210,7 +210,7 @@ public class FullRangeComparisonTest
     public static void Gt_else_long_consume(long a1, long a2)
     {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, gt
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, le
         if (a1 > a2) { a1 = 13; } else { a1 = 103; }
         consume<long>(a1, a2);
     }
@@ -219,7 +219,7 @@ public class FullRangeComparisonTest
     public static void Ge_else_ushort_consume(ushort a1, ushort a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ge
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
         if (a1 >= a2) { a1 = 14; } else { a1 = 104; }
         consume<ushort>(a1, a2);
     }
@@ -228,7 +228,7 @@ public class FullRangeComparisonTest
     public static void Eq_else_uint_consume(uint a1, uint a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
         if (a1 == a2) { a1 = 15; } else { a1 = 105; }
         consume<uint>(a1, a2);
     }
@@ -237,7 +237,7 @@ public class FullRangeComparisonTest
     public static void Ne_else_ulong_consume(ulong a1, ulong a2)
     {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ne
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, eq
         if (a1 != a2) { a1 = 16; } else { a1 = 106; }
         consume<ulong>(a1, a2);
     }
@@ -246,7 +246,7 @@ public class FullRangeComparisonTest
     public static void Lt_else_float_int_consume(float f1, float f2, int a1, int a2)
     {
         //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ge
         if (f1 < f2) { a1 = 17; } else { a1 = 107; }
         consume<float>(a1, a2);
     }
@@ -255,7 +255,7 @@ public class FullRangeComparisonTest
     public static void Le_else_double_int_consume(double f1, double f2, int a1, int a2)
     {
         //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
         if (f1 <= f2) { a1 = 18; } else { a1 = 108; }
         consume<double>(a1, a2);
     }
@@ -266,7 +266,7 @@ public class FullRangeComparisonTest
     public static byte Lt_else_byte_return(byte a1, byte a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, lt
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ge
         return (a1 < a2) ? (byte)10 : (byte)100;
     }
 
@@ -274,7 +274,7 @@ public class FullRangeComparisonTest
     public static short Le_else_short_return(short a1, short a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
         return (a1 <= a2) ? (short)11 : (short)101;
     }
 
@@ -282,7 +282,7 @@ public class FullRangeComparisonTest
     public static int Gt_else_int_return(int a1, int a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
         return (a1 > a2) ? (int)12 : (int)102;
     }
 
@@ -290,7 +290,7 @@ public class FullRangeComparisonTest
     public static long Ge_else_long_return(long a1, long a2)
     {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ge
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, lt
         return (a1 >= a2) ? (long)13 : (long)103;
     }
 
@@ -298,7 +298,7 @@ public class FullRangeComparisonTest
     public static ushort Eq_else_ushort_return(ushort a1, ushort a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
         return (a1 == a2) ? (ushort)14 : (ushort)104;
     }
 
@@ -306,7 +306,7 @@ public class FullRangeComparisonTest
     public static uint Ne_else_uint_return(uint a1, uint a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ne
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, eq
         return (a1 != a2) ? (uint)15 : (uint)105;
     }
 
@@ -314,7 +314,7 @@ public class FullRangeComparisonTest
     public static ulong Lt_else_ulong_return(ulong a1, ulong a2)
     {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, {{x[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, lt
+        //ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, ge
         return (a1 < a2) ? (ulong)16 : (ulong)106;
     }
 
@@ -322,7 +322,7 @@ public class FullRangeComparisonTest
     public static int Le_else_float_int_return(float a1, float a2)
     {
         //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
         return (a1 <= a2) ? 17 : 107;
     }
 
@@ -330,7 +330,7 @@ public class FullRangeComparisonTest
     public static int Gt_else_double_int_return(double a1, double a2)
     {
         //ARM64-FULL-LINE: fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        //ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, le
         return (a1 > a2) ? 18 : 108;
     }
 

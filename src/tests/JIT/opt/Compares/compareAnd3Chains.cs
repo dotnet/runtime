@@ -179,6 +179,21 @@ public class ComparisonTestAnd3Chains
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void consume<T>(T a1, T a2, T a3) {}
+
+    // If conditions that are consumed.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void Le_byte_3_consume(byte a1, byte a2, byte a3) {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #11
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #12, nzc, gt
+        //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #10, nzc, gt
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        if (a1 <= 10 || a2 <= 11 || a3 <= 12) { a1 = 10; }
+        consume<byte>(a1, a2, a3);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Main()
     {
         if (!Eq_byte_3(10, 11, 12))
@@ -456,6 +471,8 @@ public class ComparisonTestAnd3Chains
             Console.WriteLine("ComparisonTestAnd2Chains:Le_double_3(10.5, 11.5, 12.5) failed");
             return 101;
         }
+
+        Le_byte_3_consume(101, 102, 103);
 
         Console.WriteLine("PASSED");
         return 100;

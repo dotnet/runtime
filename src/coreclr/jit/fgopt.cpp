@@ -5172,6 +5172,18 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             }
         }
 
+        // Cannot handle cases where reversing creates a new node.
+        if (bPrev->bbJumpKind == BBJ_COND)
+        {
+            Statement* const condTestStmt = bPrev->lastStmt();
+            GenTree* const   condTest     = condTestStmt->GetRootNode();
+            noway_assert(condTest->gtOper == GT_JTRUE);
+            if (!gtCanReverseCondSimple(condTest->gtGetOp1()))
+            {
+                reorderBlock = false;
+            }
+        }
+
         if (reorderBlock == false)
         {
             //
@@ -6161,6 +6173,13 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         {
                             optimizeJump = false;
                         }
+                    }
+
+                    // Cannot handle cases where reversing creates a new node.
+                    GenTree* last = block->lastNode();
+                    if (last->OperGet() == GT_JTRUE && !gtCanReverseCondSimple(last->gtGetOp1()))
+                    {
+                        optimizeJump = false;
                     }
 
                     if (optimizeJump && isJumpToJoinFree)

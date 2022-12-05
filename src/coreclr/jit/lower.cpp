@@ -7164,10 +7164,30 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 //
 void Lowering::ContainCheckJTrue(GenTreeOp* node)
 {
-    // The compare does not need to be generated into a register.
-    GenTree* cmp = node->gtGetOp1();
-    cmp->gtType  = TYP_VOID;
-    cmp->gtFlags |= GTF_SET_FLAGS;
+    GenTree* op1 = node->gtGetOp1();
+
+    if (op1->OperIsCompare())
+    {
+        // The compare does not need to be generated into a register.
+        op1->gtType = TYP_VOID;
+        op1->gtFlags |= GTF_SET_FLAGS;
+    }
+#if defined(TARGET_ARM64)
+    else if (op1->OperIs(GT_AND))
+    {
+        // If the second op of the AND is contained, then the AND does not need to be generated
+        // into a register.
+        if (op1->gtGetOp2()->isContained())
+        {
+            op1->gtType = TYP_VOID;
+            op1->gtFlags |= GTF_SET_FLAGS;
+        }
+    }
+#endif
+    else
+    {
+        assert(false);
+    }
 }
 
 //------------------------------------------------------------------------

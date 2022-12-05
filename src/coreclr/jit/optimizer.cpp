@@ -9081,6 +9081,7 @@ private:
 
 public:
     bool optOptimizeBoolsCondBlock();
+    bool optOptimizeCompareChainCondBlock();
     bool optOptimizeBoolsReturnBlock(BasicBlock* b3);
 #ifdef DEBUG
     void optOptimizeBoolsGcStress();
@@ -9313,6 +9314,188 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 #endif
 
     // Return true to continue the bool optimization for the rest of the BB chain
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+//  optOptimizeCompareChainCondBlock:  Create AND chain when when both m_b1 and m_b2 are BBJ_COND.
+//
+//  Returns:
+//      true if chain optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
+//
+//  Assumptions:
+//      m_b1 and m_b2 are set on entry.
+//
+//  Notes:
+//
+//      This aims to reduced the number of conditional jumps by joining cases when multiple
+//      conditions gate the execution of a block. For example:
+//          If ( a > b || c == d) { x = y; }
+//      Will become the following. Note that the second condition is inverted.
+//
+//      ------------ BB01 -> BB03 (cond), succs={BB02,BB03}
+//      *  JTRUE
+//      \--*  GE a,b
+//
+//      ------------ BB02 -> BB04 (cond), preds={BB01} succs={BB03,BB04}
+//      *  JTRUE
+//      \--*  NE c,d
+//
+//      ------------ BB03, preds={BB01, BB02} succs={BB04}
+//      *  ASG x,y
+//
+//      These operands will be combined into a single AND chain in the first block (with the first
+//      condition inverted).
+//
+//      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
+//      *  JTRUE
+//      \--*  AND
+//         +--*  LT a,b
+//         \--*  NE c,d
+//
+//      ------------ BB03, preds={BB01} succs={BB04}
+//      *  ASG x,y
+//
+//
+//      This will also work for statements with else cases:
+//          If ( a > b || c == d) { x = y; } else { x = z; }
+//      Here BB04 will contain the else ASG. Both BB04 and BB05 will unconditionally jump to BB05.
+//
+//      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
+//      *  JTRUE
+//      \--*  AND
+//         +--*  LT a,b
+//         \--*  NE c,d
+//
+//      ------------ BB03, preds={BB01} succs={BB05}
+//      *  ASG x,y
+//
+//      ------------ BB04, preds={BB01} succs={BB05}
+//      *  ASG x,z
+//
+//
+//      Multiple conditions can be chained together. This is due to the optimization reverse
+//      iterating through the blocks. For example:
+//          If ( a > b || c == d || e < f ) { x = y; }
+//      The first pass will combine "c == d" and "e < f" into a chain. The second pass will then
+//      combine the "a > b" with the earlier chain, giving:
+//
+//      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
+//      *  JTRUE
+//      \--*  AND
+//         +--*  AND
+//            +--*  NE c,d
+//            +--*  GE e,f
+//         \--*  LT a,b
+//
+//      ------------ BB03, preds={BB01} succs={BB04}
+//      *  ASG x,y
+//
+//
+//      Conditions connected by && are not yet checked for. For example:
+//          If ( a > b && c == d ) { x = y; }
+//
+bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
+{
+    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
+    m_t3 = nullptr;
+
+    if (!(m_b1->bbNext == m_b2 && m_b1->bbJumpDest == m_b2->bbNext && m_b1->bbJumpDest->bbNext == m_b2->bbJumpDest))
+    {
+        return false;
+    }
+
+    Statement* const s1 = optOptimizeBoolsChkBlkCond();
+    if (s1 == nullptr)
+    {
+        return false;
+    }
+    Statement* s2 = m_b2->firstStmt();
+
+    assert(m_testInfo1.testTree->gtOper == GT_JTRUE);
+    GenTree* cond1 = m_testInfo1.testTree->AsOp()->gtOp1;
+
+    assert(m_testInfo2.testTree->gtOper == GT_JTRUE);
+    GenTree* cond2 = m_testInfo2.testTree->AsOp()->gtOp1;
+
+    // Ensure both conditions are suitable.
+    if (!cond1->OperIsCmpCompare())
+    {
+        return false;
+    }
+    if (!(cond2->OperIsCmpCompare() || cond2->OperIs(GT_AND)))
+    {
+        return false;
+    }
+
+    // Ensure there are no additional side effects.
+    if ((cond1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
+        (cond2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+
+    // Integer compares only for now (until support for Arm64 fccmp instruction is added)
+    if (varTypeIsFloating(cond1->gtGetOp1()->TypeGet()) || varTypeIsFloating(cond2->gtGetOp1()->TypeGet()))
+    {
+        return false;
+    }
+
+    // Avoid cases where the compare will be optimized better later:
+    // * cmp(and(x, y), 0) will be turned into a TEST_ opcode.
+    // * Compares against zero will be optimized with cbz.
+    GenTree* cond1Op2 = cond1->gtGetOp2();
+    GenTree* cond2Op2 = cond2->gtGetOp2();
+    if ((cond1Op2->IsIntegralConst() && cond1Op2->AsIntCon()->IconValue() == 0) ||
+        (cond2Op2->IsIntegralConst() && cond2Op2->AsIntCon()->IconValue() == 0))
+    {
+        return false;
+    }
+
+    // Remove the first JTRUE statement.
+    constexpr bool isUnlink = true;
+    m_comp->fgRemoveStmt(m_b1, s1 DEBUGARG(isUnlink));
+
+    // Invert the first condition.
+    GenTree* revCond = m_comp->gtReverseCond(cond1);
+    assert(cond1 == revCond); // Ensure `gtReverseCond` did not create a new node.
+
+    // Create a chain.
+    GenTree* newchain = m_comp->gtNewOperNode(GT_AND, TYP_INT, cond1, cond2);
+    newchain->AsOp()->gtFlags |= (cond1->gtFlags & GTF_ALL_EFFECT);
+    newchain->AsOp()->gtFlags |= (cond2->gtFlags & GTF_ALL_EFFECT);
+    cond1->gtFlags &= ~GTF_RELOP_JMP_USED;
+    cond2->gtFlags &= ~GTF_RELOP_JMP_USED;
+    newchain->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+
+    // Wire the chain into the second block
+    m_testInfo2.testTree->AsOp()->gtOp1 = newchain;
+    m_testInfo2.testTree->AsOp()->gtFlags |= (newchain->gtFlags & GTF_ALL_EFFECT);
+    m_comp->gtSetEvalOrder(m_testInfo2.testTree);
+    m_comp->fgSetStmtSeq(s2);
+
+    // Update the flow.
+    m_comp->fgRemoveAllRefPreds(m_b1->bbJumpDest, m_b1);
+    m_b1->bbJumpKind = BBJ_NONE;
+
+    // Fixup flags.
+    m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
+
+    // Join the two blocks. This is done now to ensure that additional conditions can be chained.
+    if (m_comp->fgCanCompactBlocks(m_b1, m_b2))
+    {
+        m_comp->fgCompactBlocks(m_b1, m_b2);
+    }
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        printf("\nCombined conditions " FMT_BB " and " FMT_BB " into AND chain :\n", m_b1->bbNum, m_b2->bbNum);
+        m_comp->fgDumpBlock(m_b1);
+        printf("\n");
+    }
+#endif
+
     return true;
 }
 
@@ -10067,7 +10250,8 @@ PhaseStatus Compiler::optOptimizeBools()
         numPasses++;
         change = false;
 
-        for (BasicBlock* const b1 : Blocks())
+        // Reverse iterate through the blocks.
+        for (BasicBlock* b1 = fgLastBB; b1 != nullptr; b1 = b1->bbPrev)
         {
             // We're only interested in conditional jumps here
 
@@ -10108,6 +10292,13 @@ PhaseStatus Compiler::optOptimizeBools()
                     change = true;
                     numCond++;
                 }
+#ifdef TARGET_ARM64
+                else if (optBoolsDsc.optOptimizeCompareChainCondBlock())
+                {
+                    change = true;
+                    numCond++;
+                }
+#endif
             }
             else if (b2->bbJumpKind == BBJ_RETURN)
             {

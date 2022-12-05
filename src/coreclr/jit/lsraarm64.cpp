@@ -241,9 +241,17 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_JTRUE:
-            srcCount = 0;
+        {
+            GenTree* op1 = tree->gtGetOp1();
+            srcCount     = 0;
+            if ((op1->gtFlags & GTF_SET_FLAGS) == 0)
+            {
+                assert(op1->OperIs(GT_AND));
+                srcCount = BuildOperandUses(op1);
+            }
             assert(dstCount == 0);
-            break;
+        }
+        break;
 
         case GT_JMP:
             srcCount = 0;
@@ -287,7 +295,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             FALLTHROUGH;
 
-        case GT_AND:
         case GT_AND_NOT:
         case GT_OR:
         case GT_XOR:
@@ -298,6 +305,20 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
+            break;
+
+        case GT_AND:
+            srcCount = BuildBinaryUses(tree->AsOp());
+            if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+            {
+                assert(tree->TypeGet() == TYP_VOID);
+                assert(dstCount == 0);
+            }
+            else
+            {
+                assert(dstCount == 1);
+                BuildDef(tree);
+            }
             break;
 
         case GT_BFIZ:
