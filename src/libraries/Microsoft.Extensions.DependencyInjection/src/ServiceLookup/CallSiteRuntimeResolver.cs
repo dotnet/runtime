@@ -174,9 +174,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return array;
         }
 
-        protected override object VisitFactory(FactoryCallSite factoryCallSite, RuntimeResolverContext context)
+        protected override object? VisitFactory(FactoryCallSite factoryCallSite, RuntimeResolverContext context)
         {
-            return factoryCallSite.Factory(context.Scope);
+            object? value = factoryCallSite.Factory(context.Scope);
+            Type serviceType = factoryCallSite.ServiceType;
+            if (value != null && !serviceType.IsInstanceOfType(value))
+            {
+                throw new ArgumentException(SR.Format(SR.ConstantCantBeConvertedToServiceType, value.GetType(), serviceType));
+            }
+            return value;
         }
     }
 
