@@ -26,6 +26,17 @@ parameters:
     _wasm_pipelines: [
         eng/pipelines/**/*wasm*
     ]
+    _wasm_src_native: [
+        src/native/minipal/*
+        src/native/libs/CMakeLists.txt
+        src/native/libs/configure.cmake
+        src/native/libs/build*
+        src/native/libs/Common/*
+        src/native/libs/System.Globalization.Native/*
+        src/native/libs/System.IO.Compression.Native/*
+        src/native/libs/System.Native/*
+    ]
+
     # src/workloads is only used in runtime-official builds
     # where evaluate-paths is not used
     _always_exclude: [
@@ -124,6 +135,7 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+      - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
@@ -175,6 +187,7 @@ jobs:
       - src/mono/wasm/runtime/*
       - src/mono/wasm/templates/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
@@ -189,6 +202,7 @@ jobs:
       - src/mono/mono/*
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
+      - ${{ parameters._const_paths._wasm_src_native }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
       - src/mono/nuget/*
@@ -200,6 +214,7 @@ jobs:
       include:
       - src/tests/*
       - src/mono/*
+      - ${{ parameters._const_paths._wasm_src_native }}
       exclude:
       - src/mono/nuget/*
       - src/mono/sample/*
