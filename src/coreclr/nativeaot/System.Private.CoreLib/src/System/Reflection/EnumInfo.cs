@@ -23,8 +23,6 @@ namespace System.Reflection
         internal Type UnderlyingType { get; }
         internal string[] Names { get; }
         internal bool HasFlagsAttribute { get; }
-
-        internal abstract Array ValuesNonGeneric { get; }
     }
 
     [ReflectionBlocked]
@@ -43,7 +41,6 @@ namespace System.Reflection
         }
 
         internal TUnderlyingValue[] Values { get; }
-        internal override Array ValuesNonGeneric => Values;
         internal bool ValuesAreSequentialFromZero { get; }
 
         public TUnderlyingValue[] CloneValues() =>

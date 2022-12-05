@@ -284,32 +284,10 @@ namespace System
         /// <returns>An array that contains the values of the constants in <typeparamref name="TEnum"/>.</returns>
         public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
         {
-            ReadOnlySpan<TEnum> span;
-
-            RuntimeType rt = (RuntimeType)typeof(TEnum);
-            Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
-
-            // Get a span to the underlying values.
-            if (underlyingType == typeof(int)) span = MemoryMarshal.Cast<int, TEnum>(GetEnumInfo<int>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(uint)) span = MemoryMarshal.Cast<uint, TEnum>(GetEnumInfo<uint>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(long)) span = MemoryMarshal.Cast<long, TEnum>(GetEnumInfo<long>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(ulong)) span = MemoryMarshal.Cast<ulong, TEnum>(GetEnumInfo<ulong>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(byte)) span = MemoryMarshal.Cast<byte, TEnum>(GetEnumInfo<byte>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(sbyte)) span = MemoryMarshal.Cast<sbyte, TEnum>(GetEnumInfo<sbyte>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(short)) span = MemoryMarshal.Cast<short, TEnum>(GetEnumInfo<short>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(ushort)) span = MemoryMarshal.Cast<ushort, TEnum>(GetEnumInfo<ushort>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(nint)) span = MemoryMarshal.Cast<nint, TEnum>(GetEnumInfo<nint>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(nuint)) span = MemoryMarshal.Cast<nuint, TEnum>(GetEnumInfo<nuint>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(char)) span = MemoryMarshal.Cast<char, TEnum>(GetEnumInfo<char>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(float)) span = MemoryMarshal.Cast<float, TEnum>(GetEnumInfo<float>(rt, getNames: false).Values);
-            else if (underlyingType == typeof(double)) span = MemoryMarshal.Cast<double, TEnum>(GetEnumInfo<double>(rt, getNames: false).Values);
-#if !NATIVEAOT // this won't ever be used, but it still triggers IL3050
-            else if (underlyingType == typeof(bool)) return (TEnum[])GetValues(typeof(TEnum)); // special-cased to return, as GetValues is already cloning
-#endif
-            else throw CreateUnknownEnumTypeException();
-
-            // Return a clone of the array to avoid exposing the cached array instance.
-            return span.ToArray();
+            Array values = GetValuesAsUnderlyingTypeNoCopy((RuntimeType)typeof(TEnum));
+            var result = new TEnum[values.Length];
+            Array.Copy(values, result, values.Length);
+            return result;
         }
 
         /// <summary>Retrieves an array of the values of the constants in a specified enumeration.</summary>
@@ -334,28 +312,8 @@ namespace System
         /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
         /// </remarks>
         /// <returns>An array that contains the values of the underlying type constants in <typeparamref name="TEnum" />.</returns>
-        public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum
-        {
-            RuntimeType rt = (RuntimeType)typeof(TEnum);
-            Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
-
-            // Return a clone of the array to avoid exposing the cached array instance.
-            if (underlyingType == typeof(int)) return GetEnumInfo<int>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(uint)) return GetEnumInfo<uint>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(long)) return GetEnumInfo<long>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(ulong)) return GetEnumInfo<ulong>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(byte)) return GetEnumInfo<byte>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(sbyte)) return GetEnumInfo<sbyte>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(short)) return GetEnumInfo<short>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(ushort)) return GetEnumInfo<ushort>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(nint)) return GetEnumInfo<nint>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(nuint)) return GetEnumInfo<nuint>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(char)) return GetEnumInfo<char>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(float)) return GetEnumInfo<float>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(double)) return GetEnumInfo<double>(rt, getNames: false).CloneValues();
-            else if (underlyingType == typeof(bool)) return CopyByteArrayToNewBoolArray(GetEnumInfo<byte>(rt, getNames: false).Values);
-            else throw CreateUnknownEnumTypeException();
-        }
+        public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum =>
+            typeof(TEnum).GetEnumValuesAsUnderlyingType();
 
         /// <summary>Retrieves an array of the values of the underlying type constants in a specified enumeration.</summary>
         /// <param name="enumType">An enumeration type.</param>

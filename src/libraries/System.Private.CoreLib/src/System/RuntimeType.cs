@@ -126,30 +126,10 @@ namespace System
             if (!IsActualEnum)
                 ThrowMustBeEnum();
 
-            // Get all of the values as the underlying type
+            // Get all of the values as the underlying type and copy them to a new array of the enum type.
             Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
-
-            // Create an array of the Enum type
             Array ret = Array.CreateInstance(this, values.Length);
-
-            unsafe
-            {
-#if CORECLR
-                Debug.Assert(
-                    RuntimeHelpers.GetMethodTable(ret)->ComponentSize ==
-                    RuntimeHelpers.GetMethodTable(values)->ComponentSize);
-
-                Buffer.Memmove(
-                    ref MemoryMarshal.GetArrayDataReference(ret),
-                    ref MemoryMarshal.GetArrayDataReference(values),
-                    (uint)values.Length * (nuint)RuntimeHelpers.GetMethodTable(values)->ComponentSize);
-#else
-                for (int i = 0; i < values.Length; i++)
-                {
-                    ret.SetValue(Enum.ToObject(this, values.GetValue(i)!), i);
-                }
-#endif
-            }
+            Array.Copy(values, ret, values.Length);
 
             return ret;
         }

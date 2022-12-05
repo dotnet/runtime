@@ -24,7 +24,9 @@ namespace System
         private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
         {
             Debug.Assert(rt.IsActualEnum);
-            return InternalGetCorElementType((MethodTable*)rt.GetUnderlyingNativeHandle());
+            CorElementType elementType = InternalGetCorElementType((MethodTable*)rt.GetUnderlyingNativeHandle());
+            GC.KeepAlive(rt);
+            return elementType;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

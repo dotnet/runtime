@@ -97,16 +97,16 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            Array values = Enum.GetEnumInfo(this).ValuesNonGeneric;
+            Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             int count = values.Length;
+
             // Without universal shared generics, chances are slim that we'll have the appropriate
             // array type available. Offer an escape hatch that avoids a missing metadata exception
             // at the cost of a small appcompat risk.
-            Array result;
-            if (AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed)
-                result = Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count);
-            else
-                result = Array.CreateInstance(this, count);
+            Array result = AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed ?
+                Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count) :
+                Array.CreateInstance(this, count);
+
             Array.Copy(values, result, values.Length);
             return result;
         }
@@ -116,7 +116,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            return (Array)Enum.GetEnumInfo(this).ValuesNonGeneric.Clone();
+            return (Array)Enum.GetValuesAsUnderlyingTypeNoCopy(this).Clone();
         }
 
         internal bool IsActualEnum
