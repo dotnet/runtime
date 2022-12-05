@@ -93,7 +93,14 @@ namespace System.Net
 
         // This is only called when we selected local client certificate.
         // Currently this is only when Java crypto asked for it.
-        internal static bool IsLocalCertificateUsed(SafeDeleteContext? _) => true;
+        internal static bool IsLocalCertificateUsed(SafeDeleteContext? securityContext)
+        {
+            SafeSslHandle? sslContext = ((SafeDeleteSslContext?)securityContext)?.SslContext;
+            if (sslContext == null)
+                return false;
+
+            return Interop.AndroidCrypto.SSLStreamIsLocalCertificateUsed(sslContext);
+        }
 
         //
         // Used only by client SSL code, never returns null.
