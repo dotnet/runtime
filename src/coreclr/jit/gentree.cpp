@@ -2453,6 +2453,7 @@ AGAIN:
         switch (oper)
         {
             case GT_LCL_VAR:
+            case GT_LCL_VAR_ADDR:
                 if (op1->AsLclVarCommon()->GetLclNum() != op2->AsLclVarCommon()->GetLclNum())
                 {
                     break;
@@ -2461,6 +2462,7 @@ AGAIN:
                 return true;
 
             case GT_LCL_FLD:
+            case GT_LCL_FLD_ADDR:
                 if ((op1->AsLclFld()->GetLclNum() != op2->AsLclFld()->GetLclNum()) ||
                     (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()) ||
                     (op1->AsLclFld()->GetLayout() != op2->AsLclFld()->GetLayout()))
@@ -18071,6 +18073,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                                 objClass = fieldClass;
                             }
                         }
+                    }
+                }
+                else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
+                {
+                    // Check if we have IND(ICON_HANDLE) that represents a static field
+                    FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
+                    if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
+                    {
+                        CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
+                        objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
                     }
                 }
             }
