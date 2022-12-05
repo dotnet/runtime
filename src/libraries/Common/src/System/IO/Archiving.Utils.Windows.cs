@@ -62,7 +62,8 @@ namespace System.IO
             }
 
 #pragma warning disable CS8500 // takes address of managed type
-            return string.Create(appendPathSeparator ? path.Length + 1 : path.Length, (appendPathSeparator, RosPtr: (IntPtr)(&path)), static (dest, state) =>
+            ReadOnlySpan<char> tmpPath = path; // avoid address exposing the span and impacting the other code in the method that uses it
+            return string.Create(appendPathSeparator ? tmpPath.Length + 1 : tmpPath.Length, (appendPathSeparator, RosPtr: (IntPtr)(&tmpPath)), static (dest, state) =>
             {
                 var path = *(ReadOnlySpan<char>*)state.RosPtr;
                 path.CopyTo(dest);

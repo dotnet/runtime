@@ -75,7 +75,8 @@ namespace System.Text
             }
 
 #pragma warning disable CS8500 // takes address of managed type
-            string result = string.Create(length, (IntPtr)(&span), static (dest, spanPtr) =>
+            ReadOnlySpan<ReadOnlyMemory<char>> tmpSpan = span; // avoid address exposing the span and impacting the other code in the method that uses it
+            string result = string.Create(length, (IntPtr)(&tmpSpan), static (dest, spanPtr) =>
             {
                 Span<ReadOnlyMemory<char>> span = *(Span<ReadOnlyMemory<char>>*)spanPtr;
                 for (int i = 0; i < span.Length; i++)

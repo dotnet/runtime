@@ -713,51 +713,64 @@ namespace System.IO
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
 
-            byte firstNeedsSeparator = PathInternal.IsDirectorySeparator(first[^1]) || PathInternal.IsDirectorySeparator(second[0]) ? (byte)0 : (byte)1;
-            byte secondNeedsSeparator = PathInternal.IsDirectorySeparator(second[^1]) || PathInternal.IsDirectorySeparator(third[0]) ? (byte)0 : (byte)1;
-            byte thirdNeedsSeparator = PathInternal.IsDirectorySeparator(third[^1]) || PathInternal.IsDirectorySeparator(fourth[0]) ? (byte)0 : (byte)1;
-
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+            var state = new JoinInternalState
+            {
+                ReadOnlySpanPtr1 = (IntPtr)(&first),
+                ReadOnlySpanPtr2 = (IntPtr)(&second),
+                ReadOnlySpanPtr3 = (IntPtr)(&third),
+                ReadOnlySpanPtr4 = (IntPtr)(&fourth),
+                NeedSeparator1 = PathInternal.IsDirectorySeparator(first[^1]) || PathInternal.IsDirectorySeparator(second[0]) ? (byte)0 : (byte)1,
+                NeedSeparator2 = PathInternal.IsDirectorySeparator(second[^1]) || PathInternal.IsDirectorySeparator(third[0]) ? (byte)0 : (byte)1,
+                NeedSeparator3 = PathInternal.IsDirectorySeparator(third[^1]) || PathInternal.IsDirectorySeparator(fourth[0]) ? (byte)0 : (byte)1,
+            };
+
             return string.Create(
-                first.Length + second.Length + third.Length + fourth.Length + firstNeedsSeparator + secondNeedsSeparator + thirdNeedsSeparator,
-                (FirstRos: (IntPtr)(&first), SecondRos: (IntPtr)(&second), ThirdRos: (IntPtr)(&third), FourthRos: (IntPtr)(&fourth), firstNeedsSeparator, secondNeedsSeparator, thirdNeedsSeparator),
+                first.Length + second.Length + third.Length + fourth.Length + state.NeedSeparator1 + state.NeedSeparator2 + state.NeedSeparator3,
+                state,
                 static (destination, state) =>
                 {
-                    ReadOnlySpan<char> first = *(ReadOnlySpan<char>*)state.FirstRos;
+                    ReadOnlySpan<char> first = *(ReadOnlySpan<char>*)state.ReadOnlySpanPtr1;
                     first.CopyTo(destination);
                     destination = destination.Slice(first.Length);
 
-                    if (state.firstNeedsSeparator != 0)
+                    if (state.NeedSeparator1 != 0)
                     {
                         destination[0] = PathInternal.DirectorySeparatorChar;
                         destination = destination.Slice(1);
                     }
 
-                    ReadOnlySpan<char> second = *(ReadOnlySpan<char>*)state.SecondRos;
+                    ReadOnlySpan<char> second = *(ReadOnlySpan<char>*)state.ReadOnlySpanPtr2;
                     second.CopyTo(destination);
                     destination = destination.Slice(second.Length);
 
-                    if (state.secondNeedsSeparator != 0)
+                    if (state.NeedSeparator2 != 0)
                     {
                         destination[0] = PathInternal.DirectorySeparatorChar;
                         destination = destination.Slice(1);
                     }
 
-                    ReadOnlySpan<char> third = *(ReadOnlySpan<char>*)state.ThirdRos;
+                    ReadOnlySpan<char> third = *(ReadOnlySpan<char>*)state.ReadOnlySpanPtr3;
                     third.CopyTo(destination);
                     destination = destination.Slice(third.Length);
 
-                    if (state.thirdNeedsSeparator != 0)
+                    if (state.NeedSeparator3 != 0)
                     {
                         destination[0] = PathInternal.DirectorySeparatorChar;
                         destination = destination.Slice(1);
                     }
 
-                    ReadOnlySpan<char> fourth = *(ReadOnlySpan<char>*)state.FourthRos;
+                    ReadOnlySpan<char> fourth = *(ReadOnlySpan<char>*)state.ReadOnlySpanPtr4;
                     Debug.Assert(fourth.Length == destination.Length);
                     fourth.CopyTo(destination);
                 });
 #pragma warning restore CS8500
+        }
+
+        private struct JoinInternalState // used to avoid rooting ValueTuple`7
+        {
+            public IntPtr ReadOnlySpanPtr1, ReadOnlySpanPtr2, ReadOnlySpanPtr3, ReadOnlySpanPtr4;
+            public byte NeedSeparator1, NeedSeparator2, NeedSeparator3;
         }
 
         private static ReadOnlySpan<byte> Base32Char => "abcdefghijklmnopqrstuvwxyz012345"u8;

@@ -1537,22 +1537,20 @@ namespace System.Text.RegularExpressions
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
 #pragma warning disable CS8500 // takes address of managed type
+            ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
 #if REGEXGENERATOR
             return StringExtensions.Create(
 #else
             return string.Create(
 #endif
-                SetStartIndex + count, (IntPtr)(&chars), static (span, charsPtr) =>
+                SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
             {
-                // Reconstruct the span now that we're inside of the lambda.
-                ReadOnlySpan<char> chars = *(ReadOnlySpan<char>*)charsPtr;
-
                 // Fill in the set string
                 span[FlagsIndex] = (char)0;
                 span[SetLengthIndex] = (char)(span.Length - SetStartIndex);
                 span[CategoryLengthIndex] = (char)0;
                 int i = SetStartIndex;
-                foreach (char c in chars)
+                foreach (char c in *(ReadOnlySpan<char>*)charsPtr)
                 {
                     span[i++] = c;
                     if (c != LastChar)

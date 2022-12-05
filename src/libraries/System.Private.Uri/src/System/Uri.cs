@@ -3841,7 +3841,8 @@ namespace System
 
             // Then look up the syntax in a string-based table.
 #pragma warning disable CS8500 // takes address of managed type
-            string str = string.Create(span.Length, (IntPtr)(&span), (buffer, spanPtr) =>
+            ReadOnlySpan<char> tmpSpan = span; // avoid address exposing the span and impacting the other code in the method that uses it
+            string str = string.Create(tmpSpan.Length, (IntPtr)(&tmpSpan), (buffer, spanPtr) =>
             {
                 int charsWritten = (*(ReadOnlySpan<char>*)spanPtr).ToLowerInvariant(buffer);
                 Debug.Assert(charsWritten == buffer.Length);

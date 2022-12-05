@@ -544,11 +544,11 @@ namespace System
             }
 
 #pragma warning disable CS8500 // takes address of managed type
-            return string.Create(strToClean.Length - charsToRemove, (IntPtr)(&strToClean), static (buffer, strToCleanPtr) =>
+            ReadOnlySpan<char> tmpStrToClean = strToClean; // avoid address exposing the span and impacting the other code in the method that uses it
+            return string.Create(tmpStrToClean.Length - charsToRemove, (IntPtr)(&tmpStrToClean), static (buffer, strToCleanPtr) =>
             {
-                var strToClean = *(ReadOnlySpan<char>*)strToCleanPtr;
                 int destIndex = 0;
-                foreach (char c in strToClean)
+                foreach (char c in *(ReadOnlySpan<char>*)strToCleanPtr)
                 {
                     if (!IsBidiControlCharacter(c))
                     {
