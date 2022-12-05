@@ -1,0 +1,5 @@
+if(NOT CLR_CMAKE_HOST_OSX)
+include_directories(${INC_PLATFORM_DIR})
+add_library(CrossplatVirtualAlloc SHARED CrossplatVirtualAlloc.cpp)
+target_link_libraries(CrossplatVirtualAlloc PRIVATE platformdefines)
+endif()

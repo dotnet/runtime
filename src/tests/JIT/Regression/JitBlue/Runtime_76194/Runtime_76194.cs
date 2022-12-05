@@ -85,43 +85,24 @@ public unsafe class Runtime_76194
     }
 }
 
+internal unsafe static class CrossplatVirtualAlloc
+{
+    [DllImport(nameof(CrossplatVirtualAlloc))]
+    public static extern byte* Alloc(nuint size);
+
+    [DllImport(nameof(CrossplatVirtualAlloc))]
+    public static extern void Free(byte* ptr, nuint size);
+}
+
 // Cross-platform implementation of VirtualAlloc that is focused on reproducing problems
 // where JIT emits code that reads/writes more than requested
-public unsafe class CrossVirtualAlloc : IDisposable
+internal unsafe class CrossVirtualAlloc : IDisposable
 {
     private readonly byte* _ptr;
 
     public CrossVirtualAlloc()
     {
-        if (OperatingSystem.IsWindows())
-        {
-            const int MEM_COMMIT = 0x1000;
-            const int MEM_RESERVE = 0x2000;
-            const int PAGE_READWRITE = 0x04;
-            const int MEM_RELEASE = 0x8000;
-
-            byte* reservePtr = VirtualAlloc(null, PageSize * 2, MEM_RESERVE, PAGE_READWRITE);
-            if (reservePtr != null)
-            {
-                _ptr = VirtualAlloc(reservePtr, PageSize, MEM_COMMIT, PAGE_READWRITE);
-                if (_ptr == null)
-                {
-                    VirtualFree(reservePtr, 0, MEM_RELEASE);
-                }
-            }
-        }
-        else
-        {
-            _ptr = Mmap(2 * PageSize);
-            if (_ptr == (void*)-1)
-            {
-                throw new InvalidOperationException($"mmap failed: {Marshal.GetLastPInvokeError()}, PageSize={PageSize}");
-            }
-            else if (mprotect(_ptr + PageSize, PageSize, 0) != 0)
-            {
-                throw new InvalidOperationException($"mprotect failed: {Marshal.GetLastPInvokeError()}, PageSize={PageSize}, _ptr={(nuint)_ptr}");
-            }
-        }
+        _ptr = CrossplatVirtualAlloc.Alloc(PageSize);
     }
 
     public bool IsFailedToCommit => _ptr == null;
@@ -134,48 +115,7 @@ public unsafe class CrossVirtualAlloc : IDisposable
     public void Dispose()
     {
         if (IsFailedToCommit)
-        {
             return;
-        }
-
-        if (OperatingSystem.IsWindows())
-        {
-            const int MEM_RELEASE = 0x8000;
-            VirtualFree(_ptr, 0, MEM_RELEASE);
-        }
-        else
-        {
-            munmap(_ptr, PageSize * 2);
-        }
+        CrossplatVirtualAlloc.Free(_ptr, PageSize);
     }
-
-    [DllImport("kernel32")]
-    static extern byte* VirtualAlloc(byte* lpAddress, nuint dwSize, uint flAllocationType, uint flProtect);
-
-    [DllImport("kernel32")]
-    static extern int VirtualFree(byte* lpAddress, nuint dwSize, uint dwFreeType);
-
-    static byte* Mmap(nuint length)
-    {
-        const int PROT_READ = 0x1;
-        const int PROT_WRITE = 0x2;
-        const int MAP_PRIVATE = 0x02;
-        const int MAP_ANONYMOUS = 0x20;
-        byte* ptr = mmap(null, 2 * PageSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        if (ptr == (byte*)-1)
-        {
-            // Workaround for systems where MAP_ANONYMOUS has a different value
-            ptr = mmap(null, 2 * PageSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | 0x10, -1, 0);
-        }
-        return ptr;
-    }
-
-    [DllImport("libc", SetLastError = true)]
-    static extern byte* mmap(byte* addr, nuint length, int prot, int flags, int fd, nuint offset);
-
-    [DllImport("libc", SetLastError = true)]
-    static extern int mprotect(byte* addr, nuint len, int prot);
-
-    [DllImport("libc", SetLastError = true)]
-    static extern int munmap(byte* addr, nuint length);
 }
