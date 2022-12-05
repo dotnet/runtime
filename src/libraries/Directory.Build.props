@@ -142,9 +142,7 @@
     <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
     <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
 
-    <!-- FIXME: Using net7 workload here, since we are building the test projects with net7.0
-                right now. -->
-    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-net7+latest\</SdkWithWorkloadForTestingPath>
+    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>
     <SdkWithWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
 
     <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
