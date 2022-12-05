@@ -9,7 +9,7 @@
 #include <sys/mman.h>
 #endif
 
-extern "C" DLL_EXPORT void* Alloc(uintptr_t size)
+extern "C" DLL_EXPORT void* AllocWithGuard(uintptr_t size)
 {
 #ifdef _WIN32
     void* reservePtr = VirtualAlloc(nullptr, size * 2, MEM_RESERVE, PAGE_READWRITE);
