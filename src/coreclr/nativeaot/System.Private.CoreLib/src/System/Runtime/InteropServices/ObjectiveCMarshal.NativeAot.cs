@@ -13,8 +13,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static readonly IntPtr[] s_ObjcMessageSendFunctions = new IntPtr[(int)MessageSendFunction.MsgSendSuperStret + 1];
         private static bool s_initialized;
         private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
-        private static delegate* unmanaged<void*, int> s_IsTrackedReferenceCallback;
-        private static delegate* unmanaged<void*, void> s_OnEnteredFinalizerQueueCallback;
+        private static delegate* unmanaged[SuppressGCTransition]<void*, int> s_IsTrackedReferenceCallback;
+        private static delegate* unmanaged[SuppressGCTransition]<void*, void> s_OnEnteredFinalizerQueueCallback;
 
         [ThreadStatic]
         private static Exception? t_pendingExceptionObject;
@@ -71,29 +71,29 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         [RuntimeExport("ObjectiveCMarshalGetIsTrackedReferenceCallback")]
-        static delegate* unmanaged<void*, int> GetIsTrackedReferenceCallback()
+        static delegate* unmanaged[SuppressGCTransition]<void*, int> GetIsTrackedReferenceCallback()
         {
             return s_IsTrackedReferenceCallback;
         }
 
         [RuntimeExport("ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback")]
-        static delegate* unmanaged<void*, void> GetOnEnteredFinalizerQueueCallback()
+        static delegate* unmanaged[SuppressGCTransition]<void*, void> GetOnEnteredFinalizerQueueCallback()
         {
             return s_OnEnteredFinalizerQueueCallback;
         }
 
         private static bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
-            delegate* unmanaged<void*, int> isReferencedCallback,
-            delegate* unmanaged<void*, void> trackedObjectEnteredFinalization)
+            delegate* unmanaged<IntPtr, int> isReferencedCallback,
+            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
         {
             if (!RuntimeImports.RhRegisterObjectiveCMarshalBeginEndCallback((IntPtr)beginEndCallback))
             {
                 return false;
             }
 
-            s_IsTrackedReferenceCallback = isReferencedCallback;
-            s_OnEnteredFinalizerQueueCallback = trackedObjectEnteredFinalization;
+            s_IsTrackedReferenceCallback = (delegate* unmanaged[SuppressGCTransition]<void*, int>)isReferencedCallback;
+            s_OnEnteredFinalizerQueueCallback = (delegate* unmanaged[SuppressGCTransition]<void*, void>)trackedObjectEnteredFinalization;
             s_initialized = true;
 
             return true;
