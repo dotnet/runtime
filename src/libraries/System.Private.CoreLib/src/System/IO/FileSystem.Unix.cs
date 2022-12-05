@@ -52,16 +52,17 @@ namespace System.IO
             }
         }
 
-        private static StartedCopyFileState StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+        private static StartedCopyFileState StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite, bool openDst = true)
         {
             //The return value is expected to be Disposed by the caller (unless this method throws) once the copy is complete.
             //Begins 'CopyFile' by locking and creating the relevant file handles.
+            //If 'openDst' is false, it doesn't open the destination file handle, nor check anything to do with it (used in macOS implementation).
 
             StartedCopyFileState startedCopyFile = default;
             try
             {
                 startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out startedCopyFile.fileLength, out startedCopyFile.filePermissions);
-                startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, true);
+                if (openDst) startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, true);
             }
             catch
             {
@@ -111,8 +112,11 @@ namespace System.IO
         {
             //Copy the file in a way that works on all Unix Operating Systems.
             //The 'startedCopyFile' parameter should take the output from 'StartCopyFile'.
-            //'startedCopyFile' should be disposed by the caller.
-            Interop.CheckIo(Interop.Sys.CopyFile(startedCopyFile.src, startedCopyFile.dst, startedCopyFile.fileLength));
+            //'startedCopyFile' should be disposed by the caller. Assumes src and dst
+            //are non-null, caller must check this, return values from StartCopyFile
+            //are non-null (except dst when openDst is true), and from return values from
+            //OpenCopyFileDstHandle are non-null (except possibly when openNewFile is false).
+            Interop.CheckIo(Interop.Sys.CopyFile(startedCopyFile.src!, startedCopyFile.dst!, startedCopyFile.fileLength));
         }
 
         //CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs

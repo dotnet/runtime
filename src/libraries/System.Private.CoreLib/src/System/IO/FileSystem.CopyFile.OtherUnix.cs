@@ -3,15 +3,15 @@
 
 namespace System.IO
 {
-	partial class FileSystem
-	{
-		public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
-		{
-			//Start the file copy and prepare for finalization
-			using StartedCopyFileState startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite);
+    internal static partial class FileSystem
+    {
+        public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+        {
+            //Start the file copy and prepare for finalization
+            using StartedCopyFileState startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite);
 
-			//Copy the file using the standard unix implementation
-			StandardCopyFile(startCopyFile);
-		}
-	}
+            //Copy the file using the standard unix implementation
+            StandardCopyFile(startedCopyFile);
+        }
+    }
 }
