@@ -4705,16 +4705,18 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenC
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForSelect(GenTreeConditional* tree)
+void CodeGen::genCodeForSelect(GenTreeOp* tree)
 {
-    emitter* emit = GetEmitter();
+    assert(tree->OperIs(GT_SELECT));
+    GenTreeConditional* select = tree->AsConditional();
+    emitter*            emit   = GetEmitter();
 
-    GenTree*  opcond  = tree->gtCond;
-    GenTree*  op1     = tree->gtOp1;
-    GenTree*  op2     = tree->gtOp2;
+    GenTree*  opcond  = select->gtCond;
+    GenTree*  op1     = select->gtOp1;
+    GenTree*  op2     = select->gtOp2;
     var_types op1Type = genActualType(op1->TypeGet());
     var_types op2Type = genActualType(op2->TypeGet());
-    emitAttr  attr    = emitActualTypeSize(tree->TypeGet());
+    emitAttr  attr    = emitActualTypeSize(select->TypeGet());
 
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));

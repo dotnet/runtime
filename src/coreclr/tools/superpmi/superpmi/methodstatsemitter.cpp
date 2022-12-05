@@ -45,8 +45,8 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
         {
             // Obtain the method Hash
-            char md5Hash[MD5_HASH_BUFFER_SIZE];
-            if (mc->dumpMethodMD5HashToBuffer(md5Hash, MD5_HASH_BUFFER_SIZE) != MD5_HASH_BUFFER_SIZE)
+            char md5Hash[MM3_HASH_BUFFER_SIZE];
+            if (mc->dumpMethodHashToBuffer(md5Hash, MM3_HASH_BUFFER_SIZE) != MM3_HASH_BUFFER_SIZE)
                 md5Hash[0] = 0;
 
             charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%s,", md5Hash);

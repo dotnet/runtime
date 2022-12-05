@@ -15,12 +15,12 @@
 #define __BINDER__ASSEMBLY_HASH_TRAITS_HPP__
 
 #include "bindertypes.hpp"
-#include "contextentry.hpp"
+#include "assembly.hpp"
 #include "shash.h"
 
 namespace BINDER_SPACE
 {
-    class AssemblyHashTraits : public DeleteElementsOnDestructSHashTraits<NoRemoveSHashTraits<DefaultSHashTraits<ContextEntry*>>>
+    class AssemblyHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<Assembly*>>
     {
     public:
         typedef AssemblyName* key_t;
@@ -28,9 +28,9 @@ namespace BINDER_SPACE
         // GetKey, Equals and Hash can throw due to SString
         static const bool s_NoThrow = false;
 
-        static key_t GetKey(const element_t& pAssemblyEntry)
+        static key_t GetKey(const element_t& entry)
         {
-            return pAssemblyEntry->GetAssemblyName();
+            return entry->GetAssemblyName();
         }
         static BOOL Equals(key_t pAssemblyName1, key_t pAssemblyName2)
         {
@@ -40,13 +40,11 @@ namespace BINDER_SPACE
         {
             return pAssemblyName->Hash(AssemblyName::INCLUDE_DEFAULT);
         }
-        static element_t Null()
+
+        static const bool s_DestructPerEntryCleanupAction = true;
+        static void OnDestructPerEntryCleanupAction(element_t elem)
         {
-            return NULL;
-        }
-        static bool IsNull(const element_t &assemblyEntry)
-        {
-            return (assemblyEntry == NULL);
+            elem->Release();
         }
     };
 };

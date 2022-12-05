@@ -3637,7 +3637,7 @@ to the variable that 'Addend' points to.
 Parameters
 
 lpAddend
-[in/out] Pointer to the variable to to added.
+[in/out] Pointer to the variable to added.
 
 Return Values
 

@@ -11789,7 +11789,7 @@ void gc_heap::clear_gen1_cards()
 heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_heap* hp, int gen_num)
 {
     gc_oh_num oh = gen_to_oh (gen_num);
-    size_t initial_commit = SEGMENT_INITIAL_COMMIT;
+    size_t initial_commit = use_large_pages_p ? size : SEGMENT_INITIAL_COMMIT;
     int h_number =
 #ifdef MULTIPLE_HEAPS
         hp->heap_number;
@@ -11814,8 +11814,7 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
     heap_segment_mem (new_segment) = start;
     heap_segment_used (new_segment) = start;
     heap_segment_reserved (new_segment) = new_pages + size;
-    heap_segment_committed (new_segment) = (use_large_pages_p ?
-        heap_segment_reserved(new_segment) : (new_pages + initial_commit));
+    heap_segment_committed (new_segment) = new_pages + initial_commit;
 
     init_heap_segment (new_segment, hp
 #ifdef USE_REGIONS
@@ -21786,7 +21785,7 @@ void gc_heap::gc1()
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
 #ifdef USE_REGIONS
-    if (!(settings.concurrent))
+    if (!(settings.concurrent) && (settings.condemned_generation == max_generation))
     {
         last_gc_before_oom = FALSE;
     }
@@ -24170,12 +24169,17 @@ BOOL ref_p (uint8_t* r)
     return (straight_ref_p (r) || partial_object_p (r));
 }
 
-mark_queue_t::mark_queue_t() : curr_slot_index(0)
+mark_queue_t::mark_queue_t()
+#ifdef MARK_PHASE_PREFETCH
+    : curr_slot_index(0)
+#endif //MARK_PHASE_PREFETCH
 {
+#ifdef MARK_PHASE_PREFETCH
     for (size_t i = 0; i < slot_count; i++)
     {
         slot_table[i] = nullptr;
     }
+#endif //MARK_PHASE_PREFETCH
 }
 
 // place an object in the mark queue
@@ -24185,6 +24189,7 @@ mark_queue_t::mark_queue_t() : curr_slot_index(0)
 FORCEINLINE
 uint8_t *mark_queue_t::queue_mark(uint8_t *o)
 {
+#ifdef MARK_PHASE_PREFETCH
     Prefetch (o);
 
     // while the prefetch is taking effect, park our object in the queue
@@ -24197,6 +24202,9 @@ uint8_t *mark_queue_t::queue_mark(uint8_t *o)
     curr_slot_index = (slot_index + 1) % slot_count;
     if (old_o == nullptr)
         return nullptr;
+#else //MARK_PHASE_PREFETCH
+    uint8_t* old_o = o;
+#endif //MARK_PHASE_PREFETCH
 
     // this causes us to access the method table pointer of the old object
     BOOL already_marked = marked (old_o);
@@ -24248,6 +24256,7 @@ uint8_t *mark_queue_t::queue_mark(uint8_t *o, int condemned_gen)
 // returns nullptr if there is no such object
 uint8_t* mark_queue_t::get_next_marked()
 {
+#ifdef MARK_PHASE_PREFETCH
     size_t slot_index = curr_slot_index;
     size_t empty_slot_count = 0;
     while (empty_slot_count < slot_count)
@@ -24267,15 +24276,18 @@ uint8_t* mark_queue_t::get_next_marked()
         }
         empty_slot_count++;
     }
+#endif //MARK_PHASE_PREFETCH
     return nullptr;
 }
 
 void mark_queue_t::verify_empty()
 {
+#ifdef MARK_PHASE_PREFETCH
     for (size_t slot_index = 0; slot_index < slot_count; slot_index++)
     {
         assert(slot_table[slot_index] == nullptr);
     }
+#endif //MARK_PHASE_PREFETCH
 }
 
 void gc_heap::mark_object_simple1 (uint8_t* oo, uint8_t* start THREAD_NUMBER_DCL)
@@ -25972,6 +25984,7 @@ BOOL gc_heap::process_mark_overflow(int condemned_gen_number)
 
     BOOL  overflow_p = FALSE;
 recheck:
+    drain_mark_queue();
     if ((! (max_overflow_address == 0) ||
          ! (min_overflow_address == MAX_PTR)))
     {
@@ -26236,7 +26249,8 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
         if (process_mark_overflow(condemned_gen_number))
             fUnscannedPromotions = true;
 
-        drain_mark_queue();
+        // mark queue must be empty after process_mark_overflow
+        mark_queue.verify_empty();
 
         // Perform the scan and set the flag if any promotions resulted.
         if (GCScan::GcDhReScan(sc))
@@ -26867,7 +26881,9 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // handle table has been fully promoted.
     GCScan::GcDhInitialScan(GCHeap::Promote, condemned_gen_number, max_generation, &sc);
     scan_dependent_handles(condemned_gen_number, &sc, true);
-    drain_mark_queue();
+
+    // mark queue must be empty after scan_dependent_handles
+    mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 
 #ifdef MULTIPLE_HEAPS
@@ -26957,7 +26973,9 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     // Scan dependent handles again to promote any secondaries associated with primaries that were promoted
     // for finalization. As before scan_dependent_handles will also process any mark stack overflow.
     scan_dependent_handles(condemned_gen_number, &sc, false);
-    drain_mark_queue();
+
+    // mark queue must be empty after scan_dependent_handles
+    mark_queue.verify_empty();
     fire_mark_event (ETW::GC_ROOT_DH_HANDLES, current_promoted_bytes, last_promoted_bytes);
 #endif //FEATURE_PREMORTEM_FINALIZATION
 

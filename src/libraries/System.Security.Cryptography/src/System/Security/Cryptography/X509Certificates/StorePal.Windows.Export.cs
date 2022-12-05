@@ -32,8 +32,10 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             unsafe
                             {
-                                byte[] rawData = new byte[pCertContext.CertContext->cbCertEncoded];
-                                Marshal.Copy((IntPtr)(pCertContext.CertContext->pbCertEncoded), rawData, 0, rawData.Length);
+                                // We can use the DangerousCertContext because the safehandle never leaves this method
+                                // and can't be disposed of by another thread.
+                                byte[] rawData = new byte[pCertContext.DangerousCertContext->cbCertEncoded];
+                                Marshal.Copy((IntPtr)(pCertContext.DangerousCertContext->pbCertEncoded), rawData, 0, rawData.Length);
                                 GC.KeepAlive(pCertContext);
                                 return rawData;
                             }

@@ -1312,7 +1312,7 @@ STDMETHODIMP RegMeta::SetParent(                      // S_OK or error.
 
     IfFailGo(m_pStgdb->m_MiniMd.GetMemberRefRecord(RidFromToken(mr), &pMemberRef));
 
-    // If the token is nil set it to to m_tdModule.
+    // If the token is nil set it to m_tdModule.
     tk = IsNilToken(tk) ? m_tdModule : tk;
 
     // Set the parent.

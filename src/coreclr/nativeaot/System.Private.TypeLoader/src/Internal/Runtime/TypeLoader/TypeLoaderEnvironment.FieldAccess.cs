@@ -187,29 +187,19 @@ namespace Internal.Runtime.TypeLoader
                     int fieldOffset;
                     IntPtr fieldAddressCookie = IntPtr.Zero;
 
-                    if (canonFormKind == CanonicalFormKind.Universal)
+                    Debug.Assert(canonFormKind != CanonicalFormKind.Universal);
+                    if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
                     {
-                        if (!TypeLoaderEnvironment.Instance.TryGetFieldOffset(declaringTypeHandle, entryParser.GetUnsigned() /* field ordinal */, out fieldOffset))
-                        {
-                            Debug.Assert(false);
-                            return false;
-                        }
+                        fieldOffset = (int)entryParser.GetUnsigned();
                     }
                     else
                     {
-                        if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
-                        {
-                            fieldOffset = (int)entryParser.GetUnsigned();
-                        }
-                        else
-                        {
-                            fieldOffset = 0;
-                            fieldAddressCookie = externalReferences.GetAddressFromIndex(entryParser.GetUnsigned());
+                        fieldOffset = 0;
+                        fieldAddressCookie = externalReferences.GetAddressFromIndex(entryParser.GetUnsigned());
 
-                            FieldTableFlags storageClass = entryFlags & FieldTableFlags.StorageClass;
-                            if (storageClass == FieldTableFlags.GCStatic || storageClass == FieldTableFlags.ThreadStatic)
-                                fieldOffset = (int)entryParser.GetUnsigned();
-                        }
+                        FieldTableFlags storageClass = entryFlags & FieldTableFlags.StorageClass;
+                        if (storageClass == FieldTableFlags.GCStatic || storageClass == FieldTableFlags.ThreadStatic)
+                            fieldOffset = (int)entryParser.GetUnsigned();
                     }
 
                     fieldAccessMetadata.MappingTableModule = mappingTableModule.Handle;

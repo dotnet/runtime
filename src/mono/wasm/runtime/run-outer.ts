@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // WARNING: code in this file is executed before any of the emscripten code, so there is very little initialized already
-import { ENVIRONMENT_IS_WEB, emscriptenEntrypoint, runtimeHelpers, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_NODE } from "./imports";
+import { emscriptenEntrypoint, runtimeHelpers } from "./imports";
 import { setup_proxy_console } from "./logging";
 import { mono_exit } from "./run";
 import { DotnetModuleConfig, MonoConfig, MonoConfigInternal, mono_assert, RuntimeAPI } from "./types";
@@ -21,6 +21,10 @@ export interface DotnetHostBuilder {
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
+
+// these constants duplicate detection inside emscripten internals, but happen earlier
+const ENVIRONMENT_IS_WEB = typeof window == "object";
+const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 
 class HostBuilder implements DotnetHostBuilder {
     private instance?: RuntimeAPI;
@@ -269,7 +273,7 @@ class HostBuilder implements DotnetHostBuilder {
     async create(): Promise<RuntimeAPI> {
         try {
             if (!this.instance) {
-                if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_PTHREAD && (this.moduleConfig.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+                if (ENVIRONMENT_IS_WEB && (this.moduleConfig.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
                     setup_proxy_console("main", globalThis.console, globalThis.location.origin);
                 }
                 if (ENVIRONMENT_IS_NODE) {

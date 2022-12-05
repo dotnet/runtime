@@ -11,6 +11,9 @@
 // will be forwarded to this interface instance.
 extern IGCToCLR* g_theGCToCLR;
 
+// GC version that the current runtime supports
+extern VersionInfo g_runtimeSupportedVersion;
+
 struct StressLogMsg;
 
 // When we are building the GC in a standalone environment, we

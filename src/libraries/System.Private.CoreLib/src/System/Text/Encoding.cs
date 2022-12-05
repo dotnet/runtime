@@ -129,10 +129,7 @@ namespace System.Text
         protected Encoding(int codePage)
         {
             // Validate code page
-            if (codePage < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(codePage));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(codePage);
 
             // Remember code page
             _codePage = codePage;
@@ -147,10 +144,7 @@ namespace System.Text
         protected Encoding(int codePage, EncoderFallback? encoderFallback, DecoderFallback? decoderFallback)
         {
             // Validate code page
-            if (codePage < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(codePage));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(codePage);
 
             // Remember code page
             _codePage = codePage;
@@ -556,16 +550,9 @@ namespace System.Text
         public int GetByteCount(string s, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(s);
-
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (index > s.Length - count)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      SR.ArgumentOutOfRange_IndexCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, s.Length - count);
 
             unsafe
             {
@@ -584,10 +571,7 @@ namespace System.Text
         public virtual unsafe int GetByteCount(char* chars, int count)
         {
             ArgumentNullException.ThrowIfNull(chars);
-
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             char[] arrChar = new ReadOnlySpan<char>(chars, count).ToArray();
 
@@ -654,16 +638,9 @@ namespace System.Text
         public byte[] GetBytes(string s, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(s);
-
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                      SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (index > s.Length - count)
-                throw new ArgumentOutOfRangeException(nameof(index),
-                      SR.ArgumentOutOfRange_IndexCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, s.Length - count);
 
             unsafe
             {

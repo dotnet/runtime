@@ -485,15 +485,8 @@ internal sealed class OletxTransactionManager
         byte[] recoveryInformation,
         IEnlistmentNotificationInternal enlistmentNotification)
     {
-        if (recoveryInformation == null)
-        {
-            throw new ArgumentNullException(nameof(recoveryInformation));
-        }
-
-        if (enlistmentNotification == null)
-        {
-            throw new ArgumentNullException(nameof(enlistmentNotification));
-        }
+        ArgumentNullException.ThrowIfNull(recoveryInformation);
+        ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
         // Now go find the resource manager in the collection.
         OletxResourceManager oletxResourceManager = RegisterResourceManager(resourceManagerIdentifier);
