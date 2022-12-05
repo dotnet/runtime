@@ -701,7 +701,7 @@ MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespac
 int main() {
 	// Assume the runtime pack has been copied into the output directory as 'runtime'
 	// Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-	mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
+	mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net8.0");
 	mono_wasm_load_runtime("", 0);
 
 	MonoAssembly* assembly = mono_wasm_assembly_load ("Wasi.Console.Sample");

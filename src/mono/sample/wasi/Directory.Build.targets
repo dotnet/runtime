@@ -14,7 +14,7 @@
       "
       Outputs="
       bin/publish/runtime/native/dotnet.wasm;
-      bin/publish/runtime/lib/net7.0/lib/mscorlib.dll;
+      bin/publish/runtime/lib/$(NetCoreAppCurrent)/lib/mscorlib.dll;
       bin/publish/$(_SampleAssembly);
       "
 >
