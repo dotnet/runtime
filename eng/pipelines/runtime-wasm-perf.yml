@@ -28,7 +28,7 @@ extends:
           #perfForkToUse:
             #url: https://github.com/radical/performance
             #branch: fix-build
-          #downloadSpecificBuild:
-            #buildId: '1878694'
-            #pipeline: 'perf-wasm'
-            #branchName: 'refs/pull/72119/head'
+          downloadSpecificBuild:
+            buildId: '102408'
+            pipeline: 'runtime-wasm-perf'
+            branchName: 'refs/pull/79247/head'
