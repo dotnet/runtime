@@ -1571,7 +1571,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     if (frozenObj == nullptr)
                     {
                         // Boxed static is not yet set, allocate it
-                        pFieldMT->AllocateRegularStaticBox(pField, (BYTE*)pResult->fieldLookup.addr);
+                        pFieldMT->AllocateRegularStaticBox(pField, (Object**)pResult->fieldLookup.addr);
                         frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
                     }
 

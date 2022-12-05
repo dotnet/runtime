@@ -3496,7 +3496,7 @@ void MethodTable::AllocateRegularStaticBoxes()
 
             if (!pField->IsSpecialStatic() && pField->IsByValue())
             {
-                AllocateRegularStaticBox(pField, pStaticBase + pField->GetOffset());
+                AllocateRegularStaticBox(pField, (Object**)(pStaticBase + pField->GetOffset()));
             }
 
             pField++;
@@ -3516,7 +3516,6 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
     }
     _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
 
-    Object** boxedStaticHandle = reinterpret_cast<Object**>(fieldAddress);
     // Static fields are not pinned in collectible types so we need to protect the address
     GCPROTECT_BEGININTERIOR(boxedStaticHandle);
     if (VolatileLoad(boxedStaticHandle) == nullptr)
