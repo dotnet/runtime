@@ -317,6 +317,12 @@ static int FindLibWithMajorVersion(const char* versionPrefix, char* symbolName, 
     // ICU packaging documentation (http://userguide.icu-project.org/packaging)
     // describes applications link against the major (e.g. libicuuc.so.54).
 
+    // Select the version of ICU present at build time
+    if (OpenICULibraries(U_ICU_VERSION_MAJOR_NUM, -1, -1, versionPrefix, symbolName, symbolVersion))
+    {
+        return true;
+    }
+
     // Select the highest supported version of ICU present on the local machine
     for (int i = MaxICUVersion; i >= MinICUVersion; i--)
     {
