@@ -38,6 +38,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string RuntimeConfigPropertyName = "tfm";
             public const string Net6 = "net6.0";
             public const string Net7 = "net7.0";
+            public const string Net8 = "net8.0";
         }
 
         public static class FxVersion
