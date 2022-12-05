@@ -887,19 +887,21 @@ namespace System.Text.RegularExpressions.Generator
                     };
 
                     string indexOf =
-                        primarySet.Chars is not null ? primarySet.Chars!.Length switch
+                        primarySet.Chars is not null ? (primarySet.Negated, primarySet.Chars.Length) switch
                         {
-                            1 => $"{span}.IndexOf({Literal(primarySet.Chars[0])})",
-                            2 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
-                            3 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
-                            _ => $"{span}.IndexOfAny({EmitIndexOfAnyValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
+                            (false, 1) => $"{span}.IndexOf({Literal(primarySet.Chars[0])})",
+                            (false, 2) => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
+                            (false, 3) => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
+                            (false, _) => $"{span}.IndexOfAny({EmitIndexOfAnyValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
+                            (true, 1) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Chars[0])})",
+                            _ => throw new InvalidOperationException("Expected that negated sets will have at most 1 value in Chars."),
                         } :
-                        primarySet.AsciiSet is not null ? primarySet.AsciiSet.Value.Negated switch
+                        primarySet.AsciiSet is not null ? primarySet.Negated switch
                         {
-                            false => $"{span}.IndexOfAny({EmitIndexOfAnyValues(primarySet.AsciiSet.Value.Chars, requiredHelpers)})",
-                            true => $"{span}.IndexOfAnyExcept({EmitIndexOfAnyValues(primarySet.AsciiSet.Value.Chars, requiredHelpers)})",
+                            false => $"{span}.IndexOfAny({EmitIndexOfAnyValues(primarySet.AsciiSet, requiredHelpers)})",
+                            _ => throw new InvalidOperationException("Expected AsciiSets not to be negated."),
                         } :
-                        (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Range.Value.Negated) switch
+                        (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Negated) switch
                         {
                             (false, false) => $"{span}.IndexOfAnyInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",
                             (true, false) => $"{span}.IndexOf({Literal(primarySet.Range.Value.LowInclusive)})",
@@ -4440,8 +4442,22 @@ namespace System.Text.RegularExpressions.Generator
                 bool negated = RegexCharClass.IsNegated(node.Str) ^ negate;
 
                 Span<char> setChars = stackalloc char[5]; // current max that's vectorized
-                int setCharsCount;
-                if ((setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars)) > 0)
+                int setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars);
+
+                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 2-5 values that fit in a single range
+                if (setCharsCount != 1 && RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
+                {
+                    string indexOfAnyInRangeName = !negated ?
+                        "IndexOfAnyInRange" :
+                        "IndexOfAnyExceptInRange";
+
+                    indexOfExpr = $"{last}{indexOfAnyInRangeName}({Literal(lowInclusive)}, {Literal(highInclusive)})";
+
+                    literalLength = 1;
+                    return true;
+                }
+
+                if (setCharsCount > 0)
                 {
                     (string indexOfName, string indexOfAnyName) = !negated ?
                         ("IndexOf", "IndexOfAny") :
@@ -4455,18 +4471,6 @@ namespace System.Text.RegularExpressions.Generator
                         3 => $"{last}{indexOfAnyName}({Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])})",
                         _ => $"{last}{indexOfAnyName}({EmitIndexOfAnyValuesOrLiteral(setChars, requiredHelpers)})",
                     };
-
-                    literalLength = 1;
-                    return true;
-                }
-
-                if (RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
-                {
-                    string indexOfAnyInRangeName = !negated ?
-                        "IndexOfAnyInRange" :
-                        "IndexOfAnyExceptInRange";
-
-                    indexOfExpr = $"{last}{indexOfAnyInRangeName}({Literal(lowInclusive)}, {Literal(highInclusive)})";
 
                     literalLength = 1;
                     return true;

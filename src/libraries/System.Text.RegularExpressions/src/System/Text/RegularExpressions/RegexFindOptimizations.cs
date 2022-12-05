@@ -159,7 +159,8 @@ namespace System.Text.RegularExpressions
                     // the set's characteristics.
                     if (!compiled &&
                         fixedDistanceSets.Count == 1 &&
-                        fixedDistanceSets[0].Chars is { Length: 1 })
+                        fixedDistanceSets[0].Chars is { Length: 1 } &&
+                        !fixedDistanceSets[0].Negated)
                     {
                         FixedDistanceLiteral = (fixedDistanceSets[0].Chars![0], null, fixedDistanceSets[0].Distance);
                         FindMode = FindNextStartingPositionMode.FixedDistanceChar_LeftToRight;
@@ -241,14 +242,16 @@ namespace System.Text.RegularExpressions
 
             /// <summary>The character class description.</summary>
             public string Set;
+            /// <summary>Whether the <see cref="Set"/> is negated.</summary>
+            public bool Negated;
             /// <summary>Small list of all of the characters that make up the set, if known; otherwise, null.</summary>
             public char[]? Chars;
             /// <summary>The distance of the set from the beginning of the match.</summary>
             public int Distance;
             /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
-            public (char LowInclusive, char HighInclusive, bool Negated)? Range;
+            public (char LowInclusive, char HighInclusive)? Range;
             /// <summary>As an alternative to <see cref="Chars"/>, a description of the set of ASCII characters it represents, if it does.</summary>
-            public (char[] Chars, bool Negated)? AsciiSet;
+            public char[]? AsciiSet;
         }
 
         /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
@@ -273,7 +276,7 @@ namespace System.Text.RegularExpressions
                 for (int i = 0; i < fixedDistanceSets.Count + 1; i++)
                 {
                     char[]? chars = i < fixedDistanceSets.Count ? fixedDistanceSets[i].Chars : null;
-                    bool invalidChars = chars is not { Length: 1 };
+                    bool invalidChars = chars is not { Length: 1 } || fixedDistanceSets[i].Negated;
 
                     // If the current set ends a sequence (or we've walked off the end), see whether
                     // what we've gathered constitues a valid string, and if it's better than the
@@ -554,7 +557,7 @@ namespace System.Text.RegularExpressions
                         string set = primarySet.Set;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
-                        if (chars is not null)
+                        if (chars is not null && !primarySet.Negated)
                         {
                             int i = span.IndexOfAny(chars);
                             if (i >= 0)
@@ -621,7 +624,7 @@ namespace System.Text.RegularExpressions
 
                         int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
 
-                        if (primarySet.Chars is not null)
+                        if (primarySet.Chars is not null && !primarySet.Negated)
                         {
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
