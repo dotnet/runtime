@@ -82,7 +82,7 @@ namespace System.IO
                     if (overwrite)
                     {
                         //Get a lock to the dest file for compat reasons, and then delete it.
-                        using SafeFileHandle dstHandle = OpenCopyFileDstHandle(destFullPath, true, startedCopyFile, false);
+                        using SafeFileHandle? dstHandle = OpenCopyFileDstHandle(destFullPath, true, startedCopyFile, false);
                         File.Delete(destFullPath);
                         goto tryAgainWithReadLink;
                     }
