@@ -1147,11 +1147,7 @@ INTERP_GET_EXCEPTION_CHAR_ARG(argument_out_of_range)
 
 // Inlining throw logic into interp_exec_method makes it bigger and could push us up against
 //  internal limits in things like WASM compilers
-#if HOST_BROWSER
 static MONO_NEVER_INLINE void interp_throw_ex_general (
-#else
-static MONO_ALWAYS_INLINE void interp_throw_ex_general (
-#endif
 	MonoException *__ex, ThreadContext *context, InterpFrame *frame, const guint16 *ex_ip, gboolean rethrow
 ) {
 	HANDLE_FUNCTION_ENTER ();
@@ -3814,17 +3810,14 @@ main_loop:
 		MINT_IN_CASE(MINT_DEF)
 		MINT_IN_CASE(MINT_DUMMY_USE)
 		MINT_IN_CASE(MINT_TIER_PATCHPOINT_DATA)
-		MINT_IN_CASE(MINT_CALLRUN)
 		// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
 		MINT_IN_CASE(MINT_MOV_SRC_OFF)
 		// Ditto
 		MINT_IN_CASE(MINT_MOV_DST_OFF)
-#ifndef HOST_BROWSER
 		// Only used in WASM builds
 		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER)
 		MINT_IN_CASE(MINT_TIER_PREPARE_JITERPRETER)
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER)
-#endif
 			g_assert_not_reached ();
 			MINT_IN_BREAK;
 #endif
