@@ -117,7 +117,7 @@ namespace System.IO
 
         //CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs
         //The implementations on OSX-like Operating Systems attempts to clone the file first.
-        static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite);
+        static unsafe partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite);
 
 #pragma warning disable IDE0060
         public static void Encrypt(string path)
