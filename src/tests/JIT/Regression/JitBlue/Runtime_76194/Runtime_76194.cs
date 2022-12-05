@@ -60,15 +60,10 @@ public unsafe class Runtime_76194
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Main()
     {
-        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
-        {
-            return 100;
-        }
-
         nuint pageSize = (nuint)Environment.SystemPageSize;
         for (int i = 0; i < 100; i++)
         {
-            byte* ptr = CrossplatVirtualAlloc.Alloc(pageSize);
+            byte* ptr = CrossplatVirtualAlloc.AllocWithGuard(pageSize);
             if (ptr == null)
             {
                 throw new InvalidOperationException($"CrossplatVirtualAlloc.Alloc returned null at {i}th iteration");
@@ -96,7 +91,7 @@ public unsafe class Runtime_76194
 internal static unsafe class CrossplatVirtualAlloc
 {
     [DllImport(nameof(CrossplatVirtualAlloc))]
-    public static extern byte* Alloc(nuint size);
+    public static extern byte* AllocWithGuard(nuint size);
 
     [DllImport(nameof(CrossplatVirtualAlloc))]
     public static extern void Free(byte* ptr, nuint size);
