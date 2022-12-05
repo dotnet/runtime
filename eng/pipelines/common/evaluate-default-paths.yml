@@ -187,6 +187,7 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
 
     - subset: wasmdebuggertests
+      combined: true
       include:
       - eng/testing/ProvisioningVersions.props
       - src/libraries/System.Runtime.InteropServices/*
@@ -195,6 +196,9 @@ jobs:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
       - ${{ parameters._const_paths._wasm_pipelines }}
+      exclude:
+      - src/mono/nuget/*
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: any_other_than_wasm_wbt_dbg
       exclude:
