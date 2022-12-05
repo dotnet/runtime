@@ -115,7 +115,7 @@ bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t i
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that is listed as imm(N,r,s) and referred to as 'bitmask immediate'
 */
 
@@ -141,7 +141,7 @@ static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that is listed as imm(i16,hw) and referred to as 'halfword immediate'
 */
 
@@ -192,7 +192,7 @@ static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emit
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that are use for FMOV immediate and referred to as 'float 8-bit immediate'
 */
 
@@ -217,7 +217,7 @@ static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
 /************************************************************************
 *
-*  This union is used to to encode/decode the cond, nzcv and imm5 values for
+*  This union is used to encode/decode the cond, nzcv and imm5 values for
 *   instructions that use them in the small constant immediate field
 */
 

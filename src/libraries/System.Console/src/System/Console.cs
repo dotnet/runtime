@@ -87,7 +87,7 @@ namespace System
             }
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -127,7 +127,7 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -705,7 +705,8 @@ namespace System
         [UnsupportedOSPlatform("tvos")]
         public static void SetIn(TextReader newIn)
         {
-            CheckNonNull(newIn, nameof(newIn));
+            ArgumentNullException.ThrowIfNull(newIn);
+
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
             lock (s_syncObject)
             {
@@ -715,7 +716,8 @@ namespace System
 
         public static void SetOut(TextWriter newOut)
         {
-            CheckNonNull(newOut, nameof(newOut));
+            ArgumentNullException.ThrowIfNull(newOut);
+
             newOut = TextWriter.Synchronized(newOut);
             lock (s_syncObject)
             {
@@ -726,19 +728,14 @@ namespace System
 
         public static void SetError(TextWriter newError)
         {
-            CheckNonNull(newError, nameof(newError));
+            ArgumentNullException.ThrowIfNull(newError);
+
             newError = TextWriter.Synchronized(newError);
             lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;
                 Volatile.Write(ref s_error, newError);
             }
-        }
-
-        private static void CheckNonNull(object obj, string paramName)
-        {
-            if (obj == null)
-                throw new ArgumentNullException(paramName);
         }
 
         //

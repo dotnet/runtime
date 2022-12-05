@@ -15,7 +15,8 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
     copyIntoScratchBuffer, _now, elapsedTimes, append_memset_dest,
     append_memmove_dest_src, counters, getRawCwrap, importDef,
-    JiterpreterOptions, getOptions, recordFailure, try_append_memset_fast
+    JiterpreterOptions, getOptions, recordFailure, try_append_memset_fast,
+    try_append_memmove_fast
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -249,6 +250,7 @@ function getTraceImports () {
         ["ld_del_ptr", "ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")],
         ["ldtsflda", "ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")],
         ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
+        ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -486,6 +488,13 @@ function generate_wasm (
             "conv_ovf", {
                 "destination": WasmValtype.i32,
                 "source": WasmValtype.i32,
+                "opcode": WasmValtype.i32,
+            }, WasmValtype.i32
+        );
+        builder.defineType(
+            "relop_fp", {
+                "lhs": WasmValtype.f64,
+                "rhs": WasmValtype.f64,
                 "opcode": WasmValtype.i32,
             }, WasmValtype.i32
         );
@@ -1350,6 +1359,9 @@ function append_memset_local (builder: WasmBuilder, localOffset: number, value: 
 }
 
 function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: number, sourceLocalOffset: number, count: number) {
+    if (try_append_memmove_fast(builder, destLocalOffset, sourceLocalOffset, count, false))
+        return true;
+
     // spec: pop n, pop s, pop d, copy n bytes from s to d
     append_ldloca(builder, destLocalOffset);
     append_ldloca(builder, sourceLocalOffset);
@@ -1812,6 +1824,27 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_SHR_UN_I8_IMM]:  [WasmOpcode.i64_shr_u,     WasmOpcode.i64_load, WasmOpcode.i64_store],
 };
 
+// HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
+// The opcode specifies whether the operands need to be promoted first.
+const intrinsicFpBinops : { [opcode: number] : WasmOpcode } = {
+    [MintOpcode.MINT_CEQ_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CEQ_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CNE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CNE_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGT_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGT_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGE_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGT_UN_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGT_UN_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLT_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLT_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLT_UN_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLT_UN_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLE_R8]: WasmOpcode.nop,
+};
+
 const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_ADD_I4]:    [WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_ADD_OVF_I4]:[WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
@@ -1882,25 +1915,6 @@ const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_CLE_UN_I8]: [WasmOpcode.i64_le_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CGE_UN_I8]: [WasmOpcode.i64_ge_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_CEQ_R4]:    [WasmOpcode.f32_eq,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CNE_R4]:    [WasmOpcode.f32_ne,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLT_R4]:    [WasmOpcode.f32_lt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    // FIXME: What are these, semantically?
-    [MintOpcode.MINT_CLT_UN_R4]: [WasmOpcode.f32_lt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_R4]:    [WasmOpcode.f32_gt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    // FIXME
-    [MintOpcode.MINT_CGT_UN_R4]: [WasmOpcode.f32_gt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_R4]:    [WasmOpcode.f32_le,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_R4]:    [WasmOpcode.f32_ge,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-
-    [MintOpcode.MINT_CEQ_R8]:    [WasmOpcode.f64_eq,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CNE_R8]:    [WasmOpcode.f64_ne,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLT_R8]:    [WasmOpcode.f64_lt,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_R8]:    [WasmOpcode.f64_gt,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_R8]:    [WasmOpcode.f64_le,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_R8]:    [WasmOpcode.f64_ge,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-
-    // FIXME: unordered float comparisons
 };
 
 const relopbranchTable : { [opcode: number]: [comparisonOpcode: MintOpcode, immediateOpcode: WasmOpcode | false, isSafepoint: boolean] | MintOpcode | undefined } = {
@@ -1992,6 +2006,22 @@ function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode
         lhsVar = "math_lhs32", rhsVar = "math_rhs32",
         info : OpRec3 | OpRec4 | undefined,
         operandsCached = false;
+
+    const intrinsicFpBinop = intrinsicFpBinops[opcode];
+    if (intrinsicFpBinop) {
+        builder.local("pLocals");
+        const isF64 = intrinsicFpBinop == WasmOpcode.nop;
+        append_ldloc(builder, getArgU16(ip, 2), isF64 ? WasmOpcode.f64_load : WasmOpcode.f32_load);
+        if (!isF64)
+            builder.appendU8(intrinsicFpBinop);
+        append_ldloc(builder, getArgU16(ip, 3), isF64 ? WasmOpcode.f64_load : WasmOpcode.f32_load);
+        if (!isF64)
+            builder.appendU8(intrinsicFpBinop);
+        builder.i32_const(<any>opcode);
+        builder.callImport("relop_fp");
+        append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+        return true;
+    }
 
     switch (opcode) {
         case MintOpcode.MINT_REM_R4:
@@ -2909,9 +2939,11 @@ export function mono_interp_tier_prepare_jiterpreter (
     else
         info.hitCount++;
 
-    if (info.hitCount < mostRecentOptions.minimumTraceHitCount)
+    const minHitCount = mostRecentOptions.minimumTraceHitCount;
+
+    if (info.hitCount < minHitCount)
         return JITERPRETER_TRAINING;
-    else if (info.hitCount === mostRecentOptions.minimumTraceHitCount) {
+    else if (info.hitCount === minHitCount) {
         counters.traceCandidates++;
         let methodFullName: string | undefined;
         if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0)) {
@@ -2997,32 +3029,45 @@ export function jiterpreter_dump_stats (b?: boolean) {
             // Filter out noisy methods that we don't care about optimizing
             if (traces[i].name!.indexOf("Xunit.") >= 0)
                 continue;
+
             // FIXME: A single hot method can contain many failed traces. This creates a lot of noise
             //  here and also likely indicates the jiterpreter would add a lot of overhead to it
             // Filter out aborts that aren't meaningful since it is unlikely to ever make sense
             //  to fix them, either because they are rarely used or because putting them in
             //  traces would not meaningfully improve performance
-            if (traces[i].abortReason && traces[i].abortReason!.startsWith("mono_icall_"))
-                continue;
-            switch (traces[i].abortReason) {
-                case "trace-too-small":
-                case "call":
-                case "callvirt.fast":
-                case "calli.nat.fast":
-                case "calli.nat":
-                case "call.delegate":
-                case "newobj":
-                case "newobj_vt":
-                case "intrins_ordinal_ignore_case_ascii":
-                case "intrins_marvin_block":
-                case "intrins_ascii_chars_to_uppercase":
-                case "switch":
-                case "call_handler.s":
-                case "rethrow":
-                case "endfinally":
-                case "end-of-body":
+            if (traces[i].abortReason) {
+                if (traces[i].abortReason!.startsWith("mono_icall_") ||
+                    traces[i].abortReason!.startsWith("ret."))
                     continue;
+
+                switch (traces[i].abortReason) {
+                    // not feasible to fix
+                    case "trace-too-small":
+                    case "call":
+                    case "callvirt.fast":
+                    case "calli.nat.fast":
+                    case "calli.nat":
+                    case "call.delegate":
+                    case "newobj":
+                    case "newobj_vt":
+                    case "newobj_slow":
+                    case "switch":
+                    case "call_handler.s":
+                    case "rethrow":
+                    case "endfinally":
+                    case "end-of-body":
+                    case "ret":
+                        continue;
+
+                    // not worth implementing / too difficult
+                    case "intrins_ordinal_ignore_case_ascii":
+                    case "intrins_marvin_block":
+                    case "intrins_ascii_chars_to_uppercase":
+                    case "newarr":
+                        continue;
+                }
             }
+
             c++;
             console.log(`${traces[i].name} @${traces[i].ip} (${traces[i].hitCount} hits) ${traces[i].abortReason}`);
         }

@@ -4,8 +4,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Net.CookieVariant</Target>
-    <Left>ref/net7.0/System.Net.Primitives.dll</Left>
-    <Right>runtimes/browser/lib/net7.0/System.Net.Primitives.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
@@ -16,6 +14,7 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Net.PathList</Target>
+<<<<<<< HEAD
     <Left>ref/net7.0/System.Net.Primitives.dll</Left>
     <Right>runtimes/browser/lib/net7.0/System.Net.Primitives.dll</Right>
   </Suppression>
@@ -48,5 +47,7 @@
     <Target>T:System.Net.PathList</Target>
     <Left>ref/net7.0/System.Net.Primitives.dll</Left>
     <Right>runtimes/win/lib/net7.0/System.Net.Primitives.dll</Right>
+=======
+>>>>>>> main
   </Suppression>
 </Suppressions>
