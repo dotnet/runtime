@@ -827,8 +827,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.EnumInfo`1</Target>
-    <Left>ref/net7.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net7.0/System.Private.CoreLib.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
