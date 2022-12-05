@@ -27,6 +27,10 @@ parameters:
     # where evaluate-paths is not used
     _always_exclude: [
         eng/pipelines/common/evaluate-default-paths.yml
+        '*.md'
+        LICENSE.TXT
+        PATENTS.TXT
+        THIRD-PARTY-NOTICES.TXT
         src/workloads/*
     ]
 
@@ -42,10 +46,6 @@ jobs:
       - src/native/libs/System.IO.Compression.Native/*
       exclude:
       - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
       - docs/*
       - src/installer/*
       - src/mono/*
@@ -71,10 +71,6 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
 
       - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
       - docs/*
       - src/installer/*
       - src/coreclr/*
@@ -89,10 +85,6 @@ jobs:
     - subset: libraries
       exclude:
       - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
       - docs/*
       - src/installer/*
       - src/mono/*
@@ -125,10 +117,6 @@ jobs:
       - docs/manpages/*
       exclude:
       - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
       - docs/*
       - src/coreclr/*
       - src/mono/*
