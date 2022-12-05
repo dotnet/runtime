@@ -5672,7 +5672,7 @@ void emitter::emitIns_R_R_I(
         // For volatile load/store, there will be memory barrier instruction before/after the load/store
         // and in such case, IsRedundantLdStr() returns false, because the method just checks for load/store
         // pair next to each other.
-        if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+        if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
         {
             return;
         }
@@ -7671,7 +7671,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     }
 
     // Is the ldr/str even necessary?
-    if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
     {
         return;
     }
@@ -7911,7 +7911,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     }
 
     // Is the ldr/str even necessary?
-    if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
     {
         return;
     }
@@ -16090,7 +16090,17 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    if (((ins != INS_ldr) && (ins != INS_str)) || !emitCanPeepholeLastIns())
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    if ((ins != INS_ldr) && (ins != INS_str))
     {
         return false;
     }
@@ -16168,10 +16178,16 @@ bool emitter::IsRedundantLdStr(
 //
 // Return Value:
 //    "true" if the previous instruction HAS been overwritten.
+//
 bool emitter::TryReplaceLdrStrWithPairInstr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
     if (!emitComp->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    if (!emitCanPeepholeLastIns())
     {
         return false;
     }
@@ -16248,14 +16264,13 @@ bool emitter::TryReplaceLdrStrWithPairInstr(
 //    eRO_none       - No optimization of consecutive instructions is possible
 //    eRO_ascending  - Registers can be loaded/ stored into ascending store locations
 //    eRO_descending - Registers can be loaded/ stored into decending store locations.
-
+//
 emitter::RegisterOrder emitter::IsOptimizableLdrStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    bool          isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-    RegisterOrder optimisationOrder   = eRO_none;
+    RegisterOrder optimisationOrder = eRO_none;
 
-    if (((ins != INS_ldr) && (ins != INS_str)) || !emitCanPeepholeLastIns())
+    if ((ins != INS_ldr) && (ins != INS_str))
     {
         return eRO_none;
     }
