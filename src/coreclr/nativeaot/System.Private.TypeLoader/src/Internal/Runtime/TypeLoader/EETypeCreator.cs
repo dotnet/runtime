@@ -384,22 +384,10 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->DynamicModule = dynamicModulePtr;
 
                     // Copy VTable entries from template type
-                    // FEATURE_UNIVERSAL_GENERICS can be simplified to just copy memory
-                    int numSlotsFilled = 0;
                     IntPtr* pVtable = (IntPtr*)((byte*)pEEType + sizeof(MethodTable));
                     IntPtr* pTemplateVtable = (IntPtr*)((byte*)pTemplateEEType + sizeof(MethodTable));
-                    for (int i = 0; i < pTemplateEEType->NumVtableSlots; i++)
-                    {
-                        int vtableSlotInDynamicType = i;
-                        if (vtableSlotInDynamicType != -1)
-                        {
-                            Debug.Assert(vtableSlotInDynamicType < numVtableSlots);
-                            pVtable[vtableSlotInDynamicType] = pTemplateVtable[i];
-                            numSlotsFilled++;
-                        }
-                    }
-
-                    Debug.Assert(numSlotsFilled == numVtableSlots);
+                    for (int i = 0; i < numVtableSlots; i++)
+                        pVtable[i] = pTemplateVtable[i];
 
                     // Copy Pointer to finalizer method from the template type
                     if (hasFinalizer)
