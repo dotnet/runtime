@@ -41,7 +41,6 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
-#include <mono/metadata/marshal-ilgen.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
@@ -52,6 +51,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/marshal-lightweight.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -3097,17 +3097,9 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 	if (!mono_llvm_only && (mono_aot_only || mini_debug_options.dyn_runtime_invoke)) {
 		gboolean supported = TRUE;
-		int i;
 
 		if (method->string_ctor)
 			sig = mono_marshal_get_string_ctor_signature (method);
-
-		for (i = 0; i < sig->param_count; ++i) {
-			MonoType *t = sig->params [i];
-
-			if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
-				supported = FALSE;
-		}
 
 		if (!info->compiled_method)
 			supported = FALSE;
@@ -3217,8 +3209,6 @@ exit:
 	return ret;
 }
 
-static GENERATE_GET_CLASS_WITH_CACHE (nullbyrefreturn_ex, "Mono", "NullByRefReturnException");
-
 static MonoObject*
 mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
@@ -3271,20 +3261,6 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
 
-		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-			MonoClass *klass = mono_class_from_mono_type_internal (t);
-			guint8 *nullable_buf;
-			int size;
-
-			size = mono_class_value_size (klass, NULL);
-			nullable_buf = g_alloca (size);
-			g_assert (nullable_buf);
-
-			/* The argument pointed to by params [i] is either a boxed vtype or null */
-			mono_nullable_init (nullable_buf, (MonoObject*)params [i], klass);
-			params [i] = nullable_buf;
-		}
-
 		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
@@ -3302,10 +3278,9 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 
 	if (m_type_is_byref (sig->ret)) {
 		if (*(gpointer*)retval == NULL) {
-			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
-			MonoObject *ex = mono_object_new_checked (klass, error);
+			MonoException *ex = mono_get_exception_null_reference ();
 			mono_error_assert_ok (error);
-			mono_error_set_exception_instance (error, (MonoException*)ex);
+			mono_error_set_exception_instance (error, ex);
 			return NULL;
 		}
 	}
@@ -3532,10 +3507,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		if (m_type_is_byref (sig->ret)) {
 			if (*(gpointer*)retval == NULL) {
-				MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
-				MonoObject *ex = mono_object_new_checked (klass, error);
+				MonoException *ex = mono_get_exception_null_reference ();
 				mono_error_assert_ok (error);
-				mono_error_set_exception_instance (error, (MonoException*)ex);
+				mono_error_set_exception_instance (error, ex);
 				return NULL;
 			}
 		}
@@ -4468,22 +4442,6 @@ mini_init (const char *filename)
 
 	mono_component_event_pipe_100ns_ticks_start ();
 
-
-#ifdef ENABLE_ILGEN
-	mono_marshal_lightweight_init ();
-  	mono_marshal_ilgen_init_internal ();
-#else
-	if (mono_marshal_is_ilgen_requested ())
-  	{
-		mono_marshal_lightweight_init ();
-  		mono_marshal_ilgen_init_internal ();
- 	}
-	else{
-		mono_marshal_noilgen_init_lightweight();
-		mono_marshal_noilgen_init_heavyweight ();
-	}
-#endif
-
 	MONO_VES_INIT_BEGIN ();
 
 	CHECKED_MONO_INIT ();
@@ -4505,6 +4463,10 @@ mini_init (const char *filename)
 	if (mono_use_interpreter)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
+
+	mono_marshal_lightweight_init ();
+  	mono_component_marshal_ilgen()->ilgen_init_internal ();
+	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 

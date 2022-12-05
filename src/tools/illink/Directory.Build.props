@@ -1,0 +1,38 @@
+<Project>
+  <PropertyGroup>
+    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and '$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))' == 'ref'">true</IsReferenceAssembly>
+    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
+    <!-- The TFM for the product (linker, task,.. not analyzer, which is netstandard) -->
+    <NetCoreAppToolCurrent>net7.0</NetCoreAppToolCurrent>
+    <!-- The TFM for all the tests - intentionally different since tests may depend on new framework APIs in order to validate
+         linker interaction with them, linker itself doesn't need the new framework typically. -->
+    <NetCoreAppTestsCurrent>net7.0</NetCoreAppTestsCurrent>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(IsReferenceAssembly)' == 'true' ">
+    <!-- Since .NET 5 reference assemblies are always produced -->
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <ProduceOnlyReferenceAssembly>true</ProduceOnlyReferenceAssembly>
+    <!-- Used by Arcade to compute OutputPath, IntermediateOutputPath, etc. early in the import chain. -->
+    <OutDirName>$(MSBuildProjectName)/ref</OutDirName>
+    <!-- Don't try to publish PDBs for ref assemblies that have none. -->
+    <PublishWindowsPdb>false</PublishWindowsPdb>
+    <RunApiCompat>false</RunApiCompat>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  <Import Project="eng/Analyzers.props" />
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/dotnet/linker</RepositoryUrl>
+    <!-- No symbols are produced for ref assemblies, but some parts of the SDK still expect pdbs, so we explicitly tell it there are none. -->
+    <!-- Must be set after importing Arcade to override its defaults. -->
+    <DebugType Condition=" '$(IsReferenceAssembly)' == 'true' ">none</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>preview</LangVersion>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <UseVSTestRunner>true</UseVSTestRunner>
+  </PropertyGroup>
+</Project>

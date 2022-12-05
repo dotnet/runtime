@@ -320,7 +320,7 @@ namespace System.Diagnostics
                         }
 
                         logKey = eventKey.CreateSubKey(logName);
-                        SetSpecialLogRegValues(logKey, logName);
+                        SetSpecialLogRegValues(logKey);
                         // A source with the same name as the log has to be created
                         // by default. It is the behavior expected by EventLog API.
                         sourceLogKey = logKey.CreateSubKey(logName);
@@ -331,7 +331,7 @@ namespace System.Diagnostics
                     {
                         if (!createLogKey)
                         {
-                            SetSpecialLogRegValues(logKey, logName);
+                            SetSpecialLogRegValues(logKey);
                         }
 
                         sourceKey = logKey.CreateSubKey(source);
@@ -768,7 +768,7 @@ namespace System.Diagnostics
             _underlyingEventLog.RegisterDisplayName(resourceFile, resourceId);
         }
 
-        private static void SetSpecialLogRegValues(RegistryKey logKey, string logName)
+        private static void SetSpecialLogRegValues(RegistryKey logKey)
         {
             // Set all the default values for this log.  AutoBackupLogfiles only makes sense in
             // Win2000 SP4, WinXP SP1, and Win2003, but it should alright elsewhere.

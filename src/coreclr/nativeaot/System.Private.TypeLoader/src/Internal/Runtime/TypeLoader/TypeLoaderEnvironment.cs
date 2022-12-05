@@ -101,20 +101,6 @@ namespace Internal.Runtime.TypeLoader
         {
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, isMdArray, rank, out arrayTypeHandle);
         }
-
-        public override IntPtr UpdateFloatingDictionary(IntPtr context, IntPtr dictionaryPtr)
-        {
-            return TypeLoaderEnvironment.Instance.UpdateFloatingDictionary(context, dictionaryPtr);
-        }
-
-        /// <summary>
-        /// Register a new runtime-allocated code thunk in the diagnostic stream.
-        /// </summary>
-        /// <param name="thunkAddress">Address of thunk to register</param>
-        public override void RegisterThunk(IntPtr thunkAddress)
-        {
-            SerializedDebugData.RegisterTailCallThunk(thunkAddress);
-        }
     }
 
     public static class RuntimeSignatureExtensions
@@ -517,81 +503,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public bool TryGetFieldOffset(RuntimeTypeHandle declaringTypeHandle, uint fieldOrdinal, out int fieldOffset)
-        {
-            fieldOffset = int.MinValue;
-
-            // No use going further for non-generic types... TypeLoader doesn't have offset answers for non-generic types!
-            if (!declaringTypeHandle.IsGenericType())
-                return false;
-
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return TypeBuilder.TryGetFieldOffset(declaringTypeHandle, fieldOrdinal, out fieldOffset);
-            }
-        }
-
-        public unsafe IntPtr UpdateFloatingDictionary(IntPtr context, IntPtr dictionaryPtr)
-        {
-            IntPtr newFloatingDictionary;
-            bool isNewlyAllocatedDictionary;
-            bool isTypeContext = context != dictionaryPtr;
-
-            if (isTypeContext)
-            {
-                // Look for the exact base type that owns the dictionary. We may be having
-                // a virtual method run on a derived type and the generic lookup are performed
-                // on the base type's dictionary.
-                MethodTable* pEEType = (MethodTable*)context.ToPointer();
-                context = (IntPtr)EETypeCreator.GetBaseEETypeForDictionaryPtr(pEEType, dictionaryPtr);
-            }
-
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                // Check if some other thread already allocated a floating dictionary and updated the fixed portion
-                if (*(IntPtr*)dictionaryPtr != IntPtr.Zero)
-                    return *(IntPtr*)dictionaryPtr;
-
-                try
-                {
-                    if (t_isReentrant)
-                        Environment.FailFast("Reentrant update to floating dictionary");
-                    t_isReentrant = true;
-
-                    newFloatingDictionary = TypeBuilder.TryBuildFloatingDictionary(context, isTypeContext, dictionaryPtr, out isNewlyAllocatedDictionary);
-
-                    t_isReentrant = false;
-                }
-                catch
-                {
-                    // Catch and rethrow any exceptions instead of using finally block. Otherwise, filters that are run during
-                    // the first pass of exception unwind may hit the re-entrancy fail fast above.
-
-                    // TODO: Convert this to filter for better diagnostics once we switch to Roslyn
-
-                    t_isReentrant = false;
-                    throw;
-                }
-            }
-
-            if (newFloatingDictionary == IntPtr.Zero)
-            {
-                Environment.FailFast("Unable to update floating dictionary");
-                return IntPtr.Zero;
-            }
-
-            // The pointer to the floating dictionary is the first slot of the fixed dictionary.
-            if (Interlocked.CompareExchange(ref *(IntPtr*)dictionaryPtr, newFloatingDictionary, IntPtr.Zero) != IntPtr.Zero)
-            {
-                // Some other thread beat us and updated the pointer to the floating dictionary.
-                // Free the one allocated by the current thread
-                if (isNewlyAllocatedDictionary)
-                    MemoryHelpers.FreeMemory(newFloatingDictionary);
-            }
-
-            return *(IntPtr*)dictionaryPtr;
-        }
-
         public bool CanInstantiationsShareCode(RuntimeTypeHandle[] genericArgHandles1, RuntimeTypeHandle[] genericArgHandles2, CanonicalFormKind kind)
         {
             if (genericArgHandles1.Length != genericArgHandles2.Length)
@@ -680,60 +591,6 @@ namespace Internal.Runtime.TypeLoader
         {
             targetMethod = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(maybeInstantiatingAndUnboxingStub);
             return (targetMethod != IntPtr.Zero);
-        }
-
-        public bool TryComputeHasInstantiationDeterminedSize(RuntimeTypeHandle typeHandle, out bool hasInstantiationDeterminedSize)
-        {
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-            bool success = TryComputeHasInstantiationDeterminedSize(typeHandle, context, out hasInstantiationDeterminedSize);
-            TypeSystemContextFactory.Recycle(context);
-
-            return success;
-        }
-
-        public bool TryComputeHasInstantiationDeterminedSize(RuntimeTypeHandle typeHandle, TypeSystemContext context, out bool hasInstantiationDeterminedSize)
-        {
-            Debug.Assert(RuntimeAugments.IsGenericType(typeHandle) || RuntimeAugments.IsGenericTypeDefinition(typeHandle));
-            DefType type = (DefType)context.ResolveRuntimeTypeHandle(typeHandle);
-
-            return TryComputeHasInstantiationDeterminedSize(type, out hasInstantiationDeterminedSize);
-        }
-
-        internal static bool TryComputeHasInstantiationDeterminedSize(DefType type, out bool hasInstantiationDeterminedSize)
-        {
-            Debug.Assert(type.HasInstantiation);
-
-            NativeLayoutInfoLoadContext loadContextUniversal;
-            NativeLayoutInfo universalLayoutInfo;
-            NativeParser parser = type.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out loadContextUniversal, out universalLayoutInfo);
-            if (parser.IsNull)
-            {
-                hasInstantiationDeterminedSize = false;
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                MetadataType typeDefinition = type.GetTypeDefinition() as MetadataType;
-                if (typeDefinition != null)
-                {
-                    TypeDesc [] universalCanonInstantiation = new TypeDesc[type.Instantiation.Length];
-                    TypeSystemContext context = type.Context;
-                    TypeDesc universalCanonType = context.UniversalCanonType;
-                    for (int i = 0 ; i < universalCanonInstantiation.Length; i++)
-                         universalCanonInstantiation[i] = universalCanonType;
-
-                    DefType universalCanonForm = typeDefinition.MakeInstantiatedType(universalCanonInstantiation);
-                    hasInstantiationDeterminedSize = universalCanonForm.InstanceFieldSize.IsIndeterminate;
-                    return true;
-                }
-#endif
-                return false;
-            }
-
-            int? flags = (int?)parser.GetUnsignedForBagElementKind(BagElementKind.TypeFlags);
-
-            hasInstantiationDeterminedSize = flags.HasValue ?
-                (((NativeFormat.TypeFlags)flags) & NativeFormat.TypeFlags.HasInstantiationDeterminedSize) != 0 :
-                false;
-
-            return true;
         }
 
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING

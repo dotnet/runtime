@@ -20,6 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private IList<string> urlSymbolServerList;
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
+        private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
         public static HttpClient HttpClient => new HttpClient();
@@ -258,7 +259,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (id == SessionId.Null)
                 await AttachToTarget(id, token);
 
-            if (!contexts.TryGetValue(id, out ExecutionContext context))
+            if (!contexts.TryGetValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
             {
                 if  (method == "Debugger.setPauseOnExceptions")
                 {
@@ -267,7 +268,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (pauseOnException != PauseOnExceptionsKind.Unset)
                         _defaultPauseOnExceptions = pauseOnException;
                 }
-                // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
                 return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
 
@@ -844,7 +844,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var assemblyName = await context.SdbAgent.GetAssemblyNameFromModule(moduleId, token);
             DebugStore store = await LoadStore(sessionId, true, token);
             AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
-            var methods = DebugStore.EnC(asm, meta_buf, pdb_buf);
+            var methods = DebugStore.EnC(context.SdbAgent, asm, meta_buf, pdb_buf);
             foreach (var method in methods)
             {
                 await ResetBreakpoint(sessionId, store, method, token);
@@ -1272,7 +1272,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var pdb_data = string.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
 
                 var context = GetContext(sessionId);
-                foreach (var source in store.Add(sessionId, assembly_name, assembly_data, pdb_data, token))
+                foreach (var source in store.Add(sessionId, assembly_data, pdb_data, token))
                 {
                     await OnSourceFileAdded(sessionId, source, context, token);
                 }
@@ -1406,7 +1406,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 VarInfo[] varIds = scope.Method.Info.GetLiveVarsAt(scope.Location.IlLocation.Offset);
 
-                var values = await context.SdbAgent.StackFrameGetValues(scope.Method, context.ThreadId, scopeId, varIds, token);
+                var values = await context.SdbAgent.StackFrameGetValues(scope.Method, context.ThreadId, scopeId, varIds, scope.Location.IlLocation.Offset, token);
                 if (values != null)
                 {
                     if (values == null || values.Count == 0)

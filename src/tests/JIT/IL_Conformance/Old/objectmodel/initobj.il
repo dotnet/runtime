@@ -22,7 +22,7 @@
 
 .class public	_initoj {
 
-	.method public static int32 main(class System.String[]) {
+	.method public static int32 main() {
 	.entrypoint
 	.locals	(value class valClass, int32)
 	.maxstack	10

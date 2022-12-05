@@ -9,36 +9,38 @@ schedules:
   always: true
 
 extends:
-  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobs:
+    stages:
+    - stage: Build
+      jobs:
 
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
-        buildConfig: checked
-        platforms:
-        - windows_x64
-        - windows_x86
-        jobParameters:
-          uploadAs: 'pipelineArtifacts'
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - windows_x86
+          jobParameters:
+            uploadAs: 'pipelineArtifacts'
 
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
-        buildConfig: release
-        platforms:
-        - windows_x64
-        - windows_x86
-        jobParameters:
-          uploadAs: 'pipelineArtifacts'
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          - windows_x86
+          jobParameters:
+            uploadAs: 'pipelineArtifacts'
 
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/coreclr/templates/superpmi-asmdiffs-checked-release-job.yml
-        buildConfig: checked
-        platforms:
-        - windows_x64
-        - windows_x86
-        helixQueueGroup: ci
-        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-asmdiffs-checked-release-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - windows_x86
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

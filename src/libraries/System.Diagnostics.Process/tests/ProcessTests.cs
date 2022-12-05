@@ -2546,7 +2546,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndNotElevated))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
         public void NonElevatedUser_QueryProcessNameOfSystemProcess()
         {
             const string Services = "services";

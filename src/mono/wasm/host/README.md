@@ -4,7 +4,7 @@ WasmAppHost is used when `dotnet run` executes for projects targeting wasm.
 
 ## Command line arguments
 
-- **--debug** | **-d**: Whether to start debug server.
+- **--debug** | **-d**: Whether to start debug server. [More on debugging](../debugger/debugger.md).
 - **--host** | **-h**: A host configuration name.
 - **--runtime-config** | **-r**: A path for the runtimeconfig.json to use.
 

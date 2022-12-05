@@ -1,6 +1,6 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)testing\tests.mobile.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" />
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)', 'AppBundle'))</BundleDir>
@@ -10,7 +10,7 @@
   <Target Name="CreateTestWasmAppBundle"
           AfterTargets="Publish"
           DependsOnTargets="BundleTestWasmApp"
-          Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'browser'" />
+          Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'Browser'" />
 
   <PropertyGroup Condition="'$(PublishAot)' == 'true'">
     <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>

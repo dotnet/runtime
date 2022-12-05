@@ -16,6 +16,8 @@ namespace System.Runtime.Intrinsics.X86
 
         public static bool IsSupported { [Intrinsic] get => false; }
 
+#pragma warning disable IDE0060
+
         public abstract class X64
         {
             internal X64() { }
@@ -91,8 +93,7 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static void Pause() { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// unsigned _udiv64(unsigned __int64 dividend, unsigned divisor, unsigned* remainder)
+
         ///   DIV reg/m32
         /// </summary>
         public static (uint Quotient, uint Remainder) DivRem(uint lower, uint upper, uint divisor) { throw new PlatformNotSupportedException(); }
@@ -112,5 +113,8 @@ namespace System.Runtime.Intrinsics.X86
         ///   IDIV reg/m
         /// </summary>
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw new PlatformNotSupportedException(); }
+        
+#pragma warning restore IDE0060
+
     }
 }

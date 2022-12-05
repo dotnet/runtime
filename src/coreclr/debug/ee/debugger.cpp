@@ -16383,7 +16383,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
 #endif
 
 #ifdef USE_INTEROPSAFE_CANARY
-// Small header to to prefix interop-heap blocks.
+// Small header to prefix interop-heap blocks.
 // This lets us enforce that we don't delete interopheap data from a non-interop heap.
 struct InteropHeapCanary
 {

@@ -17,7 +17,7 @@ namespace GitHub_20269
     class Program
     {
         static int i;
-        static int Main(string[] args)
+        static int Main()
         {
             i = 1;
             return (int)new Program().GetVector()[0] + 99;
