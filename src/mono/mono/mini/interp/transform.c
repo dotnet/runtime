@@ -4385,6 +4385,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	int num_args = signature->hasthis + signature->param_count;
 	int arglist_local = -1;
 	int call_handler_count = 0;
+	int start_new_bblock = 0;
 	gboolean ret = TRUE;
 	gboolean emitted_funccall_seq_point = FALSE;
 	guint32 *arg_locals = NULL;
@@ -4572,6 +4573,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 		InterpBasicBlock *new_bb = td->offset_to_bb [in_offset];
 		if (new_bb != NULL && td->cbb != new_bb) {
+			start_new_bblock = 0;
 			/* We are starting a new basic block. Change cbb and link them together */
 			if (link_bblocks) {
 				/*
@@ -4625,6 +4627,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			continue;
 		}
 
+		start_new_bblock = 1;
 		if (td->verbose_level > 1) {
 			g_print ("IL_%04lx %-10s, sp %ld, %s %-12s\n",
 				td->ip - td->il_code,
@@ -7701,6 +7704,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	}
 
 	g_assert (td->ip == end);
+	if (start_new_bblock != 1) {
+		mono_error_set_generic_error (error, "System", "InvalidProgramException", "Invalid IL code");
+		goto exit;
+	}
 
 	if (inlining) {
 		// When inlining, all return points branch to this bblock. Code generation inside the caller
