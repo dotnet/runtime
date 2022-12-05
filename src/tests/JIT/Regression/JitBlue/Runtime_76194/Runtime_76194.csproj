@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'OSX'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
