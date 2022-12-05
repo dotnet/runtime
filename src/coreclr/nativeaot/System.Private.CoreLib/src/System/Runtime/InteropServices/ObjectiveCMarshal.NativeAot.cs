@@ -13,8 +13,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static readonly IntPtr[] s_ObjcMessageSendFunctions = new IntPtr[(int)MessageSendFunction.MsgSendSuperStret + 1];
         private static bool s_initialized;
         private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
-        private static delegate* unmanaged<IntPtr, int> s_IsTrackedReferenceCallback;
-        private static delegate* unmanaged<IntPtr, void> s_OnEnteredFinalizerQueueCallback;
+        private static delegate* unmanaged<void*, int> s_IsTrackedReferenceCallback;
+        private static delegate* unmanaged<void*, void> s_OnEnteredFinalizerQueueCallback;
 
         [ThreadStatic]
         private static Exception? t_pendingExceptionObject;
@@ -71,21 +71,21 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         [RuntimeExport("ObjectiveCMarshalGetIsTrackedReferenceCallback")]
-        static delegate* unmanaged<IntPtr, int> GetIsTrackedReferenceCallback()
+        static delegate* unmanaged<void*, int> GetIsTrackedReferenceCallback()
         {
             return s_IsTrackedReferenceCallback;
         }
 
         [RuntimeExport("ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback")]
-        static delegate* unmanaged<IntPtr, void> GetOnEnteredFinalizerQueueCallback()
+        static delegate* unmanaged<void*, void> GetOnEnteredFinalizerQueueCallback()
         {
             return s_OnEnteredFinalizerQueueCallback;
         }
 
         private static bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
-            delegate* unmanaged<IntPtr, int> isReferencedCallback,
-            delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
+            delegate* unmanaged<void*, int> isReferencedCallback,
+            delegate* unmanaged<void*, void> trackedObjectEnteredFinalization)
         {
             if (!RuntimeImports.RhRegisterObjectiveCMarshalBeginEndCallback((IntPtr)beginEndCallback))
             {
