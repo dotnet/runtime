@@ -7,11 +7,11 @@ parameters:
   buildId: ''
   branchName: ''
   pipeline: ''
-  project: 'dnceng-public' # 'internal' or 'public'
+  project: 'public' # 'internal' or 'public'
 
 steps:
-  # Download artifact
-  - task: DownloadBuildArtifacts@0
+  # Download  artifact
+  - task: DownloadBuildArtifacts@1
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
