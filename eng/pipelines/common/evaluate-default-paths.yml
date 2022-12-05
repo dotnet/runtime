@@ -211,51 +211,23 @@ jobs:
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
-    - subset: any_other_than_wasm_wbt_dbg
-      exclude:
-      - src/mono/wasm/Wasm.Build.Tests/*
-      - src/mono/wasm/debugger/*
-      - ${{ parameters._const_paths._wasm_pipelines }}
-      - ${{ parameters._const_paths._always_exclude }}
-
-    - subset: wasm_wbt_or_dbg
-      include:
-      - src/mono/wasm/Wasm.Build.Tests/*
-      - src/mono/wasm/debugger/*
-
-    - subset: wasm
+    # Wasm except Wasm.build.Tests, and debugger
+    - subset: wasm_specific_except_wbt_dbg
+      combined: true
       include:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       # other paths that should also trigger wasm jobs
       - src/mono/*
-
-    # libraries with some wasm specific code
-    - subset: wasm_libraries
-      include:
-      - src/libraries/Common/*
-      - src/libraries/System.Console/*
-      - src/libraries/System.Diagnostics.FileVersionInfo/tests/*
-      - src/libraries/System.IO.Compression/*
-      - src/libraries/System.IO.MemoryMappedFiles/*
-      - src/libraries/System.Net.Http/*
-      - src/libraries/System.Net.Mail/*
-      - src/libraries/System.Net.Primitives/*
-      - src/libraries/System.Net.WebClient/*
-      - src/libraries/System.Net.WebProxy/*
-      - src/libraries/System.Net.WebSockets.Client/*
-      - src/libraries/System.Net.WebSockets/*
-      - src/libraries/System.Runtime.InteropServices.JavaScript/*
-      - src/libraries/System.Runtime.InteropServices/*
-      - src/libraries/System.Runtime.Serialization.Formatters/*
-      - src/libraries/System.Security.Cryptography/*
-      - src/libraries/System.Text.Encodings.Web/*
-
-    # anything other than wasm-specific paths
-    - subset: non_wasm
       exclude:
-      - ${{ parameters._const_paths._wasm_specific_only }}
-      - ${{ parameters._const_paths._wasm_pipelines }}
+      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/workloads-testing.targets
+      - src/mono/mono/component/mini-wasm-debugger.c
+      - src/mono/wasm/debugger/*
+      - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/nuget/Microsoft.NET.Runtime*
+      - src/mono/nuget/Microsoft.NET.Workload*
+      - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}
 
     # anything other than mono, or wasm specific paths
@@ -265,7 +237,6 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
-
       - eng/testing/tests.mobile.targets
       - src/mono/*
       - src/tasks/AndroidAppBuilder/*
