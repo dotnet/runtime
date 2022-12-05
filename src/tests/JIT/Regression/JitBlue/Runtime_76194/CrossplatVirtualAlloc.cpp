@@ -24,9 +24,9 @@ extern "C" DLL_EXPORT void* Alloc(uintptr_t size)
     }
 #else
     uint8_t* ptr = (uint8_t*)mmap(nullptr, size * 2, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (ptr != (void*)-1)
+    if (ptr != MAP_FAILED)
     {
-        if (mprotect(ptr + size, size, 0) == 0)
+        if (mprotect(ptr + size, size, PROT_NONE) == 0)
         {
             return ptr;
         }
