@@ -152,27 +152,28 @@ jobs:
 
     #
     # ** WASM **
-    # Changes in *only* Wasm.Build.Tests, or debugger, are very self-contained,
-    # so we try to avoid triggering only those relevants tests
+    # Changes in *only* Wasm.Build.Tests, debugger, or runtime-tests are very
+    # self-contained, so we try to trigger only those relevants tests
     #
     - subset: wasmbuildtests
+      combined: true
       include:
       - eng/Version.Details.xml
       - eng/Versions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
+      - src/installer/pkg/sfx/Microsoft.NETCore.App/*
       - src/libraries/sendtohelix*
       - src/libraries/System.Net.WebSockets.Client/*
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
+      - src/mono/monoaotcross.proj
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
-      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
-      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/*
-      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - src/mono/wasm/build/*
       - src/mono/wasm/emscripten-version.txt
@@ -182,6 +183,8 @@ jobs:
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/tasks/*
       - ${{ parameters._const_paths._wasm_pipelines }}
+      exclude:
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: wasmdebuggertests
       include:
