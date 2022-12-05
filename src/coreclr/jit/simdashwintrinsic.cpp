@@ -213,7 +213,13 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     if (retType == TYP_STRUCT)
     {
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);
-        retType         = getSIMDTypeForSize(simdSize);
+        if ((simdBaseJitType == CORINFO_TYPE_UNDEF) || !varTypeIsArithmetic(JitType2PreciseVarType(simdBaseJitType)) ||
+            (simdSize == 0))
+        {
+            // Unsupported type
+            return nullptr;
+        }
+        retType = getSIMDTypeForSize(simdSize);
     }
     else if (numArgs != 0)
     {
@@ -452,7 +458,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT128_CreateBroadcast:
         case NI_VectorT256_CreateBroadcast:
         {
-            if (varTypeIsLong(simdBaseType))
+            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
                 // instruction, which takes a 64-bit memory address and
@@ -592,7 +598,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
 
-            if (!indexOp->OperIsConst())
+            if (!indexOp->IsIntegralConst())
             {
                 // TODO-XARCH-CQ: We should always import these like we do with GetElement
                 // Index is not a constant, use the software fallback
@@ -671,7 +677,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             assert(numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
 
-            if (!indexOp->OperIsConst())
+            if (!indexOp->IsIntegralConst())
             {
                 // TODO-ARM64-CQ: We should always import these like we do with GetElement
                 // If index is not constant use software fallback.
@@ -1860,8 +1866,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         dest->gtType = simdType;
         dest->gtFlags |= GTF_GLOB_REF;
 
-        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc, /* isVolatile */ false, /* isCopyBlock */ true);
-        retNode->gtFlags |= ((copyBlkDst->gtFlags | copyBlkSrc->gtFlags) & GTF_ALL_EFFECT);
+        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);
 
         return retNode;
     }

@@ -235,7 +235,7 @@ namespace GitHub_20211
             }
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             if (new TestRunner().Run() == Result.Pass)
             {

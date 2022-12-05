@@ -1862,6 +1862,27 @@
   <data name="ArgumentOutOfRange_Year" xml:space="preserve">
     <value>Year must be between 1 and 9999.</value>
   </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
+    <value>'{0}' must be a non-zero value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
+    <value>'{0}' must be a non-negative value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
+    <value>'{0}' must be a non-negative and non-zero value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
+    <value>'{0}' must be less than or equal to '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
+    <value>'{0}' must be less than '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
+    <value>'{0}' must be greater than or equal to '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreater" xml:space="preserve">
+    <value>'{0}' must be greater than '{1}'.</value>
+  </data>
   <data name="Arithmetic_NaN" xml:space="preserve">
     <value>Function does not accept floating point Not-a-Number values.</value>
   </data>
@@ -2735,14 +2756,8 @@
   <data name="Lazy_Value_RecursiveCallsToValue" xml:space="preserve">
     <value>ValueFactory attempted to access the Value property of this instance.</value>
   </data>
-  <data name="ManualResetEventSlim_ctor_SpinCountOutOfRange" xml:space="preserve">
-    <value>The spinCount argument must be in the range 0 to {0}, inclusive.</value>
-  </data>
   <data name="ManualResetEventSlim_ctor_TooManyWaiters" xml:space="preserve">
     <value>There are too many threads currently waiting on the event. A maximum of {0} waiting threads are supported.</value>
-  </data>
-  <data name="ManualResetEventSlim_Disposed" xml:space="preserve">
-    <value>The event has been disposed.</value>
   </data>
   <data name="Marshaler_StringTooLong" xml:space="preserve">
     <value>Marshaler restriction: Excessively long string.</value>
@@ -3017,9 +3032,6 @@
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
-  <data name="ObjectDisposed_SafeHandleClosed" xml:space="preserve">
-    <value>Safe handle has been closed.</value>
-  </data>
   <data name="OperationCanceled" xml:space="preserve">
     <value>The operation was canceled.</value>
   </data>
@@ -3214,9 +3226,6 @@
   </data>
   <data name="SemaphoreSlim_ctor_MaxCountWrong" xml:space="preserve">
     <value>The maximumCount argument must be a positive number. If a maximum is not required, use the constructor without a maxCount parameter.</value>
-  </data>
-  <data name="SemaphoreSlim_Disposed" xml:space="preserve">
-    <value>The semaphore has been disposed.</value>
   </data>
   <data name="SemaphoreSlim_Release_CountWrong" xml:space="preserve">
     <value>The releaseCount argument must be greater than zero.</value>
@@ -3433,9 +3442,6 @@
   </data>
   <data name="Threading_ThreadInterrupted" xml:space="preserve">
     <value>Thread was interrupted from a waiting state.</value>
-  </data>
-  <data name="ThreadLocal_Disposed" xml:space="preserve">
-    <value>The ThreadLocal object has been disposed.</value>
   </data>
   <data name="ThreadLocal_Value_RecursiveCallsToValue" xml:space="preserve">
     <value>ValueFactory attempted to access the Value property of this instance.</value>

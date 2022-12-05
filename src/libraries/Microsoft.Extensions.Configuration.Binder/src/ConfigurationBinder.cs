@@ -299,20 +299,16 @@ namespace Microsoft.Extensions.Configuration
 
             if (config != null && config.GetChildren().Any())
             {
-                // for arrays, collections, and read-only list-like interfaces, we concatenate on to what is already there, if we can
-                if (type.IsArray || IsArrayCompatibleInterface(type))
+                // for arrays and read-only list-like interfaces, we concatenate on to what is already there, if we can
+                if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
                         bindingPoint.SetValue(BindArray(type, (IEnumerable?)bindingPoint.Value, config, options));
-                        return;
                     }
 
                     // for getter-only collection properties that we can't add to, nothing more we can do
-                    if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
-                    {
-                        return;
-                    }
+                    return;
                 }
 
                 // for sets and read-only set interfaces, we clone what's there into a new collection, if we can
@@ -350,12 +346,19 @@ namespace Microsoft.Extensions.Configuration
                         return;
                     }
 
-                    // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
-                    // on a new instance of the interface over populating the existing instance implementing the interface.
-                    // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
-                    // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
+                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ?  type.GetGenericTypeDefinition() : null;
 
-                    bindingPoint.SetValue(CreateInstance(type, config, options));
+                    if (interfaceGenericType is not null &&
+                        (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
+                    {
+                        // For ICollection<T> and IList<T> we bind them to mutable List<T> type.
+                        Type genericType = typeof(List<>).MakeGenericType(type.GenericTypeArguments[0]);
+                        bindingPoint.SetValue(Activator.CreateInstance(genericType));
+                    }
+                    else
+                    {
+                        bindingPoint.SetValue(CreateInstance(type, config, options));
+                    }
                 }
 
                 // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
@@ -364,7 +367,7 @@ namespace Microsoft.Extensions.Configuration
 
                 if (dictionaryInterface != null)
                 {
-                    BindConcreteDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
+                    BindDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
                 }
                 else
                 {
@@ -546,12 +549,12 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            BindConcreteDictionary(dictionary, dictionaryType, config, options);
+            BindDictionary(dictionary, genericType, config, options);
 
             return dictionary;
         }
 
-        // Binds and potentially overwrites a concrete dictionary.
+        // Binds and potentially overwrites a dictionary object.
         // This differs from BindDictionaryInterface because this method doesn't clone
         // the dictionary; it sets and/or overwrites values directly.
         // When a user specifies a concrete dictionary or a concrete class implementing IDictionary<,>
@@ -559,12 +562,15 @@ namespace Microsoft.Extensions.Configuration
         // in their config class, then it is cloned to a new dictionary, the same way as other collections.
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static void BindConcreteDictionary(
-            object? dictionary,
+        private static void BindDictionary(
+            object dictionary,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
         {
+            Debug.Assert(dictionaryType.IsGenericType &&
+                         (dictionaryType.GetGenericTypeDefinition() == typeof(IDictionary<,>) || dictionaryType.GetGenericTypeDefinition() == typeof(Dictionary<,>)));
+
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
             bool keyTypeIsEnum = keyType.IsEnum;
@@ -584,12 +590,13 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
-
             Debug.Assert(dictionary is not null);
-            // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
-            PropertyInfo? setter = dictionary.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
-            if (setter is null || !setter.CanWrite)
+
+
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
+            PropertyInfo? indexerProperty  = dictionaryType.GetProperty("Item", DeclaredOnlyLookup);
+
+            if (indexerProperty is null || !indexerProperty.CanWrite)
             {
                 // Cannot set any item on the dictionary object.
                 return;
@@ -617,7 +624,7 @@ namespace Microsoft.Extensions.Configuration
                         options: options);
                     if (valueBindingPoint.HasNewValue)
                     {
-                        setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
+                        indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
                 catch(Exception ex)
@@ -864,18 +871,6 @@ namespace Microsoft.Extensions.Configuration
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(IDictionary<,>)
                 || genericTypeDefinition == typeof(IReadOnlyDictionary<,>);
-        }
-
-        private static bool IsArrayCompatibleInterface(Type type)
-        {
-            if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
-
-            Type genericTypeDefinition = type.GetGenericTypeDefinition();
-            return genericTypeDefinition == typeof(IEnumerable<>)
-                || genericTypeDefinition == typeof(ICollection<>)
-                || genericTypeDefinition == typeof(IList<>)
-                || genericTypeDefinition == typeof(IReadOnlyCollection<>)
-                || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
 
         private static bool IsImmutableArrayCompatibleInterface(Type type)

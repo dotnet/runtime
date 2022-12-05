@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Avx2_ro</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- It takes a long time to complete (on a non-AVX machine) -->
-    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
@@ -138,14 +137,14 @@
     <Compile Include="MaskStore.UInt32.cs" />
     <Compile Include="MaskStore.Int64.cs" />
     <Compile Include="MaskStore.UInt64.cs" />
-    <Compile Include="Max.Byte.cs" />
     <Compile Include="Max.Int16.cs" />
+    <Compile Include="Max.Byte.cs" />
     <Compile Include="Max.Int32.cs" />
     <Compile Include="Max.SByte.cs" />
     <Compile Include="Max.UInt16.cs" />
     <Compile Include="Max.UInt32.cs" />
-    <Compile Include="Min.Byte.cs" />
     <Compile Include="Min.Int16.cs" />
+    <Compile Include="Min.Byte.cs" />
     <Compile Include="Min.Int32.cs" />
     <Compile Include="Min.SByte.cs" />
     <Compile Include="Min.UInt16.cs" />
@@ -155,10 +154,10 @@
     <Compile Include="MultiplyHighRoundScale.Int16.cs" />
     <Compile Include="MultiplyHigh.Int16.cs" />
     <Compile Include="MultiplyHigh.UInt16.cs" />
-    <Compile Include="MultiplyLow.Int16.cs" />
     <Compile Include="MultiplyLow.Int32.cs" />
-    <Compile Include="MultiplyLow.UInt16.cs" />
+    <Compile Include="MultiplyLow.Int16.cs" />
     <Compile Include="MultiplyLow.UInt32.cs" />
+    <Compile Include="MultiplyLow.UInt16.cs" />
     <Compile Include="MultipleSumAbsoluteDifferences.UInt16.0.cs" />
     <Compile Include="Or.Byte.cs" />
     <Compile Include="Or.Int16.cs" />
@@ -194,6 +193,19 @@
     <Compile Include="ShiftLeftLogical.UInt32.32.cs" />
     <Compile Include="ShiftLeftLogical.Int64.64.cs" />
     <Compile Include="ShiftLeftLogical.UInt64.64.cs" />
+    <Compile Include="ShiftLeftLogical128BitLane.SByte.1.cs" />
+    <Compile Include="ShiftLeftLogical128BitLane.Byte.1.cs" />
+    <Compile Include="ShiftLeftLogical128BitLane.Int16.1.cs" />
+    <Compile Include="ShiftLeftLogical128BitLane.UInt16.1.cs" />
+    <Compile Include="ShiftLeftLogical128BitLane.Int32.1.cs" />
+    <Compile Include="ShiftLeftLogical128BitLane.UInt32.1.cs" />
+    <Compile Include="ShiftLeftLogical128BitLane.Int64.1.cs" />
+    <Compile Include="ShiftLeftLogical128BitLane.UInt64.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Int16.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Int32.1.cs" />
+    <Compile Include="ShiftRightArithmetic.Int16.16.cs" />
+    <Compile Include="ShiftRightArithmetic.Int32.32.cs" />
+    <Compile Include="ShiftRightArithmeticVariable.Int32.cs" />
     <Compile Include="ShiftRightLogical.Int16.1.cs" />
     <Compile Include="ShiftRightLogical.UInt16.1.cs" />
     <Compile Include="ShiftRightLogical.Int32.1.cs" />
@@ -206,19 +218,6 @@
     <Compile Include="ShiftRightLogical.UInt32.32.cs" />
     <Compile Include="ShiftRightLogical.Int64.64.cs" />
     <Compile Include="ShiftRightLogical.UInt64.64.cs" />
-    <Compile Include="ShiftRightArithmetic.Int16.1.cs" />
-    <Compile Include="ShiftRightArithmetic.Int32.1.cs" />
-    <Compile Include="ShiftRightArithmetic.Int16.16.cs" />
-    <Compile Include="ShiftRightArithmetic.Int32.32.cs" />
-    <Compile Include="ShiftRightArithmeticVariable.Int32.cs" />
-    <Compile Include="ShiftLeftLogical128BitLane.SByte.1.cs" />
-    <Compile Include="ShiftLeftLogical128BitLane.Byte.1.cs" />
-    <Compile Include="ShiftLeftLogical128BitLane.Int16.1.cs" />
-    <Compile Include="ShiftLeftLogical128BitLane.UInt16.1.cs" />
-    <Compile Include="ShiftLeftLogical128BitLane.Int32.1.cs" />
-    <Compile Include="ShiftLeftLogical128BitLane.UInt32.1.cs" />
-    <Compile Include="ShiftLeftLogical128BitLane.Int64.1.cs" />
-    <Compile Include="ShiftLeftLogical128BitLane.UInt64.1.cs" />
     <Compile Include="ShiftRightLogical128BitLane.SByte.1.cs" />
     <Compile Include="ShiftRightLogical128BitLane.Byte.1.cs" />
     <Compile Include="ShiftRightLogical128BitLane.Int16.1.cs" />
@@ -230,8 +229,8 @@
     <Compile Include="Sign.SByte.cs" />
     <Compile Include="Sign.Int16.cs" />
     <Compile Include="Sign.Int32.cs" />
-    <Compile Include="Shuffle.SByte.cs" />
     <Compile Include="Shuffle.Byte.cs" />
+    <Compile Include="Shuffle.SByte.cs" />
     <Compile Include="Shuffle.Int32.1.cs" />
     <Compile Include="Shuffle.UInt32.1.cs" />
     <Compile Include="ShuffleHigh.Int16.228.cs" />
@@ -255,10 +254,10 @@
     <Compile Include="Xor.UInt16.cs" />
     <Compile Include="Xor.UInt32.cs" />
     <Compile Include="Xor.UInt64.cs" />
-    <Compile Include="Program.Avx2.cs" />
-    <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="Program.Avx2.cs" />
+    <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

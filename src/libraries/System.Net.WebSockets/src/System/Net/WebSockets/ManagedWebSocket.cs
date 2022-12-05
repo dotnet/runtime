@@ -1396,11 +1396,7 @@ namespace System.Net.WebSockets
             // The connection closed before we were able to read everything we needed.
             // If it was due to us being disposed, fail with the correct exception.
             // Otherwise, it was due to the connection being closed and it wasn't expected.
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(WebSocket));
-            }
-
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
             throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
         }
 

@@ -419,6 +419,7 @@ jmethodID g_SSLEngineBeginHandshake;
 jmethodID g_SSLEngineCloseOutbound;
 jmethodID g_SSLEngineGetApplicationProtocol;
 jmethodID g_SSLEngineGetHandshakeStatus;
+jmethodID g_SSLEngineGetHandshakeSession;
 jmethodID g_SSLEngineGetSession;
 jmethodID g_SSLEngineGetSSLParameters;
 jmethodID g_SSLEngineGetSupportedProtocols;
@@ -1002,6 +1003,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineGetApplicationProtocol = GetOptionalMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
+    g_SSLEngineGetHandshakeSession =    GetOptionalMethod(env, false, g_SSLEngine, "getHandshakeSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetSSLParameters =       GetMethod(env, false, g_SSLEngine, "getSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
     g_SSLEngineGetSupportedProtocols =  GetMethod(env, false, g_SSLEngine, "getSupportedProtocols", "()[Ljava/lang/String;");
     g_SSLEngineSetEnabledProtocols =    GetMethod(env, false, g_SSLEngine, "setEnabledProtocols", "([Ljava/lang/String;)V");

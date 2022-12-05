@@ -3835,6 +3835,17 @@
     "any",
     "base"
   ],
+  "wasi": [
+    "wasi",
+    "any",
+    "base"
+  ],
+  "wasi-wasm": [
+    "wasi-wasm",
+    "wasi",
+    "any",
+    "base"
+  ],
   "centos": [
     "centos",
     "rhel",

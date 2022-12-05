@@ -4,7 +4,7 @@ namespace InterfaceMain
 {
     interface Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             return 100;
         }

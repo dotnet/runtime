@@ -131,7 +131,7 @@ public class Test
         return isCurrentTestPassed;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         arrByteArrayLen = 5000;
         arrByteArray = new byte[arrByteArrayLen][];

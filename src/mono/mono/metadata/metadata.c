@@ -6180,7 +6180,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 				       MonoMarshalSpec **marshal_spec, gboolean alloc_from_image)
 {
 	MonoTableInfo *tdef;
-	locator_t loc;
+	locator_t loc = {0,};
 
 	loc.idx = index + 1;
 	if (meta->uncompressed_metadata)
@@ -6192,7 +6192,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 		loc.col_idx = MONO_FIELD_LAYOUT_FIELD;
 		loc.t = tdef;
 
-		/* FIXME: metadata-update */
+		/* metadata-update: explicit layout not supported, just return -1 */
 
 		if (tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator)) {
 			*offset = mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_LAYOUT_OFFSET);
@@ -6206,7 +6206,14 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 		loc.col_idx = MONO_FIELD_RVA_FIELD;
 		loc.t = tdef;
 
-		if (tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator)) {
+                gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
+
+                if (G_UNLIKELY (meta->has_updates)) {
+                        if (!found)
+                                found = (mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator) != NULL);
+                }
+
+		if (found) {
 			/*
 			 * LAMESPEC: There is no signature, no nothing, just the raw data.
 			 */
@@ -6320,6 +6327,12 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_EVENT_MAP_EVENTLIST);
+        /*
+         * metadata-update: note this next line needs block needs to look at the number of rows in
+         * EventMap and Event of the base image.  Updates will add rows for new properties,
+         * but they won't be contiguous.  if we set end to the number of rows in the updated
+         * Property table, the range will include properties from some other class
+         */
 	if (loc.result + 1 < table_info_get_rows (tdef)) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_EVENT_MAP_EVENTLIST) - 1;
 	} else {
@@ -6433,10 +6446,16 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_PROPERTY_MAP_PROPERTY_LIST);
-	if (loc.result + 1 < mono_metadata_table_num_rows (meta, MONO_TABLE_PROPERTYMAP)) {
+        /*
+         * metadata-update: note this next line needs block needs to look at the number of rows in
+         * PropertyMap and Property of the base image.  Updates will add rows for new properties,
+         * but they won't be contiguous.  if we set end to the number of rows in the updated
+         * Property table, the range will include properties from some other class
+         */
+	if (loc.result + 1 < table_info_get_rows (&meta->tables [MONO_TABLE_PROPERTYMAP])) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_PROPERTY_MAP_PROPERTY_LIST) - 1;
 	} else {
-		end = mono_metadata_table_num_rows (meta, MONO_TABLE_PROPERTY);
+		end = table_info_get_rows (&meta->tables [MONO_TABLE_PROPERTY]);
 	}
 
 	*end_idx = GUINT32_TO_UINT(end);
@@ -6939,21 +6958,21 @@ handle_enum:
 const char*
 mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 {
-	locator_t loc;
+	locator_t loc = {0,};
 	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_FIELDMARSHAL];
-
-	if (!tdef->base)
-		return NULL;
 
 	loc.t = tdef;
 	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
 	loc.idx = ((idx + 1) << MONO_HAS_FIELD_MARSHAL_BITS) | (is_field? MONO_HAS_FIELD_MARSHAL_FIELDSREF: MONO_HAS_FIELD_MARSHAL_PARAMDEF);
 
-	/* FIXME: metadata-update */
 	/* FIXME: Index translation */
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
-		return NULL;
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
+
+        if (G_UNLIKELY (meta->has_updates)) {
+                if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+                        return NULL;
+        }
 
 	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
 }

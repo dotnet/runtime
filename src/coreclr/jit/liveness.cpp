@@ -970,7 +970,7 @@ void Compiler::fgExtendDbgLifetimes()
             if (!fgLocalVarLivenessDone)
             {
                 // Create a "zero" node
-                GenTree* zero = gtNewZeroConNode(genActualType(type));
+                GenTree* zero = gtNewZeroConNode(type);
 
                 // Create initialization node
                 if (!block->IsLIR())

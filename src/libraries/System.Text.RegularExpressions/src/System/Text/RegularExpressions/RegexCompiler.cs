@@ -824,8 +824,12 @@ namespace System.Text.RegularExpressions
 
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
                 // We can use it if this is a case-sensitive class with a small number of characters in the class.
+                // We avoid using it for the relatively common case of the starting set being '.', aka anything other than
+                // a newline, as it's very rare to have long, uninterrupted sequences of newlines.
                 int setIndex = 0;
-                bool canUseIndexOf = primarySet.Chars is not null || primarySet.Range is not null;
+                bool canUseIndexOf =
+                    primarySet.Set != RegexCharClass.NotNewLineClass &&
+                    (primarySet.Chars is not null || primarySet.Range is not null);
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 Label checkSpanLengthLabel = default;
@@ -1753,7 +1757,7 @@ namespace System.Text.RegularExpressions
                 Label body = DefineLabel();
                 Label charactersMatched = DefineLabel();
                 LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
-                LocalBuilder currentCharacter = _ilg!.DeclareLocal(typeof(char));
+                LocalBuilder currentCharacter = _ilg.DeclareLocal(typeof(char));
 
                 // for (int i = 0; ...)
                 Ldc(0);
@@ -5477,11 +5481,67 @@ namespace System.Text.RegularExpressions
             // Analyze the character set more to determine what code to generate.
             RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
 
-            // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
+            // Next, handle sets where the high - low + 1 range is <= 32.  In that case, we can emit
+            // a branchless lookup in a uint that does not rely on loading any objects (e.g. the string-based
+            // lookup we use later).  This nicely handles common sets like [\t\r\n ].
+            if (analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 32)
+            {
+                // Create the 32-bit value with 1s at indices corresponding to every character in the set,
+                // where the bit is computed to be the char value minus the lower bound starting from
+                // most significant bit downwards.
+                uint bitmap = 0;
+                bool negatedClass = RegexCharClass.IsNegated(charClass);
+                for (int i = analysis.LowerBoundInclusiveIfOnlyRanges; i < analysis.UpperBoundExclusiveIfOnlyRanges; i++)
+                {
+                    if (RegexCharClass.CharInClass((char)i, charClass) ^ negatedClass)
+                    {
+                        bitmap |= 1u << (31 - (i - analysis.LowerBoundInclusiveIfOnlyRanges));
+                    }
+                }
+
+                // To determine whether a character is in the set, we subtract the lowest char; this subtraction happens before
+                // the result is zero-extended to uint, meaning that `charMinusLow` will always have upper 16 bits equal to 0.
+                // We then left shift the constant with this offset, and apply a bitmask that has the highest bit set (the sign bit)
+                // if and only if `ch` is in the [low, low + 32) range. Then we only need to check whether this final result is
+                // less than 0: this will only be the case if both `charMinusLow` was in fact the index of a set bit in the constant,
+                // and also `ch` was in the allowed range (this ensures that false positive bit shifts are ignored).
+
+                // uint charMinusLow = (ushort)(ch - lowInclusive);
+                LocalBuilder charMinusLow = _ilg!.DeclareLocal(typeof(uint));
+                Ldloc(tempLocal);
+                Ldc(analysis.LowerBoundInclusiveIfOnlyRanges);
+                Sub();
+                _ilg.Emit(OpCodes.Conv_U2);
+                Stloc(charMinusLow);
+
+                // uint shift = bitmap << (short)charMinusLow;
+                _ilg.Emit(OpCodes.Ldc_I4, bitmap);
+                Ldloc(charMinusLow);
+                _ilg.Emit(OpCodes.Conv_I2);
+                Ldc(31);
+                And();
+                Shl();
+
+                // uint mask = charMinusLow - 32;
+                Ldloc(charMinusLow);
+                Ldc(32);
+                _ilg.Emit(OpCodes.Conv_I4);
+                Sub();
+
+                // (int)(shift & mask) < 0 // or >= for a negated character class
+                And();
+                Ldc(0);
+                _ilg.Emit(OpCodes.Conv_I4);
+                _ilg.Emit(OpCodes.Clt);
+                NegateIf(negatedClass);
+
+                return;
+            }
+
+            // Next, handle sets where the high - low + 1 range is <= 64.  As with the 32-bit case above, we can emit
             // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
-            // lookup we use later).  This nicely handles sets made up of a subset of ASCII letters, for example.
-            // We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is a deoptimization
-            // when compared to the subsequent fallbacks.
+            // lookup we use later).  We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is
+            // a deoptimization when compared to the subsequent fallbacks.
             if (IntPtr.Size == 8 && analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
             {
                 // Create the 64-bit value with 1s at indices corresponding to every character in the set,
@@ -5493,7 +5553,7 @@ namespace System.Text.RegularExpressions
                 {
                     if (RegexCharClass.CharInClass((char)i, charClass) ^ negatedClass)
                     {
-                        bitmap |= (1ul << (63 - (i - analysis.LowerBoundInclusiveIfOnlyRanges)));
+                        bitmap |= 1ul << (63 - (i - analysis.LowerBoundInclusiveIfOnlyRanges));
                     }
                 }
 
@@ -5511,13 +5571,13 @@ namespace System.Text.RegularExpressions
                 Ldloc(tempLocal);
                 Ldc(analysis.LowerBoundInclusiveIfOnlyRanges);
                 Sub();
-                _ilg!.Emit(OpCodes.Conv_U8);
+                _ilg.Emit(OpCodes.Conv_U8);
                 Stloc(charMinusLow);
 
                 // ulong shift = bitmap << (int)charMinusLow;
                 LdcI8((long)bitmap);
                 Ldloc(charMinusLow);
-                _ilg!.Emit(OpCodes.Conv_I4);
+                _ilg.Emit(OpCodes.Conv_I4);
                 Ldc(63);
                 And();
                 Shl();
@@ -5525,14 +5585,14 @@ namespace System.Text.RegularExpressions
                 // ulong mask = charMinusLow - 64;
                 Ldloc(charMinusLow);
                 Ldc(64);
-                _ilg!.Emit(OpCodes.Conv_I8);
+                _ilg.Emit(OpCodes.Conv_I8);
                 Sub();
 
                 // (long)(shift & mask) < 0 // or >= for a negated character class
                 And();
                 Ldc(0);
-                _ilg!.Emit(OpCodes.Conv_I8);
-                _ilg!.Emit(OpCodes.Clt);
+                _ilg.Emit(OpCodes.Conv_I8);
+                _ilg.Emit(OpCodes.Clt);
                 NegateIf(negatedClass);
 
                 return;

@@ -16,7 +16,7 @@
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
 
     <!-- don't run any wasm build steps -->
-    <IsWasmProject>false</IsWasmProject>
+    <IsBrowserWasmProject>false</IsBrowserWasmProject>
     <UseDefaultTestHost>true</UseDefaultTestHost>
   </PropertyGroup>
 

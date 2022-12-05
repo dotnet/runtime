@@ -11,9 +11,7 @@
 	extends [mscorlib]System.Object
 {
 	.method private hidebysig static 
-		int32 Main (
-			string[] args
-		) cil managed 
+		int32 Main () cil managed
 	{
 
 		.maxstack 1
