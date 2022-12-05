@@ -73,7 +73,7 @@ public class MiscTests2 : BuildTestBase
     public void NetProjects_NativeReference(string config)
         => BuildNetProject(config, aot: false, @"<NativeFileReference Include=""native-lib.o"" />");
 
-    public static TheoryData<string, bool, bool> NetTestData = new()
+    public static TheoryData<string, bool> NetTestData = new()
     {
         { "Debug", /*aot*/ true },
         { "Debug", /*aot*/ false },
