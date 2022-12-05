@@ -54,6 +54,10 @@ public unsafe class Runtime_76194
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static byte* GetPointerNearPageEndFor<T>(byte* ptr, nuint pageSize) => ptr + pageSize - Unsafe.SizeOf<T>();
+
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Main()
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
@@ -61,60 +65,39 @@ public unsafe class Runtime_76194
             return 100;
         }
 
+        nuint pageSize = (nuint)Environment.SystemPageSize;
         for (int i = 0; i < 100; i++)
         {
-            using CrossVirtualAlloc alloc = new();
-            if (alloc.IsFailedToCommit)
+            byte* ptr = CrossplatVirtualAlloc.Alloc(pageSize);
+            if (ptr == null)
             {
-                Console.WriteLine("VirtualAlloc/mmap/mprotect failed, giving up on test.");
-                break;
+                throw new InvalidOperationException($"CrossplatVirtualAlloc.Alloc returned null at {i}th iteration");
             }
-            Read1(alloc.GetPointerNearPageEndFor<Data1>());
-            Write1(alloc.GetPointerNearPageEndFor<Data1>(), default);
-            Read2(alloc.GetPointerNearPageEndFor<Data2>());
-            Write2(alloc.GetPointerNearPageEndFor<Data2>(), default);
-            Read3(alloc.GetPointerNearPageEndFor<Data3>());
-            Write3(alloc.GetPointerNearPageEndFor<Data3>(), default);
-            Read4(alloc.GetPointerNearPageEndFor<Data4>());
-            Write4(alloc.GetPointerNearPageEndFor<Data4>(), default);
-            Read5(alloc.GetPointerNearPageEndFor<Data5>());
-            Write5(alloc.GetPointerNearPageEndFor<Data5>(), default);
+
+            Read1(GetPointerNearPageEndFor<Data1>(ptr, pageSize));
+            Write1(GetPointerNearPageEndFor<Data1>(ptr, pageSize), default);
+            Read2(GetPointerNearPageEndFor<Data2>(ptr, pageSize));
+            Write2(GetPointerNearPageEndFor<Data2>(ptr, pageSize), default);
+            Read3(GetPointerNearPageEndFor<Data3>(ptr, pageSize));
+            Write3(GetPointerNearPageEndFor<Data3>(ptr, pageSize), default);
+            Read4(GetPointerNearPageEndFor<Data4>(ptr, pageSize));
+            Write4(GetPointerNearPageEndFor<Data4>(ptr, pageSize), default);
+            Read5(GetPointerNearPageEndFor<Data5>(ptr, pageSize));
+            Write5(GetPointerNearPageEndFor<Data5>(ptr, pageSize), default);
+
+            CrossplatVirtualAlloc.Free(ptr, pageSize);
         }
         return 100;
     }
 }
 
-internal unsafe static class CrossplatVirtualAlloc
+// Cross-platform implementation of VirtualAlloc that is focused on reproducing problems
+// where JIT emits code that reads/writes more than requested
+internal static unsafe class CrossplatVirtualAlloc
 {
     [DllImport(nameof(CrossplatVirtualAlloc))]
     public static extern byte* Alloc(nuint size);
 
     [DllImport(nameof(CrossplatVirtualAlloc))]
     public static extern void Free(byte* ptr, nuint size);
-}
-
-// Cross-platform implementation of VirtualAlloc that is focused on reproducing problems
-// where JIT emits code that reads/writes more than requested
-internal unsafe class CrossVirtualAlloc : IDisposable
-{
-    private readonly byte* _ptr;
-
-    public CrossVirtualAlloc()
-    {
-        _ptr = CrossplatVirtualAlloc.Alloc(PageSize);
-    }
-
-    public bool IsFailedToCommit => _ptr == null;
-
-    public static readonly nuint PageSize = (nuint)Environment.SystemPageSize;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public byte* GetPointerNearPageEndFor<T>() => _ptr + PageSize - Unsafe.SizeOf<T>();
-
-    public void Dispose()
-    {
-        if (IsFailedToCommit)
-            return;
-        CrossplatVirtualAlloc.Free(_ptr, PageSize);
-    }
 }
