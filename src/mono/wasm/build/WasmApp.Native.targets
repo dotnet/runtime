@@ -2,6 +2,7 @@
   <!-- not really meant to be used w/o WasmApp.targets -->
 
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="AppendMemorySnapshotToWasmFile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
@@ -666,17 +667,15 @@
     <PropertyGroup>
       <WasmMemorySnapshotCaptureGenerator>wasm-memory-snapshot-capture.js</WasmMemorySnapshotCaptureGenerator>
       <WasmMemorySnapshotFileName>memory.dat</WasmMemorySnapshotFileName>
-      <WasmEditToolPath>$(DotNetTool) wa-edit</WasmEditToolPath>
     </PropertyGroup>
     <ItemGroup>
       <WasmMemorySnapshotCaptureLine Include="const dotnet = (await import('./dotnet.js')).dotnet%3B" />
       <WasmMemorySnapshotCaptureLine Include="const { Module } = await dotnet.create()%3B" />
       <WasmMemorySnapshotCaptureLine Include="(await import('fs')).promises.writeFile('./$(WasmMemorySnapshotFileName)', Module.HEAP8)%3B" />
     </ItemGroup>
-    <Exec Command="dotnet tool update -g wa-edit" IgnoreExitCode="true" />
     <WriteLinesToFile File="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Lines="@(WasmMemorySnapshotCaptureLine)" Overwrite="true" Encoding="UTF-8" />
     <Exec WorkingDirectory="$(WasmAppDir)" Command="$(EmscriptenNodeExecutable) $(WasmMemorySnapshotCaptureGenerator)" />
-    <Exec WorkingDirectory="$(WasmAppDir)" Command="$(WasmEditToolPath) -v ./dotnet.wasm ./dotnet2.wasm -o 0 -d ./$(WasmMemorySnapshotFileName) -a" />
+    <AppendMemorySnapshotToWasmFile Source="$(WasmAppDir)dotnet.wasm" Destination="$(WasmAppDir)dotnet2.wasm" DataSectionFile="$(WasmAppDir)$(WasmMemorySnapshotFileName)" />
     <Delete Files="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator);$(WasmAppDir)dotnet.wasm;$(WasmAppDir)$(WasmMemorySnapshotFileName)" />
     <Move SourceFiles="$(WasmAppDir)dotnet2.wasm" DestinationFiles="$(WasmAppDir)dotnet.wasm" />
     <Message Text="Memory snapshot merged into the dotnet.wasm" Importance="High" />
