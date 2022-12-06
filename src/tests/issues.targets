@@ -277,6 +277,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_34094/Test34094/*">
             <Issue>https://github.com/dotnet/runtime/issues/57458</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_31615/Runtime_31615/*">
+            <Issue>https://github.com/dotnet/runtime/issues/79170</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm32 specific excludes -->
@@ -2212,9 +2215,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**">
             <Issue>https://github.com/dotnet/runtime/issues/54396</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/Statics/Misc/LiteralStatic/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54560</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59952/b59952/**">
             <Issue>needs triage</Issue>

@@ -3,22 +3,17 @@
 
 
 using System;
-using System.Runtime;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 using System.Reflection.Runtime.General;
 
-using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
 #if ECMA_METADATA_SUPPORT
 using Internal.TypeSystem.Ecma;
 #endif
@@ -100,6 +95,104 @@ namespace Internal.Runtime.TypeLoader
 
             Debug.Assert(false);
             return default(NativeReader);
+        }
+
+        /// <summary>
+        /// Return the metadata handle for a TypeDef if the pay-for-policy enabled this type as browsable. This is used to obtain name and other information for types
+        /// obtained via typeof() or Object.GetType(). This can include generic types (not to be confused with generic instances).
+        ///
+        /// Preconditions:
+        ///    runtimeTypeHandle is a typedef (not a constructed type such as an array or generic instance.)
+        /// </summary>
+        /// <param name="runtimeTypeHandle">Runtime handle of the type in question</param>
+        /// <param name="qTypeDefinition">TypeDef handle for the type</param>
+        public unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
+        {
+            int hashCode = runtimeTypeHandle.GetHashCode();
+
+            // Iterate over all modules, starting with the module that defines the MethodTable
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(runtimeTypeHandle)))
+            {
+                NativeReader typeMapReader;
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
+                {
+                    NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
+                    NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
+
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = typeHashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        RuntimeTypeHandle foundType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        if (foundType.Equals(runtimeTypeHandle))
+                        {
+                            Handle entryMetadataHandle = entryParser.GetUnsigned().AsHandle();
+                            if (entryMetadataHandle.HandleType == HandleType.TypeDefinition)
+                            {
+                                MetadataReader metadataReader = module.MetadataReader;
+                                qTypeDefinition = new QTypeDefinition(metadataReader, entryMetadataHandle.ToTypeDefinitionHandle(metadataReader));
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            qTypeDefinition = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Return the RuntimeTypeHandle for the named type described in metadata. This is used to implement the Create and Invoke
+        /// apis for types.
+        ///
+        /// Preconditions:
+        ///    metadataReader + typeDefHandle  - a valid metadata reader + typeDefinitionHandle where "metadataReader" is one
+        ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
+        ///
+        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
+        /// guarantees that any type enabled for metadata also has a RuntimeTypeHandle underneath.
+        /// </summary>
+        /// <param name="qTypeDefinition">TypeDef handle for the type to look up</param>
+        /// <param name="runtimeTypeHandle">Runtime type handle (MethodTable) for the given type</param>
+        public unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            if (qTypeDefinition.IsNativeFormatMetadataBased)
+            {
+                MetadataReader metadataReader = qTypeDefinition.NativeFormatReader;
+                TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
+                int hashCode = typeDefHandle.ComputeHashCode(metadataReader);
+
+                NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
+
+                NativeReader typeMapReader;
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
+                {
+                    NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
+                    NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
+
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = typeHashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        var foundTypeIndex = entryParser.GetUnsigned();
+                        if (entryParser.GetUnsigned().AsHandle().Equals(typeDefHandle))
+                        {
+                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            runtimeTypeHandle = default;
+            return false;
         }
 
         /// <summary>

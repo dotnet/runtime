@@ -249,9 +249,6 @@
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>Internal\TypeSystem\TypeSystemHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
-      <Link>UniversalCanonLayoutAlgorithm.cs</Link>
-    </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
       <Link>LockFreeReaderHashtableOfPointers.cs</Link>
     </Compile>
@@ -285,13 +282,11 @@
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldAlgorithm.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldDesc.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInfoLoadContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInterfacesAlgorithm.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NoMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NoMetadataRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\OptionalFields.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\PermanentAllocatedMemoryBlobs.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TemplateLocator.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeBuilder.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeBuilderState.cs" />
@@ -305,7 +300,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.Metadata.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MetadataSignatureParsing.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MethodAddress.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.NamedTypeLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.SignatureParsing.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.StaticsLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderLogger.cs" />

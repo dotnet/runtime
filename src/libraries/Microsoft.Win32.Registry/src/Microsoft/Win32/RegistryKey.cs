@@ -784,7 +784,6 @@ namespace Microsoft.Win32
         /// <returns>All subkey names.</returns>
         public string[] GetSubKeyNames()
         {
-            EnsureNotDisposed();
             int subkeys = SubKeyCount;
 
             if (subkeys <= 0)
@@ -792,16 +791,17 @@ namespace Microsoft.Win32
                 return Array.Empty<string>();
             }
 
-            List<string> names = new List<string>(subkeys);
-            Span<char> name = stackalloc char[MaxKeyLength + 1];
+            string[] names = new string[subkeys];
+            Span<char> nameSpan = stackalloc char[MaxKeyLength + 1];
 
             int result;
-            int nameLength = name.Length;
+            int nameLength = nameSpan.Length;
+            int cpt = 0;
 
             while ((result = Interop.Advapi32.RegEnumKeyEx(
                 _hkey,
-                names.Count,
-                ref MemoryMarshal.GetReference(name),
+                cpt,
+                ref MemoryMarshal.GetReference(nameSpan),
                 ref nameLength,
                 null,
                 null,
@@ -811,9 +811,15 @@ namespace Microsoft.Win32
                 switch (result)
                 {
                     case Interop.Errors.ERROR_SUCCESS:
-                        names.Add(new string(name.Slice(0, nameLength)));
-                        nameLength = name.Length;
+                        if (cpt >= names.Length) // possible new item during loop
+                        {
+                            Array.Resize(ref names, names.Length * 2);
+                        }
+
+                        names[cpt++] = new string(nameSpan.Slice(0, nameLength));
+                        nameLength = nameSpan.Length;
                         break;
+
                     default:
                         // Throw the error
                         Win32Error(result, null);
@@ -821,7 +827,13 @@ namespace Microsoft.Win32
                 }
             }
 
-            return names.ToArray();
+            // Shrink array to fit found items, if necessary
+            if (cpt < names.Length)
+            {
+                Array.Resize(ref names, cpt);
+            }
+
+            return names;
         }
 
         /// <summary>Retrieves the count of values.</summary>
@@ -858,8 +870,6 @@ namespace Microsoft.Win32
         /// <returns>All value names.</returns>
         public unsafe string[] GetValueNames()
         {
-            EnsureNotDisposed();
-
             int values = ValueCount;
 
             if (values <= 0)
@@ -1238,7 +1248,7 @@ namespace Microsoft.Win32
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
             }
 
-            if (!Enum.IsDefined(typeof(RegistryValueKind), valueKind))
+            if (!Enum.IsDefined(valueKind))
             {
                 throw new ArgumentException(SR.Arg_RegBadKeyKind, nameof(valueKind));
             }

@@ -7,7 +7,8 @@ import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
 
 export const maxFailures = 2,
-    maxMemsetSize = 64;
+    maxMemsetSize = 64,
+    maxMemmoveSize = 64;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
@@ -661,13 +662,14 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
     if (count >= maxMemsetSize)
         return false;
 
+    const destLocal = destOnStack ? "math_lhs32" : "pLocals";
     if (destOnStack)
         builder.local("math_lhs32", WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
     // Do blocks of 8-byte sets first for smaller/faster code
     while (count >= 8) {
-        builder.local(destOnStack ? "math_lhs32" : "pLocals");
+        builder.local(destLocal);
         builder.i52_const(0);
         builder.appendU8(WasmOpcode.i64_store);
         builder.appendMemarg(offset, 0);
@@ -677,7 +679,7 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
 
     // Then set the remaining 0-7 bytes
     while (count >= 1) {
-        builder.local(destOnStack ? "math_lhs32" : "pLocals");
+        builder.local(destLocal);
         builder.i32_const(0);
         let localCount = count % 4;
         switch (localCount) {
@@ -716,45 +718,100 @@ export function append_memset_dest (builder: WasmBuilder, value: number, count: 
     builder.appendU8(0);
 }
 
+export function try_append_memmove_fast (
+    builder: WasmBuilder, destLocalOffset: number, srcLocalOffset: number,
+    count: number, addressesOnStack: boolean
+) {
+    let destLocal = "math_lhs32", srcLocal = "math_rhs32";
+
+    if (count <= 0) {
+        if (addressesOnStack) {
+            builder.appendU8(WasmOpcode.drop);
+            builder.appendU8(WasmOpcode.drop);
+        }
+        return true;
+    }
+
+    if (count >= maxMemmoveSize)
+        return false;
+
+    if (addressesOnStack) {
+        builder.local(srcLocal, WasmOpcode.set_local);
+        builder.local(destLocal, WasmOpcode.set_local);
+    } else {
+        destLocal = srcLocal = "pLocals";
+    }
+
+    let destOffset = addressesOnStack ? 0 : destLocalOffset,
+        srcOffset = addressesOnStack ? 0 : srcLocalOffset;
+
+    // Do blocks of 8-byte copies first for smaller/faster code
+    while (count >= 8) {
+        builder.local(destLocal);
+        builder.local(srcLocal);
+        builder.appendU8(WasmOpcode.i64_load);
+        builder.appendMemarg(srcOffset, 0);
+        builder.appendU8(WasmOpcode.i64_store);
+        builder.appendMemarg(destOffset, 0);
+        destOffset += 8;
+        srcOffset += 8;
+        count -= 8;
+    }
+
+    // Then copy the remaining 0-7 bytes
+    while (count >= 1) {
+        let loadOp : WasmOpcode, storeOp : WasmOpcode;
+        let localCount = count % 4;
+        switch (localCount) {
+            case 0:
+                // since we did %, 4 bytes turned into 0. gotta fix that up to avoid infinite loop
+                localCount = 4;
+                loadOp = WasmOpcode.i32_load;
+                storeOp = WasmOpcode.i32_store;
+                break;
+            default:
+            case 1:
+                localCount = 1; // silence tsc
+                loadOp = WasmOpcode.i32_load8_s;
+                storeOp = WasmOpcode.i32_store8;
+                break;
+            case 3:
+            case 2:
+                // For 3 bytes we just want to do a 2 write then a 1
+                localCount = 2;
+                loadOp = WasmOpcode.i32_load16_s;
+                storeOp = WasmOpcode.i32_store16;
+                break;
+
+        }
+
+        builder.local(destLocal);
+        builder.local(srcLocal);
+        builder.appendU8(loadOp);
+        builder.appendMemarg(srcOffset, 0);
+        builder.appendU8(storeOp);
+        builder.appendMemarg(destOffset, 0);
+        srcOffset += localCount;
+        destOffset += localCount;
+        count -= localCount;
+    }
+
+    return true;
+}
+
 // expects dest then source to have been pushed onto wasm stack
 export function append_memmove_dest_src (builder: WasmBuilder, count: number) {
-    // FIXME: Unroll this like memset, since we now know that the memory ops generate expensive
-    //  function calls
-    switch (count) {
-        case 1:
-            builder.appendU8(WasmOpcode.i32_load8_u);
-            builder.appendMemarg(0, 0);
-            builder.appendU8(WasmOpcode.i32_store8);
-            builder.appendMemarg(0, 0);
-            return true;
-        case 2:
-            builder.appendU8(WasmOpcode.i32_load16_u);
-            builder.appendMemarg(0, 0);
-            builder.appendU8(WasmOpcode.i32_store16);
-            builder.appendMemarg(0, 0);
-            return true;
-        case 4:
-            builder.appendU8(WasmOpcode.i32_load);
-            builder.appendMemarg(0, 0);
-            builder.appendU8(WasmOpcode.i32_store);
-            builder.appendMemarg(0, 0);
-            return true;
-        case 8:
-            builder.appendU8(WasmOpcode.i64_load);
-            builder.appendMemarg(0, 0);
-            builder.appendU8(WasmOpcode.i64_store);
-            builder.appendMemarg(0, 0);
-            return true;
-        default:
-            // spec: pop n, pop s, pop d, copy n bytes from s to d
-            builder.i32_const(count);
-            // great encoding isn't it
-            builder.appendU8(WasmOpcode.PREFIX_sat);
-            builder.appendU8(10);
-            builder.appendU8(0);
-            builder.appendU8(0);
-            return true;
-    }
+    if (try_append_memmove_fast(builder, 0, 0, count, true))
+        return true;
+
+    // spec: pop n, pop s, pop d, copy n bytes from s to d
+    builder.i32_const(count);
+    // great encoding isn't it
+    builder.appendU8(WasmOpcode.PREFIX_sat);
+    builder.appendU8(10);
+    builder.appendU8(0);
+    builder.appendU8(0);
+    return true;
 }
 
 export function recordFailure () : void {
@@ -817,7 +874,7 @@ const optionNames : { [jsName: string] : string } = {
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
-    "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
+    "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count"
 };
 
 let optionsVersion = -1;

@@ -4,18 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Text;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
-
-using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
-using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -32,13 +23,6 @@ namespace Internal.Runtime.TypeLoader
     //
     internal class TypeBuilderState
     {
-        internal class VTableLayoutInfo
-        {
-            public uint VTableSlot;
-            public RuntimeSignature MethodSignature;
-            public bool IsSealedVTableSlot;
-        }
-
         public TypeBuilderState(TypeDesc typeBeingBuilt)
         {
             TypeBeingBuilt = typeBeingBuilt;
@@ -100,10 +84,8 @@ namespace Internal.Runtime.TypeLoader
 
         private bool _nativeLayoutComputed;
         private bool _templateTypeLoaderNativeLayout;
-        private bool _readyToRunNativeLayout;
 
         private NativeLayoutInfo _nativeLayoutInfo;
-        private NativeLayoutInfo _r2rnativeLayoutInfo;
 
         private void EnsureNativeLayoutInfoComputed()
         {
@@ -116,24 +98,12 @@ namespace Internal.Runtime.TypeLoader
                         // Attempt to compute native layout through as a non-ReadyToRun template
                         object _ = this.TemplateType;
                     }
-                    if (!_nativeLayoutTokenComputed)
-                    {
-                        TemplateLocator.TryGetMetadataNativeLayout(TypeBeingBuilt, out _r2rnativeLayoutInfo.Module, out _r2rnativeLayoutInfo.Offset);
-
-                        if (_r2rnativeLayoutInfo.Module != null)
-                            _readyToRunNativeLayout = true;
-                    }
                     _nativeLayoutTokenComputed = true;
                 }
 
                 if (_nativeLayoutInfo.Module != null)
                 {
                     FinishInitNativeLayoutInfo(TypeBeingBuilt, ref _nativeLayoutInfo);
-                }
-
-                if (_r2rnativeLayoutInfo.Module != null)
-                {
-                    FinishInitNativeLayoutInfo(TypeBeingBuilt, ref _r2rnativeLayoutInfo);
                 }
 
                 _nativeLayoutComputed = true;
@@ -189,28 +159,6 @@ namespace Internal.Runtime.TypeLoader
                 return default(NativeParser);
         }
 
-        public NativeParser GetParserForReadyToRunNativeLayoutInfo()
-        {
-            EnsureNativeLayoutInfoComputed();
-            if (_readyToRunNativeLayout)
-                return new NativeParser(_r2rnativeLayoutInfo.Reader, _r2rnativeLayoutInfo.Offset);
-            else
-                return default(NativeParser);
-        }
-
-        public NativeParser GetParserForUniversalNativeLayoutInfo(out NativeLayoutInfoLoadContext universalLayoutLoadContext, out NativeLayoutInfo universalLayoutInfo)
-        {
-            universalLayoutInfo = new NativeLayoutInfo();
-            universalLayoutLoadContext = null;
-            TypeDesc universalTemplate = TemplateLocator.TryGetUniversalTypeTemplate(TypeBeingBuilt, ref universalLayoutInfo);
-            if (universalTemplate == null)
-                return new NativeParser();
-
-            FinishInitNativeLayoutInfo(TypeBeingBuilt, ref universalLayoutInfo);
-            universalLayoutLoadContext = universalLayoutInfo.LoadContext;
-            return new NativeParser(universalLayoutInfo.Reader, universalLayoutInfo.Offset);
-        }
-
         // RuntimeInterfaces is the full list of interfaces that the type implements. It can include private internal implementation
         // detail interfaces that nothing is known about.
         public DefType[] RuntimeInterfaces
@@ -261,39 +209,12 @@ namespace Internal.Runtime.TypeLoader
             else
             {
                 // Type is being newly constructed
-                if (TemplateType != null)
-                {
-                    NativeParser parser = GetParserForNativeLayoutInfo();
-                    // Template type loader case
-#if GENERICS_FORCE_USG
-                    bool isTemplateUniversalCanon = state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.UniversalCanonLookup);
-                    if (isTemplateUniversalCanon && type.CanShareNormalGenericCode())
-                    {
-                        TypeBuilderState tempState = new TypeBuilderState();
-                        tempState.NativeLayoutInfo = new NativeLayoutInfo();
-                        tempState.TemplateType = type.Context.TemplateLookup.TryGetNonUniversalTypeTemplate(type, ref tempState.NativeLayoutInfo);
-                        if (tempState.TemplateType != null)
-                        {
-                            Debug.Assert(!tempState.TemplateType.IsCanonicalSubtype(CanonicalFormKind.UniversalCanonLookup));
-                            parser = GetNativeLayoutInfoParser(type, ref tempState.NativeLayoutInfo);
-                        }
-                    }
-#endif
-                    var dictionaryLayoutParser = parser.GetParserForBagElementKind(BagElementKind.DictionaryLayout);
+                Debug.Assert(TemplateType != null);
+                NativeParser parser = GetParserForNativeLayoutInfo();
+                // Template type loader case
+                var dictionaryLayoutParser = parser.GetParserForBagElementKind(BagElementKind.DictionaryLayout);
 
-                    return !dictionaryLayoutParser.IsNull;
-                }
-                else
-                {
-                    NativeParser parser = GetParserForReadyToRunNativeLayoutInfo();
-                    // ReadyToRun case
-                    // Dictionary is directly encoded instead of the NativeLayout being a collection of bags
-                    if (parser.IsNull)
-                        return false;
-
-                    // First unsigned value in the native layout is the number of dictionary entries
-                    return parser.GetUnsigned() != 0;
-                }
+                return !dictionaryLayoutParser.IsNull;
             }
         }
 
@@ -318,71 +239,31 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                TypeDesc templateType = TypeBeingBuilt.ComputeTemplate(false);
-                if (templateType != null)
+                // Template type loader case
+                unsafe
                 {
-                    // Template type loader case
-                    unsafe
+                    if (TypeBeingBuilt.IsPointer || TypeBeingBuilt.IsByRef)
                     {
-                        if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
-                        {
-                            // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
-                            // They do not implement the generic interfaces that make this interesting for normal arrays.
-                            return TypeBeingBuilt.BaseType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
-                        }
-                        else
-                        {
-                            // This should only happen for non-universal templates
-                            Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
-
-                            // Canonical template type loader case
-                            return templateType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
-                        }
-                    }
-                }
-                else
-                {
-                    // Metadata based type loading.
-
-                    // Generic Type Definitions have no actual vtable entries
-                    if (TypeBeingBuilt.IsGenericDefinition)
+                        // Pointers and byrefs don't have vtable slots
                         return 0;
-
-                    // We have at least as many slots as exist on the base type.
-
-                    ushort numVTableSlots = 0;
-                    checked
-                    {
-                        if (TypeBeingBuilt.BaseType != null)
-                        {
-                            numVTableSlots = TypeBeingBuilt.BaseType.GetOrCreateTypeBuilderState().NumVTableSlots;
-                        }
-                        else
-                        {
-                            // Generic interfaces have a dictionary slot
-                            if (TypeBeingBuilt.IsInterface && TypeBeingBuilt.HasInstantiation)
-                                numVTableSlots = 1;
-                        }
-
-                        // Interfaces have actual vtable slots
-                        if (TypeBeingBuilt.IsInterface)
-                            return numVTableSlots;
-
-                        foreach (MethodDesc method in TypeBeingBuilt.GetMethods())
-                        {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                            if (LazyVTableResolver.MethodDefinesVTableSlot(method))
-                                numVTableSlots++;
-#else
-                            Environment.FailFast("metadata type loader required");
-#endif
-                        }
-
-                        if (HasDictionarySlotInVTable)
-                            numVTableSlots++;
                     }
+                    if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
+                    {
+                        // MDArray types and pointer arrays have the same vtable as the System.Array type they "derive" from.
+                        // They do not implement the generic interfaces that make this interesting for normal arrays.
+                        return TypeBeingBuilt.BaseType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
+                    }
+                    else
+                    {
+                        // This should only happen for non-universal templates
+                        Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
 
-                    return numVTableSlots;
+                        TypeDesc templateType = TypeBeingBuilt.ComputeTemplate(false);
+                        Debug.Assert(templateType != null);
+
+                        // Canonical template type loader case
+                        return templateType.GetRuntimeTypeHandle().ToEETypePtr()->NumVtableSlots;
+                    }
                 }
             }
         }
@@ -818,16 +699,5 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 #pragma warning restore CA1822
-
-        public VTableLayoutInfo[] VTableMethodSignatures;
-        public int NumSealedVTableMethodSignatures;
-
-#if GENERICS_FORCE_USG
-        public TypeDesc NonUniversalTemplateType;
-        public int NonUniversalInstanceGCDescSize;
-        public IntPtr NonUniversalInstanceGCDesc;
-        public IntPtr NonUniversalStaticGCDesc;
-        public IntPtr NonUniversalThreadStaticGCDesc;
-#endif
     }
 }
