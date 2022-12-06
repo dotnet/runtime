@@ -349,6 +349,16 @@ namespace CoreclrTestLib
             string contents = File.ReadAllText(crashReportJsonFile);
             dynamic crashReport = JsonSerializer.Deserialize<JsonObject>(contents);
             var threads = crashReport["payload"]["threads"];
+
+            // The logic happens in 3 steps:
+            // 1. Read the crashReport.json file, locate all the addresses of interest and then build
+            //    a string that will be passed to llvm-symbolizer. It is populated so that each address
+            //    is in its separate line along with the file name, etc. Some TAGS are added in the
+            //    string that is used in step 2.
+            // 2. llvm-symbolizer is ran and above string is passed as input.
+            // 3. After llvm-symbolizer completes, TAGS are used to format its output to print it in
+            //    the way it will be printed by sos.
+
             StringBuilder addrBuilder = new StringBuilder();
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
             foreach (var thread in threads)
