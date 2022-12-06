@@ -793,10 +793,7 @@ namespace Wasm.Build.Tests
             CreateBlazorWasmTemplateProject(id);
 
             string extraItems = @$"
-                <PackageReference Include=""SkiaSharp"" Version=""2.88.1-preview.63"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.1-preview.63"" />
-
-                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.7\*.a"" />
+                {GetSkiaSharpReferenceItems()}
                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
             ";
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
@@ -1050,6 +1047,11 @@ namespace Wasm.Build.Tests
 
             return table;
         }
+
+        protected static string GetSkiaSharpReferenceItems()
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.3"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.3"" />
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.12\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"
             public class TestClass {
