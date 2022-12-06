@@ -261,11 +261,10 @@ namespace ILLink.Tasks
 				if (!String.IsNullOrEmpty (_illinkPath))
 					return _illinkPath;
 
-#pragma warning disable IL3000 // 'Assembly.Location' always returns an empty string
-				var taskDirectory = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
-#pragma warning restore IL3000 // 'Assembly.Location' always returns an empty string
+				Version version = Environment.Version;
 				// The linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
-				_illinkPath = Path.Combine (Path.GetDirectoryName (taskDirectory), "net7.0", "illink.dll");
+				_illinkPath = Path.Join (AppDomain.CurrentDomain.BaseDirectory, $"net{version.Major}.{version.Minor}", "illink.dll");
+				
 				return _illinkPath;
 			}
 			set => _illinkPath = value;
