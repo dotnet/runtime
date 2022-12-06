@@ -1334,7 +1334,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
                     nChars > 0 && nChars <= ARRAY_SIZE(path))
                 {
                     WCHAR* pFile = path + nChars - 1;
-                    while ((pFile >= path) && (*pFile != W('\\')))
+                    while ((pFile >= path) && (*pFile != DIRECTORY_SEPARATOR_CHAR_W))
                     {
                         pFile--;
                     }

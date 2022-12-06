@@ -131,6 +131,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadOnly = 0x0000,
             Writeable = 0x0001,
             Executable = 0x0002,
+            Uninitialized = 0x0004,
         };
 
         /// <summary>
@@ -150,6 +151,9 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case SectionType.Writeable:
                     attributes |= CustomSectionAttributes.Writeable;
+                    break;
+                case SectionType.Uninitialized:
+                    attributes |= CustomSectionAttributes.Uninitialized | CustomSectionAttributes.Writeable;
                     break;
             }
 

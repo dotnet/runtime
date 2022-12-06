@@ -73,6 +73,23 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
+        private static volatile int s_isPrivilegedProcess = -1;
+        public static bool IsPrivilegedProcess
+        {
+            get
+            {
+                int p = s_isPrivilegedProcess;
+                if (p == -1)
+                {
+                    s_isPrivilegedProcess = p = AdminHelpers.IsProcessElevated() ? 1 : 0;
+                }
+
+                return p == 1;
+            }
+        }
+
+        public static bool IsNotPrivilegedProcess => !IsPrivilegedProcess;
+
         public static bool IsMarshalGetExceptionPointersSupported => !IsMonoRuntime && !IsNativeAot;
 
         private static readonly Lazy<bool> s_isCheckedRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));

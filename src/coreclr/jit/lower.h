@@ -90,8 +90,8 @@ private:
     bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
     void ContainCheckCompareChainForAnd(GenTree* tree);
     void ContainCheckConditionalCompare(GenTreeOp* cmp);
-    void ContainCheckSelect(GenTreeConditional* node);
 #endif
+    void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
@@ -317,7 +317,7 @@ private:
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
-    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
+    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
@@ -375,6 +375,11 @@ private:
     void LowerModPow2(GenTree* node);
     GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
+
+    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
+                                                 GenTree*    op1,
+                                                 CorInfoType simdBaseJitType,
+                                                 unsigned    simdSize);
 #endif // FEATURE_HW_INTRINSICS
 
     //----------------------------------------------------------------------------------------------

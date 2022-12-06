@@ -719,8 +719,7 @@ namespace System.Security.Cryptography
         private void CheckCopyToArguments(Stream destination, int bufferSize)
         {
             ArgumentNullException.ThrowIfNull(destination);
-
-            EnsureNotDisposed(destination, nameof(destination));
+            ObjectDisposedException.ThrowIf(!destination.CanRead && !destination.CanWrite, destination);
 
             if (!destination.CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
@@ -728,12 +727,6 @@ namespace System.Security.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             if (!CanRead)
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-        }
-
-        private static void EnsureNotDisposed(Stream stream, string objectName)
-        {
-            if (!stream.CanRead && !stream.CanWrite)
-                throw new ObjectDisposedException(objectName);
         }
 
         public void Clear()
