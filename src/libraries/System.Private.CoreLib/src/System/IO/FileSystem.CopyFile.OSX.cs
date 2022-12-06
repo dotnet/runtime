@@ -17,14 +17,22 @@ namespace System.IO
             string destFullPath_Full = Path.GetFullPath(destFullPath);
             string? destPathFolder = Path.GetDirectoryName(destFullPath_Full);
             string destPath;
-            if (string.IsNullOrEmpty(destPath))
+            if (string.IsNullOrEmpty(destPathFolder))
             {
                 destPath = destFullPath_Full;
             }
             else
             {
-                destPathFolder = ResolveLinkTargetString(destPathFolder, true, true);
-                if (string.IsNullOrEmpty(destPath))
+                try
+                {
+                    destPathFolder = ResolveLinkTargetString(destPathFolder, true, true);
+                }
+                catch
+                {
+                    //In case readlink fails
+                    destPathFolder = null;
+                }
+                if (string.IsNullOrEmpty(destPathFolder))
                 {
                     destPath = destFullPath_Full;
                 }
