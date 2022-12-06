@@ -43,7 +43,7 @@ namespace System.IO
             }
 
             //Get the full path of the source path and verify that we're not copying the source file onto itself
-            string fullSource = TryGetLinkTarget(sourceFullPath, destPath, overwrite) ?? destPath;
+            string fullSource = TryGetLinkTarget(sourceFullPath, destPath, overwrite) ?? sourceFullPath;
 
             //Start the file copy and prepare for finalization
             StartedCopyFileState startedCopyFile = StartCopyFile(fullSource, destPath, overwrite, openDst: false);
