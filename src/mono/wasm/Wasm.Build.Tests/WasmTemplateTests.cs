@@ -185,15 +185,15 @@ namespace Wasm.Build.Tests
         [InlineData("Release", false)]
         [InlineData("Release", true)]
         public void ConsoleBuildAndRunDefault(string config, bool relinking)
-            => ConsoleBuildAndRun(config, relinking, string.Empty);
+            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework);
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug", "-f net7.0")]
-        [InlineData("Debug", "-f net8.0")]
-        public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs)
-            => ConsoleBuildAndRun(config, false, extraNewArgs);
+        [InlineData("Debug", "-f net7.0", "net7.0")]
+        [InlineData("Debug", "-f net8.0", "net8.0")]
+        public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
+            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM);
 
-        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs)
+        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs);
@@ -215,31 +215,17 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: false,
-                            TargetFramework: BuildTestBase.DefaultTargetFramework
+                            TargetFramework: expectedTFM
                             ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking, targetFramework: DefaultTargetFramework);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config, expectedTFM), "AppBundle"), fromRuntimePack: !relinking, targetFramework: expectedTFM);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
             Assert.Equal(42, exitCode);
 
-            try
-            {
-                Assert.Contains("args[0] = x", output);
-                Assert.Contains("args[1] = y", output);
-                Assert.Contains("args[2] = z", output);
-            }
-            catch
-            {
-                if (!extraNewArgs.Contains("-f net7.0"))
-                    throw;
-
-                // Workaround for https://github.com/dotnet/runtime/issues/76429
-                // till a 7.0 sdk with the fix becomes available
-                Assert.Contains("args[0] = dotnet", output);
-                Assert.Contains("args[1] = is", output);
-                Assert.Contains("args[2] = great!", output);
-            }
+            Assert.Contains("args[0] = x", output);
+            Assert.Contains("args[1] = y", output);
+            Assert.Contains("args[2] = z", output);
         }
 
         public static TheoryData<bool, bool, string> TestDataForAppBundleDir()
@@ -254,7 +240,7 @@ namespace Wasm.Build.Tests
             void AddTestData(bool forConsole, bool runOutsideProjectDirectory)
             {
                 // FIXME: Disabled for `main` right now, till 7.0 gets the fix
-                //data.Add(runOutsideProjectDirectory, forConsole, string.Empty);
+                data.Add(runOutsideProjectDirectory, forConsole, string.Empty);
 
                 data.Add(runOutsideProjectDirectory, forConsole,
                                 $"<OutputPath>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</OutputPath>");

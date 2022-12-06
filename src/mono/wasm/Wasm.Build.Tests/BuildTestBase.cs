@@ -671,7 +671,8 @@ namespace Wasm.Build.Tests
         protected static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist=true)
         {
             string prefix = label != null ? $"{label}: " : string.Empty;
-            Assert.True(Directory.Exists(dir), $"[{label}] {dir} not found");
+            if (!Directory.Exists(dir))
+                throw new XunitException($"[{label}] {dir} not found");
             foreach (string filename in filenames)
             {
                 string path = Path.Combine(dir, filename);
