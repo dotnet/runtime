@@ -5,9 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Playwright;
 
 #nullable enable
 
@@ -82,7 +84,7 @@ public class BuildPublishTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void WithDllImportInMainAssembly(string config)
+    public async Task WithDllImportInMainAssembly(string config)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
         string id = $"blz_dllimp_{config}";
@@ -111,12 +113,22 @@ public class BuildPublishTests : BuildTestBase
         File.WriteAllText(Path.Combine(_projectDir!, "Pages", "MyDllImport.cs"), myDllImportCs);
 
         AddItemsPropertiesToProject(projectFile, extraItems: @"<NativeFileReference Include=""mylib.cpp"" />");
+        BlazorAddRazorButton("cpp_add", """
+            var result = MyDllImports.cpp_add(10, 12);
+            outputText = $"{result}";
+        """);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
         CheckNativeFileLinked(forPublish: false);
 
         BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
         CheckNativeFileLinked(forPublish: true);
+
+        await BlazorRun(config, async (page) => {
+            await page.Locator("text=\"cpp_add\"").ClickAsync();
+            var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
+            Assert.Equal("Output: 22", txt);
+        });
 
         void CheckNativeFileLinked(bool forPublish)
         {

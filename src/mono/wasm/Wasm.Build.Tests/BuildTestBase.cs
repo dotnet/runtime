@@ -18,6 +18,7 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Playwright;
 
 #nullable enable
 
@@ -802,6 +803,50 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
 
             return projectFile;
+        }
+
+        public void BlazorAddRazorButton(string buttonText, string customCode, string methodName="test", string razorPage="Pages/Counter.razor")
+        {
+            string additionalCode = $$"""
+                <p role="{{methodName}}">Output: @outputText</p>
+                <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
+
+                @code {
+                    private string outputText = string.Empty;
+                    public void {{methodName}}()
+                    {
+                        {{customCode}}
+                    }
+                }
+            """;
+
+            // find blazor's Counter.razor
+            string counterRazorPath = Path.Combine(_projectDir!, razorPage);
+            if (!File.Exists(counterRazorPath))
+                throw new FileNotFoundException($"Could not find {counterRazorPath}");
+
+            string oldContent = File.ReadAllText(counterRazorPath);
+            File.WriteAllText(counterRazorPath, oldContent + additionalCode);
+        }
+
+        public async Task BlazorRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+        {
+            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!);
+
+            await using var runner = new BrowserRunner(_testOutput);
+            var page = await runner.RunAsync(runCommand, $"run -c {config} {extraArgs}");
+
+            await page.Locator("text=Counter").ClickAsync();
+            var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.Equal("Current count: 0", txt);
+
+            await page.Locator("text=\"Click me\"").ClickAsync();
+            txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.Equal("Current count: 1", txt);
+
+            if (test is not null)
+                await test(page);
         }
 
         public static (int exitCode, string buildOutput) RunProcess(string path,

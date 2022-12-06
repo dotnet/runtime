@@ -426,19 +426,7 @@ namespace Wasm.Build.Tests
                     .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
                     .EnsureSuccessful();
 
-            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!);
-
-            await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build");
-
-            await page.Locator("text=Counter").ClickAsync();
-            var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-            Assert.Equal("Current count: 0", txt);
-
-            await page.Locator("text=\"Click me\"").ClickAsync();
-            txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-            Assert.Equal("Current count: 1", txt);
+            await BlazorRun(config);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
