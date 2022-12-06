@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
 			CompilerTypeSystemContext typeSystemContext =
-				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
+				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleCutoffPoint: -1);
 
 			typeSystemContext.InputFilePaths = options.InputFilePaths;
 			typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
@@ -40,7 +40,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				inputModules.Add (module);
 			}
 
-			CompilationModuleGroup compilationGroup = new TestInfraMultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
+			CompilationModuleGroup compilationGroup;
+			if (options.FrameworkCompilation)
+				compilationGroup = new SingleFileCompilationModuleGroup ();
+			else
+				compilationGroup = new TestInfraMultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
 
 			List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider> ();
 			EcmaModule? entrypointModule = null;
@@ -82,6 +86,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				options.AdditionalRootAssemblies.ToArray (),
 				options.TrimAssemblies.ToArray ());
 
+			PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy ();
+			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);
+			InteropStubManager interopStubManager = new UsageBasedInteropStubManager (interopStateManager, pinvokePolicy, logger);
+
 			CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)
 				.UseILProvider (ilProvider)
 				.UseCompilationUnitPrefix("");
@@ -90,6 +98,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.UseCompilationRoots (compilationRoots)
 				.UseMetadataManager (metadataManager)
 				.UseParallelism (System.Diagnostics.Debugger.IsAttached ? 1 : -1)
+				.UseInteropStubManager (interopStubManager)
 				.ToILScanner ();
 
 			return scanner.Scan ();

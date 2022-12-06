@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json.Serialization;
@@ -19,7 +18,7 @@ namespace System.Text.Json
         // We check for flush after each JSON property and element is written to the buffer.
         // Once the buffer is expanded to contain the largest single element\property, a 90% threshold
         // means the buffer may be expanded a maximum of 4 times: 1-(1/(2^4))==.9375.
-        private const float FlushThreshold = .90f;
+        internal const float FlushThreshold = .90f;
 
         /// <summary>
         /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
@@ -50,8 +49,8 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
         }
 
         /// <summary>
@@ -80,8 +79,8 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            WriteStream(utf8Json, value, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            jsonTypeInfo.Serialize(utf8Json, value);
         }
 
         /// <summary>
@@ -119,7 +118,7 @@ namespace System.Text.Json
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
-            return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
+            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
         }
 
         /// <summary>
@@ -154,7 +153,7 @@ namespace System.Text.Json
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
-            WriteStream(utf8Json, value, jsonTypeInfo);
+            jsonTypeInfo.SerializeAsObject(utf8Json, value);
         }
 
         /// <summary>
@@ -188,7 +187,8 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
+            jsonTypeInfo.EnsureConfigured();
+            return jsonTypeInfo.SerializeAsync(utf8Json, value, cancellationToken);
         }
 
         /// <summary>
@@ -219,7 +219,8 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            WriteStream(utf8Json, value, jsonTypeInfo);
+            jsonTypeInfo.EnsureConfigured();
+            jsonTypeInfo.Serialize(utf8Json, value);
         }
 
         /// <summary>
@@ -258,11 +259,8 @@ namespace System.Text.Json
             }
 
             ValidateInputType(value, inputType);
-            return WriteStreamAsync(
-                utf8Json,
-                value,
-                GetTypeInfo(context, inputType),
-                cancellationToken);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
+            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
         }
 
         /// <summary>
@@ -298,116 +296,8 @@ namespace System.Text.Json
             }
 
             ValidateInputType(value, inputType);
-            WriteStream(utf8Json, value, GetTypeInfo(context, inputType));
-        }
-
-        private static async Task WriteStreamAsync<TValue>(
-            Stream utf8Json,
-            TValue value,
-            JsonTypeInfo jsonTypeInfo,
-            CancellationToken cancellationToken)
-        {
-            jsonTypeInfo.EnsureConfigured();
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-            JsonWriterOptions writerOptions = options.GetWriterOptions();
-
-            using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
-            using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
-            {
-                WriteStack state = default;
-                jsonTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
-                state.Initialize(jsonTypeInfo, supportAsync: true, supportContinuation: true);
-                state.CancellationToken = cancellationToken;
-
-                bool isFinalBlock;
-
-                try
-                {
-                    do
-                    {
-                        state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
-
-                        try
-                        {
-                            isFinalBlock = WriteCore(writer, value, jsonTypeInfo, ref state);
-
-                            if (state.SuppressFlush)
-                            {
-                                Debug.Assert(!isFinalBlock);
-                                Debug.Assert(state.PendingTask is not null);
-                                state.SuppressFlush = false;
-                            }
-                            else
-                            {
-                                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                                bufferWriter.Clear();
-                            }
-                        }
-                        finally
-                        {
-                            // Await any pending resumable converter tasks (currently these can only be IAsyncEnumerator.MoveNextAsync() tasks).
-                            // Note that pending tasks are always awaited, even if an exception has been thrown or the cancellation token has fired.
-                            if (state.PendingTask is not null)
-                            {
-                                try
-                                {
-                                    await state.PendingTask.ConfigureAwait(false);
-                                }
-                                catch
-                                {
-                                    // Exceptions should only be propagated by the resuming converter
-                                    // TODO https://github.com/dotnet/runtime/issues/22144
-                                }
-                            }
-
-                            // Dispose any pending async disposables (currently these can only be completed IAsyncEnumerators).
-                            if (state.CompletedAsyncDisposables?.Count > 0)
-                            {
-                                await state.DisposeCompletedAsyncDisposables().ConfigureAwait(false);
-                            }
-                        }
-
-                    } while (!isFinalBlock);
-                }
-                catch
-                {
-                    // On exception, walk the WriteStack for any orphaned disposables and try to dispose them.
-                    await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
-                    throw;
-                }
-            }
-        }
-
-        private static void WriteStream<TValue>(
-            Stream utf8Json,
-            in TValue value,
-            JsonTypeInfo jsonTypeInfo)
-        {
-            jsonTypeInfo.EnsureConfigured();
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-            JsonWriterOptions writerOptions = options.GetWriterOptions();
-
-            using (var bufferWriter = new PooledByteBufferWriter(options.DefaultBufferSize))
-            using (var writer = new Utf8JsonWriter(bufferWriter, writerOptions))
-            {
-                WriteStack state = default;
-                jsonTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
-                state.Initialize(jsonTypeInfo, supportContinuation: true, supportAsync: false);
-
-                bool isFinalBlock;
-
-                do
-                {
-                    state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
-
-                    isFinalBlock = WriteCore(writer, value, jsonTypeInfo, ref state);
-
-                    bufferWriter.WriteToStream(utf8Json);
-                    bufferWriter.Clear();
-
-                    Debug.Assert(state.PendingTask == null);
-                } while (!isFinalBlock);
-            }
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
+            jsonTypeInfo.SerializeAsObject(utf8Json, value);
         }
     }
 }

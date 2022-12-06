@@ -301,9 +301,6 @@ mono_interp_error_cleanup (MonoError *error);
 gboolean
 mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method);
 
-MONO_NEVER_INLINE void
-mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
-
 #if HOST_BROWSER
 
 gboolean

@@ -35,8 +35,9 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(document));
             }
 
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadDocument<TValue>(document, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -70,7 +71,8 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadDocument<object?>(document, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -106,7 +108,8 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return ReadDocument<TValue>(document, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -161,13 +164,8 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadDocument<object?>(document, jsonTypeInfo);
-        }
-
-        private static TValue? ReadDocument<TValue>(JsonDocument document, JsonTypeInfo jsonTypeInfo)
-        {
             ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
-            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
     }
 }

@@ -117,10 +117,14 @@ namespace System.Resources
         ResourceReader(Stream stream)
 #endif
         {
+#if RESOURCES_EXTENSIONS
             if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
+#else
+            ArgumentNullException.ThrowIfNull(stream);
+#endif
 
             if (!stream.CanRead)
             {

@@ -5,19 +5,15 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
-using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 
-using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -100,15 +96,6 @@ namespace Internal.Runtime.TypeLoader
         public override bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, isMdArray, rank, out arrayTypeHandle);
-        }
-
-        /// <summary>
-        /// Register a new runtime-allocated code thunk in the diagnostic stream.
-        /// </summary>
-        /// <param name="thunkAddress">Address of thunk to register</param>
-        public override void RegisterThunk(IntPtr thunkAddress)
-        {
-            SerializedDebugData.RegisterTailCallThunk(thunkAddress);
         }
     }
 
@@ -512,20 +499,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public bool TryGetFieldOffset(RuntimeTypeHandle declaringTypeHandle, uint fieldOrdinal, out int fieldOffset)
-        {
-            fieldOffset = int.MinValue;
-
-            // No use going further for non-generic types... TypeLoader doesn't have offset answers for non-generic types!
-            if (!declaringTypeHandle.IsGenericType())
-                return false;
-
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return TypeBuilder.TryGetFieldOffset(declaringTypeHandle, fieldOrdinal, out fieldOffset);
-            }
-        }
-
         public bool CanInstantiationsShareCode(RuntimeTypeHandle[] genericArgHandles1, RuntimeTypeHandle[] genericArgHandles2, CanonicalFormKind kind)
         {
             if (genericArgHandles1.Length != genericArgHandles2.Length)
@@ -616,60 +589,6 @@ namespace Internal.Runtime.TypeLoader
             return (targetMethod != IntPtr.Zero);
         }
 
-        public bool TryComputeHasInstantiationDeterminedSize(RuntimeTypeHandle typeHandle, out bool hasInstantiationDeterminedSize)
-        {
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-            bool success = TryComputeHasInstantiationDeterminedSize(typeHandle, context, out hasInstantiationDeterminedSize);
-            TypeSystemContextFactory.Recycle(context);
-
-            return success;
-        }
-
-        public bool TryComputeHasInstantiationDeterminedSize(RuntimeTypeHandle typeHandle, TypeSystemContext context, out bool hasInstantiationDeterminedSize)
-        {
-            Debug.Assert(RuntimeAugments.IsGenericType(typeHandle) || RuntimeAugments.IsGenericTypeDefinition(typeHandle));
-            DefType type = (DefType)context.ResolveRuntimeTypeHandle(typeHandle);
-
-            return TryComputeHasInstantiationDeterminedSize(type, out hasInstantiationDeterminedSize);
-        }
-
-        internal static bool TryComputeHasInstantiationDeterminedSize(DefType type, out bool hasInstantiationDeterminedSize)
-        {
-            Debug.Assert(type.HasInstantiation);
-
-            NativeLayoutInfoLoadContext loadContextUniversal;
-            NativeLayoutInfo universalLayoutInfo;
-            NativeParser parser = type.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out loadContextUniversal, out universalLayoutInfo);
-            if (parser.IsNull)
-            {
-                hasInstantiationDeterminedSize = false;
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                MetadataType typeDefinition = type.GetTypeDefinition() as MetadataType;
-                if (typeDefinition != null)
-                {
-                    TypeDesc [] universalCanonInstantiation = new TypeDesc[type.Instantiation.Length];
-                    TypeSystemContext context = type.Context;
-                    TypeDesc universalCanonType = context.UniversalCanonType;
-                    for (int i = 0 ; i < universalCanonInstantiation.Length; i++)
-                         universalCanonInstantiation[i] = universalCanonType;
-
-                    DefType universalCanonForm = typeDefinition.MakeInstantiatedType(universalCanonInstantiation);
-                    hasInstantiationDeterminedSize = universalCanonForm.InstanceFieldSize.IsIndeterminate;
-                    return true;
-                }
-#endif
-                return false;
-            }
-
-            int? flags = (int?)parser.GetUnsignedForBagElementKind(BagElementKind.TypeFlags);
-
-            hasInstantiationDeterminedSize = flags.HasValue ?
-                (((NativeFormat.TypeFlags)flags) & NativeFormat.TypeFlags.HasInstantiationDeterminedSize) != 0 :
-                false;
-
-            return true;
-        }
-
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
         public bool TryResolveSingleMetadataFixup(ModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
         {
@@ -720,28 +639,6 @@ namespace Internal.Runtime.TypeLoader
             {
                 return TryResolveTypeSlotDispatch_Inner(targetType, interfaceType, slot, out methodAddress);
             }
-        }
-
-        public unsafe bool TryGetOrCreateNamedTypeForMetadata(
-            QTypeDefinition qTypeDefinition,
-            out RuntimeTypeHandle runtimeTypeHandle)
-        {
-            if (TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle))
-            {
-                return true;
-            }
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                IntPtr runtimeTypeHandleAsIntPtr;
-                TypeBuilder.ResolveSingleTypeDefinition(qTypeDefinition, out runtimeTypeHandleAsIntPtr);
-                runtimeTypeHandle = *(RuntimeTypeHandle*)&runtimeTypeHandleAsIntPtr;
-                return true;
-            }
-#else
-            return false;
-#endif
         }
 
         public static IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)

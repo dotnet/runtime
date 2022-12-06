@@ -84,13 +84,13 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.22571.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.22578.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>60a4b756026f3ff7164f47aa09ece9e7c4e0ffca</Sha>
+      <Sha>843d359bc773fa80150b61373a1811fecd5be98c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.22571.1">
+    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.22578.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>60a4b756026f3ff7164f47aa09ece9e7c4e0ffca</Sha>
+      <Sha>843d359bc773fa80150b61373a1811fecd5be98c</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -262,9 +262,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>dd7fdb723d91c2c6cb7efc3d95f9d95ee86d48c8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22552.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22602.1">
       <Uri>https://github.com/dotnet/linker</Uri>
-      <Sha>391ac60bbfb2c618b82f08af728d2d4d259d584e</Sha>
+      <Sha>da244b780a1d1755cb7cb389df599fe650726892</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22566.1">
       <Uri>https://github.com/dotnet/xharness</Uri>

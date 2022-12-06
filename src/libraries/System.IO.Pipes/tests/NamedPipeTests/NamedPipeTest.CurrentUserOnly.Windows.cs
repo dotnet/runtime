@@ -197,6 +197,7 @@ namespace System.IO.Pipes.Tests
                 {
                     // When CurrentUserOnly is only on client side and asks for ReadOnly access, the connection is not rejected
                     // but we get the UnauthorizedAccessException on the client regardless.
+                    Assert.True(serverTask.Wait(TimeSpan.FromSeconds(10)));
                     Assert.True(serverTask.IsCompletedSuccessfully);
                 }
                 else
@@ -209,6 +210,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79180", TestRuntimes.Mono)]
         [ConditionalTheory(nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
         [InlineData(false)]
         [InlineData(true)]

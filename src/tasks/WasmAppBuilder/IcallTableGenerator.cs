@@ -206,7 +206,7 @@ internal sealed class IcallTableGenerator
                 }
                 catch (NotImplementedException nie)
                 {
-                    Log.LogWarning($"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
+                    Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
                                     $" because type '{nie.Message}' is not supported for parameter named '{par.Name}'. Ignoring.");
                     return null;
                 }
