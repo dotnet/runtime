@@ -6021,27 +6021,37 @@ bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
                 return WALK_CONTINUE;
             }
 
-            // Check for calls and determine what's written.
+            // Determine what's written and check for calls.
             //
-            GenTree* dest = nullptr;
             if (tree->OperIs(GT_CALL))
             {
                 m_dsc->ivaMaskCall = optCallInterf(tree->AsCall());
-
-                dest = m_compiler->gtCallGetDefinedRetBufLclAddr(tree->AsCall());
-                if (dest == nullptr)
-                {
-                    return WALK_CONTINUE;
-                }
-
-                dest = dest->AsOp()->gtOp1;
             }
             else
             {
-                dest = tree->AsOp()->gtOp1;
-            }
+                assert(tree->OperIs(GT_ASG));
 
-            genTreeOps const destOper = dest->OperGet();
+                genTreeOps destOper = tree->gtGetOp1()->OperGet();
+                if (destOper == GT_LCL_FLD)
+                {
+                    // We can't track every field of every var. Moreover, indirections
+                    // may access different parts of the var as different (but
+                    // overlapping) fields. So just treat them as indirect accesses
+                    //
+                    // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
+                    // noway_assert(lvaTable[lclNum].lvAddrTaken);
+                    //
+                    varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                    m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+                }
+                else if (destOper == GT_IND)
+                {
+                    // Set the proper indirection bits
+                    //
+                    varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                    m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+                }
+            }
 
             // Determine if the tree modifies a particular local
             //
@@ -6067,26 +6077,6 @@ bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
                 {
                     return WALK_ABORT;
                 }
-            }
-
-            if (destOper == GT_LCL_FLD)
-            {
-                // We can't track every field of every var. Moreover, indirections
-                // may access different parts of the var as different (but
-                // overlapping) fields. So just treat them as indirect accesses
-                //
-                // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
-                // noway_assert(lvaTable[lclNum].lvAddrTaken);
-                //
-                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
-            }
-            else if (destOper == GT_IND)
-            {
-                // Set the proper indirection bits
-                //
-                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
             }
 
             return WALK_CONTINUE;
