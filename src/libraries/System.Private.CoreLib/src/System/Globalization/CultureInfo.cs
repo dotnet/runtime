@@ -505,7 +505,7 @@ namespace System.Globalization
                                 parentName = "zh-Hant";
                             }
                         }
-                        else if (_name.Length > 8 && _name.AsSpan(2, 4).Equals("-Han", StringComparison.Ordinal) && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
+                        else if (_name.Length > 8 && _name.AsSpan(2, 4) is "-Han" && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
                         {
                             if (_name[6] == 't') // zh-Hant-*
                             {

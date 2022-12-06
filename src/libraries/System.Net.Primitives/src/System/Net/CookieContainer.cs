@@ -617,7 +617,7 @@ namespace System.Net
             ReadOnlySpan<char> hostSpan = host;
             Span<Range> ipParts = stackalloc Range[5];
             ipParts = ipParts.Slice(0, hostSpan.Split(ipParts, '.'));
-            if (ipParts.Length == 4 && hostSpan[ipParts[0]].SequenceEqual("127"))
+            if (ipParts.Length == 4 && hostSpan[ipParts[0]] is "127")
             {
                 int i;
                 for (i = 1; i < ipParts.Length; i++)

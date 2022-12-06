@@ -474,8 +474,8 @@ namespace System.Net.Http.Headers
             ReadOnlySpan<char> processedInputSpan = processedInput;
             // "=, encodingName, encodingType, encodedData, ="
             if (processedInputSpan.Split(parts, '?') != 5 ||
-                !processedInputSpan[parts[0]].SequenceEqual("\"=") ||
-                !processedInputSpan[parts[4]].SequenceEqual("=\"") ||
+                processedInputSpan[parts[0]] is not "\"=" ||
+                processedInputSpan[parts[4]] is not "=\"" ||
                 !processedInputSpan[parts[2]].Equals("b", StringComparison.OrdinalIgnoreCase))
             {
                 // Not encoded.
