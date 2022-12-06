@@ -442,16 +442,16 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("")]
-        [InlineData("-f net7.0")]
-        [InlineData("-f net8.0")]
-        public async Task BrowserBuildAndRun(string extraNewArgs)
+        [InlineData("", BuildTestBase.DefaultTargetFramework)]
+        [InlineData("-f net7.0", "net7.0")]
+        [InlineData("-f net8.0", "net8.0")]
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework)
         {
             string config = "Debug";
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
 
-            UpdateBrowserMainJs(DefaultTargetFramework);
+            UpdateBrowserMainJs(targetFramework);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
