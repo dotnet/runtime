@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <AssemblyName>.NET Tests Watchdog</AssemblyName>
+    <_BuildGeneralArgs>-arch $(TargetArchitecture) -c $(Configuration) -os $(TargetOS)</_BuildGeneralArgs>
+  </PropertyGroup>
+
+
+  <!-- Instructions to build on Unix. -->
+
+  <Target Name="BuildForUnix"
+          Condition="!$([MSBuild]::IsOsPlatform(Windows))">
+
+    <PropertyGroup>
+      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> $(CMakeArgs)</_CMakeArgs>
+      <_BuildUnixArgs>$(_BuildGeneralArgs)$(_CMakeArgs)</_BuildUnixArgs>
+    </PropertyGroup>
+
+    <Message Text="$(MSBuildThisFileDirectory)build-watchdog.sh $(_BuildUnixArgs)" Importance="High" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-watchdog.sh&quot; $(_BuildUnixArgs)" />
+
+  </Target>
+
+
+  <!-- Instructions to build on Windows. -->
+
+  <Target Name="BuildForWindows"
+          Condition="$([MSBuild]::IsOsPlatform(Windows))">
+
+    <PropertyGroup>
+      <_BuildWindowsArgs>$(_BuildGeneralArgs)</_BuildWindowsArgs>
+      <_BuildWindowsArgs Condition="'$(Ninja)' == 'false'">$(_BuildWindowsArgs) msbuild</_BuildWindowsArgs>
+    </PropertyGroup>
+
+    <Message Text="$(MSBuildThisFileDirectory)build-watchdog.cmd $(_BuildWindowsArgs)" Importance="High" />
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-watchdog.cmd&quot; $(_BuildWindowsArgs)" />
+
+  </Target>
+
+</Project>
+
