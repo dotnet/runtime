@@ -1931,7 +1931,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindTypeRef(
             (void)md_cursor_to_token(cursor, ptr);
             return S_OK;
         }
-
 Next:
         (void)md_cursor_next(&cursor);
     }
@@ -2516,9 +2515,9 @@ namespace
         return readIn;
     }
 
-    // Handles processing the following metadata signature grammar.
+    // Handles processing the following metadata signature rules.
     //
-    // START := MethodDefSig | MethodRefSig | StandAloneMethodSig
+    // S := MethodDefSig | MethodRefSig | StandAloneMethodSig
     // II.23.2.1  MethodDefSig : = (DEFAULT | VARARG | (GENERIC GenParamCount)) ParamCount RetType Param *
     // II.23.2.2  MethodRefSig : = (DEFAULT | (GENERIC GenParamCount)) ParamCount RetType Param *
     //  | VARARG ParamCount RetType Param * (SENTINEL Param + ) ?
@@ -2576,6 +2575,7 @@ namespace
         uint32_t cnt = 0;
         ULONG data;
         ULONG tmp;
+        int32_t stmp;
         mdToken tk;
         switch (corType)
         {
@@ -2607,7 +2607,7 @@ namespace
                 RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &tmp)); // Size*
             RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // NumLoBounds
             for (uint32_t i = 0; i < data; ++i)
-                RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &tmp)); // LoBounds*
+                RETURN_IF_NOT_ADVANCE(CorSigUncompressSignedInt(sigCurr, &stmp)); // LoBounds*
             break;
         case ELEMENT_TYPE_VALUETYPE:
         case ELEMENT_TYPE_CLASS:
