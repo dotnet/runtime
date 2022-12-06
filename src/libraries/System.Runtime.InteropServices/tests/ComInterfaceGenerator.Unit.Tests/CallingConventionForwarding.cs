@@ -23,10 +23,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -50,10 +49,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [SuppressGCTransitionAttribute]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -78,10 +76,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -106,10 +103,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -134,10 +130,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -168,10 +163,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [SuppressGCTransition]
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
                     [VirtualMethodIndex(0)]

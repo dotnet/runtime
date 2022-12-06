@@ -30,7 +30,6 @@ namespace Microsoft.Interop
             MarshallingInfo ExceptionMarshallingInfo,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
-            ManagedTypeInfo TypeKeyType,
             ManagedTypeInfo TypeKeyOwner,
             SequenceEqualImmutableArray<Diagnostic> Diagnostics);
 
@@ -348,19 +347,14 @@ namespace Microsoft.Interop
 
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
 
-            var typeKeyOwner = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
-            ManagedTypeInfo typeKeyType = SpecialTypeInfo.Byte;
+            var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
-            INamedTypeSymbol? iUnmanagedInterfaceTypeInstantiation = symbol.ContainingType.AllInterfaces.FirstOrDefault(iface => SymbolEqualityComparer.Default.Equals(iface.OriginalDefinition, iUnmanagedInterfaceTypeType));
-            if (iUnmanagedInterfaceTypeInstantiation is null)
+            INamedTypeSymbol expectedUnmanagedInterfaceType = iUnmanagedInterfaceTypeType.Construct(symbol.ContainingType);
+
+            bool implementsIUnmanagedInterfaceOfSelf = symbol.ContainingType.AllInterfaces.Any(iface => SymbolEqualityComparer.Default.Equals(iface, expectedUnmanagedInterfaceType));
+            if (!implementsIUnmanagedInterfaceOfSelf)
             {
                 // TODO: Report invalid configuration
-            }
-            else
-            {
-                // The type key is the second generic type parameter, so we need to get the info for the
-                // second argument.
-                typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iUnmanagedInterfaceTypeInstantiation.TypeArguments[1]);
             }
 
             MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, symbol, environment.Compilation, generatorDiagnostics, virtualMethodIndexData);
@@ -375,8 +369,7 @@ namespace Microsoft.Interop
                 exceptionMarshallingInfo,
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
-                typeKeyType,
-                typeKeyOwner,
+                interfaceType,
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
@@ -442,8 +435,7 @@ namespace Microsoft.Interop
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 methodStub.VtableIndexData.Index,
                 methodStub.CallingConvention.Array,
-                methodStub.TypeKeyOwner.Syntax,
-                methodStub.TypeKeyType);
+                methodStub.TypeKeyOwner.Syntax);
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
@@ -518,7 +510,7 @@ namespace Microsoft.Interop
 
             var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 2);
 
-            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.TypeKeyType))
+            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, NativeThisInfo.Instance)
             {
                 InstanceIdentifier = ThisParameterIdentifier,
                 NativeIndex = 0,

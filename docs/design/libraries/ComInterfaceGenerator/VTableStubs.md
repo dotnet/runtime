@@ -80,26 +80,29 @@ public readonly ref struct VirtualMethodTableInfo
     }
 }
 
-public interface IUnmanagedVirtualMethodTableProvider<T> where T : IEquatable<T>
+public interface IUnmanagedVirtualMethodTableProvider
 {
-    protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(T typeKey);
+    protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type);
 
-    public sealed VirtualMethodTableInfo GetVirtualMethodTableInfoForKey<TUnmanagedInterfaceType>()
-        where TUnmanagedInterfaceType : IUnmanagedInterfaceType<T>
+    public sealed VirtualMethodTableInfo GetVirtualMethodTableInfoForKey()
+        where TUnmanagedInterfaceType : IUnmanagedInterfaceType
     {
-        return GetVirtualMethodTableInfoForKey(TUnmanagedInterfaceType.TypeKey);
+        // Dispatch from a non-virtual generic to a virtual non-generic with System.Type
+        // to avoid generic virtual method dispatch, which is very slow.
+        return GetVirtualMethodTableInfoForKey(typeof(TUnmanagedInterfaceType));
     }
 }
 
-public interface IUnmanagedInterfaceType<T> where T : IEquatable<T>
+public interface IUnmanagedInterfaceType
 {
-    public abstract static T TypeKey { get; }
 }
 ```
 
 ## Required API Shapes
 
-The user will be required to implement `IUnmanagedVirtualMethodTableProvider<T>` on the type that provides the method tables, and `IUnmanagedInterfaceType<T>` on the type that defines the unmanaged interface. The `T` types must match between the two interfaces. This mechanism is designed to enable each native API platform to provide their own casting key, for example `IID`s in COM, without interfering with each other or requiring using reflection-based types like `System.Type`.
+The user will be required to implement `IUnmanagedVirtualMethodTableProvider` on the type that provides the method tables, and `IUnmanagedInterfaceType` on the type that defines the unmanaged interface.
+
+Previously, each of these interface types was generic on a type `T`. The `T` types were required to match between the two interfaces. This mechanism was designed to enable each native API platform to provide their own casting key, for example `IID`s in COM, without interfering with each other or requiring using reflection-based types like `System.Type`. However, practical implementation showed that providing just a "type key" was not enough information to cover any non-trivial scenarios (like COM) efficiently without effectively forcing a two-level lookup model or hard-coding type support in the `IUnmanagedVirtualMethodTableProvider<T>` implementation. Additionally, we determined that using reflection to get to attributes is considered "okay" and using generic attributes would enable APIs that build on this model like COM to effectively retrieve information from the `System.Type` instance without causing additional problems.
 
 ## Example Usage
 
