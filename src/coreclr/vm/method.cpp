@@ -2146,11 +2146,11 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
     case STUB_CODE_BLOCK_STUBPRECODE:
         return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
-    }   
-
-    // We should never get here
-    _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
-    return NULL;
+    default:
+        // We should never get here
+        _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
+        return NULL;
+    }
 }
 
 //*******************************************************************************

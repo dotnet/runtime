@@ -48,7 +48,7 @@ class CodeRangeMapRangeList : public RangeList
 public:
     VPTR_VTABLE_CLASS(CodeRangeMapRangeList, RangeList)
 
-#ifdef DACCESS_COMPILE
+#if defined(DACCESS_COMPILE) || !defined(TARGET_WINDOWS)
     CodeRangeMapRangeList() : 
         _RangeListRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT),
         _rangeListType(STUB_CODE_BLOCK_UNKNOWN),

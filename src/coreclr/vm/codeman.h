@@ -911,14 +911,18 @@ class RangeSectionMap
     bool AttachRangeSectionToMap(PTR_RangeSection pRangeSection)
     {
         uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSection);
-        RangeSectionFragment* fragments = (RangeSectionFragment*)calloc(rangeSectionFragmentCount, sizeof(RangeSectionFragment));
+        size_t fragmentsSize = rangeSectionFragmentCount * sizeof(RangeSectionFragment);
+        RangeSectionFragment* fragments = (RangeSectionFragment*)malloc(fragmentsSize);
+        memset(fragments, 0, fragmentsSize);
 
         if (fragments == NULL)
         {
             return false;
         }
 
-        RangeSectionFragmentPointer** entriesInMapToUpdate = (RangeSectionFragmentPointer**)calloc(rangeSectionFragmentCount, sizeof(RangeSectionFragmentPointer*));
+        size_t entryUpdateSize = rangeSectionFragmentCount * sizeof(RangeSectionFragmentPointer*);
+        RangeSectionFragmentPointer** entriesInMapToUpdate = (RangeSectionFragmentPointer**)malloc(entryUpdateSize);
+        memset(entriesInMapToUpdate, 0, entryUpdateSize);
         if (entriesInMapToUpdate == NULL)
         {
             free(fragments);
