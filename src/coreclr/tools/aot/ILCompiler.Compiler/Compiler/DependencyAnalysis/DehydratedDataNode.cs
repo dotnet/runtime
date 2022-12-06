@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
             // the most popular targets.
             ISymbolDefinitionNode firstSymbol = null;
             var relocOccurences = new Dictionary<ISymbolNode, int>();
-            foreach (ObjectNode.ObjectData o in factory.MetadataManager.GetDehydratableData())
+            foreach (ObjectData o in factory.MetadataManager.GetDehydratableData())
             {
                 firstSymbol ??= o.DefinedSymbols[0];
 
@@ -209,17 +209,14 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         Debug.Assert(sourcePosition == reloc.Offset);
 
-#if DEBUG
+                        long delta;
                         unsafe
                         {
                             fixed (byte* pData = &o.Data[reloc.Offset])
                             {
-                                long delta = Relocation.ReadValue(reloc.RelocType, pData);
-                                // Extra work needed to be able to encode/decode relocs with deltas
-                                Debug.Assert(delta == 0);
+                                delta = Relocation.ReadValue(reloc.RelocType, pData);
                             }
                         }
-#endif
 
                         // The size of the relocation is included in the ObjectData bytes. Skip the literal bytes.
                         sourcePosition += Relocation.GetSize(reloc.RelocType);
@@ -228,7 +225,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (target is ISymbolNodeWithLinkage withLinkage)
                             target = withLinkage.NodeForLinkage(factory);
 
-                        if (relocs.TryGetValue(target, out int targetIndex))
+                        if (delta == 0 && relocs.TryGetValue(target, out int targetIndex))
                         {
                             // Reloc goes through the lookup table
                             int relocCommand = reloc.RelocType switch
@@ -252,7 +249,7 @@ namespace ILCompiler.DependencyAnalysis
                             bool hasNextReloc;
                             do
                             {
-                                builder.EmitReloc(target, RelocType.IMAGE_REL_BASED_RELPTR32);
+                                builder.EmitReloc(target, RelocType.IMAGE_REL_BASED_RELPTR32, checked((int)delta));
                                 numRelocs++;
                                 hasNextReloc = false;
 
@@ -276,8 +273,16 @@ namespace ILCompiler.DependencyAnalysis
                                     if (nextTarget is ISymbolNodeWithLinkage nextTargetWithLinkage)
                                         nextTarget = nextTargetWithLinkage.NodeForLinkage(factory);
 
+                                    unsafe
+                                    {
+                                        fixed (byte* pData = &o.Data[reloc.Offset])
+                                        {
+                                            delta = Relocation.ReadValue(reloc.RelocType, pData);
+                                        }
+                                    }
+
                                     // We don't have a short code for it?
-                                    if (relocs.ContainsKey(nextTarget))
+                                    if (delta == 0 && relocs.ContainsKey(nextTarget))
                                         break;
 
                                     // This relocation is good - we'll generate it as part of the run

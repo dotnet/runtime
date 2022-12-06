@@ -44,8 +44,8 @@ void DumpIL_RemoveFullPath(SString &strTokenFormatting)
     {
         SString::Iterator lastSlash = strTokenFormatting.End() - 1;
 
-        // Find the last '\\' in the string.
-        while ((lastSlash != leftBracket) && (*lastSlash != '\\'))
+        // Find the last directory separator character ('\\' on Windows, '/' on Unix) in the string.
+        while ((lastSlash != leftBracket) && (*lastSlash != DIRECTORY_SEPARATOR_CHAR_A))
         {
             --lastSlash;
         }

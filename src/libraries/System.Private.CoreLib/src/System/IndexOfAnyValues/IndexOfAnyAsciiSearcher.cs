@@ -8,6 +8,8 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
+#pragma warning disable 8500 // sizeof of managed types
+
 namespace System.Buffers
 {
     internal static class IndexOfAnyAsciiSearcher
@@ -490,26 +492,23 @@ namespace System.Buffers
             // X86: Downcast every character using saturation.
             // - Values <= 32767 result in min(value, 255).
             // - Values  > 32767 result in 0. Because of this we must do more work to handle needles that contain 0.
-            // ARM64: Take the low byte of each character.
-            // - All values result in (value & 0xFF).
+            // ARM64: Do narrowing saturation over unsigned values.
+            // - All values result in min(value, 255)
             Vector128<byte> source = Sse2.IsSupported
                 ? Sse2.PackUnsignedSaturate(source0, source1)
-                : AdvSimd.Arm64.UnzipEven(source0.AsByte(), source1.AsByte());
+                : AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0.AsUInt16()), source1.AsUInt16());
 
             Vector128<byte> result = IndexOfAnyLookupCore(source, bitmapLookup);
 
-            // On ARM64, we ignored the high byte of every character when packing (see above).
-            // The 'result' can therefore contain false positives - e.g. 0x141 would match 0x41 ('A').
             // On X86, PackUnsignedSaturate resulted in values becoming 0 for inputs above 32767.
             // Any value above 32767 would therefore match against 0. If 0 is present in the needle, we must clear the false positives.
             // In both cases, we can correct the result by clearing any bits that matched with a non-ascii source character.
-            if (AdvSimd.Arm64.IsSupported || TOptimizations.NeedleContainsZero)
+            if (TOptimizations.NeedleContainsZero)
             {
+                Debug.Assert(Sse2.IsSupported);
                 Vector128<short> ascii0 = Vector128.LessThan(source0.AsUInt16(), Vector128.Create((ushort)128)).AsInt16();
                 Vector128<short> ascii1 = Vector128.LessThan(source1.AsUInt16(), Vector128.Create((ushort)128)).AsInt16();
-                Vector128<byte> ascii = Sse2.IsSupported
-                    ? Sse2.PackSignedSaturate(ascii0, ascii1).AsByte()
-                    : AdvSimd.Arm64.UnzipEven(ascii0.AsByte(), ascii1.AsByte());
+                Vector128<byte> ascii = Sse2.PackSignedSaturate(ascii0, ascii1).AsByte();
                 result &= ascii;
             }
 
@@ -542,7 +541,13 @@ namespace System.Buffers
                 ? source
                 : source & Vector128.Create((byte)0xF);
 
-            Vector128<byte> highNibbles = Vector128.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector128.Create((byte)0xF);
+            // On ARM, we have an instruction for an arithmetic right shift of 1-byte signed values.
+            // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
+            // This is how we exclude non-ASCII values from results on ARM.
+            // On X86, use a 4-byte value shift with AND 15 to emulate a 1-byte value logical shift.
+            Vector128<byte> highNibbles = AdvSimd.IsSupported
+                ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
+                : Sse2.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector128.Create((byte)0xF);
 
             // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
             // Lookup the rows via the lower nibble and the column via the higher nibble.
@@ -585,17 +590,17 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeFirstIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
+        private static unsafe int ComputeFirstIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
             where TNegator : struct, INegator
         {
             uint mask = TNegator.ExtractMask(result);
             int offsetInVector = BitOperations.TrailingZeroCount(mask);
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
+            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
         }
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result)
+        private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector128<byte> result)
             where TNegator : struct, INegator
         {
             uint mask = TNegator.ExtractMask(result);
@@ -606,21 +611,21 @@ namespace System.Buffers
                 current0 = ref current1;
                 offsetInVector -= Vector128<short>.Count;
             }
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / Unsafe.SizeOf<T>());
+            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(T));
         }
 #pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
+        private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector128<byte> result)
             where TNegator : struct, INegator
         {
             uint mask = TNegator.ExtractMask(result) & 0xFFFF;
             int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
+            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector128<byte> result)
+        private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector128<byte> result)
             where TNegator : struct, INegator
         {
             uint mask = TNegator.ExtractMask(result) & 0xFFFF;
@@ -631,7 +636,7 @@ namespace System.Buffers
             }
 
             // We matched within the second vector
-            return offsetInVector - Vector128<short>.Count + (int)(Unsafe.ByteOffset(ref searchSpace, ref secondVector) / Unsafe.SizeOf<T>());
+            return offsetInVector - Vector128<short>.Count + (int)(Unsafe.ByteOffset(ref searchSpace, ref secondVector) / sizeof(T));
         }
 
         internal interface INegator

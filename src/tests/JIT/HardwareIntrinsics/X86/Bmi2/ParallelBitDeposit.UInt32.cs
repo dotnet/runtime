@@ -228,7 +228,7 @@ namespace JIT.HardwareIntrinsics.X86._Bmi2
 
             
 // The validation logic defined here for Bmi2.ParallelBitDeposit and Bmi2.ParallelBitExtract is
-// based on the 'Operation' pseudo-code defined for the pdep and pext instruction in the 'Intel®
+// based on the 'Operation' pseudo-code defined for the pdep and pext instruction in the 'Intel\u00AE
 // 64 and IA-32 Architectures Software Developer’s Manual; Volume 2 (2A, 2B, 2C & 2D): Instruction
 // Set Reference, A-Z'
 

@@ -352,6 +352,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
         internal bool IsCompilerGenerated { get; }
+        private AsyncScopeDebugInformation[] _asyncScopes { get; set; }
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
@@ -363,6 +364,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.TypeInfo = type;
             TypeInfo.Methods.Add(this);
             assembly.Methods[methodToken] = this;
+            _asyncScopes = Array.Empty<AsyncScopeDebugInformation>();
         }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -413,6 +415,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
             DebuggerAttrInfo.ClearInsignificantAttrFlags();
+        }
+
+        public bool ContainsAsyncScope(int oneBasedIdx, int offset)
+        {
+            int arrIdx = oneBasedIdx - 1;
+            return arrIdx >= 0 && arrIdx < _asyncScopes.Length &&
+                    offset >= _asyncScopes[arrIdx].StartOffset && offset <= _asyncScopes[arrIdx].EndOffset;
         }
 
         public ParameterInfo[] GetParametersInfo()
@@ -483,6 +492,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                 EndLocation = new SourceLocation(this, end);
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandleToUpdateLocals);
+
+            byte[] scopeDebugInformation =
+                    (from cdiHandle in pdbMetadataReader.GetCustomDebugInformation(methodDefHandle)
+                    let cdi = pdbMetadataReader.GetCustomDebugInformation(cdiHandle)
+                    where pdbMetadataReader.GetGuid(cdi.Kind) == PortableCustomDebugInfoKinds.StateMachineHoistedLocalScopes
+                    select pdbMetadataReader.GetBlobBytes(cdi.Value)).FirstOrDefault();
+
+            if (scopeDebugInformation != null)
+            {
+                _asyncScopes = new AsyncScopeDebugInformation[scopeDebugInformation.Length / 8];
+                for (int i = 0; i < _asyncScopes.Length; i++)
+                {
+                    int scopeOffset = BitConverter.ToInt32(scopeDebugInformation, i * 8);
+                    int scopeLen = BitConverter.ToInt32(scopeDebugInformation, (i * 8) + 4);
+                    _asyncScopes[i] = new AsyncScopeDebugInformation(scopeOffset, scopeOffset + scopeLen);
+                }
+            }
+
+            _asyncScopes ??= Array.Empty<AsyncScopeDebugInformation>();
         }
         public void UpdateEnC(MetadataReader pdbMetadataReaderParm, int methodIdx)
         {
@@ -597,6 +625,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return loc.Source.Id;
             }
         }
+
+        private record struct AsyncScopeDebugInformation(int StartOffset, int EndOffset);
     }
 
     internal sealed class ParameterInfo
@@ -890,14 +920,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 debugId = id;
         }
 
-        public bool EnC(byte[] meta, byte[] pdb)
+        public bool EnC(MonoSDBHelper sdbAgent, byte[] meta, byte[] pdb)
         {
             var asmStream = new MemoryStream(meta);
             MetadataReader asmMetadataReader = MetadataReaderProvider.FromMetadataStream(asmStream).GetMetadataReader();
             var pdbStream = new MemoryStream(pdb);
             MetadataReader pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
             enCMetadataReader.Add(new (asmMetadataReader, pdbMetadataReader));
-            PopulateEnC(asmMetadataReader, pdbMetadataReader);
+            PopulateEnC(sdbAgent, asmMetadataReader, pdbMetadataReader);
             return true;
         }
         private static int GetTypeDefIdx(MetadataReader asmMetadataReaderParm, int number)
@@ -944,10 +974,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return asmMetadataReaderLocal.GetString(MetadataTokens.StringHandle(strIdx));
         }
 
-        private void PopulateEnC(MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
+        private void PopulateEnC(MonoSDBHelper sdbAgent, MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
         {
             TypeInfo typeInfo = null;
             int methodIdxAsm = 1;
+            sdbAgent.ResetTypes(); // FIXME: only remove the cache for the affected type if fields or methods are added
+
             foreach (var entry in asmMetadataReaderParm.GetEditAndContinueLogEntries())
             {
                 if (entry.Operation == EditAndContinueOperation.AddMethod ||
@@ -1358,9 +1390,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             public string Url { get; set; }
             public Task<byte[][]> Data { get; set; }
         }
-        public static IEnumerable<MethodInfo> EnC(AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
+        public static IEnumerable<MethodInfo> EnC(MonoSDBHelper sdbAgent, AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
         {
-            asm.EnC(meta_data, pdb_data);
+            asm.EnC(sdbAgent, meta_data, pdb_data);
             return GetEnCMethods(asm);
         }
 

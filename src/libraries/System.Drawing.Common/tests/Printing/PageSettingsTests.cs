@@ -24,7 +24,7 @@
 //
 // Author:
 //
-//  Jordi Mas i Hernandez, jordimash@gmail.com
+//  Jordi Mas i Hernandez (jordi@ximian.com)
 //
 
 using Xunit;

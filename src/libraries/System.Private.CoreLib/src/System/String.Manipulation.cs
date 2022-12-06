@@ -17,6 +17,17 @@ namespace System
 {
     public partial class String
     {
+        // Avoid paying the init cost of all the IndexOfAnyValues unless they are actually used.
+        private static class IndexOfAnyValuesStorage
+        {
+            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
+            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
+            // also specifically excludes VT from the list of newline functions, so we do not include
+            // it in the needle list.
+            public static readonly IndexOfAnyValues<char> NewLineChars =
+                IndexOfAnyValues.Create("\r\n\f\u0085\u2028\u2029");
+        }
+
         private const int StackallocIntBufferSizeLimit = 128;
 
         private static void FillStringChecked(string dest, int destPos, string src)
@@ -558,19 +569,9 @@ namespace System
         private static string JoinCore(ReadOnlySpan<char> separator, string?[] value, int startIndex, int count)
         {
             ArgumentNullException.ThrowIfNull(value);
-
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
-            }
-            if (startIndex > value.Length - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - count);
 
             return JoinCore(separator, new ReadOnlySpan<string?>(value, startIndex, count));
         }
@@ -825,8 +826,7 @@ namespace System
 
         public string PadLeft(int totalWidth, char paddingChar)
         {
-            if (totalWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(totalWidth), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(totalWidth);
             int oldLength = Length;
             int count = totalWidth - oldLength;
             if (count <= 0)
@@ -844,8 +844,7 @@ namespace System
 
         public string PadRight(int totalWidth, char paddingChar)
         {
-            if (totalWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(totalWidth), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(totalWidth);
             int oldLength = Length;
             int count = totalWidth - oldLength;
             if (count <= 0)
@@ -861,13 +860,10 @@ namespace System
 
         public string Remove(int startIndex, int count)
         {
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             int oldLength = this.Length;
-            if (count > oldLength - startIndex)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, oldLength - startIndex);
 
             if (count == 0)
                 return this;
@@ -1233,16 +1229,9 @@ namespace System
             // the haystack; or O(n) if no needle is found. This ensures that in the common case
             // of this method being called within a loop, the worst-case runtime is O(n) rather than
             // O(n^2), where n is the length of the input text.
-            //
-            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
-            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
-            // also specifically excludes VT from the list of newline functions, so we do not include
-            // it in the needle list.
-
-            const string needles = "\r\n\f\u0085\u2028\u2029";
 
             stride = default;
-            int idx = text.IndexOfAny(needles);
+            int idx = text.IndexOfAny(IndexOfAnyValuesStorage.NewLineChars);
             if ((uint)idx < (uint)text.Length)
             {
                 stride = 1; // needle found
@@ -1315,9 +1304,7 @@ namespace System
 
         private string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
         {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                    SR.ArgumentOutOfRange_NegativeCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             CheckStringSplitOptions(options);
 
@@ -1378,11 +1365,7 @@ namespace System
 
         private string[] SplitInternal(string? separator, string?[]? separators, int count, StringSplitOptions options)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count),
-                    SR.ArgumentOutOfRange_NegativeCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             CheckStringSplitOptions(options);
 

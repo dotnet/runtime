@@ -1107,7 +1107,11 @@ AGAIN:
     if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
         // We should not be building address modes out of non-foldable constants
-        assert(op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()));
+        if (!op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()))
+        {
+            assert(compiler->opts.compReloc);
+            return false;
+        }
 
         /* We're adding a constant */
 
@@ -9389,7 +9393,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 #else
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
             instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
-            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_2, size);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_2, size);
             genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
             // May kill REG_SCRATCH, so we need to reload it.
             hasPoisonImm = false;

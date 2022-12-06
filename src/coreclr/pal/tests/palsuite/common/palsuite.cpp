@@ -62,7 +62,7 @@ UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency)
     return ts.QuadPart / (performanceFrequency.QuadPart / 1000);    
 }
 
-static const char* rgchPathDelim = "\\";
+static const char* rgchPathDelim = "/";
 
 
 int
@@ -146,7 +146,7 @@ mkAbsoluteFilenameW (
     DWORD dwFileLength,
     LPWSTR absPathName )
 {
-    const WCHAR szPathDelimW[] = {'\\','\0'};
+    const WCHAR szPathDelimW[] = {'/','\0'};
 
     DWORD sizeDN, sizeFN, sizeAPN;
 

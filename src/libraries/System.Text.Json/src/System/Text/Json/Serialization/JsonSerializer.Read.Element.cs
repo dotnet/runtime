@@ -27,8 +27,9 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(this JsonElement element, JsonSerializerOptions? options = null)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -58,7 +59,8 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadUsingMetadata<object?>(element, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -86,7 +88,8 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -133,13 +136,8 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadUsingMetadata<object?>(element, jsonTypeInfo);
-        }
-
-        private static TValue? ReadUsingMetadata<TValue>(JsonElement element, JsonTypeInfo jsonTypeInfo)
-        {
             ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
-            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
     }
 }

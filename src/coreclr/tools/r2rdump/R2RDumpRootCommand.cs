@@ -49,7 +49,7 @@ namespace R2RDump
         public Option<bool> HideTransitions { get; } =
             new(new[] { "--hide-transitions", "--ht" }, "Don't include GC transitions in disassembly output");
         public Option<bool> Verbose { get; } =
-            new(new[] { "--verbose", "-v" }, "Dump disassembly, unwindInfo, gcInfo and sectionContents");
+            new(new[] { "--verbose" }, "Dump disassembly, unwindInfo, gcInfo and sectionContents");
         public Option<bool> Diff { get; } =
             new(new[] { "--diff" }, "Compare two R2R images");
         public Option<bool> DiffHideSameDisasm { get; } =

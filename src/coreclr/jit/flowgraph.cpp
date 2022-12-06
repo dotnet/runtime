@@ -944,6 +944,8 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
         case GT_CNS_STR:
         case GT_ADDR:
         case GT_FIELD_ADDR:
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
         case GT_CLS_VAR_ADDR:
             // A GT_ADDR node, by itself, never requires null checking.  The expression whose address is being
             // taken is either a local or static variable, whose address is necessarily non-null, or else it is

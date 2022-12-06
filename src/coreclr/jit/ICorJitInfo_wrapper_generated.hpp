@@ -1474,24 +1474,15 @@ unsigned WrapICorJitInfo::getClassDomainID(
     return temp;
 }
 
-void* WrapICorJitInfo::getFieldAddress(
-          CORINFO_FIELD_HANDLE field,
-          void** ppIndirection)
-{
-    API_ENTER(getFieldAddress);
-    void* temp = wrapHnd->getFieldAddress(field, ppIndirection);
-    API_LEAVE(getFieldAddress);
-    return temp;
-}
-
 bool WrapICorJitInfo::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
+          int valueOffset,
           bool ignoreMovableObjects)
 {
     API_ENTER(getReadonlyStaticFieldValue);
-    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
+    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
     API_LEAVE(getReadonlyStaticFieldValue);
     return temp;
 }
