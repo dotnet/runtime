@@ -321,6 +321,7 @@ interp_prev_ins (InterpInst *ins)
 		if (G_UNLIKELY (td->ip >= end)) {		\
 			interp_generate_ipe_bad_fallthru (td);	\
 		}						\
+		start_new_bblock = 1;	\
 	} while (0)
 
 #if NO_UNALIGNED_ACCESS
@@ -1374,6 +1375,24 @@ interp_generate_ipe_bad_fallthru (TransformData *td)
 	mono_error_cleanup (bad_fallthru_error);
 }
 
+static void
+set_exception_type_from_invalid_il (MonoError* error, TransformData *td)
+{
+	char *method_fname = mono_method_full_name (td->method, TRUE);
+	char *method_code;
+	MonoMethodHeader *header = mono_method_get_header_checked (td->method, error);
+
+	if (!header) {
+		method_code = g_strdup_printf ("could not parse method body due to %s", mono_error_get_message (error));
+		mono_error_cleanup (error);
+	} else if (header->code_size == 0)
+		method_code = g_strdup ("method body is empty.");
+	else
+		method_code = mono_disasm_code_one (NULL, td->method, td->ip, NULL);
+	mono_error_set_invalid_program (error, "Invalid IL code in %s: %s\n", method_fname, method_code);
+ 	g_free (method_fname);
+ 	g_free (method_code);
+}
 
 static int
 create_interp_local (TransformData *td, MonoType *type)
@@ -4625,6 +4644,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			bb = bb->next;
 
 		if (bb->dead || td->cbb->dead) {
+			int ip_offset = GPTRDIFF_TO_INT (td->ip - header->code);
 			int op_size = mono_opcode_size (td->ip, end);
 			g_assert (op_size > 0); /* The BB formation pass must catch all bad ops */
 
@@ -4632,10 +4652,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				g_print ("SKIPPING DEAD OP at %x\n", in_offset);
 			link_bblocks = FALSE;
 			td->ip += op_size;
+
+			if (ip_offset + op_size == bb->end) {
+				start_new_bblock = 1;
+			}
+
 			continue;
 		}
 
-		start_new_bblock = 1;
 		if (td->verbose_level > 1) {
 			g_print ("IL_%04lx %-10s, sp %ld, %s %-12s\n",
 				td->ip - td->il_code,
@@ -4917,6 +4941,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			interp_add_ins (td, MINT_JMP);
 			td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 			td->ip += 5;
+			start_new_bblock = 1;
 			break;
 		}
 		case CEE_CALLVIRT: /* Fall through */
@@ -4957,10 +4982,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			readonly = FALSE;
 			save_last_error = FALSE;
 			tailcall = FALSE;
+			start_new_bblock = 1;
 			break;
 		}
 		case CEE_RET: {
 			link_bblocks = FALSE;
+			start_new_bblock = 1;
 			MonoType *ult = mini_type_get_underlying_type (signature->ret);
 			mt = mint_type (ult);
 			if (mt != MINT_TYPE_VOID) {
@@ -5047,6 +5074,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				link_bblocks = FALSE;
 			}
 			td->ip += 5;
+			start_new_bblock = 1;
 			break;
 		}
 		case CEE_BR_S: {
@@ -5056,6 +5084,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				link_bblocks = FALSE;
 			}
 			td->ip += 2;
+			start_new_bblock = 1;
 			break;
 		}
 		case CEE_BRFALSE:
@@ -5208,6 +5237,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->ip += 4;
 			}
 			td->last_ins->info.target_bb_table = target_bb_table;
+			start_new_bblock = 1;
 			break;
 		}
 		case CEE_LDIND_I1:
@@ -6043,6 +6073,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			link_bblocks = FALSE;
 			td->sp = td->stack;
 			++td->ip;
+			start_new_bblock = 1;
 			break;
 		case CEE_LDFLDA: {
 			CHECK_STACK (td, 1);
@@ -6378,6 +6409,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			} else if (!m_class_is_valuetype (klass)) {
 				/* already boxed, do nothing. */
 				td->ip += 5;
+				start_new_bblock = 1;
 			} else {
 				if (G_UNLIKELY (m_class_is_byreflike (klass))) {
 					mono_error_set_bad_image (error, image, "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
@@ -6398,6 +6430,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_type (td, STACK_TYPE_O, klass);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->ip += 5;
+				start_new_bblock = 1;
 			}
 
 			break;
@@ -7003,6 +7036,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->last_ins->data [0] = GINT_TO_UINT16 (clause_index);
 			link_bblocks = FALSE;
 			++td->ip;
+			start_new_bblock = 1;
 			break;
 		}
 		case CEE_LEAVE:
@@ -7051,6 +7085,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			else
 				td->ip += 2;
 			link_bblocks = FALSE;
+			start_new_bblock = 1;
 			break;
 		}
 		case MONO_CUSTOM_PREFIX:
@@ -7063,6 +7098,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					td->sp = td->stack;
 					++td->ip;
+					start_new_bblock = 1;
 					break;
 
 				case CEE_MONO_LD_DELEGATE_METHOD_PTR:
@@ -7141,6 +7177,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 						td->last_ins->info.call_args = call_args;
 					}
+					start_new_bblock = 1;
 					break;
 				}
 			case CEE_MONO_VTADDR: {
@@ -7217,6 +7254,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				if (td->sp > td->stack)
 					g_warning ("CEE_MONO_RETOBJ: more values on stack: %d", td->sp-td->stack);
+				start_new_bblock = 1;
 				break;
 			case CEE_MONO_LDNATIVEOBJ: {
 				token = read32 (td->ip + 1);
@@ -7583,6 +7621,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
 				++td->ip;
 				link_bblocks = FALSE;
+				start_new_bblock = 1;
 				break;
 			case CEE_UNALIGNED_:
 				td->ip += 2;
@@ -7660,6 +7699,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->sp = td->stack;
 				link_bblocks = FALSE;
 				++td->ip;
+				start_new_bblock = 1;
 				break;
 			}
 			case CEE_SIZEOF: {
@@ -7713,7 +7753,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 	g_assert (td->ip == end);
 	if (start_new_bblock != 1) {
-		mono_error_set_generic_error (error, "System", "InvalidProgramException", "Invalid IL code");
+		set_exception_type_from_invalid_il(error, td);
 		goto exit;
 	}
 
