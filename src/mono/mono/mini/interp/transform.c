@@ -5650,9 +5650,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (m_class_is_valuetype (klass)) {
 				mt = mint_type (m_class_get_byval_arg (klass));
 				td->sp -= 2;
-				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_CPOBJ_VT : MINT_CPOBJ);
+				if (mt == MINT_TYPE_VT && !m_class_has_references (klass)) {
+					interp_add_ins (td, MINT_CPOBJ_VT_NOREF);
+					td->last_ins->data [0] = GINT32_TO_UINT16 (mono_class_value_size (klass, NULL));
+				} else {
+					interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_CPOBJ_VT : MINT_CPOBJ);
+					td->last_ins->data [0] = get_data_item_index (td, klass);
+				}
 				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-				td->last_ins->data [0] = get_data_item_index(td, klass);
 			} else {
 				td->sp--;
 				interp_add_ins (td, MINT_LDIND_I);
