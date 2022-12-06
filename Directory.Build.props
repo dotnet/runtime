@@ -40,6 +40,13 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)' == '' and '$(InferPlatformFromTargetArchitecture)' == 'true'">$(TargetArchitecture)</Platform>
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <!-- Set OutDirName (Arcade specific property that must be set before the Arcade SDK is imported) to change the BaseOutputPath and
+         BaseIntermediateOutputPath properties to include the ref subfolder. -->
+    <IsReferenceAssemblyProject Condition="$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)')) == 'ref'">true</IsReferenceAssemblyProject>
+    <OutDirName Condition="'$(IsReferenceAssemblyProject)' == 'true'">$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref</OutDirName>
+  </PropertyGroup>
 
   <!-- Import the Arcade SDK -->
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
