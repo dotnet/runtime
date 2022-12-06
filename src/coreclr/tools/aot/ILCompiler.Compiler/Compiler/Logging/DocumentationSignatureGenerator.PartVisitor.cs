@@ -162,7 +162,7 @@ namespace ILCompiler.Logging
             protected override void AppendNameForInstantiatedType(StringBuilder builder, DefType type)
             {
                 int containingArity = 0;
-                TypeDesc containingType = InstantiateContainingType(type);
+                DefType containingType = InstantiateContainingType(type);
                 if (containingType != null)
                 {
                     AppendName(builder, containingType);
@@ -221,16 +221,18 @@ namespace ILCompiler.Logging
             }
 #endif
 
-            private static TypeDesc InstantiateContainingType(DefType type)
+            private static DefType InstantiateContainingType(DefType type)
             {
                 DefType containingType = type.ContainingType;
                 if (containingType is null)
                     return null;
 
-                if (!containingType.HasInstantiation)
+                // If the type doesn't follow C# scheme where nested types inherit generic parameters from their container type
+                // return the container type as-is.
+                if (!containingType.HasInstantiation || containingType.Instantiation.Length > type.Instantiation.Length)
                     return containingType;
 
-                return containingType.InstantiateAsOpen().InstantiateSignature(type.Instantiation, default(Instantiation));
+                return (DefType)containingType.InstantiateAsOpen().InstantiateSignature(type.Instantiation, default);
             }
         }
     }
