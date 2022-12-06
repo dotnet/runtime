@@ -221,7 +221,8 @@ namespace System.Net
                 throw new NotImplementedException(nameof(SafeDeleteSslContext));
             }
 
-            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, readCallback, writeCallback, InitialBufferSize);
+            string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
+            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, readCallback, writeCallback, InitialBufferSize, peerHost);
 
             if (credential.Protocols != SslProtocols.None)
             {;

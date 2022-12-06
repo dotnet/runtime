@@ -57,15 +57,17 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.U1)] bool isServer,
             SSLReadCallback streamRead,
             SSLWriteCallback streamWrite,
-            int appBufferSize);
+            int appBufferSize,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? peerHost);
         internal static void SSLStreamInitialize(
             SafeSslHandle sslHandle,
             bool isServer,
             SSLReadCallback streamRead,
             SSLWriteCallback streamWrite,
-            int appBufferSize)
+            int appBufferSize,
+            string? peerHost)
         {
-            int ret = SSLStreamInitializeImpl(sslHandle, isServer, streamRead, streamWrite, appBufferSize);
+            int ret = SSLStreamInitializeImpl(sslHandle, isServer, streamRead, streamWrite, appBufferSize, peerHost);
             if (ret != SUCCESS)
                 throw new SslException();
         }
