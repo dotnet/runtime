@@ -87,11 +87,6 @@ extends:
           - windows_arm64
           jobParameters:
             testGroup: innerloop
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # Build the whole product using GNU compiler toolchain
@@ -1132,7 +1127,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAot_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true 
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true
             timeoutInMinutes: 180
 
             condition: >-
@@ -1167,7 +1162,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
             runtimeVariant: llvmfullaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true 
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true
             timeoutInMinutes: 300
 
             condition: >-
