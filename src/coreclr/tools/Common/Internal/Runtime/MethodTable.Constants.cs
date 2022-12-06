@@ -167,10 +167,7 @@ namespace Internal.Runtime
         /// </summary>
         IsDynamicTypeWithThreadStatics = 0x00001000,
 
-        /// <summary>
-        /// This MethodTable contains a pointer to dynamic module information
-        /// </summary>
-        HasDynamicModuleFlag = 0x00002000,
+        // UNUSED = 0x00002000,
 
         /// <summary>
         /// This MethodTable is an abstract class (but not an interface).
@@ -192,7 +189,6 @@ namespace Internal.Runtime
         ETF_OptionalFieldsPtr,
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
-        ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,
         ETF_DynamicGcStatics,
