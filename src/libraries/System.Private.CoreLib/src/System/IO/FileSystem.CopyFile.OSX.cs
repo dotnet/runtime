@@ -12,11 +12,25 @@ namespace System.IO
         {
             //Attempt to clone the file:
 
-            //Get the full path of the source path
-            string fullSource = TryGetLinkTarget(sourceFullPath) ?? sourceFullPath;
+            //Simplify the destination path (i.e. unlink all the links except the last one itself,
+            //i.e. for /link1/link2, you could get /folder1/link2).
+            string destFullPath_Full = Path.GetFullPath(destFullPath);
+            string destPath = Path.GetDirectoryName(destFullPath_Full);
+            destPath = ResolveLinkTargetString(destPath, true, true);
+            if (string.IsNullOrEmpty(destPath))
+            {
+                destPath = destFullPath_Full;
+            }
+            else
+            {
+                destPath = Path.Combine(destPath, Path.GetFileName(destFullPath));
+            }
+
+            //Get the full path of the source path and verify that we're not copying the source file onto itself
+            string fullSource = TryGetLinkTarget(sourceFullPath, destPath, overwrite) ?? destPath;
 
             //Start the file copy and prepare for finalization
-            StartedCopyFileState startedCopyFile = StartCopyFile(fullSource, destFullPath, overwrite, openDst: false);
+            StartedCopyFileState startedCopyFile = StartCopyFile(fullSource, destPath, overwrite, openDst: false);
 
             //Attempt counter just in case we somehow loop infinite times e.g. on a
             //filesystem that doesn't actually delete files but pretends it does.
@@ -32,20 +46,20 @@ namespace System.IO
                 {
                     //Ensure file is deleted on first try.
                     //Get a lock to the dest file for compat reasons, and then delete it.
-                    using SafeFileHandle? dstHandle = OpenCopyFileDstHandle(destFullPath, true, startedCopyFile, false);
-                    File.Delete(destFullPath);
+                    using SafeFileHandle? dstHandle = OpenCopyFileDstHandle(destPath, true, startedCopyFile, false);
+                    File.Delete(destPath);
                 }
                 goto tryAgain;
 
                 //We may want to re-read the link to see if its path has changed
                 tryAgainWithReadLink:
                 if (++attempts >= 5) goto throwError;
-                string fullSource2 = TryGetLinkTarget(sourceFullPath) ?? sourceFullPath;
+                string fullSource2 = TryGetLinkTarget(sourceFullPath, destPath, overwrite) ?? sourceFullPath;
                 if (fullSource != fullSource2)
                 {
                     //Path has changed
                     startedCopyFile.Dispose();
-                    startedCopyFile = StartCopyFile(fullSource, destFullPath, overwrite, openDst: false);
+                    startedCopyFile = StartCopyFile(fullSource, destPath, overwrite, openDst: false);
                 }
                 else if (failOnRereadDoesntChange)
                 {
@@ -58,7 +72,7 @@ namespace System.IO
                 tryAgain:
                 unsafe
                 {
-                    if (Interop.@libc.copyfile(fullSource, destFullPath, null, Interop.@libc.COPYFILE_CLONE_FORCE) == 0)
+                    if (Interop.@libc.copyfile(fullSource, destPath, null, Interop.@libc.COPYFILE_CLONE_FORCE) == 0)
                     {
                         return;
                     }
@@ -70,11 +84,11 @@ namespace System.IO
                 const int EEXIST = 17;
                 const int ENOENT = 2;
                 bool directoryExist = false;
-                if ((error == ENOTSUP && FileOrDirectoryExists(destFullPath)) || error == EEXIST)
+                if ((error == ENOTSUP && FileOrDirectoryExists(destPath)) || error == EEXIST)
                 {
                     //This means the destination existed, try again with the destination deleted if appropriate
                     error = EEXIST;
-                    if (Directory.Exists(destFullPath))
+                    if (Directory.Exists(destPath))
                     {
                         directoryExist = true;
                         goto throwError;
@@ -82,8 +96,8 @@ namespace System.IO
                     if (overwrite)
                     {
                         //Get a lock to the dest file for compat reasons, and then delete it.
-                        using SafeFileHandle? dstHandle = OpenCopyFileDstHandle(destFullPath, true, startedCopyFile, false);
-                        File.Delete(destFullPath);
+                        using SafeFileHandle? dstHandle = OpenCopyFileDstHandle(destPath, true, startedCopyFile, false);
+                        File.Delete(destPath);
                         goto tryAgainWithReadLink;
                     }
                 }
@@ -122,17 +136,53 @@ namespace System.IO
                 startedCopyFile.Dispose();
             }
 
-            //Attempts to read the path's link target, or returns null even if the path doesn't exist
-            static string? TryGetLinkTarget(string path)
+            //Attempts to read the path's link target, or returns null even if the path doesn't exist rather than throwing.
+            //Throws an error if 'path' is at any point equal to 'destPath', since it means we're copying onto itself.
+            //Throws an error if 'path' has too many symbolic link levels.
+            static string? TryGetLinkTarget(string path, string destPath, bool overwrite)
             {
-                try
+                if (path == destPath)
                 {
-                    return ResolveLinkTargetString(path, true, false);
+                    //Throw an appropriate error
+                    if (overwrite) throw new IOException(SR.Format(SR.IO_SharingViolation_File, destPath));
+                    else throw new IOException(SR.Format(SR.IO_FileExists_Name, destPath));
                 }
-                catch
+                string? currentTarget = null;
+                for (int i = 0; i < MaxFollowedLinks; i++)
                 {
-                    return null;
+                    string? newTarget;
+                    try
+                    {
+                        //Attempt to unlink the current link
+                        newTarget = ResolveLinkTargetString(currentTarget ?? path, false, false);
+                    }
+                    catch
+                    {
+                        //This means path's target doesn't exist, stop unlinking
+                        return currentTarget;
+                    }
+
+                    //Check the new target path
+                    if (newTarget == destPath)
+                    {
+                        //Throw an appropriate error
+                        if (overwrite) throw new IOException(SR.Format(SR.IO_SharingViolation_File, destPath));
+                        else throw new IOException(SR.Format(SR.IO_FileExists_Name, destPath));
+                    }
+
+                    //Store the unlinked path, otherwise return our current path
+                    if (string.IsNullOrEmpty(newTarget))
+                    {
+                        return currentTarget;
+                    }
+                    else
+                    {
+                        currentTarget = newTarget;
+                    }
                 }
+
+                //If we get here, we've gone through MaxFollowedLinks iterations
+                throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, path));
             }
 
             //Checks if a file or directory exists without caring which it was
