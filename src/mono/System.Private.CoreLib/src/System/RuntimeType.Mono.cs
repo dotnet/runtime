@@ -1551,7 +1551,7 @@ namespace System
 
         internal sealed class TypeCache
         {
-            public object? EnumInfo;
+            public Enum.EnumInfo? EnumInfo;
             public TypeCode TypeCode;
             // this is the displayed form: special characters
             // ,+*&*[]\ in the identifier portions of the names

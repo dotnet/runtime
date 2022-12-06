@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Numerics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
 
@@ -13,8 +12,7 @@ namespace Internal.Reflection.Execution
 {
     static class NativeFormatEnumInfo
     {
-        public static EnumInfo<TUnderlyingValue> Create<TUnderlyingValue>(RuntimeTypeHandle typeHandle, MetadataReader reader, TypeDefinitionHandle typeDefHandle)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
+        public static EnumInfo Create(RuntimeTypeHandle typeHandle, MetadataReader reader, TypeDefinitionHandle typeDefHandle)
         {
             TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
 
@@ -31,7 +29,7 @@ namespace Internal.Reflection.Execution
             }
 
             string[] names = new string[staticFieldCount];
-            TUnderlyingValue[] values = new TUnderlyingValue[staticFieldCount];
+            object[] values = new object[staticFieldCount];
 
             int i = 0;
             foreach (FieldHandle fieldHandle in typeDef.Fields)
@@ -40,7 +38,7 @@ namespace Internal.Reflection.Execution
                 if (0 != (field.Flags & FieldAttributes.Static))
                 {
                     names[i] = field.Name.GetString(reader);
-                    values[i] = (TUnderlyingValue)field.DefaultValue.ParseConstantNumericValue(reader);
+                    values[i] = field.DefaultValue.ParseConstantNumericValue(reader);
                     i++;
                 }
             }
@@ -52,7 +50,7 @@ namespace Internal.Reflection.Execution
                     isFlags = true;
             }
 
-            return new EnumInfo<TUnderlyingValue>(RuntimeAugments.GetEnumUnderlyingType(typeHandle), values, names, isFlags);
+            return new EnumInfo(RuntimeAugments.GetEnumUnderlyingType(typeHandle), values, names, isFlags);
         }
     }
 }

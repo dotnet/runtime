@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -100,21 +99,17 @@ namespace System
             if (!(valueType.IsActualEnum || IsIntegerType(valueType)))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
 
-            // Map the value to a ulong and then look up that value in the enum.
-            // This supports numerical values of different types than the enum
-            // or its underlying type.
-            return Enum.GetName(this, Enum.ToUInt64(value));
-        }
+            ulong ulValue = Enum.ToUInt64(value);
 
-        private static void ThrowMustBeEnum() =>
-            throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+            return Enum.GetEnumName(this, ulValue);
+        }
 
         public override string[] GetEnumNames()
         {
             if (!IsActualEnum)
-                ThrowMustBeEnum();
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            string[] ret = Enum.GetNamesNoCopy(this);
+            string[] ret = Enum.InternalGetNames(this);
 
             // Make a copy since we can't hand out the same array since users can modify them
             return new ReadOnlySpan<string>(ret).ToArray();
@@ -124,21 +119,20 @@ namespace System
         public override Array GetEnumValues()
         {
             if (!IsActualEnum)
-                ThrowMustBeEnum();
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            // Get all of the values as the underlying type and copy them to a new array of the enum type.
-            Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
+            // Get all of the values
+            ulong[] values = Enum.InternalGetValues(this);
+
+            // Create a generic Array
             Array ret = Array.CreateInstance(this, values.Length);
-#if MONO
-            // TODO https://github.com/dotnet/runtime/issues/79224:
-            // Array.Copy can be used instead when bool[] is no longer supported, or if mono's Array.Copy is updated to support copying a bool[] to an EnumBackedByBool[].
+
             for (int i = 0; i < values.Length; i++)
             {
-                ret.SetValue(Enum.ToObject(this, values.GetValue(i)!), i);
+                object val = Enum.ToObject(this, values[i]);
+                ret.SetValue(val, i);
             }
-#else
-            Array.Copy(values, ret, values.Length);
-#endif
+
             return ret;
         }
 
@@ -156,15 +150,97 @@ namespace System
         public override Array GetEnumValuesAsUnderlyingType()
         {
             if (!IsActualEnum)
-                ThrowMustBeEnum();
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            return Enum.GetValuesAsUnderlyingType(this);
+            // Get all of the values
+            ulong[] values = Enum.InternalGetValues(this);
+
+            switch (RuntimeTypeHandle.GetCorElementType(Enum.InternalGetUnderlyingType(this)))
+            {
+
+                case CorElementType.ELEMENT_TYPE_U1:
+                    {
+                        var ret = new byte[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (byte)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U2:
+                    {
+                        var ret = new ushort[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (ushort)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U4:
+                    {
+                        var ret = new uint[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (uint)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U8:
+                    {
+                        return (Array)values.Clone();
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I1:
+                    {
+                        var ret = new sbyte[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (sbyte)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I2:
+                    {
+                        var ret = new short[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (short)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I4:
+                    {
+                        var ret = new int[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (int)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I8:
+                    {
+                        var ret = new long[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (long)values[i];
+                        }
+                        return ret;
+                    }
+                default:
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            }
         }
 
         public override Type GetEnumUnderlyingType()
         {
             if (!IsActualEnum)
-                ThrowMustBeEnum();
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             return Enum.InternalGetUnderlyingType(this);
         }
@@ -207,50 +283,44 @@ namespace System
             ArgumentNullException.ThrowIfNull(value);
 
             if (!IsActualEnum)
-                ThrowMustBeEnum();
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            // Check if both of them are of the same type
+            RuntimeType valueType = (RuntimeType)value.GetType();
 
             // If the value is an Enum then we need to extract the underlying value from it
-            RuntimeType valueType = (RuntimeType)value.GetType();
             if (valueType.IsActualEnum)
             {
-                // The enum type must match this type.
                 if (!valueType.IsEquivalentTo(this))
                     throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType, this));
 
                 valueType = (RuntimeType)valueType.GetEnumUnderlyingType();
             }
 
-            // If a string is passed in, search the enum names with it.
+            // If a string is passed in
             if (valueType == StringType)
-                return Array.IndexOf(Enum.GetNamesNoCopy(this), (string)value) >= 0;
+            {
+                // Get all of the Fields, calling GetHashEntry directly to avoid copying
+                string[] names = Enum.InternalGetNames(this);
+                return Array.IndexOf(names, value) >= 0;
+            }
 
             // If an enum or integer value is passed in
-            if (!IsIntegerType(valueType))
-                throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-
-            RuntimeType underlyingType = Enum.InternalGetUnderlyingType(this);
-            if (underlyingType != valueType)
-                throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, valueType, underlyingType));
-
-            return GetTypeCode(underlyingType) switch
+            if (IsIntegerType(valueType))
             {
-                TypeCode.SByte => Enum.IsDefinedPrimitive(this, (sbyte)value),
-                TypeCode.Byte => Enum.IsDefinedPrimitive(this, (byte)value),
-                TypeCode.Int16 => Enum.IsDefinedPrimitive(this, (short)value),
-                TypeCode.UInt16 => Enum.IsDefinedPrimitive(this, (ushort)value),
-                TypeCode.Int32 => Enum.IsDefinedPrimitive(this, (int)value),
-                TypeCode.UInt32 => Enum.IsDefinedPrimitive(this, (uint)value),
-                TypeCode.Int64 => Enum.IsDefinedPrimitive(this, (long)value),
-                TypeCode.UInt64 => Enum.IsDefinedPrimitive(this, (ulong)value),
-                TypeCode.Single => Enum.IsDefinedPrimitive(this, (float)value),
-                TypeCode.Double => Enum.IsDefinedPrimitive(this, (double)value),
-                TypeCode.Char => Enum.IsDefinedPrimitive(this, (char)value),
-                TypeCode.Boolean => Enum.IsDefinedPrimitive(this, (bool)value ? (byte)1 : (byte)0),
-                _ =>
-                    underlyingType == typeof(nint) ? Enum.IsDefinedPrimitive(this, (nint)value) :
-                    underlyingType == typeof(nuint) ? Enum.IsDefinedPrimitive(this, (nuint)value) :
-                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
-            };
+                RuntimeType underlyingType = Enum.InternalGetUnderlyingType(this);
+                if (underlyingType != valueType)
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, valueType, underlyingType));
+
+                ulong[] ulValues = Enum.InternalGetValues(this);
+                ulong ulValue = Enum.ToUInt64(value);
+
+                return Array.BinarySearch(ulValues, ulValue) >= 0;
+            }
+            else
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            }
         }
 
         protected override bool IsByRefImpl() => RuntimeTypeHandle.IsByRef(this);

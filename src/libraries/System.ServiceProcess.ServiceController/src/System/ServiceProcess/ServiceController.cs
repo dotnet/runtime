@@ -977,7 +977,7 @@ namespace System.ServiceProcess
         /// <param name="timeout">Wait for specific timeout</param>
         public void WaitForStatus(ServiceControllerStatus desiredStatus, TimeSpan timeout)
         {
-            if (!Enum.IsDefined(desiredStatus))
+            if (!Enum.IsDefined(typeof(ServiceControllerStatus), desiredStatus))
                 throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(desiredStatus), (int)desiredStatus, typeof(ServiceControllerStatus)));
 
             DateTime start = DateTime.UtcNow;

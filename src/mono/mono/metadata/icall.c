@@ -3678,7 +3678,7 @@ ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle
 }
 
 static void
-get_enum_field (MonoArrayHandle names, MonoArrayHandle values, int base_type, MonoClassField *field, guint* j, MonoError *error)
+get_enum_field (MonoArrayHandle names, MonoArrayHandle values, int base_type, MonoClassField *field, guint* j, guint64 *previous_value, gboolean *sorted, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER();
 	guint64 field_value;
@@ -3702,12 +3702,16 @@ get_enum_field (MonoArrayHandle names, MonoArrayHandle values, int base_type, Mo
 	field_value = read_enum_value (p, base_type);
 	MONO_HANDLE_ARRAY_SETVAL (values, guint64, *j, field_value);
 
+	if (*previous_value > field_value)
+		*sorted = FALSE;
+
+	*previous_value = field_value;
 	(*j)++;
 leave:
 	HANDLE_FUNCTION_RETURN();
 }
 
-void
+MonoBoolean
 ves_icall_System_Enum_GetEnumValuesAndNames (MonoQCallTypeHandle type_handle, MonoArrayHandleOut values, MonoArrayHandleOut names, MonoError *error)
 {
 	MonoClass *enumc = mono_class_from_mono_type_internal (type_handle.type);
@@ -3715,30 +3719,34 @@ ves_icall_System_Enum_GetEnumValuesAndNames (MonoQCallTypeHandle type_handle, Mo
 	gpointer iter;
 	MonoClassField *field;
 	int base_type;
+	guint64 previous_value = 0;
+	gboolean sorted = TRUE;
 
 	mono_class_init_checked (enumc, error);
-	return_if_nok (error);
+	return_val_if_nok (error, FALSE);
 
 	if (!m_class_is_enumtype (enumc)) {
 		mono_error_set_argument (error, NULL, "Type provided must be an Enum.");
-		return;
+		return TRUE;
 	}
 
 	base_type = mono_class_enum_basetype_internal (enumc)->type;
 
 	nvalues = mono_class_num_fields (enumc) > 0 ? mono_class_num_fields (enumc) - 1 : 0;
 	MONO_HANDLE_ASSIGN(names, mono_array_new_handle (mono_defaults.string_class, nvalues, error));
-	return_if_nok (error);
+	return_val_if_nok (error, FALSE);
 	MONO_HANDLE_ASSIGN(values, mono_array_new_handle (mono_defaults.uint64_class, nvalues, error));
-	return_if_nok (error);
+	return_val_if_nok (error, FALSE);
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (enumc, &iter))) {
-		get_enum_field (names, values, base_type, field, &j, error);
+		get_enum_field (names, values, base_type, field, &j, &previous_value, &sorted, error);
 		if (!is_ok (error))
 			break;
 	}
-	return_if_nok (error);
+	return_val_if_nok (error, FALSE);
+
+	return sorted || base_type == MONO_TYPE_R4 || base_type == MONO_TYPE_R8;
 }
 
 enum {
