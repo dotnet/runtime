@@ -337,6 +337,9 @@
     <NoWarn>$(NoWarn);CS8625</NoWarn>
     <!-- We dont need to add null annotation within the ref for explicit interface methods. -->
     <NoWarn>$(NoWarn);CS8617</NoWarn>
+    <!-- No symbols are produced for ref assemblies, but some parts of the SDK still expect pdbs, so we explicitly tell it there are none. -->
+    <!-- Must be set after importing Arcade to override its defaults. -->
+    <DebugType>none</DebugType>
   </PropertyGroup>
 
   <!-- All reference assemblies should have a ReferenceAssemblyAttribute and the 0x70 flag which prevents them from loading. -->
