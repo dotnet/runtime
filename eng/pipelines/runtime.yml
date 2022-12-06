@@ -85,6 +85,11 @@ extends:
         - windows_arm64
         jobParameters:
           testGroup: innerloop
+          condition: >-
+            or(
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
 
     #
     # Build the whole product using GNU compiler toolchain
