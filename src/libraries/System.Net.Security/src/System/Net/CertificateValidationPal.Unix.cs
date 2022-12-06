@@ -96,7 +96,7 @@ namespace System.Net
         }
 
         // This is only called when we selected local client certificate.
-        // Currently this is only when OpenSSL needs it becaseu peer asked.
+        // Currently this is only when OpenSSL needs it because peer asked.
         internal static bool IsLocalCertificateUsed(SafeDeleteContext? _) => true;
 
         //
