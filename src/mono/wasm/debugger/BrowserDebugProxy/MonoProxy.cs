@@ -561,7 +561,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             if (await IsRuntimeAlreadyReadyAlready(id, token))
                             {
-                                System.Diagnostics.Debugger.Launch();
                                 DebugStore store = await RuntimeReady(id, token);
                                 store.CreateSymbolServer();
                                 await store.LoadPDBFromSymbolServer(token);
