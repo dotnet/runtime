@@ -21750,6 +21750,7 @@ void gc_heap::gc1()
 
     if (!(settings.concurrent))
     {
+        rearrange_uoh_segments();
 #ifdef USE_REGIONS
         initGCShadow();
         distribute_free_regions();
@@ -21771,7 +21772,6 @@ void gc_heap::gc1()
         }
 #endif //USE_REGIONS
 
-        rearrange_uoh_segments();
         update_end_ngc_time();
         update_end_gc_time_per_heap();
         add_to_history_per_heap();
