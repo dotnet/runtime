@@ -2104,6 +2104,13 @@ protected:
                                               size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2]);
 #endif //MULTIPLE_HEAPS && REGIONS
     PER_HEAP_ISOLATED
+    void remove_old_or_small_regions (int hn,
+                                      region_free_list& from_list,
+#ifdef MULTIPLE_HEAPS
+                                      region_free_list global_free_list[count_free_region_kinds],
+#endif //MULTIPLE_HEAPS
+                                      BOOL last_gc_before_oom);
+    PER_HEAP_ISOLATED
     void distribute_free_regions();
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED
