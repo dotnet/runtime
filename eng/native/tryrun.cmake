@@ -146,9 +146,7 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
     set_cache_value(HAVE_SET_MAX_VARIABLE 1)
     set_cache_value(HAVE_FULLY_FEATURED_PTHREAD_MUTEXES 1)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
-  endif()
-
-  if (TIZEN)
+  elseif (TIZEN)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
   endif()
 else()
