@@ -1056,7 +1056,7 @@ int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
         return -1;
     }
 
-#if defined(TARGET_WASI)
+#if !defined(TARGET_WASI)
     return msync(address, (size_t)length, flags);
 #else
     return -1;
