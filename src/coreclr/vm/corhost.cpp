@@ -38,6 +38,8 @@
 
 #ifndef DACCESS_COMPILE
 
+#include <corehost/host_runtime_contract.h>
+
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
 
 //***************************************************************************
@@ -578,22 +580,22 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     for (int i = 0; i < nProperties; i++)
     {
-        if (wcscmp(pPropertyNames[i], W("NATIVE_DLL_SEARCH_DIRECTORIES")) == 0)
+        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES)) == 0)
         {
             pwzNativeDllSearchDirectories = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("TRUSTED_PLATFORM_ASSEMBLIES")) == 0)
+        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) == 0)
         {
             pwzTrustedPlatformAssemblies = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("PLATFORM_RESOURCE_ROOTS")) == 0)
+        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS)) == 0)
         {
             pwzPlatformResourceRoots = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("APP_PATHS")) == 0)
+        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_APP_PATHS)) == 0)
         {
             pwzAppPaths = pPropertyValues[i];
         }
