@@ -10,7 +10,10 @@ pr:
     - main
   paths:
     include:
-    - src/coreclr/jit/abc.txt
+    - src/coreclr/jit/*
+    - src/coreclr/tools/superpmi/*
+    exclude:
+    - src/coreclr/inc/jiteeversionguid.h
 
 variables:
   - template: /eng/pipelines/common/variables.yml
