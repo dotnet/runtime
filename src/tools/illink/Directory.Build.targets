@@ -8,7 +8,7 @@
   </Target>
 
   <!-- Import reference assembly and ApiCompat logic --> 
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" /> 
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
 
   <!-- The default pack logic will include the implementation assembly in lib.
        This also adds the reference assembly under ref. -->
