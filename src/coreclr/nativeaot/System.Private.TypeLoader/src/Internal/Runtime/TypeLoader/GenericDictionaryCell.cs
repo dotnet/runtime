@@ -370,54 +370,9 @@ namespace Internal.Runtime.TypeLoader
                     // Check whether we have already resolved a canonical or universal match
                     IntPtr addressToUse;
                     TypeLoaderEnvironment.MethodAddressType foundAddressType;
-                    if (Method.FunctionPointer != IntPtr.Zero)
-                    {
-                        addressToUse = Method.FunctionPointer;
-                        foundAddressType = TypeLoaderEnvironment.MethodAddressType.Canonical;
-                    }
-                    else if (Method.UsgFunctionPointer != IntPtr.Zero)
-                    {
-                        addressToUse = Method.UsgFunctionPointer;
-                        foundAddressType = TypeLoaderEnvironment.MethodAddressType.UniversalCanonical;
-                    }
-                    else
-                    {
-                        // No previous match, new lookup is needed
-                        IntPtr fnptr;
-                        IntPtr unboxingStub;
-
-                        MethodDesc searchMethod = Method;
-                        if (Method.UnboxingStub)
-                        {
-                            // Find the function that isn't an unboxing stub, note the first parameter which is false
-                            searchMethod = searchMethod.Context.ResolveGenericMethodInstantiation(false, (DefType)Method.OwningType, Method.NameAndSignature, Method.Instantiation, IntPtr.Zero, false);
-                        }
-
-                        if (!TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(searchMethod, out fnptr, out unboxingStub, out foundAddressType))
-                        {
-                            Environment.FailFast("Unable to find method address for method:" + Method.ToString());
-                        }
-
-                        if (Method.UnboxingStub)
-                        {
-                            addressToUse = unboxingStub;
-                        }
-                        else
-                        {
-                            addressToUse = fnptr;
-                        }
-
-                        if (foundAddressType == TypeLoaderEnvironment.MethodAddressType.Canonical ||
-                            foundAddressType == TypeLoaderEnvironment.MethodAddressType.UniversalCanonical)
-                        {
-                            // Cache the resolved canonical / universal pointer in the MethodDesc
-                            // Actually it would simplify matters here if the MethodDesc held just one pointer
-                            // and the lookup type enumeration value.
-                            Method.SetFunctionPointer(
-                                addressToUse,
-                                foundAddressType == TypeLoaderEnvironment.MethodAddressType.UniversalCanonical);
-                        }
-                    }
+                    Debug.Assert(Method.FunctionPointer != IntPtr.Zero);
+                    addressToUse = Method.FunctionPointer;
+                    foundAddressType = TypeLoaderEnvironment.MethodAddressType.Canonical;
 
                     // Look at the resolution type and check whether we can set up the ExactFunctionPointer upfront
                     switch (foundAddressType)

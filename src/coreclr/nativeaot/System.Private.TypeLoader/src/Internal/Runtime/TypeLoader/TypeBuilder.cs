@@ -250,10 +250,6 @@ namespace Internal.Runtime.TypeLoader
                         foreach (var instArg in typeAsDefType.Instantiation)
                             RegisterForPreparation(instArg);
 
-                        // We need the type definition to register a generic type
-                        if (type.GetTypeDefinition() is MetadataType)
-                            RegisterForPreparation(type.GetTypeDefinition());
-
                         ParseNativeLayoutInfo(state, type);
                     }
                 }
@@ -1152,13 +1148,6 @@ namespace Internal.Runtime.TypeLoader
             nlilContext._module = moduleInfo;
             nlilContext._typeSystemContext = typeSystemContext;
 
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            NativeFormatMetadataUnit metadataUnit = null;
-
-            if (moduleInfo.ModuleType == ModuleType.ReadyToRun)
-                metadataUnit = typeSystemContext.ResolveMetadataUnit(moduleInfo);
-#endif
-
             if ((contextKind & GenericContextKind.FromMethodHiddenArg) != 0)
             {
                 RuntimeTypeHandle declaringTypeHandle;
@@ -1195,25 +1184,7 @@ namespace Internal.Runtime.TypeLoader
                 if ((contextKind & GenericContextKind.HasDeclaringType) != 0)
                 {
                     // No need to deal with arrays - arrays can't have declaring type
-
-                    TypeDesc declaringType;
-
-                    if (moduleInfo.ModuleType == ModuleType.Eager)
-                    {
-                        declaringType = nlilContext.GetType(ref parser);
-                    }
-                    else
-                    {
-                        Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                        uint typeToken = parser.GetUnsigned();
-                        declaringType = metadataUnit.GetType(((int)typeToken).AsHandle());
-#else
-                        Environment.FailFast("Ready to Run module type?");
-                        declaringType = null;
-#endif
-                    }
-
+                    TypeDesc declaringType = nlilContext.GetType(ref parser);
                     DefType actualContext = GetExactDeclaringType((DefType)typeContext, (DefType)declaringType);
 
                     nlilContext._typeArgumentHandles = actualContext.Instantiation;
@@ -1232,23 +1203,7 @@ namespace Internal.Runtime.TypeLoader
                     return genericDictionary;
                 }
 
-                GenericTypeDictionary ucgDict;
-
-                if (moduleInfo.ModuleType == ModuleType.Eager)
-                {
-                    ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionary(this, nlilContext, parser));
-                }
-                else
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-                    FixupCellMetadataResolver metadataResolver = new FixupCellMetadataResolver(metadataUnit, nlilContext);
-                    ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionaryFromMetadataTokensAndContext(this, parser, metadataUnit, metadataResolver));
-#else
-                    Environment.FailFast("Ready to Run module type?");
-                    ucgDict = null;
-#endif
-                }
+                GenericTypeDictionary ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionary(this, nlilContext, parser));
                 genericDictionary = ucgDict.Allocate();
 
                 // Process the pending types
@@ -1263,39 +1218,7 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                GenericDictionaryCell cell;
-
-                if (moduleInfo.ModuleType == ModuleType.Eager)
-                {
-                    cell = GenericDictionaryCell.ParseAndCreateCell(
-                        nlilContext,
-                        ref parser);
-                }
-                else
-                {
-                    Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    MetadataFixupKind fixupKind = (MetadataFixupKind)parser.GetUInt8();
-                    Internal.Metadata.NativeFormat.Handle token = parser.GetUnsigned().AsHandle();
-                    Internal.Metadata.NativeFormat.Handle token2 = default(Internal.Metadata.NativeFormat.Handle);
-
-                    switch (fixupKind)
-                    {
-                        case MetadataFixupKind.GenericConstrainedMethod:
-                        case MetadataFixupKind.NonGenericConstrainedMethod:
-                        case MetadataFixupKind.NonGenericDirectConstrainedMethod:
-                            token2 = parser.GetUnsigned().AsHandle();
-                            break;
-                    }
-
-                    FixupCellMetadataResolver resolver = new FixupCellMetadataResolver(metadataUnit, nlilContext);
-                    cell = GenericDictionaryCell.CreateCellFromFixupKindAndToken(fixupKind, resolver, token, token2);
-#else
-                    Environment.FailFast("Ready to Run module type?");
-                    cell = null;
-#endif
-                }
-
+                GenericDictionaryCell cell = GenericDictionaryCell.ParseAndCreateCell(nlilContext, ref parser);
                 cell.Prepare(this);
 
                 // Process the pending types
