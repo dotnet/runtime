@@ -1050,13 +1050,13 @@ namespace DebuggerTests
                 "TestLoadSymbols.Run"
             );
 
-            await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 1518, 8, justMyCode ? "dotnet://debugger-test.dll/debugger-test.cs" : "",
+            await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 1518, 8, justMyCode ? "TestLoadSymbols.Run" : "",
                 locals_fn: async (locals) =>
                 {
                     if (!justMyCode)
-                        await CheckObject(locals, "this", "Simple.Complex");
+                        await CheckObject(locals, "this", "Newtonsoft.Json.Linq.JArray", description: "[]");
                     else
-                        await CheckObject(locals, "array", "Simple.Complex");
+                        await CheckObject(locals, "array", "Newtonsoft.Json.Linq.JArray", description: "[]");
                 }
             );
         }
