@@ -437,7 +437,7 @@ namespace Microsoft.Interop
             IncrementalStubGenerationContext methodStub)
         {
             var diagnostics = new GeneratorDiagnostics();
-            ImmutableArray<TypePositionInfo> elements = AddThisParameterToElementInfo(methodStub);
+            ImmutableArray<TypePositionInfo> elements = AddImplicitElementInfos(methodStub);
 
             // Generate stub code
             var stubGenerator = new UnmanagedToManagedStubGenerator(
@@ -486,18 +486,18 @@ namespace Microsoft.Interop
                 methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
-        private static ImmutableArray<TypePositionInfo> AddThisParameterToElementInfo(IncrementalStubGenerationContext methodStub)
+        private static ImmutableArray<TypePositionInfo> AddImplicitElementInfos(IncrementalStubGenerationContext methodStub)
         {
             ImmutableArray<TypePositionInfo> originalElements = methodStub.SignatureContext.ElementTypeInformation;
 
-            var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 1);
+            var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 2);
 
             elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.TypeKeyType))
             {
                 InstanceIdentifier = ThisParameterIdentifier,
                 NativeIndex = 0,
             });
-            foreach (var element in originalElements)
+            foreach (TypePositionInfo element in originalElements)
             {
                 elements.Add(element with
                 {
@@ -505,7 +505,20 @@ namespace Microsoft.Interop
                 });
             }
 
-            return elements.MoveToImmutable();
+            if (methodStub.ExceptionMarshallingInfo != NoMarshallingInfo.Instance)
+            {
+                elements.Add(
+                    new TypePositionInfo(
+                        new ReferenceTypeInfo($"global::{TypeNames.System_Exception}", TypeNames.System_Exception),
+                        methodStub.ExceptionMarshallingInfo)
+                    {
+                        InstanceIdentifier = "__exception",
+                        ManagedIndex = TypePositionInfo.ExceptionIndex,
+                        NativeIndex = TypePositionInfo.ReturnIndex
+                    });
+            }
+
+            return elements.ToImmutable();
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
@@ -563,7 +576,7 @@ namespace Microsoft.Interop
                 var stubGenerator = new UnmanagedToManagedStubGenerator(
                     method.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
                     method.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
-                    AddThisParameterToElementInfo(method),
+                    AddImplicitElementInfos(method),
                     // Swallow diagnostics here since the diagnostics will be reported by the unmanaged->managed stub generation
                     (elementInfo, ex) => { },
                     method.UnmanagedToManagedGeneratorFactory.GeneratorFactory);

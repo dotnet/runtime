@@ -157,13 +157,10 @@ namespace Microsoft.Interop
 
             catchClauseBuilder.AddRange(
                 managedExceptionMarshaller.Generator.Generate(
-                    managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.UnmarshalCapture }));
+                    managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.Marshal }));
             catchClauseBuilder.AddRange(
                 managedExceptionMarshaller.Generator.Generate(
-                    managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.Unmarshal }));
-            catchClauseBuilder.AddRange(
-                managedExceptionMarshaller.Generator.Generate(
-                    managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.GuaranteedUnmarshal }));
+                    managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }));
             return ImmutableArray.Create(
                 CatchClause(
                     CatchDeclaration(ParseTypeName(TypeNames.System_Exception), Identifier(managed)),

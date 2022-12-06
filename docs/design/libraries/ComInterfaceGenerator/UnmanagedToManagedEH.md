@@ -8,9 +8,16 @@ We determined that there were three options:
 2. Match the existing behavior in the runtime for `[PreserveSig]` on a method on a `[ComImport]` interface.
 3. Allow the user to provide their own "exception -> return value" translation.
 
+We chose option 3 for a few reasons:
+
+1. Ecosystems like Swift don't use COM HResults as result types, so they may want different behavior for simple types like `int`.
+2. Not providing a customization option for exception handling would prevent dropping a single method down from the COM generator to the VTable generator to replicate the old `[PreserveSig]` behavior, and there's a desire to not support the `[PreserveSig]` attribute as it exists today.
+
+As a result, we decided to provide their own rules while providing an easy opt-in to the COM-style rules.
+
 ## Option 1: Do Nothing
 
-This option seems the simplest option. The source generator will not emit a `try-catch` block and will just let the exception propogate when in a wrapper for a `VirtualMethodTableIndex` stub. There's a big problem with this path though. One goal of our COM source generator design is to let developers drop down a particular method from the "HRESULT-swapped, all nice COM defaults" mechanism to a `VirtualMethodTableIndex`-attributed method for particular methods when they do not match the expected default behaviors. This feature becomes untenable if we do not wrap the stub in a `try-catch`, as suddenly there is no mechanism to emulate the exception handling of exceptions thrown by marshallers. For cases where all marshallers are known to not throw exceptions except in cases where the process is unrecoverable (i.e. `OutOfMemoryException`), this version may provide a slight performance improvement as there will be no exception handling in the generated stub.
+This option seems the simplest option. The source generator will not emit a `try-catch` block and will just let the exception propogate when in a wrapper for a `VirtualMethodTableIndex` stub. There's a big problem with this path though. One goal of our COM source generator design is to let developers drop down a particular method from the "HRESULT-swapped, all nice COM defaults" mechanism to a `VirtualMethodTableIndex`-attributed method for particular methods when they do not match the expected default behaviors. This feature becomes untenable if we do not wrap the stub in a `try-catch`, as suddenly there is no mechanism to emulate the exception handling of exceptions thrown by marshallers. For cases where all marshallers are known to not throw exceptions except in cases where the process is unrecoverable (for example, `OutOfMemoryException`), this version may provide a slight performance improvement as there will be no exception handling in the generated stub.
 
 ## Option 2: Match the existing behavior in the runtime for `[PreserveSig]` on a method on a `[ComImport]` interface
 

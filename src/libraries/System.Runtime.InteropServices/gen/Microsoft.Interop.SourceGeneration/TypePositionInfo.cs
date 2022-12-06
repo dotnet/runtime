@@ -51,7 +51,7 @@ namespace Microsoft.Interop
 
         public static bool IsSpecialIndex(int index)
         {
-            return index is UnsetIndex or ReturnIndex;
+            return index is UnsetIndex or ReturnIndex or ExceptionIndex;
         }
 
         public static int IncrementIndex(int index)
