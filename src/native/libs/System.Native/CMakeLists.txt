@@ -15,27 +15,42 @@ if (CLR_CMAKE_TARGET_OSX)
 endif ()
 
 set(NATIVE_SOURCES
-    pal_dynamicload.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c
-    pal_mount.c
-    pal_networking.c
     pal_networkstatistics.c
-    pal_process.c
     pal_random.c
     pal_runtimeinformation.c
-    pal_signal.c
     pal_string.c
     pal_tcpstate.c
-    pal_threading.c
     pal_time.c
-    pal_uid.c
     pal_datetime.c
     pal_sysctl.c
 )
+
+if (NOT CLR_CMAKE_TARGET_WASI)
+    list (APPEND NATIVE_SOURCES 
+        pal_dynamicload.c
+        pal_mount.c
+        pal_networking.c
+        pal_process.c
+        pal_signal.c
+        pal_threading.c
+        pal_uid.c
+    )
+else()
+    list (APPEND NATIVE_SOURCES 
+        pal_dynamicload_wasi.c
+        pal_mount_wasi.c
+        pal_networking_wasi.c
+        pal_process_wasi.c
+        pal_signal_wasi.c
+        pal_threading_wasi.c
+        pal_uid_wasi.c
+    )
+endif()
 
 if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     list (APPEND NATIVE_SOURCES pal_autoreleasepool.m)
@@ -63,6 +78,11 @@ elseif (CLR_CMAKE_TARGET_OSX)
     list (APPEND NATIVE_SOURCES
         pal_searchpath.m
         pal_console.c
+        pal_log.c)
+elseif (CLR_CMAKE_TARGET_WASI)
+    list (APPEND NATIVE_SOURCES
+        pal_searchpath.c
+        pal_console_wasi.c
         pal_log.c)
 else ()
     list (APPEND NATIVE_SOURCES

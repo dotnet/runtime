@@ -107,7 +107,6 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #define lstat_ lstat
 #endif  /* HAVE_STAT64 */
 
-#if !defined(TARGET_WASI)
 // These numeric values are specified by POSIX.
 // Validate that our definitions match.
 c_static_assert(PAL_S_IRWXU == S_IRWXU);
@@ -129,15 +128,16 @@ c_static_assert(PAL_S_ISGID == S_ISGID);
 // are common to our current targets.  If these static asserts fail,
 // ConvertFileStatus needs to be updated to twiddle mode bits
 // accordingly.
+#if !defined(TARGET_WASI)
 c_static_assert(PAL_S_IFMT == S_IFMT);
 c_static_assert(PAL_S_IFIFO == S_IFIFO);
+#endif /* TARGET_WASI */
 c_static_assert(PAL_S_IFBLK == S_IFBLK);
 c_static_assert(PAL_S_IFCHR == S_IFCHR);
 c_static_assert(PAL_S_IFDIR == S_IFDIR);
 c_static_assert(PAL_S_IFREG == S_IFREG);
 c_static_assert(PAL_S_IFLNK == S_IFLNK);
 c_static_assert(PAL_S_IFSOCK == S_IFSOCK);
-#endif /* TARGET_WASI */
 
 // Validate that our enum for inode types is the same as what is
 // declared by the dirent.h header on the local system.
@@ -889,6 +889,7 @@ intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
         pathTemplate[firstSuffixIndex] = firstSuffixChar;
     }
 #elif TARGET_WASI
+    assert_msg(false, "Not supported on WASI", 0);
     result = -1;
 #else
 #error "Cannot find mkstemps nor mkstemp on this platform"
@@ -1055,7 +1056,7 @@ int32_t SystemNative_MSync(void* address, uint64_t length, int32_t flags)
         return -1;
     }
 
-#if !defined(TARGET_WASI)
+#if defined(TARGET_WASI)
     return msync(address, (size_t)length, flags);
 #else
     return -1;
@@ -1926,4 +1927,3 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     assert(count >= -1);
     return count;
 }
-

@@ -59,8 +59,6 @@
 #cmakedefine01 HAVE_SIGNAL_KILL
 #cmakedefine01 HAVE_SYS_RESOURCE_H
 #cmakedefine01 HAVE_GETRUSAGE
-#cmakedefine01 HAVE_GETRLIMIT
-#cmakedefine01 HAVE_SETRLIMIT
 #cmakedefine01 HAVE_SYS_SOCKIO_H
 #cmakedefine01 HAVE_ETHTOOL_H
 #cmakedefine01 HAVE_SYS_POLL_H

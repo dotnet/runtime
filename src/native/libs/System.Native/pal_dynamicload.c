@@ -4,11 +4,8 @@
 #include "pal_config.h"
 #include "pal_dynamicload.h"
 
-#if HAVE_DLFCN_H
 #include <dlfcn.h>
-#endif
 #include <string.h>
-#include <stdio.h>
 
 #if HAVE_GNU_LIBNAMES_H
 #include <gnu/lib-names.h>
@@ -16,7 +13,6 @@
 
 void* SystemNative_LoadLibrary(const char* filename)
 {
-#if !defined(TARGET_WASI)
     // Check whether we have been requested to load 'libc'. If that's the case, then:
     // * For Linux, use the full name of the library that is defined in <gnu/lib-names.h> by the
     //   LIBC_SO constant. The problem is that calling dlopen("libc.so") will fail for libc even
@@ -40,45 +36,26 @@ void* SystemNative_LoadLibrary(const char* filename)
     }
 
     return dlopen(filename, RTLD_LAZY);
-#else /* TARGET_WASI */
-    return NULL;
-#endif /* TARGET_WASI */
 }
 
 void* SystemNative_GetLoadLibraryError(void)
 {
-#if !defined(TARGET_WASI)
     return dlerror();
-#else /* TARGET_WASI */
-    return NULL;
-#endif /* TARGET_WASI */
 }
 
 void* SystemNative_GetProcAddress(void* handle, const char* symbol)
 {
-#if !defined(TARGET_WASI)
     // We're not trying to disambiguate between "symbol was not found" and "symbol found, but
     // the value is null". .NET does not define a behavior for DllImports of null entrypoints,
     // so we might as well take the "not found" path on the managed side.
     return dlsym(handle, symbol);
-#else /* TARGET_WASI */
-    return NULL;
-#endif /* TARGET_WASI */
 }
 
 void SystemNative_FreeLibrary(void* handle)
 {
-#if !defined(TARGET_WASI)
     dlclose(handle);
-#endif /* TARGET_WASI */
 }
 
-#if defined TARGET_WASI
-void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
-{
-    return NULL;
-}
-#else
 static void* volatile g_defaultSearchOrderPseudoHandle = NULL;
 void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
@@ -99,4 +76,3 @@ void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
     }
     return defaultSearchOrderPseudoHandle;
 }
-#endif

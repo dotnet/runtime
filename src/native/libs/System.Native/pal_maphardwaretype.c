@@ -114,7 +114,6 @@ uint16_t MapHardwareType(uint16_t nativeType)
             return NetworkInterfaceType_Unknown;
     }
 #elif defined(TARGET_WASI)
-    // TODOWASI
     return NetworkInterfaceType_Unknown;
 #endif
 }

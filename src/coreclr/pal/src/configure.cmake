@@ -135,9 +135,6 @@ check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
-check_function_exists(pipe HAVE_PIPE)
-check_function_exists(chmod HAVE_CHMOD)
-check_function_exists(fchmod HAVE_FCHMOD)
 
 check_cxx_source_compiles("
 #include <pthread_np.h>

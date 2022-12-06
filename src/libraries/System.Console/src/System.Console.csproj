@@ -67,10 +67,11 @@
   </ItemGroup>
   <!-- WASI is like unix without dup and termio -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
-    <Compile Include="System\ConsolePal.Unix.cs" />
+    <Compile Include="System\ConsolePal.Wasi.cs" />
+    <Compile Include="System\ConsolePal.Unix.ConsoleStream.cs" />
+    <!-- 
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
-    <Compile Include="System\IO\StdInReader.cs" />
-    <Compile Include="System\IO\KeyParser.cs" />
+     -->
 
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.StdinReady.cs"
              Link="Common\Interop\Unix\Interop.StdinReady.cs" />
@@ -190,6 +191,7 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="System\ConsolePal.Unix.cs" />
+    <Compile Include="System\ConsolePal.Unix.ConsoleStream.cs" />
     <Compile Include="System\TerminalFormatStrings.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
              Link="Common\System\Console\ConsoleUtils.cs" />
