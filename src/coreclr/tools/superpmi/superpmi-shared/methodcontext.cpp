@@ -3535,40 +3535,6 @@ CORINFO_METHOD_HANDLE MethodContext::repEmbedMethodHandle(CORINFO_METHOD_HANDLE 
     return (CORINFO_METHOD_HANDLE)value.B;
 }
 
-void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection, void* result, CorInfoType cit)
-{
-    if (GetFieldAddress == nullptr)
-        GetFieldAddress = new LightWeightMap<DWORDLONG, Agnostic_GetFieldAddress>();
-
-    Agnostic_GetFieldAddress value;
-    if (ppIndirection == nullptr)
-        value.ppIndirection = 0;
-    else
-        value.ppIndirection = CastPointer(*ppIndirection);
-    value.fieldAddress      = CastPointer(result);
-
-    DWORDLONG key = CastHandle(field);
-    GetFieldAddress->Add(key, value);
-    DEBUG_REC(dmpGetFieldAddress(key, value));
-}
-void MethodContext::dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value)
-{
-    printf("GetFieldAddress key fld-%016llX, value ppi-%016llX addr-%016llX", key, value.ppIndirection, value.fieldAddress);
-}
-void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
-{
-    DWORDLONG key = CastHandle(field);
-    Agnostic_GetFieldAddress value = LookupByKeyOrMiss(GetFieldAddress, key, ": key %016llX", key);
-
-    DEBUG_REP(dmpGetFieldAddress(key, value));
-
-    if (ppIndirection != nullptr)
-    {
-        *ppIndirection = (void*)value.ppIndirection;
-    }
-    return (void*)value.fieldAddress;
-}
-
 void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result)
 {
     if (GetReadonlyStaticFieldValue == nullptr)

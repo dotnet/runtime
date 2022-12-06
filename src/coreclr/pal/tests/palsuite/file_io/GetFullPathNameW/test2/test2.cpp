@@ -18,7 +18,7 @@
 
 PALTEST(file_io_GetFullPathNameW_test2_paltest_getfullpathnamew_test2, "file_io/GetFullPathNameW/test2/paltest_getfullpathnamew_test2")
 {
-    WCHAR szwDotDot[]   = {'.','.','\\','\0'};
+    WCHAR szwDotDot[]   = {'.','.','/','\0'};
     WCHAR szwFileName[] = {'t','e','s','t','i','n','g','.','t','m','p','\0'};
 
     DWORD dwRc = 0;

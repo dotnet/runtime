@@ -141,9 +141,9 @@ if defined CrossgenLargeVersionBubble (
     set __RuntestPyArgs=%__RuntestPyArgs% --large_version_bubble
 )
 
-if defined CrossGen2SynthesizePgo {
+if defined CrossGen2SynthesizePgo (
     set __RuntestPyArgs=%__RuntestPyArgs% --synthesize_pgo
-}
+)
 
 if defined __PrintLastResultsOnly (
     set __RuntestPyArgs=%__RuntestPyArgs% --analyze_results_only

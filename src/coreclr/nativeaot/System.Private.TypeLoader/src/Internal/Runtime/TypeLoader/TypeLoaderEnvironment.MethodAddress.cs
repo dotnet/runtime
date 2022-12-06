@@ -17,7 +17,6 @@ using Internal.Runtime.CompilerServices;
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
 
 namespace Internal.Runtime.TypeLoader
 {

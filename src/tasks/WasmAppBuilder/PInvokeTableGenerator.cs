@@ -214,7 +214,7 @@ internal sealed class PInvokeTableGenerator
                 string imports = string.Join(Environment.NewLine,
                                             candidates.Select(
                                                 p => $"    {p.Method} (in [{p.Method.DeclaringType?.Assembly.GetName().Name}] {p.Method.DeclaringType})"));
-                Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
+                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
                                  " Calling such functions is not supported, and will fail at runtime." +
                                 $" Managed DllImports: {Environment.NewLine}{imports}");
 

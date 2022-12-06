@@ -58,7 +58,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return Read<TValue>(ref reader, jsonTypeInfo);
         }
 
@@ -117,7 +117,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return Read<object?>(ref reader, jsonTypeInfo);
+            return ReadAsObject(ref reader, jsonTypeInfo);
         }
 
         /// <summary>
@@ -234,10 +234,10 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
-            return Read<object>(ref reader, GetTypeInfo(context, returnType));
+            return ReadAsObject(ref reader, GetTypeInfo(context, returnType));
         }
 
-        private static TValue? Read<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
+        private static TValue? Read<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
 
@@ -253,7 +253,32 @@ namespace System.Text.Json
             try
             {
                 Utf8JsonReader scopedReader = GetReaderScopedToNextValue(ref reader, ref state);
-                return ReadCore<TValue>(ref scopedReader, jsonTypeInfo, ref state);
+                return jsonTypeInfo.Deserialize(ref scopedReader, ref state);
+            }
+            catch (JsonException)
+            {
+                reader = restore;
+                throw;
+            }
+        }
+
+        private static object? ReadAsObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            if (reader.CurrentState.Options.CommentHandling == JsonCommentHandling.Allow)
+            {
+                ThrowHelper.ThrowArgumentException_SerializerDoesNotSupportComments(nameof(reader));
+            }
+
+            ReadStack state = default;
+            state.Initialize(jsonTypeInfo);
+            Utf8JsonReader restore = reader;
+
+            try
+            {
+                Utf8JsonReader scopedReader = GetReaderScopedToNextValue(ref reader, ref state);
+                return jsonTypeInfo.DeserializeAsObject(ref scopedReader, ref state);
             }
             catch (JsonException)
             {

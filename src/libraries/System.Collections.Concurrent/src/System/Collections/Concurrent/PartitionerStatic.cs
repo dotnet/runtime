@@ -605,15 +605,10 @@ namespace System.Collections.Concurrent
 
                 public IEnumerator<KeyValuePair<long, TSource>> GetEnumerator()
                 {
-                    if (_disposed)
-                    {
-                        throw new ObjectDisposedException(SR.PartitionerStatic_CanNotCallGetEnumeratorAfterSourceHasBeenDisposed);
-                    }
-                    else
-                    {
-                        return new InternalPartitionEnumerator(_sharedReader, _sharedIndex,
-                            _hasNoElementsLeft, _activePartitionCount, this, _useSingleChunking);
-                    }
+                    ObjectDisposedException.ThrowIf(_disposed, this);
+
+                    return new InternalPartitionEnumerator(_sharedReader, _sharedIndex,
+                        _hasNoElementsLeft, _activePartitionCount, this, _useSingleChunking);
                 }
 
 
