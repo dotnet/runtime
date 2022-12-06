@@ -18,7 +18,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class MonoProxy : DevToolsProxy
     {
-        private IList<string> urlSymbolServerList;
+        internal List<string> UrlSymbolServerList { get; private set; }
+        internal string CachePathSymbolServer { get; private set; }
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
@@ -31,9 +32,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected readonly ProxyOptions _options;
 
-        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
+        public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
         {
-            this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
+            UrlSymbolServerList = new List<string>();
             RuntimeId = runtimeId;
             _options = options;
             _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
@@ -540,11 +541,32 @@ namespace Microsoft.WebAssembly.Diagnostics
                             SendResponse(id, Result.Err("ApplyUpdate failed."), token);
                         return true;
                     }
-                case "DotnetDebugger.addSymbolServerUrl":
+                case "DotnetDebugger.setSymbolOptions":
                     {
-                        string url = args["url"]?.Value<string>();
-                        if (!string.IsNullOrEmpty(url) && !urlSymbolServerList.Contains(url))
-                            urlSymbolServerList.Add(url);
+                        var shouldUpdateSymbolStore = false;
+                        CachePathSymbolServer = args["symbolOptions"]?["cachePath"]?.Value<string>();
+                        var urls = args["symbolOptions"]?["searchPaths"]?.Value<JArray>();
+                        SendResponse(id, Result.OkFromObject(new { }), token);
+                        if (urls == null)
+                            return true;
+                        foreach (var url in urls)
+                        {
+                            if (!string.IsNullOrEmpty(url.Value<string>()) && !UrlSymbolServerList.Contains(url.Value<string>()))
+                            {
+                                UrlSymbolServerList.Add(url.Value<string>());
+                                shouldUpdateSymbolStore = true;
+                            }
+                        }
+                        if (shouldUpdateSymbolStore)
+                        {
+                            if (await IsRuntimeAlreadyReadyAlready(id, token))
+                            {
+                                System.Diagnostics.Debugger.Launch();
+                                DebugStore store = await RuntimeReady(id, token);
+                                store.CreateSymbolServer();
+                                await store.LoadPDBFromSymbolServer(token);
+                            }
+                        }
                         return true;
                     }
                 case "DotnetDebugger.getMethodLocation":
@@ -895,7 +917,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (shouldReturn)
                 return true;
 
-            if (j == 0 && method?.Info.DebuggerAttrInfo.DoAttributesAffectCallStack(JustMyCode) == true)
+            if (j == 0 && method?.Info?.DebuggerAttrInfo?.DoAttributesAffectCallStack(JustMyCode) == true)
             {
                 if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
                 {
@@ -1120,49 +1142,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
             return false;
-        }
-
-        internal async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, int method_token, SessionId sessionId, CancellationToken token)
-        {
-            ExecutionContext context = GetContext(sessionId);
-            if (urlSymbolServerList.Count == 0)
-                return null;
-            if (asm.TriedToLoadSymbolsOnDemand || !asm.CodeViewInformationAvailable)
-                return null;
-            asm.TriedToLoadSymbolsOnDemand = true;
-            var pdbName = Path.GetFileName(asm.PdbName);
-
-            foreach (string urlSymbolServer in urlSymbolServerList)
-            {
-                string downloadURL = $"{urlSymbolServer}/{pdbName}/{asm.PdbGuid.ToString("N").ToUpperInvariant() + asm.PdbAge}/{pdbName}";
-
-                try
-                {
-                    using HttpResponseMessage response = await HttpClient.GetAsync(downloadURL, token);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
-                        continue;
-                    }
-
-                    using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync(token);
-                    asm.UpdatePdbInformation(streamToReadFrom);
-                    foreach (SourceFile source in asm.Sources)
-                    {
-                        var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                        await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-                    }
-                    return asm.GetMethodByToken(method_token);
-                }
-                catch (Exception e)
-                {
-                    Log("info", $"Unable to load symbols on demand exception: {e} url:{downloadURL} assembly: {asm.Name}");
-                }
-                break;
-            }
-
-            Log("info", $"Unable to load symbols on demand assembly: {asm.Name}");
-            return null;
         }
 
         protected void OnDefaultContextUpdate(SessionId sessionId, ExecutionContext context)
@@ -1565,7 +1544,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var comparer = new SourceLocation.LocationComparer();
             // if column is specified the frontend wants the exact matches
-            // and will clear the bp if it isn't close enoug
+            // and will clear the bp if it isn't close enough
             var bpLocations = store.FindBreakpointLocations(req, ifNoneFoundThenFindNext);
             IEnumerable<IGrouping<SourceId, SourceLocation>> locations = bpLocations.Distinct(comparer)
                 .OrderBy(l => l.Column)
