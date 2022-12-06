@@ -21579,6 +21579,88 @@ GenTree* Compiler::gtNewSimdGetElementNode(var_types   type,
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
+#ifdef TARGET_XARCH
+GenTree* Compiler::gtNewSimdDivisionNode(var_types   type,
+                                         GenTree*    op1,
+                                         GenTree*    op2,
+                                         CorInfoType simdBaseJitType,
+                                         unsigned    simdSize,
+                                         bool        isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type, simdBaseType, genActualType(simdBaseType)));
+
+    assert(op2 != nullptr);
+    assert(op2->TypeIs(type, simdBaseType, genActualType(simdBaseType)));
+
+    CorInfoType          opBaseJitType =  CORINFO_TYPE_INT;
+    CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, opBaseJitType, isSimdAsHWIntrinsic);
+    assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+    assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+    assert(compIsaSupportedDebugOnly(InstructionSet_LZCNT));
+    //  m_prime = 1 + ((Int64)1<<(N+(int)L-1))/(Int64)(actual_divisor_abs) - ((Int64)1<<N)
+    GenTree* op2Dup;
+    op2 = impCloneExpr(op2, &op2Dup, clsHnd, CHECK_SPILL_ALL,
+                        nullptr DEBUGARG("Clone op2 as divisor"));
+    GenTree* tmp0 = gtNewSimdAbsNode(type, op2, simdBaseJitType, simdSize, false);
+    GenTree* tmp1 = gtNewSimdGetElementNode(simdBaseType, tmp0, gtNewIconNode(0), simdBaseJitType, simdSize, true);
+    GenTree* tmp1Dup;
+    tmp1 = impCloneExpr(tmp1, &tmp1Dup, clsHnd, CHECK_SPILL_ALL,
+                        nullptr DEBUGARG("Clone tmp1 as actual divisor"));
+    // GenTree* tmp2 = gtNewOperNode(GT_ADD, TYP_INT, tmp1, gtNewIconNode(-1));
+    GenTree* tmp3 = gtNewSimdHWIntrinsicNode(TYP_UINT, tmp1, NI_LZCNT_LeadingZeroCount, simdBaseJitType, simdSize, false);
+    GenTree* tmp3Dup;
+    tmp3 = impCloneExpr(tmp3, &tmp3Dup, clsHnd, CHECK_SPILL_ALL,
+                        nullptr DEBUGARG("Clone tmp3 as LZCNT"));
+    //  tmp4 -> L = N(=32) - Lzcnt(divsiorAbs)
+    GenTree* tmp4 = gtNewOperNode(GT_SUB, TYP_INT, gtNewIconNode(32), tmp3);
+    GenTree* tmp5 = gtNewOperNode(GT_ADD, TYP_INT, tmp4, gtNewIconNode(31));
+    GenTree* tmp6 = gtNewOperNode(GT_LSH, TYP_LONG, gtNewIconNode(1, TYP_LONG), tmp5);
+    GenTree* tmp7 = gtNewOperNode(GT_DIV, TYP_LONG, tmp6, tmp1Dup);
+    GenTree* tmp8 = gtNewOperNode(GT_ADD, TYP_LONG, tmp7, gtNewIconNode(1, TYP_LONG));
+    GenTree* tmp9 = gtNewOperNode(GT_ADD, TYP_LONG, tmp8, gtNewIconNode(4294967296, TYP_LONG)); //  4294967296 = 1<<32
+    GenTree* tmp10 = gtNewSimdHWIntrinsicNode(type, tmp9, NI_Vector256_Create, simdBaseJitType, simdSize, true);
+    GenTree* tmp10Dup;
+    tmp10 = impCloneExpr(tmp10, &tmp10Dup, clsHnd, CHECK_SPILL_ALL,
+                        nullptr DEBUGARG("Clone tmp10 as duplicated divisorVector"));
+    GenTree* op1Dup;
+    op1 = impCloneExpr(op1, &op1Dup, clsHnd, CHECK_SPILL_ALL,
+                        nullptr DEBUGARG("Clone op1 as duplicated dividend"));
+    GenTree* op1Dup2;
+    op1Dup = impCloneExpr(op1Dup, &op1Dup2, clsHnd, CHECK_SPILL_ALL,
+                        nullptr DEBUGARG("Clone op1 as duplicated dividend"));
+    GenTree* op1Dup3;
+    op1Dup2 = impCloneExpr(op1Dup2, &op1Dup3, clsHnd, CHECK_SPILL_ALL,
+                        nullptr DEBUGARG("Clone op1 as duplicated dividend"));
+    GenTree* tmp12 = gtNewSimdHWIntrinsicNode(type, op1, tmp10, NI_AVX2_Multiply, CORINFO_TYPE_LONG, simdSize, false);
+    GenTree* tmp13 = gtNewSimdHWIntrinsicNode(type, tmp12, gtNewIconNode(32), NI_AVX2_ShiftRightLogical, CORINFO_TYPE_LONG, simdSize, false);
+    GenTree* tmp14 = gtNewSimdHWIntrinsicNode(type, op1Dup, gtNewIconNode(32), NI_AVX2_ShiftRightLogical, CORINFO_TYPE_LONG, simdSize, false);
+    GenTree* tmp15 = gtNewSimdHWIntrinsicNode(type, tmp14, tmp10Dup, NI_AVX2_Multiply, CORINFO_TYPE_LONG, simdSize, false);
+    //  tmp13 -> res_even,
+    //  tmp15 -> res_odd
+    GenTree* tmp16 = gtNewSimdHWIntrinsicNode(type, tmp13, tmp15, gtNewIconNode(170), NI_AVX2_Blend, simdBaseJitType, simdSize, false);  //  170 = 0xaa, this line is to blend 2 vectors, tmp13 and tmp15 alternatively for each 32 bit data.
+    GenTree* tmp17 = gtNewSimdHWIntrinsicNode(type, tmp16, op1Dup2, NI_AVX2_Add, simdBaseJitType,simdSize, false);
+    GenTree* tmp18 = gtNewOperNode(GT_SUB, TYP_INT, gtNewIconNode(31), tmp3Dup);
+    GenTree* tmp19 = gtNewSimdBinOpNode(GT_RSH, type, tmp17, tmp18, simdBaseJitType, simdSize, false);
+    GenTree* tmp20 = gtNewSimdBinOpNode(GT_RSH, type, op1Dup3, gtNewIconNode(31), simdBaseJitType, simdSize, false);
+    GenTree* tmp21 = gtNewSimdHWIntrinsicNode(type, tmp19, tmp20, NI_AVX2_Subtract, simdBaseJitType, simdSize, false);
+    GenTree* tmp22 = gtNewSimdBinOpNode(GT_RSH, type, op2Dup, gtNewIconNode(31), simdBaseJitType, simdSize, false);
+    GenTree* tmp22Dup;
+    tmp22 = impCloneExpr(tmp22, &tmp22Dup, clsHnd, CHECK_SPILL_ALL,
+                        nullptr DEBUGARG("Clone tmp22 as duplicated divisor sign vector"));
+    GenTree* tmp23 = gtNewSimdBinOpNode(GT_XOR, type, tmp21, tmp22, simdBaseJitType, simdSize, false);
+    GenTree* tmp24 = gtNewSimdBinOpNode(GT_SUB, type, tmp23, tmp22Dup, simdBaseJitType, simdSize, false);
+    return tmp24;
+}
+#endif //  TARGET_XARCH
+
 GenTree* Compiler::gtNewSimdMaxNode(var_types   type,
                                     GenTree*    op1,
                                     GenTree*    op2,

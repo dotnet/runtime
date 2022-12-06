@@ -1122,6 +1122,44 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize,
                                              /* isSimdAsHWIntrinsic */ false);
             }
+            //  Ruihan: things needed to make clear before start
+            //  1. included instruction set(s)?  AVX2, X86Base (BitScanReverse) / LZCNT, ... -- to be updated, 
+            //  2. Get the integer element from a vector - GetElement?  ---- mov
+            //  3. Create a new int value: In the middle of the algo, there are some int variables and int constant, how to create those variables and constants. -- gtNewIconNode
+            //  4. 'isSimdAsHWIntrinsic' meaning -- start with false
+            //  5. How to capture the divisor pattern -- check the dump file
+            //  6. Zero division. -- check edge cases later 
+            #ifdef TARGET_XARCH
+            // #ifdef false
+            else if (varTypeIsInt(simdBaseType))
+            {
+                GenTree* divisor = impStackTop(0).val;
+                if (divisor->IsCnsVec()) {
+                    auto divisorVal = divisor->AsVecCon()->gtSimd32Val.i32;
+                    bool isIdentical = true;
+                    int head = divisorVal[0];
+                    assert(!(head == 0));
+                    for (int i = 1; i < 8; ++i) {
+                        if (divisorVal[i] != head) {
+                            isIdentical = false;
+                        }
+                    }
+                    int placeholder = 0;
+                    if(isIdentical) {
+                        op2 = impSIMDPopStack(retType);
+                        op1 = impSIMDPopStack(retType);
+                
+                        assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+                        assert(varTypeIsSIMD(retType));
+                        assert(getSIMDTypeForSize(simdSize) == retType);
+                        // printf("This is modified JIT using accelerated algo\n");
+                        retNode = gtNewSimdDivisionNode(retType, op1, op2, simdBaseJitType, simdSize, false);
+                    }
+                }
+            }
+            #endif  // TARGET_XARCH
+            // printf("it is using original JIT \n");
             break;
         }
 
