@@ -117,6 +117,9 @@ protected:
 
 #ifndef DACCESS_COMPILE
         BOOL result = FALSE;
+
+        --end; // The RangeList apis surface works with ranges which are represented as open intervals,
+               // But the RangeSectionMap uses a closed interval
         EX_TRY
         {
             AddRangeWorkerHelper((TADDR)start, (TADDR)end, id);
@@ -160,7 +163,6 @@ protected:
                 ExecutionManager::DeleteRange(_starts[i]);
                 _starts[i] = 0;
             }
-                
         }
 #endif // DACCESS_COMPILE
     }
