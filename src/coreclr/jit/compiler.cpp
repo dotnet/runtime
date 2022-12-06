@@ -1759,7 +1759,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
                         InlineInfo*           inlineInfo)
 {
     assert(pAlloc);
-    opts = {};
     compArenaAllocator = pAlloc;
 
     // Inlinee Compile object will only be allocated when needed for the 1st time.
@@ -3475,11 +3474,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
     // !=2: Vary stress. Performance will be slightly/moderately degraded
     // 2:   Check-all stress. Performance will be REALLY horrible
-    int stressLevel = getJitStressLevel();
-    if ((opts.jitFlags != nullptr) && opts.IsReadyToRun())
-    {
-        stressLevel = 0;
-    }
+    const int stressLevel = getJitStressLevel();
 
     assert(weight <= MAX_STRESS_WEIGHT);
 
