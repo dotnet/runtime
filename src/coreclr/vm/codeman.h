@@ -751,8 +751,8 @@ class RangeSectionMap
 
         bool AtomicReplace(RangeSectionFragment* newFragment, RangeSectionFragment* oldFragment)
         {
-            uintptr_t oldPtr = FragmentToPtr(oldFragment);
-            uintptr_t newPtr = FragmentToPtr(newFragment);
+            TADDR oldPtr = FragmentToPtr(oldFragment);
+            TADDR newPtr = FragmentToPtr(newFragment);
 
             return oldPtr == InterlockedCompareExchangeT(&_ptr, newPtr, oldPtr);
         }
