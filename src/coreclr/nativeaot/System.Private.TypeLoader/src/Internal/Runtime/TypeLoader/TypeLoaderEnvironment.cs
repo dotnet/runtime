@@ -5,19 +5,15 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
-using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 
-using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -643,28 +639,6 @@ namespace Internal.Runtime.TypeLoader
             {
                 return TryResolveTypeSlotDispatch_Inner(targetType, interfaceType, slot, out methodAddress);
             }
-        }
-
-        public unsafe bool TryGetOrCreateNamedTypeForMetadata(
-            QTypeDefinition qTypeDefinition,
-            out RuntimeTypeHandle runtimeTypeHandle)
-        {
-            if (TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle))
-            {
-                return true;
-            }
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                IntPtr runtimeTypeHandleAsIntPtr;
-                TypeBuilder.ResolveSingleTypeDefinition(qTypeDefinition, out runtimeTypeHandleAsIntPtr);
-                runtimeTypeHandle = *(RuntimeTypeHandle*)&runtimeTypeHandleAsIntPtr;
-                return true;
-            }
-#else
-            return false;
-#endif
         }
 
         public static IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)

@@ -5,34 +5,20 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime;
-using System.Text;
-
-using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
-using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
-using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
     using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
     using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
-    using TypeEntryToRegister = TypeLoaderEnvironment.TypeEntryToRegister;
     using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
-    using HandleBasedGenericTypeLookup = TypeLoaderEnvironment.HandleBasedGenericTypeLookup;
-    using DefTypeBasedGenericTypeLookup = TypeLoaderEnvironment.DefTypeBasedGenericTypeLookup;
     using HandleBasedGenericMethodLookup = TypeLoaderEnvironment.HandleBasedGenericMethodLookup;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
-#if FEATURE_UNIVERSAL_GENERICS
-    using ThunkKind = CallConverterThunk.ThunkKind;
-#endif
 
     internal static class LowLevelListExtensions
     {
@@ -57,31 +43,12 @@ namespace Internal.Runtime.TypeLoader
         }
     }
 
-    [Flags]
-    internal enum FieldLoadState
-    {
-        None = 0,
-        Instance = 1,
-        Statics = 2,
-    }
-
-    public static class TypeBuilderApi
-    {
-        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
-        {
-            TypeBuilder.ResolveMultipleCells(cells, out fixups);
-        }
-    }
-
-
     internal class TypeBuilder
     {
         public TypeBuilder()
         {
             TypeLoaderEnvironment.Instance.VerifyTypeLoaderLockHeld();
         }
-
-        private const int MinimumValueTypeSize = 0x1;
 
         /// <summary>
         /// The StaticClassConstructionContext for a type is encoded in the negative space
@@ -94,8 +61,6 @@ namespace Internal.Runtime.TypeLoader
         private LowLevelList<InstantiatedMethod> _methodsThatNeedDictionaries = new LowLevelList<InstantiatedMethod>();
 
         private LowLevelList<TypeDesc> _typesThatNeedPreparation;
-
-        private object _epoch = new object();
 
 #if DEBUG
         private bool _finalTypeBuilding;
@@ -375,38 +340,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private static GenericDictionaryCell[] GetGenericMethodDictionaryCellsForMetadataBasedLoad(InstantiatedMethod method, InstantiatedMethod nonTemplateMethod)
-        {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            uint r2rNativeLayoutInfoToken;
-            GenericDictionaryCell[] cells = null;
-            NativeFormatModuleInfo r2rNativeLayoutModuleInfo;
-
-            if ((new TemplateLocator()).TryGetMetadataNativeLayout(nonTemplateMethod, out r2rNativeLayoutModuleInfo, out r2rNativeLayoutInfoToken))
-            {
-                // ReadyToRun dictionary parsing
-                NativeReader readyToRunReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(r2rNativeLayoutModuleInfo.Handle);
-                var readyToRunInfoParser = new NativeParser(readyToRunReader, r2rNativeLayoutInfoToken);
-
-                // A null readyToRunInfoParser is a valid situation to end up in
-                // This can happen if either we have exact code for a method, or if
-                // we are going to use the universal generic implementation.
-                // In both of those cases, we do not have any generic dictionary cells
-                // to put into the dictionary
-                if (!readyToRunInfoParser.IsNull)
-                {
-                    NativeFormatMetadataUnit nativeMetadataUnit = method.Context.ResolveMetadataUnit(r2rNativeLayoutModuleInfo);
-                    FixupCellMetadataResolver resolver = new FixupCellMetadataResolver(nativeMetadataUnit, nonTemplateMethod);
-                    cells = GenericDictionaryCell.BuildDictionaryFromMetadataTokensAndContext(this, readyToRunInfoParser, nativeMetadataUnit, resolver);
-                }
-            }
-
-            return cells;
-#else
-            return null;
-#endif
-        }
-
         internal void ParseNativeLayoutInfo(InstantiatedMethod method)
         {
             TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for method " + method.ToString() + " ...");
@@ -425,31 +358,9 @@ namespace Internal.Runtime.TypeLoader
             uint nativeLayoutInfoToken;
             NativeFormatModuleInfo nativeLayoutModule;
             MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
-
-            // If the templateMethod found in the static image is missing or universal, see if the R2R layout
-            // can provide something more specific.
-            if ((templateMethod == null) || templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
+            if (templateMethod == null)
             {
-                GenericDictionaryCell[] cells = GetGenericMethodDictionaryCellsForMetadataBasedLoad(method, nonTemplateMethod);
-
-                if (cells != null)
-                {
-                    method.SetGenericDictionary(new GenericMethodDictionary(cells));
-                    return;
-                }
-
-                if (templateMethod == null)
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    // In this case we were looking for the r2r template to create the dictionary, but
-                    // there isn't one. This implies that we don't need a Canon specific dictionary
-                    // so just generate something empty
-                    method.SetGenericDictionary(new GenericMethodDictionary(Array.Empty<GenericDictionaryCell>()));
-                    return;
-#else
-                    throw new TypeBuilder.MissingTemplateException();
-#endif
-                }
+                throw new MissingTemplateException();
             }
 
             // Ensure that if this method is non-shareable from a normal canonical perspective, then
@@ -499,8 +410,7 @@ namespace Internal.Runtime.TypeLoader
 
             if (state.TemplateType == null)
             {
-                // SUPPORTS_NATIVE_METADATA_TYPE_LOADING should this throw MissingTemplate?
-                return;
+                throw new MissingTemplateException();
             }
 
             NativeParser typeInfoParser = state.GetParserForNativeLayoutInfo();
@@ -993,7 +903,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<TypeEntryToRegister> TypesToRegister()
+        private IEnumerable<GenericTypeEntry> TypesToRegister()
         {
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
@@ -1001,25 +911,12 @@ namespace Internal.Runtime.TypeLoader
                 if (typeAsDefType == null)
                     continue;
 
-                if (typeAsDefType.HasInstantiation && !typeAsDefType.IsTypeDefinition)
+                yield return new GenericTypeEntry
                 {
-                    yield return new TypeEntryToRegister
-                    {
-                        GenericTypeEntry = new GenericTypeEntry
-                        {
-                            _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
-                            _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
-                            _instantiatedTypeHandle = typeAsDefType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle
-                        }
-                    };
-                }
-                else
-                {
-                    yield return new TypeEntryToRegister
-                    {
-                        MetadataDefinitionType = (MetadataType)typeAsDefType
-                    };
-                }
+                    _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
+                    _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
+                    _instantiatedTypeHandle = typeAsDefType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle
+                };
             }
         }
 

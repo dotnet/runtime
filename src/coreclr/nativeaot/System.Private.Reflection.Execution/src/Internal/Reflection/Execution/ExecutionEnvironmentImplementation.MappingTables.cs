@@ -167,7 +167,7 @@ namespace Internal.Reflection.Execution
         /// <param name="runtimeTypeHandle">Runtime type handle (MethodTable) for the given type</param>
         public sealed override unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
         {
-            return TypeLoaderEnvironment.Instance.TryGetOrCreateNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle);
+            return TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle);
         }
 
         /// <summary>

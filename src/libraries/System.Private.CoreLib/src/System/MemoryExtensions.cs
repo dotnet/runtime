@@ -3410,10 +3410,21 @@ namespace System
                 if (value is IFormattable)
                 {
                     // If the value can format itself directly into our buffer, do so.
+
+                    if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _destination.Slice(_pos), out int charsWritten))
+                        {
+                            _pos += charsWritten;
+                            return true;
+                        }
+
+                        return Fail();
+                    }
+
                     if (value is ISpanFormattable)
                     {
-                        int charsWritten;
-                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out charsWritten, default, _provider)) // constrained call avoiding boxing for value types
+                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out int charsWritten, default, _provider)) // constrained call avoiding boxing for value types
                         {
                             _pos += charsWritten;
                             return true;
@@ -3455,10 +3466,21 @@ namespace System
                 if (value is IFormattable)
                 {
                     // If the value can format itself directly into our buffer, do so.
+
+                    if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _destination.Slice(_pos), out int charsWritten, format))
+                        {
+                            _pos += charsWritten;
+                            return true;
+                        }
+
+                        return Fail();
+                    }
+
                     if (value is ISpanFormattable)
                     {
-                        int charsWritten;
-                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out charsWritten, format, _provider)) // constrained call avoiding boxing for value types
+                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out int charsWritten, format, _provider)) // constrained call avoiding boxing for value types
                         {
                             _pos += charsWritten;
                             return true;

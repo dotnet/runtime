@@ -14,7 +14,6 @@ using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
-using Internal.TypeSystem.NativeFormat;
 using Internal.TypeSystem.NoMetadata;
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
