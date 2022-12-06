@@ -15,15 +15,23 @@ namespace System.IO
             //Simplify the destination path (i.e. unlink all the links except the last one itself,
             //i.e. for /link1/link2, you could get /folder1/link2).
             string destFullPath_Full = Path.GetFullPath(destFullPath);
-            string destPath = Path.GetDirectoryName(destFullPath_Full);
-            destPath = ResolveLinkTargetString(destPath, true, true);
+            string? destPathFolder = Path.GetDirectoryName(destFullPath_Full);
+            string destPath;
             if (string.IsNullOrEmpty(destPath))
             {
                 destPath = destFullPath_Full;
             }
             else
             {
-                destPath = Path.Combine(destPath, Path.GetFileName(destFullPath));
+                destPathFolder = ResolveLinkTargetString(destPathFolder, true, true);
+                if (string.IsNullOrEmpty(destPath))
+                {
+                    destPath = destFullPath_Full;
+                }
+                else
+                {
+                    destPath = Path.Combine(destPathFolder, Path.GetFileName(destFullPath));
+                }
             }
 
             //Get the full path of the source path and verify that we're not copying the source file onto itself
