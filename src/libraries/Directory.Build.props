@@ -63,7 +63,6 @@
   </ItemGroup>
 
   <Import Project="NetCoreAppLibrary.props" />
-  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssemblyProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.props" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
 
   <PropertyGroup>
