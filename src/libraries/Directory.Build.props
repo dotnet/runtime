@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <SkipInferTargetOSName>true</SkipInferTargetOSName>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
   </PropertyGroup>
 
