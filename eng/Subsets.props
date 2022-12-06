@@ -149,7 +149,6 @@
     <SubsetName Include="Host.Pkg" Description="The .NET host packages." />
     <SubsetName Include="Host.Tools" Description="The .NET hosting libraries." />
     <SubsetName Include="Host.Tests" Description="The .NET hosting tests." />
-    <SubsetName Include="Host.Watchdog" Description="The .NET tests watchdog (Experimental)." />
 
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly). Equivalent to: $(DefaultLibrariesSubsets)" />
@@ -386,10 +385,6 @@
   <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(PgoInstrument)' != 'true'">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" SignPhase="MsiFiles" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.watchdog+'))">
-    <ProjectToBuild Include="$(SharedNativeRoot)watchdog\build.proj" Category="host" />
   </ItemGroup>
 
   <!-- Libraries sets -->

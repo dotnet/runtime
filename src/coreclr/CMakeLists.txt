@@ -113,6 +113,11 @@ else()
     endif()
 endif()
 
+#----------------------------------------------------
+# Build the test watchdog alongside the CLR
+#----------------------------------------------------
+include("${CLR_SRC_NATIVE_DIR}/watchdog/CMakeLists.txt")
+
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(pal/prebuilt/inc)
 
@@ -264,3 +269,4 @@ endif(CLR_CMAKE_HOST_WIN32)
 if(CLR_CROSS_COMPONENTS_BUILD)
   include(crosscomponents.cmake)
 endif(CLR_CROSS_COMPONENTS_BUILD)
+
