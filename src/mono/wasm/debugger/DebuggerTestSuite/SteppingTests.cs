@@ -877,7 +877,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-async-test.cs", line_pause, column_pause,
                 $"DebuggerTests.AsyncTests.ContinueWithTests.{method_name}");
         }
-        
+
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(112, 16, 114, 16, "HiddenLinesInAnAsyncBlock")]
         [InlineData(130, 16, 133, 16, "HiddenLinesJustBeforeANestedAsyncBlock")]
@@ -1036,6 +1036,29 @@ namespace DebuggerTests
                 pause_location.Value["locations"][0]["lineNumber"].Value<int>() + 1,
                 step_into2["callFrames"][0]["location"]["lineNumber"].Value<int>()
                 );
+        }
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServer(bool justMyCode)
+        {
+            await SetJustMyCode(justMyCode);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test] TestLoadSymbols:Run'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1516, 8,
+                "TestLoadSymbols.Run"
+            );
+
+            await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 1518, 8, justMyCode ? "dotnet://debugger-test.dll/debugger-test.cs" : "",
+                locals_fn: async (locals) =>
+                {
+                    if (!justMyCode)
+                        await CheckObject(locals, "this", "Simple.Complex");
+                    else
+                        await CheckObject(locals, "array", "Simple.Complex");
+                }
+            );
         }
     }
 }
