@@ -188,7 +188,8 @@ namespace Wasm.Build.Tests
             => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework);
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug", "-f net7.0", "net7.0")]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
+        // [InlineData("Debug", "-f net7.0", "net7.0")]
         [InlineData("Debug", "-f net8.0", "net8.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
             => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM);
@@ -431,7 +432,8 @@ namespace Wasm.Build.Tests
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("", BuildTestBase.DefaultTargetFramework)]
-        [InlineData("-f net7.0", "net7.0")]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
+        // [InlineData("-f net7.0", "net7.0")]
         [InlineData("-f net8.0", "net8.0")]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework)
         {
