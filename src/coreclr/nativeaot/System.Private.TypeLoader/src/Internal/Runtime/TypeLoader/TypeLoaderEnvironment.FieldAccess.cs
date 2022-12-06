@@ -95,8 +95,6 @@ namespace Internal.Runtime.TypeLoader
             ref FieldAccessMetadata fieldAccessMetadata)
         {
             CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
-            string fieldName = null;
-            RuntimeTypeHandle declaringTypeHandleDefinition = TypeLoaderEnvironment.GetTypeDefinition(declaringTypeHandle);
 
             foreach (NativeFormatModuleInfo mappingTableModule in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
@@ -139,24 +137,7 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
-                        if (fieldName == null)
-                        {
-                            QTypeDefinition qTypeDefinition;
-
-                            bool success = Instance.TryGetMetadataForNamedType(
-                                declaringTypeHandleDefinition,
-                                out qTypeDefinition);
-                            Debug.Assert(success);
-
-                            MetadataReader nativeFormatMetadataReader = qTypeDefinition.NativeFormatReader;
-
-                            fieldName = nativeFormatMetadataReader.GetString(fieldHandle.GetField(nativeFormatMetadataReader).Name);
-                        }
-
-                        string entryFieldName = entryParser.GetString();
-
-                        if (fieldName != entryFieldName)
-                            continue;
+                        Debug.Fail("Multifile path");
                     }
 
                     int fieldOffset;
@@ -186,13 +167,6 @@ namespace Internal.Runtime.TypeLoader
             }
 
             return false;
-        }
-
-        private enum FieldAccessStaticDataKind
-        {
-            NonGC,
-            GC,
-            TLS
         }
     }
 }

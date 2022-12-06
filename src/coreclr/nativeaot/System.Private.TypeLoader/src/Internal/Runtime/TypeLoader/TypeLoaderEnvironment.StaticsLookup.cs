@@ -30,13 +30,6 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public IntPtr TryGetNonGcStaticFieldData(RuntimeTypeHandle runtimeTypeHandle)
         {
-            IntPtr nonGcStaticsAddress;
-            IntPtr gcStaticsAddress;
-            if (TryGetStaticsInfoForNamedType(runtimeTypeHandle, out nonGcStaticsAddress, out gcStaticsAddress))
-            {
-                return nonGcStaticsAddress;
-            }
-
             unsafe
             {
                 // Non-generic, non-dynamic static data is found via the FieldAccessMap
@@ -76,13 +69,6 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public IntPtr TryGetGcStaticFieldData(RuntimeTypeHandle runtimeTypeHandle)
         {
-            IntPtr nonGcStaticsAddress;
-            IntPtr gcStaticsAddress;
-            if (TryGetStaticsInfoForNamedType(runtimeTypeHandle, out nonGcStaticsAddress, out gcStaticsAddress))
-            {
-                return gcStaticsAddress;
-            }
-
             unsafe
             {
                 // Non-generic, non-dynamic static data is found via the FieldAccessMap
@@ -261,11 +247,6 @@ namespace Internal.Runtime.TypeLoader
             }
 
             return new NativeParser();
-        }
-
-        private static unsafe IntPtr TryCreateDictionaryCellWithValue(uint value)
-        {
-            return PermanentAllocatedMemoryBlobs.GetPointerToUInt(value);
         }
         #endregion
     }

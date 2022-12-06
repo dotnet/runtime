@@ -5,34 +5,20 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime;
-using System.Text;
-
-using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
-using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
-using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
     using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
     using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
-    using TypeEntryToRegister = TypeLoaderEnvironment.TypeEntryToRegister;
     using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
-    using HandleBasedGenericTypeLookup = TypeLoaderEnvironment.HandleBasedGenericTypeLookup;
-    using DefTypeBasedGenericTypeLookup = TypeLoaderEnvironment.DefTypeBasedGenericTypeLookup;
     using HandleBasedGenericMethodLookup = TypeLoaderEnvironment.HandleBasedGenericMethodLookup;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
-#if FEATURE_UNIVERSAL_GENERICS
-    using ThunkKind = CallConverterThunk.ThunkKind;
-#endif
 
     internal static class LowLevelListExtensions
     {
@@ -57,31 +43,12 @@ namespace Internal.Runtime.TypeLoader
         }
     }
 
-    [Flags]
-    internal enum FieldLoadState
-    {
-        None = 0,
-        Instance = 1,
-        Statics = 2,
-    }
-
-    public static class TypeBuilderApi
-    {
-        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
-        {
-            TypeBuilder.ResolveMultipleCells(cells, out fixups);
-        }
-    }
-
-
     internal class TypeBuilder
     {
         public TypeBuilder()
         {
             TypeLoaderEnvironment.Instance.VerifyTypeLoaderLockHeld();
         }
-
-        private const int MinimumValueTypeSize = 0x1;
 
         /// <summary>
         /// The StaticClassConstructionContext for a type is encoded in the negative space
@@ -94,8 +61,6 @@ namespace Internal.Runtime.TypeLoader
         private LowLevelList<InstantiatedMethod> _methodsThatNeedDictionaries = new LowLevelList<InstantiatedMethod>();
 
         private LowLevelList<TypeDesc> _typesThatNeedPreparation;
-
-        private object _epoch = new object();
 
 #if DEBUG
         private bool _finalTypeBuilding;
@@ -938,7 +903,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<TypeEntryToRegister> TypesToRegister()
+        private IEnumerable<GenericTypeEntry> TypesToRegister()
         {
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
@@ -946,25 +911,12 @@ namespace Internal.Runtime.TypeLoader
                 if (typeAsDefType == null)
                     continue;
 
-                if (typeAsDefType.HasInstantiation && !typeAsDefType.IsTypeDefinition)
+                yield return new GenericTypeEntry
                 {
-                    yield return new TypeEntryToRegister
-                    {
-                        GenericTypeEntry = new GenericTypeEntry
-                        {
-                            _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
-                            _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
-                            _instantiatedTypeHandle = typeAsDefType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle
-                        }
-                    };
-                }
-                else
-                {
-                    yield return new TypeEntryToRegister
-                    {
-                        MetadataDefinitionType = (MetadataType)typeAsDefType
-                    };
-                }
+                    _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
+                    _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
+                    _instantiatedTypeHandle = typeAsDefType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle
+                };
             }
         }
 
