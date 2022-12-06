@@ -122,7 +122,7 @@ public class BuildPublishTests : BuildTestBase
         {
             // very crude way to check that the native file was linked in
             // needed because we don't run the blazor app yet
-            string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm", forPublish ? "for-publish" : "for-build");
+            string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", forPublish ? "for-publish" : "for-build");
             string pinvokeTableHPath = Path.Combine(objBuildDir, "pinvoke-table.h");
             Assert.True(File.Exists(pinvokeTableHPath), $"Could not find {pinvokeTableHPath}");
 
