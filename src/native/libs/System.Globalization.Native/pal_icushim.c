@@ -311,6 +311,22 @@ static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, cha
     return false;
 }
 
+// Select libraries using the ICU build time version if CLR_USE_ICU_BUILD_TIME_VERSION
+// environment variable is set
+static int FindLibUsingBuildTimeVersion(const char* versionPrefix, char* symbolName, char* symbolVersion)
+{
+    char* useBuildTimeVersion = getenv("CLR_USE_ICU_BUILD_TIME_VERSION");
+    if (useBuildTimeVersion != NULL)
+    {
+        if (OpenICULibraries(U_ICU_VERSION_MAJOR_NUM, -1, -1, versionPrefix, symbolName, symbolVersion))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // Search for library files with names including the major version.
 static int FindLibWithMajorVersion(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
@@ -372,6 +388,7 @@ static int FindLibWithMajorMinorSubVersion(const char* versionPrefix, char* symb
 static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
     return FindLibUsingOverride(versionPrefix, symbolName, symbolVersion) ||
+           FindLibUsingBuildTimeVersion(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorVersion(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorMinorVersion(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorMinorSubVersion(versionPrefix, symbolName, symbolVersion);
