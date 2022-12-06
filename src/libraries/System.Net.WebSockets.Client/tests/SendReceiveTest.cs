@@ -642,7 +642,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             await CreateEchoServerAsync(async uri =>
             {
-                using (ClientWebSocket cws = await GetConnectedWebSocket(uri, TimeOutMilliseconds, _output))
+                using ClientWebSocket cws = await GetConnectedWebSocket(uri, TimeOutMilliseconds, _output);
                 {
                     CancellationTokenSource ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -655,7 +655,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                     for (int i = 0; i < sendBuffer.Length; i++)
                     {
-                        Task<WebSocketReceiveResult> receive = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer, receiveBuffer.Length - i - 1, 1), ctsDefault.Token);
+                        Task<WebSocketReceiveResult> receive = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer, i, 1), ctsDefault.Token);
                         Task send = SendAsync(cws, new ArraySegment<byte>(sendBuffer, i, 1), WebSocketMessageType.Binary, true, ctsDefault.Token);
                         await Task.WhenAll(receive, send);
                         Assert.Equal(1, receive.Result.Count);

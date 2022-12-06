@@ -151,7 +151,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 if (UseVersion.Major == 2)
                 {
-                    return null;
+                    throw new NotSupportedException("Remote servers don't support WebSockets over HTTP/2 yet");
                 }
 
                 if (UseSsl)

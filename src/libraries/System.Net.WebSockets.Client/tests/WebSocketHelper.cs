@@ -149,9 +149,9 @@ namespace System.Net.WebSockets.Client.Tests
             return GetEchoHttp2LoopbackServer(clientFunc, new Http2Options());
         }
 
-        public static Task GetEchoHttp2LoopbackServer(Func<Uri, Task> clientFunc, Http2Options options)
+        public static async Task GetEchoHttp2LoopbackServer(Func<Uri, Task> clientFunc, Http2Options options)
         {
-            Http2LoopbackServer server = Http2LoopbackServer.CreateServer(options);
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(options);
 
             Task serverTask = Task.Run(async () =>
             {
@@ -170,18 +170,10 @@ namespace System.Net.WebSockets.Client.Tests
                     var result = await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        if (result.CloseStatus == WebSocketCloseStatus.Empty)
-                        {
-                            await websocket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
-                        }
-                        else
-                        {
-                            WebSocketCloseStatus closeStatus = result.CloseStatus.GetValueOrDefault();
-                            await websocket.CloseAsync(
-                                closeStatus,
-                                result.CloseStatusDescription,
-                                CancellationToken.None);
-                        }
+                        await websocket.CloseAsync(
+                            result.CloseStatus ?? WebSocketCloseStatus.Empty,
+                            result.CloseStatusDescription,
+                            CancellationToken.None);
 
                         continue;
                     }
@@ -192,13 +184,13 @@ namespace System.Net.WebSockets.Client.Tests
                 await connection.DisposeAsync();
             });
 
-            return new Task[] { serverTask, clientFunc(server.Address) }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2);
+            await new Task[] { serverTask, clientFunc(server.Address) }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2);
         }
 
-        public static Task GetEchoLoopbackServer(Func<Uri, Task> clientFunc,  LoopbackServer.Options options = null)
+        public static async Task GetEchoLoopbackServer(Func<Uri, Task> clientFunc,  LoopbackServer.Options options = null)
         {
-            LoopbackServer server = new LoopbackServer(options);
-            Task.WaitAll(server.ListenAsync());
+            using LoopbackServer server = new LoopbackServer(options);
+            await server.ListenAsync();
 
             Task serverTask = server.AcceptConnectionAsync(async connection =>
             {
@@ -210,18 +202,10 @@ namespace System.Net.WebSockets.Client.Tests
                     var result = await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        if (result.CloseStatus == WebSocketCloseStatus.Empty)
-                        {
-                            await websocket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
-                        }
-                        else
-                        {
-                            WebSocketCloseStatus closeStatus = result.CloseStatus.GetValueOrDefault();
-                            await websocket.CloseAsync(
-                                closeStatus,
-                                result.CloseStatusDescription,
-                                CancellationToken.None);
-                        }
+                        await websocket.CloseAsync(
+                            result.CloseStatus ?? WebSocketCloseStatus.Empty,
+                            result.CloseStatusDescription,
+                            CancellationToken.None);
 
                         continue;
                     }
@@ -233,7 +217,7 @@ namespace System.Net.WebSockets.Client.Tests
                 await connection.DisposeAsync();
             });
 
-            return new Task[] { serverTask, clientFunc(server.Address) }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2); ;
+            await new Task[] { serverTask, clientFunc(server.Address) }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2); ;
         }
 
         private static bool InitWebSocketSupported()
