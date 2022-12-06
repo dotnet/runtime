@@ -22,6 +22,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Warnings
 		}
 
 		[Fact]
+		public Task CustomStepWithWarnings ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task WarningsAreSorted ()
 		{
 			return RunTest (allowMissingWarnings: true);
