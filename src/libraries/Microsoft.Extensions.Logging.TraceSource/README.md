@@ -4,6 +4,42 @@
 
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/logging.
 
+## Example
+
+The following example shows how to display logs to a trace listener.
+
+```cs
+using System;
+using Microsoft.Extensions.Logging;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        using (var textWriterTraceListener = new TextWriterTraceListener(@"C:\logs\trace.log"))
+        using (var consoleTraceListener = new ConsoleTraceListener())
+        {
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .AddTraceSource(new SourceSwitch("Something") { Level = SourceLevels.All }, consoleTraceListener)
+                    .AddTraceSource(new SourceSwitch("HouseKeeping") { Level = SourceLevels.All }, textWriterTraceListener);
+                    // writer: Console.Out));
+            });
+
+            var logger = loggerFactory.CreateLogger<Program>();
+            logger.LogInformation("LogInformation information");
+            logger.LogWarning("LogWarning warning");
+
+            var ts = new TraceSource("HouseKeeping", SourceLevels.All);
+            ts.Listeners.Add(consoleTraceListener);
+            ts.Listeners.Add(textWriterTraceListener);
+            ts.TraceEvent(TraceEventType.Error, 0, "trace error");
+        }
+    }
+}
+```
+
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
 - [x] [We consider PRs that target this library for improvements to the logging source generator](../../libraries/README.md#secondary-bars)

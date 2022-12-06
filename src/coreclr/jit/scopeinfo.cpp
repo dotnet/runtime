@@ -359,7 +359,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
 //
 // Notes:
 //    The "varLoc" argument is filled depending of the "type" argument but as a VLT_REG... variation.
-//    "baseReg" and "offset" are used .for not 64 bit and values that are splitted in two parts.
+//    "baseReg" and "offset" are used .for not 64 bit and values that are split in two parts.
 void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
     const LclVarDsc* varDsc, var_types type, regNumber baseReg, int offset, bool isFramePointerUsed)
 {

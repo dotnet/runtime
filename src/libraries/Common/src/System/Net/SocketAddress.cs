@@ -164,11 +164,11 @@ namespace System.Net.Internals
             }
         }
 
+        internal int GetPort() => (int)SocketAddressPal.GetPort(Buffer);
+
         internal IPEndPoint GetIPEndPoint()
         {
-            IPAddress address = GetIPAddress();
-            int port = (int)SocketAddressPal.GetPort(Buffer);
-            return new IPEndPoint(address, port);
+            return new IPEndPoint(GetIPAddress(), GetPort());
         }
 
         // For ReceiveFrom we need to pin address size, using reserved Buffer space.

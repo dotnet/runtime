@@ -32,8 +32,8 @@ class Program
 
         // Display PE header information
         PEHeader header = peReader.PEHeaders.PEHeader;
-        Console.WriteLine($"Image base:     0x{header.ImageBase.ToString("X")}");
-        Console.WriteLine($"File alignment: 0x{header.FileAlignment.ToString("X")}");
+        Console.WriteLine($"Image base:     0x{header.ImageBase:X}");
+        Console.WriteLine($"File alignment: 0x{header.FileAlignment:X}");
         Console.WriteLine($"Subsystem:      {header.Subsystem}");
 
         // Display .NET metadata information

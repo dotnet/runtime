@@ -1205,7 +1205,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     Args:
         xml_result_file      : results xml file to parse
         args                 : arguments
-        tests                : dictionary of individual test results
+        tests                : list of individual test results
         assemblies           : dictionary of per-assembly aggregations
     """
 
@@ -1252,14 +1252,13 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
                         test_location_on_filesystem = None
                     test_output = test.findtext("output")
-                    assert tests[test_name] == None
-                    tests[test_name] = defaultdict(lambda: None, {
+                    tests.append(defaultdict(lambda: None, {
                         "name": test_name,
                         "test_path": test_location_on_filesystem,
                         "result" : result,
                         "time": time,
                         "test_output": test_output
-                    })
+                    }))
                     if result == "Pass":
                         assembly_info["passed"] += 1
                     elif result == "Fail":
@@ -1283,7 +1282,6 @@ def print_summary(tests, assemblies):
     failed_tests = []
 
     for test in tests:
-        test = tests[test]
         if test["result"] == "Fail":
             print("Failed test: %s" % test["name"])
 
@@ -1350,7 +1348,7 @@ def create_repro(args, env, tests):
     """
     assert tests is not None
 
-    failed_tests = [tests[item] for item in tests if tests[item]["result"] == "Fail" and tests[item]["test_path"] is not None]
+    failed_tests = [test for test in tests if test["result"] == "Fail" and test["test_path"] is not None]
     if len(failed_tests) == 0:
         return
 
@@ -1395,7 +1393,7 @@ def main(args):
 
     if not args.skip_test_run:
         assemblies = defaultdict(lambda: None)
-        tests = defaultdict(lambda: None)
+        tests = []
         parse_test_results(args, tests, assemblies)
         print_summary(tests, assemblies)
         create_repro(args, env, tests)

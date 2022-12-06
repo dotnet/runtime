@@ -1279,6 +1279,18 @@ namespace System
         // Returns true for actual enum types only.
         internal bool IsActualEnum => !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
 
+        public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
+        public override bool IsGenericType => RuntimeTypeHandle.HasInstantiation(this);
+        public override bool IsGenericTypeDefinition => RuntimeTypeHandle.IsGenericTypeDefinition(this);
+
+        public override Type GetGenericTypeDefinition()
+        {
+            if (!IsGenericType)
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+
+            return RuntimeTypeHandle.GetGenericTypeDefinition(this);
+        }
+
         public override GenericParameterAttributes GenericParameterAttributes
         {
             get
@@ -1539,7 +1551,7 @@ namespace System
 
         internal sealed class TypeCache
         {
-            public Enum.EnumInfo? EnumInfo;
+            public object? EnumInfo;
             public TypeCode TypeCode;
             // this is the displayed form: special characters
             // ,+*&*[]\ in the identifier portions of the names

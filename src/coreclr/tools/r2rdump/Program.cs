@@ -494,11 +494,12 @@ namespace R2RDump
             return 0;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         public static int Main(string[] args) =>
             new CommandLineBuilder(new R2RDumpRootCommand())
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
+                .UseVersionOption("--version", "-v")
                 .UseHelp()
                 .UseParseErrorReporting()
                 .Build()

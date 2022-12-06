@@ -697,11 +697,7 @@ namespace System.Security.AccessControl
             [MemberNotNull(nameof(_sid))]
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _sid = value;
             }
         }
