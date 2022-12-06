@@ -71,7 +71,7 @@ echo "*******************************"
 echo "Unity: Building CoreCLR runtime"
 echo "*******************************"
 echo
-if [ "$architecture" = "arm64" ]; then
+if [ "$architecture" = "arm64" -a `uname -p` = "i386" ]; then
     cross_build=true
 else
     cross_build=false
