@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <!-- Don't produce ref assemblies by default. -->
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and '$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))' == 'ref'">true</IsReferenceAssembly>
     <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
     <!-- The TFM for the product (linker, task,.. not analyzer, which is netstandard) -->
@@ -9,8 +11,6 @@
     <NetCoreAppTestsCurrent>net7.0</NetCoreAppTestsCurrent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(IsReferenceAssembly)' == 'true' ">
-    <!-- Since .NET 5 reference assemblies are always produced -->
-    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <ProduceOnlyReferenceAssembly>true</ProduceOnlyReferenceAssembly>
     <!-- Used by Arcade to compute OutputPath, IntermediateOutputPath, etc. early in the import chain. -->
     <OutDirName>$(MSBuildProjectName)/ref</OutDirName>
