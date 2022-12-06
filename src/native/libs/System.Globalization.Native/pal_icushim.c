@@ -294,33 +294,27 @@ static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, cha
     char* versionOverride = getenv("CLR_ICU_VERSION_OVERRIDE");
     if (versionOverride != NULL)
     {
-        int first = -1;
-        int second = -1;
-        int third = -1;
-
-        int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
-        if (matches > 0)
+        if (strcmp(versionOverride, "build") == 0)
         {
-            if (OpenICULibraries(first, second, third, versionPrefix, symbolName, symbolVersion))
+            if (OpenICULibraries(U_ICU_VERSION_MAJOR_NUM, -1, -1, versionPrefix, symbolName, symbolVersion))
             {
                 return true;
             }
         }
-    }
-
-    return false;
-}
-
-// Select libraries using the ICU build time version if CLR_USE_ICU_BUILD_TIME_VERSION
-// environment variable is set
-static int FindLibUsingBuildTimeVersion(const char* versionPrefix, char* symbolName, char* symbolVersion)
-{
-    char* useBuildTimeVersion = getenv("CLR_USE_ICU_BUILD_TIME_VERSION");
-    if (useBuildTimeVersion != NULL)
-    {
-        if (OpenICULibraries(U_ICU_VERSION_MAJOR_NUM, -1, -1, versionPrefix, symbolName, symbolVersion))
+        else
         {
-            return true;
+            int first = -1;
+            int second = -1;
+            int third = -1;
+
+            int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
+            if (matches > 0)
+            {
+                if (OpenICULibraries(first, second, third, versionPrefix, symbolName, symbolVersion))
+                {
+                    return true;
+                }
+            }
         }
     }
 
@@ -388,7 +382,6 @@ static int FindLibWithMajorMinorSubVersion(const char* versionPrefix, char* symb
 static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
     return FindLibUsingOverride(versionPrefix, symbolName, symbolVersion) ||
-           FindLibUsingBuildTimeVersion(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorVersion(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorMinorVersion(versionPrefix, symbolName, symbolVersion) ||
            FindLibWithMajorMinorSubVersion(versionPrefix, symbolName, symbolVersion);
