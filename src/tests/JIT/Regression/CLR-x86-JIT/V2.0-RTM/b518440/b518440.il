@@ -14,7 +14,7 @@
 
 .class public A
 {
-  .method public hidebysig static int32 main(string[] args)
+  .method public hidebysig static int32 main()
   {
     .entrypoint
     .maxstack 2

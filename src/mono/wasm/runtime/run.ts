@@ -8,6 +8,7 @@ import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { mono_assert } from "./types";
 import { consoleWebSocket, mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { jiterpreter_dump_stats } from "./jiterpreter";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
@@ -73,7 +74,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
                 set_exit_code_and_quit_now(exit_code, reason);
             }
         })();
-        // we need to throw, rather than let the caller continue the normal execution 
+        // we need to throw, rather than let the caller continue the normal execution
         // in the middle of some code, which expects this to stop the process
         throw runtimeHelpers.ExitStatus
             ? new runtimeHelpers.ExitStatus(exit_code)
@@ -168,5 +169,12 @@ function logErrorOnExit(exit_code: number, reason?: any) {
         } else {
             console.log("WASM EXIT " + exit_code);
         }
+    }
+
+    try {
+        jiterpreter_dump_stats(false);
+    } catch {
+        // eslint-disable-next-line @typescript-eslint/no-extra-semi
+        ;
     }
 }

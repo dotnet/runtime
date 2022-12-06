@@ -58,7 +58,7 @@ namespace System
 
         internal static void ShutdownCore()
         {
-#if !TARGET_WASM // WASMTODO Be careful what happens here as if the code has called emscripten_set_main_loop then the main loop method will normally be called repeatedly after this method
+#if !TARGET_BROWSER // WASMTODO Be careful what happens here as if the code has called emscripten_set_main_loop then the main loop method will normally be called repeatedly after this method
             AppContext.OnProcessExit();
 #endif
         }

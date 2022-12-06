@@ -59,7 +59,7 @@
 .class auto ansi _vbProject extends [mscorlib]System.Object
 {
   .field static assembly class [mscorlib]System.Collections.Dictionary _vbEventCollection
-  .method public static int32 _main(class [mscorlib]System.String[] _s) il managed forwardref
+  .method public static int32 _main() il managed forwardref
   {
     .entrypoint
     .maxstack  8

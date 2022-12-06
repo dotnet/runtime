@@ -7,7 +7,7 @@ using System;
 class Light
 {
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         int lightspeed;
         long days;

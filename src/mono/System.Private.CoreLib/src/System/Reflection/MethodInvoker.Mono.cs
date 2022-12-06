@@ -11,51 +11,23 @@ namespace System.Reflection
         {
             _method = method;
 
-#if USE_NATIVE_INVOKE
-            // Always use the native invoke; useful for testing.
-            _strategyDetermined = true;
-#elif USE_EMIT_INVOKE
-            // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
-            _invoked = true;
-#endif
+            if (LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke)
+            {
+                // Always use the native invoke; useful for testing.
+                _strategyDetermined = true;
+            }
+            else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
+            {
+                // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
+                _invoked = true;
+            }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe object? InterpretedInvoke(object? obj, Span<object?> args, BindingFlags invokeAttr)
+        private unsafe object? InterpretedInvoke(object? obj, IntPtr *args)
         {
             Exception? exc;
-            object? o;
 
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
-                catch (OverflowException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                try
-                {
-                    o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
-            }
+            object? o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out exc);
 
             if (exc != null)
                 throw exc;

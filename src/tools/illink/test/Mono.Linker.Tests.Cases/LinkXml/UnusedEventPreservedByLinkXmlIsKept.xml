@@ -1,0 +1,10 @@
+<linker>
+	<assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedEventPreservedByLinkXmlIsKept/Unused">
+      <event signature="System.EventHandler`1&lt;System.EventArgs&gt; Preserved" />
+      <event signature="System.EventHandler`1&lt;System.EventArgs&gt; Preserved1" />
+      <event signature="System.EventHandler Preserved2" />
+      <event name="Preserved3" />
+    </type>
+  </assembly>
+</linker>
