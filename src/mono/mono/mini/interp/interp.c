@@ -1154,7 +1154,7 @@ interp_throw_ex_general (
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoExceptionHandle tmp_handle = MONO_HANDLE_NEW (MonoException, __ex);
-	interp_throw (context, __ex, (frame), (ex_ip), (rethrow));
+	interp_throw (context, MONO_HANDLE_RAW(tmp_handle), (frame), (ex_ip), (rethrow));
 	HANDLE_FUNCTION_RETURN ();
 }
 
@@ -3804,25 +3804,6 @@ main_loop:
 			memset (locals + ip [1], 0, ip [2]);
 			ip += 3;
 			MINT_IN_BREAK;
-#if HOST_BROWSER
-#else
-		MINT_IN_CASE(MINT_NOP)
-		MINT_IN_CASE(MINT_IL_SEQ_POINT)
-		MINT_IN_CASE(MINT_NIY)
-		MINT_IN_CASE(MINT_DEF)
-		MINT_IN_CASE(MINT_DUMMY_USE)
-		MINT_IN_CASE(MINT_TIER_PATCHPOINT_DATA)
-		// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
-		MINT_IN_CASE(MINT_MOV_SRC_OFF)
-		// Ditto
-		MINT_IN_CASE(MINT_MOV_DST_OFF)
-		// Only used in WASM builds
-		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER)
-		MINT_IN_CASE(MINT_TIER_PREPARE_JITERPRETER)
-		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER)
-			g_assert_not_reached ();
-			MINT_IN_BREAK;
-#endif
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
 			SAVE_INTERP_STATE (frame);
@@ -7629,10 +7610,22 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 #endif
 
-#if !USE_COMPUTED_GOTO
+#if USE_COMPUTED_GOTO
+// Generate assert_not_reached handler for all unhandled IR opcodes that don't have cases
+#define OPDEF(opsymbol, u1, u2, u3, u4, u5)
+#define IROPDEF(opsymbol, u1, u2, u3, u4, u5) MINT_IN_CASE(opsymbol)
+// WASM doesn't have computed goto so we can safely assume that this is a non-wasm target
+#define WASMOPDEF(opsymbol, u1, u2, u3, u4, u5) MINT_IN_CASE(opsymbol)
+#include "mintops.def"
+#undef OPDEF
+#undef IROPDEF
+#undef WASMOPDEF
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
+#else
 		default:
 			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), GPTRDIFF_TO_INT (ip - frame->imethod->code));
-#endif
+#endif // USE_COMPUTED_GOTO
 		}
 	}
 
