@@ -433,23 +433,31 @@ namespace CoreclrTestLib
             };
 
             outputWriter.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
-            if(!llvmSymbolizer.Start())
-            {
-                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
-            }
 
-            using (var symbolizerWriter = llvmSymbolizer.StandardInput)
+            try
             {
-                symbolizerWriter.WriteLine(addrBuilder.ToString());
-            }
+                if (!llvmSymbolizer.Start())
+                {
+                    outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
+                }
 
-            symbolizerOutput = llvmSymbolizer.StandardOutput.ReadToEnd();
+                using (var symbolizerWriter = llvmSymbolizer.StandardInput)
+                {
+                    symbolizerWriter.WriteLine(addrBuilder.ToString());
+                }
 
-            if(!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
-            {
+                symbolizerOutput = llvmSymbolizer.StandardOutput.ReadToEnd();
+
+                if (!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
+                {
+                    outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
+                    outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
+                    llvmSymbolizer.Kill(true);
+                    return false;
+                }
+            } catch (Exception e) {
                 outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
-                outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
-                llvmSymbolizer.Kill(true);
+                outputWriter.WriteLine(e.ToString());
                 return false;
             }
 
