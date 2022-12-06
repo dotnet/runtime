@@ -152,13 +152,16 @@ protected:
 
         // Iterate backwards to improve efficiency of removals
         // as any linked lists in the RangeSectionMap code are in reverse order of insertion.
-        auto iter = _starts.End();
-        while (iter != _starts.Begin())
+        for (auto i = _starts.GetCount(); i > 0;)
         {
-            --iter;
-            ExecutionManager::DeleteRange(*iter);
+            --i;
+            if (_starts[i] != 0)
+            {
+                ExecutionManager::DeleteRange(_starts[i]);
+                _starts[i] = 0;
+            }
+                
         }
-        _starts.Clear();
 #endif // DACCESS_COMPILE
     }
 
