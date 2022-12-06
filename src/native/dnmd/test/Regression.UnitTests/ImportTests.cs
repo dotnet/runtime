@@ -170,7 +170,8 @@ namespace Regression.UnitTests
                     Assert.Equal(GetParamForMethodIndex(baselineImport, methoddef), GetParamForMethodIndex(currentImport, methoddef));
                     Assert.Equal(EnumPermissionSetsAndGetProps(baselineImport, methoddef), EnumPermissionSetsAndGetProps(currentImport, methoddef));
                     Assert.Equal(GetPinvokeMap(baselineImport, methoddef), GetPinvokeMap(currentImport, methoddef));
-                    Assert.Equal(GetMethodProps(baselineImport, methoddef), GetMethodProps(currentImport, methoddef));
+                    Assert.Equal(GetMethodProps(baselineImport, methoddef, out nint _, out uint _), GetMethodProps(currentImport, methoddef, out nint sig, out uint sigLen));
+                    Assert.Equal(GetNativeCallConvFromSig(baselineImport, sig, sigLen), GetNativeCallConvFromSig(currentImport, sig, sigLen));
                     Assert.Equal(GetNameFromToken(baselineImport, methoddef), GetNameFromToken(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
                 }
@@ -920,7 +921,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetMethodProps(IMetaDataImport import, uint methoddef)
+        private static List<nuint> GetMethodProps(IMetaDataImport import, uint methoddef, out nint ppvSigBlob, out uint pcbSigBlob)
         {
             List<nuint> values = new();
 
@@ -931,8 +932,8 @@ namespace Regression.UnitTests
                 name.Length,
                 out int pchMethod,
                 out uint pdwAttr,
-                out nint ppvSigBlob,
-                out uint pcbSigBlob,
+                out ppvSigBlob,
+                out pcbSigBlob,
                 out uint pulCodeRVA,
                 out uint pdwImplFlags);
 
@@ -1267,6 +1268,20 @@ namespace Regression.UnitTests
             if (hr >= 0)
             {
                 values.Add(pszUtf8NamePtr);
+            }
+            return values;
+        }
+
+        private static List<uint> GetNativeCallConvFromSig(IMetaDataImport import, nint sig, uint sigLen)
+        {
+            List<uint> values = new();
+
+            int hr = import.GetNativeCallConvFromSig(sig, sigLen, out uint pCallConv);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(pCallConv);
             }
             return values;
         }

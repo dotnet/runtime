@@ -2440,12 +2440,271 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNestedClassProps(
     return S_OK;
 }
 
+namespace
+{
+    uint32_t const FoundValue = 0;
+    uint32_t const InvalidReadCount = (uint32_t)-1;
+
+    struct ReadSigContext
+    {
+        mdhandle_t Handle;
+        CorPinvokeMap PinvokeCallConv;
+    };
+
+    // II.23.2.8 TypeDefOrRefOrSpecEncoded as potential calling convention
+    uint32_t ReadTypeDefOrRefOrSpecEncodedAsCallConv(PCCOR_SIGNATURE sig, ReadSigContext& cxt)
+    {
+        mdToken tk;
+        uint32_t readIn = CorSigUncompressToken(sig, &tk);
+        if (IsNilToken(tk) || TypeFromToken(tk) == mdtTypeSpec)
+            return readIn;
+
+        // See if this token is a calling convention.
+        uint32_t tkType = TypeFromToken(tk);
+        if (tkType != mdtTypeRef && tkType != mdtTypeDef)
+            return readIn;
+
+        mdcursor_t cursor;
+        if (!md_token_to_cursor(cxt.Handle, tk, &cursor))
+            return InvalidReadCount;
+
+        col_index_t colNspace;
+        col_index_t colName;
+        if (tkType == mdtTypeRef)
+        {
+            colNspace = mdtTypeRef_TypeNamespace;
+            colName = mdtTypeRef_TypeName;
+        }
+        else
+        {
+            assert(tkType == mdtTypeDef);
+            colNspace = mdtTypeDef_TypeNamespace;
+            colName = mdtTypeDef_TypeName;
+        }
+
+        char const* nspace;
+        if (1 != md_get_column_value_as_utf8(cursor, colNspace, 1, &nspace))
+            return InvalidReadCount;
+
+        if (0 == ::strcmp(nspace, CMOD_CALLCONV_NAMESPACE) || 0 == ::strcmp(nspace, CMOD_CALLCONV_NAMESPACE_OLD))
+        {
+            char const* name;
+            if (1 != md_get_column_value_as_utf8(cursor, colName, 1, &name))
+                return InvalidReadCount;
+
+            if (0 == ::strcmp(name, CMOD_CALLCONV_NAME_CDECL))
+            {
+                cxt.PinvokeCallConv = pmCallConvCdecl;
+                return FoundValue;
+            }
+            if (0 == ::strcmp(name, CMOD_CALLCONV_NAME_STDCALL))
+            {
+                cxt.PinvokeCallConv = pmCallConvStdcall;
+                return FoundValue;
+            }
+            if (0 == ::strcmp(name, CMOD_CALLCONV_NAME_THISCALL))
+            {
+                cxt.PinvokeCallConv = pmCallConvThiscall;
+                return FoundValue;
+            }
+            if (0 == ::strcmp(name, CMOD_CALLCONV_NAME_FASTCALL))
+            {
+                cxt.PinvokeCallConv = pmCallConvFastcall;
+                return FoundValue;
+            }
+        }
+        return readIn;
+    }
+
+    // Handles processing the following metadata signature grammar.
+    //
+    // START := MethodDefSig | MethodRefSig | StandAloneMethodSig
+    // II.23.2.1  MethodDefSig : = (DEFAULT | VARARG | (GENERIC GenParamCount)) ParamCount RetType Param *
+    // II.23.2.2  MethodRefSig : = (DEFAULT | (GENERIC GenParamCount)) ParamCount RetType Param *
+    //  | VARARG ParamCount RetType Param * (SENTINEL Param + ) ?
+    // II.23.2.3  StandAloneMethodSig : = (DEFAULT | STDCALL | THISCALL | FASTCALL) ParamCount RetType Param *
+    //  | (VARARG | C) ParamCount RetType Param * (SENTINEL Param + ) ?
+    //
+    // II.23.2.11 RetType := CustomMod* (BYREF? Type | TYPEDBYREF | VOID)
+    // II.23.2.10 Param := CustomMod* (BYREF? Type | TYPEDBYREF)
+    // II.23.2.7  CustomMod := (CMOD_OPT | CMOD_REQD) TypeDefOrRefOrSpecEncoded
+    // II.23.2.12 Type := BOOLEAN | CHAR | I1 | U1 | I2 | U2 | I4 | U4 | I8 | U8 | R4 | R8 | I | U
+    //  | ARRAY Type ArrayShape
+    //  | CLASS TypeDefOrRefOrSpecEncoded
+    //  | FNPTR MethodDefSig
+    //  | FNPTR MethodRefSig
+    //  | GENERICINST (CLASS | VALUETYPE) TypeDefOrRefOrSpecEncoded GenArgCount Type*
+    //  | MVAR Number
+    //  | OBJECT
+    //  | PTR CustomMod* Type
+    //  | PTR CustomMod* VOID
+    //  | STRING
+    //  | SZARRAY CustomMod* Type
+    //  | VALUETYPE TypeDefOrRefOrSpecEncoded
+    //  | VAR Number
+    // II.23.2.13 ArrayShape := Rank NumSizes Size* NumLoBounds LoBound*
+    //
+    // II.23.2.8  TypeDefOrRefOrSpecEncoded := mdToken
+    // GenArgCount := uint32
+    // ParamCount := uint32
+    // Number := uint32
+    // Rank := uint32
+    // NumSizes := uint32
+    // Size := uint32
+    // NumLoBounds := uint32
+    // LoBound := int32
+    uint32_t ReadCorType_CallConv(PCCOR_SIGNATURE sig, PCCOR_SIGNATURE sigEnd, ReadSigContext& cxt)
+    {
+#define RETURN_IF_NOT_ADVANCE(stmt) \
+{\
+    if (sigCurr >= sigEnd) return InvalidReadCount; \
+    cnt = stmt; \
+    if (cnt <= FoundValue) return cnt; \
+    sigCurr += cnt; \
+}
+
+        assert(sig != nullptr && sigEnd != nullptr);
+
+        PCCOR_SIGNATURE sigCurr = sig;
+
+        // Process modifiers (e.g., PTR or BYREF) and VARARG sentinel values - see MethodDefSig and MethodRefSig.
+        CorElementType corType = CorSigUncompressElementType(sigCurr);
+        while (CorIsModifierElementType(corType) || corType == ELEMENT_TYPE_SENTINEL)
+            corType = CorSigUncompressElementType(sigCurr);
+
+        // Read in CorType
+        uint32_t cnt = 0;
+        ULONG data;
+        ULONG tmp;
+        mdToken tk;
+        switch (corType)
+        {
+        case ELEMENT_TYPE_SZARRAY:
+            RETURN_IF_NOT_ADVANCE(ReadCorType_CallConv(sigCurr, sigEnd, cxt)); // CustomMod* Type
+            break;
+        case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_MVAR:
+            RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // Number
+            break;
+        case ELEMENT_TYPE_GENERICINST: 
+            RETURN_IF_NOT_ADVANCE(ReadCorType_CallConv(sigCurr, sigEnd, cxt)); // (CLASS | VALUETYPE) TypeDefOrRefOrSpecEncoded
+            RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // GenArgCount
+            for (uint32_t i = 0; i < data; ++i)
+                RETURN_IF_NOT_ADVANCE(ReadCorType_CallConv(sigCurr, sigEnd, cxt)); // Type*
+            break;
+        case ELEMENT_TYPE_FNPTR: // MethodDefSig | MethodRefSig
+            RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // Metadata calling convention
+            RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // ParamCount
+            RETURN_IF_NOT_ADVANCE(ReadCorType_CallConv(sigCurr, sigEnd, cxt)); // RetType
+            for (uint32_t i = 0; i < data; ++i)
+                RETURN_IF_NOT_ADVANCE(ReadCorType_CallConv(sigCurr, sigEnd, cxt)); // Type*
+            break;
+        case ELEMENT_TYPE_ARRAY:
+            RETURN_IF_NOT_ADVANCE(ReadCorType_CallConv(sigCurr, sigEnd, cxt)); // Type
+            RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // Rank
+            RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // NumSizes
+            for (uint32_t i = 0; i < data; ++i)
+                RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &tmp)); // Size*
+            RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // NumLoBounds
+            for (uint32_t i = 0; i < data; ++i)
+                RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &tmp)); // LoBounds*
+            break;
+        case ELEMENT_TYPE_VALUETYPE:
+        case ELEMENT_TYPE_CLASS:
+            RETURN_IF_NOT_ADVANCE(CorSigUncompressToken(sigCurr, &tk)); // TypeDefOrRefOrSpecEncoded
+            break;
+        case ELEMENT_TYPE_CMOD_REQD:
+        case ELEMENT_TYPE_CMOD_OPT:
+            RETURN_IF_NOT_ADVANCE(ReadTypeDefOrRefOrSpecEncodedAsCallConv(sigCurr, cxt)); // TypeDefOrRefOrSpecEncoded
+            RETURN_IF_NOT_ADVANCE(ReadCorType_CallConv(sigCurr, sigEnd, cxt)); // (Target) Type
+            break;
+        default:
+            break;
+        }
+
+        if (sigCurr > sigEnd)
+            return InvalidReadCount;
+
+        return (uint32_t)(sigCurr - sig);
+#undef RETURN_IF_NOT_ADVANCE
+    }
+}
+
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNativeCallConvFromSig(
     void const* pvSig,
     ULONG       cbSig,
     ULONG* pCallConv)
 {
-    return E_NOTIMPL;
+    if (cbSig == 0 || pCallConv == nullptr)
+        return E_INVALIDARG;
+
+    PCCOR_SIGNATURE sig = (PCCOR_SIGNATURE)pvSig;
+    PCCOR_SIGNATURE sigEnd = sig + cbSig;
+    ULONG callConv; // Metadata callconv position value, not the expected return type.
+
+    // Signature processing specified in ECMA-335 sections:
+    //  - II.23.2.1 MethodDefSig
+    //  - II.23.2.2 MethodRefSig
+    //  - II.23.2.3 StandAloneMethodSig - Primary signature containing native calling conventions
+    //
+    uint32_t cnt = CorSigUncompressData(sig, &callConv);
+    if (cnt == InvalidReadCount)
+        return CORSEC_E_INVALID_IMAGE_FORMAT;
+
+    PCCOR_SIGNATURE sigTypeArgs = sig + cnt;
+    PCCOR_SIGNATURE sigArgCount = sigTypeArgs;
+
+    // Check for generic signature, defined in II.23.2.1.
+    if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        ULONG typeArgs;
+        cnt = CorSigUncompressData(sigTypeArgs, &typeArgs);
+        if (cnt == InvalidReadCount)
+            return CORSEC_E_INVALID_IMAGE_FORMAT;
+        sigArgCount = sigTypeArgs + cnt;
+    }
+
+    // Read in signature arg count.
+    assert(sigArgCount < sigEnd);
+    ULONG argCount;
+    cnt = CorSigUncompressData(sigArgCount, &argCount);
+    if (cnt == InvalidReadCount)
+        return CORSEC_E_INVALID_IMAGE_FORMAT;
+
+    ReadSigContext cxt{ _md_ptr.get(), pmCallConvWinapi };
+
+    PCCOR_SIGNATURE sigRetType = sigArgCount + cnt;
+    assert(sigRetType < sigEnd);
+    // Process the return type - II.23.2.11.
+    cnt = ReadCorType_CallConv(sigRetType, sigEnd, cxt);
+    if (cnt == InvalidReadCount)
+        return CORSEC_E_INVALID_IMAGE_FORMAT;
+
+    // Check if calling convention was found. If not
+    // found, continue looking on the arguments.
+    if (cnt != 0)
+    {
+        PCCOR_SIGNATURE sigArgs = sigRetType + cnt;
+        PCCOR_SIGNATURE sigCurrArg = sigArgs;
+        // Process arguments - II.23.2.10.
+        for (uint32_t i = 0; i < argCount; ++i)
+        {
+            assert(sigCurrArg < sigEnd);
+
+            cnt = ReadCorType_CallConv(sigCurrArg, sigEnd, cxt);
+            if (cnt == InvalidReadCount)
+                return CORSEC_E_INVALID_IMAGE_FORMAT;
+
+            if (cnt == FoundValue)
+                goto Done;
+
+            // Move to the next argument
+            sigCurrArg = sigCurrArg + cnt;
+        }
+    }
+Done:
+    *pCallConv = cxt.PinvokeCallConv;
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::IsGlobal(
