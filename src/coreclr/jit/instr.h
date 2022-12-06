@@ -347,6 +347,7 @@ enum insBarrier : unsigned
 enum insOpts : unsigned
 {
     INS_OPTS_NONE,
+    INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_C,      // see ::emitIns_Call().
 };

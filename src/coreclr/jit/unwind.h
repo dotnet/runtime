@@ -418,10 +418,12 @@ public:
 
         uecFinalized = true; // With the "end" code in place, now we're done
 
+#ifndef TARGET_RISCV64 // TODO COMMENTED OUT BECAUSE s_UnwindSize is not set
 #ifdef DEBUG
         unsigned codeSize = GetCodeSizeFromUnwindCodes(false);
         assert(codeSize <= MAX_EPILOG_SIZE_BYTES);
 #endif // DEBUG
+#endif // !TARGET_RISCV64
     }
 
     UnwindEpilogCodes()

@@ -237,7 +237,23 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     LIMITED_METHOD_CONTRACT;
     UINT32* pCode = (UINT32*)pBufferRW;
 
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // We require 8-byte alignment so the LD instruction is aligned properly
+    _ASSERTE(((UINT_PTR)pCode & 7) == 0);
+
+    // pcaddi  $r21,4
+    // ld.d  $r21,$r21,0
+    // jirl  $r0,$r21,0
+    // nop    //padding.
+
+    pCode[0] = 0x00000097; //auipc ra,0
+    pCode[1] = 0x0100b083; //ld    ra,ra,16
+    pCode[2] = 0x00008067; //jalr  x0,ra,0
+    pCode[3] = 0x00000003; //padding nop. Also used for isJump.
+
+    // Ensure that the updated instructions get updated in the I-Cache
+    ClrFlushInstructionCache(pBufferRX, 16);
+
+    *((LPVOID *)(pCode + 4)) = target;   // 64-bit target address
 }
 
 //------------------------------------------------------------------------

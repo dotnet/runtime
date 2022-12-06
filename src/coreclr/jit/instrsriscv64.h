@@ -32,7 +32,7 @@
 
 // RV32I & RV64I
 INST(invalid,       "INVALID",        0,    BAD_CODE)
-INST(nop,           "nop",            0,    0x00000003)
+INST(nop,           "nop",            0,    0x00000013)
 
 //// R_R
 INST(mov,           "mov",            0,    0x00000003)

@@ -431,7 +431,7 @@ void emitter::emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt /* = INS_OPTS_NONE */)
 {
     code_t code = emitInsCode(ins);
-    if ((INS_addi <= ins && INS_srai >= ins) || INS_ld == ins || INS_lw == ins)
+    if ((INS_addi <= ins && INS_srai >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins)
     {
         code |= reg1 << 7;           // rd
         code |= reg2 << 15;          // rs1
@@ -616,7 +616,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
     assert(dst != nullptr);
     //
-    // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JIRL.
+    // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
     //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dst
 
     assert(dst->bbFlags & BBF_HAS_LABEL);
@@ -919,9 +919,421 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     return 0;
 }
 
-void emitter::emitJumpDistBind()
+void emitter::emitJumpDistBind() // TODO NEED TO CHECK WHAT NUMBERS MEAN
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+#ifdef DEBUG
+    if (emitComp->verbose)
+    {
+        printf("*************** In emitJumpDistBind()\n");
+    }
+    if (EMIT_INSTLIST_VERBOSE)
+    {
+        printf("\nInstruction list before jump distance binding:\n\n");
+        emitDispIGlist(true);
+    }
+#endif
+
+    instrDescJmp* jmp;
+
+    UNATIVE_OFFSET adjIG;
+    UNATIVE_OFFSET adjSJ;
+    insGroup*      lstIG;
+#ifdef DEBUG
+    insGroup* prologIG = emitPrologIG;
+#endif // DEBUG
+
+    // NOTE:
+    //  bit0 of isLinkingEnd_LA: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
+    //  bit1 of isLinkingEnd_LA: indicating not needed updating the size while emitTotalCodeSize <= (0x7fff << 2) or had
+    //  updated;
+    unsigned int isLinkingEnd_LA = emitTotalCodeSize <= (0x7fff << 2) ? 2 : 0;
+
+    UNATIVE_OFFSET ssz = 0; // relative small jump's delay-slot.
+    // small  jump max. neg distance
+    NATIVE_OFFSET nsd = B_DIST_SMALL_MAX_NEG;
+    // small  jump max. pos distance
+    NATIVE_OFFSET psd =
+        B_DIST_SMALL_MAX_POS -
+        emitCounts_INS_OPTS_J * (3 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J).
+
+/*****************************************************************************/
+/* If the default small encoding is not enough, we start again here.     */
+/*****************************************************************************/
+
+AGAIN:
+
+#ifdef DEBUG
+    emitCheckIGoffsets();
+#endif
+
+#ifdef DEBUG
+    insGroup*     lastIG = nullptr;
+    instrDescJmp* lastSJ = nullptr;
+#endif
+
+    lstIG = nullptr;
+    adjSJ = 0;
+    adjIG = 0;
+
+    for (jmp = emitJumpList; jmp; jmp = jmp->idjNext)
+    {
+        insGroup* jmpIG;
+        insGroup* tgtIG;
+
+        UNATIVE_OFFSET jsz; // size of the jump instruction in bytes
+
+        NATIVE_OFFSET  extra;           // How far beyond the short jump range is this jump offset?
+        UNATIVE_OFFSET srcInstrOffs;    // offset of the source instruction of the jump
+        UNATIVE_OFFSET srcEncodingOffs; // offset of the source used by the instruction set to calculate the relative
+                                        // offset of the jump
+        UNATIVE_OFFSET dstOffs;
+        NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
+
+/* Make sure the jumps are properly ordered */
+
+#ifdef DEBUG
+        assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
+        lastSJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
+
+        assert(lastIG == nullptr || lastIG->igNum <= jmp->idjIG->igNum || jmp->idjIG == prologIG ||
+               emitNxtIGnum > unsigned(0xFFFF)); // igNum might overflow
+        lastIG = jmp->idjIG;
+#endif // DEBUG
+
+        /* Get hold of the current jump size */
+
+        jsz = jmp->idCodeSize();
+
+        /* Get the group the jump is in */
+
+        jmpIG = jmp->idjIG;
+
+        /* Are we in a group different from the previous jump? */
+
+        if (lstIG != jmpIG)
+        {
+            /* Were there any jumps before this one? */
+
+            if (lstIG)
+            {
+                /* Adjust the offsets of the intervening blocks */
+
+                do
+                {
+                    lstIG = lstIG->igNext;
+                    assert(lstIG);
+#ifdef DEBUG
+                    if (EMITVERBOSE)
+                    {
+                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                               lstIG->igOffs + adjIG);
+                    }
+#endif // DEBUG
+                    lstIG->igOffs += adjIG;
+                    assert(IsCodeAligned(lstIG->igOffs));
+                } while (lstIG != jmpIG);
+            }
+
+            /* We've got the first jump in a new group */
+            adjSJ = 0;
+            lstIG = jmpIG;
+        }
+
+        /* Apply any local size adjustment to the jump's relative offset */
+        jmp->idjOffs += adjSJ;
+
+        // If this is a jump via register, the instruction size does not change, so we are done.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+        /* Have we bound this jump's target already? */
+
+        if (jmp->idIsBound())
+        {
+            /* Does the jump already have the smallest size? */
+
+            if (jmp->idjShort)
+            {
+                // We should not be jumping/branching across funclets/functions
+                emitCheckFuncletBranch(jmp, jmpIG);
+
+                continue;
+            }
+
+            tgtIG = jmp->idAddr()->iiaIGlabel;
+        }
+        else
+        {
+            /* First time we've seen this label, convert its target */
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+            tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
+
+#ifdef DEBUG
+            if (EMITVERBOSE)
+            {
+                if (tgtIG)
+                {
+                    printf(" to %s\n", emitLabelString(tgtIG));
+                }
+                else
+                {
+                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_HAS_LABEL.\n",
+                           jmp->idAddr()->iiaBBlabel->bbNum);
+                }
+            }
+            assert(tgtIG);
+#endif // DEBUG
+
+            /* Record the bound target */
+
+            jmp->idAddr()->iiaIGlabel = tgtIG;
+            jmp->idSetIsBound();
+        }
+
+        // We should not be jumping/branching across funclets/functions
+        emitCheckFuncletBranch(jmp, jmpIG);
+
+        /*
+            In the following distance calculations, if we're not actually
+            scheduling the code (i.e. reordering instructions), we can
+            use the actual offset of the jump (rather than the beg/end of
+            the instruction group) since the jump will not be moved around
+            and thus its offset is accurate.
+
+            First we need to figure out whether this jump is a forward or
+            backward one; to do this we simply look at the ordinals of the
+            group that contains the jump and the target.
+         */
+
+        srcInstrOffs = jmpIG->igOffs + jmp->idjOffs;
+
+        /* Note that the destination is always the beginning of an IG, so no need for an offset inside it */
+        dstOffs = tgtIG->igOffs;
+
+        srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
+
+        if (jmpIG->igNum < tgtIG->igNum)
+        {
+            /* Forward jump */
+
+            /* Adjust the target offset by the current delta. This is a worst-case estimate, as jumps between
+               here and the target could be shortened, causing the actual distance to shrink.
+             */
+
+            dstOffs += adjIG;
+
+            /* Compute the distance estimate */
+
+            jmpDist = dstOffs - srcEncodingOffs;
+
+            /* How much beyond the max. short distance does the jump go? */
+
+            extra = jmpDist - psd;
+
+#if DEBUG_EMIT
+            assert(jmp->idDebugOnlyInfo() != nullptr);
+            if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
+            {
+                if (INTERESTING_JUMP_NUM == 0)
+                {
+                    printf("[1] Jump %u:\n", jmp->idDebugOnlyInfo()->idNum);
+                }
+                printf("[1] Jump  block is at %08X\n", jmpIG->igOffs);
+                printf("[1] Jump reloffset is %04X\n", jmp->idjOffs);
+                printf("[1] Jump source is at %08X\n", srcEncodingOffs);
+                printf("[1] Label block is at %08X\n", dstOffs);
+                printf("[1] Jump  dist. is    %04X\n", jmpDist);
+                if (extra > 0)
+                {
+                    printf("[1] Dist excess [S] = %d  \n", extra);
+                }
+            }
+            if (EMITVERBOSE)
+            {
+                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                       jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
+            }
+#endif // DEBUG_EMIT
+
+            assert(jmpDist >= 0); // Forward jump
+            assert(!(jmpDist & 0x3));
+
+            if (isLinkingEnd_LA & 0x2)
+            {
+                jmp->idAddr()->iiaSetJmpOffset(jmpDist);
+            }
+            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
+            {
+                instruction ins = jmp->idIns();
+                assert((INS_jal <= ins) && (ins <= INS_bgeu));
+
+                if (ins >
+                    INS_jalr ) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                {
+                    if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
+                    {
+                        extra = 4;
+                    }
+                    else
+                    {
+                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                        extra = 8;
+                    }
+                }
+                else if (ins > INS_j && ins < INS_jalr) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                {
+                    if (jmpDist + emitCounts_INS_OPTS_J * 4 < 0x200000)
+                        continue;
+
+                    extra = 4;
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                }
+                else
+                {
+                    assert(ins == INS_jal || ins == INS_jalr);
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                    continue;
+                }
+
+                jmp->idInsOpt(INS_OPTS_JALR);
+                jmp->idCodeSize(jmp->idCodeSize() + extra);
+                jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J).
+                adjSJ += (UNATIVE_OFFSET)extra;
+                adjIG += (UNATIVE_OFFSET)extra;
+                emitTotalCodeSize += (UNATIVE_OFFSET)extra;
+                jmpIG->igFlags |= IGF_UPD_ISZ;
+                isLinkingEnd_LA |= 0x1;
+            }
+            continue;
+        }
+        else
+        {
+            /* Backward jump */
+
+            /* Compute the distance estimate */
+
+            jmpDist = srcEncodingOffs - dstOffs;
+
+            /* How much beyond the max. short distance does the jump go? */
+
+            extra = jmpDist + nsd;
+
+#if DEBUG_EMIT
+            assert(jmp->idDebugOnlyInfo() != nullptr);
+            if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
+            {
+                if (INTERESTING_JUMP_NUM == 0)
+                {
+                    printf("[2] Jump %u:\n", jmp->idDebugOnlyInfo()->idNum);
+                }
+                printf("[2] Jump  block is at %08X\n", jmpIG->igOffs);
+                printf("[2] Jump reloffset is %04X\n", jmp->idjOffs);
+                printf("[2] Jump source is at %08X\n", srcEncodingOffs);
+                printf("[2] Label block is at %08X\n", dstOffs);
+                printf("[2] Jump  dist. is    %04X\n", jmpDist);
+                if (extra > 0)
+                {
+                    printf("[2] Dist excess [S] = %d  \n", extra);
+                }
+            }
+            if (EMITVERBOSE)
+            {
+                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                       jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
+            }
+#endif // DEBUG_EMIT
+
+            assert(jmpDist >= 0); // Backward jump
+            assert(!(jmpDist & 0x3));
+
+            if (isLinkingEnd_LA & 0x2)
+            {
+                jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
+            }
+            else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
+            {
+                instruction ins = jmp->idIns();
+                assert((INS_jal <= ins) && (ins <= INS_bgeu));
+
+                if (ins >
+                    INS_jalr ) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                {
+                    if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
+                    {
+                        extra = 4;
+                    }
+                    else
+                    {
+                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                        extra = 8;
+                    }
+                }
+                else if (ins < INS_jalr && ins > INS_j) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                {
+                    if (jmpDist + emitCounts_INS_OPTS_J * 4 < 0x200000)
+                        continue;
+
+                    extra = 4;
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                }
+                else
+                {
+                    assert(ins == INS_jal || ins == INS_jalr);
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
+                    continue;
+                }
+
+                jmp->idInsOpt(INS_OPTS_JALR);
+                jmp->idCodeSize(jmp->idCodeSize() + extra);
+                jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J).
+                adjSJ += (UNATIVE_OFFSET)extra;
+                adjIG += (UNATIVE_OFFSET)extra;
+                emitTotalCodeSize += (UNATIVE_OFFSET)extra;
+                jmpIG->igFlags |= IGF_UPD_ISZ;
+                isLinkingEnd_LA |= 0x1;
+            }
+            continue;
+        }
+    } // end for each jump
+
+    if ((isLinkingEnd_LA & 0x3) < 0x2)
+    {
+        // indicating the instrDescJmp's size of the type INS_OPTS_J had updated
+        // after the first round and should iterate again to update.
+        isLinkingEnd_LA = 0x2;
+
+        // Adjust offsets of any remaining blocks.
+        for (; lstIG;)
+        {
+            lstIG = lstIG->igNext;
+            if (!lstIG)
+            {
+                break;
+            }
+#ifdef DEBUG
+            if (EMITVERBOSE)
+            {
+                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                       lstIG->igOffs + adjIG);
+            }
+#endif // DEBUG
+
+            lstIG->igOffs += adjIG;
+
+            assert(IsCodeAligned(lstIG->igOffs));
+        }
+        goto AGAIN;
+    }
+
+#ifdef DEBUG
+    if (EMIT_INSTLIST_VERBOSE)
+    {
+        printf("\nLabels list after the jump dist binding:\n\n");
+        emitDispIGlist(false);
+    }
+
+    emitCheckIGoffsets();
+#endif // DEBUG
 }
 
 /*****************************************************************************

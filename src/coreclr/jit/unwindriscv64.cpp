@@ -223,8 +223,21 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Walk the prolog codes and calculate the size of the prolog or epilog, in bytes.
 unsigned UnwindCodesBase::GetCodeSizeFromUnwindCodes(bool isProlog)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return 0;
+    BYTE*    pCodesStart = GetCodes();
+    BYTE*    pCodes      = pCodesStart;
+    unsigned size        = 0;
+    for (;;)
+    {
+        BYTE b1 = *pCodes;
+        if (IsEndCode(b1))
+        {
+            break; // We hit an "end" code; we're done
+        }
+        size += 4; // All codes represent 4 byte instructions.
+        pCodes += GetUnwindSizeFromUnwindHeader(b1);
+        assert(pCodes - pCodesStart < 256); // 255 is the absolute maximum number of code bytes allowed
+    }
+    return size;
 }
 
 #endif // DEBUG
@@ -310,7 +323,16 @@ void Compiler::unwindEndProlog()
 
 void Compiler::unwindBegEpilog()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(compGeneratingEpilog);
+
+#if defined(FEATURE_CFI_SUPPORT)
+    if (generateCFIUnwindCodes())
+    {
+        return;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+    funCurrentFunc()->uwi.AddEpilog();
 }
 
 void Compiler::unwindEndEpilog()
@@ -330,12 +352,71 @@ void Compiler::unwindPadding()
 // all its funclets.
 void Compiler::unwindReserve()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(!compGeneratingProlog);
+    assert(!compGeneratingEpilog);
+
+    assert(compFuncInfoCount > 0);
+    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    {
+        unwindReserveFunc(funGetFunc(funcIdx));
+    }
 }
 
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    BOOL isFunclet          = (func->funKind == FUNC_ROOT) ? FALSE : TRUE;
+    bool funcHasColdSection = false;
+
+#if defined(FEATURE_CFI_SUPPORT)
+    if (generateCFIUnwindCodes())
+    {
+        DWORD unwindCodeBytes = 0;
+        if (fgFirstColdBlock != nullptr)
+        {
+            eeReserveUnwindInfo(isFunclet, true /*isColdCode*/, unwindCodeBytes);
+        }
+        unwindCodeBytes = (DWORD)(func->cfiCodes->size() * sizeof(CFI_CODE));
+        eeReserveUnwindInfo(isFunclet, false /*isColdCode*/, unwindCodeBytes);
+
+        return;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+    // If there is cold code, split the unwind data between the hot section and the
+    // cold section. This needs to be done before we split into fragments, as each
+    // of the hot and cold sections can have multiple fragments.
+
+    if (fgFirstColdBlock != NULL)
+    {
+        assert(!isFunclet); // TODO-CQ: support hot/cold splitting with EH
+
+        emitLocation* startLoc;
+        emitLocation* endLoc;
+        unwindGetFuncLocations(func, false, &startLoc, &endLoc);
+
+        func->uwiCold = new (this, CMK_UnwindInfo) UnwindInfo();
+        func->uwiCold->InitUnwindInfo(this, startLoc, endLoc);
+        func->uwiCold->HotColdSplitCodes(&func->uwi);
+
+        funcHasColdSection = true;
+    }
+
+    // First we need to split the function or funclet into fragments that are no larger
+    // than 512K, so the fragment size will fit in the unwind data "Function Length" field.
+    // The LOONGARCH Exception Data specification "Function Fragments" section describes this.
+    func->uwi.Split();
+
+    func->uwi.Reserve(isFunclet, true);
+
+    // After the hot section, split and reserve the cold section
+
+    if (funcHasColdSection)
+    {
+        assert(func->uwiCold != NULL);
+
+        func->uwiCold->Split();
+        func->uwiCold->Reserve(isFunclet, false);
+    }
 }
 
 // unwindEmit: Report all the unwind information to the VM.
@@ -368,7 +449,47 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
 
 void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+#if 0 // TODO COMMENTED OUT BECAUSE s_UnwindSize is not set
+#ifdef DEBUG
+    // We're done adding codes. Check that we didn't accidentally create a bigger prolog.
+    unsigned codeSize = GetCodeSizeFromUnwindCodes(true);
+    assert(codeSize <= MAX_PROLOG_SIZE_BYTES);
+#endif // DEBUG
+#endif
+
+    int prologBytes = Size();
+
+    EnsureSize(headerBytes + prologBytes + epilogBytes + 3); // 3 = padding bytes for alignment
+
+    upcUnwindBlockSlot = upcCodeSlot - headerBytes - epilogBytes; // Index of the first byte of the unwind header
+
+    assert(upcMemSize == upcUnwindBlockSlot + headerBytes + prologBytes + epilogBytes + 3);
+
+    upcHeaderSlot = upcUnwindBlockSlot - 1; // upcHeaderSlot is always incremented before storing
+    assert(upcHeaderSlot >= -1);
+
+    if (epilogBytes > 0)
+    {
+        // The prolog codes that are already at the end of the array need to get moved to the middle,
+        // with space for the non-matching epilog codes to follow.
+
+        memmove_s(&upcMem[upcUnwindBlockSlot + headerBytes], upcMemSize - (upcUnwindBlockSlot + headerBytes),
+                  &upcMem[upcCodeSlot], prologBytes);
+
+        // Note that the three UWC_END padding bytes still exist at the end of the array.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+        // Zero out the epilog codes memory, to ensure we've copied the right bytes. Don't zero the padding bytes.
+        memset(&upcMem[upcUnwindBlockSlot + headerBytes + prologBytes], 0, epilogBytes);
+#endif // DEBUG
+
+        upcEpilogSlot =
+            upcUnwindBlockSlot + headerBytes + prologBytes; // upcEpilogSlot points to the next epilog location to fill
+
+        // Update upcCodeSlot to point at the new beginning of the prolog codes
+        upcCodeSlot = upcUnwindBlockSlot + headerBytes;
+    }
 }
 
 // Add a header word. Header words are added starting at the beginning, in order: first to last.
@@ -392,7 +513,50 @@ void UnwindPrologCodes::GetFinalInfo(/* OUT */ BYTE** ppUnwindBlock, /* OUT */ U
 
 int UnwindPrologCodes::Match(UnwindEpilogInfo* pEpi)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    if (Size() < pEpi->Size())
+    {
+        return -1;
+    }
+
+    int matchIndex = 0; // Size() - pEpi->Size();
+
+    BYTE* pProlog = GetCodes();
+    BYTE* pEpilog = pEpi->GetCodes();
+
+    // First check set_fp.
+    if (0 < pEpi->Size())
+    {
+        if (*pProlog == 0xE1)
+        {
+            pProlog++;
+            if (*pEpilog == 0xE1)
+            {
+                pEpilog++;
+            }
+            else
+            {
+                matchIndex = 1;
+            }
+        }
+        else if (*pProlog == 0xE2)
+        {
+            pProlog += 3;
+            if (*pEpilog == 0xE1)
+            {
+                pEpilog += 3;
+            }
+            else
+            {
+                matchIndex = 3;
+            }
+        }
+    }
+
+    if (0 == memcmp(pProlog, pEpilog, pEpi->Size()))
+    {
+        return matchIndex;
+    }
+
     return -1;
 }
 
@@ -407,7 +571,29 @@ void UnwindPrologCodes::CopyFrom(UnwindPrologCodes* pCopyFrom)
 
 void UnwindPrologCodes::EnsureSize(int requiredSize)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    if (requiredSize > upcMemSize)
+    {
+        // Reallocate, and copy everything to a new array.
+
+        // Choose the next power of two size. This may or may not be the best choice.
+        noway_assert((requiredSize & 0xC0000000) == 0); // too big!
+        int newSize;
+        for (newSize = upcMemSize << 1; newSize < requiredSize; newSize <<= 1)
+        {
+            // do nothing
+        }
+
+        BYTE* newUnwindCodes = new (uwiComp, CMK_UnwindInfo) BYTE[newSize];
+        memcpy_s(newUnwindCodes + newSize - upcMemSize, upcMemSize, upcMem,
+                 upcMemSize); // copy the existing data to the end
+#ifdef DEBUG
+        // Clear the old unwind codes; nobody should be looking at them
+        memset(upcMem, 0xFF, upcMemSize);
+#endif                           // DEBUG
+        upcMem = newUnwindCodes; // we don't free anything that used to be there since we have a no-release allocator
+        upcCodeSlot += newSize - upcMemSize;
+        upcMemSize = newSize;
+    }
 }
 
 #ifdef DEBUG
@@ -425,7 +611,28 @@ void UnwindPrologCodes::Dump(int indent)
 
 void UnwindEpilogCodes::EnsureSize(int requiredSize)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    if (requiredSize > uecMemSize)
+    {
+        // Reallocate, and copy everything to a new array.
+
+        // Choose the next power of two size. This may or may not be the best choice.
+        noway_assert((requiredSize & 0xC0000000) == 0); // too big!
+        int newSize;
+        for (newSize = uecMemSize << 1; newSize < requiredSize; newSize <<= 1)
+        {
+            // do nothing
+        }
+
+        BYTE* newUnwindCodes = new (uwiComp, CMK_UnwindInfo) BYTE[newSize];
+        memcpy_s(newUnwindCodes, newSize, uecMem, uecMemSize);
+#ifdef DEBUG
+        // Clear the old unwind codes; nobody should be looking at them
+        memset(uecMem, 0xFF, uecMemSize);
+#endif                           // DEBUG
+        uecMem = newUnwindCodes; // we don't free anything that used to be there since we have a no-release allocator
+        // uecCodeSlot stays the same
+        uecMemSize = newSize;
+    }
 }
 
 #ifdef DEBUG
@@ -458,7 +665,9 @@ int UnwindEpilogInfo::Match(UnwindEpilogInfo* pEpi)
 
 void UnwindEpilogInfo::CaptureEmitLocation()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    noway_assert(epiEmitLocation == NULL); // This function is only called once per epilog
+    epiEmitLocation = new (uwiComp, CMK_UnwindInfo) emitLocation();
+    epiEmitLocation->CaptureLocation(uwiComp->GetEmitter());
 }
 
 void UnwindEpilogInfo::FinalizeOffset()
@@ -506,7 +715,52 @@ void UnwindFragmentInfo::FinalizeOffset()
 
 void UnwindFragmentInfo::AddEpilog()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(ufiInitialized == UFI_INITIALIZED_PATTERN);
+
+#ifdef DEBUG
+    if (ufiInProlog)
+    {
+        assert(ufiEpilogList == NULL);
+        ufiInProlog = false;
+    }
+    else
+    {
+        assert(ufiEpilogList != NULL);
+    }
+#endif // DEBUG
+
+    // Either allocate a new epilog object, or, for the first one, use the
+    // preallocated one that is a member of the UnwindFragmentInfo class.
+
+    UnwindEpilogInfo* newepi;
+
+    if (ufiEpilogList == NULL)
+    {
+        // Use the epilog that's in the class already. Be sure to initialize it!
+        newepi = ufiEpilogList = &ufiEpilogFirst;
+    }
+    else
+    {
+        newepi = new (uwiComp, CMK_UnwindInfo) UnwindEpilogInfo(uwiComp);
+    }
+
+    // Put the new epilog at the end of the epilog list
+
+    if (ufiEpilogLast != NULL)
+    {
+        ufiEpilogLast->epiNext = newepi;
+    }
+
+    ufiEpilogLast = newepi;
+
+    // What is the starting code offset of the epilog? Store an emitter location
+    // so we can ask the emitter later, after codegen.
+
+    newepi->CaptureEmitLocation();
+
+    // Put subsequent unwind codes in this new epilog
+
+    ufiCurCodes = &newepi->epiCodes;
 }
 
 // Copy the prolog codes from the 'pCopyFrom' fragment. These prolog codes will
@@ -547,7 +801,131 @@ bool UnwindFragmentInfo::IsAtFragmentEnd(UnwindEpilogInfo* pEpi)
 
 void UnwindFragmentInfo::MergeCodes()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(ufiInitialized == UFI_INITIALIZED_PATTERN);
+
+    unsigned epilogCount     = 0;
+    unsigned epilogCodeBytes = 0; // The total number of unwind code bytes used by epilogs that don't match the
+                                  // prolog codes
+    unsigned epilogIndex = ufiPrologCodes.Size(); // The "Epilog Start Index" for the next non-matching epilog codes
+    UnwindEpilogInfo* pEpi;
+
+    for (pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+    {
+        ++epilogCount;
+
+        pEpi->FinalizeCodes();
+
+        // Does this epilog match the prolog?
+        // NOTE: for the purpose of matching, we don't handle the 0xFD and 0xFE end codes that allow slightly unequal
+        // prolog and epilog codes.
+
+        int matchIndex;
+
+        matchIndex = ufiPrologCodes.Match(pEpi);
+        if (matchIndex != -1)
+        {
+            pEpi->SetMatches();
+            pEpi->SetStartIndex(matchIndex); // Prolog codes start at zero, so matchIndex is exactly the start index
+        }
+        else
+        {
+            // The epilog codes don't match the prolog codes. Do they match any of the epilogs
+            // we've seen so far?
+
+            bool matched = false;
+            for (UnwindEpilogInfo* pEpi2 = ufiEpilogList; pEpi2 != pEpi; pEpi2 = pEpi2->epiNext)
+            {
+                matchIndex = pEpi2->Match(pEpi);
+                if (matchIndex != -1)
+                {
+                    // Use the same epilog index as the one we matched, as it has already been set.
+                    pEpi->SetMatches();
+                    pEpi->SetStartIndex(pEpi2->GetStartIndex() + matchIndex); // We might match somewhere inside pEpi2's
+                                                                              // codes, in which case matchIndex > 0
+                    matched = true;
+                    break;
+                }
+            }
+
+            if (!matched)
+            {
+                pEpi->SetStartIndex(epilogIndex); // We'll copy these codes to the next available location
+                epilogCodeBytes += pEpi->Size();
+                epilogIndex += pEpi->Size();
+            }
+        }
+    }
+
+    DWORD codeBytes = ufiPrologCodes.Size() + epilogCodeBytes;
+    codeBytes       = AlignUp(codeBytes, sizeof(DWORD));
+
+    DWORD codeWords =
+        codeBytes / sizeof(DWORD); // This is how many words we need to store all the unwind codes in the unwind block
+
+    // Do we need the 2nd header word for "Extended Code Words" or "Extended Epilog Count"?
+
+    bool needExtendedCodeWordsEpilogCount =
+        (codeWords > UW_MAX_CODE_WORDS_COUNT) || (epilogCount > UW_MAX_EPILOG_COUNT);
+
+    // How many epilog scope words do we need?
+
+    bool     setEBit      = false;       // do we need to set the E bit?
+    unsigned epilogScopes = epilogCount; // Note that this could be zero if we have no epilogs!
+
+    if (epilogCount == 1)
+    {
+        assert(ufiEpilogList != NULL);
+        assert(ufiEpilogList->epiNext == NULL);
+
+        if (ufiEpilogList->Matches() && (ufiEpilogList->GetStartIndex() == 0) && // The match is with the prolog
+            !needExtendedCodeWordsEpilogCount && IsAtFragmentEnd(ufiEpilogList))
+        {
+            epilogScopes = 0; // Don't need any epilog scope words
+            setEBit      = true;
+        }
+    }
+
+    DWORD headerBytes = (1                                            // Always need first header DWORD
+                         + (needExtendedCodeWordsEpilogCount ? 1 : 0) // Do we need the 2nd DWORD for Extended Code
+                                                                      // Words or Extended Epilog Count?
+                         + epilogScopes                               // One DWORD per epilog scope, for EBit = 0
+                         ) *
+                        sizeof(DWORD); // convert it to bytes
+
+    DWORD finalSize = headerBytes + codeBytes; // Size of actual unwind codes, aligned up to 4-byte words,
+                                               // including end padding if necessary
+
+    // Construct the final unwind information.
+
+    // We re-use the memory for the prolog unwind codes to construct the full unwind data. If all the epilogs
+    // match the prolog, this is easy: we just prepend the header. If there are epilog codes that don't match
+    // the prolog, we still use the prolog codes memory, but it's a little more complicated, since the
+    // unwind info is ordered as: (a) header, (b) prolog codes, (c) non-matching epilog codes. And, the prolog
+    // codes array is filled in from end-to-beginning. So, we compute the size of memory we need, ensure we
+    // have that much memory, and then copy the prolog codes to the right place, appending the non-matching
+    // epilog codes and prepending the header.
+
+    ufiPrologCodes.SetFinalSize(headerBytes, epilogCodeBytes);
+
+    if (epilogCodeBytes != 0)
+    {
+        // We need to copy the epilog code bytes to their final memory location
+
+        for (pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+        {
+            if (!pEpi->Matches())
+            {
+                ufiPrologCodes.AppendEpilog(pEpi);
+            }
+        }
+    }
+
+    // Save some data for later
+    ufiSize                             = finalSize;
+    ufiSetEBit                          = setEBit;
+    ufiNeedExtendedCodeWordsEpilogCount = needExtendedCodeWordsEpilogCount;
+    ufiCodeWords                        = codeWords;
+    ufiEpilogScopes                     = epilogScopes;
 }
 
 // Finalize: Prepare the unwind information for the VM. Compute and prepend the unwind header.
@@ -559,7 +937,23 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
 void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(isHotCode || !isFunclet); // TODO-CQ: support hot/cold splitting in functions with EH
+
+    MergeCodes();
+
+    BOOL isColdCode = isHotCode ? FALSE : TRUE;
+
+    ULONG unwindSize = Size();
+
+#ifdef DEBUG
+    if (uwiComp->verbose)
+    {
+        if (ufiNum != 1)
+            printf("reserveUnwindInfo: fragment #%d:\n", ufiNum);
+    }
+#endif
+
+    uwiComp->eeReserveUnwindInfo(isFunclet, isColdCode, unwindSize);
 }
 
 // Allocate the unwind info for a fragment with the VM.
@@ -631,7 +1025,118 @@ void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 
 void UnwindInfo::Split()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    UNATIVE_OFFSET maxFragmentSize; // The maximum size of a code fragment in bytes
+
+    maxFragmentSize = UW_MAX_FRAGMENT_SIZE_BYTES;
+
+#ifdef DEBUG
+    // Consider COMPlus_JitSplitFunctionSize
+    unsigned splitFunctionSize = (unsigned)JitConfig.JitSplitFunctionSize();
+
+    if (splitFunctionSize != 0)
+        if (splitFunctionSize < maxFragmentSize)
+            maxFragmentSize = splitFunctionSize;
+#endif // DEBUG
+
+    // Now, there should be exactly one fragment.
+
+    assert(uwiFragmentLast != NULL);
+    assert(uwiFragmentLast == &uwiFragmentFirst);
+    assert(uwiFragmentLast->ufiNext == NULL);
+
+    // Find the code size of this function/funclet.
+
+    UNATIVE_OFFSET startOffset;
+    UNATIVE_OFFSET endOffset;
+    UNATIVE_OFFSET codeSize;
+
+    if (uwiFragmentLast->ufiEmitLoc == NULL)
+    {
+        // NULL emit location means the beginning of the code. This is to handle the first fragment prolog.
+        startOffset = 0;
+    }
+    else
+    {
+        startOffset = uwiFragmentLast->ufiEmitLoc->CodeOffset(uwiComp->GetEmitter());
+    }
+
+    if (uwiEndLoc == NULL)
+    {
+        // Note that compTotalHotCodeSize and compTotalColdCodeSize are computed before issuing instructions
+        // from the emitter instruction group offsets, and will be accurate unless the issued code shrinks.
+        // compNativeCodeSize is precise, but is only set after instructions are issued, which is too late
+        // for us, since we need to decide how many fragments we need before the code memory is allocated
+        // (which is before instruction issuing).
+        UNATIVE_OFFSET estimatedTotalCodeSize =
+            uwiComp->info.compTotalHotCodeSize + uwiComp->info.compTotalColdCodeSize;
+        assert(estimatedTotalCodeSize != 0);
+        endOffset = estimatedTotalCodeSize;
+    }
+    else
+    {
+        endOffset = uwiEndLoc->CodeOffset(uwiComp->GetEmitter());
+    }
+
+    assert(endOffset > startOffset); // there better be at least 1 byte of code
+    codeSize = endOffset - startOffset;
+
+    // Now that we know the code size for this section (main function hot or cold, or funclet),
+    // figure out how many fragments we're going to need.
+
+    UNATIVE_OFFSET numberOfFragments = (codeSize + maxFragmentSize - 1) / maxFragmentSize; // round up
+    assert(numberOfFragments > 0);
+
+    if (numberOfFragments == 1)
+    {
+        // No need to split; we're done
+        return;
+    }
+
+    // Now, we're going to commit to splitting the function into "numberOfFragments" fragments,
+    // for the purpose of unwind information. We need to do the actual splits so we can figure out
+    // the size of each piece of unwind data for the call to reserveUnwindInfo(). We won't know
+    // the actual offsets of the splits since we haven't issued the instructions yet, so store
+    // an emitter location instead of an offset, and "finalize" the offset in the unwindEmit() phase,
+    // like we do for the function length and epilog offsets.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+    if (uwiComp->verbose)
+    {
+        printf("Split unwind info into %d fragments (function/funclet size: %d, maximum fragment size: %d)\n",
+               numberOfFragments, codeSize, maxFragmentSize);
+    }
+#endif // DEBUG
+
+    // Call the emitter to do the split, and call us back for every split point it chooses.
+    uwiComp->GetEmitter()->emitSplit(uwiFragmentLast->ufiEmitLoc, uwiEndLoc, maxFragmentSize, (void*)this,
+                                     EmitSplitCallback);
+
+#ifdef DEBUG
+    // Did the emitter split the function/funclet into as many fragments as we asked for?
+    // It might be fewer if the COMPlus_JitSplitFunctionSize was used, but it better not
+    // be fewer if we're splitting into 512K blocks!
+
+    unsigned fragCount = 0;
+    for (UnwindFragmentInfo* pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+    {
+        ++fragCount;
+    }
+    if (fragCount < numberOfFragments)
+    {
+        if (uwiComp->verbose)
+        {
+            printf("WARNING: asked the emitter for %d fragments, but only got %d\n", numberOfFragments, fragCount);
+        }
+
+        // If this fires, then we split into fewer fragments than we asked for, and we are using
+        // the default, unwind-data-defined 512K maximum fragment size. We won't be able to fit
+        // this fragment into the unwind data! If you set COMPlus_JitSplitFunctionSize to something
+        // small, we might not be able to split into as many fragments as asked for, because we
+        // can't split prologs or epilogs.
+        assert(maxFragmentSize != UW_MAX_FRAGMENT_SIZE_BYTES);
+    }
+#endif // DEBUG
 }
 
 /*static*/ void UnwindInfo::EmitSplitCallback(void* context, emitLocation* emitLoc)
@@ -643,7 +1148,13 @@ void UnwindInfo::Split()
 
 void UnwindInfo::Reserve(bool isFunclet, bool isHotCode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+    assert(isHotCode || !isFunclet);
+
+    for (UnwindFragmentInfo* pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+    {
+        pFrag->Reserve(isFunclet, isHotCode);
+    }
 }
 
 // Allocate and populate VM unwind info for all fragments
@@ -655,7 +1166,10 @@ void UnwindInfo::Allocate(CorJitFuncKind funKind, void* pHotCode, void* pColdCod
 
 void UnwindInfo::AddEpilog()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+    assert(uwiFragmentLast != NULL);
+    uwiFragmentLast->AddEpilog();
+    CaptureLocation();
 }
 
 void UnwindInfo::CaptureLocation()

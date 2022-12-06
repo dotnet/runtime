@@ -139,7 +139,48 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 
 void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(spDelta >= 0);
+    unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
+    if (regsToRestoreCount == 0)
+    {
+        if (spDelta != 0)
+        {
+            // Currently this is the case for varargs only
+            // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
+            genStackPointerAdjustment(spDelta, REG_RA, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => RA
+        }
+        return;
+    }
+
+    assert((spDelta % 16) == 0);
+
+    // We also can restore FP and RA, even though they are not in RBM_CALLEE_SAVED.
+    assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_RA));
+
+    // Point past the end, to start. We predecrement to find the offset to load from.
+    static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
+    int spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES;
+
+    // Save integer registers at higher addresses than floating-point registers.
+
+    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
+    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
+
+    // Restore in the opposite order of saving.
+
+    if (maskRestoreRegsInt != RBM_NONE)
+    {
+        int spIntDelta = (maskRestoreRegsFloat != RBM_NONE) ? 0 : spDelta; // should we delay the SP adjustment?
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spIntDelta, spOffset);
+        spOffset -= genCountBits(maskRestoreRegsInt) * REGSIZE_BYTES;
+    }
+
+    if (maskRestoreRegsFloat != RBM_NONE)
+    {
+        // If there is any spDelta, it must be used here.
+        genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, spDelta, spOffset);
+        // No need to update spOffset since it's not used after this.
+    }
 }
 
 // clang-format on
@@ -156,12 +197,266 @@ void CodeGen::genFuncletEpilog()
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
 {
-    NYI("unimplemented on RISCV64 yet");
+    if (!compiler->ehAnyFunclets())
+    {
+        return;
+    }
+
+    assert(isFramePointerUsed());
+
+    // The frame size and offsets must be finalized
+    assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
+
+    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta();
+
+    regMaskTP rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
+    assert((rsMaskSaveRegs & RBM_RA) != 0);
+    assert((rsMaskSaveRegs & RBM_FP) != 0);
+
+    unsigned PSPSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? 8 : 0;
+
+    unsigned saveRegsCount = genCountBits(rsMaskSaveRegs);
+    assert((saveRegsCount == compiler->compCalleeRegsPushed) || (saveRegsCount == compiler->compCalleeRegsPushed - 1));
+
+    unsigned saveRegsPlusPSPSize =
+        roundUp((UINT)genTotalFrameSize(), STACK_ALIGN) - compiler->compLclFrameSize + PSPSize;
+
+    unsigned saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
+
+    assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
+    unsigned outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
+
+    unsigned maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + outgoingArgSpaceAligned;
+    assert((maxFuncletFrameSizeAligned % STACK_ALIGN) == 0);
+
+    int SP_to_FPRA_save_delta = compiler->lvaOutgoingArgSpaceSize;
+
+    unsigned funcletFrameSize        = saveRegsPlusPSPSize + compiler->lvaOutgoingArgSpaceSize;
+    unsigned funcletFrameSizeAligned = roundUp(funcletFrameSize, STACK_ALIGN);
+    assert(funcletFrameSizeAligned <= maxFuncletFrameSizeAligned);
+
+    unsigned funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
+    assert((funcletFrameAlignmentPad == 0) || (funcletFrameAlignmentPad == REGSIZE_BYTES));
+
+    if (maxFuncletFrameSizeAligned <= (2048 - 8))
+    {
+        genFuncletInfo.fiFrameType = 1;
+        saveRegsPlusPSPSize -= 2 * 8; // FP/RA
+    }
+    else
+    {
+        unsigned saveRegsPlusPSPAlignmentPad = saveRegsPlusPSPSizeAligned - saveRegsPlusPSPSize;
+        assert((saveRegsPlusPSPAlignmentPad == 0) || (saveRegsPlusPSPAlignmentPad == REGSIZE_BYTES));
+
+        genFuncletInfo.fiFrameType = 2;
+        saveRegsPlusPSPSize -= 2 * 8; // FP/RA
+    }
+
+    int CallerSP_to_PSP_slot_delta = -(int)saveRegsPlusPSPSize;
+    genFuncletInfo.fiSpDelta1      = -(int)funcletFrameSizeAligned;
+    int SP_to_PSP_slot_delta       = funcletFrameSizeAligned - saveRegsPlusPSPSize;
+
+    /* Now save it for future use */
+    genFuncletInfo.fiSaveRegs              = rsMaskSaveRegs;
+    genFuncletInfo.fiSP_to_FPRA_save_delta = SP_to_FPRA_save_delta;
+
+    genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
+    genFuncletInfo.fiCallerSP_to_PSP_slot_delta = CallerSP_to_PSP_slot_delta;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\n");
+        printf("Funclet prolog / epilog info\n");
+        printf("                        Save regs: ");
+        dspRegMask(genFuncletInfo.fiSaveRegs);
+        printf("\n");
+        printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
+        printf("  SP to FP/RA save location delta: %d\n", genFuncletInfo.fiSP_to_FPRA_save_delta);
+        printf("                       Frame type: %d\n", genFuncletInfo.fiFrameType);
+        printf("                       SP delta 1: %d\n", genFuncletInfo.fiSpDelta1);
+
+        if (compiler->lvaPSPSym != BAD_VAR_NUM)
+        {
+            if (CallerSP_to_PSP_slot_delta !=
+                compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for debugging
+            {
+                printf("lvaGetCallerSPRelativeOffset(lvaPSPSym): %d\n",
+                       compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
+            }
+        }
+    }
+
+    assert(genFuncletInfo.fiSP_to_FPRA_save_delta >= 0);
+#endif // DEBUG
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
-    NYI("unimplemented on RISCV64 yet");
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In genFnEpilog()\n");
+    }
+#endif // DEBUG
+
+    ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
+
+    VarSetOps::Assign(compiler, gcInfo.gcVarPtrSetCur, GetEmitter()->emitInitGCrefVars);
+    gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;
+    gcInfo.gcRegByrefSetCur = GetEmitter()->emitInitByrefRegs;
+
+#ifdef DEBUG
+    if (compiler->opts.dspCode)
+    {
+        printf("\n__epilog:\n");
+    }
+
+    if (verbose)
+    {
+        printf("gcVarPtrSetCur=%s ", VarSetOps::ToString(compiler, gcInfo.gcVarPtrSetCur));
+        dumpConvertedVarSet(compiler, gcInfo.gcVarPtrSetCur);
+        printf(", gcRegGCrefSetCur=");
+        printRegMaskInt(gcInfo.gcRegGCrefSetCur);
+        GetEmitter()->emitDispRegSet(gcInfo.gcRegGCrefSetCur);
+        printf(", gcRegByrefSetCur=");
+        printRegMaskInt(gcInfo.gcRegByrefSetCur);
+        GetEmitter()->emitDispRegSet(gcInfo.gcRegByrefSetCur);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+
+    GenTree* lastNode = block->lastNode();
+
+    // Method handle and address info used in case of jump epilog
+    CORINFO_METHOD_HANDLE methHnd = nullptr;
+    CORINFO_CONST_LOOKUP  addrInfo;
+    addrInfo.addr       = nullptr;
+    addrInfo.accessType = IAT_VALUE;
+
+    if (jmpEpilog && (lastNode->gtOper == GT_JMP))
+    {
+        methHnd = (CORINFO_METHOD_HANDLE)lastNode->AsVal()->gtVal1;
+        compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
+    }
+
+    compiler->unwindBegEpilog();
+
+    if (jmpEpilog)
+    {
+        SetHasTailCalls(true);
+
+        noway_assert(block->bbJumpKind == BBJ_RETURN);
+        noway_assert(block->GetFirstLIRNode() != nullptr);
+
+        /* figure out what jump we have */
+        GenTree* jmpNode = lastNode;
+#if !FEATURE_FASTTAILCALL
+        noway_assert(jmpNode->gtOper == GT_JMP);
+#else  // FEATURE_FASTTAILCALL
+        // armarch
+        // If jmpNode is GT_JMP then gtNext must be null.
+        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
+        noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
+
+        // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
+        noway_assert((jmpNode->gtOper == GT_JMP) ||
+                     ((jmpNode->gtOper == GT_CALL) && jmpNode->AsCall()->IsFastTailCall()));
+
+        // The next block is associated with this "if" stmt
+        if (jmpNode->gtOper == GT_JMP)
+#endif // FEATURE_FASTTAILCALL
+        {
+            // Simply emit a jump to the methodHnd. This is similar to a call so we can use
+            // the same descriptor with some minor adjustments.
+            assert(methHnd != nullptr);
+            assert(addrInfo.addr != nullptr);
+
+            emitter::EmitCallType callType;
+            void*                 addr;
+            regNumber             indCallReg;
+            switch (addrInfo.accessType)
+            {
+                case IAT_VALUE:
+                // TODO-LOONGARCH64-CQ: using B/BL for optimization.
+                case IAT_PVALUE:
+                    // Load the address into a register, load indirect and call  through a register
+                    // We have to use REG_INDIRECT_CALL_TARGET_REG since we assume the argument registers are in use
+                    callType   = emitter::EC_INDIR_R;
+                    indCallReg = REG_INDIRECT_CALL_TARGET_REG;
+                    addr       = NULL;
+                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
+                    if (addrInfo.accessType == IAT_PVALUE)
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, indCallReg, indCallReg, 0);
+                        regSet.verifyRegUsed(indCallReg);
+                    }
+                    break;
+
+                case IAT_RELPVALUE:
+                {
+                    // Load the address into a register, load relative indirect and call through a register
+                    // We have to use R12 since we assume the argument registers are in use
+                    // LR is used as helper register right before it is restored from stack, thus,
+                    // all relative address calculations are performed before LR is restored.
+                    callType   = emitter::EC_INDIR_R;
+                    indCallReg = REG_T2;
+                    addr       = NULL;
+
+                    regSet.verifyRegUsed(indCallReg);
+                    break;
+                }
+
+                case IAT_PPVALUE:
+                default:
+                    NO_WAY("Unsupported JMP indirection");
+            }
+
+            /* Simply emit a jump to the methodHnd. This is similar to a call so we can use
+             * the same descriptor with some minor adjustments.
+             */
+
+            genPopCalleeSavedRegisters(true);
+
+            // clang-format off
+            GetEmitter()->emitIns_Call(callType,
+                                       methHnd,
+                                       INDEBUG_LDISASM_COMMA(nullptr)
+                                       addr,
+                                       0,          // argSize
+                                       EA_UNKNOWN // retSize
+                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN), // secondRetSize
+                                       gcInfo.gcVarPtrSetCur,
+                                       gcInfo.gcRegGCrefSetCur,
+                                       gcInfo.gcRegByrefSetCur,
+                                       DebugInfo(),
+                                       indCallReg,    // ireg
+                                       REG_NA,        // xreg
+                                       0,             // xmul
+                                       0,             // disp
+                                       true);         // isJump
+            // clang-format on
+            CLANG_FORMAT_COMMENT_ANCHOR;
+        }
+#if FEATURE_FASTTAILCALL
+        else
+        {
+            genPopCalleeSavedRegisters(true);
+            genCallInstruction(jmpNode->AsCall());
+        }
+#endif // FEATURE_FASTTAILCALL
+    }
+    else
+    {
+        genPopCalleeSavedRegisters(false);
+
+        GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_RA, 0);
+        compiler->unwindReturn(REG_RA);
+    }
+
+    compiler->unwindEndEpilog();
 }
 
 void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
@@ -2361,7 +2656,37 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(compiler->compGeneratingProlog);
+
+    if (!compiler->getNeedsGSSecurityCookie())
+    {
+        return;
+    }
+
+    if (compiler->gsGlobalSecurityCookieAddr == nullptr)
+    {
+        noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, compiler->gsGlobalSecurityCookieVal);
+
+        GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
+    }
+    else
+    {
+        if (compiler->opts.compReloc)
+        {
+            GetEmitter()->emitIns_R_AI(INS_jalr, EA_PTR_DSP_RELOC, initReg,
+                                       (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        }
+        else
+        {
+            GetEmitter()->emitIns_I_la(EA_PTRSIZE, initReg, ((size_t)compiler->gsGlobalSecurityCookieAddr));
+            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, initReg, initReg, 0);
+        }
+        regSet.verifyRegUsed(initReg);
+        GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
+    }
+
+    *pInitRegZeroed = false;
 }
 
 //------------------------------------------------------------------------
@@ -3822,7 +4147,150 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(compiler->compGeneratingEpilog);
+
+    regMaskTP rsRestoreRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+
+    if (isFramePointerUsed())
+    {
+        rsRestoreRegs |= RBM_FPBASE;
+    }
+
+    rsRestoreRegs |= RBM_RA; // We must save/restore the return address.
+
+    regMaskTP regsToRestoreMask = rsRestoreRegs;
+
+    int totalFrameSize = genTotalFrameSize();
+
+    int calleeSaveSPOffset = 0; // This will be the starting place for restoring
+                                // the callee-saved registers, in decreasing order.
+    int frameType         = 0;  // An indicator of what type of frame we are popping.
+    int calleeSaveSPDelta = 0;  // Amount to add to SP after callee-saved registers have been restored.
+
+    if (isFramePointerUsed())
+    {
+        if (totalFrameSize <= 2047)
+        {
+            if (compiler->compLocallocUsed)
+            {
+                int SPtoFPdelta = genSPtoFPdelta();
+                // Restore sp from fp
+                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -SPtoFPdelta);
+                compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
+            }
+
+            JITDUMP("Frame type 1(save FP/RA at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
+
+            frameType = 1;
+
+            regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
+
+            calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
+        }
+        else
+        {
+            JITDUMP("Frame type 2(save FP/RA at bottom). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
+                    "localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
+                    dspBool(compiler->compLocallocUsed));
+
+            frameType = 2;
+
+            int outSzAligned;
+            if (compiler->lvaOutgoingArgSpaceSize >= 2040)
+            {
+                int offset         = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
+                calleeSaveSPDelta  = AlignUp((UINT)offset, STACK_ALIGN);
+                calleeSaveSPOffset = calleeSaveSPDelta - offset;
+
+                int offset2       = totalFrameSize - calleeSaveSPDelta - compiler->lvaOutgoingArgSpaceSize;
+                calleeSaveSPDelta = AlignUp((UINT)offset2, STACK_ALIGN);
+                offset2           = calleeSaveSPDelta - offset2;
+
+                if (compiler->compLocallocUsed)
+                {
+                    // Restore sp from fp
+                    GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
+                    compiler->unwindSetFrameReg(REG_FPBASE, offset2);
+                }
+                else
+                {
+                    outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
+                    genStackPointerAdjustment(outSzAligned, REG_RA, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => RA
+                }
+
+                regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
+
+                GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
+                compiler->unwindSaveReg(REG_RA, offset2 + 8);
+
+                GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
+                compiler->unwindSaveReg(REG_FP, offset2);
+
+                genStackPointerAdjustment(calleeSaveSPDelta, REG_RA, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => RA
+
+                calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
+                calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
+            }
+            else
+            {
+                int offset2 = compiler->lvaOutgoingArgSpaceSize;
+                if (compiler->compLocallocUsed)
+                {
+                    // Restore sp from fp
+                    GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset2);
+                    compiler->unwindSetFrameReg(REG_FPBASE, offset2);
+                }
+
+                regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
+
+                GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, offset2 + 8);
+                compiler->unwindSaveReg(REG_RA, offset2 + 8);
+
+                GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
+                compiler->unwindSaveReg(REG_FP, offset2);
+
+                calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
+                calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
+                calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
+
+                genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_RA, nullptr,
+                                          /* reportUnwindData */ true); // TODO CHECK R21 => RA
+            }
+        }
+    }
+    else
+    {
+        // No frame pointer (no chaining).
+        NYI("Frame without frame pointer");
+        calleeSaveSPOffset = 0;
+    }
+
+    JITDUMP("    calleeSaveSPOffset=%d, calleeSaveSPDelta=%d\n", calleeSaveSPOffset, calleeSaveSPDelta);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, calleeSaveSPDelta);
+
+    if (frameType == 1)
+    {
+        calleeSaveSPOffset = compiler->lvaOutgoingArgSpaceSize;
+
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, calleeSaveSPOffset + 8);
+        compiler->unwindSaveReg(REG_RA, calleeSaveSPOffset + 8);
+
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, calleeSaveSPOffset);
+        compiler->unwindSaveReg(REG_FP, calleeSaveSPOffset);
+
+        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+        compiler->unwindAllocStack(totalFrameSize);
+    }
+    else if (frameType == 2)
+    {
+        // had done.
+    }
+    else
+    {
+        unreached();
+    }
 }
 
 //-----------------------------------------------------------------------------------
@@ -3838,7 +4306,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(compiler->compGeneratingProlog);
+
+    // Give profiler a chance to back out of hooking this method
+    if (!compiler->compIsProfilerHookNeeded())
+    {
+        return;
+    }
+    // TODO RISCV64
 }
 
 // return size
