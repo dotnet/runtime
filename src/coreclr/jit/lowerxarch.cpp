@@ -5614,28 +5614,37 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
     // op1 and op2 are emitted as two separate instructions due to the
     // conditional nature of cmov, so both operands can be contained memory
     // operands.
-    if (IsContainableMemoryOp(op1))
+    unsigned operSize = genTypeSize(select);
+    assert((operSize == 4) || (operSize == TARGET_POINTER_SIZE));
+
+    if (genTypeSize(op1) == operSize)
     {
-        if (IsSafeToContainMem(select, op1))
+        if (IsContainableMemoryOp(op1))
         {
-            MakeSrcContained(select, op1);
+            if (IsSafeToContainMem(select, op1))
+            {
+                MakeSrcContained(select, op1);
+            }
         }
-    }
-    else if (IsSafeToContainMem(select, op1))
-    {
-        MakeSrcRegOptional(select, op1);
+        else if (IsSafeToContainMem(select, op1))
+        {
+            MakeSrcRegOptional(select, op1);
+        }
     }
 
-    if (IsContainableMemoryOp(op2))
+    if (genTypeSize(op2) == operSize)
     {
-        if (IsSafeToContainMem(select, op2))
+        if (IsContainableMemoryOp(op2))
         {
-            MakeSrcContained(select, op2);
+            if (IsSafeToContainMem(select, op2))
+            {
+                MakeSrcContained(select, op2);
+            }
         }
-    }
-    else if (IsSafeToContainMem(select, op2))
-    {
-        MakeSrcRegOptional(select, op2);
+        else if (IsSafeToContainMem(select, op2))
+        {
+            MakeSrcRegOptional(select, op2);
+        }
     }
 }
 
