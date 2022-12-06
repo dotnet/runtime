@@ -224,6 +224,6 @@
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
       />
 
-    <WriteLinesToFile Lines="" File="$(_SdkWithNoWorkloadStampPath)" />
+    <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />
   </Target>
 </Project>
