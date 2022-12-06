@@ -120,7 +120,7 @@ namespace System.Text.Json
 
             try
             {
-                WriteCore(writer, value, jsonTypeInfo);
+                jsonTypeInfo.Serialize(writer, value);
                 return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions(), options.GetDocumentOptions());
             }
             finally
@@ -138,7 +138,7 @@ namespace System.Text.Json
 
             try
             {
-                WriteCoreAsObject(writer, value, jsonTypeInfo);
+                jsonTypeInfo.SerializeAsObject(writer, value);
                 return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions(), options.GetDocumentOptions());
             }
             finally

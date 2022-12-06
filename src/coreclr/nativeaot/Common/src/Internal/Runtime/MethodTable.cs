@@ -1251,36 +1251,6 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal DynamicModule* DynamicModule
-        {
-            get
-            {
-                if ((RareFlags & EETypeRareFlags.HasDynamicModuleFlag) != 0)
-                {
-                    uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicModule);
-                    fixed (MethodTable* pThis = &this)
-                    {
-                        return *(DynamicModule**)((byte*)pThis + cbOffset);
-                    }
-                }
-                else
-                {
-                    return null;
-                }
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(RareFlags.HasFlag(EETypeRareFlags.HasDynamicModuleFlag));
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicModule);
-                fixed (MethodTable* pThis = &this)
-                {
-                    *(DynamicModule**)((byte*)pThis + cbOffset) = value;
-                }
-            }
-#endif
-        }
-
         internal TypeManagerHandle TypeManager
         {
             get
@@ -1471,14 +1441,6 @@ namespace Internal.Runtime
             {
                 cbOffset += relativeOrFullPointerOffset;
             }
-
-            if (eField == EETypeField.ETF_DynamicModule)
-            {
-                return cbOffset;
-            }
-
-            if ((rareFlags & EETypeRareFlags.HasDynamicModuleFlag) != 0)
-                cbOffset += (uint)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicTemplateType)
             {
@@ -1672,84 +1634,5 @@ namespace Internal.Runtime
                 }
             }
         }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct DynamicModule
-    {
-        // Size field used to indicate the number of bytes of this structure that are defined in Runtime Known ways
-        // This is used to drive versioning of this field
-        private int _cbSize;
-
-        // Pointer to interface dispatch resolver that works off of a type/slot pair
-        // This is a function pointer with the following signature IntPtr()(MethodTable* targetType, MethodTable* interfaceType, ushort slot)
-        private delegate*<MethodTable*, MethodTable*, ushort, IntPtr> _dynamicTypeSlotDispatchResolve;
-
-        // Starting address for the binary module corresponding to this dynamic module.
-        private delegate*<ExceptionIDs, Exception> _getRuntimeException;
-
-#if TYPE_LOADER_IMPLEMENTATION
-        public int CbSize
-        {
-            get
-            {
-                return _cbSize;
-            }
-            set
-            {
-                _cbSize = value;
-            }
-        }
-#endif
-
-        public delegate*<MethodTable*, MethodTable*, ushort, IntPtr> DynamicTypeSlotDispatchResolve
-        {
-            get
-            {
-                if (_cbSize >= sizeof(IntPtr) * 2)
-                {
-                    return _dynamicTypeSlotDispatchResolve;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _dynamicTypeSlotDispatchResolve = value;
-            }
-#endif
-        }
-
-        public delegate*<ExceptionIDs, Exception> GetRuntimeException
-        {
-            get
-            {
-                if (_cbSize >= sizeof(IntPtr) * 3)
-                {
-                    return _getRuntimeException;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _getRuntimeException = value;
-            }
-#endif
-        }
-
-        /////////////////////// END OF FIELDS KNOWN TO THE MRT RUNTIME ////////////////////////
-#if TYPE_LOADER_IMPLEMENTATION
-        public static readonly int DynamicModuleSize = IntPtr.Size * 3; // We have three fields here.
-
-        // We can put non-low level runtime fields that are module level, that need quick access from a type here
-        // For instance, we may choose to put a pointer to the metadata reader or the like here in the future.
-#endif
     }
 }

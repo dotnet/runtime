@@ -12,6 +12,8 @@ namespace System.Formats.Tar.Tests
 {
     public abstract partial class TarTestsBase : FileCleanupTestBase
     {
+        protected static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
+
         protected const string InitialEntryName = "InitialEntryName.ext";
         protected readonly string ModifiedEntryName = "ModifiedEntryName.ext";
 
@@ -208,11 +210,6 @@ namespace System.Formats.Tar.Tests
             // GNU formatted files. Format used by GNU tar versions up to 1.13.25.
             gnu
         }
-        protected static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
-
-        protected static bool IsUnixButNotSuperUser => !PlatformDetection.IsWindows && !PlatformDetection.IsSuperUser;
-
-        protected static bool IsNotLinuxBionic => !PlatformDetection.IsLinuxBionic;
 
         protected TarTestsBase()
         {

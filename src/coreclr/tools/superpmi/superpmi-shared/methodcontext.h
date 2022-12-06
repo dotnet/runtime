@@ -488,10 +488,6 @@ public:
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
     CORINFO_METHOD_HANDLE repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection);
 
-    void recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection, void* result, CorInfoType cit);
-    void dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value);
-    void* repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection);
-
     void recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result);
     void dmpGetReadonlyStaticFieldValue(DLDDD key, DD value);
     bool repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
@@ -1016,7 +1012,7 @@ enum mcPackets
     Packet_GetDelegateCtor = 49,
     Packet_GetEEInfo = 50,
     Packet_GetEHinfo = 51,
-    Packet_GetFieldAddress = 52,
+    //Packet_GetFieldAddress = 52,
     Packet_GetFieldClass = 53,
     Packet_GetFieldInClass = 54,
     Packet_GetFieldInfo = 55,

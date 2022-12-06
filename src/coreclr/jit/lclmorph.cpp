@@ -992,7 +992,13 @@ private:
                 indir->AsLclFld()->SetLayout(indirLayout);
                 lclNode = indir->AsLclVarCommon();
 
-                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                if (!indir->TypeIs(TYP_STRUCT))
+                {
+                    // The general invariant in the compiler is that whoever creates a LCL_FLD node after local morph
+                    // must mark the associated local DNER. We break this invariant here, for STRUCT fields, to allow
+                    // global morph to transform these into enregisterable LCL_VARs, applying DNER otherwise.
+                    m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
                 break;
 
             default:
@@ -1097,14 +1103,6 @@ private:
             return IndirTransform::LclFld;
         }
 
-        if (varDsc->TypeGet() != TYP_STRUCT)
-        {
-            // TODO-ADDR: STRUCT uses of primitives require more work: "fgMorphOneAsgBlockOp"
-            // and init block morphing need to be updated to recognize them. Alternatively,
-            // we could consider moving some of their functionality here.
-            return IndirTransform::None;
-        }
-
         ClassLayout* indirLayout = nullptr;
 
         if (indir->OperIs(GT_FIELD))
@@ -1122,8 +1120,10 @@ private:
 
         *pStructLayout = indirLayout;
 
-        // We're only processing TYP_STRUCT uses and variables now.
-        assert(indir->TypeIs(TYP_STRUCT) && (varDsc->GetLayout() != nullptr));
+        if (varDsc->TypeGet() != TYP_STRUCT)
+        {
+            return IndirTransform::LclFld;
+        }
 
         if ((val.Offset() == 0) && ClassLayout::AreCompatible(indirLayout, varDsc->GetLayout()))
         {

@@ -109,21 +109,6 @@ namespace System.Runtime
             return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
-#if FEATURE_UNIVERSAL_GENERICS
-        public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
-        {
-            Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk));
-            if (entry == null)
-            {
-                entry = CacheMiss((IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk),
-                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature),
-                    delegateObj);
-            }
-            return entry.Result;
-        }
-#endif
-
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
             Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot);

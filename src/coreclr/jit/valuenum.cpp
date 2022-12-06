@@ -6001,6 +6001,59 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
     m_checkedBoundVNs.AddOrUpdate(vn, true);
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
+    var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN)
+{
+    if (IsVNConstant(arg0VN))
+    {
+        switch (ni)
+        {
+#ifdef TARGET_ARM64
+            case NI_ArmBase_LeadingZeroCount:
+#else
+            case NI_LZCNT_LeadingZeroCount:
+#endif
+            {
+                UINT32 cns = (UINT32)GetConstantInt32(arg0VN);
+                int    lzc = 0;
+                while (cns != 0)
+                {
+                    cns = cns >> 1;
+                    lzc++;
+                }
+                return VNForIntCon(32 - lzc);
+            }
+
+#ifdef TARGET_ARM64
+            case NI_ArmBase_Arm64_LeadingZeroCount:
+#else
+            case NI_LZCNT_X64_LeadingZeroCount:
+#endif
+            {
+                UINT64 cns = (UINT64)GetConstantInt64(arg0VN);
+                int    lzc = 0;
+                while (cns != 0)
+                {
+                    cns = cns >> 1;
+                    lzc++;
+                }
+                return VNForIntCon(64 - lzc);
+            }
+
+            default:
+                break;
+        }
+    }
+
+    if (encodeResultType)
+    {
+        return VNForFunc(type, func, arg0VN, resultTypeVN);
+    }
+    return VNForFunc(type, func, arg0VN);
+}
+#endif
+
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN));
@@ -7064,6 +7117,10 @@ void ValueNumStore::InitValueNumStoreStatics()
         else if (GenTree::OperIsBinary(gtOper))
         {
             arity = 2;
+        }
+        else if (GenTree::StaticOperIs(gtOper, GT_SELECT))
+        {
+            arity = 3;
         }
 
         vnfOpAttribs[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
@@ -8500,6 +8557,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //    tree where only one of the constants is expected to have a field sequence.
 //
 // Arguments:
+//    vnStore  - ValueNumStore object
 //    tree     - tree node to inspect
 //    pAddress - [Out] resulting address with all offsets combined
 //    pFseq    - [Out] field sequence
@@ -8507,22 +8565,27 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 // Return Value:
 //    true if the given tree is a static field address
 //
-static bool fgGetStaticFieldSeqAndAddress(GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
+static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
 {
     ssize_t val = 0;
     // Accumulate final offset
     while (tree->OperIs(GT_ADD))
     {
-        GenTree* op1 = tree->gtGetOp1();
-        GenTree* op2 = tree->gtGetOp2();
-        if (op1->IsCnsIntOrI() && (op1->AsIntCon()->gtFieldSeq == nullptr))
+        GenTree* op1   = tree->gtGetOp1();
+        GenTree* op2   = tree->gtGetOp2();
+        ValueNum op1vn = op1->gtVNPair.GetLiberal();
+        ValueNum op2vn = op2->gtVNPair.GetLiberal();
+
+        if (!op1->IsIconHandle(GTF_ICON_STATIC_HDL) && op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) &&
+            varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
         {
-            val += op1->AsIntCon()->IconValue();
+            val += vnStore->CoercedConstantValue<ssize_t>(op1vn);
             tree = op2;
         }
-        else if (op2->IsCnsIntOrI() && (op2->AsIntCon()->gtFieldSeq == nullptr))
+        else if (!op2->IsIconHandle(GTF_ICON_STATIC_HDL) && op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) &&
+                 varTypeIsIntegral(vnStore->TypeOfVN(op2vn)))
         {
-            val += op2->AsIntCon()->IconValue();
+            val += vnStore->CoercedConstantValue<ssize_t>(op2vn);
             tree = op1;
         }
         else
@@ -8568,7 +8631,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   address  = 0;
     FieldSeq* fieldSeq = nullptr;
-    if (fgGetStaticFieldSeqAndAddress(tree->gtGetOp1(), &address, &fieldSeq))
+    if (varTypeIsIntegral(tree) && GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &address, &fieldSeq))
     {
         assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
@@ -9759,25 +9822,21 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             if (tree->GetOperandCount() == 1)
             {
-                excSetPair = op1Xvnp;
+                ValueNum normalLVN =
+                    vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func, op1vnp.GetLiberal(),
+                                                     encodeResultType, resultTypeVNPair.GetLiberal());
+                ValueNum normalCVN =
+                    vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func, op1vnp.GetConservative(),
+                                                     encodeResultType, resultTypeVNPair.GetConservative());
 
-                if (encodeResultType)
-                {
-                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, resultTypeVNPair);
-                    assert((vnStore->VNFuncArity(func) == 2) || isVariableNumArgs);
-                }
-                else
-                {
-                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp);
-                    assert((vnStore->VNFuncArity(func) == 1) || isVariableNumArgs);
-                }
+                normalPair = ValueNumPair(normalLVN, normalCVN);
+                excSetPair = op1Xvnp;
             }
             else
             {
                 ValueNumPair op2vnp;
                 ValueNumPair op2Xvnp;
                 getOperandVNs(tree->Op(2), &op2vnp, &op2Xvnp);
-
                 excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
                 if (encodeResultType)
                 {
