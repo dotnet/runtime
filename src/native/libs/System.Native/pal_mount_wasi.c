@@ -11,8 +11,6 @@
 
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
-    (void)onFound; // unused
-    (void)context; // unused
     return -1;
 }
 
@@ -20,8 +18,6 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
 {
     assert(name != NULL);
     assert(mpi != NULL);
-    (void)name; // unused
-    (void)mpi; // unused
     return -1;
 }
 
@@ -30,9 +26,5 @@ SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer
 {
     assert((formatNameBuffer != NULL) && (formatType != NULL));
     assert(bufferLength > 0);
-    (void)name; // unused
-    (void)formatNameBuffer; // unused
-    (void)bufferLength; // unused
-    (void)formatType; // unused
     return -1;
 }

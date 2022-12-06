@@ -18,10 +18,6 @@ int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buf
     assert(pwd != NULL);
     assert(buf != NULL);
     assert(buflen >= 0);
-    (void)uid;
-    (void)pwd;
-    (void)buf;
-    (void)buflen;
 
     return EINVAL;
 }
@@ -31,10 +27,6 @@ int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t
     assert(pwd != NULL);
     assert(buf != NULL);
     assert(buflen >= 0);
-    (void)name;
-    (void)pwd;
-    (void)buf;
-    (void)buflen;
 
     return EINVAL;
 }
@@ -59,10 +51,6 @@ int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* gr
     assert(groups != NULL);
     assert(ngroups != NULL);
     assert(*ngroups >= 0);
-    (void)name;
-    (void)group;
-    (void)groups;
-    (void)ngroups;
     return EINVAL;
 }
 
@@ -70,14 +58,11 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
 {
     assert(ngroups >= 0);
     assert(groups != NULL);
-    (void)groups;
-    (void)ngroups;
 
     return EINVAL;
 }
 
 char* SystemNative_GetGroupName(uint32_t gid)
 {
-    (void)gid;
     return NULL;
 }

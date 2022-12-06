@@ -12,7 +12,6 @@
 void* SystemNative_LoadLibrary(const char* filename)
 {
     assert_msg(false, "Not supported on WASI", 0);
-    (void)filename; // unused
     return NULL;
 }
 

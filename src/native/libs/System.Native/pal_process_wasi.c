@@ -17,6 +17,12 @@
 
 #include <minipal/getexepath.h>
 
+#ifdef DEBUG
+#define DEBUGNOTRETURN __attribute__((noreturn))
+#else
+#define DEBUGNOTRETURN
+#endif
+
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -34,22 +40,6 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       int32_t* stdoutFd,
                                       int32_t* stderrFd)
 {
-    (void)filename; // unused
-    (void)argv; // unused
-    (void)envp; // unused
-    (void)cwd; // unused
-    (void)redirectStdin; // unused
-    (void)redirectStdout; // unused
-    (void)redirectStderr; // unused
-    (void)setCredentials; // unused
-    (void)userId; // unused
-    (void)groupId; // unused
-    (void)groups; // unused
-    (void)groupsLength; // unused
-    (void)childPid; // unused
-    (void)stdinFd; // unused
-    (void)stdoutFd; // unused
-    (void)stderrFd; // unused
     return -1;
 }
 
@@ -58,15 +48,12 @@ int32_t SystemNative_GetRLimit(RLimitResources resourceType, RLimit* limits)
     assert(limits != NULL);
     int result = -1;
     memset(limits, 0, sizeof(RLimit));
-    (void)resourceType; // unused
     return result;
 }
 
 int32_t SystemNative_SetRLimit(RLimitResources resourceType, const RLimit* limits)
 {
     assert(limits != NULL);
-    (void)resourceType; // unused
-    (void)limits; // unused
     return -1;
 }
 
@@ -85,13 +72,10 @@ int32_t SystemNative_GetSid(int32_t pid)
     return -1;
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
     assert_msg(false, "Not supported on WASI", 0);
-    (void)priority; // unused
-    (void)message; // unused
-    (void)arg1; // unused
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
@@ -101,30 +85,21 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
 
 int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode)
 {
-    (void)pid; // unused
-    (void)exitCode; // unused
     return -1;
 }
 
 int64_t SystemNative_PathConf(const char* path, PathConfName name)
 {
-    (void)path; // unused
-    (void)name; // unused
     return -1;
 }
 
 int32_t SystemNative_GetPriority(PriorityWhich which, int32_t who)
 {
-    (void)which; // unused
-    (void)who; // unused
     return -1;
 }
 
 int32_t SystemNative_SetPriority(PriorityWhich which, int32_t who, int32_t nice)
 {
-    (void)which; // unused
-    (void)who; // unused
-    (void)nice; // unused
     return -1;
 }
 
@@ -143,16 +118,12 @@ char* SystemNative_GetCwd(char* buffer, int32_t bufferSize)
 
 int32_t SystemNative_SchedSetAffinity(int32_t pid, intptr_t* mask)
 {
-    (void)pid;
-    (void)mask;
     errno = ENOTSUP;
     return -1;
 }
 
 int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 {
-    (void)pid;
-    (void)mask;
     errno = ENOTSUP;
     return -1;
 }

@@ -14,53 +14,52 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-__attribute__((noreturn))
+#ifdef DEBUG
+#define DEBUGNOTRETURN __attribute__((noreturn))
+#else
+#define DEBUGNOTRETURN
+#endif
+
+DEBUGNOTRETURN
 void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
 {
     assert(signalHandler);
-    (void)signalHandler;
     assert_msg(false, "Not supported on WASI", 0);
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
 {
-    (void)signalCode;
     assert_msg(false, "Not supported on WASI", 0);
 }
 
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
 {
     assert(callback != NULL);
     assert_msg(false, "Not supported on WASI", 0);
-    (void)callback;
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_RegisterForSigChld(SigChldCallback callback)
 {
     assert(callback != NULL);
     assert_msg(false, "Not supported on WASI", 0);
-    (void)callback;
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void))
 {
     assert(callback == NULL);
     assert_msg(false, "Not supported on WASI", 0);
-    (void)callback;
 }
 
 int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
 {
-    (void)signalCode;
     return false;
 }
 
 void SystemNative_DisablePosixSignalHandling(int signalCode)
 {
-    (void)signalCode;
 }

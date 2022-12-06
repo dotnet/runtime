@@ -17,6 +17,12 @@
 #include <poll.h>
 #include <signal.h>
 
+#ifdef DEBUG
+#define DEBUGNOTRETURN __attribute__((noreturn))
+#else
+#define DEBUGNOTRETURN
+#endif
+
 int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 {
     assert(windowSize != NULL);
@@ -28,7 +34,6 @@ int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 int32_t SystemNative_SetWindowSize(WinSize* windowSize)
 {
     assert(windowSize != NULL);
-    (void)windowSize;
     errno = ENOTSUP;
     return -1;
 }
@@ -38,36 +43,32 @@ int32_t SystemNative_IsATty(intptr_t fd)
     return isatty(ToFileDescriptor(fd));
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_SetKeypadXmit(const char* terminfoString)
 {
-    (void)terminfoString; //unused
     assert(terminfoString != NULL);
     assert_msg(false, "Not supported on WASI", 0);
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
-    (void)minChars; //unused
-    (void)decisecondsTimeout; //unused
     assert_msg(false, "Not supported on WASI", 0);
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_UninitializeConsoleAfterRead(void)
 {
     assert_msg(false, "Not supported on WASI", 0);
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
 {
-    (void)childUsesTerminal; //unused
     assert_msg(false, "Not supported on WASI", 0);
 }
 
-__attribute__((noreturn))
+DEBUGNOTRETURN
 void SystemNative_GetControlCharacters(
     int32_t* controlCharacterNames, uint8_t* controlCharacterValues, int32_t controlCharacterLength,
     uint8_t* posixDisableValue)
@@ -77,10 +78,6 @@ void SystemNative_GetControlCharacters(
     assert(controlCharacterLength >= 0);
     assert(posixDisableValue != NULL);
 
-    (void)controlCharacterNames; //unused
-    (void)controlCharacterValues; //unused
-    (void)controlCharacterLength; //unused
-    (void)posixDisableValue; //unused
     assert_msg(false, "Not supported on WASI", 0);
 }
 
