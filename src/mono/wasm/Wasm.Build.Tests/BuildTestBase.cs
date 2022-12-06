@@ -504,6 +504,9 @@ namespace Wasm.Build.Tests
 
         protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
         {
+            if (options.WarnAsError)
+                extraArgs = extraArgs.Append("/warnaserror").ToArray();
+
             var res = BuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
             _testOutput.WriteLine($"BlazorBuild, options.tfm: {options.TargetFramework}");
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: false, targetFramework: options.TargetFramework);
@@ -1095,7 +1098,8 @@ namespace Wasm.Build.Tests
         string Id,
         string Config,
         NativeFilesType ExpectedFileType,
-        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor
+        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
+        bool WarnAsError = true
     );
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
