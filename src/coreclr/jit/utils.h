@@ -419,6 +419,16 @@ public:
         return *this;
     }
 
+    PhasedVar& operator|=(const T& value)
+    {
+#ifdef DEBUG
+        assert(m_writePhase);
+        m_initialized = true;
+#endif // DEBUG
+        m_value |= value;
+        return *this;
+    }
+
     // Note: if you need more <op>= functions, you can define them here, like operator&=
 
     // Assign a value, but don't assert if we're not in the write phase, and

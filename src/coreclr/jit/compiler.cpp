@@ -3325,6 +3325,49 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
+
+    // TODO-XARCH-AVX512 adding in register defs here
+    // WILL ONLY WORK ON AMD64 for now
+#if defined(TARGET_XARCH)
+    rbmAllFloat = RBM_ALLFLOAT;
+    rbmFltCalleeTrash = RBM_FLT_CALLEE_TRASH;
+    rbmCountCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT;
+
+#if defined(TARGET_AMD64)
+    if (DoJitStressEvexEncoding())
+    {
+        rbmAllFloat |= RBM_HIGHFLOAT;
+        rbmFltCalleeTrash |= RBM_HIGHFLOAT;
+        rbmCountCalleeTrashFloat += 16;
+    }
+#endif
+    rbmCalleeTrash = RBM_INT_CALLEE_TRASH | rbmFltCalleeTrash;
+    rbmCalleeTrashNoGC = rbmCalleeTrash;
+    rbmCalleeTrashWriteBarrier = rbmCalleeTrashNoGC;
+    rbmCalleeGCTrashWriteBarrier = rbmCalleeTrashNoGC;
+    rbmCalleeTrashWriteBarrierByref = rbmCalleeTrashNoGC | RBM_RSI | RBM_RDI;
+    rbmCalleeGCTrashWriteBarrierByref = rbmCalleeTrashNoGC & ~(RBM_RDI | RBM_RSI);
+    rbmStopForGCTrash = (rbmCalleeTrash & ~(RBM_FLOATRET | RBM_INTRET));
+    rbmInitPInvokeFrameTrash = rbmCalleeTrash;
+    rbmProfilerEnterTrash = rbmCalleeTrash;
+    rbmProfilerLeaveTrash = (rbmCalleeTrash & ~(RBM_FLOATRET | RBM_INTRET));
+    rbmProfilerTailcallTrash = rbmProfilerLeaveTrash;
+#else
+    rbmFltCalleeTrash = RBM_FLT_CALLEE_TRASH;
+    rbmCalleeTrash = RBM_CALLEE_TRASH;
+    rbmCalleeTrashNoGC = RBM_CALLEE_TRASH_NOGC;
+    rbmCalleeTrashWriteBarrier = RBM_CALLEE_TRASH_WRITEBARRIER;
+    rbmCalleeGCTrashWriteBarrier = RBM_CALLEE_GCTRASH_WRITEBARRIER;
+    rbmCalleeTrashWriteBarrierByref = RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
+    rbmCalleeGCTrashWriteBarrierByref = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+    rbmStopForGCTrash = RBM_STOP_FOR_GC_TRASH;
+    rbmInitPInvokeFrameTrash = RBM_INIT_PINVOKE_FRAME_TRASH;
+    rbmProfilerEnterTrash = RBM_PROFILER_ENTER_TRASH;
+    rbmProfilerLeaveTrash = RBM_PROFILER_LEAVE_TRASH;
+    rbmProfilerTailcallTrash = RBM_PROFILER_TAILCALL_TRASH;
+#endif
+
+
 }
 
 #ifdef DEBUG

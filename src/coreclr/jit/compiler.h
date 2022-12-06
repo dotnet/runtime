@@ -7583,6 +7583,23 @@ private:
 
 #endif // TARGET_X86
     }
+    
+    // ANTHONY - Make regalloc changes here
+public:
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmCalleeTrash;
+    regMaskTP rbmCalleeTrashNoGC;
+    regMaskTP rbmCalleeTrashWriteBarrier;
+    regMaskTP rbmCalleeGCTrashWriteBarrier;
+    regMaskTP rbmCalleeTrashWriteBarrierByref;
+    regMaskTP rbmCalleeGCTrashWriteBarrierByref;
+    regMaskTP rbmStopForGCTrash;
+    regMaskTP rbmProfilerTailcallTrash;
+    regMaskTP rbmInitPInvokeFrameTrash;
+    regMaskTP rbmProfilerEnterTrash;
+    regMaskTP rbmProfilerLeaveTrash;
+    unsigned rbmCountCalleeTrashFloat;
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

@@ -590,19 +590,19 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            return RBM_CALLEE_TRASH_WRITEBARRIER;
+            return rbmCalleeTrashWriteBarrier;
 
         case CORINFO_HELP_ASSIGN_BYREF:
-            return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
+            return rbmCalleeTrashWriteBarrierByref;
 
         case CORINFO_HELP_PROF_FCN_ENTER:
-            return RBM_PROFILER_ENTER_TRASH;
+            return rbmProfilerEnterTrash;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
-            return RBM_PROFILER_LEAVE_TRASH;
+            return rbmProfilerLeaveTrash;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-            return RBM_PROFILER_TAILCALL_TRASH;
+            return rbmProfilerTailcallTrash;
 
 #ifdef TARGET_X86
         case CORINFO_HELP_ASSIGN_REF_EAX:
@@ -622,16 +622,16 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 #endif
 
         case CORINFO_HELP_STOP_FOR_GC:
-            return RBM_STOP_FOR_GC_TRASH;
+            return rbmStopForGCTrash;
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            return RBM_INIT_PINVOKE_FRAME_TRASH;
+            return rbmInitPInvokeFrameTrash;
 
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return RBM_VALIDATE_INDIRECT_CALL_TRASH;
 
         default:
-            return RBM_CALLEE_TRASH;
+            return rbmCalleeTrash;
     }
 }
 
@@ -3590,7 +3590,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 regMaskTP fpAvailMask;
 
-                fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
+                fpAvailMask = compiler->rbmFltCalleeTrash & ~regArgMaskLive;
                 if (GlobalJitOptions::compFeatureHfa)
                 {
                     fpAvailMask &= RBM_ALLDOUBLE;
@@ -5246,7 +5246,7 @@ void CodeGen::genFinalizeFrame()
         // We always save FP.
         noway_assert(isFramePointerUsed());
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        regMaskTP okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
+        regMaskTP okRegs = (compiler->rbmCalleeTrash | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
         if (RBM_ENC_CALLEE_SAVED != 0)
         {
             regSet.rsSetRegsModified(RBM_ENC_CALLEE_SAVED);

@@ -395,7 +395,7 @@ regMaskTP LinearScan::internalFloatRegCandidates()
     }
     else
     {
-        return RBM_FLT_CALLEE_TRASH;
+        return compiler->rbmFltCalleeTrash;
     }
 }
 
@@ -472,7 +472,7 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 
             case LSRA_LIMIT_CALLER:
             {
-                mask = getConstrainedRegMask(mask, RBM_CALLEE_TRASH, minRegCount);
+                mask = getConstrainedRegMask(mask, compiler->rbmCalleeTrash, minRegCount);
             }
             break;
 
@@ -711,10 +711,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independetly
     // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
     // we cannot use EVEX at all)
-    if (!compiler->DoJitStressEvexEncoding())
+    if (compiler->DoJitStressEvexEncoding())
     {
-        availableFloatRegs &= ~RBM_HIGHFLOAT;
-        availableDoubleRegs &= ~RBM_HIGHFLOAT;
+        availableFloatRegs |= RBM_HIGHFLOAT;
+        availableDoubleRegs |= RBM_HIGHFLOAT;
     }
 #endif
 
@@ -11894,7 +11894,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
     else
     {
-        callerCalleePrefs = callerSaveRegs(currentInterval->registerType);
+        callerCalleePrefs = callerSaveRegs(currentInterval->registerType, linearScan->compiler);
     }
 
     // If this has a delayed use (due to being used in a rmw position of a

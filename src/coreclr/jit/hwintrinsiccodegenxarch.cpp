@@ -1527,7 +1527,7 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             regNumber op2Reg       = op2->GetRegNum();
             regNumber addrBaseReg  = REG_NA;
             regNumber addrIndexReg = REG_NA;
-            regNumber maskReg      = node->ExtractTempReg(RBM_ALLFLOAT);
+            regNumber maskReg      = node->ExtractTempReg(compiler->rbmAllFloat);
 
             if (numArgs == 5)
             {

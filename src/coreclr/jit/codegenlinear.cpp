@@ -2332,8 +2332,8 @@ void CodeGen::genEmitCallIndir(int                   callType,
 
     // These should have been put in volatile registers to ensure they do not
     // get overridden by epilog sequence during tailcall.
-    noway_assert(!isJump || (iReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(iReg)) != 0));
-    noway_assert(!isJump || (xReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(xReg)) != 0));
+    noway_assert(!isJump || (iReg == REG_NA) || ((compiler->rbmCalleeTrash & genRegMask(iReg)) != 0));
+    noway_assert(!isJump || (xReg == REG_NA) || ((compiler->rbmCalleeTrash & genRegMask(xReg)) != 0));
 
     GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
                                methHnd,
