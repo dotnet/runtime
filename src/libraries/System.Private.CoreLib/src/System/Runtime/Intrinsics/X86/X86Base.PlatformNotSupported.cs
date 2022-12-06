@@ -88,18 +88,11 @@ namespace System.Runtime.Intrinsics.X86
         public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// void _mm_pause (void);
-        ///   PAUSE
-        /// </summary>
-        public static void Pause() { throw new PlatformNotSupportedException(); }
-
-
         ///   DIV reg/m32
         /// </summary>
         public static (uint Quotient, uint Remainder) DivRem(uint lower, uint upper, uint divisor) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int _div64(__int64 dividend, int divisor, int* remainder)
         ///   IDIV reg/m32
         /// </summary>
         public static (int Quotient, int Remainder) DivRem(uint lower, int upper, int divisor) { throw new PlatformNotSupportedException(); }
@@ -114,6 +107,12 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw new PlatformNotSupportedException(); }
         
+        /// <summary>
+        /// void _mm_pause (void);
+        ///   PAUSE
+        /// </summary>
+        public static void Pause() { throw new PlatformNotSupportedException(); }
+
 #pragma warning restore IDE0060
 
     }
