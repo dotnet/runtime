@@ -61,7 +61,7 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly
 
     - container: wasi_wasm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-webassembly
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-webassembly-staging
 
     - container: FreeBSD_x64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12
