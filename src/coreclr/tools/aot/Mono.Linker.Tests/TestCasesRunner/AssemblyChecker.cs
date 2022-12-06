@@ -36,7 +36,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					EcmaMethod method => (method.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (method.Handle)),
 					PropertyPseudoDesc property => (((EcmaType) property.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (property.Handle)),
 					EventPseudoDesc @event => (((EcmaType) @event.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (@event.Handle)),
-					_ => (null, 0)
+					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {entity} yet.")
 				};
 
 			public AssemblyQualifiedToken (IMemberDefinition member) =>
@@ -45,7 +45,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					MethodDefinition method => (method.Module.Assembly.Name.Name, method.MetadataToken.ToInt32 ()),
 					PropertyDefinition property => (property.Module.Assembly.Name.Name, property.MetadataToken.ToInt32 ()),
 					EventDefinition @event => (@event.Module.Assembly.Name.Name, @event.MetadataToken.ToInt32 ()),
-					_ => (null, 0)
+					FieldDefinition field => (field.Module.Assembly.Name.Name, field.MetadataToken.ToInt32 ()),
+					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {member} yet.")
 				};
 
 			public override int GetHashCode () => AssemblyName == null ? 0 : AssemblyName.GetHashCode () ^ Token.GetHashCode ();
@@ -56,9 +57,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			public bool IsNil => AssemblyName == null;
 		}
-
-		private static AssemblyQualifiedToken GetToken (TypeDefinition typeDefinition)
-			=> new AssemblyQualifiedToken (typeDefinition.Module.Assembly.Name.Name, typeDefinition.MetadataToken.ToInt32 ());
 
 		private readonly BaseAssemblyResolver originalsResolver;
 		private readonly ReaderParameters originalReaderParameters;
@@ -122,7 +120,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var membersToAssert = originalAssembly.MainModule.Types;
 			foreach (var originalMember in membersToAssert) {
 				if (originalMember is TypeDefinition td) {
-					AssemblyQualifiedToken token = GetToken (td);
+					AssemblyQualifiedToken token = new (td);
 
 					if (td.Name == "<Module>") {
 						linkedMembers.Remove (token);
@@ -204,26 +202,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			void AddProperty (PropertyPseudoDesc property)
 			{
-				if (!ShouldIncludeProperty (property))
+				// Note that this is currently called from AddMethod which will exit if the owning type is excluded
+				// and also add the owning type if necessary
+				if (!ShouldIncludeEntityByDisplayName (property))
 					return;
 
-				if (!AddMember (property))
-					return;
-
-				if (property.OwningType is { } owningType)
-					AddType (owningType);
+				AddMember (property);
 			}
 
 			void AddEvent (EventPseudoDesc @event)
 			{
-				if (!ShouldIncludeEvent (@event))
+				// Note that this is currently called from AddMethod which will exit if the owning type is excluded
+				// and also add the owning type if necessary
+				if (!ShouldIncludeEntityByDisplayName (@event))
 					return;
 
-				if (!AddMember (@event))
-					return;
-
-				if (@event.OwningType is { } owningType)
-					AddType (owningType);
+				AddMember (@event);
 			}
 
 			bool AddMember (TypeSystemEntity entity) => linkedMembers.TryAdd (new AssemblyQualifiedToken (entity), entity);
@@ -254,10 +248,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			static bool ShouldIncludeMethod (MethodDesc method) => ShouldIncludeType (method.OwningType) && ShouldIncludeEntityByDisplayName (method);
-
-			static bool ShouldIncludeProperty (PropertyPseudoDesc property) => ShouldIncludeType (property.OwningType) && ShouldIncludeEntityByDisplayName (property);
-
-			static bool ShouldIncludeEvent (EventPseudoDesc @event) => ShouldIncludeType (@event.OwningType) && ShouldIncludeEntityByDisplayName (@event);
 		}
 
 		private static string? GetModuleName (TypeSystemEntity entity)
@@ -360,7 +350,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #endif
 
 			foreach (var td in original.NestedTypes) {
-				AssemblyQualifiedToken token = GetToken (td);
+				AssemblyQualifiedToken token = new (td);
 				linkedMembers.TryGetValue (
 					token,
 					out TypeSystemEntity? linkedMember);
