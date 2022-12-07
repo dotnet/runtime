@@ -87,7 +87,7 @@ namespace System
             }
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -127,7 +127,7 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -392,26 +392,50 @@ namespace System
             set { ConsolePal.WindowTop = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowWidth
         {
-            [UnsupportedOSPlatform("android")]
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
-            [SupportedOSPlatform("windows")]
-            set { ConsolePal.WindowWidth = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
+                }
+
+                ConsolePal.WindowWidth = value;
+            }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowHeight
         {
-            [UnsupportedOSPlatform("android")]
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowHeight; }
-            [SupportedOSPlatform("windows")]
-            set { ConsolePal.WindowHeight = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
+                }
+
+                ConsolePal.WindowHeight = value;
+            }
         }
 
         [SupportedOSPlatform("windows")]
@@ -420,9 +444,27 @@ namespace System
             ConsolePal.SetWindowPosition(left, top);
         }
 
-        [SupportedOSPlatform("windows")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void SetWindowSize(int width, int height)
         {
+            if (Console.IsOutputRedirected)
+            {
+                throw new IOException(SR.InvalidOperation_SetWindowSize);
+            }
+
+            if (width <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
+            }
+
+            if (height <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
+            }
+
             ConsolePal.SetWindowSize(width, height);
         }
 
@@ -663,7 +705,8 @@ namespace System
         [UnsupportedOSPlatform("tvos")]
         public static void SetIn(TextReader newIn)
         {
-            CheckNonNull(newIn, nameof(newIn));
+            ArgumentNullException.ThrowIfNull(newIn);
+
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
             lock (s_syncObject)
             {
@@ -673,7 +716,8 @@ namespace System
 
         public static void SetOut(TextWriter newOut)
         {
-            CheckNonNull(newOut, nameof(newOut));
+            ArgumentNullException.ThrowIfNull(newOut);
+
             newOut = TextWriter.Synchronized(newOut);
             lock (s_syncObject)
             {
@@ -684,19 +728,14 @@ namespace System
 
         public static void SetError(TextWriter newError)
         {
-            CheckNonNull(newError, nameof(newError));
+            ArgumentNullException.ThrowIfNull(newError);
+
             newError = TextWriter.Synchronized(newError);
             lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;
                 Volatile.Write(ref s_error, newError);
             }
-        }
-
-        private static void CheckNonNull(object obj, string paramName)
-        {
-            if (obj == null)
-                throw new ArgumentNullException(paramName);
         }
 
         //

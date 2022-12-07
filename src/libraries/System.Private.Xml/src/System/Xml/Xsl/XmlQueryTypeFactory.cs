@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
 using System.Xml.Schema;
 using System.Xml.XPath;
 using TF = System.Xml.Xsl.XmlQueryTypeFactory;
@@ -699,17 +700,20 @@ namespace System.Xml.Xsl
             public static XmlQueryType Create(XmlNodeKindFlags nodeKinds)
             {
                 List<XmlQueryType> members;
+                uint kinds = (uint)nodeKinds;
 
                 // If exactly one kind is set, then create singleton ItemType
-                if (Bits.ExactlyOne((uint)nodeKinds))
-                    return ItemType.Create(s_nodeKindToTypeCode[Bits.LeastPosition((uint)nodeKinds)], false);
+                if (BitOperations.IsPow2(kinds))
+                {
+                    return ItemType.Create(s_nodeKindToTypeCode[BitOperations.TrailingZeroCount(kinds) + 1], false);
+                }
 
                 members = new List<XmlQueryType>();
-                while (nodeKinds != XmlNodeKindFlags.None)
+                while (kinds != 0)
                 {
-                    members.Add(ItemType.Create(s_nodeKindToTypeCode[Bits.LeastPosition((uint)nodeKinds)], false));
+                    members.Add(ItemType.Create(s_nodeKindToTypeCode[BitOperations.TrailingZeroCount(kinds) + 1], false));
 
-                    nodeKinds = (XmlNodeKindFlags)Bits.ClearLeast((uint)nodeKinds);
+                    kinds &= kinds - 1;
                 }
 
                 return Create(members);

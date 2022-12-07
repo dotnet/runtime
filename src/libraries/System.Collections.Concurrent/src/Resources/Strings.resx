@@ -159,9 +159,6 @@
   <data name="Partitioner_DynamicPartitionsNotSupported" xml:space="preserve">
     <value>Dynamic partitions are not supported by this partitioner.</value>
   </data>
-  <data name="PartitionerStatic_CanNotCallGetEnumeratorAfterSourceHasBeenDisposed" xml:space="preserve">
-    <value>Can not call GetEnumerator on partitions after the source enumerable is disposed</value>
-  </data>
   <data name="PartitionerStatic_CurrentCalledBeforeMoveNext" xml:space="preserve">
     <value>MoveNext must be called at least once before calling Current.</value>
   </data>

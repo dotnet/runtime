@@ -25,7 +25,14 @@ namespace System.Net.WebSockets.Client.Tests
             yield return NoThrow(options => options.UseDefaultCredentials = false);
             yield return Throw(options => options.Credentials = new NetworkCredential());
             yield return Throw(options => options.Proxy = new WebProxy());
-            yield return Throw(options => options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate()));
+
+            // Will result in an exception on apple mobile platforms
+            // and crash the test.
+            if (PlatformDetection.IsNotAppleMobile)
+            {
+                yield return Throw(options => options.ClientCertificates.Add(Test.Common.Configuration.Certificates.GetClientCertificate()));
+            }
+
             yield return NoThrow(options => options.ClientCertificates = new X509CertificateCollection());
             yield return Throw(options => options.RemoteCertificateValidationCallback = delegate { return true; });
             yield return Throw(options => options.Cookies = new CookieContainer());
@@ -345,7 +352,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
-                Task t = ConnectAsync(clientSocket, new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                Task t = ConnectAsync(clientSocket, new Uri($"ws://{Guid.NewGuid():N}"), cts.Token);
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
@@ -356,7 +363,7 @@ namespace System.Net.WebSockets.Client.Tests
             using (var clientSocket = new ClientWebSocket())
             {
                 var cts = new CancellationTokenSource();
-                Task t = ConnectAsync(clientSocket, new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                Task t = ConnectAsync(clientSocket, new Uri($"ws://{Guid.NewGuid():N}"), cts.Token);
                 cts.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }

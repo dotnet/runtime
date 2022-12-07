@@ -12,17 +12,17 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the container with the set of objects for this formatter.
         /// </summary>
-        IContainer Container { get; }
+        IContainer? Container { get; }
 
         /// <summary>
         /// Gets the instance that is invoking the method on the formatter object.
         /// </summary>
-        object Instance { get; }
+        object? Instance { get; }
 
         /// <summary>
         /// Retrieves the PropertyDescriptor that is surfacing the given context item.
         /// </summary>
-        PropertyDescriptor PropertyDescriptor { get; }
+        PropertyDescriptor? PropertyDescriptor { get; }
 
         /// <summary>
         /// Gets a value indicating whether this object can be changed.

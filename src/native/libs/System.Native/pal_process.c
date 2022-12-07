@@ -244,23 +244,13 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
 #endif
 
-    // Validate arguments
-    if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
-        NULL == stderrFd || NULL == childPid || (groupsLength > 0 && groups == NULL))
-    {
-        assert(false && "null argument.");
-        errno = EINVAL;
-        success = false;
-        goto done;
-    }
+    assert(NULL != filename && NULL != argv && NULL != envp && NULL != stdinFd &&
+            NULL != stdoutFd && NULL != stderrFd && NULL != childPid &&
+            (groupsLength == 0 || groups != NULL) && "null argument.");
 
-    if ((redirectStdin & ~1) != 0 || (redirectStdout & ~1) != 0 || (redirectStderr & ~1) != 0 || (setCredentials & ~1) != 0)
-    {
-        assert(false && "Boolean redirect* inputs must be 0 or 1.");
-        errno = EINVAL;
-        success = false;
-        goto done;
-    }
+    assert((redirectStdin & ~1) == 0 && (redirectStdout & ~1) == 0 &&
+            (redirectStderr & ~1) == 0 && (setCredentials & ~1) == 0 &&
+            "Boolean redirect* inputs must be 0 or 1.");
 
     if (setCredentials && groupsLength > 0)
     {
@@ -670,7 +660,7 @@ int32_t SystemNative_Kill(int32_t pid, int32_t signal)
     return kill(pid, signal);
 }
 
-int32_t SystemNative_GetPid()
+int32_t SystemNative_GetPid(void)
 {
     return getpid();
 }
@@ -685,7 +675,7 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
     syslog((int)(LOG_USER | priority), message, arg1);
 }
 
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)
 {
     siginfo_t siginfo;
     memset(&siginfo, 0, sizeof(siginfo));
@@ -884,7 +874,7 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 }
 #endif
 
-char* SystemNative_GetProcessPath()
+char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
 }

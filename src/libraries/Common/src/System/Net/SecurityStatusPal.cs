@@ -71,6 +71,7 @@ namespace System.Net
         DowngradeDetected,
         ApplicationProtocolMismatch,
         NoRenegotiation,
-        KeySetDoesNotExist
+        KeySetDoesNotExist,
+        ContextExpiredError
     }
 }

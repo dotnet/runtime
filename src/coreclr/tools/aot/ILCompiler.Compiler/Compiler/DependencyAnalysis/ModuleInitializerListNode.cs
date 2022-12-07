@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -135,12 +135,17 @@ namespace ILCompiler.DependencyAnalysis
             // the time of startup. (Linker likely can't do it, unfortunately.)
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialAlignment(factory.Target.PointerSize);
             builder.AddSymbol(this);
             builder.AddSymbol(_endSymbol);
 
             foreach (var module in sortedModules)
             {
-                builder.EmitPointerReloc(factory.MethodEntrypoint(module.GetGlobalModuleType().GetStaticConstructor()));
+                IMethodNode entrypoint = factory.MethodEntrypoint(module.GetGlobalModuleType().GetStaticConstructor());
+                if (factory.Target.SupportsRelativePointers)
+                    builder.EmitReloc(entrypoint, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    builder.EmitPointerReloc(entrypoint);
             }
 
             var result = builder.ToObjectData();

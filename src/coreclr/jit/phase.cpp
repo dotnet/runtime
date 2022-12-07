@@ -148,9 +148,9 @@ void Phase::PostPhase(PhaseStatus status)
     // phases that mess with profile counts set their phase status
     // appropriately.
     //
-    if ((JitConfig.JitProfileChecks() > 0) && comp->fgHaveProfileData() && comp->fgComputePredsDone)
+    if ((JitConfig.JitProfileChecks() > 0) && comp->fgHaveProfileWeights() && comp->fgComputePredsDone)
     {
-        comp->fgDebugCheckProfileData();
+        comp->fgDebugCheckProfileWeights();
     }
 
 #endif // DEBUG

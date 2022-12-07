@@ -28,6 +28,7 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.WebHeaderCollection" />

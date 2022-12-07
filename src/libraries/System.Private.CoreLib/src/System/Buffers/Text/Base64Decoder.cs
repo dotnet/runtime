@@ -592,8 +592,9 @@ namespace System.Buffers.Text
 
                 // lookup
                 Vector128<byte> hiNibbles = Vector128.ShiftRightLogical(str.AsInt32(), 4).AsByte() & mask2F;
+                Vector128<byte> loNibbles = str & mask2F;
                 Vector128<byte> hi = SimdShuffle(lutHi, hiNibbles, mask8F);
-                Vector128<byte> lo = SimdShuffle(lutLo, str, mask8F);
+                Vector128<byte> lo = SimdShuffle(lutLo, loNibbles, mask8F);
 
                 // Check for invalid input: if any "and" values from lo and hi are not zero,
                 // fall back on bytewise code to do error checking and reporting:

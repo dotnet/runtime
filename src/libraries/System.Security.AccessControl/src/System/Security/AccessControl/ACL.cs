@@ -520,10 +520,7 @@ namespace System.Security.AccessControl
 
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (value.BinaryLength % 4 != 0)
                 {
@@ -2160,10 +2157,7 @@ namespace System.Security.AccessControl
                     nameof(flags));
             }
 
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
+            ArgumentNullException.ThrowIfNull(sid);
 
             ThrowIfNotCanonical();
 
@@ -2603,10 +2597,7 @@ namespace System.Security.AccessControl
                     nameof(flags));
             }
 
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
+            ArgumentNullException.ThrowIfNull(sid);
 
             ThrowIfNotCanonical();
 

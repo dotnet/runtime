@@ -165,6 +165,10 @@ if [[ "$__TargetArch" != "$__HostArch" ]]; then
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__TargetArch $__CMakeArgs"
 fi
 
+if [[ "$USE_SCCACHE" == "true" ]]; then
+    __CMakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache $__CMakeArgs"
+fi
+
 eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
 
 build_native "$__TargetOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"

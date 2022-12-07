@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Wasm.Tests.Internal;
+using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
@@ -29,6 +30,9 @@ internal class BrowserRunner : IAsyncDisposable
     public Task<CommandResult>? RunTask { get; private set; }
     public IList<string> OutputLines { get; private set; } = new List<string>();
     private TaskCompletionSource<int> _exited = new();
+    private readonly ITestOutputHelper _testOutput;
+
+    public BrowserRunner(ITestOutputHelper testOutput) => _testOutput = testOutput;
 
     // FIXME: options
     public async Task<IPage> RunAsync(ToolCommand cmd, string args, bool headless = true)
@@ -78,7 +82,7 @@ internal class BrowserRunner : IAsyncDisposable
         var url = new Uri(urlAvailable.Task.Result);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}" };
-        Console.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
+        _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
         Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
             ExecutablePath = s_chromePath.Value,
             Headless = headless,
@@ -99,7 +103,7 @@ internal class BrowserRunner : IAsyncDisposable
         await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
         if (_exited.Task.IsCompleted)
         {
-            Console.WriteLine ($"Exited with {await _exited.Task}");
+            _testOutput.WriteLine ($"Exited with {await _exited.Task}");
             return;
         }
 
@@ -114,7 +118,7 @@ internal class BrowserRunner : IAsyncDisposable
         await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
         if (RunTask.IsCanceled)
         {
-            Console.WriteLine ($"Exited with {(await RunTask).ExitCode}");
+            _testOutput.WriteLine ($"Exited with {(await RunTask).ExitCode}");
             return;
         }
 

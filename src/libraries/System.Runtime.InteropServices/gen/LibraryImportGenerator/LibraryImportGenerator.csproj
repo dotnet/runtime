@@ -9,7 +9,7 @@
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
     <NoWarn>RS2008;$(NoWarn)</NoWarn>
-    <AnalyzerLanguage>cs</AnalyzerLanguage>    
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,17 +23,10 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
-    <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
-    <Compile Include="$(CommonPath)Roslyn\ISyntaxHelper.cs" Link="Common\Roslyn\ISyntaxHelper.cs" />
-    <Compile Include="$(CommonPath)Roslyn\CSharpSyntaxHelper.cs" Link="Common\Roslyn\CSharpSyntaxHelper.cs" />
-    <Compile Include="$(CommonPath)Roslyn\GlobalAliases.cs" Link="Common\Roslyn\GlobalAliases.cs" />
-    <Compile Include="$(CommonPath)Roslyn\SyntaxNodeGrouping.cs" Link="Common\Roslyn\SyntaxNodeGrouping.cs" />
-    <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider.ImmutableArrayValueComparer.cs" Link="Common\Roslyn\SyntaxValueProvider.ImmutableArrayValueComparer.cs" />
-    <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider_ForAttributeWithMetadataName.cs" Link="Common\Roslyn\SyntaxValueProvider_ForAttributeWithMetadataName.cs" />
-    <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider_ForAttributeWithSimpleName.cs" Link="Common\Roslyn\SyntaxValueProvider_ForAttributeWithSimpleName.cs" />
 
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
   </ItemGroup>
 
 </Project>

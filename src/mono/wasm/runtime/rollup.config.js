@@ -1,18 +1,19 @@
 import { defineConfig } from "rollup";
 import typescript from "@rollup/plugin-typescript";
-import { terser } from "rollup-plugin-terser";
+import terser from "@rollup/plugin-terser";
+import virtual from "@rollup/plugin-virtual";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import * as fs from "fs";
 import * as path from "path";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
-import consts from "rollup-plugin-consts";
 import { createFilter } from "@rollup/pluginutils";
-import * as fast_glob from "fast-glob";
+import fast_glob from "fast-glob";
+import gitCommitInfo from "git-commit-info";
 
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
-const productVersion = process.env.ProductVersion || "7.0.0-dev";
+const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
@@ -63,7 +64,38 @@ const inlineAssert = [
         pattern: /^\s*mono_assert/gm,
         failure: "previous regexp didn't inline all mono_assert statements"
     }];
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock }), typescript()];
+
+let gitHash;
+try {
+    const gitInfo = gitCommitInfo();
+    gitHash = gitInfo.hash;
+} catch (e) {
+    gitHash = "unknown";
+}
+
+function consts(dict) {
+    /// implement rollup-plugin-const in terms of @rollup/plugin-virtual
+    /// It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
+    /// and the virtual module always exports a single default binding (the const value).
+
+    let newDict = {};
+    for (const k in dict) {
+        const newKey = "consts:" + k;
+        const newVal = JSON.stringify (dict[k]);
+        newDict[newKey] = `export default ${newVal}`;
+    }
+    return virtual(newDict);
+}
+
+// set tsconfig.json options note exclude comes from tsconfig.json
+// (which gets it from tsconfig.shared.json) to exclude node_modules,
+// for example
+const typescriptConfigOptions = {
+    rootDirs: [".", "../../../../artifacts/bin/native/generated"],
+    include: ["**/*.ts", "../../../../artifacts/bin/native/generated/**/*.ts"]
+};
+
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash }), typescript(typescriptConfigOptions)];
 
 const externalDependencies = [
 ];

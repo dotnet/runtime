@@ -58,6 +58,10 @@ if [%XHARNESS_ARGS%] == [] (
     set "XHARNESS_ARGS=%JS_ENGINE% %JS_ENGINE_ARGS% %BROWSER_PATH% %MAIN_JS%"
 )
 
+if [%PREPEND_PATH%] NEQ [] (
+    set "PATH=%PREPEND_PATH%;%PATH%"
+)
+
 echo EXECUTION_DIR=%EXECUTION_DIR%
 echo SCENARIO=%SCENARIO%
 echo XHARNESS_OUT=%XHARNESS_OUT%
@@ -94,15 +98,15 @@ exit /b %EXIT_CODE%
 REM Functions
 :SetEnvVars
 if [%TEST_USING_WORKLOADS%] == [true] (
-    set _DIR_NAME=dotnet-workload
+    set _DIR_NAME=dotnet-net7+latest
     set SDK_HAS_WORKLOAD_INSTALLED=true
 ) else (
-    set _DIR_NAME=sdk-no-workload
+    set _DIR_NAME=dotnet-none
     set SDK_HAS_WORKLOAD_INSTALLED=false
 )
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
-    robocopy /np /nfl /NDL /NJH /NJS /nc /e %BASE_DIR%\%_DIR_NAME% %EXECUTION_DIR%\%_DIR_NAME%
+    robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%_DIR_NAME% %EXECUTION_DIR%\%_DIR_NAME%
     set _SDK_DIR=%EXECUTION_DIR%\%_DIR_NAME%
 ) else (
     set _SDK_DIR=%BASE_DIR%\%_DIR_NAME%

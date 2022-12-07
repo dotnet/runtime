@@ -305,7 +305,7 @@ namespace System
         //
         public static int GetGeneration(WeakReference wo)
         {
-            int result = GetGenerationWR(wo.m_handle);
+            int result = GetGenerationWR(wo.WeakHandle);
             KeepAlive(wo);
             return result;
         }
@@ -389,8 +389,8 @@ namespace System
 
         /// <summary>
         /// Get a count of the bytes allocated over the lifetime of the process.
-        /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
         /// </summary>
+        /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long GetTotalAllocatedBytes(bool precise = false);
 
@@ -626,14 +626,10 @@ namespace System
         /// <param name="notification">delegate to invoke when operation occurs</param>s
         internal static void RegisterMemoryLoadChangeNotification(float lowMemoryPercent, float highMemoryPercent, Action notification)
         {
-            if (highMemoryPercent < 0 || highMemoryPercent > 1.0 || highMemoryPercent <= lowMemoryPercent)
-            {
-                throw new ArgumentOutOfRangeException(nameof(highMemoryPercent));
-            }
-            if (lowMemoryPercent < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(lowMemoryPercent));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(highMemoryPercent, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(highMemoryPercent, 1.0);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(highMemoryPercent, lowMemoryPercent);
+            ArgumentOutOfRangeException.ThrowIfLessThan(lowMemoryPercent, 0);
             ArgumentNullException.ThrowIfNull(notification);
 
             lock (s_notifications)
@@ -677,7 +673,7 @@ namespace System
         /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
+        public static unsafe T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
             if (!pinned)
             {
@@ -689,10 +685,13 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-                if (length < 2048 / Unsafe.SizeOf<T>())
+#pragma warning disable 8500 // sizeof of managed types
+                if (length < 2048 / sizeof(T))
+#pragma warning restore 8500
                 {
                     return new T[length];
                 }
+
 #endif
             }
             else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -781,7 +780,7 @@ namespace System
 
                 case GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Marshal.PtrToStringUTF8((IntPtr)data);
+                        string? dataAsString = Marshal.PtrToStringUTF8((nint)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }
@@ -795,8 +794,8 @@ namespace System
         /// <summary>
         /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't necessarily have to be the same as the ones that are passed by the user.
         /// For example for the "GCHeapCount" configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
-        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         /// </summary>
+        /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         public static unsafe IReadOnlyDictionary<string, object> GetConfigurationVariables()
         {
             GCConfigurationContext context = new GCConfigurationContext

@@ -1248,7 +1248,6 @@ namespace System.Diagnostics.Tests
 
                 Assert.All(processes, process => Assert.Equal(currentProcess.ProcessName, process.ProcessName));
                 Assert.All(processes, process => Assert.Equal(".", process.MachineName));
-                Assert.All(processes, process => Assert.Equal(currentProcess.StartTime, process.StartTime));
             }
 
             // Outputs a list of active processes in case of failure: https://github.com/dotnet/runtime/issues/28874
@@ -2547,7 +2546,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndNotElevated))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
         public void NonElevatedUser_QueryProcessNameOfSystemProcess()
         {
             const string Services = "services";

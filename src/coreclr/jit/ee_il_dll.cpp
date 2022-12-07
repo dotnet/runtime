@@ -120,6 +120,16 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     g_jitInitialized = true;
 }
 
+#ifndef DEBUG
+void jitprintf(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(jitstdout, fmt, vl);
+    va_end(vl);
+}
+#endif
+
 void jitShutdown(bool processIsTerminating)
 {
     if (!g_jitInitialized)
@@ -693,9 +703,15 @@ void Compiler::eeSetLVdone()
         eeDispVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
     }
 #endif // DEBUG
+    if ((eeVarsCount == 0) && (eeVars != nullptr))
+    {
+        // We still call setVars with nullptr when eeVarsCount is 0 as part of the contract.
+        // We also need to free the nonused memory.
+        info.compCompHnd->freeArray(eeVars);
+        eeVars = nullptr;
+    }
 
     info.compCompHnd->setVars(info.compMethodHnd, eeVarsCount, (ICorDebugInfo::NativeVarInfo*)eeVars);
-
     eeVars = nullptr; // We give up ownership after setVars()
 }
 
@@ -842,8 +858,17 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         name = "typeCtx";
     }
-    printf("%3d(%10s) : From %08Xh to %08Xh, in ", var->varNumber,
-           (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name), var->startOffset, var->endOffset);
+    if (0 <= var->varNumber && var->varNumber < lvaCount)
+    {
+        printf("(");
+        gtDispLclVar(var->varNumber, false);
+        printf(")");
+    }
+    else
+    {
+        printf("(%10s)", (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name));
+    }
+    printf(" : From %08Xh to %08Xh, in ", var->startOffset, var->endOffset);
 
     switch ((CodeGenInterface::siVarLocType)var->loc.vlType)
     {
@@ -1386,148 +1411,7 @@ bool Compiler::eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param)
     return info.compCompHnd->runWithSPMIErrorTrap(function, param);
 }
 
-/*****************************************************************************
- *
- *                      Utility functions
- */
-
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(FEATURE_TRACELOGGING)
-
-/*****************************************************************************/
-
-// static helper names - constant array
-const char* jitHlpFuncTable[CORINFO_HELP_COUNT] = {
-#define JITHELPER(code, pfnHelper, sig) #code,
-#define DYNAMICJITHELPER(code, pfnHelper, sig) #code,
-#include "jithelpers.h"
-};
-
-/*****************************************************************************
-*
-*  Filter wrapper to handle exception filtering.
-*  On Unix compilers don't support SEH.
-*/
-
-struct FilterSuperPMIExceptionsParam_ee_il
-{
-    Compiler*             pThis;
-    Compiler::Info*       pJitInfo;
-    CORINFO_FIELD_HANDLE  field;
-    CORINFO_METHOD_HANDLE method;
-    CORINFO_CLASS_HANDLE  clazz;
-    const char**          classNamePtr;
-    const char*           fieldOrMethodOrClassNamePtr;
-    char16_t*             classNameWidePtr;
-    unsigned              classSize;
-    EXCEPTION_POINTERS    exceptionPointers;
-};
-
-const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char** classNamePtr)
-{
-    if (eeGetHelperNum(method) != CORINFO_HELP_UNDEF)
-    {
-        if (classNamePtr != nullptr)
-        {
-            *classNamePtr = "HELPER";
-        }
-        CorInfoHelpFunc ftnNum = eeGetHelperNum(method);
-        const char*     name   = info.compCompHnd->getHelperName(ftnNum);
-
-        // If it's something unknown from a RET VM, or from SuperPMI, then use our own helper name table.
-        if ((strcmp(name, "AnyJITHelper") == 0) || (strcmp(name, "Yickish helper name") == 0))
-        {
-            if ((unsigned)ftnNum < CORINFO_HELP_COUNT)
-            {
-                name = jitHlpFuncTable[ftnNum];
-            }
-        }
-        return name;
-    }
-
-    if (eeIsNativeMethod(method))
-    {
-        if (classNamePtr != nullptr)
-        {
-            *classNamePtr = "NATIVE";
-        }
-        method = eeGetMethodHandleForNative(method);
-    }
-
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis        = this;
-    param.pJitInfo     = &info;
-    param.method       = method;
-    param.classNamePtr = classNamePtr;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr =
-                pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
-        },
-        &param);
-
-    if (!success)
-    {
-        if (param.classNamePtr != nullptr)
-        {
-            *(param.classNamePtr) = "hackishClassName";
-        }
-
-        param.fieldOrMethodOrClassNamePtr = "hackishMethodName";
-    }
-
-    return param.fieldOrMethodOrClassNamePtr;
-}
-
-const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** classNamePtr)
-{
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis        = this;
-    param.pJitInfo     = &info;
-    param.field        = field;
-    param.classNamePtr = classNamePtr;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr =
-                pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
-        },
-        &param);
-
-    if (!success)
-    {
-        param.fieldOrMethodOrClassNamePtr = "hackishFieldName";
-    }
-
-    return param.fieldOrMethodOrClassNamePtr;
-}
-
-//------------------------------------------------------------------------
-// eeGetClassName:
-//   Get the name (including namespace and instantiation) of a type.
-//   If missing information (in SPMI), then return a placeholder string.
-//
-// Return value:
-//   The name string.
-//
-const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
-{
-    StringPrinter printer(getAllocator(CMK_DebugOnly));
-    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
-    {
-        printer.Truncate(0);
-        printer.Printf("hackishClassName");
-    }
-
-    return printer.GetBuffer();
-}
-
-#endif // DEBUG || FEATURE_JIT_METHOD_PERF
-
 #ifdef DEBUG
-
 //------------------------------------------------------------------------
 // eeTryGetClassSize: wraps getClassSize but if doing SuperPMI replay
 // and the value isn't found, use a bogus size.
@@ -1539,116 +1423,10 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 //
 unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
+    unsigned classSize = UINT_MAX;
+    eeRunFunctorWithSPMIErrorTrap([&]() { classSize = info.compCompHnd->getClassSize(clsHnd); });
 
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->classSize = pParam->pJitInfo->compCompHnd->getClassSize(pParam->clazz);
-        },
-        &param);
-
-    if (!success)
-    {
-        param.classSize = (unsigned)-1; // Use the maximum unsigned value as the size
-    }
-    return param.classSize;
+    return classSize;
 }
 
-//------------------------------------------------------------------------
-// eeGetShortClassName: wraps appendClassName to provide functionality
-// similar to getClassName(), but returns a class name that is shortened,
-// not using full assembly info.
-//
-// Arguments:
-//   clsHnd - the class handle to get the type name of
-//
-// Return value:
-//   string class name. Note: unlike eeGetClassName/getClassName, this string is
-//   allocated from the JIT heap, so care should possibly be taken to avoid leaking it.
-//   It returns a char16_t string, since that's what appendClassName returns.
-//
-const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
-{
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            int            len        = 0;
-            constexpr bool fNamespace = true;
-            constexpr bool fFullInst  = false;
-            constexpr bool fAssembly  = false;
-
-            // Warning: crossgen2 doesn't fully implement the `appendClassName` API.
-            // We need to pass size zero, get back the actual buffer size required, allocate that space,
-            // and call the API again to get the full string.
-            int cchStrLen = pParam->pJitInfo->compCompHnd->appendClassName(nullptr, &len, pParam->clazz, fNamespace,
-                                                                           fFullInst, fAssembly);
-
-            size_t cchBufLen         = (size_t)cchStrLen + /* null terminator */ 1;
-            pParam->classNameWidePtr = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char16_t>(cchBufLen);
-            char16_t* pbuf           = pParam->classNameWidePtr;
-            len                      = (int)cchBufLen;
-
-            int cchResultStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz, fNamespace,
-                                                                                 fFullInst, fAssembly);
-            noway_assert(cchStrLen == cchResultStrLen);
-            noway_assert(pParam->classNameWidePtr[cchResultStrLen] == 0);
-        },
-        &param);
-
-    if (!success)
-    {
-        const char16_t substituteClassName[] = u"hackishClassName";
-        size_t         cchLen                = ArrLen(substituteClassName);
-        param.classNameWidePtr               = getAllocator(CMK_DebugOnly).allocate<char16_t>(cchLen);
-        memcpy(param.classNameWidePtr, substituteClassName, cchLen * sizeof(char16_t));
-    }
-
-    return param.classNameWidePtr;
-}
-
-const WCHAR* Compiler::eeGetCPString(size_t strHandle)
-{
-#ifdef HOST_UNIX
-    return nullptr;
-#else
-    char buff[512 + sizeof(CORINFO_String)];
-
-    // make this bulletproof, so it works even if we are wrong.
-    if (ReadProcessMemory(GetCurrentProcess(), (void*)strHandle, buff, 4, nullptr) == 0)
-    {
-        return (nullptr);
-    }
-
-    CORINFO_String* asString = *((CORINFO_String**)strHandle);
-
-    if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
-    {
-        return (nullptr);
-    }
-
-    if (asString->stringLen >= 255 || asString->chars[asString->stringLen] != 0)
-    {
-        return nullptr;
-    }
-
-    return (WCHAR*)(asString->chars);
-#endif // HOST_UNIX
-}
-#else  // DEBUG
-void jitprintf(const char* fmt, ...)
-{
-    va_list vl;
-    va_start(vl, fmt);
-    vfprintf(jitstdout, fmt, vl);
-    va_end(vl);
-}
 #endif // !DEBUG

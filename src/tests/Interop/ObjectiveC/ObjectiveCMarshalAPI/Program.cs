@@ -317,7 +317,7 @@ namespace ObjectiveCMarshalAPI
                 });
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {

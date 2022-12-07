@@ -20,8 +20,14 @@ namespace Sample
                 new DotULong(),
                 new DotFloat(),
                 new DotDouble(),
+                new SumSByte(),
+                new SumShort(),
                 new SumUInt(),
                 new SumDouble(),
+                new MinFloat(),
+                new MaxFloat(),
+                new MinDouble(),
+                new MaxDouble(),
             };
         }
 
@@ -81,7 +87,7 @@ namespace Sample
         class DotInt : VectorMeasurement
         {
             Vector128<int> vector1, vector2;
-            float result;
+            int result;
 
             public override string Name => "Dot product int";
 
@@ -100,7 +106,7 @@ namespace Sample
         class DotULong : VectorMeasurement
         {
             Vector128<ulong> vector1, vector2;
-            float result;
+            ulong result;
 
             public override string Name => "Dot product ulong";
 
@@ -183,6 +189,116 @@ namespace Sample
 
             public override void RunStep() {
                 result = Vector128.Sum(vector1);
+            }
+        }
+
+        class SumShort : VectorMeasurement
+        {
+            Vector128<short> vector1;
+            short result;
+
+            public override string Name => "Sum short";
+
+            public SumShort()
+            {
+                vector1 = Vector128.Create(12, 34, 56, 78, 23, 45, 67, 89);
+            }
+
+            public override void RunStep() {
+                result = Vector128.Sum(vector1);
+            }
+        }
+
+        class SumSByte : VectorMeasurement
+        {
+            Vector128<sbyte> vector1;
+            sbyte result;
+
+            public override string Name => "Sum sbyte";
+
+            public SumSByte()
+            {
+                vector1 = Vector128.Create(1, -3, 2, -5, 4, -6, 8, -7, 10, -9, 12, -11, 14, -13, 16, -15);
+            }
+
+            public override void RunStep() {
+                result = Vector128.Sum(vector1);
+            }
+        }
+
+        class MinFloat : VectorMeasurement
+        {
+            Vector128<float> vector1;
+            Vector128<float> vector2;
+            Vector128<float> result;
+
+            public override string Name => "Min float";
+
+            public MinFloat()
+            {
+                vector1 = Vector128.Create(12f, 34, 56, 78);
+                vector2 = Vector128.Create(13f, 32, 57, 77);
+            }
+
+            public override void RunStep() {
+                result = Vector128.Min(vector1, vector2);
+            }
+        }
+
+        class MaxFloat : VectorMeasurement
+        {
+            Vector128<float> vector1;
+            Vector128<float> vector2;
+            Vector128<float> result;
+
+            public override string Name => "Max float";
+
+            public MaxFloat()
+            {
+                vector1 = Vector128.Create(12f, 34, 56, 78);
+                vector2 = Vector128.Create(13f, 32, 57, 77);
+            }
+
+            public override void RunStep() {
+                result = Vector128.Max(vector1, vector2);
+            }
+        }
+
+        class MinDouble : VectorMeasurement
+        {
+            Vector128<double> vector1;
+            Vector128<double> vector2;
+            Vector128<double> result;
+
+            public override string Name => "Min double";
+
+            public MinDouble()
+            {
+                vector1 = Vector128.Create(12d, 34);
+                vector2 = Vector128.Create(13d, 32);
+            }
+
+            public override void RunStep() {
+                result = Vector128.Min(vector1, vector2);
+            }
+        }
+
+        class MaxDouble : VectorMeasurement
+        {
+            Vector128<double> vector1;
+            Vector128<double> vector2;
+            Vector128<double> result;
+
+            public override string Name => "Max double";
+
+            public MaxDouble()
+            {
+                vector1 = Vector128.Create(12d, 34);
+                vector2 = Vector128.Create(13d, 32);
+            }
+
+            public override void RunStep() {
+                result = Vector128.Max(vector1, vector2);
             }
         }
     }

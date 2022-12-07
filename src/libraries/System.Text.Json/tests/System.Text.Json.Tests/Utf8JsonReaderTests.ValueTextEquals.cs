@@ -8,8 +8,6 @@ namespace System.Text.Json.Tests
 {
     public static partial class Utf8JsonReaderTests
     {
-        public static bool IsX64 { get; } = IntPtr.Size >= 8;
-
         [Fact]
         public static void TestTextEqualsBasic()
         {
@@ -623,7 +621,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public static void LookupOverflow()
         {

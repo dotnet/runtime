@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
@@ -86,9 +85,13 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
 
-            ReadOnlySpan<byte> byteSpan = MemoryMarshal.AsBytes(value);
-            OperationStatus status = JsonWriterHelper.ToUtf8(byteSpan, output.Slice(BytesPending), out int _, out int written);
+            OperationStatus status = JsonWriterHelper.ToUtf8(value, output.Slice(BytesPending), out int written);
             Debug.Assert(status != OperationStatus.DestinationTooSmall);
+            if (status == OperationStatus.InvalidData)
+            {
+                ThrowHelper.ThrowArgumentException_InvalidUTF16(value[written]);
+            }
+
             BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Asterisk;
@@ -124,9 +127,13 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
 
-            ReadOnlySpan<byte> byteSpan = MemoryMarshal.AsBytes(value);
-            OperationStatus status = JsonWriterHelper.ToUtf8(byteSpan, output.Slice(BytesPending), out int _, out int written);
+            OperationStatus status = JsonWriterHelper.ToUtf8(value, output.Slice(BytesPending), out int written);
             Debug.Assert(status != OperationStatus.DestinationTooSmall);
+            if (status == OperationStatus.InvalidData)
+            {
+                ThrowHelper.ThrowArgumentException_InvalidUTF16(value[written]);
+            }
+
             BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Asterisk;
@@ -150,6 +157,11 @@ namespace System.Text.Json
             if (utf8Value.IndexOf(SingleLineCommentDelimiterUtf8) != -1)
             {
                 ThrowHelper.ThrowArgumentException_InvalidCommentValue();
+            }
+
+            if (!JsonWriterHelper.IsValidUtf8String(utf8Value))
+            {
+                ThrowHelper.ThrowArgumentException_InvalidUTF8(utf8Value);
             }
 
             WriteCommentByOptions(utf8Value);

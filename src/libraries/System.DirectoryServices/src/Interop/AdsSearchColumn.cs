@@ -3,7 +3,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace System.DirectoryServices.Interop
+namespace System.DirectoryServices
 {
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct AdsSearchColumn

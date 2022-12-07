@@ -169,7 +169,7 @@ public partial class QuicStream : Stream
     /// <inheritdoc />
     public override void WriteByte(byte value)
     {
-        Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+        Write(new ReadOnlySpan<byte>(in value));
     }
 
     /// <inheritdoc />

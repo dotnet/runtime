@@ -637,7 +637,7 @@ namespace System.Collections.Generic
                 throw new NotSupportedException(SR.NotSupported_KeyCollectionSet);
             }
 
-            bool ICollection<TKey>.Contains(TKey item)
+            public bool Contains(TKey item)
             {
                 return _dictionary.ContainsKey(item);
             }

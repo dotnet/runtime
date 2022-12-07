@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -402,6 +403,7 @@ namespace ILCompiler
                         break;
 
                     case ILOpcode.call:
+                    case ILOpcode.callvirt:
                         {
                             MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
                             MethodSignature methodSig = method.Signature;
@@ -425,6 +427,13 @@ namespace ILCompiler
                             for (int i = numParams - 1; i >= 0; i--)
                             {
                                 methodParams[i] = stack.PopIntoLocation(GetArgType(method, i));
+                            }
+
+                            if (opcode == ILOpcode.callvirt)
+                            {
+                                // Only support non-virtual methods for now + we don't emulate NRE on null this
+                                if (method.IsVirtual || methodParams[0] == null)
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             Value retVal;
@@ -598,6 +607,11 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Reference field");
                             }
 
+                            if (field.FieldType.IsByRef)
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Byref field");
+                            }
+
                             var settableInstance = instance.Value as IHasInstanceFields;
                             if (settableInstance == null)
                             {
@@ -709,9 +723,12 @@ namespace ILCompiler
                                 switch (opcode)
                                 {
                                     case ILOpcode.conv_u:
+                                    case ILOpcode.conv_i:
                                         stack.Push(StackValueKind.NativeInt,
                                             context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32((int)val));
                                         break;
+                                    default:
+                                        return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
                             else if (popped.ValueKind == StackValueKind.Float)
@@ -1704,6 +1721,8 @@ namespace ILCompiler
         public interface ISerializableValue
         {
             void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
+
+            bool GetRawData(NodeFactory factory, out object data);
         }
 
         /// <summary>
@@ -1713,6 +1732,8 @@ namespace ILCompiler
         {
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
+            bool IsKnownImmutable { get; }
+            int ArrayLength { get; }
         }
 
         /// <summary>
@@ -1766,6 +1787,8 @@ namespace ILCompiler
             }
 
             public abstract void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
+
+            public abstract bool GetRawData(NodeFactory factory, out object data);
 
             private static T ThrowInvalidProgram<T>()
             {
@@ -1855,6 +1878,12 @@ namespace ILCompiler
                 builder.EmitBytes(InstanceBytes);
             }
 
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = InstanceBytes;
+                return true;
+            }
+
             private byte[] AsExactByteCount(int size)
             {
                 if (InstanceBytes.Length != size)
@@ -1903,6 +1932,12 @@ namespace ILCompiler
             {
                 throw new NotSupportedException();
             }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
         }
 
         private sealed class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
@@ -1929,6 +1964,12 @@ namespace ILCompiler
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 throw new NotSupportedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
             }
         }
 
@@ -1976,6 +2017,12 @@ namespace ILCompiler
                 // This would imply we have a byref-typed static field. The layout algorithm should have blocked this.
                 throw new NotImplementedException();
             }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
         }
 
         private abstract class ReferenceTypeValue : Value
@@ -2022,6 +2069,17 @@ namespace ILCompiler
                     Type,
                     new AllocationSite(AllocationSite.OwningType, AllocationSite.InstructionCounter - baseInstructionCounter),
                     this);
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                if (this is ISerializableReference serializableRef)
+                {
+                    data = factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, serializableRef);
+                    return true;
+                }
+                data = null;
+                return false;
+            }
         }
 
 #pragma warning disable CA1852
@@ -2095,6 +2153,10 @@ namespace ILCompiler
             {
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
+
+            public bool IsKnownImmutable => _methodPointed.Signature.IsStatic;
+
+            public int ArrayLength => throw new NotSupportedException();
         }
 
 #pragma warning disable CA1852
@@ -2183,6 +2245,10 @@ namespace ILCompiler
 
                 builder.EmitBytes(_data);
             }
+
+            public bool IsKnownImmutable => _elementCount == 0;
+
+            public int ArrayLength => Length;
         }
 
         private sealed class ForeignTypeInstance : AllocatedReferenceTypeValue
@@ -2210,22 +2276,65 @@ namespace ILCompiler
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
         }
 
-        private sealed class StringInstance : ReferenceTypeValue
+        private sealed class StringInstance : ReferenceTypeValue, IHasInstanceFields
         {
-            private readonly string _value;
+            private readonly byte[] _value;
 
+            private string ValueAsString
+            {
+                get
+                {
+                    FieldDesc firstCharField = Type.GetField("_firstChar");
+                    int startOffset = firstCharField.Offset.AsInt;
+                    int length = _value.Length - startOffset - sizeof(char) /* terminating null */;
+                    return new string(MemoryMarshal.Cast<byte, char>(
+                        ((ReadOnlySpan<byte>)_value).Slice(startOffset, length)));
+                }
+            }
             public StringInstance(TypeDesc stringType, string value)
                 : base(stringType)
             {
-                _value = value;
+                _value = ConstructStringInstance(stringType, value);
+            }
+
+            private static byte[] ConstructStringInstance(TypeDesc stringType, ReadOnlySpan<char> value)
+            {
+                int pointerSize = stringType.Context.Target.PointerSize;
+                var bytes = new byte[
+                    pointerSize /* MethodTable */
+                    + sizeof(int) /* length */
+                    + (value.Length * sizeof(char)) /* bytes */
+                    + sizeof(char) /* null terminator */];
+
+                FieldDesc lengthField = stringType.GetField("_stringLength");
+                Debug.Assert(lengthField.FieldType.IsWellKnownType(WellKnownType.Int32)
+                    && lengthField.Offset.AsInt == pointerSize);
+                new FieldAccessor(bytes).SetField(lengthField, ValueTypeValue.FromInt32(value.Length));
+
+                FieldDesc firstCharField = stringType.GetField("_firstChar");
+                Debug.Assert(firstCharField.FieldType.IsWellKnownType(WellKnownType.Char)
+                    && firstCharField.Offset.AsInt == pointerSize + sizeof(int) /* length */);
+
+                value.CopyTo(MemoryMarshal.Cast<byte, char>(((Span<byte>)bytes).Slice(firstCharField.Offset.AsInt)));
+
+                return bytes;
             }
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                builder.EmitPointerReloc(factory.SerializedStringObject(_value));
+                builder.EmitPointerReloc(factory.SerializedStringObject(ValueAsString));
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = factory.SerializedStringObject(ValueAsString);
+                return true;
             }
 
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
+            Value IHasInstanceFields.GetField(FieldDesc field) => new FieldAccessor(_value).GetField(field);
+            void IHasInstanceFields.SetField(FieldDesc field, Value value) => ThrowHelper.ThrowInvalidProgramException();
+            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_value).GetFieldAddress(field);
         }
 
 #pragma warning disable CA1852
@@ -2296,6 +2405,10 @@ namespace ILCompiler
                 int pointerSize = factory.Target.PointerSize;
                 builder.EmitBytes(_data, pointerSize, _data.Length - pointerSize);
             }
+
+            public bool IsKnownImmutable => !Type.GetFields().GetEnumerator().MoveNext();
+
+            public int ArrayLength => throw new NotSupportedException();
         }
 
         private struct FieldAccessor

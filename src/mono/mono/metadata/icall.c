@@ -233,6 +233,31 @@ ves_icall_System_Array_SetValueRelaxedImpl (MonoArrayHandle arr, MonoObjectHandl
 	array_set_value_impl (arr, value, pos, FALSE, FALSE, error);
 }
 
+void
+ves_icall_System_Array_InitializeInternal (MonoObjectHandleOnStack arr_handle, MonoError *error)
+{
+	MonoArray *arr = *(MonoArray**)arr_handle;
+	MonoClass * const array_class = mono_object_class (arr);
+	MonoClass * const element_class = m_class_get_element_class (array_class);
+	if (!m_class_is_valuetype (element_class)) {
+		return;
+	}
+
+
+	MonoMethod * const method = mono_class_get_method_from_name_checked (element_class, ".ctor", 0, 0, error);
+	if (!method) {
+		return;
+	}
+
+	gsize element_size = mono_array_element_size (array_class);
+
+	for (guint32 i = 0; i < arr->max_length; i++) {
+		gpointer element_address = mono_array_addr_with_size_fast (arr, element_size, (gsize)i);
+		mono_runtime_invoke_checked (method, element_address, NULL, error);
+		return_if_nok (error);
+	}
+}
+
 // Copied from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/vm/invokeutil.cpp#L31
 #define PT_Primitive          0x01000000
 
@@ -1787,12 +1812,59 @@ guint32
 ves_icall_RuntimeTypeHandle_IsInstanceOfType (MonoQCallTypeHandle type_handle, MonoObjectHandle obj, MonoError *error)
 {
 	MonoType *type = type_handle.type;
+
+	if (m_type_is_byref (type))
+		return FALSE;
+
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, FALSE);
 	MonoObjectHandle inst = mono_object_handle_isinst (obj, klass, error);
 	return_val_if_nok (error, FALSE);
 	return !MONO_HANDLE_IS_NULL (inst);
+}
+
+void
+ves_icall_RuntimeMethodHandle_ReboxToNullable (MonoObjectHandle obj, MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	mono_class_init_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *obj_res = mono_object_new_checked (klass, error);
+	goto_if_nok (error, error_ret);
+	gpointer dest = mono_object_unbox_internal (obj_res);
+
+	mono_nullable_init (dest, MONO_HANDLE_RAW (obj), klass);
+
+	HANDLE_ON_STACK_SET (res, obj_res);
+	return;
+error_ret:
+	HANDLE_ON_STACK_SET (res, NULL);
+}
+
+void
+ves_icall_RuntimeMethodHandle_ReboxFromNullable (MonoObjectHandle obj, MonoObjectHandleOnStack res, MonoError *error)
+{
+	if (MONO_HANDLE_IS_NULL (obj)) {
+		HANDLE_ON_STACK_SET (res, NULL);
+		return;
+	}
+
+	MonoVTable *vtable = MONO_HANDLE_GETVAL (obj, vtable);
+	MonoClass *klass = vtable->klass;
+	MonoObject *obj_res;
+
+	if (!mono_class_is_nullable (klass)) {
+		obj_res = MONO_HANDLE_RAW (obj);
+	} else {
+		gpointer vbuf = mono_object_unbox_internal (MONO_HANDLE_RAW (obj));
+		obj_res = mono_nullable_box (vbuf, klass, error);
+	}
+
+	HANDLE_ON_STACK_SET (res, obj_res);
 }
 
 guint32
@@ -2002,7 +2074,7 @@ ves_icall_RuntimeFieldInfo_GetFieldOffset (MonoReflectionFieldHandle field, Mono
 	MonoClassField *class_field = MONO_HANDLE_GETVAL (field, field);
 	mono_class_setup_fields (m_field_get_parent (class_field));
 
-	/* TODO: metadata-update: figure out what CoreCLR does in this situation. */
+	/* metadata-update: mono only calls this for ExplicitLayout types */
 	g_assert (!m_field_is_from_update (class_field));
 
 	return m_field_get_offset (class_field) - MONO_ABI_SIZEOF (MonoObject);
@@ -2089,31 +2161,9 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 			MonoGenericClass *gclass = type->data.generic_class;
 			g_assert (!gclass->context.class_inst->is_open);
 
-			if (mono_class_is_nullable (mono_class_from_mono_type_internal (type))) {
-				MonoClass *nklass = mono_class_from_mono_type_internal (type);
-
-				/*
-				 * Convert the boxed vtype into a Nullable structure.
-				 * This is complicated by the fact that Nullables have
-				 * a variable structure.
-				 */
-				MonoObjectHandle nullable = mono_object_new_handle (nklass, error);
-				return_if_nok (error);
-
-				MonoGCHandle nullable_gchandle = 0;
-				guint8 *nval = (guint8*)mono_object_handle_pin_unbox (nullable, &nullable_gchandle);
-				mono_nullable_init_from_handle (nval, value, nklass);
-
-				isref = FALSE;
-				value_gchandle = nullable_gchandle;
-				v = (gchar*)nval;
-			}
-			else {
-				isref = !m_class_is_valuetype (gclass->container_class);
-				if (!isref && !MONO_HANDLE_IS_NULL (value)) {
-					v = (char*)mono_object_handle_pin_unbox (value, &value_gchandle);
-				};
-			}
+			isref = !m_class_is_valuetype (gclass->container_class);
+			if (!isref && !MONO_HANDLE_IS_NULL (value))
+				v = (char*)mono_object_handle_pin_unbox (value, &value_gchandle);
 			break;
 		}
 		default:
@@ -2143,9 +2193,19 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 			mono_field_static_set_value_internal (vtable, cf, v);
 	} else {
 
-		if (isref)
-			MONO_HANDLE_SET_FIELD_REF (obj, cf, value);
-		else
+		if (isref) {
+			MonoObject *obj_ptr = MONO_HANDLE_RAW (obj);
+			MonoObject *value_ptr = MONO_HANDLE_RAW (value);
+			gpointer *dest;
+			if (G_LIKELY (!m_field_is_from_update (cf))) {
+				dest = (gpointer*)(((char *)obj_ptr) + m_field_get_offset (cf));
+			} else {
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (cf));
+				dest = mono_metadata_update_added_field_ldflda (obj_ptr, cf->type, token, error);
+				mono_error_assert_ok (error);
+			}
+			mono_gc_wbarrier_generic_store_internal (dest, value_ptr);
+		} else
 			mono_field_set_value_internal (MONO_HANDLE_RAW (obj), cf, v); /* FIXME: make mono_field_set_value take a handle for obj */
 	}
 leave:
@@ -2176,15 +2236,18 @@ ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle fi
 	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
 	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 
-	/* TODO: metadata-update: get the values of added fields */
-	g_assert (!m_field_is_from_update (field));
 
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (field)))) {
-		mono_error_set_not_implemented (error, "");
-		return MONO_HANDLE_NEW (MonoObject, NULL);
+		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
+		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+		return ves_icall_RuntimeFieldInfo_GetValueInternal (field_h, objHandle, error);
 	} else if (MONO_TYPE_IS_REFERENCE (field->type)) {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (field));
 		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject)));
 	} else {
+		/* metadata-update can't add fields to structs */
+		g_assert (!m_field_is_from_update (field));
 		return mono_value_box_handle (klass, (guint8*)obj->value + m_field_get_offset (field) - sizeof (MonoObject), error);
 	}
 }
@@ -2198,16 +2261,17 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle fi
 
 	mono_class_setup_fields (m_field_get_parent (f));
 
-	/* TODO: metadata-update: set the values of added fields */
-	g_assert (!m_field_is_from_update (f));
-
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_field_get_parent (f)))) {
 		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
 		return_if_nok (error);
 		ves_icall_RuntimeFieldInfo_SetValueInternal (field_h, objHandle, value_h, error);
 	} else if (MONO_TYPE_IS_REFERENCE (f->type)) {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (f));
 		mono_copy_value (f->type, (guint8*)obj->value + m_field_get_offset (f) - sizeof (MonoObject), MONO_HANDLE_RAW (value_h), FALSE);
 	} else {
+		/* metadata-update: can't add fields to structs */
+		g_assert (!m_field_is_from_update (f));
 		MonoGCHandle gchandle = NULL;
 		g_assert (MONO_HANDLE_RAW (value_h));
 		mono_copy_value (f->type, (guint8*)obj->value + m_field_get_offset (f) - sizeof (MonoObject), mono_object_handle_pin_unbox (value_h, &gchandle), FALSE);
@@ -3378,11 +3442,10 @@ ves_icall_RuntimeMethodInfo_GetGenericArguments (MonoReflectionMethodHandle ref_
 
 MonoObjectHandle
 ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHandle this_arg_handle,
-			  MonoSpanOfObjects *params_span, MonoExceptionHandleOut exception_out, MonoError *error)
+			  gpointer *params_byref, MonoExceptionHandleOut exception_out, MonoError *error)
 {
 	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
 	MonoObject* const this_arg = MONO_HANDLE_RAW (this_arg_handle);
-	g_assert (params_span != NULL);
 
 	/*
 	 * Invoke from reflection is supposed to always be a virtual call (the API
@@ -3391,7 +3454,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	 */
 	MonoMethod *m = method->method;
 	MonoMethodSignature* const sig = mono_method_signature_internal (m);
-	int pcount = 0;
 	void *obj = this_arg;
 	MonoObject *result = NULL;
 	MonoArray *arr = NULL;
@@ -3422,11 +3484,11 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 
 	/* Array constructor */
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
-		pcount = mono_span_length (params_span);
-		uintptr_t * const lengths = g_newa (uintptr_t, pcount);
+		int pcount = sig->param_count;
+		uintptr_t *lengths = g_newa (uintptr_t, pcount);
 		/* Note: the synthetized array .ctors have int32 as argument type */
 		for (int i = 0; i < pcount; ++i)
-			lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, i) + sizeof (MonoObject));
+			lengths [i] = *(int32_t*) params_byref [i];
 
 		if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
 			/* This is a ctor for jagged arrays. MS creates an array of arrays. */
@@ -3452,11 +3514,11 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		} else {
 			g_assert (pcount == (m_class_get_rank (m->klass) * 2));
 			/* The arguments are lower-bound-length pairs */
-			intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
+			intptr_t *lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
 
 			for (int i = 0; i < pcount / 2; ++i) {
-				lower_bounds [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
-				lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
+				lower_bounds [i] = *(int32_t*) params_byref [i * 2];
+				lengths [i] = *(int32_t*) params_byref [i * 2 + 1];
 			}
 
 			arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);
@@ -3464,7 +3526,9 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 			goto exit;
 		}
 	}
-	result = mono_runtime_invoke_span_checked (m, obj, params_span, error);
+
+	result = mono_runtime_try_invoke_byrefs (m, obj, params_byref, NULL, error);
+
 	goto exit;
 return_null:
 	result = NULL;
@@ -3614,7 +3678,7 @@ ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle
 }
 
 static void
-get_enum_field (MonoArrayHandle names, MonoArrayHandle values, int base_type, MonoClassField *field, guint* j, guint64 *previous_value, gboolean *sorted, MonoError *error)
+get_enum_field (MonoArrayHandle names, MonoArrayHandle values, int base_type, MonoClassField *field, guint* j, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER();
 	guint64 field_value;
@@ -3638,16 +3702,12 @@ get_enum_field (MonoArrayHandle names, MonoArrayHandle values, int base_type, Mo
 	field_value = read_enum_value (p, base_type);
 	MONO_HANDLE_ARRAY_SETVAL (values, guint64, *j, field_value);
 
-	if (*previous_value > field_value)
-		*sorted = FALSE;
-
-	*previous_value = field_value;
 	(*j)++;
 leave:
 	HANDLE_FUNCTION_RETURN();
 }
 
-MonoBoolean
+void
 ves_icall_System_Enum_GetEnumValuesAndNames (MonoQCallTypeHandle type_handle, MonoArrayHandleOut values, MonoArrayHandleOut names, MonoError *error)
 {
 	MonoClass *enumc = mono_class_from_mono_type_internal (type_handle.type);
@@ -3655,34 +3715,30 @@ ves_icall_System_Enum_GetEnumValuesAndNames (MonoQCallTypeHandle type_handle, Mo
 	gpointer iter;
 	MonoClassField *field;
 	int base_type;
-	guint64 previous_value = 0;
-	gboolean sorted = TRUE;
 
 	mono_class_init_checked (enumc, error);
-	return_val_if_nok (error, FALSE);
+	return_if_nok (error);
 
 	if (!m_class_is_enumtype (enumc)) {
 		mono_error_set_argument (error, NULL, "Type provided must be an Enum.");
-		return TRUE;
+		return;
 	}
 
 	base_type = mono_class_enum_basetype_internal (enumc)->type;
 
 	nvalues = mono_class_num_fields (enumc) > 0 ? mono_class_num_fields (enumc) - 1 : 0;
 	MONO_HANDLE_ASSIGN(names, mono_array_new_handle (mono_defaults.string_class, nvalues, error));
-	return_val_if_nok (error, FALSE);
+	return_if_nok (error);
 	MONO_HANDLE_ASSIGN(values, mono_array_new_handle (mono_defaults.uint64_class, nvalues, error));
-	return_val_if_nok (error, FALSE);
+	return_if_nok (error);
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (enumc, &iter))) {
-		get_enum_field (names, values, base_type, field, &j, &previous_value, &sorted, error);
+		get_enum_field (names, values, base_type, field, &j, error);
 		if (!is_ok (error))
 			break;
 	}
-	return_val_if_nok (error, FALSE);
-
-	return sorted || base_type == MONO_TYPE_R4 || base_type == MONO_TYPE_R8;
+	return_if_nok (error);
 }
 
 enum {
@@ -4032,8 +4088,6 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 GPtrArray*
 ves_icall_RuntimeType_GetPropertiesByName_native (MonoQCallTypeHandle type_handle, gchar *propname, guint32 bflags, guint32 mlisttype, MonoError *error)
 {
-	// Fetch non-public properties as well because they can hide public properties with the same name in base classes
-	bflags |= BFLAGS_NonPublic;
 	MonoType *type = type_handle.type;
 
 	if (m_type_is_byref (type))
@@ -4072,11 +4126,9 @@ handle_parent:
 			(prop->set && ((prop->set->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else if (bflags & BFLAGS_NonPublic) {
-			if (property_accessor_nonpublic(prop->get, startklass == klass) ||
+		} else if (property_accessor_nonpublic(prop->get, startklass == klass) ||
 				property_accessor_nonpublic(prop->set, startklass == klass)) {
 				match++;
-			}
 		}
 		if (!match)
 			continue;
@@ -4106,8 +4158,6 @@ handle_parent:
 		g_hash_table_insert (properties, prop, prop);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = m_class_get_parent (klass))) {
-		// BFLAGS_NonPublic should be excluded for base classes
-		bflags &= ~BFLAGS_NonPublic;
 		goto handle_parent;
 	}
 
@@ -6138,6 +6188,29 @@ ves_icall_System_RuntimeType_CreateInstanceInternal (MonoQCallTypeHandle type_ha
 	return mono_object_new_handle (klass, error);
 }
 
+/* Only used for value types */
+void
+ves_icall_System_RuntimeType_AllocateValueType (MonoQCallTypeHandle type_handle, MonoObjectHandle value_h, MonoObjectHandleOnStack res, MonoError *error)
+{
+	MonoType *type = type_handle.type;
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	mono_class_init_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *obj_res = mono_object_new_checked (klass, error);
+	goto_if_nok (error, error_ret);
+
+	MonoObject *value = MONO_HANDLE_RAW (value_h);
+	if (value)
+		mono_value_copy_internal (mono_object_unbox_internal (obj_res), mono_object_unbox_internal (value), klass);
+
+	HANDLE_ON_STACK_SET (res, obj_res);
+	return;
+error_ret:
+	HANDLE_ON_STACK_SET (res, NULL);
+}
+
 MonoReflectionMethodHandle
 ves_icall_RuntimeMethodInfo_get_base_method (MonoReflectionMethodHandle m, MonoBoolean definition, MonoError *error)
 {
@@ -6282,27 +6355,42 @@ ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, M
 
 	(void)mono_handle_class (target);
 
-	int offset = 0;
+	/* if relative, offset is from the start of target. Otherwise offset is actually an address */
+	gboolean relative = TRUE;
+	intptr_t offset = 0;
 	for (guint i = 0; i < mono_array_handle_length (fields); ++i) {
 		MonoClassField *f;
 		MONO_HANDLE_ARRAY_GETVAL (f, fields, MonoClassField*, i);
 
 		g_assert (f);
 
-		/* TODO: metadata-update: the first field might be added, right? the rest are inside structs */
-		g_assert (!m_field_is_from_update (f));
-
-		if (i == 0)
-			offset = m_field_get_offset (f);
-		else
+		if (i == 0) {
+			if (G_LIKELY (!m_field_is_from_update (f)))
+				offset = m_field_get_offset (f);
+			else {
+				/* The first field was added by a metadata-update to an exsiting type.
+				 * Since it's store outside the object, offset is an absolute address
+				 */
+				relative = FALSE;
+				uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (f));
+				offset = (intptr_t) mono_metadata_update_added_field_ldflda (MONO_HANDLE_RAW (target), f->type, token, error);
+				mono_error_assert_ok (error);
+			}
+		} else {
+			/* metadata-update: the first field might be added, the rest are inside structs */
+			g_assert (!m_field_is_from_update (f));
 			offset += m_field_get_offset (f) - sizeof (MonoObject);
+		}
 		(void)mono_class_from_mono_type_internal (f->type);
 		ftype = f->type;
 	}
 
 	res->type = ftype;
 	res->klass = mono_class_from_mono_type_internal (ftype);
-	res->value = (guint8*)MONO_HANDLE_RAW (target) + offset;
+	if (G_LIKELY (relative))
+		res->value = (guint8*)MONO_HANDLE_RAW (target) + offset;
+	else
+		res->value = (guint8*)offset;
 }
 
 void
@@ -6390,12 +6478,6 @@ ves_icall_RuntimeParameterInfo_GetTypeModifiers (MonoReflectionTypeHandle rt, Mo
 		if (!(method = prop->get))
 			method = prop->set;
 		g_assert (method);
-	} else if (strcmp (m_class_get_name (member_class), "DynamicMethod") == 0 && strcmp (m_class_get_name_space (member_class), "System.Reflection.Emit") == 0) {
-		MonoArrayHandle params = MONO_HANDLE_NEW_GET (MonoArray, MONO_HANDLE_CAST (MonoReflectionDynamicMethod, member), parameters);
-		MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
-		MONO_HANDLE_ARRAY_GETREF (t, params, pos);
-		type = mono_reflection_type_handle_mono_type (t, error);
-		return type_array_from_modifiers (type, optional, error);
 	} else {
 		char *type_name = mono_type_get_full_name (member_class);
 		mono_error_set_not_supported (error, "Custom modifiers on a ParamInfo with member %s are not supported", type_name);
@@ -6476,6 +6558,9 @@ ves_icall_property_info_get_default_value (MonoReflectionPropertyHandle property
 		mono_error_set_invalid_operation (error, NULL);
 		return NULL_HANDLE;
 	}
+
+	/* metadata-update: looks like Roslyn doesn't set the HasDefault attribute for updates */
+	g_assert (!m_property_is_from_update (prop));
 
 	def_value = mono_class_get_property_default_value (prop, &def_type);
 
@@ -6907,11 +6992,11 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 		res = (gconstpointer)no_icall_table;
 		goto exit;
 	} else {
-		gboolean uses_handles = FALSE;
+		MonoInternalCallFlags icall_flags;
 		g_assert (icall_table->lookup);
-		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &uses_handles);
-		if (res && flags && uses_handles)
-			*flags = *flags | MONO_ICALL_FLAGS_USES_HANDLES;
+		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &icall_flags);
+		if (res && flags)
+			*flags = *flags | icall_flags;
 		mono_icall_unlock ();
 		locked = FALSE;
 
@@ -7197,6 +7282,7 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 #define ICALL_TYPE(id,name,first) /* nothing */
 #define ICALL(id,name,func) /* nothing */
 #define NOHANDLES(inner)  /* nothing */
+#define NOHANDLES_FLAGS(inner,flags)  /* nothing */
 
 #define MONO_HANDLE_REGISTER_ICALL(func, ret, nargs, argtypes) MONO_HANDLE_REGISTER_ICALL_IMPLEMENT (func, ret, nargs, argtypes)
 
@@ -7218,4 +7304,5 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 #undef ICALL_TYPE
 #undef ICALL
 #undef NOHANDLES
+#undef NOHANDLES_FLAGS
 #undef MONO_HANDLE_REGISTER_ICALL

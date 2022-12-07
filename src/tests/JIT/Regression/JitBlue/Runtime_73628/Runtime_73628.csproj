@@ -6,17 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_JitNoStructPromotion" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDoAssertionProp" Value="0" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set DOTNET_JitNoStructPromotion=1
-set DOTNET_JitDoAssertionProp=0
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export DOTNET_JitNoStructPromotion=1
-export DOTNET_JitDoAssertionProp=0
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

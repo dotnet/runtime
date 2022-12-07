@@ -63,8 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ARM64
 
         public void EmitLDR(Register regDst, Register regSrc, int offset)
         {
-            Debug.Assert(offset >= -255 && offset <= 4095);
-            if (offset >= 0)
+            if (offset >= 0 && offset <= 32760)
             {
                 Debug.Assert(offset % 8 == 0);
 
@@ -72,11 +71,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
 
                 Builder.EmitUInt((uint)(0b11_1110_0_1_0_1_000000000000_00000_00000u | ((uint)offset << 10) | ((uint)regSrc << 5) | (uint)regDst));
             }
-            else
+            else if (offset >= -255 && offset < 0)
             {
                 uint o = (uint)offset & 0x1FF;
 
                 Builder.EmitUInt((uint)(0b11_1110_0_0_010_000000000_1_1_00000_00000u | (o << 12) | ((uint)regSrc << 5) | (uint)regDst));
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
 
