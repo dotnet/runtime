@@ -25,6 +25,8 @@ public class AppendMemorySnapshotToWasmFile : Task
 
     public override bool Execute()
     {
+        Log.LogMessage(MessageImportance.High, $"Memory snapshot at '{DataSectionFile}' size '{new FileInfo(DataSectionFile).Length}'");
+
         using var reader = new WasmRewriter(Source, Destination, DataSectionFile, 0, DataMode.Active, Verbose);
         reader.Parse();
 
