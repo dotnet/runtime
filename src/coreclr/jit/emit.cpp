@@ -1494,7 +1494,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     {
         regNumber dstReg            = REG_NA;
         bool      isUpper32BitsZero = false;
-        if (TryGetDestinationRegisterFromLastInstruction(&dstReg, &isUpper32BitsZero))
+        if (TryGetPeepholeInfoFromLastInstruction(&dstReg, &isUpper32BitsZero))
         {
             if (dstReg != REG_NA)
             {

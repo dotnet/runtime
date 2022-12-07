@@ -578,7 +578,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
     regNumber dstReg            = REG_NA;
     bool      isUpper32BitsZero = false;
-    if (TryGetDestinationRegisterFromLastInstruction(&dstReg, &isUpper32BitsZero) && (dstReg == reg) &&
+    if (TryGetPeepholeInfoFromLastInstruction(&dstReg, &isUpper32BitsZero) && (dstReg == reg) &&
         isUpper32BitsZero)
     {
         return true;
