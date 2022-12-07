@@ -493,52 +493,83 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         return false;
     }
 
-    instrDesc* id  = emitLastIns;
-    insFormat  fmt = id->idInsFmt();
-
-    // This isn't meant to be a comprehensive check. Just look for what
-    // seems to be common.
-    switch (fmt)
+#ifdef TARGET_XARCH
+    instrDesc* id = emitLastIns;
+    if (id != nullptr)
     {
-        case IF_RWR_CNS:
-        case IF_RRW_CNS:
-        case IF_RRW_SHF:
-        case IF_RWR_RRD:
-        case IF_RRW_RRD:
-        case IF_RWR_MRD:
-        case IF_RWR_SRD:
-        case IF_RWR_ARD:
-
-            // Bail if not writing to the right register
-            if (id->idReg1() != reg)
+        // This isn't meant to be a comprehensive check. Just look for what
+        // seems to be common.
+        switch (id->idInsFmt())
+        {
+            case IF_RWR_CNS:
+            case IF_RRW_CNS:
+            case IF_RRW_SHF:
+            case IF_RWR_RRD:
+            case IF_RRW_RRD:
+            case IF_RWR_MRD:
+            case IF_RWR_SRD:
+            case IF_RWR_ARD:
             {
-                return false;
-            }
+#ifdef TARGET_AMD64
+                if ((id->idReg1() < REG_RAX) || (id->idReg1() > REG_R15))
+#else
+                if ((id->idReg1() < REG_EAX) || (id->idReg1() > REG_EDI))
+#endif // !TARGET_AMD64
+                {
+                    break;
+                }
 
-            // Bail if movsx, we always have movsx sign extend to 8 bytes
-            if (id->idIns() == INS_movsx)
-            {
-                return false;
-            }
+                // Bail if movsx, we always have movsx sign extend to 8 bytes
+                if (id->idIns() == INS_movsx)
+                {
+                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                    break;
+                }
 
 #ifdef TARGET_AMD64
-            if (id->idIns() == INS_movsxd)
-            {
-                return false;
-            }
+                if (id->idIns() == INS_movsxd)
+                {
+                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                    break;
+                }
 #endif
 
-            // movzx always zeroes the upper 32 bits.
-            if (id->idIns() == INS_movzx)
-            {
-                return true;
+                // movzx always zeroes the upper 32 bits.
+                if (id->idIns() == INS_movzx)
+                {
+                    regUpper32BitsZeroLookup |= 1UL << (id->idReg1());
+                    break;
+                }
+
+                // Else rely on operation size.
+                if (id->idOpSize() == EA_4BYTE)
+                {
+                    regUpper32BitsZeroLookup |= 1UL << (id->idReg1());
+                }
+                else
+                {
+                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                }
+                break;
             }
 
-            // Else rely on operation size.
-            return (id->idOpSize() == EA_4BYTE);
+            default:
+            {
+                // Reset
+                regUpper32BitsZeroLookup = 0;
+                break;
+            }
+        }
+    }
+#endif // TARGET_XARCH
 
-        default:
-            break;
+#ifdef TARGET_AMD64
+    if ((reg >= REG_RAX) && (reg <= REG_R15))
+#else
+    if ((reg >= REG_EAX) && (reg <= REG_EDI))
+#endif // !TARGET_AMD64
+    {
+       return (regUpper32BitsZeroLookup >> reg) & 1UL;
     }
 
     return false;

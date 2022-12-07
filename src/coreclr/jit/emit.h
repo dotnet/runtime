@@ -2173,6 +2173,12 @@ private:
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
+#ifdef TARGET_XARCH
+    // Lookup to determine if registers have their upper bits zero'ed out.
+    // GPR only.
+    unsigned int regUpper32BitsZeroLookup;
+#endif // TARGET_XARCH
+
     instrDesc* emitLastIns;
 
     // Check if a peephole optimization involving emitLastIns is safe.

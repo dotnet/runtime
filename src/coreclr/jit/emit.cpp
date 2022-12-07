@@ -1166,6 +1166,10 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
+#ifdef TARGET_XARCH
+    regUpper32BitsZeroLookup = 0;
+#endif // TARGET_XARCH
+
     emitLastIns = nullptr;
 
 #ifdef TARGET_ARMARCH
@@ -1484,6 +1488,77 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     {
         emitNxtIG(true);
     }
+
+#ifdef TARGET_XARCH
+    id = emitLastIns;
+    if (emitComp->opts.OptimizationEnabled() && (id != nullptr))
+    {
+        // This isn't meant to be a comprehensive check. Just look for what
+        // seems to be common.
+        switch (id->idInsFmt())
+        {
+            case IF_RWR_CNS:
+            case IF_RRW_CNS:
+            case IF_RRW_SHF:
+            case IF_RWR_RRD:
+            case IF_RRW_RRD:
+            case IF_RWR_MRD:
+            case IF_RWR_SRD:
+            case IF_RWR_ARD:
+            {
+#ifdef TARGET_AMD64
+                if ((id->idReg1() < REG_RAX) || (id->idReg1() > REG_R15))
+#else
+                if ((id->idReg1() < REG_EAX) || (id->idReg1() > REG_EDI))
+#endif // !TARGET_AMD64
+                {
+                    break;
+                }
+
+                // Bail if movsx, we always have movsx sign extend to 8 bytes
+                if (id->idIns() == INS_movsx)
+                {
+                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                    break;
+                }
+
+#ifdef TARGET_AMD64
+                if (id->idIns() == INS_movsxd)
+                {
+                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                    break;
+                }
+#endif
+
+                // movzx always zeroes the upper 32 bits.
+                if (id->idIns() == INS_movzx)
+                {
+                    regUpper32BitsZeroLookup |= 1UL << (id->idReg1());
+                    break;
+                }
+
+                // Else rely on operation size.
+                if (id->idOpSize() == EA_4BYTE)
+                {
+                    regUpper32BitsZeroLookup |= 1UL << (id->idReg1());
+                }
+                else
+                {
+                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                }
+                break;
+            }
+
+            default:
+            {
+                // Reset
+                regUpper32BitsZeroLookup = 0;
+                break;
+            }
+        }
+    }
+    id = nullptr;
+#endif // TARGET_XARCH
 
     /* Grab the space for the instruction */
 
