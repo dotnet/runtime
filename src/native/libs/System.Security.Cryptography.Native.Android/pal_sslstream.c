@@ -163,8 +163,10 @@ ARGS_NON_NULL_ALL static jobject EnsureRemaining(JNIEnv* env, jobject oldBuffer,
 
 // There has been a change in the SSLEngineResult.Status enum between API 23 and 24 that changed
 // the order/interger values of the enum options.
-static int MapLegacySSLEngineResultStatus(int legacyStatus) {
-    switch (legacyStatus) {
+static int MapLegacySSLEngineResultStatus(int legacyStatus)
+{
+    switch (legacyStatus)
+    {
         case LEGACY__STATUS__BUFFER_OVERFLOW:
             return STATUS__BUFFER_OVERFLOW;
         case LEGACY__STATUS__BUFFER_UNDERFLOW:
@@ -199,7 +201,8 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoWrap(JNIEnv* env, SSLStream* sslS
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus));
     (*env)->DeleteLocalRef(env, result);
 
-    if (g_SSLEngineResultStatusLegacyOrder) {
+    if (g_SSLEngineResultStatusLegacyOrder)
+    {
         status = MapLegacySSLEngineResultStatus(status);
     }
 
@@ -258,7 +261,6 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         (*env)->SetByteArrayRegion(env, tmp, 0, count, (jbyte*)(tmpNative));
         IGNORE_RETURN(
             (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPutByteArrayWithLength, tmp, 0, count));
-
         free(tmpNative);
         (*env)->DeleteLocalRef(env, tmp);
     }
@@ -280,7 +282,8 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
     int status = GetEnumAsInt(env, (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus));
     (*env)->DeleteLocalRef(env, result);
 
-    if (g_SSLEngineResultStatusLegacyOrder) {
+    if (g_SSLEngineResultStatusLegacyOrder)
+    {
         status = MapLegacySSLEngineResultStatus(status);
     }
 
@@ -1022,7 +1025,8 @@ int32_t AndroidCryptoNative_SSLStreamSetApplicationProtocols(SSLStream* sslStrea
     abort_if_invalid_pointer_argument (sslStream);
     abort_if_invalid_pointer_argument (protocolData);
 
-    if (!AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration()) {
+    if (!AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration())
+    {
         LOG_ERROR ("SSL does not support application protocols configuration");
         return FAIL;
     }
