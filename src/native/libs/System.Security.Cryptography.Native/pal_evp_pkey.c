@@ -111,7 +111,7 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, int32_t (*check_func)(EVP_PKE
 
             if (modulus != NULL && BN_is_zero(modulus))
             {
-                ERR_put_error(ERR_LIB_EVP, 0, EVP_R_INVALID_KEY, __FILE__, __LINE__);
+                ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
                 return false;
             }
         }
