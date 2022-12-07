@@ -49,7 +49,7 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Get all methods with the [VirtualMethdoIndex] attribute.
+            // Get all methods with the [VirtualMethodIndex] attribute.
             var attributedMethods = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.VirtualMethodIndexAttribute,
@@ -211,6 +211,7 @@ namespace Microsoft.Interop
 
             MarshalDirection direction = MarshalDirection.Bidirectional;
             bool implicitThis = true;
+            bool exceptionMarshallingDefined = false;
             ExceptionMarshalling exceptionMarshalling = ExceptionMarshalling.Custom;
             INamedTypeSymbol? exceptionMarshallingCustomType = null;
             if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.Direction), out TypedConstant directionValue))
@@ -233,6 +234,7 @@ namespace Microsoft.Interop
             }
             if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ExceptionMarshalling), out TypedConstant exceptionMarshallingValue))
             {
+                exceptionMarshallingDefined = true;
                 // TypedConstant's Value property only contains primitive values.
                 if (exceptionMarshallingValue.Value is not int)
                 {
@@ -254,6 +256,7 @@ namespace Microsoft.Interop
             {
                 Direction = direction,
                 ImplicitThisParameter = implicitThis,
+                ExceptionMarshallingDefined = exceptionMarshallingDefined,
                 ExceptionMarshalling = exceptionMarshalling,
                 ExceptionMarshallingCustomType = exceptionMarshallingCustomType,
             };
@@ -360,7 +363,7 @@ namespace Microsoft.Interop
                 typeKeyType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(iUnmanagedInterfaceTypeInstantiation.TypeArguments[1]);
             }
 
-            MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, environment.Compilation, generatorDiagnostics, virtualMethodIndexData.ExceptionMarshalling, virtualMethodIndexData.ExceptionMarshallingCustomType);
+            MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, symbol, environment.Compilation, generatorDiagnostics, virtualMethodIndexData);
 
             return new IncrementalStubGenerationContext(
                 signatureContext,
@@ -377,22 +380,45 @@ namespace Microsoft.Interop
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
-        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData triggerAttribute, Compilation compilation, IGeneratorDiagnostics diagnostics, ExceptionMarshalling marshalling, INamedTypeSymbol? exceptionMarshallingCustomType)
+        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexData virtualMethodIndexData)
         {
-            if (marshalling == ExceptionMarshalling.Com)
-            {
-                return new ComExceptionMarshalling();
-            }
-            if (exceptionMarshallingCustomType is null)
+            if (!virtualMethodIndexData.ExceptionMarshallingDefined)
             {
                 return NoMarshallingInfo.Instance;
             }
-            return CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
-                    compilation.GetTypeByMetadataName(TypeNames.System_Exception),
-                    exceptionMarshallingCustomType,
-                    triggerAttribute,
-                    compilation,
-                    diagnostics);
+
+            // User specified ExceptionMarshalling.Custom without specifying ExceptionMarshallingCustomType
+            if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Custom && virtualMethodIndexData.ExceptionMarshallingCustomType is null)
+            {
+                diagnostics.ReportInvalidExceptionMarshallingConfiguration(
+                    virtualMethodIndexAttr, symbol.Name, SR.InvalidExceptionMarshallingConfigurationMissingCustomType);
+                return NoMarshallingInfo.Instance;
+            }
+
+            // User specified something other than ExceptionMarshalling.Custom while specifying ExceptionMarshallingCustomType
+            if (virtualMethodIndexData.ExceptionMarshalling != ExceptionMarshalling.Custom && virtualMethodIndexData.ExceptionMarshallingCustomType is not null)
+            {
+                diagnostics.ReportInvalidExceptionMarshallingConfiguration(
+                    virtualMethodIndexAttr, symbol.Name, SR.InvalidExceptionMarshallingConfigurationNotCustom);
+            }
+
+            if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Com)
+            {
+                return new ComExceptionMarshalling();
+            }
+            if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Custom)
+            {
+                return CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
+                        compilation.GetTypeByMetadataName(TypeNames.System_Exception),
+                        virtualMethodIndexData.ExceptionMarshallingCustomType!,
+                        virtualMethodIndexAttr,
+                        compilation,
+                        diagnostics);
+            }
+            // This should not be reached in normal usage, but a developer can cast any int to the ExceptionMarshalling enum, so we should handle this case without crashing the generator.
+            diagnostics.ReportInvalidExceptionMarshallingConfiguration(
+                virtualMethodIndexAttr, symbol.Name, SR.InvalidExceptionMarshallingValue);
+            return NoMarshallingInfo.Instance;
         }
 
         private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateManagedToNativeStub(

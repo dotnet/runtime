@@ -38,7 +38,6 @@ namespace Microsoft.Interop
 
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-
                 // <managed> = IUnmanagedVirtualMethodTableProvider.GetObjectForUnmanagedWrapper<<managedType>>(<native>);
                 yield return ExpressionStatement(
                     AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,

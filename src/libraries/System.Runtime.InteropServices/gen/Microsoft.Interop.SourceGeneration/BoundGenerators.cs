@@ -32,8 +32,6 @@ namespace Microsoft.Interop
             BoundGenerator managedReturnMarshaller = defaultBoundGenerator;
             BoundGenerator nativeReturnMarshaller = defaultBoundGenerator;
             BoundGenerator managedExceptionMarshaller = defaultBoundGenerator;
-            bool foundManagedReturnMarshaller = false;
-            bool foundNativeReturnMarshaller = false;
             TypePositionInfo? managedExceptionInfo = null;
 
             foreach (TypePositionInfo argType in elementTypeInfo)
@@ -52,15 +50,13 @@ namespace Microsoft.Interop
                 signatureMarshallers.Add(generator);
                 if (argType.IsManagedReturnPosition)
                 {
-                    Debug.Assert(!foundManagedReturnMarshaller);
+                    Debug.Assert(managedReturnMarshaller == defaultBoundGenerator);
                     managedReturnMarshaller = generator;
-                    foundManagedReturnMarshaller = true;
                 }
                 if (argType.IsNativeReturnPosition)
                 {
-                    Debug.Assert(!foundNativeReturnMarshaller);
+                    Debug.Assert(nativeReturnMarshaller == defaultBoundGenerator);
                     nativeReturnMarshaller = generator;
-                    foundNativeReturnMarshaller = true;
                 }
                 if (!TypePositionInfo.IsSpecialIndex(argType.ManagedIndex))
                 {

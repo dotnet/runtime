@@ -14,6 +14,8 @@ namespace Microsoft.Interop
 
         public MarshalDirection Direction { get; init; }
 
+        public bool ExceptionMarshallingDefined { get; init; }
+
         public ExceptionMarshalling ExceptionMarshalling { get; init; }
         public INamedTypeSymbol? ExceptionMarshallingCustomType { get; init; }
     }
