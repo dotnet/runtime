@@ -577,3 +577,7 @@ End
 Crst PgoData
     AcquiredBefore LoaderHeap
 End
+
+Crst StaticBoxInit
+    AcquiredBefore LoaderHeap FrozenObjectHeap AssemblyLoader
+End

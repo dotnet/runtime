@@ -44,11 +44,10 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
 #ifdef FEATURE_READYTORUN
 static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 simpleName, bool compositeComponent, LPCUTF8 assemblyRequirementName)
 {
-    static const size_t MVID_TEXT_LENGTH = 39;
-    CHAR assemblyMvidText[MVID_TEXT_LENGTH];
+    CHAR assemblyMvidText[GUID_STR_BUFFER_LEN];
     GuidToLPSTR(mvidActual, assemblyMvidText);
 
-    CHAR componentMvidText[MVID_TEXT_LENGTH];
+    CHAR componentMvidText[GUID_STR_BUFFER_LEN];
     GuidToLPSTR(mvidExpected, componentMvidText);
 
     SString message;

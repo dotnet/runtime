@@ -21,12 +21,14 @@
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly2\ApplyUpdateReferencedAssembly2.csproj" />
+    <ProjectReference Include="..\ApplyUpdateReferencedAssembly3\ApplyUpdateReferencedAssembly3.csproj" />
     <ProjectReference Include="..\ApplyUpdateReferencedAssemblyChineseCharInPathㄨ\ApplyUpdateReferencedAssemblyChineseCharInPathㄨ.csproj" />
     <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\debugger-test-chinese-char-in-path-ㄨ\debugger-test-chinese-char-in-path-ㄨ.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" ReferenceOutputAssembly="false" Private="true" />
     <ProjectReference Include="..\debugger-test-without-debug-symbols-to-load\debugger-test-without-debug-symbols-to-load.csproj" Private="true" />
     <ProjectReference Include="..\debugger-test-with-non-user-code-class\debugger-test-with-non-user-code-class.csproj" Private="true" />
+    <ProjectReference Include="..\debugger-test-vb\debugger-test-vb.vbproj" Private="true" />
     <!-- loaded by *tests*, and not the test app -->
     <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" ReferenceOutputAssembly="false" Private="true" />
 
@@ -61,6 +63,7 @@
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-without-debug-symbols-to-load.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-non-user-code-class.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-vb.dll" />
       <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
 
       <!-- Assemblies only dynamically loaded -->

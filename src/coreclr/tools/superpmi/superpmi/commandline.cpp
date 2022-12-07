@@ -136,12 +136,12 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -jitoption [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 1 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"COMPlus_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
     printf("\n");
     printf(" -jit2option [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 2 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"COMPlus_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
     printf("\n");
     printf("Inputs are case sensitive.\n");
     printf("\n");
@@ -456,7 +456,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                if (strlen(argv[i]) != (MD5_HASH_BUFFER_SIZE - 1))
+                if (strlen(argv[i]) != (MM3_HASH_BUFFER_SIZE - 1))
                 {
                     LogError("Arg '%s' is invalid, needed a valid method context hash.", argv[i]);
                     DumpHelp(argv[0]);

@@ -3211,7 +3211,7 @@ namespace System.Xml
         //To avoid stackoverflow like ParseText->ParseEntity->ParText->..., use a loop and parsing function to implement such call.
         private ValueTask<(int, int, int, bool)> ParseTextAsync(int outOrChars)
         {
-            Task<(int, int, int, bool)> task = ParseTextAsync(outOrChars, _ps.chars, _ps.charPos, 0, -1, outOrChars, (char)0);
+            Task<(int, int, int, bool)> task = ParseTextAsync(outOrChars, _ps.chars, _ps.charPos, 0, -1, outOrChars);
             while (true)
             {
                 if (!task.IsSuccess())
@@ -3230,7 +3230,7 @@ namespace System.Xml
                 switch (_parseText_NextFunction)
                 {
                     case ParseTextFunction.ParseText:
-                        task = ParseTextAsync(outOrChars, chars, pos, rcount, rpos, orChars, c);
+                        task = ParseTextAsync(outOrChars, chars, pos, rcount, rpos, orChars);
                         break;
                     case ParseTextFunction.Entity:
                         task = ParseTextAsync_ParseEntity(outOrChars, chars, pos, rcount, rpos, orChars, c);
@@ -3266,7 +3266,7 @@ namespace System.Xml
                 switch (_parseText_NextFunction)
                 {
                     case ParseTextFunction.ParseText:
-                        task = ParseTextAsync(outOrChars, chars, pos, rcount, rpos, orChars, c);
+                        task = ParseTextAsync(outOrChars, chars, pos, rcount, rpos, orChars);
                         break;
                     case ParseTextFunction.Entity:
                         task = ParseTextAsync_ParseEntity(outOrChars, chars, pos, rcount, rpos, orChars, c);
@@ -3285,10 +3285,11 @@ namespace System.Xml
             }
         }
 
-        private Task<(int, int, int, bool)> ParseTextAsync(int outOrChars, char[] chars, int pos, int rcount, int rpos, int orChars, char c)
+        private Task<(int, int, int, bool)> ParseTextAsync(int outOrChars, char[] chars, int pos, int rcount, int rpos, int orChars)
         {
             while (true)
             {
+                char c;
                 // parse text content
                 while (XmlCharType.IsTextChar(c = chars[pos]))
                 {

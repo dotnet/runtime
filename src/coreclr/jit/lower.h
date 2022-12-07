@@ -90,8 +90,8 @@ private:
     bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
     void ContainCheckCompareChainForAnd(GenTree* tree);
     void ContainCheckConditionalCompare(GenTreeOp* cmp);
-    void ContainCheckSelect(GenTreeConditional* node);
 #endif
+    void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
@@ -281,13 +281,11 @@ private:
         GenTree* const op1 = tree->gtGetOp1();
         GenTree* const op2 = tree->gtGetOp2();
 
-        const unsigned operatorSize = genTypeSize(tree->TypeGet());
-
-        const bool op1Legal =
-            isSafeToMarkOp1 && tree->OperIsCommutative() && (operatorSize == genTypeSize(op1->TypeGet()));
-        const bool op2Legal = isSafeToMarkOp2 && (operatorSize == genTypeSize(op2->TypeGet()));
+        const bool op1Legal = isSafeToMarkOp1 && tree->OperIsCommutative() && IsContainableMemoryOpSize(tree, op1);
+        const bool op2Legal = isSafeToMarkOp2 && IsContainableMemoryOpSize(tree, op2);
 
         GenTree* regOptionalOperand = nullptr;
+
         if (op1Legal)
         {
             regOptionalOperand = op2Legal ? PreferredRegOptionalOperand(tree) : op1;
@@ -296,9 +294,10 @@ private:
         {
             regOptionalOperand = op2;
         }
+
         if (regOptionalOperand != nullptr)
         {
-            regOptionalOperand->SetRegOptional();
+            MakeSrcRegOptional(tree, regOptionalOperand);
         }
     }
 #endif // defined(TARGET_XARCH)
@@ -315,16 +314,18 @@ private:
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
-    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
+    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
-    GenTree* TryLowerMulToLshSubOrLshAdd(GenTreeOp* node);
+    GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
+
+    void TryRetypingFloatingPointStoreToIntegerStore(GenTree* store);
 
     GenTree* LowerSwitch(GenTree* node);
     bool TryLowerSwitchToBitTest(
@@ -371,6 +372,11 @@ private:
     void LowerModPow2(GenTree* node);
     GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
+
+    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
+                                                 GenTree*    op1,
+                                                 CorInfoType simdBaseJitType,
+                                                 unsigned    simdSize);
 #endif // FEATURE_HW_INTRINSICS
 
     //----------------------------------------------------------------------------------------------
@@ -443,11 +449,35 @@ public:
         return m_lsra->isContainableMemoryOp(node);
     }
 
+    // Return true if 'childNode' is a containable memory op by its size relative to the 'parentNode'.
+    // Currently very conservative.
+    bool IsContainableMemoryOpSize(GenTree* parentNode, GenTree* childNode) const
+    {
+        if (parentNode->OperIsBinary())
+        {
+            const unsigned operatorSize = genTypeSize(parentNode->TypeGet());
+
+#ifdef TARGET_XARCH
+
+            // Conservative - only do this for AND, OR, XOR.
+            if (parentNode->OperIs(GT_AND, GT_OR, GT_XOR))
+            {
+                return genTypeSize(childNode->TypeGet()) >= operatorSize;
+            }
+
+#endif // TARGET_XARCH
+
+            return genTypeSize(childNode->TypeGet()) == operatorSize;
+        }
+
+        return false;
+    }
+
 #ifdef TARGET_ARM64
     bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64
 
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_HW_INTRINSICS)
     // Tries to get a containable node for a given HWIntrinsic
     bool TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
                                         GenTree**           pNode,
@@ -464,6 +494,17 @@ private:
 
     // Makes 'childNode' contained in the 'parentNode'
     void MakeSrcContained(GenTree* parentNode, GenTree* childNode) const;
+
+    // Makes 'childNode' regOptional in the 'parentNode'
+    void MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const;
+
+    // Tries to make 'childNode' contained or regOptional in the 'parentNode'
+    void TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const;
+
+#if defined(FEATURE_HW_INTRINSICS)
+    // Tries to make 'childNode' contained or regOptional in the 'parentNode'
+    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode) const;
+#endif
 
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);

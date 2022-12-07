@@ -702,18 +702,18 @@ HRESULT ClrDataAccess::EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags)
         SystemDomain::System()->GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
 
-    AppDomainIterator adIter(FALSE);
+    AppDomain* appDomain = AppDomain::GetCurrentDomain();
+    if (appDomain == NULL)
+        return S_OK;
+
     EX_TRY
     {
-        while (adIter.Next())
-        {
-            CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
-            (
-                // Note that the flags being CLRDATA_ENUM_MEM_MINI prevents
-                // you from pulling entire files loaded into memory into the dump.
-                adIter.GetDomain()->EnumMemoryRegions(flags, true);
-            );
-        }
+        CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED
+        (
+            // Note that the flags being CLRDATA_ENUM_MEM_MINI prevents
+            // you from pulling entire files loaded into memory into the dump.
+            appDomain->EnumMemoryRegions(flags, true);
+        );
     }
     EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
@@ -888,7 +888,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                 {
                                     // This method has a generic type token which is required to figure out the exact instantiation
                                     // of the method.
-                                    // We need to to use the variable index of the generic type token in order to do the look up.
+                                    // We need to use the variable index of the generic type token in order to do the look up.
                                     CLRDATA_ADDRESS address = NULL;
                                     DWORD dwExactGenericArgsTokenIndex = 0;
                                     ReleaseHolder<IXCLRDataValue> pDV(NULL);
@@ -2050,7 +2050,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     fprintf(fp, "Total = %g msec\n"
                "ReadVirtual = %g msec\n"
                "StackWalk = %g msec; Find: %g msec\n"
-               "Find = %g msec; Hash = %g msec; Calls = %I64u; Hits = %I64u; Not found = %I64u\n\n=====\n",
+               "Find = %g msec; Hash = %g msec; Calls = %llu; Hits = %llu; Not found = %llu\n\n=====\n",
                (float) (1000*g_nTotalTime/nClockFrequency.QuadPart),
                (float) (1000*g_nReadVirtualTotalTime/nClockFrequency.QuadPart),
                (float) (1000*g_nStackTotalTime/nClockFrequency.QuadPart), (float) (1000*g_nFindStackTotalTime/nClockFrequency.QuadPart),

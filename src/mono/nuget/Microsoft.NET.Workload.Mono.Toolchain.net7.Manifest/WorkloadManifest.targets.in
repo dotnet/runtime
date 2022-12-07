@@ -1,6 +1,6 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
-  <Import Condition="'$(TargetsNet7)' == 'true' and '$(RunAOTCompilation)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.net7" />
+  <Import Condition="'$(TargetsNet7)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.net7" />
 
   <ImportGroup Condition="'$(TargetsNet7)' == 'true' and '$(TargetPlatformIdentifier)' == 'android'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />

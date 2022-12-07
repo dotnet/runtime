@@ -88,6 +88,10 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		if (ins)
 			return ins;
 	}
+
+	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 #endif
 
 	return ins;
@@ -714,6 +718,11 @@ emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 			}
 		}
 		return ins;
+	} else if (!strcmp (cmethod->name, "DisableInline")) {
+		cfg->disable_inline = TRUE;
+		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
 	}
 
 	return NULL;
@@ -758,7 +767,7 @@ get_class_from_ldtoken_ins (MonoInst *ins)
  * their relation (EQ/NE/NONE).
  */
 static CompRelation
-get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2)
+get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2, gboolean *vtype_constrained_gparam)
 {
 	MonoClass *k1 = get_class_from_ldtoken_ins (ins1);
 	MonoClass *k2 = get_class_from_ldtoken_ins (ins2);
@@ -779,6 +788,7 @@ get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2)
 				if (MONO_TYPE_IS_PRIMITIVE (t2) || MONO_TYPE_ISSTRUCT (t2))
 					rel = CMP_NE;
 			} else if (MONO_TYPE_IS_PRIMITIVE (constraint1)) {
+				*vtype_constrained_gparam = TRUE;
 				if (MONO_TYPE_IS_PRIMITIVE (t2) && constraint1->type != t2->type)
 					rel = CMP_NE;
 				else if (MONO_TYPE_IS_REFERENCE (t2))
@@ -1875,7 +1885,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
-		CompRelation rel = get_rttype_ins_relation (args [0], args [1]);
+		gboolean vtype_constrained_gparam = FALSE;
+		CompRelation rel = get_rttype_ins_relation (args [0], args [1], &vtype_constrained_gparam);
 		if (rel == CMP_EQ) {
 			if (cfg->verbose_level > 2)
 				printf ("-> true\n");
@@ -1890,11 +1901,16 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->dreg = alloc_preg (cfg);
 			ins->type = STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
+
+			/* Type checks in gshared methods like Vector<T>.IsSupported can not be optimized away if the type is T_BYTE etc. */
+			if (cfg->gshared && !cfg->gsharedvt && vtype_constrained_gparam)
+				cfg->prefer_instances = TRUE;
 		}
 		return ins;
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Inequality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
-		CompRelation rel = get_rttype_ins_relation (args [0], args [1]);
+		gboolean vtype_constrained_gparam = FALSE;
+		CompRelation rel = get_rttype_ins_relation (args [0], args [1], &vtype_constrained_gparam);
 		if (rel == CMP_NE) {
 			if (cfg->verbose_level > 2)
 				printf ("-> true\n");
@@ -1909,6 +1925,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->dreg = alloc_preg (cfg);
 			ins->type = STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
+
+			if (cfg->gshared && !cfg->gsharedvt && vtype_constrained_gparam)
+				cfg->prefer_instances = TRUE;
 		}
 		return ins;
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "get_IsValueType") &&
@@ -2046,6 +2065,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (ins)
 			return ins;
 	}
+
+	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 #endif
 
 	/* Fallback if SIMD is disabled */

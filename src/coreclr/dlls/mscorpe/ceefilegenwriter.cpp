@@ -13,7 +13,6 @@
 
 #include "corerror.h"
 #include <posterror.h>
-#include <shlwapi.h>
 
 // The following block contains a template for the default entry point stubs of a COM+
 // IL only program.  One can emit these stubs (with some fix-ups) and make

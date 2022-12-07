@@ -180,102 +180,6 @@ of _ADD_TO_STRING, as we will resize the buffer if necessary. */
     _ADD_TO_STRING( c );\
 }
 
-
-/*++
-Function :
-
-    FMTMSG_ProcessPrintf
-
-    Processes the printf formatters based on the format.
-
-    Returns the LPWSTR string, or NULL on failure.
-*/
-
-static LPWSTR FMTMSG_ProcessPrintf( WCHAR c ,
-                                 LPWSTR lpPrintfString,
-                                 LPWSTR lpInsertString)
-{
-    LPWSTR lpBuffer = NULL;
-    LPWSTR lpBuffer2 = NULL;
-    LPWSTR lpFormat = NULL;
-#if _DEBUG
-    // small size for _DEBUG to exercise buffer reallocation logic
-    int tmpSize = 4;
-#else
-    int tmpSize = 64;
-#endif
-    UINT nFormatLength = 0;
-    int nBufferLength = 0;
-
-    TRACE( "FMTMSG_ProcessPrintf( %C, %S, %p )\n", c,
-           lpPrintfString, lpInsertString );
-
-    switch ( c )
-    {
-    case 'e' :
-        /* Fall through */
-    case 'E' :
-        /* Fall through */
-    case 'f' :
-        /* Fall through */
-    case 'g' :
-        /* Fall through */
-    case 'G' :
-        ERROR( "%%%c is not supported by FormatMessage.\n", c );
-        SetLastError( ERROR_INVALID_PARAMETER );
-        return NULL;
-    }
-
-    nFormatLength = PAL_wcslen( lpPrintfString ) + 2; /* Need to count % AND NULL */
-    lpFormat = (LPWSTR)PAL_malloc( nFormatLength * sizeof( WCHAR ) );
-    if ( !lpFormat )
-    {
-        ERROR( "Unable to allocate memory.\n" );
-        SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-        return NULL;
-    }
-    /* Create the format string. */
-    memset( lpFormat, 0, nFormatLength * sizeof(WCHAR) );
-    *lpFormat = '%';
-
-    PAL_wcscat( lpFormat, lpPrintfString );
-
-    lpBuffer = (LPWSTR) PAL_malloc(tmpSize*sizeof(WCHAR));
-
-    /* try until the buffer is big enough */
-    while (TRUE)
-    {
-        if (!lpBuffer)
-        {
-            ERROR("Unable to allocate memory\n");
-            SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-            PAL_free(lpFormat);
-            return NULL;
-        }
-        nBufferLength = _snwprintf_s( lpBuffer, tmpSize,  tmpSize,
-                                    lpFormat, lpInsertString);
-
-        if ((nBufferLength >= 0) && (nBufferLength != tmpSize))
-        {
-            break; /* succeeded */
-        }
-        else
-        {
-            tmpSize *= 2;
-            lpBuffer2 = static_cast<WCHAR *>(
-                PAL_realloc(lpBuffer, tmpSize*sizeof(WCHAR)));
-            if (lpBuffer2 == NULL)
-                PAL_free(lpBuffer);
-            lpBuffer = lpBuffer2;
-        }
-    }
-
-    PAL_free( lpFormat );
-    lpFormat = NULL;
-
-    return lpBuffer;
-}
-
 /*++
 Function:
   FormatMessageW
@@ -481,113 +385,33 @@ FormatMessageW(
                 }
                 if ( *lpSourceString == '!' )
                 {
-                    LPWSTR lpInsertString = NULL;
-                    LPWSTR lpPrintfString = NULL;
-                    LPWSTR lpStartOfFormattedString = NULL;
-                    UINT nPrintfLength = 0;
-                    LPWSTR lpFormattedString = NULL;
-                    UINT nFormattedLength = 0;
+                    ERROR( "Embedded printf formatting ('!<printf format>!') is unsupported\n" );
+                    SetLastError( ERROR_INVALID_PARAMETER );
+                    lpWorkingString = NULL;
+                    nCount = 0;
+                    goto exit;
+                }
 
-                    if ( !bIsVaList )
-                    {
-                        lpInsertString = ((LPWSTR*)Arguments)[ Index - 1 ];
-                    }
-                    else
-                    {
-                        va_list TheArgs;
-
-                        va_copy(TheArgs, *Arguments);
-                        UINT i = 0;
-                        for ( ; i < Index; i++ )
-                        {
-                            lpInsertString = va_arg( TheArgs, LPWSTR );
-                        }
-                    }
-
-                    /* Calculate the length, and extract the printf string.*/
-                    lpSourceString++;
-                    {
-                        LPWSTR p = PAL_wcschr( lpSourceString, '!' );
-
-                        if ( NULL == p )
-                        {
-                            nPrintfLength = 0;
-                        }
-                        else
-                        {
-                            nPrintfLength = p - lpSourceString;
-                        }
-                    }
-
-                    lpPrintfString =
-                        (LPWSTR)PAL_malloc( ( nPrintfLength + 1 ) * sizeof( WCHAR ) );
-
-                    if ( !lpPrintfString )
-                    {
-                        ERROR( "Unable to allocate memory.\n" );
-                        SetLastError( ERROR_NOT_ENOUGH_MEMORY );
-                        lpWorkingString = NULL;
-                        nCount = 0;
-                        goto exit;
-                    }
-
-                    PAL_wcsncpy( lpPrintfString, lpSourceString, nPrintfLength );
-                    *( lpPrintfString + nPrintfLength ) = '\0';
-
-                    lpStartOfFormattedString = lpFormattedString =
-                           FMTMSG_ProcessPrintf( *lpPrintfString,
-                                                 lpPrintfString,
-                                                 lpInsertString);
-
-                    if ( !lpFormattedString )
-                    {
-                        ERROR( "Unable to process the format string.\n" );
-                        /* Function will set the error code. */
-                        PAL_free( lpPrintfString );
-                        lpWorkingString = NULL;
-                        goto exit;
-                    }
-
-
-                    nFormattedLength = PAL_wcslen( lpFormattedString );
-
-                    /* Append the processed printf string into the working string */
-                    while ( *lpFormattedString )
-                    {
-                        _CHECKED_ADD_TO_STRING( *lpFormattedString );
-                        lpFormattedString++;
-                    }
-
-                    lpSourceString += nPrintfLength + 1;
-                    PAL_free( lpPrintfString );
-                    PAL_free( lpStartOfFormattedString );
-                    lpPrintfString = lpFormattedString = NULL;
+                LPWSTR lpInsert = NULL;
+                if ( !bIsVaList )
+                {
+                    lpInsert = ((LPWSTR*)Arguments)[Index - 1];
                 }
                 else
                 {
-                    /* The printf format string defaults to 's'.*/
-                    LPWSTR lpInsert = NULL;
+                    va_list TheArgs;
+                    va_copy(TheArgs, *Arguments);
+                    UINT i = 0;
+                    for ( ; i < Index; i++ )
+                    {
+                        lpInsert = va_arg( TheArgs, LPWSTR );
+                    }
+                }
 
-                    if ( !bIsVaList )
-                    {
-                        lpInsert = ((LPWSTR*)Arguments)[Index - 1];
-                    }
-                    else
-                    {
-                        va_list TheArgs;
-                        va_copy(TheArgs, *Arguments);
-                        UINT i = 0;
-                        for ( ; i < Index; i++ )
-                        {
-                            lpInsert = va_arg( TheArgs, LPWSTR );
-                        }
-                    }
-
-                    while ( *lpInsert )
-                    {
-                        _CHECKED_ADD_TO_STRING( *lpInsert );
-                        lpInsert++;
-                    }
+                while ( *lpInsert )
+                {
+                    _CHECKED_ADD_TO_STRING( *lpInsert );
+                    lpInsert++;
                 }
             }
             /* Format specifiers. */

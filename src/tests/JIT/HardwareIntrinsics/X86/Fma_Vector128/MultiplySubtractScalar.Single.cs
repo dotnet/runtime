@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Fma_Vector128
 {
     public static partial class Program
     {
-        private static void MultiplySubtractScalarSingle()
+        [Fact]
+        public static void MultiplySubtractScalarSingle()
         {
             var test = new SimpleTernaryOpTest__MultiplySubtractScalarSingle();
 
@@ -596,7 +598,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             bool succeeded = true;
 
-            if (BitConverter.SingleToInt32Bits(MathF.Round((firstOp[0] * secondOp[0]) - thirdOp[0], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[0], 3)))
+            if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[0], secondOp[0], -thirdOp[0]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[0], 3)))
             {
                 succeeded = false;
             }

@@ -630,25 +630,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         }
     }
 
-    // Optimization:
-    //
-    // If we are about to substitute GT_OBJ, see if we can simplify it first.
-    // Not doing so can lead to regressions...
-    //
-    // Hold off on doing this for call args for now (per issue #51569).
-    // Hold off on OBJ(GT_LCL_ADDR).
-    //
-    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg() && fwdSubNode->gtGetOp1()->OperIs(GT_ADDR))
-    {
-        const bool     destroyNodes = false;
-        GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);
-        if (optTree != nullptr)
-        {
-            JITDUMP(" [folding OBJ(ADDR(LCL...))]");
-            fwdSubNode = optTree;
-        }
-    }
-
     // Quirks:
     //
     // Don't substitute nodes "AddFinalArgsAndDetermineABIInfo" doesn't handle into struct args.
@@ -657,6 +638,15 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         !fwdSubNode->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
     {
         JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
+        return false;
+    }
+
+    // A "CanBeReplacedWithItsField" SDSU can serve as a sort of "BITCAST<primitive>(struct)"
+    // device, forwarding it risks forcing things to memory.
+    //
+    if (fwdSubNode->IsCall() && varDsc->CanBeReplacedWithItsField(this))
+    {
+        JITDUMP(" fwd sub local is 'CanBeReplacedWithItsField'\n");
         return false;
     }
 

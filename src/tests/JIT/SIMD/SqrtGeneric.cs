@@ -16,7 +16,7 @@ namespace VectorMathTests
             _ => DefaultSeed
         };
 
-        static int Main(string[] args)
+        static int Main()
         {
             Random random = new Random(Seed);
             var a = new System.Numerics.Vector<short>(25);

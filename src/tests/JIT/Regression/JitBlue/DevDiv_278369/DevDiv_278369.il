@@ -40,7 +40,7 @@ label:
         ret
     }
 
-    .method private hidebysig static int32 Main(string[] args) cil managed
+    .method private hidebysig static int32 Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

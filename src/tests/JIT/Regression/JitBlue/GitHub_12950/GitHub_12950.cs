@@ -24,7 +24,7 @@ class Program
         var hmm = box.GetHashCode();
     }
     
-    static int Main(string[] args)
+    static int Main()
     {
         var someMemory = new int[1];
         var someMoreMemory = new int[1];

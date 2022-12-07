@@ -8,6 +8,6 @@
   <ItemGroup>
     <PackageDownload Include="NETStandard.Library.Ref"
                      Version="[$(NETStandardLibraryRefVersion)]" />
-    <ResolvedMatchingContract Include="$(NETStandard21RefPath)$(MSBuildProjectName).dll" />
+    <GenFacadesReferenceAssembly Include="$(NETStandard21RefPath)$(MSBuildProjectName).dll" />
   </ItemGroup>
 </Project>

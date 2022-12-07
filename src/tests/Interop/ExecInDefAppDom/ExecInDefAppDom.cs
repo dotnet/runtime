@@ -55,7 +55,7 @@ public class Program
         return passed ? 0 : 1;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int result = 100;
         String myPath = System.Reflection.Assembly.GetExecutingAssembly().Location;

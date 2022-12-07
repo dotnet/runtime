@@ -17,7 +17,7 @@ ret
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method public static int32 main(class System.String[]) {
+.method public static int32 main() {
 .locals	(int32, class MyTest)
 .entrypoint
 .maxstack	4
