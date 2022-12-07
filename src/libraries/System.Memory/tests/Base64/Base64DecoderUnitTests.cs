@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using System.Text;
 using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class Base64DecoderUnitTests
+    public class Base64DecoderUnitTests : Base64TestBase
     {
         [Fact]
         public void BasicDecoding()
@@ -157,7 +158,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> decodedBytes = new byte[3];
                 int consumed, written;
-                if (numBytes % 4 == 0)
+                if (numBytes >= 8)
                 {
                     Assert.True(OperationStatus.DestinationTooSmall ==
                         Base64.DecodeFromUtf8(source, decodedBytes, out consumed, out written), "Number of Input Bytes: " + numBytes);
@@ -373,7 +374,9 @@ namespace System.Buffers.Text.Tests
                 for (int i = 0; i < invalidBytes.Length; i++)
                 {
                     // Don't test padding (byte 61 i.e. '='), which is tested in DecodingInvalidBytesPadding
-                    if (invalidBytes[i] == Base64TestHelper.EncodingPad)
+                    // Don't test chars to be ignored (spaces: 9, 10, 13, 32 i.e. '\n', '\t', '\r', ' ')
+                    if (invalidBytes[i] == Base64TestHelper.EncodingPad
+                        || Base64TestHelper.IsByteToBeIgnored(invalidBytes[i]))
                         continue;
 
                     // replace one byte with an invalid input
@@ -568,7 +571,9 @@ namespace System.Buffers.Text.Tests
                     Span<byte> buffer = "2222PPPP"u8.ToArray(); // valid input
 
                     // Don't test padding (byte 61 i.e. '='), which is tested in DecodeInPlaceInvalidBytesPadding
-                    if (invalidBytes[i] == Base64TestHelper.EncodingPad)
+                    // Don't test chars to be ignored (spaces: 9, 10, 13, 32 i.e. '\n', '\t', '\r', ' ')
+                    if (invalidBytes[i] == Base64TestHelper.EncodingPad
+                        || Base64TestHelper.IsByteToBeIgnored(invalidBytes[i]))
                         continue;
 
                     // replace one byte with an invalid input
@@ -594,7 +599,7 @@ namespace System.Buffers.Text.Tests
             {
                 Span<byte> buffer = "2222PPP"u8.ToArray(); // incomplete input
                 Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8InPlace(buffer, out int bytesWritten));
-                Assert.Equal(0, bytesWritten);
+                Assert.Equal(3, bytesWritten);
             }
         }
 
@@ -667,5 +672,96 @@ namespace System.Buffers.Text.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ValidBase64Strings_WithCharsThatMustBeIgnored))]
+        public void BasicDecodingIgnoresCharsToBeIgnoredAsConvertToBase64Does(string utf8WithCharsToBeIgnored, byte[] expectedBytes)
+        {
+            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithCharsToBeIgnored);
+            byte[] resultBytes = new byte[5];
+            OperationStatus result = Base64.DecodeFromUtf8(utf8BytesWithByteToBeIgnored, resultBytes, out int bytesConsumed, out int bytesWritten);
+
+            // Control value from Convert.FromBase64String
+            byte[] stringBytes = Convert.FromBase64String(utf8WithCharsToBeIgnored);
+
+            Assert.Equal(OperationStatus.Done, result);
+            Assert.Equal(utf8WithCharsToBeIgnored.Length, bytesConsumed);
+            Assert.Equal(expectedBytes.Length, bytesWritten);
+            Assert.True(expectedBytes.SequenceEqual(resultBytes));
+            Assert.True(stringBytes.SequenceEqual(resultBytes));
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidBase64Strings_WithCharsThatMustBeIgnored))]
+        public void DecodeInPlaceIgnoresCharsToBeIgnoredAsConvertToBase64Does(string utf8WithCharsToBeIgnored, byte[] expectedBytes)
+        {
+            Span<byte> utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithCharsToBeIgnored);
+            OperationStatus result = Base64.DecodeFromUtf8InPlace(utf8BytesWithByteToBeIgnored, out int bytesWritten);
+            Span<byte> bytesOverwritten = utf8BytesWithByteToBeIgnored.Slice(0, bytesWritten);
+            byte[] resultBytesArray = bytesOverwritten.ToArray();
+
+            // Control value from Convert.FromBase64String
+            byte[] stringBytes = Convert.FromBase64String(utf8WithCharsToBeIgnored);
+
+            Assert.Equal(OperationStatus.Done, result);
+            Assert.Equal(expectedBytes.Length, bytesWritten);
+            Assert.True(expectedBytes.SequenceEqual(resultBytesArray));
+            Assert.True(stringBytes.SequenceEqual(resultBytesArray));
+        }
+
+        [Theory]
+        [MemberData(nameof(StringsOnlyWithCharsToBeIgnored))]
+        public void BasicDecodingWithOnlyCharsToBeIgnored(string utf8WithCharsToBeIgnored)
+        {
+            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithCharsToBeIgnored);
+            byte[] resultBytes = new byte[5];
+            OperationStatus result = Base64.DecodeFromUtf8(utf8BytesWithByteToBeIgnored, resultBytes, out int bytesConsumed, out int bytesWritten);
+
+            Assert.Equal(OperationStatus.Done, result);
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [MemberData(nameof(StringsOnlyWithCharsToBeIgnored))]
+        public void DecodingInPlaceWithOnlyCharsToBeIgnored(string utf8WithCharsToBeIgnored)
+        {
+            Span<byte> utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithCharsToBeIgnored);
+            OperationStatus result = Base64.DecodeFromUtf8InPlace(utf8BytesWithByteToBeIgnored, out int bytesWritten);
+
+            Assert.Equal(OperationStatus.Done, result);
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [InlineData("AQ==", 4, 1)]
+        [InlineData("AQ== ", 5, 1)]
+        [InlineData("AQ==  ", 6, 1)]
+        [InlineData("AQ==   ", 7, 1)]
+        [InlineData("AQ==    ", 8, 1)]
+        [InlineData("AQ==     ", 9, 1)]
+        [InlineData("AQ==\n", 5, 1)]
+        [InlineData("AQ==\n\n", 6, 1)]
+        [InlineData("AQ==\n\n\n", 7, 1)]
+        [InlineData("AQ==\n\n\n\n", 8, 1)]
+        [InlineData("AQ==\n\n\n\n\n", 9, 1)]
+        [InlineData("AQ==\t", 5, 1)]
+        [InlineData("AQ==\t\t", 6, 1)]
+        [InlineData("AQ==\t\t\t", 7, 1)]
+        [InlineData("AQ==\t\t\t\t", 8, 1)]
+        [InlineData("AQ==\t\t\t\t\t", 9, 1)]
+        [InlineData("AQ==\r", 5, 1)]
+        [InlineData("AQ==\r\r", 6, 1)]
+        [InlineData("AQ==\r\r\r", 7, 1)]
+        [InlineData("AQ==\r\r\r\r", 8, 1)]
+        [InlineData("AQ==\r\r\r\r\r", 9, 1)]
+        public void BasicDecodingWithExtraWhitespaceShouldBeCountedInConsumedBytes(string inputString, int expectedConsumed, int expectedWritten)
+        {
+            Span<byte> source = Encoding.ASCII.GetBytes(inputString);
+            Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
+
+            Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, decodedByteCount);
+            Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
+        }
     }
 }
