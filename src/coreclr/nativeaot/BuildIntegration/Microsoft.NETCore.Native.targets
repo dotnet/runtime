@@ -105,6 +105,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
   </ItemGroup>
 
+  <ItemGroup>
+    <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
+    <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
+  </ItemGroup>
+
   <ItemDefinitionGroup>
     <ManagedBinary>
       <IlcRspFile>$(NativeIntermediateOutputPath)\%(Filename).ilc.rsp</IlcRspFile>
