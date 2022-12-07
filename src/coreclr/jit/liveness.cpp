@@ -461,10 +461,6 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        if (!block->bbComputeLiveness)
-            continue;
-
-        block->bbComputeLiveness = false;
         VarSetOps::ClearD(this, fgCurUseSet);
         VarSetOps::ClearD(this, fgCurDefSet);
 
@@ -2040,7 +2036,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                         lvaTable[info.compLvFrameListRoot].lvTracked)
                     {
                         fgStmtRemoved = true;
-                        block->bbComputeLiveness = true;
                     }
                 }
                 else
@@ -2065,7 +2060,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     if (varDsc.lvTracked && !opts.MinOpts())
                     {
                         fgStmtRemoved = true;
-                        block->bbComputeLiveness = true;
                     }
                 }
                 else if (varDsc.lvTracked)
@@ -2091,7 +2085,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     if (isTracked && !opts.MinOpts())
                     {
                         fgStmtRemoved = true;
-                        block->bbComputeLiveness = true;
                     }
                 }
                 else
@@ -2330,7 +2323,6 @@ bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclN
 
     LIR::AsRange(block).Remove(store);
     fgStmtRemoved = true;
-    block->bbComputeLiveness = true;
 
     return true;
 }
@@ -2521,7 +2513,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
                 // Re-link the nodes for this statement
                 fgSetStmtSeq(compCurStmt);
-                compCurBB->bbComputeLiveness = true;
 
                 // Since the whole statement gets replaced it is safe to
                 // re-thread and update order. No need to compute costs again.
@@ -2537,7 +2528,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
                 // No side effects - remove the whole statement from the block->bbStmtList.
                 fgRemoveStmt(compCurBB, compCurStmt);
-                compCurBB->bbComputeLiveness = true;
 
                 // Since we removed it do not process the rest (i.e. RHS) of the statement
                 // variables in the RHS will not be marked as live, so we get the benefit of
@@ -2644,7 +2634,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             // Continue analysis from this node
 
             *pTree = asgNode;
-            compCurBB->bbComputeLiveness = true;
 
             return false;
         }
