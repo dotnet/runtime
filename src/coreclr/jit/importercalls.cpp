@@ -1039,8 +1039,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
 
                 unsigned lclNum = newobjThis->AsLclVarCommon()->GetLclNum();
-                impPushOnStack(
-                    gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), verMakeTypeInfo(clsHnd).NormaliseForStack());
+                impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)),
+                               verMakeTypeInfo(clsHnd).NormaliseForStack());
             }
             else
             {

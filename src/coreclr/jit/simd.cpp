@@ -1770,12 +1770,12 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
     GenTree* expr = stmt->GetRootNode();
     if (expr->OperGet() == GT_ASG && expr->TypeGet() == TYP_FLOAT)
     {
-        GenTree*    curDst            = expr->AsOp()->gtOp1;
-        GenTree*    curSrc            = expr->AsOp()->gtOp2;
-        unsigned    index             = 0;
-        CorInfoType simdBaseJitType   = CORINFO_TYPE_UNDEF;
-        unsigned    simdSize          = 0;
-        GenTree*    srcSimdLclAddr    = getSIMDStructFromField(curSrc, &simdBaseJitType, &index, &simdSize, true);
+        GenTree*    curDst          = expr->AsOp()->gtOp1;
+        GenTree*    curSrc          = expr->AsOp()->gtOp2;
+        unsigned    index           = 0;
+        CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+        unsigned    simdSize        = 0;
+        GenTree*    srcSimdLclAddr  = getSIMDStructFromField(curSrc, &simdBaseJitType, &index, &simdSize, true);
 
         if (srcSimdLclAddr == nullptr || simdBaseJitType != CORINFO_TYPE_FLOAT)
         {

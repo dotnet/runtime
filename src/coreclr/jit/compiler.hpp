@@ -861,9 +861,9 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
 
             case GT_FIELD:
             {
-                GenTreeField* fieldAddr = new (this, GT_FIELD_ADDR)
-                    GenTreeField(GT_FIELD_ADDR, type, op1->AsField()->GetFldObj(), op1->AsField()->gtFldHnd,
-                                 op1->AsField()->gtFldOffset);
+                GenTreeField* fieldAddr =
+                    new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, op1->AsField()->GetFldObj(),
+                                                           op1->AsField()->gtFldHnd, op1->AsField()->gtFldOffset);
                 fieldAddr->gtFldMayOverlap = op1->AsField()->gtFldMayOverlap;
 #ifdef FEATURE_READYTORUN
                 fieldAddr->gtFieldLookup = op1->AsField()->gtFieldLookup;
