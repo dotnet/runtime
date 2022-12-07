@@ -914,8 +914,8 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
         bool op1SupportsRegOptional = false;
         bool op2SupportsRegOptional = false;
 
-        if (!TryGetContainableHWIntrinsicOp(node, &node->Op(2), &op2SupportsRegOptional) &&
-            TryGetContainableHWIntrinsicOp(node, &node->Op(1), &op1SupportsRegOptional))
+        if (!IsContainableHWIntrinsicOp(node, node->Op(2), &op2SupportsRegOptional) &&
+            IsContainableHWIntrinsicOp(node, node->Op(1), &op1SupportsRegOptional))
         {
             // Swap operands if op2 cannot be contained but op1 can.
             swapOperands = true;
@@ -5990,41 +5990,51 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------
-// TryGetContainableHWIntrinsicOp: Tries to get a containable node for a given HWIntrinsic
+// IsContainableHWIntrinsicOp: Determines whether a child node is containable for a given HWIntrinsic
 //
 //  Arguments:
-//     [In]     containingNode      - The hardware intrinsic node which contains 'node'
-//     [In/Out] pNode               - The node to check and potentially replace with the containable node
-//     [Out]    supportsRegOptional - On return, this will be true if 'containingNode' supports regOptional operands
+//     [In]  parentNode          - The hardware intrinsic node which is the parent of 'childNode'
+//     [In]  childNode           - The node to check if it can be contained by 'parentNode'
+//     [Out] supportsRegOptional - On return, this will be true if 'parentNode' supports 'childNode' being regOptional;
 //     otherwise, false.
-//     [In]     transparentParentNode - optional "transparent" intrinsic parent like CreateScalarUnsafe
 //
 // Return Value:
-//    true if 'node' is a containable by containingNode; otherwise, false.
+//    true if 'childNode' is a containable by 'parentNode'; otherwise, false.
 //
-//    When true is returned 'node' (and by extension the relevant op of 'containingNode') may be modified
-//    to handle special scenarios such as CreateScalarUnsafe which exist to bridge the type system with
-//    the actual registers.
-//
-//    When false is returned 'node' is not modified.
-//
-bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
-                                              GenTree**           pNode,
-                                              bool*               supportsRegOptional,
-                                              GenTreeHWIntrinsic* transparentParentNode)
+bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTree* childNode, bool* supportsRegOptional)
 {
-    assert(containingNode != nullptr);
-    assert((pNode != nullptr) && (*pNode != nullptr));
+    return IsContainableHWIntrinsicOp(nullptr, parentNode, childNode, supportsRegOptional);
+}
+
+//----------------------------------------------------------------------------------------------
+// IsContainableHWIntrinsicOp: Determines whether a child node is containable for a given HWIntrinsic
+//
+//  Arguments:
+//     [In, Opt] grandparentNode     - The hardware intrinsic node which is the parent of 'parentNode'
+//     [In]      parentNode          - The hardware intrinsic node which is the parent of 'childNode'
+//     [In]      childNode           - The node to check if it can be contained by 'parentNode'
+//     [Out]     supportsRegOptional - On return, this will be true if 'parentNode' supports 'childNode' being
+//     regOptional; otherwise, false.
+//
+// Return Value:
+//    true if 'childNode' is a containable by 'parentNode'; otherwise, false.
+//
+bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
+                                          GenTreeHWIntrinsic* parentNode,
+                                          GenTree*            childNode,
+                                          bool*               supportsRegOptional)
+{
+    assert(parentNode != nullptr);
+    assert(childNode != nullptr);
     assert(supportsRegOptional != nullptr);
 
-    NamedIntrinsic      containingIntrinsicId = containingNode->GetHWIntrinsicId();
+    NamedIntrinsic      containingIntrinsicId = parentNode->GetHWIntrinsicId();
     HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingIntrinsicId);
-    GenTree*&           node                  = *pNode;
 
-    // We shouldn't have called in here if containingNode doesn't support containment
+    // We shouldn't have called in here if parentNode doesn't support containment
     assert(HWIntrinsicInfo::SupportsContainment(containingIntrinsicId));
 
-    // containingNode supports nodes that read from an aligned memory address
+    // parentNode supports nodes that read from an aligned memory address
     //
     // This will generally be an explicit LoadAligned instruction and is false for
     // machines with VEX support when minOpts is enabled. This is because there is
@@ -6035,22 +6045,22 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
     // coding patterns on the managed side.
     bool supportsAlignedSIMDLoads = false;
 
-    // containingNode supports nodes that read from general memory
+    // parentNode supports nodes that read from general memory
     //
     // We currently have to assume all "general" loads are unaligned. As such, this is
     // generally used to determine if we can mark the node as `regOptional` in the case
-    // where `node` is not containable. However, this can also be used to determine whether
+    // where `childNode` is not containable. However, this can also be used to determine whether
     // we can mark other types of reads as contained (such as when directly reading a local).
     bool supportsGeneralLoads = false;
 
-    // containingNode supports nodes that read from a scalar memory address
+    // parentNode supports nodes that read from a scalar memory address
     //
     // This will generally be an explicit LoadScalar instruction but is also used to determine
     // whether we can read an address of type T (we don't support this when the load would
     // read more than sizeof(T) bytes).
     bool supportsSIMDScalarLoads = false;
 
-    // containingNode supports nodes that read from an unaligned memory address
+    // parentNode supports nodes that read from an unaligned memory address
     //
     // This will generally be an explicit Load instruction and is generally false for machines
     // without VEX support. This is because older hardware required that the SIMD operand always
@@ -6061,7 +6071,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
     {
         case HW_Category_MemoryLoad:
         {
-            supportsGeneralLoads = !node->OperIsHWIntrinsic();
+            supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
             break;
         }
 
@@ -6078,7 +6088,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 {
                     assert(!supportsSIMDScalarLoads);
 
-                    if (!containingNode->OperIsMemoryLoad())
+                    if (!parentNode->OperIsMemoryLoad())
                     {
                         // The containable form is the one that takes a SIMD value, that may be in memory.
 
@@ -6107,14 +6117,14 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                         //  * ConvertToVector256Int64 - sizeof(simdType) = 32; sizeof(baseType) = 1 | 2 | 4;
                         //  expectedSize = 16 | 8 | 4
 
-                        const unsigned sizeof_simdType = genTypeSize(containingNode->TypeGet());
-                        const unsigned sizeof_baseType = genTypeSize(containingNode->GetSimdBaseType());
+                        const unsigned sizeof_simdType = genTypeSize(parentNode->TypeGet());
+                        const unsigned sizeof_baseType = genTypeSize(parentNode->GetSimdBaseType());
 
                         assert((sizeof_simdType == 16) || (sizeof_simdType == 32));
                         assert((sizeof_baseType == 1) || (sizeof_baseType == 2) || (sizeof_baseType == 4));
 
                         const unsigned expectedSize = sizeof_simdType / (sizeof_baseType * 2);
-                        const unsigned operandSize  = genTypeSize(node->TypeGet());
+                        const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
                         assert((sizeof_simdType != 16) || (expectedSize == 8) || (expectedSize == 4) ||
                                (expectedSize == 2));
@@ -6126,7 +6136,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     else
                     {
                         // The memory form of this already takes a pointer and should be treated like a MemoryLoad
-                        supportsGeneralLoads = !node->OperIsHWIntrinsic();
+                        supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
                     }
                     break;
                 }
@@ -6145,8 +6155,8 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = true;
 
-                    const unsigned expectedSize = genTypeSize(containingNode->TypeGet()) / 2;
-                    const unsigned operandSize  = genTypeSize(node->TypeGet());
+                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
                     supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
                     break;
@@ -6167,8 +6177,8 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                         supportsUnalignedSIMDLoads = true;
                     }
 
-                    const unsigned expectedSize = genTypeSize(containingNode->TypeGet());
-                    const unsigned operandSize  = genTypeSize(node->TypeGet());
+                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet());
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
                     supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
                     break;
@@ -6213,8 +6223,8 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 {
                     assert(!supportsSIMDScalarLoads);
 
-                    const unsigned expectedSize = genTypeSize(containingNode->GetSimdBaseType());
-                    const unsigned operandSize  = genTypeSize(node->TypeGet());
+                    const unsigned expectedSize = genTypeSize(parentNode->GetSimdBaseType());
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
                     supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
@@ -6229,7 +6239,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     assert(!supportsSIMDScalarLoads);
 
                     const unsigned expectedSize = 16;
-                    const unsigned operandSize  = genTypeSize(node->TypeGet());
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
                     supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
@@ -6244,7 +6254,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     assert(supportsAlignedSIMDLoads == false);
                     assert(supportsUnalignedSIMDLoads == false);
 
-                    if (containingNode->GetSimdBaseType() == TYP_FLOAT)
+                    if (parentNode->GetSimdBaseType() == TYP_FLOAT)
                     {
                         assert(containingIntrinsicId == NI_SSE41_Insert);
 
@@ -6259,9 +6269,9 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                         assert(supportsGeneralLoads == false);
                         assert(supportsSIMDScalarLoads == false);
 
-                        GenTree* op1 = containingNode->Op(1);
-                        GenTree* op2 = containingNode->Op(2);
-                        GenTree* op3 = containingNode->Op(3);
+                        GenTree* op1 = parentNode->Op(1);
+                        GenTree* op2 = parentNode->Op(2);
+                        GenTree* op3 = parentNode->Op(3);
 
                         // The upper two bits of the immediate value are ignored if
                         // op2 comes from memory. In order to support using the upper
@@ -6281,11 +6291,11 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     }
 
                     // We should only get here for integral nodes.
-                    assert(varTypeIsIntegral(node->TypeGet()));
+                    assert(varTypeIsIntegral(childNode->TypeGet()));
                     assert(supportsSIMDScalarLoads == false);
 
-                    const unsigned expectedSize = genTypeSize(containingNode->GetSimdBaseType());
-                    const unsigned operandSize  = genTypeSize(node->TypeGet());
+                    const unsigned expectedSize = genTypeSize(parentNode->GetSimdBaseType());
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
                     supportsGeneralLoads = (operandSize >= expectedSize);
                     break;
@@ -6323,7 +6333,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
                 {
-                    if (!varTypeIsIntegral(node->TypeGet()))
+                    if (!varTypeIsIntegral(childNode->TypeGet()))
                     {
                         // The floating-point overload doesn't require any special semantics
                         supportsSIMDScalarLoads = true;
@@ -6334,8 +6344,8 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     // The integral overloads only take GPR/mem
                     assert(supportsSIMDScalarLoads == false);
 
-                    const unsigned expectedSize = genTypeSize(genActualType(containingNode->GetSimdBaseType()));
-                    const unsigned operandSize  = genTypeSize(node->TypeGet());
+                    const unsigned expectedSize = genTypeSize(genActualType(parentNode->GetSimdBaseType()));
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
                     supportsGeneralLoads = (operandSize >= expectedSize);
                     break;
@@ -6344,7 +6354,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 {
-                    if (!containingNode->OperIsMemoryLoad())
+                    if (!parentNode->OperIsMemoryLoad())
                     {
                         // The containable form is the one that takes a SIMD value, that may be in memory.
                         supportsSIMDScalarLoads = true;
@@ -6353,7 +6363,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     else
                     {
                         // The memory form of this already takes a pointer and should be treated like a MemoryLoad
-                        supportsGeneralLoads = !node->OperIsHWIntrinsic();
+                        supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
                     }
                     break;
                 }
@@ -6367,7 +6377,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                 case NI_SSE2_X64_ConvertScalarToVector128Int64:
                 case NI_SSE2_X64_ConvertScalarToVector128UInt64:
                 {
-                    if (!varTypeIsIntegral(node->TypeGet()))
+                    if (!varTypeIsIntegral(childNode->TypeGet()))
                     {
                         // The floating-point overload doesn't require any special semantics
                         assert(containingIntrinsicId == NI_SSE2_ConvertScalarToVector128Double);
@@ -6379,8 +6389,8 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
                     // The integral overloads only take GPR/mem
                     assert(supportsSIMDScalarLoads == false);
 
-                    const unsigned expectedSize = genTypeSize(genActualType(containingNode->GetSimdBaseType()));
-                    const unsigned operandSize  = genTypeSize(node->TypeGet());
+                    const unsigned expectedSize = genTypeSize(genActualType(parentNode->GetSimdBaseType()));
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
                     supportsGeneralLoads = (operandSize >= expectedSize);
                     break;
@@ -6399,20 +6409,20 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
         case HW_Category_Scalar:
         {
             // We should only get here for integral nodes.
-            assert(varTypeIsIntegral(node->TypeGet()));
+            assert(varTypeIsIntegral(childNode->TypeGet()));
 
             assert(supportsAlignedSIMDLoads == false);
             assert(supportsUnalignedSIMDLoads == false);
             assert(supportsSIMDScalarLoads == false);
 
-            unsigned       expectedSize = genTypeSize(containingNode->TypeGet());
-            const unsigned operandSize  = genTypeSize(node->TypeGet());
+            unsigned       expectedSize = genTypeSize(parentNode->TypeGet());
+            const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
             // CRC32 codegen depends on its second oprand's type.
             // Currently, we are using SIMDBaseType to store the op2Type info.
             if (containingIntrinsicId == NI_SSE42_Crc32)
             {
-                var_types op2Type = containingNode->GetSimdBaseType();
+                var_types op2Type = parentNode->GetSimdBaseType();
                 expectedSize      = genTypeSize(op2Type);
             }
 
@@ -6434,36 +6444,36 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
 
     // Code motion safety checks
     //
-    if (transparentParentNode != nullptr)
+    if (grandparentNode != nullptr)
     {
-        isSafeToContainMem = IsSafeToContainMem(containingNode, transparentParentNode, node);
+        isSafeToContainMem = IsSafeToContainMem(grandparentNode, parentNode, childNode);
     }
     else
     {
-        isSafeToContainMem = IsSafeToContainMem(containingNode, node);
+        isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
     }
 
     *supportsRegOptional = isSafeToContainMem && supportsGeneralLoads;
 
-    if (!node->OperIsHWIntrinsic())
+    if (!childNode->OperIsHWIntrinsic())
     {
         bool canBeContained = false;
 
         if (supportsGeneralLoads)
         {
-            if (IsContainableMemoryOp(node))
+            if (IsContainableMemoryOp(childNode))
             {
                 canBeContained = isSafeToContainMem;
             }
-            else if (node->IsCnsNonZeroFltOrDbl())
+            else if (childNode->IsCnsNonZeroFltOrDbl())
             {
                 // Always safe.
                 //
                 canBeContained = true;
             }
-            else if (node->IsCnsVec())
+            else if (childNode->IsCnsVec())
             {
-                GenTreeVecCon* vecCon = node->AsVecCon();
+                GenTreeVecCon* vecCon = childNode->AsVecCon();
                 canBeContained        = !vecCon->IsAllBitsSet() && !vecCon->IsZero();
             }
         }
@@ -6473,7 +6483,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
 
     // TODO-XArch: Update this to be table driven, if possible.
 
-    GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+    GenTreeHWIntrinsic* hwintrinsic = childNode->AsHWIntrinsic();
     NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
     switch (intrinsicId)
@@ -6483,36 +6493,27 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
         {
             if (!supportsSIMDScalarLoads)
             {
+                // Nothing to do if the intrinsic doesn't support scalar loads
                 return false;
             }
 
             GenTree* op1                    = hwintrinsic->Op(1);
             bool     op1SupportsRegOptional = false;
 
-            if (!TryGetContainableHWIntrinsicOp(containingNode, &op1, &op1SupportsRegOptional, hwintrinsic))
+            if (IsContainableHWIntrinsicOp(parentNode, hwintrinsic, op1, &op1SupportsRegOptional) ||
+                op1SupportsRegOptional)
             {
-                return false;
+                // We have CreateScalarUnsafe where the underlying scalar is containable
+                // or was marked reg optional. As such, we'll say can contain the CreateScalarUnsafe
+                // and consume the value directly in codegen.
+
+                assert(op1->isContained() || op1->IsRegOptional());
+                return true;
             }
 
-            LIR::Use use;
-            if (!BlockRange().TryGetUse(node, &use) || (use.User() != containingNode))
-            {
-                return false;
-            }
-
-            // We have CreateScalarUnsafe where the underlying scalar is directly containable
-            // by containingNode. As such, we'll just remove CreateScalarUnsafe and consume
-            // the value directly.
-
-            use.ReplaceWith(op1);
-            BlockRange().Remove(node);
-
-            node = op1;
-            node->ClearContained();
-
-            return true;
+            return false;
         }
-
+        
         case NI_SSE_LoadAlignedVector128:
         case NI_SSE2_LoadAlignedVector128:
         case NI_AVX_LoadAlignedVector256:
@@ -6541,7 +6542,7 @@ bool Lowering::TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode
 
         default:
         {
-            assert(!node->isContainableHWIntrinsic());
+            assert(!childNode->isContainableHWIntrinsic());
             return false;
         }
     }
@@ -6608,7 +6609,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
         // We want to handle GetElement still for Vector2/3
         if ((intrinsicId != NI_Vector128_GetElement) && (intrinsicId != NI_Vector256_GetElement))
         {
-            // TODO-XArch-CQ: Ideally we would key this off of the size containingNode
+            // TODO-XArch-CQ: Ideally we would key this off of the size the containing node
             // expects vs the size node actually is or would be if spilled to the stack
             return;
         }
@@ -6715,7 +6716,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     ContainCheckHWIntrinsicAddr(node, op1);
                 }
-                else if (TryGetContainableHWIntrinsicOp(node, &op1, &supportsRegOptional))
+                else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                 {
                     MakeSrcContained(node, op1);
                 }
@@ -6771,13 +6772,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     bool supportsRegOptional = false;
 
-                    if (TryGetContainableHWIntrinsicOp(node, &op2, &supportsRegOptional))
+                    if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                     {
                         MakeSrcContained(node, op2);
                     }
                     else if ((isCommutative || (intrinsicId == NI_BMI2_MultiplyNoFlags) ||
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
-                             TryGetContainableHWIntrinsicOp(node, &op1, &supportsRegOptional))
+                             IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                     {
                         MakeSrcContained(node, op1);
 
@@ -6823,7 +6824,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             if (!HWIntrinsicInfo::isImmOp(intrinsicId, op2))
                             {
-                                if (TryGetContainableHWIntrinsicOp(node, &op2, &supportsRegOptional))
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op2);
                                 }
@@ -6845,7 +6846,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             // These intrinsics have op2 as an imm and op1 as a reg/mem
 
-                            if (TryGetContainableHWIntrinsicOp(node, &op1, &supportsRegOptional))
+                            if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                             {
                                 MakeSrcContained(node, op1);
                             }
@@ -6873,7 +6874,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             if (HWIntrinsicInfo::isImmOp(intrinsicId, op2))
                             {
-                                if (TryGetContainableHWIntrinsicOp(node, &op1, &supportsRegOptional))
+                                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op1);
                                 }
@@ -6882,7 +6883,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     MakeSrcRegOptional(node, op1);
                                 }
                             }
-                            else if (TryGetContainableHWIntrinsicOp(node, &op2, &supportsRegOptional))
+                            else if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                             {
                                 MakeSrcContained(node, op2);
                             }
@@ -6895,7 +6896,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         case NI_AES_KeygenAssist:
                         {
-                            if (TryGetContainableHWIntrinsicOp(node, &op1, &supportsRegOptional))
+                            if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                             {
                                 MakeSrcContained(node, op1);
                             }
@@ -7023,19 +7024,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         // Set op regOptional only if none of them is containable.
 
                         // Prefer to make op3 contained,
-                        if (resultOpNum != 3 && TryGetContainableHWIntrinsicOp(node, &op3, &supportsOp3RegOptional))
+                        if (resultOpNum != 3 && IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
                         {
                             // result = (op1 * op2) + [op3]
                             MakeSrcContained(node, op3);
                         }
-                        else if (resultOpNum != 2 &&
-                                 TryGetContainableHWIntrinsicOp(node, &op2, &supportsOp2RegOptional))
+                        else if (resultOpNum != 2 && IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                         {
                             // result = (op1 * [op2]) + op3
                             MakeSrcContained(node, op2);
                         }
                         else if (resultOpNum != 1 && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId) &&
-                                 TryGetContainableHWIntrinsicOp(node, &op1, &supportsOp1RegOptional))
+                                 IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                         {
                             // result = ([op1] * op2) + op3
                             MakeSrcContained(node, op1);
@@ -7065,7 +7065,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_AVX_BlendVariable:
                             case NI_AVX2_BlendVariable:
                             {
-                                if (TryGetContainableHWIntrinsicOp(node, &op2, &supportsRegOptional))
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op2);
                                 }
@@ -7078,7 +7078,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_AVXVNNI_MultiplyWideningAndAdd:
                             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
                             {
-                                if (TryGetContainableHWIntrinsicOp(node, &op3, &supportsRegOptional))
+                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op3);
                                 }
@@ -7091,11 +7091,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_BMI2_MultiplyNoFlags:
                             case NI_BMI2_X64_MultiplyNoFlags:
                             {
-                                if (TryGetContainableHWIntrinsicOp(node, &op2, &supportsRegOptional))
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op2);
                                 }
-                                else if (TryGetContainableHWIntrinsicOp(node, &op1, &supportsRegOptional))
+                                else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op1);
                                     // MultiplyNoFlags is a Commutative operation, so swap the first two operands here
@@ -7148,7 +7148,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_Permute2x128:
                         case NI_PCLMULQDQ_CarrylessMultiply:
                         {
-                            if (TryGetContainableHWIntrinsicOp(node, &op2, &supportsRegOptional))
+                            if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                             {
                                 MakeSrcContained(node, op2);
                             }
@@ -7195,7 +7195,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                             }
 
-                            if (TryGetContainableHWIntrinsicOp(node, &op2, &supportsRegOptional))
+                            if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                             {
                                 MakeSrcContained(node, op2);
                             }

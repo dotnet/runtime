@@ -56,10 +56,9 @@ static void assertIsContainableHWIntrinsicOp(Lowering*           lowering,
     }
 
     bool supportsRegOptional = false;
-    bool isContainable       = lowering->TryGetContainableHWIntrinsicOp(containingNode, &node, &supportsRegOptional);
+    bool isContainable       = lowering->IsContainableHWIntrinsicOp(containingNode, node, &supportsRegOptional);
 
     assert(isContainable || supportsRegOptional);
-    assert(node == containedNode);
 #endif // DEBUG
 }
 
@@ -484,11 +483,11 @@ void CodeGen::genHWIntrinsic_R_RM(
         case OperandKind::Reg:
             if (emit->IsMovInstruction(ins))
             {
-                emit->emitIns_Mov(ins, attr, reg, rmOp->GetRegNum(), /* canSkip */ false);
+                emit->emitIns_Mov(ins, attr, reg, rmOpDesc.GetReg(), /* canSkip */ false);
             }
             else
             {
-                emit->emitIns_R_R(ins, attr, reg, rmOp->GetRegNum());
+                emit->emitIns_R_R(ins, attr, reg, rmOpDesc.GetReg());
             }
             break;
 
@@ -637,7 +636,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 
         case OperandKind::Reg:
         {
-            regNumber op2Reg = op2->GetRegNum();
+            regNumber op2Reg = op2Desc.GetReg();
 
             if ((op1Reg != targetReg) && (op2Reg == targetReg) && node->isRMWHWIntrinsic(compiler))
             {
@@ -715,7 +714,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_R_R(ins, simdSize, targetReg, op1Reg, op2->GetRegNum(), op3Reg);
+            emit->emitIns_SIMD_R_R_R_R(ins, simdSize, targetReg, op1Reg, op2Desc.GetReg(), op3Reg);
             break;
 
         default:
@@ -767,7 +766,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, op3->GetRegNum());
+            emit->emitIns_SIMD_R_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, op3Desc.GetReg());
             break;
 
         default:

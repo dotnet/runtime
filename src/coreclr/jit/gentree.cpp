@@ -18934,6 +18934,13 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector256_CreateScalarUnsafe:
+        {
+            // These HWIntrinsic operations are contained as part of scalar ops
+            return true;
+        }
+
         case NI_Vector128_get_Zero:
         case NI_Vector256_get_Zero:
         {
