@@ -40,12 +40,15 @@ namespace System.Net.NetworkInformation
         {
             if (pingBinary != null)
             {
-                string? linkedName = Interop.Sys.ReadLink(pingBinary);
-
-                // If pingBinary is not link linkedName will be null
-                if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+                FileInfo info = new FileInfo(pingBinary);
+                // This is Windows way how to say it is symlink
+                if (info?.Attributes.HasFlag(FileAttributes.ReparsePoint) == true)
                 {
-                    return true;
+                    System.IO.FileSystemInfo? linkInfo = File.ResolveLinkTarget(pingBinary, returnFinalTarget: true);
+                    if (linkInfo?.Name.EndsWith("busybox", StringComparison.Ordinal) == true)
+                    {
+                        return true;
+                    }
                 }
             }
 
