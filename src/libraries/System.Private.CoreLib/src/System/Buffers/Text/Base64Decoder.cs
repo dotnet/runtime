@@ -46,7 +46,7 @@ namespace System.Buffers.Text
             fixed (byte* srcBytes = &MemoryMarshal.GetReference(utf8))
             fixed (byte* destBytes = &MemoryMarshal.GetReference(bytes))
             {
-                int srcLength = utf8.Length & ~0x3;  // only decode input up to the closest multiple of 4.
+                int srcLength = utf8.Length;  // only decode input up to the closest multiple of 4.
                 int destLength = bytes.Length;
                 int maxSrcLength = srcLength;
                 int decodedLength = GetMaxDecodedFromUtf8Length(srcLength);
@@ -60,8 +60,11 @@ namespace System.Buffers.Text
 
                 byte* src = srcBytes;
                 byte* dest = destBytes;
+                byte* destEnd = dest + (uint)destLength;
                 byte* srcEnd = srcBytes + (uint)srcLength;
                 byte* srcMax = srcBytes + (uint)maxSrcLength;
+
+                int totalBytesIgnored = 0;
 
                 if (maxSrcLength >= 24)
                 {
@@ -84,142 +87,199 @@ namespace System.Buffers.Text
                     }
                 }
 
-                // Last bytes could have padding characters, so process them separately and treat them as valid only if isFinalBlock is true
-                // if isFinalBlock is false, padding characters are considered invalid
-                int skipLastChunk = isFinalBlock ? 4 : 0;
-
-                if (destLength >= decodedLength)
-                {
-                    maxSrcLength = srcLength - skipLastChunk;
-                }
-                else
-                {
-                    // This should never overflow since destLength here is less than int.MaxValue / 4 * 3 (i.e. 1610612733)
-                    // Therefore, (destLength / 3) * 4 will always be less than 2147483641
-                    Debug.Assert(destLength < (int.MaxValue / 4 * 3));
-                    maxSrcLength = (destLength / 3) * 4;
-                }
-
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
-                srcMax = srcBytes + (uint)maxSrcLength;
 
-                while (src < srcMax)
+                // The next src increment is stored as it will be used if the dest has enough space
+                // or ignored in consumed operations if not.
+                int pendingSrcIncrement = 0;
+
+                while (src + 4 <= srcEnd)
                 {
-                    int result = Decode(src, ref decodingMap);
+                    // The default increment will be 4 if no bytes that require ignoring are encountered.
+                    pendingSrcIncrement = 4;
+                    byte b0 = src[0];
+                    byte b1 = src[1];
+                    byte b2 = src[2];
+                    byte b3 = src[3];
 
+                    int result = Decode(b0, b1, b2, b3, ref decodingMap);
                     if (result < 0)
-                        goto InvalidDataExit;
+                    {
+                        int firstInvalidIndex = GetIndexOfFirstByteToBeIgnored(src);
+                        if (firstInvalidIndex != -1)
+                        {
+                            int bytesIgnored = 0;
+                            int validBytesSearchIndex = firstInvalidIndex;
+                            bool insufficientValidBytesFound = false;
+
+                            for (int currentBlockIndex = firstInvalidIndex; currentBlockIndex < 4; currentBlockIndex++)
+                            {
+                                while (src + validBytesSearchIndex < srcEnd
+                                       && IsByteToBeIgnored(src[validBytesSearchIndex]))
+                                {
+                                    validBytesSearchIndex++;
+                                    bytesIgnored++;
+                                    totalBytesIgnored++;
+                                }
+
+                                if (src + validBytesSearchIndex >= srcEnd)
+                                {
+                                    insufficientValidBytesFound = true;
+                                    break;
+                                }
+
+                                if (currentBlockIndex == 0)
+                                {
+                                    b0 = src[validBytesSearchIndex];
+                                }
+                                else if (currentBlockIndex == 1)
+                                {
+                                    b1 = src[validBytesSearchIndex];
+                                }
+                                else if (currentBlockIndex == 2)
+                                {
+                                    b2 = src[validBytesSearchIndex];
+                                }
+                                else
+                                {
+                                    b3 = src[validBytesSearchIndex];
+                                }
+
+                                validBytesSearchIndex++;
+                            }
+
+                            if (insufficientValidBytesFound)
+                            {
+                                break;
+                            }
+
+                            result = Decode(b0, b1, b2, b3, ref decodingMap);
+                            if (result < 0
+                                && !IsBlockEndBytesPadding(b2, b3))
+                            {
+                                goto InvalidDataExit;
+                            }
+
+                            pendingSrcIncrement = validBytesSearchIndex;
+                        }
+                        else
+                        {
+                            if (!IsBlockEndBytesPadding(b2, b3))
+                            {
+                                goto InvalidDataExit;
+                            }
+                        }
+
+                        // Check to see if parsing failed due to padding. There could be 1 or 2 padding chars.
+                        if (result < 0
+                            && IsBlockEndBytesPadding(b2, b3))
+                        {
+                            int indexOfBytesAfterPadding = pendingSrcIncrement;
+                            while (src + indexOfBytesAfterPadding + 1 <= srcEnd)
+                            {
+                                if (!IsByteToBeIgnored(src[indexOfBytesAfterPadding++]))
+                                {
+                                    // Only bytes to be ignored can be after padding bytes.
+                                    goto InvalidDataExit;
+                                }
+                            }
+
+                            // If isFinalBlock is false, padding is treaded as invalid.
+                            if (!isFinalBlock)
+                            {
+                                goto InvalidDataExit;
+                            }
+
+                            int i0 = Unsafe.Add(ref decodingMap, (IntPtr)b0);
+                            int i1 = Unsafe.Add(ref decodingMap, (IntPtr)b1);
+
+                            i0 <<= 18;
+                            i1 <<= 12;
+
+                            i0 |= i1;
+
+                            if (b2 != EncodingPad)
+                            {
+                                int i2 = Unsafe.Add(ref decodingMap, (IntPtr)b2);
+
+                                i2 <<= 6;
+
+                                i0 |= i2;
+
+                                if (i0 < 0)
+                                    goto InvalidDataExit;
+                                if (dest + 2 > destEnd)
+                                    goto DestinationTooSmallExit;
+
+                                dest[0] = (byte)(i0 >> 16);
+                                dest[1] = (byte)(i0 >> 8);
+                                dest += 2;
+                            }
+                            else
+                            {
+                                if (i0 < 0)
+                                    goto InvalidDataExit;
+                                if (dest + 1 > destEnd)
+                                    goto DestinationTooSmallExit;
+
+                                dest[0] = (byte)(i0 >> 16);
+                                dest += 1;
+                            }
+
+                            src += pendingSrcIncrement;
+                            pendingSrcIncrement = 0;
+
+                            break;
+                        }
+                    }
+
+                    if (dest + 3 > destEnd)
+                    {
+                        goto DestinationTooSmallExit;
+                    }
 
                     WriteThreeLowOrderBytes(dest, result);
-                    src += 4;
+
+                    src += pendingSrcIncrement;
+                    pendingSrcIncrement = 0;
                     dest += 3;
                 }
 
-                if (maxSrcLength != srcLength - skipLastChunk)
-                    goto DestinationTooSmallExit;
-
-                // If input is less than 4 bytes, srcLength == sourceIndex == 0
-                // If input is not a multiple of 4, sourceIndex == srcLength != 0
-                if (src == srcEnd)
+                if (!isFinalBlock)
                 {
-                    if (isFinalBlock)
-                        goto InvalidDataExit;
-
-                    if (src == srcBytes + utf8.Length)
-                        goto DoneExit;
-
-                    goto NeedMoreDataExit;
+                    int remainingBytes = (int)(srcEnd - src);
+                    if (remainingBytes > 0 && remainingBytes < 4)
+                    {
+                        goto NeedMoreDataExit;
+                    }
                 }
 
-                // if isFinalBlock is false, we will never reach this point
-
-                // Handle last four bytes. There are 0, 1, 2 padding chars.
-                uint t0 = srcEnd[-4];
-                uint t1 = srcEnd[-3];
-                uint t2 = srcEnd[-2];
-                uint t3 = srcEnd[-1];
-
-                int i0 = Unsafe.Add(ref decodingMap, (IntPtr)t0);
-                int i1 = Unsafe.Add(ref decodingMap, (IntPtr)t1);
-
-                i0 <<= 18;
-                i1 <<= 12;
-
-                i0 |= i1;
-
-                byte* destMax = destBytes + (uint)destLength;
-
-                if (t3 != EncodingPad)
+                int indexOfBytesNotConsumed = pendingSrcIncrement;
+                while (src + indexOfBytesNotConsumed + 1 <= srcEnd)
                 {
-                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
-                    int i3 = Unsafe.Add(ref decodingMap, (IntPtr)t3);
-
-                    i2 <<= 6;
-
-                    i0 |= i3;
-                    i0 |= i2;
-
-                    if (i0 < 0)
+                    if (!IsByteToBeIgnored(src[indexOfBytesNotConsumed++]))
+                    {
                         goto InvalidDataExit;
-                    if (dest + 3 > destMax)
-                        goto DestinationTooSmallExit;
-
-                    WriteThreeLowOrderBytes(dest, i0);
-                    dest += 3;
+                    }
                 }
-                else if (t2 != EncodingPad)
-                {
-                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
-
-                    i2 <<= 6;
-
-                    i0 |= i2;
-
-                    if (i0 < 0)
-                        goto InvalidDataExit;
-                    if (dest + 2 > destMax)
-                        goto DestinationTooSmallExit;
-
-                    dest[0] = (byte)(i0 >> 16);
-                    dest[1] = (byte)(i0 >> 8);
-                    dest += 2;
-                }
-                else
-                {
-                    if (i0 < 0)
-                        goto InvalidDataExit;
-                    if (dest + 1 > destMax)
-                        goto DestinationTooSmallExit;
-
-                    dest[0] = (byte)(i0 >> 16);
-                    dest += 1;
-                }
-
-                src += 4;
-
-                if (srcLength != utf8.Length)
-                    goto InvalidDataExit;
 
             DoneExit:
-                bytesConsumed = (int)(src - srcBytes);
+                bytesConsumed = ((int)(src - srcBytes)) - totalBytesIgnored;
                 bytesWritten = (int)(dest - destBytes);
                 return OperationStatus.Done;
 
             DestinationTooSmallExit:
-                if (srcLength != utf8.Length && isFinalBlock)
-                    goto InvalidDataExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
-
-                bytesConsumed = (int)(src - srcBytes);
+                bytesConsumed = ((int)(src - srcBytes)) - totalBytesIgnored;
                 bytesWritten = (int)(dest - destBytes);
                 return OperationStatus.DestinationTooSmall;
 
             NeedMoreDataExit:
-                bytesConsumed = (int)(src - srcBytes);
+                bytesConsumed = ((int)(src - srcBytes)) - totalBytesIgnored;
                 bytesWritten = (int)(dest - destBytes);
                 return OperationStatus.NeedMoreData;
 
             InvalidDataExit:
-                bytesConsumed = (int)(src - srcBytes);
+                bytesConsumed = ((int)(src - srcBytes)) - totalBytesIgnored;
                 bytesWritten = (int)(dest - destBytes);
                 return OperationStatus.InvalidData;
             }
@@ -269,75 +329,154 @@ namespace System.Buffers.Text
                 uint sourceIndex = 0;
                 uint destIndex = 0;
 
-                // only decode input if it is a multiple of 4
-                if (bufferLength != ((bufferLength >> 2) * 4))
-                    goto InvalidExit;
+                int totalBytesIgnored = 0;
+
                 if (bufferLength == 0)
                     goto DoneExit;
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
 
-                while (sourceIndex < bufferLength - 4)
+                while (sourceIndex <= bufferLength - 4)
                 {
-                    int result = Decode(bufferBytes + sourceIndex, ref decodingMap);
+                    // The default increment will be 4 if no bytes that require ignoring are encountered.
+                    uint nextSoureIndex = sourceIndex + 4;
+                    byte b0 = bufferBytes[sourceIndex];
+                    byte b1 = bufferBytes[sourceIndex + 1];
+                    byte b2 = bufferBytes[sourceIndex + 2];
+                    byte b3 = bufferBytes[sourceIndex + 3];
+
+                    int result = Decode(b0, b1, b2, b3, ref decodingMap);
                     if (result < 0)
-                        goto InvalidExit;
+                    {
+                        int firstInvalidIndex = GetIndexOfFirstByteToBeIgnored(bufferBytes + sourceIndex);
+                        if (firstInvalidIndex != -1)
+                        {
+                            int bytesIgnored = 0;
+                            uint validBytesSearchIndex = (uint)firstInvalidIndex + sourceIndex;
+                            bool insufficientValidBytesFound = false;
+
+                            for (int currentBlockIndex = firstInvalidIndex; currentBlockIndex < 4; currentBlockIndex++)
+                            {
+                                while (validBytesSearchIndex <= bufferLength - 1
+                                       && IsByteToBeIgnored(bufferBytes[validBytesSearchIndex]))
+                                {
+                                    validBytesSearchIndex++;
+                                    bytesIgnored++;
+                                    totalBytesIgnored++;
+                                }
+
+                                if (validBytesSearchIndex > bufferLength - 1)
+                                {
+                                    insufficientValidBytesFound = true;
+                                    break;
+                                }
+
+                                if (currentBlockIndex == 0)
+                                {
+                                    b0 = bufferBytes[validBytesSearchIndex];
+                                }
+                                else if (currentBlockIndex == 1)
+                                {
+                                    b1 = bufferBytes[validBytesSearchIndex];
+                                }
+                                else if (currentBlockIndex == 2)
+                                {
+                                    b2 = bufferBytes[validBytesSearchIndex];
+                                }
+                                else
+                                {
+                                    b3 = bufferBytes[validBytesSearchIndex];
+                                }
+
+                                validBytesSearchIndex++;
+                            }
+
+                            if (insufficientValidBytesFound)
+                            {
+                                break;
+                            }
+
+                            result = Decode(b0, b1, b2, b3, ref decodingMap);
+                            if (result < 0
+                                && !IsBlockEndBytesPadding(b2, b3))
+                            {
+                                goto InvalidExit;
+                            }
+
+                            nextSoureIndex = validBytesSearchIndex;
+                        }
+                        else
+                        {
+                            if (!IsBlockEndBytesPadding(b2, b3))
+                            {
+                                goto InvalidExit;
+                            }
+                        }
+
+                        // Handle last four bytes. There are 1, 2 padding chars.
+                        if (result < 0
+                            && IsBlockEndBytesPadding(b2, b3))
+                        {
+                            uint indexOfBytesAfterPadding = sourceIndex + nextSoureIndex;
+                            while (indexOfBytesAfterPadding + 1 <= bufferLength - 1)
+                            {
+                                if (!IsByteToBeIgnored(bufferBytes[indexOfBytesAfterPadding++]))
+                                {
+                                    // Only bytes to be ignored can be after padding bytes.
+                                    goto InvalidExit;
+                                }
+                            }
+
+                            int i0 = Unsafe.Add(ref decodingMap, (IntPtr)b0);
+                            int i1 = Unsafe.Add(ref decodingMap, (IntPtr)b1);
+
+                            i0 <<= 18;
+                            i1 <<= 12;
+
+                            i0 |= i1;
+
+                            if (b2 != EncodingPad)
+                            {
+                                int i2 = Unsafe.Add(ref decodingMap, (IntPtr)b2);
+
+                                i2 <<= 6;
+
+                                i0 |= i2;
+
+                                if (i0 < 0)
+                                    goto InvalidExit;
+
+                                bufferBytes[destIndex] = (byte)(i0 >> 16);
+                                bufferBytes[destIndex + 1] = (byte)(i0 >> 8);
+                                destIndex += 2;
+                            }
+                            else
+                            {
+                                if (i0 < 0)
+                                    goto InvalidExit;
+
+                                bufferBytes[destIndex] = (byte)(i0 >> 16);
+                                destIndex += 1;
+                            }
+
+                            sourceIndex = nextSoureIndex;
+
+                            goto DoneExit;
+                        }
+                    }
+
                     WriteThreeLowOrderBytes(bufferBytes + destIndex, result);
                     destIndex += 3;
-                    sourceIndex += 4;
+                    sourceIndex = nextSoureIndex;
                 }
 
-                uint t0 = bufferBytes[bufferLength - 4];
-                uint t1 = bufferBytes[bufferLength - 3];
-                uint t2 = bufferBytes[bufferLength - 2];
-                uint t3 = bufferBytes[bufferLength - 1];
-
-                int i0 = Unsafe.Add(ref decodingMap, (IntPtr)t0);
-                int i1 = Unsafe.Add(ref decodingMap, (IntPtr)t1);
-
-                i0 <<= 18;
-                i1 <<= 12;
-
-                i0 |= i1;
-
-                if (t3 != EncodingPad)
+                // Check if there are any bytes that should not be ignored after the last valid block size.
+                while (sourceIndex <= bufferLength - 1)
                 {
-                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
-                    int i3 = Unsafe.Add(ref decodingMap, (IntPtr)t3);
-
-                    i2 <<= 6;
-
-                    i0 |= i3;
-                    i0 |= i2;
-
-                    if (i0 < 0)
+                    if (!IsByteToBeIgnored(bufferBytes[sourceIndex++]))
+                    {
                         goto InvalidExit;
-
-                    WriteThreeLowOrderBytes(bufferBytes + destIndex, i0);
-                    destIndex += 3;
-                }
-                else if (t2 != EncodingPad)
-                {
-                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
-
-                    i2 <<= 6;
-
-                    i0 |= i2;
-
-                    if (i0 < 0)
-                        goto InvalidExit;
-
-                    bufferBytes[destIndex] = (byte)(i0 >> 16);
-                    bufferBytes[destIndex + 1] = (byte)(i0 >> 8);
-                    destIndex += 2;
-                }
-                else
-                {
-                    if (i0 < 0)
-                        goto InvalidExit;
-
-                    bufferBytes[destIndex] = (byte)(i0 >> 16);
-                    destIndex += 1;
+                    }
                 }
 
             DoneExit:
@@ -571,15 +710,15 @@ namespace System.Buffers.Text
             // 1111 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
 
             // The JIT won't hoist these "constants", so help it
-            Vector128<byte>  lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
-            Vector128<byte>  lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
+            Vector128<byte> lutHi = Vector128.Create(0x02011010, 0x08040804, 0x10101010, 0x10101010).AsByte();
+            Vector128<byte> lutLo = Vector128.Create(0x11111115, 0x11111111, 0x1A131111, 0x1A1B1B1B).AsByte();
             Vector128<sbyte> lutShift = Vector128.Create(0x04131000, 0xb9b9bfbf, 0x00000000, 0x00000000).AsSByte();
             Vector128<sbyte> packBytesMask = Vector128.Create(0x06000102, 0x090A0405, 0x0C0D0E08, 0xffffffff).AsSByte();
-            Vector128<byte>  mergeConstant0 = Vector128.Create(0x01400140).AsByte();
+            Vector128<byte> mergeConstant0 = Vector128.Create(0x01400140).AsByte();
             Vector128<short> mergeConstant1 = Vector128.Create(0x00011000).AsInt16();
-            Vector128<byte>  one = Vector128.Create((byte)1);
-            Vector128<byte>  mask2F = Vector128.Create((byte)'/');
-            Vector128<byte>  mask8F = Vector128.Create((byte)0x8F);
+            Vector128<byte> one = Vector128.Create((byte)1);
+            Vector128<byte> mask2F = Vector128.Create((byte)'/');
+            Vector128<byte> mask8F = Vector128.Create((byte)0x8F);
 
             byte* src = srcBytes;
             byte* dest = destBytes;
@@ -665,13 +804,8 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int Decode(byte* encodedBytes, ref sbyte decodingMap)
+        private static unsafe int Decode(uint t0, uint t1, uint t2, uint t3, ref sbyte decodingMap)
         {
-            uint t0 = encodedBytes[0];
-            uint t1 = encodedBytes[1];
-            uint t2 = encodedBytes[2];
-            uint t3 = encodedBytes[3];
-
             int i0 = Unsafe.Add(ref decodingMap, (IntPtr)t0);
             int i1 = Unsafe.Add(ref decodingMap, (IntPtr)t1);
             int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
@@ -694,6 +828,51 @@ namespace System.Buffers.Text
             destination[0] = (byte)(value >> 16);
             destination[1] = (byte)(value >> 8);
             destination[2] = (byte)(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe int GetIndexOfFirstByteToBeIgnored(byte* src)
+        {
+            int firstInvalidIndex = -1;
+
+            if (IsByteToBeIgnored(src[0]))
+            {
+                firstInvalidIndex = 0;
+            }
+            else if (IsByteToBeIgnored(src[1]))
+            {
+                firstInvalidIndex = 1;
+            }
+            else if (IsByteToBeIgnored(src[2]))
+            {
+                firstInvalidIndex = 2;
+            }
+            else if (IsByteToBeIgnored(src[3]))
+            {
+                firstInvalidIndex = 3;
+            }
+
+            return firstInvalidIndex;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsBlockEndBytesPadding(byte secondToLastByte, byte lastByte) =>
+            lastByte == EncodingPad
+            || secondToLastByte == EncodingPad && lastByte == EncodingPad;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsByteToBeIgnored(byte charByte)
+        {
+            switch (charByte)
+            {
+                case 9:  // Line feed
+                case 10: // Horizontal tab
+                case 13: // Carriage return
+                case 32: // Space
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
