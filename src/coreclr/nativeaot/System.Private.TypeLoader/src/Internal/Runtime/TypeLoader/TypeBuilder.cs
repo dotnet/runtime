@@ -260,9 +260,6 @@ namespace Internal.Runtime.TypeLoader
                     {
                         Debug.Assert(typeAsArrayType.IsMdArray || typeAsArrayType.ElementType.IsPointer);
                     }
-
-                    // Assert that non-valuetypes are considered to have pointer size
-                    Debug.Assert(typeAsArrayType.ParameterType.IsValueType || state.ComponentSize == IntPtr.Size);
                 }
             }
             else
@@ -276,11 +273,7 @@ namespace Internal.Runtime.TypeLoader
                 PrepareBaseTypeAndDictionaries(type);
                 PrepareRuntimeInterfaces(type);
 
-                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete." +
-                    " IsHFA = " + (state.IsHFA ? "true" : "false") +
-                    " Type size = " + (state.TypeSize.HasValue ? state.TypeSize.Value.LowLevelToString() : "UNDEF") +
-                    " Fields size = " + (state.UnalignedTypeSize.HasValue ? state.UnalignedTypeSize.Value.LowLevelToString() : "UNDEF") +
-                    " Type alignment = " + (state.FieldAlignment.HasValue ? state.FieldAlignment.Value.LowLevelToString() : "UNDEF"));
+                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete.");
             }
         }
 
@@ -400,13 +393,6 @@ namespace Internal.Runtime.TypeLoader
 
             NativeParser baseTypeParser = new NativeParser();
 
-            int nonGcDataSize = 0;
-            int gcDataSize = 0;
-            int threadDataSize = 0;
-            bool staticSizesMeaningful = (type is DefType) // Is type permitted to have static fields
-                                    && !isTemplateUniversalCanon; // Non-universal templates always specify their statics sizes
-                                                                  // if the size can be greater than 0
-
             BagElementKind kind;
             while ((kind = typeInfoParser.GetBagElementKind()) != BagElementKind.End)
             {
@@ -432,22 +418,19 @@ namespace Internal.Runtime.TypeLoader
                     case BagElementKind.NonGcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.NonGcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        nonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.NonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.GcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.GcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        gcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.GcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.ThreadStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.ThreadStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        threadDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.ThreadDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.GcStaticDesc:
@@ -491,13 +474,6 @@ namespace Internal.Runtime.TypeLoader
                         typeInfoParser.SkipInteger();
                         break;
                 }
-            }
-
-            if (staticSizesMeaningful)
-            {
-                Debug.Assert((state.NonGcDataSize + (state.HasStaticConstructor ? TypeBuilder.ClassConstructorOffset : 0)) == nonGcDataSize);
-                Debug.Assert(state.GcDataSize == gcDataSize);
-                Debug.Assert(state.ThreadDataSize == threadDataSize);
             }
 
             type.ParseBaseType(context, baseTypeParser);
@@ -847,9 +823,16 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (type is ArrayType typeAsSzArrayType)
                 {
-                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(typeAsSzArrayType.ElementType));
+                    RuntimeTypeHandle elementTypeHandle = GetRuntimeTypeHandle(typeAsSzArrayType.ElementType);
+                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(elementTypeHandle);
 
-                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(state.ComponentSize.Value);
+                    ushort componentSize = (ushort)IntPtr.Size;
+                    unsafe
+                    {
+                        if (typeAsSzArrayType.ElementType.IsValueType)
+                            componentSize = checked((ushort)elementTypeHandle.ToEETypePtr()->ValueTypeSize);
+                    }
+                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(componentSize);
 
                     FinishInterfaces(state);
                 }
