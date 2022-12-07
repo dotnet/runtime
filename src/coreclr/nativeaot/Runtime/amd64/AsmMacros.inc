@@ -234,6 +234,8 @@ Name    dq      offset AddressToExport
 
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
+tls_CurrentThread  TEXTEQU <?tls_CurrentThread@@3UThreadBuffer@@A>
+
 ;;
 ;; __declspec(thread) version
 ;;

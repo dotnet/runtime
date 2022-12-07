@@ -79,12 +79,15 @@ __SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
         ;; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
         ;; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
         ;; to improve density, or to reduce distance between the constant pool and its use.
+
+        SETALIAS gCurrentThreadInfo, ?tls_CurrentThread@@3UThreadBuffer@@A
+
     MACRO
         INLINE_GETTHREAD_CONSTANT_POOL
-        EXTERN tls_CurrentThread
+        EXTERN $tls_CurrentThread
 
 $__SECTIONREL_tls_CurrentThread
-        DCD tls_CurrentThread
+        DCD $tls_CurrentThread
         RELOC 15 ;; SECREL
 
 __SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
