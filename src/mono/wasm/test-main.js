@@ -283,16 +283,6 @@ async function run() {
                 assets: [{
                     behavior: "dotnetwasm",
                     name: "dotnet.wasm"
-                },
-                {
-                    loadRemote: false,
-                    behavior: "icu",
-                    name: "icudt.dat"
-                },
-                {
-                    virtualPath: "/usr/share/zoneinfo/",
-                    behavior: "vfs",
-                    name: "dotnet.timezones.blat"
                 }],
                 memory: true
             })

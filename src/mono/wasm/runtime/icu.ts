@@ -37,7 +37,7 @@ export function mono_wasm_globalization_init(): void {
         invariantMode = true;
 
     if (!invariantMode) {
-        if (num_icu_assets_loaded_successfully > 0) {
+        if (num_icu_assets_loaded_successfully > 0 || config.memory) {
             if (runtimeHelpers.diagnosticTracing) {
                 console.debug("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
             }
