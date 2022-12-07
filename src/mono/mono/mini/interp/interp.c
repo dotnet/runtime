@@ -6247,13 +6247,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_ARRAY_IS_PRIMITIVE) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			LOCAL_VAR (ip [1], gint32) = m_class_is_primitive (m_class_get_element_class (mono_object_class (o)));
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_LDELEMA1) {
 			/* No bounds, one direction */
 			MonoArray *ao = LOCAL_VAR (ip [2], MonoArray*);

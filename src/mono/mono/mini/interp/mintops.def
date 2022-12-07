@@ -667,7 +667,6 @@ OPDEF(MINT_GETCHR, "getchr", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_STRLEN, "strlen", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_RANK, "array_rank", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_ARRAY_IS_PRIMITIVE, "array_is_primitive", 3, 1, 1, MintOpNoArgs)
 
 /* Calls */
 OPDEF(MINT_CALL, "call", 4, 1, 1, MintOpMethodToken)
