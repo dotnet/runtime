@@ -280,7 +280,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_31615/Runtime_31615/*">
             <Issue>https://github.com/dotnet/runtime/issues/79170</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_63354/Runtime_63354/*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_63354/Runtime_63354/**">
             <Issue>https://github.com/dotnet/runtime/issues/78898</Issue>
         </ExcludeList>
     </ItemGroup>
