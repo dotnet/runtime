@@ -88,20 +88,6 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        internal static bool RetrieveExactFunctionPointerIfPossible(MethodDesc method, out IntPtr result)
-        {
-            result = IntPtr.Zero;
-
-            if (!method.IsNonSharableMethod || !CheckAllHandlesValidForMethod(method))
-                return false;
-
-            RuntimeTypeHandle[] genMethodArgs = method.Instantiation.Length > 0 ? new RuntimeTypeHandle[method.Instantiation.Length] : Empty<RuntimeTypeHandle>.Array;
-            for (int i = 0; i < method.Instantiation.Length; i++)
-                genMethodArgs[i] = method.Instantiation[i].RuntimeTypeHandle;
-
-            return TypeLoaderEnvironment.Instance.TryLookupExactMethodPointerForComponents(method.OwningType.RuntimeTypeHandle, method.NameAndSignature, genMethodArgs, out result);
-        }
-
         internal static bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
         {
             if (method.RuntimeMethodDictionary != IntPtr.Zero)

@@ -326,184 +326,18 @@ namespace Internal.Runtime.TypeLoader
         private class MethodCell : GenericDictionaryCell
         {
             internal MethodDesc Method;
-            internal RuntimeSignature MethodSignature;
-            private bool _universalCanonImplementationOfCanonMethod;
-            private MethodDesc _methodToUseForInstantiatingParameters;
-            private IntPtr _exactFunctionPointer;
 
             internal override unsafe void Prepare(TypeBuilder builder)
             {
-                _methodToUseForInstantiatingParameters = Method;
-
-                IntPtr exactFunctionPointer;
-
-                bool canUseRetrieveExactFunctionPointerIfPossible = false;
-
-                // RetrieveExactFunctionPointerIfPossible always gets the unboxing stub if possible
-                if (Method.UnboxingStub)
-                    canUseRetrieveExactFunctionPointerIfPossible = true;
-                else if (!Method.OwningType.IsValueType) // If the owning type isn't a valuetype, concerns about unboxing stubs are moot
-                    canUseRetrieveExactFunctionPointerIfPossible = true;
-                else if (TypeLoaderEnvironment.IsStaticMethodSignature(MethodSignature)) // Static methods don't have unboxing stub concerns
-                    canUseRetrieveExactFunctionPointerIfPossible = true;
-
-                if (canUseRetrieveExactFunctionPointerIfPossible &&
-                    TypeBuilder.RetrieveExactFunctionPointerIfPossible(Method, out exactFunctionPointer))
-                {
-                    // If we succeed in finding a non-shareable function pointer for this method, it means
-                    // that we found a method body for it that was statically compiled. We'll use that body
-                    // instead of the universal canonical method pointer
-                    Debug.Assert(exactFunctionPointer != IntPtr.Zero &&
-                                 exactFunctionPointer != Method.FunctionPointer &&
-                                 exactFunctionPointer != Method.UsgFunctionPointer);
-
-                    _exactFunctionPointer = exactFunctionPointer;
-                }
-                else
-                {
-                    // There is no exact function pointer available. This means that we'll have to
-                    // build a method dictionary for the method instantiation, and use the shared canonical
-                    // function pointer that was parsed from native layout.
-                    _exactFunctionPointer = IntPtr.Zero;
-                    builder.PrepareMethod(Method);
-
-                    // Check whether we have already resolved a canonical or universal match
-                    IntPtr addressToUse;
-                    TypeLoaderEnvironment.MethodAddressType foundAddressType;
-                    Debug.Assert(Method.FunctionPointer != IntPtr.Zero);
-                    addressToUse = Method.FunctionPointer;
-                    foundAddressType = TypeLoaderEnvironment.MethodAddressType.Canonical;
-
-                    // Look at the resolution type and check whether we can set up the ExactFunctionPointer upfront
-                    switch (foundAddressType)
-                    {
-                        case TypeLoaderEnvironment.MethodAddressType.Exact:
-                            _exactFunctionPointer = addressToUse;
-                            break;
-                        case TypeLoaderEnvironment.MethodAddressType.Canonical:
-                            {
-                                bool methodRequestedIsCanonical = Method.IsCanonicalMethod(CanonicalFormKind.Specific);
-                                bool requestedMethodNeedsDictionaryWhenCalledAsCanonical = NeedsDictionaryParameterToCallCanonicalVersion();
-
-                                if (!requestedMethodNeedsDictionaryWhenCalledAsCanonical || methodRequestedIsCanonical)
-                                {
-                                    _exactFunctionPointer = addressToUse;
-                                }
-                                break;
-                            }
-                        default:
-                            Environment.FailFast("Unexpected method address type");
-                            return;
-                    }
-
-                    if (_exactFunctionPointer == IntPtr.Zero)
-                    {
-                        // We have exhausted exact resolution options so we must resort to calling
-                        // convention conversion. Prepare the type parameters of the method so that
-                        // the calling convention converter can have RuntimeTypeHandle's to work with.
-                        // For canonical methods, convert parameters to their CanonAlike form
-                        // as the Canonical RuntimeTypeHandle's are not permitted to exist.
-                        Debug.Assert(!Method.IsCanonicalMethod(CanonicalFormKind.Universal));
-
-                        bool methodRequestedIsCanonical = Method.IsCanonicalMethod(CanonicalFormKind.Specific);
-                        MethodDesc canonAlikeForm = Method;
-                        foreach (TypeDesc t in canonAlikeForm.Instantiation)
-                        {
-                            builder.PrepareType(t);
-                        }
-                        foreach (TypeDesc t in canonAlikeForm.OwningType.Instantiation)
-                        {
-                            builder.PrepareType(t);
-                        }
-
-                        if (!(Method.GetTypicalMethodDefinition() is RuntimeMethodDesc))
-                        {
-                            // Also, prepare all of the argument types as will be needed by the calling convention converter
-                            MethodSignature signature = canonAlikeForm.Signature;
-                            for (int i = 0; i < signature.Length; i++)
-                            {
-                                TypeDesc t = signature[i];
-                                if (t is ByRefType)
-                                    builder.PrepareType(((ByRefType)t).ParameterType);
-                                else
-                                    builder.PrepareType(t);
-                            }
-                            if (signature.ReturnType is ByRefType)
-                                builder.PrepareType((ByRefType)signature.ReturnType);
-                            else
-                                builder.PrepareType(signature.ReturnType);
-                        }
-
-                        _universalCanonImplementationOfCanonMethod = methodRequestedIsCanonical;
-                        _methodToUseForInstantiatingParameters = canonAlikeForm;
-                    }
-                }
-
-                // By the time we reach here, we should always have a function pointer of some form
-                Debug.Assert((_exactFunctionPointer != IntPtr.Zero) || (Method.FunctionPointer != IntPtr.Zero) || (Method.UsgFunctionPointer != IntPtr.Zero));
-            }
-
-            private bool NeedsDictionaryParameterToCallCanonicalVersion()
-            {
-                if (Method.HasInstantiation)
-                    return true;
-
-                if (!Method.OwningType.HasInstantiation)
-                    return false;
-
-                if (Method is NoMetadataMethodDesc)
-                {
-                    // If the method does not have metadata, use the NameAndSignature property which should work in that case.
-                    if (TypeLoaderEnvironment.IsStaticMethodSignature(Method.NameAndSignature.Signature))
-                        return true;
-                }
-                else
-                {
-                    // Otherwise, use the MethodSignature
-                    if (Method.Signature.IsStatic)
-                        return true;
-                }
-
-                return Method.OwningType.IsValueType && !Method.UnboxingStub;
+                builder.PrepareMethod(Method);
             }
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
             {
-                if (_exactFunctionPointer != IntPtr.Zero)
-                {
-                    // We are done... we don't need to create any unboxing stubs or calling conversion translation
-                    // thunks for exact non-shareable method instantiations
-                    return _exactFunctionPointer;
-                }
-
-                Debug.Assert(Method.Instantiation.Length > 0 || Method.OwningType.HasInstantiation);
-
-                IntPtr methodDictionary = IntPtr.Zero;
-
-                if (!_universalCanonImplementationOfCanonMethod)
-                {
-                    methodDictionary = Method.Instantiation.Length > 0 ?
-                        ((InstantiatedMethod)Method).RuntimeMethodDictionary :
-                        builder.GetRuntimeTypeHandle(Method.OwningType).ToIntPtr();
-                }
-
-                if (Method.FunctionPointer != IntPtr.Zero)
-                {
-                    if (Method.Instantiation.Length > 0
-                        || TypeLoaderEnvironment.IsStaticMethodSignature(MethodSignature)
-                        || (Method.OwningType.IsValueType && !Method.UnboxingStub))
-                    {
-                        Debug.Assert(methodDictionary != IntPtr.Zero);
-                        return FunctionPointerOps.GetGenericMethodFunctionPointer(Method.FunctionPointer, methodDictionary);
-                    }
-                    else
-                    {
-                        return Method.FunctionPointer;
-                    }
-                }
-
-                Debug.Fail("UNREACHABLE");
-                return IntPtr.Zero;
+                IntPtr methodDictionary = Method.Instantiation.Length > 0 ?
+                    ((InstantiatedMethod)Method).RuntimeMethodDictionary :
+                    builder.GetRuntimeTypeHandle(Method.OwningType).ToIntPtr();
+                return FunctionPointerOps.GetGenericMethodFunctionPointer(Method.FunctionPointer, methodDictionary);
             }
         }
 
@@ -639,14 +473,12 @@ namespace Internal.Runtime.TypeLoader
 
                 case FixupSignatureKind.Method:
                     {
-                        RuntimeSignature methodSig;
-                        var method = nativeLayoutInfoLoadContext.GetMethod(ref parser, out _, out methodSig);
+                        var method = nativeLayoutInfoLoadContext.GetMethod(ref parser, out _, out _);
                         TypeLoaderLogger.WriteLine("Method: " + method.ToString());
 
                         cell = new MethodCell
                         {
                             Method = method,
-                            MethodSignature = methodSig
                         };
                     }
                     break;
