@@ -6513,7 +6513,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
 
             return false;
         }
-        
+
         case NI_SSE_LoadAlignedVector128:
         case NI_SSE2_LoadAlignedVector128:
         case NI_AVX_LoadAlignedVector256:
