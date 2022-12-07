@@ -7342,8 +7342,6 @@ void CodeGen::genIPmappingUpdateForRemovedInstruction(emitLocation loc, unsigned
     IPmappingDsc& prev = compiler->genIPmappings.back();
     if (prev.ipmdNativeLoc == loc)
     {
-        assert(prev.ipmdKind == IPmappingDscKind::Normal);
-
 #ifdef DEBUG
         if (verbose)
         {
