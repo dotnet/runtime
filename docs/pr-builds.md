@@ -33,7 +33,9 @@ We have various pipelines that their names contain `Outerloop` on them. These pi
 
 These pipelines will run tests that take very long, that are not very stable (i.e some networking tests), or that modify machine state. Such tests are called `Outerloop` tests rather than `innerloop`.
 
-## Rerunning Validation
+## Analyzing Failures
+
+The PR Build Analysis tab has summary of all failures, including matches with the list of known issues. This tab should be your first stop for analyzing the PR failures.
 
 Validation may fail for several reasons:
 
@@ -66,7 +68,7 @@ Validation may fail for several reasons:
   * Add a comment `/azp run runtime`
   * Or, click on "re-run all checks" in the GitHub Checks tab
   * Or, simply close and reopen the PR.
-  * Or, ammend your commit with `--amend --no-edit` and force push to your branch.
+  * Or, amend your commit with `--amend --no-edit` and force push to your branch.
 
 ### Additional information:
   * You can list the available pipelines by adding a comment like `/azp list` or get the available commands by adding a comment like `azp help`.
@@ -77,6 +79,7 @@ Validation may fail for several reasons:
 
 If you have determined the failure is definitely not caused by changes in your PR, please do this:
 
+* If the failure is identified as a known issue in the Build Analysis tab, no further action is required.
 * Search for an [existing issue](https://github.com/dotnet/runtime/issues). Usually the test method name or (if a crash/hang) the test assembly name are good search parameters.
   * If there's an existing issue, add a comment with
     * a) the link to the build
@@ -84,9 +87,10 @@ If you have determined the failure is definitely not caused by changes in your P
     * c) all console output including the error message and stack trace from the Azure DevOps tab (This is necessary as retention policies are in place that recycle old builds.)
     * d) if there's a dump file (see Attachments tab in Azure DevOps) include that
     * If the issue is already closed, reopen it and update the labels to reflect the current failure state.
+    * If possible, please [update the failure signature](https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#how-to-fill-out-a-known-issue-error-message-section) to have it automatically identified by the Build Analysis as known issue next time.
   * If there's no existing issue, create an issue with the same information listed above.
   * Update the original pull request with a comment linking to the new or existing issue.
-* In a follow-up Pull Request, disable the failing test(s) with the corresponding issue link tracking the disable.
+* If the failure is occuring frequently, please disable the failing test(s) with the corresponding issue link tracking the disable in a follow-up Pull Request
   * Update the tracking issue with the label `disabled-test`.
   * For libraries tests add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/cf49643711ad8aa4685a8054286c1348cef6e1d8/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L74)
   * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file.

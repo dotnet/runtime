@@ -398,7 +398,7 @@ namespace System.Diagnostics.Tests
 
             // In Debug builds of System.Diagnostics.DiagnosticSource, the child operation Id will be constructed as follows
             // "|parent.RootId.<child.OperationName.Replace(., -)>-childCount.".
-            // This is for debugging purposes to know which operation the child Id is comming from.
+            // This is for debugging purposes to know which operation the child Id is coming from.
             //
             // In Release builds of System.Diagnostics.DiagnosticSource, it will not contain the operation name to keep it simple and it will be as
             // "|parent.RootId.childCount.".
@@ -1210,11 +1210,11 @@ namespace System.Diagnostics.Tests
             activity.SetStartTime(DateTime.Now);    // Error Does nothing because it is not UTC
             Assert.Equal(default(DateTime), activity.StartTimeUtc);
 
-            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our offical start time.
+            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our official start time.
             activity.SetStartTime(startTime);
 
             activity.Start();
-            Assert.Equal(startTime, activity.StartTimeUtc); // we use our offical start time not the time now.
+            Assert.Equal(startTime, activity.StartTimeUtc); // we use our official start time not the time now.
             Assert.Equal(TimeSpan.Zero, activity.Duration);
 
             Thread.Sleep(35);
@@ -2214,6 +2214,27 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(values[0], tag);
                 values.RemoveAt(0);
             }
+        }
+
+        [Fact]
+        public void CreateActivityWithNullOperationName()
+        {
+            Activity a = new Activity(operationName: null);
+            Assert.Equal(string.Empty, a.OperationName);
+
+            using ActivitySource aSource = new ActivitySource("NullOperationName");
+            using ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => activitySource == aSource;
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener);
+
+            using Activity a1 = aSource.StartActivity(null, ActivityKind.Client);
+            Assert.NotNull(a1);
+            Assert.Equal(string.Empty, a1.OperationName);
+
+            using Activity a2 = aSource.CreateActivity(null, ActivityKind.Client);
+            Assert.NotNull(a2);
+            Assert.Equal(string.Empty, a2.OperationName);
         }
 
         [Fact]

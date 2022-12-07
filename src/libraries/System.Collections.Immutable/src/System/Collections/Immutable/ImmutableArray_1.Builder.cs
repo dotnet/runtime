@@ -350,6 +350,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
+            /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items.</param>
             public void AddRange<TDerived>(TDerived[] items) where TDerived : T
             {
@@ -416,6 +417,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
+            /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange<TDerived>(ReadOnlySpan<TDerived> items) where TDerived : T
             {
@@ -432,6 +434,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
+            /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T
             {
@@ -454,6 +457,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
+            /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange<TDerived>(ImmutableArray<TDerived>.Builder items) where TDerived : T
             {

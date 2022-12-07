@@ -406,7 +406,7 @@ namespace System.Globalization
             return DateTime.TryCreate(year, month, day, hour, minute, second, millisecond, out result);
         }
 
-        private const int DefaultTwoDigitYearMax = 2029;
+        private const int DefaultTwoDigitYearMax = 2049;
 
         public override int TwoDigitYearMax
         {

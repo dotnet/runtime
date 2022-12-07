@@ -1,0 +1,74 @@
+<Project>
+  <PropertyGroup>
+    <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAndroidApp</BundleTestAppTargets>
+  </PropertyGroup>
+
+  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidApp.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidApp.InTree.targets" />
+
+  <PropertyGroup>
+    <AndroidBuildAppDependsOn>PrepareForAndroidBuildApp;$(AndroidBuildAppDependsOn);_CopyTestArchive</AndroidBuildAppDependsOn>
+  
+    <BundleTestAndroidAppDependsOn>AndroidBuildApp</BundleTestAndroidAppDependsOn>
+  </PropertyGroup>
+
+  <!-- Target that kicks off the whole test build and run flow -->
+  <Target Name="BundleTestAndroidApp" DependsOnTargets="$(BundleTestAndroidAppDependsOn)" />
+
+  <Target Name="PrepareForAndroidBuildApp">
+    <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
+
+    <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
+
+    <PropertyGroup>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
+    
+      <AndroidAppDir>$(PublishDir)</AndroidAppDir>
+      <AndroidAppBundleDir>$(BundleDir)</AndroidAppBundleDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <AndroidEnv Condition="'$(XUnitSingleThreadedMode)' == 'true'" Include="XUNIT_SINGLE_THREADED">
+        <Value>1</Value>
+      </AndroidEnv>
+      <AndroidEnv Condition="'$(XUnitUseRandomizedTestOrderer)' == 'true'" Include="XUNIT_RANDOM_ORDER_SEED">
+        <Value>1883302047</Value>
+      </AndroidEnv>
+      <AndroidEnv Condition="'$(XUnitSingleThreadedMode)' == 'true'" Include="XUNIT_VERBOSE">
+        <Value>1</Value>
+      </AndroidEnv>
+    </ItemGroup>
+
+    <ItemGroup>
+      <AndroidAssembliesToBundle Include="@(NativeLibraries->'$(PublishDir)%(Identity)')">
+        <_InternalForceInterpret>true</_InternalForceInterpret>
+        <_IsNative>true</_IsNative>
+      </AndroidAssembliesToBundle>
+      
+      <_PublishAssemblies Include="$(PublishDir)\**\*.dll" Exclude="$(PublishDir)\**\*.resources.dll" />
+      <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
+
+      <AndroidAssembliesToBundle Include="@(_PublishAssemblies)">
+        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
+        <_IsNative>false</_IsNative>
+      </AndroidAssembliesToBundle>
+
+      <AndroidNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="$(PublishDir)\*.dll" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_CopyTestArchive"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'">
+    <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
+
+    <Message Importance="High" Text="PackageId:       $(ApkPackageId)"/>
+    <Message Importance="High" Text="Instrumentation: net.dot.MonoRunner"/>
+    <Message Importance="High" Text="Apk:             $(ApkBundlePath)"/>
+
+    <Copy SourceFiles="$(ApkBundlePath)"
+          DestinationFolder="$(TestArchiveTestsDir)"
+          SkipUnchangedFiles="true"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
+  </Target>
+
+</Project>

@@ -61,7 +61,7 @@ disassemble wasm executables (.wasm files).
 Wasm execution can be made deterministic by passing the -s DETERMINISTIC=1 option to emcc.
 This will cause the app to always execute the same way, i.e. using the same memory
 addresses, random numbers, etc. This can be used to make random crashes happen reliably.
-Sometimes, hovewer, turning this on will make the problem disappear. In this case, it
+Sometimes, however, turning this on will make the problem disappear. In this case, it
 might be useful to add some controlled indeterminism. For example, to make the
 random number generator mostly deterministic, change `$getRandomDevice` in
 `upstream/emscripten/src/library.js` to:
@@ -83,14 +83,10 @@ and change the
 This will hopefully cause the failure to happen reliably.
 
 There is another random number generator in `upstream/emscripten/src/deterministic.js`
-which needs the same treatment:
-```
-var randomBuffer3 = new Uint8Array(2);
-crypto.getRandomValues(randomBuffer3);
+which needs the same treatment.
 
-var MAGIC = (randomBuffer3 [0] << 8) | randomBuffer3 [1];
-console.log ("SEED2: " + MAGIC);
-```
+Running `make patch-deterministic` in `src/mono/wasm` will patch the
+emscripten installation in `src/mono/wasm/emsdk` with these changes.
 
 # Debugging signature mismatch errors
 

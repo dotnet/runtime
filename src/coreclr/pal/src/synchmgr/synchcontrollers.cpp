@@ -1555,7 +1555,7 @@ namespace CorUnix
      - WaitIsSatisfied if the wait-all is fully satisfied.
      - WaitMayBeSatisfied if the target thread lives in a different process and
        therefore the wait may involve objects local to the remote process, and
-       as result is generally not possible to say whther or not the wait-all is
+       as result is generally not possible to say whether or not the wait-all is
        fully satisfied from the current process.
 
     Note: this method must be called while holding the synchronization locks

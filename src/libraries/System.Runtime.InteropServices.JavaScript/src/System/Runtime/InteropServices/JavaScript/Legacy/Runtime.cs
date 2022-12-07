@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public static class Runtime
     {
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExports", "System.Runtime.InteropServices.JavaScript")]
         public static object GetGlobalObject(string str)
             => JavaScriptImports.GetGlobalObject(str);
 
@@ -50,7 +51,7 @@ namespace System.Runtime.InteropServices.JavaScript
         ///   Returns the named property from the object, or throws a JSException on error.
         /// </summary>
         /// <param name="self">thisArg</param>
-        /// <param name="name">The name of the property to lookup</param>
+        /// <param name="name">The name of the property to lookup.</param>
         /// <remarks>
         ///   This method can raise a JSException if fetching the property in Javascript raises an exception.
         /// </remarks>
@@ -89,7 +90,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <remarks>
         /// </remarks>
         /// <param name="self">thisArg</param>
-        /// <param name="name">The name of the property to lookup</param>
+        /// <param name="name">The name of the property to lookup.</param>
         /// <param name="value">The value can be a primitive type (int, double, string, bool), an
         /// array that will be surfaced as a typed ArrayBuffer (byte[], sbyte[], short[], ushort[],
         /// float[], double[]) </param>

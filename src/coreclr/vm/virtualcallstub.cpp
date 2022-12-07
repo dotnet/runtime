@@ -532,7 +532,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     // Setup an expected number of items to commit and reserve
     //
     // The commit number is not that important as we always commit at least one page worth of items
-    // The reserve number shoudl be high enough to cover a typical lare application,
+    // The reserve number should be high enough to cover a typical lare application,
     // in order to minimize the fragmentation of our rangelists
     //
 
@@ -1535,8 +1535,6 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
         PRECONDITION(returnAddress != NULL);
     } CONTRACTL_END
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
@@ -1546,8 +1544,6 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     PREFIX_ASSUME(pMgr != NULL);
 
     pMgr->BackPatchWorker(&callSite);
-
-    END_ENTRYPOINT_VOIDRET;
 }
 
 #if defined(TARGET_X86) && defined(TARGET_UNIX)
@@ -1893,7 +1889,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
             if (insertKind != DispatchCache::IK_NONE)
             {
                 // Because the TransparentProxy MT is process-global, we cannot cache targets for
-                // unshared interfaces because there is the possiblity of caching a
+                // unshared interfaces because there is the possibility of caching a
                 // <token, TPMT, target> entry where target is in AD1, and then matching against
                 // this entry from AD2 which happens to be using the same token, perhaps for a
                 // completely different interface.
@@ -2000,7 +1996,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
 /*
 Resolve the token in the context of the method table, and set the target to point to
-the address that we should go to to get to the implementation.  Return a boolean indicating
+the address that we should go to get to the implementation.  Return a boolean indicating
 whether or not this is a permenent choice or a temporary choice.  For example, if the code has
 not been jitted yet, return FALSE and set the target to the prestub.  If the target is set to NULL,
 it means that the token is not resolvable.
@@ -2154,8 +2150,8 @@ VirtualCallStubManager::Resolver(
         }
 
         ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resulTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
+        TypeHandle resultTypeHnd = resultTypeObj->GetType();
+        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
 
         return Resolver(pResultMT, token, protectedObj, ppTarget, throwOnConflict);
     }
@@ -2403,7 +2399,7 @@ VirtualCallStubManager::GetTarget(
 //----------------------------------------------------------------------------
 /*
 Resolve the token in the context of the method table, and set the target to point to
-the address that we should go to to get to the implementation.  Return a boolean indicating
+the address that we should go to get to the implementation.  Return a boolean indicating
 whether or not this is a permenent choice or a temporary choice.  For example, if the code has
 not been jitted yet, return FALSE and set the target to the prestub.  If the target is set to NULL,
 it means that the token is not resolvable.

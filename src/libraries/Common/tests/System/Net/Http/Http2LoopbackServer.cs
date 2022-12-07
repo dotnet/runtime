@@ -221,6 +221,7 @@ namespace System.Net.Test.Common
             {
                 http2Options.Address = options.Address;
                 http2Options.UseSsl = options.UseSsl;
+                http2Options.Certificate = options.Certificate;
                 http2Options.SslProtocols = options.SslProtocols;
                 http2Options.ListenBacklog = options.ListenBacklog;
             }

@@ -33,7 +33,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlXml(bool fNull)
+        private SqlXml(bool _)
         {
             SetNull();
         }
@@ -259,9 +259,9 @@ namespace System.Data.SqlTypes
     } // SqlXml
 
     // two purposes for this class
-    // 1) keep its internal position so one reader positions on the orginial stream
+    // 1) keep its internal position so one reader positions on the original stream
     //    will not interface with the other
-    // 2) when xmlreader calls close, do not close the orginial stream
+    // 2) when xmlreader calls close, do not close the original stream
     //
     internal sealed class SqlXmlStreamWrapper : Stream
     {
@@ -395,8 +395,7 @@ namespace System.Data.SqlTypes
             ThrowIfStreamClosed(nameof(Read));
             ThrowIfStreamCannotRead(nameof(Read));
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > buffer.Length - offset)
@@ -432,8 +431,7 @@ namespace System.Data.SqlTypes
             ThrowIfStreamClosed(nameof(Write));
             ThrowIfStreamCannotWrite(nameof(Write));
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > buffer.Length - offset)

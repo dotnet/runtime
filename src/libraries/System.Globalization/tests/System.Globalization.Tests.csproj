@@ -7,6 +7,9 @@
     <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="IcuTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.cs" />

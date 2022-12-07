@@ -1027,7 +1027,7 @@ namespace System.DirectoryServices.AccountManagement
             // Make sure we're not disposed or deleted.
             CheckDisposedOrDeleted();
 
-            // Check that we actually support this propery in our store
+            // Check that we actually support this property in our store
             //CheckSupportedProperty(name);
 
             if (state == LoadState.NotSet)
@@ -1047,7 +1047,7 @@ namespace System.DirectoryServices.AccountManagement
             // Make sure we're not disposed or deleted.
             CheckDisposedOrDeleted();
 
-            // Check that we actually support this propery in our store
+            // Check that we actually support this property in our store
             //CheckSupportedProperty(name);
 
             // Need to do this now so that newly-set value doesn't get overwritten by later load

@@ -703,9 +703,6 @@ inline void CordbSafeHashTable<T>::NeuterAndClear(RSLock * pLock)
     {
         T * pCordbBase = FindFirst(&find);
         _ASSERTE(pCordbBase != NULL);
-
-        // Using this Validate to help track down bug DevDiv bugs 739406
-        pCordbBase->ValidateObject();
         pCordbBase->Neuter();
         idx++;
 

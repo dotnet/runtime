@@ -49,8 +49,8 @@ namespace System.Text.RegularExpressions.Tests
             RegexOptions options = RegexOptions.NonBacktracking;
 
             // pattern and its expected safe size
-            // all patterns have an implicit 0-start-capture node ⌊₀ and
-            // 0-end-capture node ⁰⌉ and thus also two extra cocatenation nodes
+            // all patterns have an implicit 0-start-capture node \u230A\u2080 and
+            // 0-end-capture node \u2070\u2309 and thus also two extra cocatenation nodes
             // let the safe size of a pattern X be denoted by #(X)
             (string, int)[] patternData = new (string, int)[]{
                 // no singletons
@@ -78,7 +78,7 @@ namespace System.Text.RegularExpressions.Tests
                 ("(((ab){10,}c){10,})|((cd){0,10})", 274),  // (2x11+1)x11 + 20 + 1
                 // lower bound int.MaxValue is never unfolded and treated as infinity
                 ("(a{2147483647,})", 2),
-                // typical case that blows up the DFA size to 2^100 when .* is added at the beginnig (below)
+                // typical case that blows up the DFA size to 2^100 when .* is added at the beginning (below)
                 ("a.{100}b", 103)
             };
 

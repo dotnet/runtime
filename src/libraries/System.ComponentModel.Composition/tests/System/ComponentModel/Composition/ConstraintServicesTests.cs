@@ -287,7 +287,7 @@ namespace System.ComponentModel.Composition
 
             string contractNameResult = null;
             IEnumerable<KeyValuePair<string, Type>> requiredMetadataResult = null;
-            bool success = ContraintParser.TryParseConstraint(constraint, out contractNameResult, out requiredMetadataResult);
+            bool success = ConstraintParser.TryParseConstraint(constraint, out contractNameResult, out requiredMetadataResult);
 
             Assert.True(success);
             Assert.Equal(contractName, contractNameResult);
@@ -301,7 +301,7 @@ namespace System.ComponentModel.Composition
             string contractNameResult;
             IEnumerable<KeyValuePair<string, Type>> requiredMetadataResult;
 
-            var success = ContraintParser.TryParseConstraint(constraint, out contractNameResult, out requiredMetadataResult);
+            var success = ConstraintParser.TryParseConstraint(constraint, out contractNameResult, out requiredMetadataResult);
             Assert.False(success);
             Assert.Null(contractNameResult);
             Assert.Null(requiredMetadataResult);

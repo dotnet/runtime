@@ -149,7 +149,7 @@ namespace ILCompiler
             return _helperCache.GetOrCreateValue(helper).Symbol;
         }
 
-        class Helper
+        private sealed class Helper
         {
             public ReadyToRunHelper HelperID { get; }
             public ISymbolNode Symbol { get; }
@@ -162,7 +162,8 @@ namespace ILCompiler
         }
 
         private HelperCache _helperCache;
-        class HelperCache : LockFreeReaderHashtable<ReadyToRunHelper, Helper>
+
+        private sealed class HelperCache : LockFreeReaderHashtable<ReadyToRunHelper, Helper>
         {
             private Compilation _compilation;
 
@@ -199,7 +200,7 @@ namespace ILCompiler
         ILScanResults Scan();
     }
 
-    internal class ScannerFailedException : InternalCompilerErrorException
+    internal sealed class ScannerFailedException : InternalCompilerErrorException
     {
         public ScannerFailedException(string message)
             : base(message + " " + "You can work around by running the compilation with scanner disabled.")
@@ -246,7 +247,7 @@ namespace ILCompiler
             return new ScannedMethodImportationErrorProvider(MarkedNodes);
         }
 
-        private class ScannedVTableProvider : VTableSliceProvider
+        private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
 
@@ -288,7 +289,7 @@ namespace ILCompiler
             }
         }
 
-        private class ScannedDictionaryLayoutProvider : DictionaryLayoutProvider
+        private sealed class ScannedDictionaryLayoutProvider : DictionaryLayoutProvider
         {
             private Dictionary<TypeSystemEntity, IEnumerable<GenericLookupResult>> _layouts = new Dictionary<TypeSystemEntity, IEnumerable<GenericLookupResult>>();
             private HashSet<TypeSystemEntity> _entitiesWithForcedLazyLookups = new HashSet<TypeSystemEntity>();
@@ -362,21 +363,53 @@ namespace ILCompiler
             }
         }
 
-        private class ScannedDevirtualizationManager : DevirtualizationManager
+        private sealed class ScannedDevirtualizationManager : DevirtualizationManager
         {
             private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
-            private HashSet<TypeDesc> _abstractButNonabstractlyOverriddenTypes = new HashSet<TypeDesc>();
+            private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
+            private HashSet<TypeDesc> _disqualifiedInterfaces = new();
 
             public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 foreach (var node in markedNodes)
                 {
-                    if (node is ConstructedEETypeNode eetypeNode)
+                    TypeDesc type = node switch
                     {
-                        TypeDesc type = eetypeNode.Type;
+                        ConstructedEETypeNode eetypeNode => eetypeNode.Type,
+                        CanonicalEETypeNode canoneetypeNode => canoneetypeNode.Type,
+                        _ => null,
+                    };
 
-                        if (!type.IsInterface)
+                    if (type != null)
+                    {
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            foreach (DefType baseInterface in type.RuntimeInterfaces)
+                            {
+                                // If the interface is implemented on a template type, there might be
+                                // no real upper bound on the number of actual classes implementing it
+                                // due to MakeGenericType.
+                                if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                    _disqualifiedInterfaces.Add(baseInterface);
+                            }
+                        }
+
+                        if (type.IsInterface)
+                        {
+                            if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
+                            {
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                {
+                                    // If the interface is implemented through IDynamicInterfaceCastable, there might be
+                                    // no real upper bound on the number of actual classes implementing it.
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                        _disqualifiedInterfaces.Add(baseInterface);
+                                }
+                            }
+                        }
+                        else
                         {
                             //
                             // We collect this information:
@@ -385,34 +418,94 @@ namespace ILCompiler
                             // 2. What types are the base types of other types
                             //    This is needed for optimizations. We use this information to effectively
                             //    seal types that are not base types for any other type.
-                            // 3. What abstract types got derived by non-abstract types.
-                            //    This is needed for correctness. Abstract types that were never derived
-                            //    by non-abstract types should never be devirtualized into - we probably
-                            //    didn't scan the virtual methods on them.
+                            // 3. What types implement interfaces for which use we can assume whole
+                            //    program view.
                             //
 
-                            _constructedTypes.Add(type);
+                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                                _constructedTypes.Add(type);
+
+                            if (type is not MetadataType { IsAbstract: true })
+                            {
+                                // Record all interfaces this class implements to _interfaceImplementators
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                {
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                    {
+                                        RecordImplementation(baseInterface, type);
+                                    }
+                                }
+                            }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            _canonConstructedTypes.Add(canonType.GetClosestDefType());
 
-                            bool hasNonAbstractTypeInHierarchy = canonType is not MetadataType mdType || !mdType.IsAbstract;
                             TypeDesc baseType = canonType.BaseType;
                             bool added = true;
                             while (baseType != null && added)
                             {
                                 baseType = baseType.ConvertToCanonForm(CanonicalFormKind.Specific);
                                 added = _unsealedTypes.Add(baseType);
-
-                                bool currentTypeIsAbstract = ((MetadataType)baseType).IsAbstract;
-                                if (currentTypeIsAbstract && hasNonAbstractTypeInHierarchy)
-                                    added |= _abstractButNonabstractlyOverriddenTypes.Add(baseType);
-                                hasNonAbstractTypeInHierarchy |= !currentTypeIsAbstract;
-
                                 baseType = baseType.BaseType;
                             }
                         }
                     }
                 }
+            }
+
+            private static bool CanAssumeWholeProgramViewOnInterfaceUse(DefType interfaceType)
+            {
+                if (!interfaceType.HasInstantiation)
+                {
+                    return true;
+                }
+
+                foreach (GenericParameterDesc genericParam in interfaceType.GetTypeDefinition().Instantiation)
+                {
+                    if (genericParam.Variance != GenericVariance.None)
+                    {
+                        // If the interface has any variance, this gets complicated.
+                        // Skip for now.
+                        return false;
+                    }
+                }
+
+                if (((CompilerTypeSystemContext)interfaceType.Context).IsGenericArrayInterfaceType(interfaceType))
+                {
+                    // Interfaces implemented by arrays also behave covariantly on arrays even though
+                    // they're not actually variant. Skip for now.
+                    return false;
+                }
+
+                if (interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    || interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) != interfaceType
+                    || interfaceType.Context.SupportsUniversalCanon)
+                {
+                    // If the interface has a canonical form, we might not have a full view of all implementers.
+                    // E.g. if we have:
+                    // class Fooer<T> : IFooable<T> { }
+                    // class Doer<T> : IFooable<T> { }
+                    // And we instantiated Fooer<string>, but not Doer<string>. But we do have code for Doer<__Canon>.
+                    // We might think we can devirtualize IFooable<string> to Fooer<string>, but someone could
+                    // typeof(Doer<>).MakeGenericType(typeof(string)) and break our whole program view.
+                    // This is only a problem if canonical form of the interface exists.
+                    return false;
+                }
+
+                return true;
+            }
+
+            private void RecordImplementation(TypeDesc type, TypeDesc implType)
+            {
+                Debug.Assert(!implType.IsInterface);
+
+                HashSet<TypeDesc> implList;
+                if (!_interfaceImplementators.TryGetValue(type, out implList))
+                {
+                    implList = new();
+                    _interfaceImplementators[type] = implList;
+                }
+                implList.Add(implType);
             }
 
             public override bool IsEffectivelySealed(TypeDesc type)
@@ -443,15 +536,11 @@ namespace ILCompiler
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
             {
                 MethodDesc result = base.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
-                if (result != null && result.IsFinal && result.OwningType is MetadataType mdType && mdType.IsAbstract)
+                if (result != null)
                 {
-                    // If this type is abstract check that we saw a non-abstract type deriving from it.
-                    // We don't look at virtual methods introduced by abstract classes unless there's a non-abstract
-                    // class that needs them (i.e. the non-abstract class doesn't immediately override them).
-                    // This lets us optimize out some unused virtual method implementations.
-                    // Allowing this to devirtualize would cause trouble because we didn't scan the method
-                    // and expected it would be optimized out.
-                    if (!_abstractButNonabstractlyOverriddenTypes.Contains(mdType.ConvertToCanonForm(CanonicalFormKind.Specific)))
+                    // If we would resolve into a type that wasn't seen as allocated, don't allow devirtualization.
+                    // It would go past what we scanned in the scanner and that doesn't lead to good things.
+                    if (!_canonConstructedTypes.Contains(result.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                     {
                         // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
                         devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;
@@ -463,9 +552,27 @@ namespace ILCompiler
             }
 
             public override bool CanConstructType(TypeDesc type) => _constructedTypes.Contains(type);
+
+            public override TypeDesc[] GetImplementingClasses(TypeDesc type)
+            {
+                if (_disqualifiedInterfaces.Contains(type))
+                    return null;
+
+                if (type.IsInterface && _interfaceImplementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
+                {
+                    var types = new TypeDesc[implementations.Count];
+                    int index = 0;
+                    foreach (TypeDesc implementation in implementations)
+                    {
+                        types[index++] = implementation;
+                    }
+                    return types;
+                }
+                return null;
+            }
         }
 
-        private class ScannedInliningPolicy : IInliningPolicy
+        private sealed class ScannedInliningPolicy : IInliningPolicy
         {
             private readonly HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
             private readonly CompilationModuleGroup _baseGroup;

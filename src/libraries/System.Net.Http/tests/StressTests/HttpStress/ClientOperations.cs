@@ -85,8 +85,8 @@ namespace HttpStress
                     await Task.WhenAny(task, Task.Delay(_random.Next(0, 60), cts.Token));
                 }
 
-                cts.Cancel();
                 IsCancellationRequested = true;
+                cts.Cancel();
                 return WithVersionValidation(await task);
             }
             else

@@ -781,61 +781,35 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(
                 bytes.Length == 13 || bytes.Length == 15,
                 "DateTime value should be UTCTime (13 bytes) or GeneralizedTime (15 bytes)");
-
             Debug.Assert(
                 bytes[bytes.Length - 1] == 'Z',
                 "DateTime value should end with Z marker");
 
-            if (bytes == null || bytes.Length < 1 || bytes[bytes.Length - 1] != 'Z')
+            if (bytes != null && bytes.Length is 13 or 15 && bytes[^1] == 'Z')
             {
-                throw new CryptographicException();
-            }
+                Span<char> dateString = stackalloc char[Encoding.ASCII.GetCharCount(bytes)];
+                Encoding.ASCII.GetChars(bytes, dateString);
 
-            string dateString = Encoding.ASCII.GetString(bytes);
-
-            if (s_validityDateTimeFormatInfo == null)
-            {
-                DateTimeFormatInfo validityFormatInfo =
-                    (DateTimeFormatInfo)CultureInfo.InvariantCulture.DateTimeFormat.Clone();
-
-                // Two-digit years are 1950-2049
-                validityFormatInfo.Calendar.TwoDigitYearMax = 2049;
-
-                s_validityDateTimeFormatInfo = validityFormatInfo;
-            }
-
-            if (bytes.Length == 13)
-            {
-                DateTime utcTime;
-
-                if (!DateTime.TryParseExact(
-                    dateString,
-                    "yyMMddHHmmss'Z'",
-                    s_validityDateTimeFormatInfo,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                    out utcTime))
+                if (s_validityDateTimeFormatInfo == null)
                 {
-                    throw new CryptographicException();
+                    DateTimeFormatInfo validityFormatInfo =
+                        (DateTimeFormatInfo)CultureInfo.InvariantCulture.DateTimeFormat.Clone();
+
+                    // Two-digit years are 1950-2049
+                    validityFormatInfo.Calendar.TwoDigitYearMax = 2049;
+
+                    s_validityDateTimeFormatInfo = validityFormatInfo;
                 }
 
-                return utcTime.ToLocalTime();
-            }
-
-            if (bytes.Length == 15)
-            {
-                DateTime generalizedTime;
-
-                if (!DateTime.TryParseExact(
+                if (DateTime.TryParseExact(
                     dateString,
-                    "yyyyMMddHHmmss'Z'",
+                    bytes.Length == 13 ? "yyMMddHHmmss'Z'" : "yyyyMMddHHmmss'Z'",
                     s_validityDateTimeFormatInfo,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                    out generalizedTime))
+                    out DateTime time))
                 {
-                    throw new CryptographicException();
+                    return time.ToLocalTime();
                 }
-
-                return generalizedTime.ToLocalTime();
             }
 
             throw new CryptographicException();

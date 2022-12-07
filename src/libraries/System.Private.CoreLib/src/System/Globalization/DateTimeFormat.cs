@@ -120,18 +120,12 @@ namespace System
     */
 
     // This class contains only static members and does not require the serializable attribute.
-    internal static
-    class DateTimeFormat
+    internal static class DateTimeFormat
     {
         internal const int MaxSecondsFractionDigits = 7;
         internal const long NullOffset = long.MinValue;
 
-        internal static char[] allStandardFormats =
-        {
-            'd', 'D', 'f', 'F', 'g', 'G',
-            'm', 'M', 'o', 'O', 'r', 'R',
-            's', 't', 'T', 'u', 'U', 'y', 'Y',
-        };
+        internal const string AllStandardFormats = "dDfFgGmMoOrRstTuUyY";
 
         internal const string RoundtripFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffffK";
         internal const string RoundtripDateTimeUnfixed = "yyyy'-'MM'-'ddTHH':'mm':'ss zzz";
@@ -421,7 +415,7 @@ namespace System
             if (i < format.Length)
             {
                 repeat = 0;
-                // Find a "d", so contine the walk to see how may "d" that we can find.
+                // Find a "d", so continue the walk to see how may "d" that we can find.
                 while (++i < format.Length && format[i] == patternToMatch)
                 {
                     repeat++;
@@ -1562,12 +1556,11 @@ namespace System
         {
             List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
-            for (int i = 0; i < allStandardFormats.Length; i++)
+            foreach (char standardFormat in AllStandardFormats)
             {
-                string[] strings = GetAllDateTimes(dateTime, allStandardFormats[i], dtfi);
-                for (int j = 0; j < strings.Length; j++)
+                foreach (string dateTimes in GetAllDateTimes(dateTime, standardFormat, dtfi))
                 {
-                    results.Add(strings[j]);
+                    results.Add(dateTimes);
                 }
             }
 

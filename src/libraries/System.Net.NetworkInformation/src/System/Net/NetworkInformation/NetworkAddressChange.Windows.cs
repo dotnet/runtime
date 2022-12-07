@@ -80,7 +80,7 @@ namespace System.Net.NetworkInformation
                         NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
                         ExecutionContext? ec = subscriber.Value;
 
-                        if (ec == null) // Flow supressed
+                        if (ec == null) // Flow suppressed
                         {
                             handler(null, args);
                         }
@@ -166,7 +166,7 @@ namespace System.Net.NetworkInformation
                     }
                     catch (NetworkInformationException nie)
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, nie);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(nie);
                     }
                 }
 
@@ -179,7 +179,7 @@ namespace System.Net.NetworkInformation
                         NetworkAddressChangedEventHandler handler = subscriber.Key;
                         ExecutionContext? ec = subscriber.Value;
 
-                        if (ec == null) // Flow supressed
+                        if (ec == null) // Flow suppressed
                         {
                             handler(null, EventArgs.Empty);
                         }

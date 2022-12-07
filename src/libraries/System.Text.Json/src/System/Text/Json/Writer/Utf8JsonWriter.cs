@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if !BUILDING_INBOX_LIBRARY
+#if !NETCOREAPP
 using System.Runtime.InteropServices;
 #endif
 
@@ -88,6 +88,10 @@ namespace System.Text.Json
         /// written so far. This provides the depth of the current token.
         /// </summary>
         public int CurrentDepth => _currentDepth & JsonConstants.RemoveFlagsBitMask;
+
+        private Utf8JsonWriter()
+        {
+        }
 
         /// <summary>
         /// Constructs a new <see cref="Utf8JsonWriter"/> instance with a specified <paramref name="bufferWriter"/>.
@@ -226,6 +230,29 @@ namespace System.Text.Json
             ResetHelper();
         }
 
+        internal void ResetAllStateForCacheReuse()
+        {
+            ResetHelper();
+
+            _stream = null;
+            _arrayBufferWriter = null;
+            _output = null;
+        }
+
+        internal void Reset(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
+        {
+            Debug.Assert(_output is null && _stream is null && _arrayBufferWriter is null);
+
+            _output = bufferWriter;
+            _options = options;
+            if (_options.MaxDepth == 0)
+            {
+                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
+            }
+        }
+
+        internal static Utf8JsonWriter CreateEmptyInstanceForCaching() => new Utf8JsonWriter();
+
         private void ResetHelper()
         {
             BytesPending = default;
@@ -275,7 +302,7 @@ namespace System.Text.Json
                     _arrayBufferWriter.Advance(BytesPending);
                     BytesPending = 0;
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     _stream.Write(_arrayBufferWriter.WrittenSpan);
 #else
                     Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
@@ -389,7 +416,7 @@ namespace System.Text.Json
                     _arrayBufferWriter.Advance(BytesPending);
                     BytesPending = 0;
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     await _stream.WriteAsync(_arrayBufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
 #else
                     Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);

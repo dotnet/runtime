@@ -901,7 +901,7 @@ void GenerationTable::Refresh()
 
 // This is the table of generation bounds updated by the gc
 // and read by the profiler.
-static GenerationTable *s_currentGenerationTable;
+static GenerationTable *s_currentGenerationTable = nullptr;
 
 // This is just so we can assert there's a single writer
 #ifdef  ENABLE_CONTRACTS
@@ -931,7 +931,6 @@ void __stdcall UpdateGenerationBounds()
     // Notify the profiler of start of the collection
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
-
         if (s_currentGenerationTable == nullptr)
         {
             EX_TRY
@@ -965,7 +964,10 @@ void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
-        s_currentGenerationTable->AddRecord(generation, rangeStart, rangeEnd, rangeEndReserved);
+        if (s_currentGenerationTable != nullptr)
+        {
+            s_currentGenerationTable->AddRecord(generation, rangeStart, rangeEnd, rangeEndReserved);
+        }
     }
 #endif // PROFILING_SUPPORTED
     RETURN;
@@ -2243,7 +2245,7 @@ HRESULT GetCodeInfoFromCodeStart(
     ///////////////////////////////////
     // Get the code region info for this function. This is a multi step process.
     //
-    // MethodDesc ==> Code Address ==> JitMananger ==>
+    // MethodDesc ==> Code Address ==> JitManager ==>
     // MethodToken ==> MethodRegionInfo
     //
     // (Our caller handled the first step: MethodDesc ==> Code Address.)
@@ -3946,7 +3948,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo(ModuleID     moduleId,
         "**PROF: GetModuleInfo 0x%p.\n",
         moduleId));
 
-    // Paramter validation is taken care of in GetModuleInfo2.
+    // Parameter validation is taken care of in GetModuleInfo2.
 
     return GetModuleInfo2(
         moduleId,
@@ -8718,7 +8720,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         // If the profiler did not specify a seed context of its own, use the current one we
         // just produced.
         //
-        // Failing to seed the walk can cause us to to "miss" functions on the stack.  This is
+        // Failing to seed the walk can cause us to "miss" functions on the stack.  This is
         // because StackWalkFrames(), when doing an unseeded stackwalk, sets the
         // starting regdisplay's IP/SP to 0.  This, in turn causes StackWalkFramesEx
         // to set cf.isFrameless = (pEEJM != NULL); (which is FALSE, since we have no
@@ -9670,7 +9672,7 @@ typedef struct _COR_PRF_ELT_INFO_INTERNAL
 
 //---------------------------------------------------------------------------------------
 //
-// ProfilingGetFunctionEnter3Info provides frame information and argument infomation of
+// ProfilingGetFunctionEnter3Info provides frame information and argument information of
 // the function ELT callback is inspecting.  It is called either by the profiler or the
 // C helper function.
 //
@@ -9874,7 +9876,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionEnter3Info(FunctionID functionId,     
 
 //---------------------------------------------------------------------------------------
 //
-// ProfilingGetFunctionLeave3Info provides frame information and return value infomation
+// ProfilingGetFunctionLeave3Info provides frame information and return value information
 // of the function ELT callback is inspecting.  It is called either by the profiler or the
 // C helper function.
 //

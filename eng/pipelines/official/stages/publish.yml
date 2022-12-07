@@ -17,10 +17,11 @@ stages:
   - template: /eng/common/templates/job/publish-build-assets.yml
     parameters:
       publishUsingPipelines: true
+      publishAssetsImmediately: true
       dependsOn: PrepareSignedArtifacts
       pool:
         name: NetCore1ESPool-Internal
-        demands: ImageOverride -equals Build.Windows.Amd64.VS2022
+        demands: ImageOverride -equals 1es-windows-2022
 
 # Stages-based publishing entry point
 - template: /eng/common/templates/post-build/post-build.yml
@@ -34,6 +35,7 @@ stages:
     enableSigningValidation: false
     enableNugetValidation: false
     enableSourceLinkValidation: false
+    publishAssetsImmediately: true
     SDLValidationParameters:
       enable: false
       artifactNames:

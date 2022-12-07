@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -16,6 +17,17 @@ namespace System
 {
     public partial class String
     {
+        // Avoid paying the init cost of all the IndexOfAnyValues unless they are actually used.
+        private static class IndexOfAnyValuesStorage
+        {
+            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
+            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
+            // also specifically excludes VT from the list of newline functions, so we do not include
+            // it in the needle list.
+            public static readonly IndexOfAnyValues<char> NewLineChars =
+                IndexOfAnyValues.Create("\r\n\f\u0085\u2028\u2029");
+        }
+
         private const int StackallocIntBufferSizeLimit = 128;
 
         private static void FillStringChecked(string dest, int destPos, string src)
@@ -557,19 +569,9 @@ namespace System
         private static string JoinCore(ReadOnlySpan<char> separator, string?[] value, int startIndex, int count)
         {
             ArgumentNullException.ThrowIfNull(value);
-
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
-            }
-            if (startIndex > value.Length - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - count);
 
             return JoinCore(separator, new ReadOnlySpan<string?>(value, startIndex, count));
         }
@@ -824,8 +826,7 @@ namespace System
 
         public string PadLeft(int totalWidth, char paddingChar)
         {
-            if (totalWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(totalWidth), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(totalWidth);
             int oldLength = Length;
             int count = totalWidth - oldLength;
             if (count <= 0)
@@ -843,8 +844,7 @@ namespace System
 
         public string PadRight(int totalWidth, char paddingChar)
         {
-            if (totalWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(totalWidth), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(totalWidth);
             int oldLength = Length;
             int count = totalWidth - oldLength;
             if (count <= 0)
@@ -860,13 +860,10 @@ namespace System
 
         public string Remove(int startIndex, int count)
         {
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             int oldLength = this.Length;
-            if (count > oldLength - startIndex)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, oldLength - startIndex);
 
             if (count == 0)
                 return this;
@@ -994,7 +991,7 @@ namespace System
             if (firstIndex < 0)
                 return this;
 
-            int remainingLength = Length - firstIndex;
+            nuint remainingLength = (uint)(Length - firstIndex);
             string result = FastAllocateString(Length);
 
             int copyLength = firstIndex;
@@ -1006,36 +1003,22 @@ namespace System
             }
 
             // Copy the remaining characters, doing the replacement as we go.
-            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), copyLength);
-            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), copyLength);
+            ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUInt16(), (uint)copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUInt16(), (uint)copyLength);
 
-            if (Vector.IsHardwareAccelerated && remainingLength >= Vector<ushort>.Count)
+            // If the string is long enough for vectorization to kick in, we'd like to
+            // process the remaining elements vectorized too.
+            // Thus we adjust the pointers so that at least one full vector from the end can be processed.
+            nuint length = (uint)Length;
+            if (Vector128.IsHardwareAccelerated && length >= (uint)Vector128<ushort>.Count)
             {
-                Vector<ushort> oldChars = new Vector<ushort>(oldChar);
-                Vector<ushort> newChars = new Vector<ushort>(newChar);
-
-                do
-                {
-                    Vector<ushort> original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref pSrc));
-                    Vector<ushort> equals = Vector.Equals(original, oldChars);
-                    Vector<ushort> results = Vector.ConditionalSelect(equals, newChars, original);
-                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref pDst), results);
-
-                    pSrc = ref Unsafe.Add(ref pSrc, Vector<ushort>.Count);
-                    pDst = ref Unsafe.Add(ref pDst, Vector<ushort>.Count);
-                    remainingLength -= Vector<ushort>.Count;
-                }
-                while (remainingLength >= Vector<ushort>.Count);
+                nuint adjust = (length - remainingLength) & ((uint)Vector128<ushort>.Count - 1);
+                pSrc = ref Unsafe.Subtract(ref pSrc, adjust);
+                pDst = ref Unsafe.Subtract(ref pDst, adjust);
+                remainingLength += adjust;
             }
 
-            for (; remainingLength > 0; remainingLength--)
-            {
-                ushort currentChar = pSrc;
-                pDst = currentChar == oldChar ? newChar : currentChar;
-
-                pSrc = ref Unsafe.Add(ref pSrc, 1);
-                pDst = ref Unsafe.Add(ref pDst, 1);
-            }
+            SpanHelpers.ReplaceValueType(ref pSrc, ref pDst, oldChar, newChar, remainingLength);
 
             return result;
         }
@@ -1067,7 +1050,7 @@ namespace System
                 int i = 0;
                 while (true)
                 {
-                    int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                    int pos = SpanHelpers.IndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
                     if (pos < 0)
                     {
                         break;
@@ -1246,16 +1229,9 @@ namespace System
             // the haystack; or O(n) if no needle is found. This ensures that in the common case
             // of this method being called within a loop, the worst-case runtime is O(n) rather than
             // O(n^2), where n is the length of the input text.
-            //
-            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
-            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
-            // also specifically excludes VT from the list of newline functions, so we do not include
-            // it in the needle list.
-
-            const string needles = "\r\n\f\u0085\u2028\u2029";
 
             stride = default;
-            int idx = text.IndexOfAny(needles);
+            int idx = text.IndexOfAny(IndexOfAnyValuesStorage.NewLineChars);
             if ((uint)idx < (uint)text.Length)
             {
                 stride = 1; // needle found
@@ -1328,9 +1304,7 @@ namespace System
 
         private string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
         {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                    SR.ArgumentOutOfRange_NegativeCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             CheckStringSplitOptions(options);
 
@@ -1339,17 +1313,7 @@ namespace System
             {
                 // Per the method's documentation, we'll short-circuit the search for separators.
                 // But we still need to post-process the results based on the caller-provided flags.
-
-                string candidate = this;
-                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
-                {
-                    candidate = candidate.Trim();
-                }
-                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
-                {
-                    count = 0;
-                }
-                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             if (separators.IsEmpty)
@@ -1401,11 +1365,7 @@ namespace System
 
         private string[] SplitInternal(string? separator, string?[]? separators, int count, StringSplitOptions options)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count),
-                    SR.ArgumentOutOfRange_NegativeCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             CheckStringSplitOptions(options);
 
@@ -1422,17 +1382,7 @@ namespace System
             {
                 // Per the method's documentation, we'll short-circuit the search for separators.
                 // But we still need to post-process the results based on the caller-provided flags.
-
-                string candidate = this;
-                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
-                {
-                    candidate = candidate.Trim();
-                }
-                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
-                {
-                    count = 0;
-                }
-                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             if (singleSeparator)
@@ -1458,7 +1408,7 @@ namespace System
             // Handle the special case of no replaces.
             if (sepList.Length == 0)
             {
-                return new string[] { this };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             string[] result = (options != StringSplitOptions.None)
@@ -1471,6 +1421,28 @@ namespace System
             return result;
         }
 
+        private string[] CreateSplitArrayOfThisAsSoleValue(StringSplitOptions options, int count)
+        {
+            Debug.Assert(count >= 0);
+
+            if (count != 0)
+            {
+                string candidate = this;
+
+                if ((options & StringSplitOptions.TrimEntries) != 0)
+                {
+                    candidate = candidate.Trim();
+                }
+
+                if ((options & StringSplitOptions.RemoveEmptyEntries) == 0 || candidate.Length != 0)
+                {
+                    return new string[] { candidate };
+                }
+            }
+
+            return Array.Empty<string>();
+        }
+
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)
         {
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
@@ -1480,14 +1452,7 @@ namespace System
             if (sepList.Length == 0)
             {
                 // there are no separators so sepListBuilder did not rent an array from pool and there is no need to dispose it
-                string candidate = this;
-                if ((options & StringSplitOptions.TrimEntries) != 0)
-                {
-                    candidate = candidate.Trim();
-                }
-                return ((candidate.Length == 0) && ((options & StringSplitOptions.RemoveEmptyEntries) != 0))
-                    ? Array.Empty<string>()
-                    : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             string[] result = (options != StringSplitOptions.None)
@@ -1658,16 +1623,13 @@ namespace System
             {
                 unsafe
                 {
-                    ProbabilisticMap map = default;
-                    uint* charMap = (uint*)&map;
-                    ProbabilisticMap.Initialize(charMap, separators);
+                    var map = new ProbabilisticMap(separators);
+                    ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (ProbabilisticMap.IsCharBitSet(charMap, (byte)c) &&
-                            ProbabilisticMap.IsCharBitSet(charMap, (byte)(c >> 8)) &&
-                            separators.Contains(c))
+                        if (ProbabilisticMap.Contains(ref charMap, separators, c))
                         {
                             sepListBuilder.Append(i);
                         }
@@ -1803,41 +1765,63 @@ namespace System
 
         // Returns a substring of this string.
         //
-        public string Substring(int startIndex) => Substring(startIndex, Length - startIndex);
-
-        public string Substring(int startIndex, int length)
+        public string Substring(int startIndex)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-
-            if (startIndex > Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
-            }
-
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
-
-            if (startIndex > Length - length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            }
-
-            if (length == 0)
-            {
-                return string.Empty;
-            }
-
-            if (startIndex == 0 && length == this.Length)
+            if (startIndex == 0)
             {
                 return this;
             }
 
+            int length = Length - startIndex;
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if ((uint)startIndex > (uint)Length)
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
             return InternalSubString(startIndex, length);
+        }
+
+        public string Substring(int startIndex, int length)
+        {
+#if TARGET_64BIT
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
+#else
+            if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
+#endif
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if (length == Length)
+            {
+                Debug.Assert(startIndex == 0);
+                return this;
+            }
+
+            return InternalSubString(startIndex, length);
+        }
+
+        [DoesNotReturn]
+        private void ThrowSubstringArgumentOutOfRange(int startIndex, int length)
+        {
+            (string paramName, string message) =
+                startIndex < 0 ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndex) :
+                startIndex > Length ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength) :
+                length < 0 ? (nameof(length), SR.ArgumentOutOfRange_NegativeLength) :
+                (nameof(length), SR.ArgumentOutOfRange_IndexLength);
+
+            throw new ArgumentOutOfRangeException(paramName, message);
         }
 
         private string InternalSubString(int startIndex, int length)

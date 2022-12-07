@@ -491,7 +491,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         from = args["to"].Value<string>()
                     });
                     if (args["type"].Value<string>() == "prototypeAndProperties")
-                        o.Add("prototype", GetPrototype(objectId, args));
+                        o.Add("prototype", GetPrototype(args));
                     await SendEvent(sessionId, "", o, token);
                     return true;
                 }
@@ -501,7 +501,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         return false;
                     var o = JObject.FromObject(new
                     {
-                        prototype = GetPrototype(objectId, args),
+                        prototype = GetPrototype(args),
                         from = args["to"].Value<string>()
                     });
                     await SendEvent(sessionId, "", o, token);
@@ -627,8 +627,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         {
                             var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
                             JObject retValue = await resolver.Resolve(expression, token);
-                            if (retValue == null)
-                                retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
+                            retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
                             if (retValue["type"].Value<string>() == "object")
                             {
                                 osend["result"] = JObject.FromObject(new
@@ -743,7 +742,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return true;
     }
 
-    private static JObject GetPrototype(DotnetObjectId objectId, JObject args)
+    private static JObject GetPrototype(JObject args)
     {
         var o = JObject.FromObject(new
         {
@@ -788,7 +787,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         @class = variable["value"]?["className"]?.Value<string>(),
                         value = variable["value"]?["description"]?.Value<string>(),
                         actor = variable["value"]["objectId"].Value<string>(),
-                        type = "object"
+                        type = variable["value"]?["type"]?.Value<string>() ?? "object"
                     }),
                     enumerable = true,
                     configurable = false,

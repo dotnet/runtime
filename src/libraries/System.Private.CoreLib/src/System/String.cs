@@ -85,15 +85,9 @@ namespace System
         private static string Ctor(char[] value, int startIndex, int length)
         {
             ArgumentNullException.ThrowIfNull(value);
-
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-
-            if (startIndex > value.Length - length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - length);
 
             if (length == 0)
                 return Empty;
@@ -139,11 +133,8 @@ namespace System
 
         private static unsafe string Ctor(char* ptr, int startIndex, int length)
         {
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
             char* pStart = ptr + startIndex;
 
@@ -190,11 +181,8 @@ namespace System
 
         private static unsafe string Ctor(sbyte* value, int startIndex, int length)
         {
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             if (value == null)
             {
@@ -236,7 +224,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
             return newString;
 #else
-            return Encoding.UTF8.GetString(pb, numBytes);
+            return CreateStringFromEncoding(pb, numBytes, Encoding.UTF8);
 #endif
         }
 
@@ -250,11 +238,8 @@ namespace System
             if (enc == null)
                 return new string(value, startIndex, length);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
             if (value == null)
             {
@@ -328,7 +313,7 @@ namespace System
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string.</param>
         /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
-        public static string Create(IFormatProvider? provider, [InterpolatedStringHandlerArgument("provider")] ref DefaultInterpolatedStringHandler handler) =>
+        public static string Create(IFormatProvider? provider, [InterpolatedStringHandlerArgument(nameof(provider))] ref DefaultInterpolatedStringHandler handler) =>
             handler.ToStringAndClear();
 
         /// <summary>Creates a new string by using the specified provider to control the formatting of the specified interpolated string.</summary>
@@ -396,14 +381,11 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(destination);
 
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
-            if (sourceIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            if (count > Length - sourceIndex)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_IndexCount);
-            if (destinationIndex > destination.Length - count || destinationIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_IndexCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(sourceIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Length - sourceIndex, nameof(sourceIndex));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(destinationIndex, destination.Length - count);
+            ArgumentOutOfRangeException.ThrowIfNegative(destinationIndex);
 
             Buffer.Memmove(
                 destination: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destination), destinationIndex),
@@ -463,8 +445,8 @@ namespace System
         public char[] ToCharArray(int startIndex, int length)
         {
             // Range check everything.
-            if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)Length, nameof(startIndex));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length - length);
 
             if (length <= 0)
             {
@@ -508,6 +490,7 @@ namespace System
         public ref readonly char GetPinnableReference() => ref _firstChar;
 
         internal ref char GetRawStringData() => ref _firstChar;
+        internal ref ushort GetRawStringDataAsUInt16() => ref Unsafe.As<char, ushort>(ref _firstChar);
 
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect
@@ -593,39 +576,9 @@ namespace System
             return new StringRuneEnumerator(this);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int wcslen(char* ptr)
-        {
-            // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
-            // This IndexOf behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
-            int length = SpanHelpers.IndexOf(ref *ptr, '\0', int.MaxValue);
-            if (length < 0)
-            {
-                ThrowMustBeNullTerminatedString();
-            }
+        internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ref *ptr);
 
-            return length;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int strlen(byte* ptr)
-        {
-            // IndexOf processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
-            // This IndexOf behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
-            int length = SpanHelpers.IndexOf(ref *ptr, (byte)'\0', int.MaxValue);
-            if (length < 0)
-            {
-                ThrowMustBeNullTerminatedString();
-            }
-
-            return length;
-        }
-
-        [DoesNotReturn]
-        private static void ThrowMustBeNullTerminatedString()
-        {
-            throw new ArgumentException(SR.Arg_MustBeNullTerminatedString);
-        }
+        internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ref *ptr);
 
         //
         // IConvertible implementation

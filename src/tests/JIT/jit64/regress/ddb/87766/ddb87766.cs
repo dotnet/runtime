@@ -43,7 +43,7 @@ public class VIMain
         }
         catch (DivideByZeroException e)
         {
-            Console.WriteLine("exeption stack trace: " + e.StackTrace.ToString());  //display the stack trace
+            Console.WriteLine("exception stack trace: " + e.StackTrace.ToString());  //display the stack trace
             if (e.StackTrace.ToString().Contains("Accumulate"))
             {
                 Console.WriteLine("Fail, method Accumulate NOT inlined.");

@@ -7,37 +7,15 @@
 #error The pal_ifaddrs.h shim is intended only for Android
 #endif
 
+#if __ANDROID_API__ >= 24
+#error The pal_ifaddrs.h shim is only necessary for Android API 21-23 and it should be removed now that the minimum supported API level is 24 or higher
+#endif
+
 // Android doesn't include the getifaddrs and freeifaddrs functions in older Bionic libc (pre API 24).
-// In recent Android versions (Android 11+) the data returned by the getifaddrs function is not valid.
 // This shim is a port of Xamarin Android's implementation of getifaddrs using Netlink.
+// https://github.com/xamarin/xamarin-android/blob/681887ebdbd192ce7ce1cd02221d4939599ba762/src/monodroid/jni/xamarin_getifaddrs.h
 
-#include "pal_compiler.h"
-#include "pal_config.h"
-#include "pal_types.h"
+#include <ifaddrs.h>
 
-#include <sys/cdefs.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-
-struct ifaddrs
-{
-    struct ifaddrs *ifa_next;
-    char *ifa_name;
-    unsigned int ifa_flags;
-    struct sockaddr *ifa_addr;
-    struct sockaddr *ifa_netmask;
-    union
-    {
-        struct sockaddr *ifu_broadaddr;
-        struct sockaddr *ifu_dstaddr;
-    } ifa_ifu;
-    void *ifa_data;
-};
-
-// Synonym for `ifa_ifu.ifu_broadaddr` in `struct ifaddrs`.
-#define ifa_broadaddr ifa_ifu.ifu_broadaddr
-// Synonym for `ifa_ifu.ifu_dstaddr` in `struct ifaddrs`.
-#define ifa_dstaddr ifa_ifu.ifu_dstaddr
-
-int getifaddrs (struct ifaddrs **ifap);
-void freeifaddrs (struct ifaddrs *ifap);
+int _netlink_getifaddrs (struct ifaddrs **ifap);
+void _netlink_freeifaddrs (struct ifaddrs *ifap);

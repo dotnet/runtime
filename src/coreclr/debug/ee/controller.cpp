@@ -368,7 +368,7 @@ void ControllerStackInfo::SetReturnFrameWithActiveFrame()
 
     // Invalidate the active frame.
     m_activeFound = false;
-    memset(&(m_activeFrame), 0, sizeof(m_activeFrame));
+    m_activeFrame = {};
     m_activeFrame.fp = LEAF_MOST_FRAME;
 }
 
@@ -3068,7 +3068,7 @@ Exit:
 
 
     // We pulse the GC mode here too cooperate w/ a thread trying to suspend the runtime. If we didn't pulse
-    // the GC, the odds of catching this thread in interuptable code may be very small (since this filter
+    // the GC, the odds of catching this thread in interruptible code may be very small (since this filter
     // could be very large compared to the managed code this thread is running).
     // Only do this if the exception was actually for the debugger. (We don't want to toggle the GC mode on every
     // random exception). We can't do this while holding any debugger locks.
@@ -4997,7 +4997,7 @@ bool DebuggerBreakpoint::SendEvent(Thread *thread, bool fIpChanged)
 
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
 
-    // If we got interupted by SetIp, we just don't send the IPC event. Our triggers are still
+    // If we got interrupted by SetIp, we just don't send the IPC event. Our triggers are still
     // active so no harm done.
     if (!fIpChanged)
     {
@@ -5555,7 +5555,7 @@ bool DebuggerStepper::TrapStepInto(ControllerStackInfo *info,
     // If we're calling from managed code, this should either succeed
     // or become an ecall into mscorwks.
     // @Todo - what about stubs in mscorwks.
-    // @todo - if this fails, we want to provde as much info as possible.
+    // @todo - if this fails, we want to provide as much info as possible.
     if (!g_pEEInterface->TraceStub(ip, &trace)
         || !g_pEEInterface->FollowTrace(&trace))
     {
@@ -7728,12 +7728,12 @@ bool DebuggerStepper::SendEvent(Thread *thread, bool fIpChanged)
     }
     CONTRACTL_END;
 
-    // We practically should never have a step interupted by SetIp.
+    // We practically should never have a step interrupted by SetIp.
     // We'll still go ahead and send the Step-complete event because we've already
     // deactivated our triggers by now and we haven't placed any new patches to catch us.
     // We assert here because we don't believe we'll ever be able to hit this scenario.
     // This is technically an issue, but we consider it benign enough to leave in.
-    _ASSERTE(!fIpChanged || !"Stepper interupted by SetIp");
+    _ASSERTE(!fIpChanged || !"Stepper interrupted by SetIp");
 
     LOG((LF_CORDB, LL_INFO10000, "DS::SE m_fpStepInto:0x%x\n", m_fpStepInto.GetSPValue()));
 
@@ -8358,7 +8358,7 @@ bool DebuggerThreadStarter::SendEvent(Thread *thread, bool fIpChanged)
     }
     CONTRACTL_END;
 
-    // This SendEvent can't be interupted by a SetIp because until the client
+    // This SendEvent can't be interrupted by a SetIp because until the client
     // gets a ThreadStarter event, it doesn't even know the thread exists, so
     // it certainly can't change its ip.
     _ASSERTE(!fIpChanged);
@@ -8654,7 +8654,7 @@ bool DebuggerFuncEvalComplete::SendEvent(Thread *thread, bool fIpChanged)
     CONTRACTL_END;
 
 
-    // This should not ever be interupted by a SetIp.
+    // This should not ever be interrupted by a SetIp.
     // The BP will be off in random native code for which SetIp would be illegal.
     // However, func-eval conroller will restore the context from when we're at the patch,
     // so that will look like the IP changed on us.

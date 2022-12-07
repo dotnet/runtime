@@ -806,7 +806,7 @@ namespace System.Reflection.Emit
             // Emitting a switch table
 
             int i;
-            int remaining;                  // number of bytes remaining for this switch instruction to be substracted
+            int remaining;                  // number of bytes remaining for this switch instruction to be subtracted
             // for computing the offset
 
             int count = labels.Length;

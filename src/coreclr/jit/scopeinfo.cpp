@@ -144,7 +144,7 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 }
 
 //------------------------------------------------------------------------
-// storeVariableInRegisters: Convert the siVarLoc instance in a regsiter
+// storeVariableInRegisters: Convert the siVarLoc instance in a register
 //  location using the given registers.
 //
 // Arguments:
@@ -359,7 +359,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
 //
 // Notes:
 //    The "varLoc" argument is filled depending of the "type" argument but as a VLT_REG... variation.
-//    "baseReg" and "offset" are used .for not 64 bit and values that are splitted in two parts.
+//    "baseReg" and "offset" are used .for not 64 bit and values that are split in two parts.
 void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
     const LclVarDsc* varDsc, var_types type, regNumber baseReg, int offset, bool isFramePointerUsed)
 {
@@ -1788,7 +1788,7 @@ void CodeGen::psiMoveESPtoEBP()
  *                          psiMoveToReg
  *
  * Called when a parameter is loaded into its assigned register from the stack,
- * or when parameters are moved around due to circular dependancy.
+ * or when parameters are moved around due to circular dependency.
  * If reg != REG_NA, then the parameter is being moved into its assigned
  * register, else it may be being moved to a temp register.
  */
@@ -1812,7 +1812,7 @@ void CodeGen::psiMoveToReg(unsigned varNum, regNumber reg, regNumber otherReg)
 
 #ifdef ACCURATE_PROLOG_DEBUG_INFO
 
-    /* If reg!=REG_NA, the parameter is part of a cirular dependancy, and is
+    /* If reg!=REG_NA, the parameter is part of a cirular dependency, and is
      * being moved through temp register "reg".
      * If reg==REG_NA, it is being moved to its assigned register.
      */

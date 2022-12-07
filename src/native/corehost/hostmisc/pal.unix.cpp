@@ -171,6 +171,7 @@ namespace
         }
 
         fclose(file);
+        free(line);
         if (!found)
             return false;
 
@@ -665,7 +666,7 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 #elif defined(TARGET_FREEBSD)
-// On FreeBSD get major verion. Minors should be compatible
+// On FreeBSD get major version. Minors should be compatible
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;

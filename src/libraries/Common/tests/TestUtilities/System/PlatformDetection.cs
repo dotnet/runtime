@@ -5,11 +5,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using Microsoft.Win32;
 using Xunit;
 
@@ -38,10 +38,12 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
-        public static bool IsNotAndroidX86 => !(IsAndroid && IsX86Process);
+        public static bool IsAndroidX86 => IsAndroid && IsX86Process;
+        public static bool IsNotAndroidX86 => !IsAndroidX86;
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
+        public static bool IsNotMacCatalyst => !IsMacCatalyst;
         public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
@@ -59,7 +61,9 @@ namespace System
         public static bool IsNotArm64Process => !IsArm64Process;
         public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
+        public static bool IsS390xProcess => (int)RuntimeInformation.ProcessArchitecture == 5; // Architecture.S390x
         public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
+        public static bool IsPpc64leProcess => (int)RuntimeInformation.ProcessArchitecture == 8; // Architecture.Ppc64le
         public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
@@ -68,6 +72,25 @@ namespace System
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
+
+        private static volatile int s_isPrivilegedProcess = -1;
+        public static bool IsPrivilegedProcess
+        {
+            get
+            {
+                int p = s_isPrivilegedProcess;
+                if (p == -1)
+                {
+                    s_isPrivilegedProcess = p = AdminHelpers.IsProcessElevated() ? 1 : 0;
+                }
+
+                return p == 1;
+            }
+        }
+
+        public static bool IsNotPrivilegedProcess => !IsPrivilegedProcess;
+
+        public static bool IsMarshalGetExceptionPointersSupported => !IsMonoRuntime && !IsNativeAot;
 
         private static readonly Lazy<bool> s_isCheckedRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
         private static readonly Lazy<bool> s_isReleaseRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Release"));
@@ -93,7 +116,7 @@ namespace System
 
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
-        public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
+
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
@@ -101,10 +124,12 @@ namespace System
 
         public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
+        public static bool IsBrowserDomSupportedOrNodeJS => IsBrowserDomSupported || IsNodeJS;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
         public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool IsNodeJS => IsEnvironmentVariableTrue("IsNodeJS");
         public static bool IsNotNodeJS => !IsNodeJS;
+        public static bool IsNodeJSOnWindows => GetNodeJSPlatform() == "win32";
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
@@ -128,6 +153,21 @@ namespace System
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
+
+#if NETCOREAPP
+        public static bool IsBuiltInComEnabled => SupportsComInterop
+                                            && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
+                                                ? isEnabled
+                                                : true);
+#else
+        public static bool IsBuiltInComEnabled => SupportsComInterop;
+#endif
+
+        // Automation refers to OLE Automation support. Automation support here means the OS
+        // and runtime provide support for the following: IDispatch, STA apartments, etc. This
+        // is typically available whenever COM support is enabled, but Windows Nano Server is an exception.
+        public static bool IsBuiltInComEnabledWithOSAutomationSupport => IsBuiltInComEnabled && IsNotWindowsNanoServer;
+
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
@@ -139,6 +179,7 @@ namespace System
 #endif
 
         public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
+        public static bool IsInvokingFinalizersSupported => !IsNativeAot;
 
         public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
@@ -151,6 +192,7 @@ namespace System
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
+        public static bool IsNonBundledAssemblyLoadingSupported => IsAssemblyLoadingSupported && !IsMonoAOT;
         public static bool IsMethodBodySupported => !IsNativeAot;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
@@ -573,6 +615,14 @@ namespace System
 
             var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
+        }
+
+        private static string GetNodeJSPlatform()
+        {
+            if (!IsNodeJS)
+                return null;
+
+            return Environment.GetEnvironmentVariable("NodeJSPlatform");
         }
 
         private static bool AssemblyConfigurationEquals(string configuration)

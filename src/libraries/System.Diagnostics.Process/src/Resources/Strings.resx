@@ -167,7 +167,7 @@
   <data name="CouldntGetProcessInfos" xml:space="preserve">
     <value>Couldn't get process information from performance counter.</value>
   </data>
-  <data name="InputIdleUnkownError" xml:space="preserve">
+  <data name="InputIdleUnknownError" xml:space="preserve">
     <value>WaitForInputIdle failed.  This could be because the process does not have a graphical interface.</value>
   </data>
   <data name="FileNameMissing" xml:space="preserve">

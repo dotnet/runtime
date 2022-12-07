@@ -43,6 +43,9 @@ internal class Program
         TestValueTypeDup.Run();
         TestFunctionPointers.Run();
         TestGCInteraction.Run();
+        TestDuplicatedFields.Run();
+        TestInstanceDelegate.Run();
+        TestStringFields.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -867,6 +870,78 @@ class TestGCInteraction
 
         h1.Dispose();
         h2.Dispose();
+    }
+}
+
+class TestDuplicatedFields
+{
+    class WithSameFields
+    {
+        public static WithSameFields Field1a = new WithSameFields();
+        public static WithSameFields Field1b = Field1a;
+
+        public static int[] Field2a = new int[1];
+        public static int[] Field2b = Field2a;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(WithSameFields));
+        Assert.AreSame(WithSameFields.Field1a, WithSameFields.Field1b);
+        Assert.AreSame(WithSameFields.Field2a, WithSameFields.Field2b);
+    }
+}
+
+class TestInstanceDelegate
+{
+    class ClassWithInstanceDelegate
+    {
+        public static Func<int> Instance1 = new ClassWithInstanceDelegate(42).GetCookie;
+        public static ClassWithInstanceDelegate Target = new ClassWithInstanceDelegate(123);
+        public static Func<int> Instance2 = Target.GetCookie;
+
+        private int _cookie;
+        public ClassWithInstanceDelegate(int cookie) => _cookie = cookie;
+        public int GetCookie() => _cookie;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(ClassWithInstanceDelegate));
+        Assert.AreEqual(42, ClassWithInstanceDelegate.Instance1());
+        Assert.AreEqual(123, ClassWithInstanceDelegate.Instance2());
+        Assert.AreSame(ClassWithInstanceDelegate.Target, ClassWithInstanceDelegate.Instance2.Target);
+    }
+}
+
+class TestStringFields
+{
+    class ClassAccessingLength
+    {
+        public static int Length = "Hello".Length;
+    }
+
+    class ClassAccessingNull
+    {
+        public static int Length;
+        static ClassAccessingNull()
+        {
+            string myNull = null;
+            try
+            {
+                Length = myNull.Length;
+            }
+            catch (Exception) { }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(ClassAccessingLength));
+        Assert.AreEqual(5, ClassAccessingLength.Length);
+
+        Assert.IsLazyInitialized(typeof(ClassAccessingNull));
+        Assert.AreEqual(0, ClassAccessingNull.Length);
     }
 }
 

@@ -20,7 +20,8 @@ namespace Microsoft.Interop.JavaScript
         private readonly JSSignatureContext _signatureContext;
 
         public JSExportCodeGenerator(
-            StubEnvironment environment,
+            TargetFramework targetFramework,
+            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             JSExportData attributeData,
             JSSignatureContext signatureContext,
@@ -28,21 +29,21 @@ namespace Microsoft.Interop.JavaScript
             IMarshallingGeneratorFactory generatorFactory)
         {
             _signatureContext = signatureContext;
-            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, ReturnIdentifier);
+            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSExportCodeContext(attributeData, innerContext);
             _marshallers = new BoundGenerators(argTypes, CreateGenerator);
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, ReturnNativeIdentifier);
+                innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
                 _context = new JSExportCodeContext(attributeData, innerContext);
                 _marshallers = new BoundGenerators(argTypes, CreateGenerator);
             }
 
             // validate task + span mix
-            if (_marshallers.ManagedReturnMarshaller.TypeInfo.ManagedType is JSTaskTypeInfo)
+            if (_marshallers.ManagedReturnMarshaller.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSTaskTypeInfo))
             {
-                BoundGenerator spanArg = _marshallers.AllMarshallers.FirstOrDefault(m => m.TypeInfo.ManagedType is JSSpanTypeInfo);
+                BoundGenerator spanArg = _marshallers.AllMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
                 if (spanArg != default)
                 {
                     marshallingNotSupportedCallback(spanArg.TypeInfo, new MarshallingNotSupportedException(spanArg.TypeInfo, _context)
@@ -69,7 +70,7 @@ namespace Microsoft.Interop.JavaScript
         public BlockSyntax GenerateJSExportBody()
         {
             StatementSyntax invoke = InvokeSyntax();
-            JSGeneratedStatements statements = JSGeneratedStatements.Create(_marshallers, _context, invoke);
+            GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context);
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
 
@@ -88,7 +89,7 @@ namespace Microsoft.Interop.JavaScript
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Unmarshal);
 
-            tryStatements.AddRange(statements.InvokeStatements);
+            tryStatements.Add(invoke);
 
             if (!statements.GuaranteedUnmarshal.IsEmpty)
             {
@@ -98,6 +99,7 @@ namespace Microsoft.Interop.JavaScript
             }
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+            tryStatements.AddRange(statements.PinnedMarshal);
             tryStatements.AddRange(statements.Marshal);
 
             List<StatementSyntax> allStatements = setupStatements;

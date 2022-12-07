@@ -536,7 +536,7 @@ namespace System.ComponentModel
 
         internal Type? ExtenderGetReceiverType() => _receiverType;
 
-        internal Type ExtenderGetType(IExtenderProvider provider) => PropertyType;
+        internal Type ExtenderGetType() => PropertyType;
 
         internal object? ExtenderGetValue(IExtenderProvider? provider, object? component)
         {
@@ -740,7 +740,7 @@ namespace System.ComponentModel
             // 1. Attributes of the property type. These are the lowest level and should be
             //     overwritten by any newer attributes.
             //
-            // 2. Attributes obtained from any SpecificTypeAttribute. These supercede attributes
+            // 2. Attributes obtained from any SpecificTypeAttribute. These supersede attributes
             //     for the property type.
             //
             // 3. Attributes of the property itself, from base class to most derived. This way
@@ -749,7 +749,7 @@ namespace System.ComponentModel
             // 4. Attributes from our base MemberDescriptor. While this seems opposite of what
             //     we want, MemberDescriptor only has attributes if someone passed in a new
             //     set in the constructor. Therefore, these attributes always
-            //     supercede existing values.
+            //     supersede existing values.
             //
 
 
@@ -956,14 +956,8 @@ namespace System.ComponentModel
         /// </summary>
         public override void RemoveValueChanged(object? component, EventHandler handler)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
 
             // If there's an event called <propertyname>Changed, we hooked the caller's
             // handler directly up to that on the component, so remove it now.

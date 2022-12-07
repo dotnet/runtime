@@ -327,7 +327,7 @@ namespace System.Security.Cryptography.X509Certificates
             int cbData = 0;
             if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbData))
             {
-                int dwErrorCode = Marshal.GetLastWin32Error();
+                int dwErrorCode = Marshal.GetLastPInvokeError();
                 if (dwErrorCode == ErrorCode.CRYPT_E_NOT_FOUND)
                     return null;
                 throw dwErrorCode.ToCryptographicException();
@@ -339,7 +339,7 @@ namespace System.Security.Cryptography.X509Certificates
                 fixed (byte* pPrivateKey = privateKey)
                 {
                     if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, privateKey, ref cbData))
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                     Interop.Crypt32.CRYPT_KEY_PROV_INFO* pKeyProvInfo = (Interop.Crypt32.CRYPT_KEY_PROV_INFO*)pPrivateKey;
 
                     CspParameters cspParameters = new CspParameters();
@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
-                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                    Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                     pal.Dispose();
                     throw e;
                 }
@@ -576,7 +576,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
-                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                    Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                     pal.Dispose();
                     throw e;
                 }
@@ -604,7 +604,7 @@ namespace System.Security.Cryptography.X509Certificates
                         Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
                         handle))
                     {
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                     }
 
                     // The value was transferred to the certificate.

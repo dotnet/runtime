@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
+using Microsoft.Interop.UnitTests;
 using Xunit;
 
 namespace LibraryImportGenerator.UnitTests
@@ -98,15 +99,15 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 2, 0 };
 
             // Custom type marshalling with invalid members
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.NonStaticMarshallerEntryPoint, 2, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateless.ManagedToNativeOnlyOutParameter, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateless.ManagedToNativeOnlyReturnValue, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateless.NativeToManagedOnlyInParameter, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateless.StackallocOnlyRefParameter, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.ManagedToNativeOnlyOutParameter, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.ManagedToNativeOnlyReturnValue, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.NativeToManagedOnlyInParameter, 1, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomStructMarshalling.Stateful.StackallocOnlyRefParameter, 1, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.NonStaticMarshallerEntryPoint, 2, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateless.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateless.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateless.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateless.StackallocOnlyRefParameter, 1, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateful.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateful.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateful.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateful.StackallocOnlyRefParameter, 1, 0 };
 
             // Abstract SafeHandle type by reference
             yield return new object[] { ID(), CodeSnippets.BasicParameterWithByRefModifier("ref", "System.Runtime.InteropServices.SafeHandle"), 1, 0 };
@@ -118,11 +119,11 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.MarshalUsingCollectionWithNullElementName, 2, 0 };
 
             // Generic collection marshaller has different arity than collection.
-            yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
+            yield return new object[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets>.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
 
-            yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 2, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshallingDuplicateElementIndirectionDepth, 2, 0 };
-            yield return new object[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
+            yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 1, 0 };
+            yield return new object[] { ID(), CodeSnippets.CustomElementMarshallingDuplicateElementIndirectionDepth, 1, 0 };
+            yield return new object[] { ID(), CodeSnippets.CustomElementMarshallingUnusedElementIndirectionDepth, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnReturnValue, 2, 0 };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };
             yield return new object[] { ID(), CodeSnippets.MutuallyRecursiveCountElementNameOnParameter, 4, 0 };
@@ -208,6 +209,22 @@ using System.Runtime.InteropServices.Marshalling;
             Assert.True(generatorDiags.All(d => d.Id == "SYSLIB1051"));
 
             TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+        }
+
+        [Fact]
+        public async Task ValidateRequireAllowUnsafeBlocksDiagnostic()
+        {
+            string source = CodeSnippets.TrivialClassDeclarations;
+            Compilation comp = await TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+
+            // The errors should indicate the AllowUnsafeBlocks is required.
+            Assert.True(generatorDiags.All(d => d.Id == "SYSLIB1062"));
+
+            // There should only be one SYSLIB1062, even if there are multiple LibraryImportAttribute uses.
+            Assert.Equal(1, generatorDiags.Count());
         }
     }
 }

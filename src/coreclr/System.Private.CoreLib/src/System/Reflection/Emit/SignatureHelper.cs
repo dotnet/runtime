@@ -489,7 +489,7 @@ namespace System.Reflection.Emit
 
         private void AddElementType(CorElementType cvt)
         {
-            // Adds an element to the signature.  A managed represenation of CorSigCompressElement
+            // Adds an element to the signature.  A managed representation of CorSigCompressElement
             if (m_currSig + 1 > m_signature.Length)
                 m_signature = ExpandArray(m_signature);
 
@@ -498,7 +498,7 @@ namespace System.Reflection.Emit
 
         private void AddToken(int token)
         {
-            // A managed represenation of CompressToken
+            // A managed representation of CompressToken
             // Pulls the token appart to get a rid, adds some appropriate bits
             // to the token and then adds this to the signature.
 

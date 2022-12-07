@@ -156,7 +156,6 @@
 #include "virtualcallstub.h"
 #include "strongnameinternal.h"
 #include "syncclean.hpp"
-#include "typeparse.h"
 #include "debuginfostore.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
@@ -174,10 +173,6 @@
 #ifdef FEATURE_STACK_SAMPLING
 #include "stacksampler.h"
 #endif
-
-#include "win32threadpool.h"
-
-#include <shlwapi.h>
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -289,8 +284,6 @@ HRESULT EnsureEEStarted()
     // which we will do further down.
     if (!g_fEEStarted)
     {
-        BEGIN_ENTRYPOINT_NOTHROW;
-
         // Initialize our configuration.
         CLRConfig::Initialize();
 
@@ -322,8 +315,6 @@ HRESULT EnsureEEStarted()
                 }
             }
         }
-
-        END_ENTRYPOINT_NOTHROW;
     }
     else
     {
@@ -627,12 +618,8 @@ void EEStartupHelper()
 
 #ifdef HOST_WINDOWS
         InitializeCrashDump();
-#endif // HOST_WINDOWS
 
-        // Initialize Numa and CPU group information
-        // Need to do this as early as possible. Used by creating object handle
-        // table inside Ref_Initialization() before GC is initialized.
-        NumaNodeInfo::InitNumaNodeInfo();
+#endif // HOST_WINDOWS
 #ifndef TARGET_UNIX
         CPUGroupInfo::EnsureInitialized();
 #endif // !TARGET_UNIX
@@ -644,7 +631,6 @@ void EEStartupHelper()
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         Thread::StaticInitialize();
-        ThreadpoolMgr::StaticInitialize();
 
         JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
@@ -673,7 +659,6 @@ void EEStartupHelper()
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
 #endif // FEATURE_PERFTRACING
-        GenAnalysis::Initialize();
 
 #ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
@@ -891,6 +876,11 @@ void EEStartupHelper()
         // requires write barriers to have been set up on x86, which happens as part
         // of InitJITHelpers1.
         hr = g_pGCHeap->Initialize();
+        if (FAILED(hr))
+        {
+            LogErrorToHost("GC heap initialization failed with error 0x%08X", hr);
+        }
+
         IfFailGo(hr);
 
 #ifdef FEATURE_PERFTRACING
@@ -899,6 +889,7 @@ void EEStartupHelper()
         // EventPipe initialization, so this is done after the GC has been fully initialized.
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
+        GenAnalysis::Initialize();
 
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
@@ -945,9 +936,6 @@ void EEStartupHelper()
         StackSampler::Init();
 #endif
 
-        // Perform any once-only SafeHandle initialization.
-        SafeHandle::Init();
-
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
@@ -960,7 +948,6 @@ void EEStartupHelper()
         g_MiniMetaDataBuffAddress = (TADDR) ClrVirtualAlloc(NULL,
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-
 
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
@@ -982,9 +969,6 @@ void EEStartupHelper()
         {
             SystemDomain::SystemModule()->ExpandAll();
         }
-
-        // Perform CoreLib consistency check if requested
-        g_CoreLib.CheckExtended();
 #endif // _DEBUG
 
 
@@ -992,6 +976,7 @@ ErrExit: ;
     }
     EX_CATCH
     {
+        hr = GET_EXCEPTION()->GetHR();
     }
     EX_END_CATCH(RethrowTerminalExceptionsWithInitCheck)
 
@@ -1053,7 +1038,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
 //     * Loads System.Private.CoreLib and loads up the fundamental types (System.Object ...)
 //
 // see code:EEStartup#TableOfContents for more on the runtime in general.
-// see code:#EEShutdown for a analagous routine run during shutdown.
+// see code:#EEShutdown for an analogous routine run during shutdown.
 //
 HRESULT EEStartup()
 {
@@ -1325,7 +1310,7 @@ part2:
         // instant process termination.
         if (g_fProcessDetach)
         {
-            // The assert below is a bit too aggresive and has generally brought cases that have been race conditions
+            // The assert below is a bit too aggressive and has generally brought cases that have been race conditions
             // and not easily reproed to validate a bug. A typical race scenario is when there are two threads,
             // T1 and T2, with T2 having taken a lock (e.g. SystemDomain lock), the OS terminates
             // T2 for some reason. Later, when we enter the shutdown thread, we would assert on such
@@ -1642,8 +1627,10 @@ void InitializeGarbageCollector()
     g_pFreeObjectMethodTable->SetComponentSize(1);
 
     hr = GCHeapUtilities::LoadAndInitialize();
+
     if (hr != S_OK)
     {
+        LogErrorToHost("GC initialization failed with error 0x%08X", hr);
         ThrowHR(hr);
     }
 
@@ -1939,7 +1926,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
         Thread * pThread = GetThreadNULLOk();
 
         // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
-        // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
+        // indefinitely. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
         // getting localized with a non-default thread-specific culture.
         // A canonical stack trace that gets here is a fatal error in the GC that comes through:
         // coreclr.dll!GetThreadUICultureNames
@@ -2069,7 +2056,7 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
     // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
-    // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
+    // indefinitely. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
     // getting localized with a non-default thread-specific culture.
     // A canonical stack trace that gets here is a fatal error in the GC that comes through:
     // coreclr.dll!GetThreadUICultureNames

@@ -15,16 +15,6 @@ namespace System.Runtime
                                                                  ushort itfSlotNumber,
                                                                  /* out */ MethodTable** ppGenericContext)
         {
-            DynamicModule* dynamicModule = pTgtType->DynamicModule;
-
-            // Use the dynamic module resolver if it's present
-            if (dynamicModule != null)
-            {
-                delegate*<MethodTable*, MethodTable*, ushort, IntPtr> resolver = dynamicModule->DynamicTypeSlotDispatchResolve;
-                if (resolver != null)
-                    return resolver(pTgtType, pItfType, itfSlotNumber);
-            }
-
             // Start at the current type and work up the inheritance chain
             MethodTable* pCur = pTgtType;
 
@@ -239,7 +229,7 @@ namespace System.Runtime
 
                         // The types represent different instantiations of the same generic type. The
                         // arity of both had better be the same.
-                        Debug.Assert(itfArity == (int)pCurEntryType->GenericArity, "arity mismatch betweeen generic instantiations");
+                        Debug.Assert(itfArity == (int)pCurEntryType->GenericArity, "arity mismatch between generic instantiations");
 
                         if (TypeCast.TypeParametersAreCompatible(itfArity, pCurEntryInstantiation, pItfInstantiation, pItfVarianceInfo, fArrayCovariance, null))
                         {

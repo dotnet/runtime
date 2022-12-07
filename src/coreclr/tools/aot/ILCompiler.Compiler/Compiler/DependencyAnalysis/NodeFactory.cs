@@ -13,6 +13,7 @@ using Internal.IL;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -49,7 +50,6 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager = metadataManager;
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
-            InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode(this);
             PreinitializationManager = preinitializationManager;
         }
 
@@ -205,13 +205,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _GCStaticsPreInitDataNodes = new NodeCache<MetadataType, GCStaticsPreInitDataNode>((MetadataType type) =>
-            {
-                ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
-                Debug.Assert(gcStaticsNode is GCStaticsNode);               
-                return ((GCStaticsNode)gcStaticsNode).NewPreInitDataNode();
-            });
-
             _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
             {
                 ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
@@ -234,6 +227,11 @@ namespace ILCompiler.DependencyAnalysis
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
             {
                 return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
+            });
+
+            _fieldRvaDataBlobs = new NodeCache<Internal.TypeSystem.Ecma.EcmaField, FieldRvaDataNode>(key =>
+            {
+                return new FieldRvaDataNode(key);
             });
 
             _uninitializedWritableDataBlobs = new NodeCache<UninitializedWritableDataBlobKey, BlobNode>(key =>
@@ -282,11 +280,6 @@ namespace ILCompiler.DependencyAnalysis
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
-            });
-
-            _dynamicInvokeTemplates = new NodeCache<MethodDesc, DynamicInvokeTemplateNode>(method =>
-            {
-                return new DynamicInvokeTemplateNode(method);
             });
 
             _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
@@ -348,7 +341,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, FrozenObjectNode>(key =>
             {
-                return new FrozenObjectNode(key.Owner, key.SerializableObject);
+                return new FrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -379,6 +372,11 @@ namespace ILCompiler.DependencyAnalysis
             _dataflowAnalyzedMethods = new NodeCache<MethodILKey, DataflowAnalyzedMethodNode>((MethodILKey il) =>
             {
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
+            });
+
+            _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
+            {
+                return new EmbeddedTrimmingDescriptorNode(module);
             });
 
             _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
@@ -621,13 +619,6 @@ namespace ILCompiler.DependencyAnalysis
             return _GCStatics.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, GCStaticsPreInitDataNode> _GCStaticsPreInitDataNodes;
-
-        public GCStaticsPreInitDataNode GCStaticsPreInitDataNode(MetadataType type)
-        {
-            return _GCStaticsPreInitDataNodes.GetOrAdd(type);
-        }
-
         private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;
 
         public EmbeddedObjectNode GCStaticIndirection(MetadataType type)
@@ -688,6 +679,13 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
+        private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
+
+        public EmbeddedTrimmingDescriptorNode EmbeddedTrimmingDescriptor(EcmaModule module)
+        {
+            return _embeddedTrimmingDescriptors.GetOrAdd(module);
+        }
+
         private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;
 
         public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
@@ -708,6 +706,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
+
+        private NodeCache<Internal.TypeSystem.Ecma.EcmaField, FieldRvaDataNode> _fieldRvaDataBlobs;
+
+        public ISymbolNode FieldRvaData(Internal.TypeSystem.Ecma.EcmaField field)
+        {
+            return _fieldRvaDataBlobs.GetOrAdd(field);
+        }
+
         private NodeCache<TypeDesc, SealedVTableNode> _sealedVtableNodes;
 
         internal SealedVTableNode SealedVTable(TypeDesc type)
@@ -869,12 +875,6 @@ namespace ILCompiler.DependencyAnalysis
             return _objectGetTypeFlowDependencies.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, DynamicInvokeTemplateNode> _dynamicInvokeTemplates;
-        internal DynamicInvokeTemplateNode DynamicInvokeTemplate(MethodDesc method)
-        {
-            return _dynamicInvokeTemplates.GetOrAdd(method);
-        }
-
         private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;
         public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false)
         {
@@ -892,8 +892,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode HelperEntrypoint(HelperEntrypoint entrypoint)
         {
-            if (_helperEntrypointSymbols == null)
-                _helperEntrypointSymbols = new ISymbolNode[s_helperEntrypointNames.Length];
+            _helperEntrypointSymbols ??= new ISymbolNode[s_helperEntrypointNames.Length];
 
             int index = (int)entrypoint;
 
@@ -917,10 +916,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_systemArrayOfTClass == null)
-                {
-                    _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
-                }
+                _systemArrayOfTClass ??= _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
                 return _systemArrayOfTClass;
             }
         }
@@ -930,10 +926,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_systemArrayOfTEnumeratorType == null)
-                {
-                    _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
-                }
+                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
                 return _systemArrayOfTEnumeratorType;
             }
         }
@@ -943,12 +936,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_instanceMethodRemovedHelper == null)
-                {
-                    // This helper is optional, but it's fine for this cache to be ineffective if that happens.
-                    // Those scenarios are rare and typically deal with small compilations.
-                    _instanceMethodRemovedHelper = TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
-                }
+                // This helper is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
 
                 return _instanceMethodRemovedHelper;
             }
@@ -970,21 +960,21 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<ReadyToRunHelperKey, ISymbolNode> _readyToRunHelpers;
 
-        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target)
         {
             return _readyToRunHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
 
-        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromDict.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromType;
 
-        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
@@ -1048,9 +1038,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<SerializedFrozenObjectKey, FrozenObjectNode> _frozenObjectNodes;
 
-        public FrozenObjectNode SerializedFrozenObject(FieldDesc owningField, TypePreinit.ISerializableReference data)
+        public FrozenObjectNode SerializedFrozenObject(MetadataType owningType, int allocationSiteId, TypePreinit.ISerializableReference data)
         {
-            return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningField, data));
+            return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningType, allocationSiteId, data));
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
@@ -1098,7 +1088,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
-            "__GCStaticRegionStart", 
+            "__GCStaticRegionStart",
             "__GCStaticRegionEnd",
             new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
 
@@ -1117,14 +1107,11 @@ namespace ILCompiler.DependencyAnalysis
             "__DispatchMapTableEnd",
             new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
 
-        public ArrayOfEmbeddedDataNode<EmbeddedObjectNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<EmbeddedObjectNode>(
-            "__FrozenSegmentRegionStart",
-            "__FrozenSegmentRegionEnd",
-            new SortableDependencyNode.EmbeddedObjectNodeComparer(CompilerComparer.Instance));
+        public ArrayOfFrozenObjectsNode FrozenSegmentRegion = new ArrayOfFrozenObjectsNode();
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 
-        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection { get; }
+        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode();
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
@@ -1134,10 +1121,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
+            ReadyToRunHeader = new ReadyToRunHeaderNode();
 
             graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
-            graph.AddRoot(new ModulesSectionNode(Target), "ModulesSection is always generated");
+            graph.AddRoot(new ModulesSectionNode(), "ModulesSection is always generated");
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
@@ -1153,7 +1140,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion, FrozenSegmentRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleInitializerList, ModuleInitializerList, ModuleInitializerList, ModuleInitializerList.EndSymbol);
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
@@ -1291,18 +1278,21 @@ namespace ILCompiler.DependencyAnalysis
 
         protected struct SerializedFrozenObjectKey : IEquatable<SerializedFrozenObjectKey>
         {
-            public readonly FieldDesc Owner;
+            public readonly MetadataType OwnerType;
+            public readonly int AllocationSiteId;
             public readonly TypePreinit.ISerializableReference SerializableObject;
 
-            public SerializedFrozenObjectKey(FieldDesc owner, TypePreinit.ISerializableReference obj)
+            public SerializedFrozenObjectKey(MetadataType ownerType, int allocationSiteId, TypePreinit.ISerializableReference obj)
             {
-                Owner = owner;
+                Debug.Assert(ownerType.HasStaticConstructor);
+                OwnerType = ownerType;
+                AllocationSiteId = allocationSiteId;
                 SerializableObject = obj;
             }
 
             public override bool Equals(object obj) => obj is SerializedFrozenObjectKey && Equals((SerializedFrozenObjectKey)obj);
-            public bool Equals(SerializedFrozenObjectKey other) => Owner == other.Owner;
-            public override int GetHashCode() => Owner.GetHashCode();
+            public bool Equals(SerializedFrozenObjectKey other) => OwnerType == other.OwnerType && AllocationSiteId == other.AllocationSiteId;
+            public override int GetHashCode() => HashCode.Combine(OwnerType.GetHashCode(), AllocationSiteId);
         }
 
         private struct MethodILKey : IEquatable<MethodILKey>

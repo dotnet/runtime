@@ -29,7 +29,7 @@ namespace System.Net.Sockets
         // BytesTransferred property variables.
         private int _bytesTransferred;
 
-        // DisconnectReuseSocket propery variables.
+        // DisconnectReuseSocket property variables.
         private bool _disconnectReuseSocket;
 
         // LastOperation property variables.
@@ -940,7 +940,14 @@ namespace System.Net.Sockets
                     {
                         try
                         {
-                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
+                            if (_remoteEndPoint!.AddressFamily == _socketAddress.Family)
+                            {
+                                _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
+                            }
+                            else if (_remoteEndPoint!.AddressFamily == AddressFamily.InterNetworkV6 && _socketAddress.Family == AddressFamily.InterNetwork)
+                            {
+                                _remoteEndPoint = new IPEndPoint(_socketAddress.GetIPAddress().MapToIPv6(), _socketAddress.GetPort());
+                            }
                         }
                         catch
                         {

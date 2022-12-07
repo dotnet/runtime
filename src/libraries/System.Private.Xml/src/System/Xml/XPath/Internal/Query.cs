@@ -66,7 +66,7 @@ namespace MS.Internal.Xml.XPath
         public virtual QueryProps Properties { get { return QueryProps.Merge; } }
 
         // ----------------- Helper methods -------------
-        [return: NotNullIfNotNull("input")]
+        [return: NotNullIfNotNull(nameof(input))]
         public static Query? Clone(Query? input)
         {
             if (input != null)
@@ -76,7 +76,7 @@ namespace MS.Internal.Xml.XPath
             return null;
         }
 
-        [return: NotNullIfNotNull("input")]
+        [return: NotNullIfNotNull(nameof(input))]
         protected static XPathNodeIterator? Clone(XPathNodeIterator? input)
         {
             if (input != null)
@@ -86,7 +86,7 @@ namespace MS.Internal.Xml.XPath
             return null;
         }
 
-        [return: NotNullIfNotNull("input")]
+        [return: NotNullIfNotNull(nameof(input))]
         protected static XPathNavigator? Clone(XPathNavigator? input)
         {
             if (input != null)

@@ -687,11 +687,11 @@ namespace System.Net.Security
             return cachedCred;
         }
 
-        private static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        private static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            SafeFreeCredentials cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions);
+            SafeFreeCredentials? cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions);
 
-            if (sslAuthenticationOptions.CertificateContext != null)
+            if (sslAuthenticationOptions.CertificateContext != null && cred != null)
             {
                 //
                 // Since the SafeFreeCredentials can be cached and reused, it may happen on long running processes that some cert on
@@ -869,6 +869,8 @@ namespace System.Net.Security
 
         internal SecurityStatusPal Renegotiate(out byte[]? output)
         {
+            Debug.Assert(_securityContext != null);
+
             return SslStreamPal.Renegotiate(
                                       ref _credentialsHandle!,
                                       ref _securityContext,
@@ -1098,7 +1100,7 @@ namespace System.Net.Security
                 NetEventSource.Info(this, $"alertMessage:{alertMessage}");
 
             SecurityStatusPal status;
-            status = SslStreamPal.ApplyAlertToken(ref _credentialsHandle, _securityContext, TlsAlertType.Fatal, alertMessage);
+            status = SslStreamPal.ApplyAlertToken(_securityContext, TlsAlertType.Fatal, alertMessage);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
@@ -1119,7 +1121,7 @@ namespace System.Net.Security
         private ProtocolToken? CreateShutdownToken()
         {
             SecurityStatusPal status;
-            status = SslStreamPal.ApplyShutdownToken(ref _credentialsHandle, _securityContext!);
+            status = SslStreamPal.ApplyShutdownToken(_securityContext!);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {

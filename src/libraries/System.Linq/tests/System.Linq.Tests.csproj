@@ -4,6 +4,9 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AllTests.cs" />
     <Compile Include="AnyTests.cs" />

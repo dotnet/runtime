@@ -115,7 +115,7 @@ namespace System.Xml.Tests
 
             // for function TestLinePos22
             {
-                this.AddChild(new CVariation(TestLinePos22) { Attribute = new Variation("LineNumber/LinePos after ReadBinHex succesive calls") });
+                this.AddChild(new CVariation(TestLinePos22) { Attribute = new Variation("LineNumber/LinePos after ReadBinHex successive calls") });
             }
 
 

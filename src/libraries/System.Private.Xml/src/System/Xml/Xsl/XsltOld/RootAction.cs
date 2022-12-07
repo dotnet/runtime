@@ -147,7 +147,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
 
                     ArrayList? dstAttList = dstAttSet.containedActions;
-                    // We adding attributes in reverse order for purpuse. In the mirged list most importent attset shoud go last one
+                    // We adding attributes in reverse order for purpuse. In the mirged list most important attset should go last one
                     // so we'll need to invert dstAttList finaly.
                     if (srcAttList != null)
                     {

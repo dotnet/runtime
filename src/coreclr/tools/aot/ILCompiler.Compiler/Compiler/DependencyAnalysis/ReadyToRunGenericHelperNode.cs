@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         private bool _hasInvalidEntries;
 
         public ReadyToRunHelperId Id => _id;
-        public Object Target => _target;
+        public object Target => _target;
         public TypeSystemEntity DictionaryOwner => _dictionaryOwner;
         public GenericLookupResult LookupSignature => _lookupSignature;
 
@@ -258,10 +258,10 @@ namespace ILCompiler.DependencyAnalysis
                                                                 "Type loader template"));
                 }
             }
-            
+
             return conditionalDependencies;
         }
-        
+
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             var compare = _id.CompareTo(((ReadyToRunGenericHelperNode)other)._id);

@@ -926,7 +926,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                             if (index == -1)
                             {
                                 // See if the original address is in the replay address map. This happens for
-                                // relocations on static field addresses found via getFieldAddress().
+                                // relocations on static field addresses found via getFieldInfo().
                                 void* origAddr = repAddressMap((void*)tmp.target);
                                 if ((origAddr != (void*)-1) && (origAddr != nullptr))
                                 {
@@ -1239,7 +1239,7 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
 
     if (RecordCallSiteWithSignature == nullptr)
     {
-        // The most call site records have only `methodHandle`, so creating two separate maps give us better perfomance
+        // The most call site records have only `methodHandle`, so creating two separate maps give us better performance
         // and smaller memory consumption. Note: we are not reading values from these maps during a normal replay.
         RecordCallSiteWithSignature = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
         if (recordCallSitesWithoutSig)

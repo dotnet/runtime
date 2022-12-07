@@ -88,7 +88,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return genericSpecialization;
         }
 
-        [return: NotNullIfNotNull("types")]
+        [return: NotNullIfNotNull(nameof(types))]
         public static IEnumerable<Type>? CreateTypeSpecializations(this Type[]? types, Type[] specializationTypes)
         {
             if (types == null)

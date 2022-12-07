@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class TypeDesc
+    public partial class TypeDesc
     {
         /// <summary>
         /// Gets a value indicating whether this type is serializable.
@@ -17,7 +17,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    partial class InstantiatedType
+    public partial class InstantiatedType
     {
         public override bool IsSerializable
         {

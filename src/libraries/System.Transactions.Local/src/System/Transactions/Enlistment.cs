@@ -29,7 +29,7 @@ namespace System.Transactions
 
         byte[] GetRecoveryInformation();
 
-        InternalEnlistment InternalEnlistment
+        InternalEnlistment? InternalEnlistment
         {
             get;
             set;
@@ -270,36 +270,28 @@ namespace System.Transactions
             }
         }
 
-        void IEnlistmentNotificationInternal.Prepare(
-            IPromotedEnlistment preparingEnlistment
-            )
+        void IEnlistmentNotificationInternal.Prepare(IPromotedEnlistment preparingEnlistment)
         {
             Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = preparingEnlistment;
             _twoPhaseNotifications.Prepare(PreparingEnlistment);
         }
 
-        void IEnlistmentNotificationInternal.Commit(
-            IPromotedEnlistment enlistment
-            )
+        void IEnlistmentNotificationInternal.Commit(IPromotedEnlistment enlistment)
         {
             Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;
             _twoPhaseNotifications.Commit(Enlistment);
         }
 
-        void IEnlistmentNotificationInternal.Rollback(
-            IPromotedEnlistment enlistment
-            )
+        void IEnlistmentNotificationInternal.Rollback(IPromotedEnlistment enlistment)
         {
             Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;
             _twoPhaseNotifications.Rollback(Enlistment);
         }
 
-        void IEnlistmentNotificationInternal.InDoubt(
-            IPromotedEnlistment enlistment
-            )
+        void IEnlistmentNotificationInternal.InDoubt(IPromotedEnlistment enlistment)
         {
             Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;

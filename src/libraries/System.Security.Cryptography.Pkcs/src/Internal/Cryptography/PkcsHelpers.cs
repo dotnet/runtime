@@ -681,7 +681,7 @@ namespace Internal.Cryptography
 
         // Creates a defensive copy of an OID on platforms where OID
         // is mutable. On platforms where OID is immutable, return the OID as-is.
-        [return: NotNullIfNotNull("oid")]
+        [return: NotNullIfNotNull(nameof(oid))]
         public static Oid? CopyOid(this Oid? oid)
         {
             if (s_oidIsInitOnceOnly)

@@ -162,7 +162,7 @@ void DynamicMethodTable::AddMethodsToList()
     // allocate as many chunks as needed to hold the methods
     //
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
-        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* fComPlusCallInfo */, m_pMethodTable, &amt);
+        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, m_pMethodTable, &amt);
     if (m_DynamicMethodList) RETURN;
 
     int methodCount = pChunk->GetCount();
@@ -1001,7 +1001,7 @@ void LCGMethodResolver::Destroy()
         // we cannot use GetGlobalStringLiteralMap() here because it might throw
         CrstHolder gch(pStringLiteralMap->GetHashTableCrstGlobal());
 
-        // Access to m_DynamicStringLiterals doesn't need to be syncrhonized because
+        // Access to m_DynamicStringLiterals doesn't need to be synchronized because
         // this can be run in only one thread: the finalizer thread.
         while (m_DynamicStringLiterals != NULL)
         {

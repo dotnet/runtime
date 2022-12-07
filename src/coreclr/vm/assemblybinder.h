@@ -55,14 +55,78 @@ public:
     static void GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName);
     static void GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ SString& alcName);
 
+#ifdef FEATURE_READYTORUN
+    // Must be called under the LoadLock
+    void DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 imageName);
+#endif // FEATURE_READYTORUN
+
 private:
+
+#ifdef FEATURE_READYTORUN
+    // Must be called under the LoadLock
+    void DeclareLoadedAssembly(Assembly* loadedAssembly);
+
+    struct SimpleNameToExpectedMVIDAndRequiringAssembly
+    {
+        LPCUTF8 SimpleName;
+
+        // When an assembly is loaded, this Mvid value will be set to the mvid of the assembly. If there are multiple assemblies
+        // with different mvid's loaded with the same simple name, then the Mvid value will be set to all zeroes.
+        GUID Mvid;
+
+        // If an assembly of this simple name is not yet loaded, but a depedency on an exact mvid is registered, then this field will
+        // be filled in with the simple assembly name of the first assembly loaded with an mvid dependency.
+        LPCUTF8 AssemblyRequirementName;
+
+        // To disambiguate between component images of a composite image and requirements from a non-composite --inputbubble assembly, use this bool
+        bool CompositeComponent;
+
+        SimpleNameToExpectedMVIDAndRequiringAssembly() :
+            SimpleName(NULL),
+            Mvid({0}),
+            AssemblyRequirementName(NULL),
+            CompositeComponent(false)
+        {
+        }
+
+        SimpleNameToExpectedMVIDAndRequiringAssembly(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 AssemblyRequirementName) : 
+            SimpleName(simpleName),
+            Mvid(mvid),
+            AssemblyRequirementName(AssemblyRequirementName),
+            CompositeComponent(compositeComponent)
+        {}
+
+        static SimpleNameToExpectedMVIDAndRequiringAssembly GetNull() { return SimpleNameToExpectedMVIDAndRequiringAssembly(); }
+        bool IsNull() const { return SimpleName == NULL; }
+    };
+
+    class SimpleNameWithMvidHashTraits : public NoRemoveSHashTraits< DefaultSHashTraits<SimpleNameToExpectedMVIDAndRequiringAssembly> >
+    {
+    public:
+        typedef LPCUTF8 key_t;
+
+        static SimpleNameToExpectedMVIDAndRequiringAssembly Null() { return SimpleNameToExpectedMVIDAndRequiringAssembly::GetNull(); }
+        static bool IsNull(const SimpleNameToExpectedMVIDAndRequiringAssembly& e) { return e.IsNull(); }
+
+        static LPCUTF8 GetKey(const SimpleNameToExpectedMVIDAndRequiringAssembly& e) { return e.SimpleName; }
+
+        static BOOL Equals(LPCUTF8 a, LPCUTF8 b) { return strcmp(a, b) == 0; } // Use a case senstive comparison here even though
+                                                                            // assembly name matching should be case insensitive. Case insensitive
+                                                                            // comparisons are slow and have throwing scenarios, and this hash table
+                                                                            // provides a best-effort match to prevent problems, not perfection
+
+        static count_t Hash(LPCUTF8 a) { return HashStringA(a); } // As above, this is a case sensitive hash
+    };
+
+    SHash<SimpleNameWithMvidHashTraits> m_assemblySimpleNameMvidCheckHash;
+#endif // FEATURE_READYTORUN
+
     BINDER_SPACE::ApplicationContext m_appContext;
 
     // A GC handle to the managed AssemblyLoadContext.
     // It is a long weak handle for collectible AssemblyLoadContexts and strong handle for non-collectible ones.
     INT_PTR m_ptrManagedAssemblyLoadContext;
 
-    SArray<NativeImage*> m_nativeImages;
     SArray<Assembly*> m_loadedAssemblies;
 };
 

@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
             #endregion
 
-            #region Check that any named paramters are not null
+            #region Check that any named parameters are not null
             if (namedParams != null && Array.IndexOf(namedParams, null) != -1)
                 // "Named parameter value must not be null."
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));

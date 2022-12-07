@@ -23,6 +23,11 @@ namespace System.Collections.ObjectModel
             this.list = list;
         }
 
+        /// <summary>Gets an empty <see cref="ReadOnlyCollection{T}"/>.</summary>
+        /// <value>An empty <see cref="ReadOnlyCollection{T}"/>.</value>
+        /// <remarks>The returned instance is immutable and will always be empty.</remarks>
+        public static ReadOnlyCollection<T> Empty { get; } = new ReadOnlyCollection<T>(Array.Empty<T>());
+
         public int Count => list.Count;
 
         public T this[int index] => list[index];
@@ -37,10 +42,10 @@ namespace System.Collections.ObjectModel
             list.CopyTo(array, index);
         }
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            return list.GetEnumerator();
-        }
+        public IEnumerator<T> GetEnumerator() =>
+            list.Count == 0 ?
+                SZGenericArrayEnumerator<T>.Empty :
+                list.GetEnumerator();
 
         public int IndexOf(T value)
         {

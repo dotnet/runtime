@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -21,7 +21,7 @@
     <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs"
              Link="Common\System\IO\Compression\StreamHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs"
-         Link="Common\System\IO\Compression\ZipTestHelper.cs" />
+             Link="Common\System\IO\Compression\ZipTestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"

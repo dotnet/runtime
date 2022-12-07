@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* 
+/*
  * Bug info:
- * Asserstion prop was comparing 2 range assertions incorrectly and keeping the wrong one as a result.
+ * Assertstion prop was comparing 2 range assertions incorrectly and keeping the wrong one as a result.
  * Thus assuming it didn't need the narrowing convert to byte. It thus returned the full 32 bit value instead of the lower 8 bits  alone.
- * 
+ *
  * Repro Steps:
  * Compile this program with option /optimize and execute it from a console window:
- * 
+ *
  * Actual Results:
  * value : 256, lowByte : 0, lowByteInt : 256
  *

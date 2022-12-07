@@ -702,11 +702,11 @@ To see this in action, we can take a look at the following example, with these o
 | R      | 0x1234   |
 | S      | 0x1238   |
 
-Suppose we decided to have only two buckets, then only the least signficant digit will be used to index the table, the whole hash table will look like this:
+Suppose we decided to have only two buckets, then only the least significant digit will be used to index the table, the whole hash table will look like this:
 
 | Part    | Offset | Content  | Meaning                                                                                                                                                                                   |
 |:--------|:-------|:--------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Header  | 0      | 0x04     | This is the header, the least signficant bit is `00`, therefore the table cell is just one byte. The most significant six bit represents 1, which means the number of buckets is 2^1 = 2. |
+| Header  | 0      | 0x04     | This is the header, the least significant bit is `00`, therefore the table cell is just one byte. The most significant six bit represents 1, which means the number of buckets is 2^1 = 2. |
 | Table   | 1      | 0x08     | This is the representation of the unsigned integer 4, which correspond to the offset of the bucket correspond to hash code `0`.                                                           |
 | Table   | 2      | 0x14     | This is the representation of the unsigned integer 10, which correspond to the offset of the bucket correspond to hash code `1`.                                                          |
 | Table   | 3      | 0x18     | This is the representation of the unsigned integer 12, which correspond to the offset of the end of the whole hash table.                                                                 |
@@ -797,6 +797,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GenericGcTlsBase          = 0x66,
     READYTORUN_HELPER_GenericNonGcTlsBase       = 0x67,
     READYTORUN_HELPER_VirtualFuncPtr            = 0x68,
+    READYTORUN_HELPER_IsInstanceOfException     = 0x69,
 
     // Long mul/div/shift ops
     READYTORUN_HELPER_LMul                      = 0xC0,
@@ -835,7 +836,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
 #ifndef _TARGET_X86_
-    // Personality rountines
+    // Personality routines
     READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
     READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
 #endif

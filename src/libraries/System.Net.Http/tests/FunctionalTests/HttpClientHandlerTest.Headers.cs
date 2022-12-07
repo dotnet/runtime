@@ -395,7 +395,7 @@ namespace System.Net.Http.Functional.Tests
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
             m.Headers.Host = "hostheaderthatdoesnotmatch";
 
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient(CreateHttpClientHandler(allowAllCertificates: false)))
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, m));
             }

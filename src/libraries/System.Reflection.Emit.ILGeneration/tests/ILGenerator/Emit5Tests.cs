@@ -69,7 +69,7 @@ namespace System.Reflection.Emit.Tests
                 ilg.Emit(OpCodes.Ret);
 
                 // Create the type where this method is in
-                Type createdType = type.CreateTypeInfo().AsType();
+                Type createdType = type.CreateType();
                 MethodInfo createdMethod = createdType.GetMethod("meth1");
 
                 return createdMethod;
@@ -135,7 +135,7 @@ namespace System.Reflection.Emit.Tests
                 ilg.Emit(OpCodes.Ret);
 
                 // Create the type where this method is in
-                Type createdType = type.CreateTypeInfo().AsType();
+                Type createdType = type.CreateType();
                 return createdType.GetMethod("meth1");
             }
         }
@@ -209,7 +209,7 @@ namespace System.Reflection.Emit.Tests
                 ilg.Emit(OpCodes.Ret);
 
                 // Create the type where this method is in
-                Type createdType = type.CreateTypeInfo().AsType();
+                Type createdType = type.CreateType();
                 return createdType.GetMethod("meth1");
             }
         }
@@ -256,7 +256,7 @@ namespace System.Reflection.Emit.Tests
                 ilg.Emit(OpCodes.Ret);
 
                 // Create the type where this method is in
-                Type createdType = type.CreateTypeInfo().AsType();
+                Type createdType = type.CreateType();
                 return createdType.GetMethod("meth1");
             }
         }
@@ -297,7 +297,7 @@ namespace System.Reflection.Emit.Tests
                 ilg.Emit(OpCodes.Ret);
 
                 // Create the type where this method is in
-                Type createdType = type.CreateTypeInfo().AsType();
+                Type createdType = type.CreateType();
                 return createdType.GetMethod("meth1");
             }
         }

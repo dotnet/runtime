@@ -172,7 +172,6 @@ HRESULT EEConfig::Init()
     fSuppressChecks = false;
     fConditionalContracts = false;
     fEnableFullDebug = false;
-    iExposeExceptionsInCOM = 0;
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
@@ -239,6 +238,11 @@ HRESULT EEConfig::Init()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = false;
+    tieredPGO_InstrumentOnlyHotCode = false;
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    fReadyToRun = false;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -384,7 +388,7 @@ HRESULT EEConfig::sync()
                 if (WszGetModuleFileName(NULL, wszFileName) != 0)
                 {
                     // just keep the name
-                    LPCWSTR pwszName = wcsrchr(wszFileName, W('\\'));
+                    LPCWSTR pwszName = wcsrchr(wszFileName, DIRECTORY_SEPARATOR_CHAR_W);
                     pwszName = (pwszName == NULL) ? wszFileName.GetUnicode() : (pwszName + 1);
 
                     if (SString::_wcsicmp(pwszName,pszGCStressExe) == 0)
@@ -476,8 +480,11 @@ HRESULT EEConfig::sync()
     }
 
     pReadyToRunExcludeList = NULL;
+
 #if defined(FEATURE_READYTORUN)
-    if (ReadyToRunInfo::IsReadyToRunEnabled())
+    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+
+    if (fReadyToRun)
     {
         NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunExcludeList, &wszReadyToRunExcludeList));
@@ -597,8 +604,6 @@ HRESULT EEConfig::sync()
     fVerifierOff    = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VerifierOff) != 0);
 
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
-
-    iExposeExceptionsInCOM = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ExposeExceptionsInCOM, iExposeExceptionsInCOM);
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -775,6 +780,16 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+
+    // Also, consider DynamicPGO enabled if WritePGOData is set
+    fTieredPGO |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) != 0;
+    tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
+
+    // We need quick jit for TieredPGO
+    if (!fTieredCompilation_QuickJit)
+    {
+        fTieredPGO = false;
+    }
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

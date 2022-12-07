@@ -58,7 +58,9 @@ namespace DebuggerTests
                     tcs.SetResult(true);
                 }
 
-                await Task.CompletedTask;
+                return tcs.Task.IsCompleted
+                            ?  await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler)
+                            :  await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
             });
 
             var trace_str = trace.HasValue ? $"trace: {trace.ToString().ToLower()}" : String.Empty;
@@ -110,7 +112,6 @@ namespace DebuggerTests
 
         async Task AssemblyLoadedEventTest(string asm_name, string asm_path, string pdb_path, string source_file, int expected_count)
         {
-
             int event_count = 0;
             var tcs = new TaskCompletionSource<bool>();
             insp.On("Debugger.scriptParsed", async (args, c) =>
@@ -130,7 +131,9 @@ namespace DebuggerTests
                     tcs.SetException(ex);
                 }
 
-                await Task.CompletedTask;
+                return tcs.Task.IsCompleted
+                            ?  await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler)
+                            :  await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
             });
 
             byte[] bytes = File.ReadAllBytes(asm_path);

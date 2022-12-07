@@ -157,43 +157,6 @@ namespace System.Reflection.Runtime.General
 namespace System.Reflection.Runtime.TypeInfos
 {
     //-----------------------------------------------------------------------------------------------------------
-    // TypeInfos for type definitions (i.e. "Foo" and "Foo<>" but not "Foo<int>") that aren't opted into metadata.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNoMetadataNamedTypeInfo
-    {
-        internal static RuntimeNoMetadataNamedTypeInfo GetRuntimeNoMetadataNamedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
-        {
-            RuntimeNoMetadataNamedTypeInfo type;
-            if (isGenericTypeDefinition)
-                type = GenericNoMetadataNamedTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
-            else
-                type = NoMetadataNamedTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
-            type.EstablishDebugName();
-            return type;
-        }
-
-        private sealed class NoMetadataNamedTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeNoMetadataNamedTypeInfo>
-        {
-            protected sealed override RuntimeNoMetadataNamedTypeInfo Factory(RuntimeTypeHandleKey key)
-            {
-                return new RuntimeNoMetadataNamedTypeInfo(key.TypeHandle, isGenericTypeDefinition: false);
-            }
-
-            public static readonly NoMetadataNamedTypeTable Table = new NoMetadataNamedTypeTable();
-        }
-
-        private sealed class GenericNoMetadataNamedTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeNoMetadataNamedTypeInfo>
-        {
-            protected sealed override RuntimeNoMetadataNamedTypeInfo Factory(RuntimeTypeHandleKey key)
-            {
-                return new RuntimeNoMetadataNamedTypeInfo(key.TypeHandle, isGenericTypeDefinition: true);
-            }
-
-            public static readonly GenericNoMetadataNamedTypeTable Table = new GenericNoMetadataNamedTypeTable();
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>) or constructed generic types (Foo<int>)
     // that can never be reflection-enabled due to the framework Reflection block.
     //-----------------------------------------------------------------------------------------------------------
@@ -290,7 +253,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimeArrayTypeInfo Factory(UnificationKey key)
             {
-                ValidateElementType(key.ElementType, key.TypeHandle, multiDim: false, rank: 1);
+                ValidateElementType(key.ElementType, multiDim: false, rank: 1);
 
                 return new RuntimeArrayTypeInfo(key, multiDim: false, rank: 1);
             }
@@ -307,7 +270,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             protected sealed override RuntimeArrayTypeInfo Factory(UnificationKey key)
             {
-                ValidateElementType(key.ElementType, key.TypeHandle, multiDim: true, rank: _rank);
+                ValidateElementType(key.ElementType, multiDim: true, rank: _rank);
 
                 return new RuntimeArrayTypeInfo(key, multiDim: true, rank: _rank);
             }
@@ -329,7 +292,7 @@ namespace System.Reflection.Runtime.TypeInfos
             public static readonly TypeTableForMultiDimArrayTypeTables Table = new TypeTableForMultiDimArrayTypeTables();
         }
 
-        private static void ValidateElementType(RuntimeTypeInfo elementType, RuntimeTypeHandle typeHandle, bool multiDim, int rank)
+        private static void ValidateElementType(RuntimeTypeInfo elementType, bool multiDim, int rank)
         {
             Debug.Assert(multiDim || rank == 1);
 

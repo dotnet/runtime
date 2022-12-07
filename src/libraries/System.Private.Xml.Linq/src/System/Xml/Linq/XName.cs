@@ -101,7 +101,7 @@ namespace System.Xml.Linq
         /// <param name="expandedName">A string containing an expanded XML name in the format: {namespace}localname.</param>
         /// <returns>An XName object constructed from the expanded name.</returns>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("expandedName")]
+        [return: NotNullIfNotNull(nameof(expandedName))]
         public static implicit operator XName?(string? expandedName)
         {
             return expandedName != null ? Get(expandedName) : null;

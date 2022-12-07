@@ -49,7 +49,7 @@ void EEContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ c
             {
                 //
                 // Check if this is the debugger helper thread and has the runtime
-                // stoppped.  If both of these things are true, then we do not care
+                // stopped.  If both of these things are true, then we do not care
                 // whether we are in COOP mode or not.
                 //
                 if ((g_pDebugInterface != NULL) &&

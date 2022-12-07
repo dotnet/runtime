@@ -57,8 +57,6 @@ namespace System.Xml
         private static readonly XmlInitialNode s_initialNode = new XmlInitialNode(XmlBufferReader.Empty);
         private static readonly XmlEndOfFileNode s_endOfFileNode = new XmlEndOfFileNode(XmlBufferReader.Empty);
         private static readonly XmlClosedNode s_closedNode = new XmlClosedNode(XmlBufferReader.Empty);
-        private static Base64Encoding? s_base64Encoding;
-        private static BinHexEncoding? s_binHexEncoding;
         private const string xmlns = "xmlns";
         private const string xml = "xml";
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
@@ -75,11 +73,6 @@ namespace System.Xml
             _atomicTextNode = new XmlAtomicTextNode(_bufferReader);
             _node = s_closedNode;
         }
-
-
-        private static Base64Encoding Base64Encoding => s_base64Encoding ??= new Base64Encoding();
-
-        private static BinHexEncoding BinHexEncoding => s_binHexEncoding ??= new BinHexEncoding();
 
         protected XmlBufferReader BufferReader
         {
@@ -127,6 +120,7 @@ namespace System.Xml
             _attributeIndex = -1;
             _rootElement = false;
             _readingElement = false;
+            _signing = false;
             MoveToNode(s_initialNode);
         }
 
@@ -191,6 +185,7 @@ namespace System.Xml
 
             return true;
         }
+
         protected XmlCommentNode MoveToComment()
         {
             _commentNode ??= new XmlCommentNode(_bufferReader);
@@ -229,6 +224,7 @@ namespace System.Xml
             MoveToNode(_whitespaceTextNode);
             return _whitespaceTextNode;
         }
+
         protected XmlElementNode ElementNode
         {
             get
@@ -341,6 +337,7 @@ namespace System.Xml
         {
             return AddAttribute(QNameType.Normal, true);
         }
+
         protected XmlAttributeNode AddXmlnsAttribute(Namespace ns)
         {
             if (!ns.Prefix.IsEmpty && ns.Uri.IsEmpty)
@@ -385,6 +382,7 @@ namespace System.Xml
                 }
             }
         }
+
         protected bool OutsideRootElement
         {
             get
@@ -392,6 +390,7 @@ namespace System.Xml
                 return _depth == 0;
             }
         }
+
         public override bool CanReadBinaryContent
         {
             get { return true; }
@@ -610,7 +609,6 @@ namespace System.Xml
             return null;
         }
 
-
         public override string GetAttribute(int index)
         {
             return GetAttributeNode(index).ValueAsString;
@@ -639,6 +637,7 @@ namespace System.Xml
                 return null;
             return attributeNode.ValueAsString;
         }
+
         public sealed override bool IsEmptyElement
         {
             get
@@ -781,17 +780,19 @@ namespace System.Xml
             }
         }
 
-
         public override void MoveToAttribute(int index)
         {
             MoveToNode(GetAttributeNode(index));
+            _attributeIndex = index;
         }
+
         public override bool MoveToAttribute(string name)
         {
             XmlNode? attributeNode = GetAttributeNode(name);
             if (attributeNode == null)
                 return false;
             MoveToNode(attributeNode);
+            _attributeIndex = _attributeStart;
             return true;
         }
 
@@ -801,6 +802,7 @@ namespace System.Xml
             if (attributeNode == null)
                 return false;
             MoveToNode(attributeNode);
+            _attributeIndex = _attributeStart;
             return true;
         }
 
@@ -902,7 +904,7 @@ namespace System.Xml
             {
                 if (_nameTable == null)
                 {
-                    _nameTable = new NameTable();
+                    _nameTable = new QuotaNameTable(this, _quotas.MaxNameTableCharCount);
                     _nameTable.Add(xml);
                     _nameTable.Add(xmlns);
                     _nameTable.Add(xmlnsNamespace);
@@ -953,6 +955,13 @@ namespace System.Xml
             }
         }
 
+        public override char QuoteChar
+        {
+            get
+            {
+                return _node.QuoteChar;
+            }
+        }
 
         public override bool IsLocalName(string localName)
         {
@@ -1171,7 +1180,7 @@ namespace System.Xml
                     }
                 }
             }
-            return ReadBytes(Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), false);
+            return ReadBytes(DataContractSerializer.Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), false);
         }
 
         public override string ReadElementContentAsString()
@@ -1192,6 +1201,36 @@ namespace System.Xml
                 return s;
             }
         }
+
+        public override string ReadElementString()
+        {
+            MoveToStartElement();
+            if (IsEmptyElement)
+            {
+                Read();
+                return string.Empty;
+            }
+            else
+            {
+                Read();
+                string s = ReadString();
+                ReadEndElement();
+                return s;
+            }
+        }
+
+        public override string ReadElementString(string name)
+        {
+            MoveToStartElement(name);
+            return ReadElementString();
+        }
+
+        public override string ReadElementString(string localName, string namespaceUri)
+        {
+            MoveToStartElement(localName, namespaceUri);
+            return ReadElementString();
+        }
+
         public override void ReadStartElement()
         {
             if (_node.NodeType != XmlNodeType.Element)
@@ -1335,7 +1374,7 @@ namespace System.Xml
             XmlNodeType nodeType = _node.NodeType;
             if (nodeType == XmlNodeType.Element || nodeType == XmlNodeType.EndElement)
                 return 0;
-            return ReadBytes(Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), true);
+            return ReadBytes(DataContractSerializer.Base64Encoding, 3, 4, buffer, offset, Math.Min(count, 512), true);
         }
 
         public override byte[] ReadContentAsBinHex()
@@ -1357,7 +1396,7 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
             if (count == 0)
                 return 0;
-            return ReadBytes(BinHexEncoding, 1, 2, buffer, offset, Math.Min(count, 512), true);
+            return ReadBytes(DataContractSerializer.BinHexEncoding, 1, 2, buffer, offset, Math.Min(count, 512), true);
         }
 
         public override int ReadElementContentAsBinHex(byte[] buffer, int offset, int count)
@@ -1475,20 +1514,14 @@ namespace System.Xml
                 catch (FormatException exception)
                 {
                     // Something was wrong with the format, see if we can strip the spaces
-                    int i = 0;
-                    int j = 0;
-                    while (true)
+                    int newCount = XmlConverter.StripWhitespace(chars.AsSpan(0, charCount));
+                    if (newCount == charCount)
                     {
-                        while (j < charCount && XmlConverter.IsWhitespace(chars[j]))
-                            j++;
-                        if (j == charCount)
-                            break;
-                        chars[i++] = chars[j++];
-                    }
-                    // No spaces, so don't try again
-                    if (i == charCount)
+                        // No spaces, so don't try again
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(exception.Message, exception.InnerException));
-                    charCount = i;
+                    }
+
+                    charCount = newCount;
                 }
             }
         }
@@ -2065,7 +2098,6 @@ namespace System.Xml
                 _depthDelta = depthDelta;
                 _isEmptyElement = false;
                 _quoteChar = '"';
-
                 _qnameType = QNameType.Normal;
             }
 
@@ -2249,6 +2281,7 @@ namespace System.Xml
                     return this.Namespace.Prefix == localName && ns.Value == xmlnsNamespace;
                 }
             }
+
             public bool IsPrefixAndLocalName(string prefix, string localName)
             {
                 if (_qnameType == QNameType.Normal)
@@ -2539,6 +2572,7 @@ namespace System.Xml
             {
             }
         }
+
         protected sealed class XmlEndOfFileNode : XmlNode
         {
             public XmlEndOfFileNode(XmlBufferReader bufferReader)
@@ -2911,6 +2945,7 @@ namespace System.Xml
                     return XmlNamespace;
                 return null;
             }
+
             public Namespace? LookupNamespace(string prefix)
             {
                 PrefixHandleType shortPrefix;
@@ -3060,6 +3095,7 @@ namespace System.Xml
                 }
                 return false;
             }
+
             public StringHandle Uri
             {
                 get
@@ -3078,6 +3114,57 @@ namespace System.Xml
                 {
                     _outerUri = value;
                 }
+            }
+        }
+
+        private sealed class QuotaNameTable : XmlNameTable
+        {
+            private readonly XmlDictionaryReader _reader;
+            private readonly XmlNameTable _nameTable;
+            private readonly int _maxCharCount;
+            private int _charCount;
+
+            public QuotaNameTable(XmlDictionaryReader reader, int maxCharCount)
+            {
+                _reader = reader;
+                _nameTable = new NameTable();
+                _maxCharCount = maxCharCount;
+                _charCount = 0;
+            }
+
+            public override string? Get(char[] chars, int offset, int count)
+            {
+                return _nameTable.Get(chars, offset, count);
+            }
+
+            public override string? Get(string value)
+            {
+                return _nameTable.Get(value);
+            }
+
+            private void Add(int charCount)
+            {
+                if (charCount > _maxCharCount - _charCount)
+                    XmlExceptionHelper.ThrowMaxNameTableCharCountExceeded(_reader, _maxCharCount);
+                _charCount += charCount;
+            }
+
+            public override string Add(char[] chars, int offset, int count)
+            {
+                string? s = _nameTable.Get(chars, offset, count);
+                if (s != null)
+                    return s;
+                Add(count);
+                return _nameTable.Add(chars, offset, count);
+            }
+
+            public override string Add(string value)
+            {
+                string? s = _nameTable.Get(value);
+                if (s != null)
+                    return s;
+                Add(value.Length);
+                return _nameTable.Add(value);
             }
         }
     }

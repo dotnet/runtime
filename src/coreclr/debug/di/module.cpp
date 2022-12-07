@@ -483,7 +483,7 @@ void CordbModule::RefreshMetaData()
 
     // There are several different ways we can get the metadata
     // 1) [Most common] Module is loaded into VM and never changed. The importer
-    //    will be constructed refering to the file on disk. This is a significant
+    //    will be constructed referring to the file on disk. This is a significant
     //    working set win because the VM and debugger share the image. If there is
     //    an error reading by file we can fall back to case #2 for these modules
     // 2) Most modules have a buffer in target memory that represents their
@@ -1860,7 +1860,7 @@ CordbFunction * CordbModule::CreateFunction(mdMethodDef funcMetaDataToken, SIZE_
 //
 // Arguments:
 //    funcMetaDataToken - the functions methodDef token in this module
-//    enCVerison        - The new version number of this function
+//    enCVersion        - The new version number of this function
 //    ppFunction        - Output param for the new instance - optional
 //
 // Assumptions:

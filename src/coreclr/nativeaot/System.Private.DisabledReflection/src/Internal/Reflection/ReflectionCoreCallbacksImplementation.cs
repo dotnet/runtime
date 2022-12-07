@@ -12,15 +12,15 @@ namespace Internal.Reflection
 {
     internal class ReflectionCoreCallbacksImplementation : ReflectionCoreCallbacks
     {
-        public override EnumInfo GetEnumInfo(Type type)
-        {
-            return new EnumInfo(
+        public override EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type type) =>
+            new EnumInfo<TUnderlyingValue>(
                 RuntimeAugments.GetEnumUnderlyingType(type.TypeHandle),
-                rawValues: Array.Empty<object>(),
+                values: Array.Empty<TUnderlyingValue>(),
                 names: Array.Empty<string>(),
                 isFlags: false);
-        }
 
+        public override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
+            => throw new NotSupportedException(SR.Reflection_Disabled);
         public override object ActivatorCreateInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type, bool nonPublic) => throw new NotSupportedException(SR.Reflection_Disabled);
@@ -45,7 +45,7 @@ namespace Internal.Reflection
         public override Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError) => throw new NotSupportedException(SR.Reflection_Disabled);
 #endif
         public override Assembly Load(AssemblyName refName, bool throwOnFileNotFound) => throw new NotSupportedException(SR.Reflection_Disabled);
-        public override Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore) => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override Assembly Load(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override Assembly Load(string assemblyPath) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override void RunModuleConstructor(Module module) => throw new NotSupportedException(SR.Reflection_Disabled);

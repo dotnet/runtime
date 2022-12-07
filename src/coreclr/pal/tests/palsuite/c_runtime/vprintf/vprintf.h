@@ -5,7 +5,7 @@
 **
 ** Source:  vprintf.h
 **
-** Purpose: Containts common testing functions for vprintf
+** Purpose: Contains common testing functions for vprintf
 **
 **
 **==========================================================================*/
@@ -32,7 +32,7 @@ inline void DoStrTest_vprintf(const char *formatstr, char* param, const char *ch
     ret = DoVprintf(formatstr, param);
     if (ret != strlen(checkstr))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr), ret);
     }
 }
@@ -45,13 +45,13 @@ inline void DoWStrTest_vprintf(const char *formatstr, WCHAR* param, const char *
     ret = DoVprintf(formatstr, param);
     if (ret != strlen(checkstr))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr), ret);
     }
 }
 #define DoWStrTest DoWStrTest_vprintf
 
-inline void DoPointerTest_vprintf(const char *formatstr, void* param, char* paramstr, 
+inline void DoPointerTest_vprintf(const char *formatstr, void* param, char* paramstr,
                    const char *checkstr1)
 {
     int ret;
@@ -59,7 +59,7 @@ inline void DoPointerTest_vprintf(const char *formatstr, void* param, char* para
     ret = DoVprintf(formatstr, param);
     if (ret != strlen(checkstr1))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr1), ret);
     }
 }
@@ -69,7 +69,7 @@ inline void DoCountTest_vprintf(const char *formatstr, int param, const char *ch
 {
     int ret;
     int n = -1;
-    
+
     ret = DoVprintf(formatstr, &n);
 
     if (n != param)
@@ -79,9 +79,9 @@ inline void DoCountTest_vprintf(const char *formatstr, int param, const char *ch
 
     if (ret != strlen(checkstr))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr), ret);
-    }    
+    }
 }
 #define DoCountTest DoCountTest_vprintf
 
@@ -89,7 +89,7 @@ inline void DoShortCountTest_vprintf(const char *formatstr, int param, const cha
 {
     int ret;
     short int n = -1;
-    
+
     ret = DoVprintf(formatstr, &n);
 
     if (n != param)
@@ -99,9 +99,9 @@ inline void DoShortCountTest_vprintf(const char *formatstr, int param, const cha
 
     if (ret != strlen(checkstr))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr), ret);
-    }    
+    }
 }
 #define DoShortCountTest DoShortCountTest_vprintf
 
@@ -112,7 +112,7 @@ inline void DoCharTest_vprintf(const char *formatstr, char param, const char *ch
     ret = DoVprintf(formatstr, param);
     if (ret != strlen(checkstr))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr), ret);
     }
 }
@@ -125,9 +125,9 @@ inline void DoWCharTest_vprintf(const char *formatstr, WCHAR param, const char *
     ret = DoVprintf(formatstr, param);
     if (ret != strlen(checkstr))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr), ret);
-    }    
+    }
 }
 #define DoWCharTest DoWCharTest_vprintf
 
@@ -138,9 +138,9 @@ inline void DoNumTest_vprintf(const char *formatstr, int param, const char *chec
     ret = DoVprintf(formatstr, param);
     if (ret != strlen(checkstr))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr), ret);
-    }    
+    }
 }
 #define DoNumTest DoNumTest_vprintf
 
@@ -151,13 +151,13 @@ inline void DoI64Test_vprintf(const char *formatstr, INT64 param, char *valuestr
     ret = DoVprintf(formatstr, param);
     if (ret != strlen(checkstr1))
     {
-        Fail("Expected vprintf to return %d, got %d.\n", 
+        Fail("Expected vprintf to return %d, got %d.\n",
             strlen(checkstr1), ret);
     }
 }
 #define DoI64Test DoI64Test_vprintf
 
-inline void DoDoubleTest_vprintf(const char *formatstr, double param, const char *checkstr1, 
+inline void DoDoubleTest_vprintf(const char *formatstr, double param, const char *checkstr1,
                   const char *checkstr2)
 {
     int ret;
@@ -165,13 +165,13 @@ inline void DoDoubleTest_vprintf(const char *formatstr, double param, const char
     ret = DoVprintf(formatstr, param);
     if (ret != strlen(checkstr1) && ret != strlen(checkstr2))
     {
-        Fail("Expected vprintf to return %d or %d, got %d.\n", 
+        Fail("Expected vprintf to return %d or %d, got %d.\n",
             strlen(checkstr1), strlen(checkstr2), ret);
     }
 }
 #define DoDoubleTest DoDoubleTest_vprintf
 
-inline void DoArgumentPrecTest_vprintf(const char *formatstr, int precision, void *param, 
+inline void DoArgumentPrecTest_vprintf(const char *formatstr, int precision, void *param,
                         char *paramstr, const char *checkstr1, const char *checkstr2)
 {
     int ret;
@@ -179,13 +179,13 @@ inline void DoArgumentPrecTest_vprintf(const char *formatstr, int precision, voi
     ret = DoVprintf(formatstr, precision, param);
     if (ret != strlen(checkstr1) && ret != strlen(checkstr2))
     {
-        Fail("Expected vprintf to return %d or %d, got %d.\n", 
+        Fail("Expected vprintf to return %d or %d, got %d.\n",
             strlen(checkstr1), strlen(checkstr2), ret);
     }
 }
 #define DoArgumentPrecTest DoArgumentPrecTest_vprintf
 
-inline void DoArgumentPrecDoubleTest_vprintf(const char *formatstr, int precision, double param, 
+inline void DoArgumentPrecDoubleTest_vprintf(const char *formatstr, int precision, double param,
     const char *checkstr1, const char *checkstr2)
 {
     int ret;
@@ -193,7 +193,7 @@ inline void DoArgumentPrecDoubleTest_vprintf(const char *formatstr, int precisio
     ret = DoVprintf(formatstr, precision, param);
     if (ret != strlen(checkstr1) && ret != strlen(checkstr2))
     {
-        Fail("Expected vprintf to return %d or %d, got %d.\n", 
+        Fail("Expected vprintf to return %d or %d, got %d.\n",
             strlen(checkstr1), strlen(checkstr2), ret);
     }
 }

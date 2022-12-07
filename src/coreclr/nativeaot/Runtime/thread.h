@@ -66,29 +66,32 @@ struct ExInfo
     volatile void*          m_notifyDebuggerSP;
 };
 
+struct GCFrameRegistration
+{
+    Thread* m_pThread;
+    GCFrameRegistration* m_pNext;
+    void** m_pObjRefs;
+    uint32_t m_numObjRefs;
+    int m_MaybeInterior;
+};
+
 struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
-#if DACCESS_COMPILE
-    volatile
     PInvokeTransitionFrame* m_pTransitionFrame;
-#else
-    PInvokeTransitionFrame* m_pTransitionFrame;
-#endif
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
     PInvokeTransitionFrame* m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-#ifdef HOST_64BIT
-    uintptr_t               m_uHijackedReturnValueFlags;             // used on ARM64 and UNIX only; however, ARM64 and AMD64 share field offsets
-#endif // HOST_64BIT
+    uintptr_t               m_uHijackedReturnValueFlags;            
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     PTR_PTR_VOID            m_pThreadLocalModuleStatics;
     uint32_t                m_numThreadLocalModuleStatics;
+    GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
@@ -133,6 +136,12 @@ public:
 #ifdef FEATURE_GC_STRESS
         TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator for GCStress was inited
 #endif // FEATURE_GC_STRESS
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        TSF_Redirected          = 0x00000080,       // Set to indicate the thread is redirected and will inevitably
+                                                    // suspend once resumed.
+                                                    // If we see this flag, we skip hijacking as an optimization.
+#endif //FEATURE_SUSPEND_REDIRECTION
     };
 private:
 
@@ -142,10 +151,18 @@ private:
     void ClearState(ThreadStateFlags flags);
     bool IsStateSet(ThreadStateFlags flags);
 
+
     static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
-    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, void * pvHijackTargets[]);
-    void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, void* pvHijackTargets[]);
-    void HijackReturnAddressWorker(StackFrameIterator* frameIterator, void* pvHijackTargets[]);
+
+    //
+    // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
+    // Thus they cannot have any parameters or return anything.
+    //
+    typedef void HijackFunc();
+
+    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
+    void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
+    void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
     bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
@@ -186,13 +203,11 @@ public:
 
     void                Hijack();
     void                Unhijack();
+    bool                IsHijacked();
+
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
 #endif // FEATURE_GC_STRESS
-    bool                IsHijacked();
-    void *              GetHijackedReturnAddress();
-    void *              GetUnhijackedReturnAddress(void** ppvReturnAddressLocation);
-    bool                DangerousCrossThreadIsHijacked();
 
     bool                IsSuppressGcStressSet();
     void                SetSuppressGcStress();
@@ -219,7 +234,7 @@ public:
 #endif // DACCESS_COMPILE
 #ifdef FEATURE_GC_STRESS
     void                SetRandomSeed(uint32_t seed);
-    uint32_t              NextRand();
+    uint32_t            NextRand();
     bool                IsRandInited();
 #endif // FEATURE_GC_STRESS
     PTR_ExInfo          GetCurExInfo();
@@ -248,7 +263,7 @@ public:
     //
     // GC support APIs - do not use except from GC itself
     //
-    void SetGCSpecial(bool isGCSpecial);
+    void SetGCSpecial();
     bool IsGCSpecial();
     bool CatchAtSafePoint();
 
@@ -272,6 +287,9 @@ public:
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
 
     NATIVE_CONTEXT* GetInterruptedContext();
+
+    void PushGCFrameRegistration(GCFrameRegistration* pRegistration);
+    void PopGCFrameRegistration(GCFrameRegistration* pRegistration);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     NATIVE_CONTEXT* EnsureRedirectionContext();

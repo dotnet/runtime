@@ -957,7 +957,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			}
 		} else {
 			if (TRACE_ABC_REMOVAL) {
-				printf ("Recursivity rejected (some relation in the cycle is not a defintion)\n");
+				printf ("Recursivity rejected (some relation in the cycle is not a definition)\n");
 			}
 		}
 		break;

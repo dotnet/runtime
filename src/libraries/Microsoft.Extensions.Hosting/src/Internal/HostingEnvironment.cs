@@ -13,11 +13,11 @@ namespace Microsoft.Extensions.Hosting.Internal
     public class HostingEnvironment : IHostingEnvironment, IHostEnvironment
 #pragma warning restore CS0618 // Type or member is obsolete
     {
-        public string EnvironmentName { get; set; } = null!;
+        public string EnvironmentName { get; set; } = string.Empty;
 
-        public string? ApplicationName { get; set; }
+        public string ApplicationName { get; set; } = string.Empty;
 
-        public string ContentRootPath { get; set; } = null!;
+        public string ContentRootPath { get; set; } = string.Empty;
 
         public IFileProvider ContentRootFileProvider { get; set; } = null!;
     }

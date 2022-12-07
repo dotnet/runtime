@@ -26,7 +26,7 @@ For example: `./build.sh mono release -test:JIT/opt/InstructionCombining/DivToMu
 
 Run individual test:
 ```
-bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root 
+bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root
 ```
 
 Run all built tests:
@@ -55,11 +55,9 @@ The last few lines of the build log should contain something like this:
 --------------------------------------------------
  Example run.sh command
 
- src/tests/run.sh --coreOverlayDir=<repo_root>artifacts/tests/coreclr/Browser.wasm.Release/Tests/Core_Root --testNativeBinDir=<repo_root>/artifacts/obj/coreclr/Browser.wasm.Release/tests --testRootDir=<repo_root>/artifacts/tests/coreclr/Browser.wasm.Release --copyNativeTestBin Release
+ src/tests/run.sh wasm <Debug|Release>
 --------------------------------------------------
 ```
-
-To run all tests, execute that command, adding `wasm` to the end.
 
 ### Android:
 Build the runtime tests for Android x64/ARM64
@@ -90,6 +88,11 @@ For example, the following command is for running System.Runtime tests:
 ```
 make run-tests-corefx-System.Runtime
 ```
+
+### Debugging libraries tests on Desktop Mono
+
+See [debugging with VS Code](../../debugging/libraries/debugging-vscode.md#Debugging-Libraries-with-Visual-Studio-Code-running-on-Mono)
+
 ### Mobile targets and WebAssembly
 Build and run library tests against WebAssembly, Android or iOS. See instructions located in [Library testing document folder](../libraries/)
 
@@ -118,7 +121,7 @@ make run
 Note that the default configuration of this sample is LLVM JIT.
 
 ## WebAssembly
-To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the progam in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
+To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the program in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
 
 ```
 make build && make run

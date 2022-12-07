@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 
 using Internal.Text;
@@ -9,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class RuntimeMethodHandleNode : ObjectNode, ISymbolDefinitionNode
+    public class RuntimeMethodHandleNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
         private MethodDesc _targetMethod;
 
@@ -37,15 +36,12 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
-            get
-            {
-                if (_targetMethod.Context.Target.IsWindows)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -55,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!_targetMethod.IsMethodDefinition && !_targetMethod.OwningType.IsGenericDefinition
                 && _targetMethod.HasInstantiation && _targetMethod.IsVirtual)
             {
-                dependencies = dependencies ?? new DependencyList();
+                dependencies ??= new DependencyList();
                 dependencies.Add(factory.GVMDependencies(_targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM dependencies for runtime method handle");
             }
 
@@ -66,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static Utf8String s_NativeLayoutSignaturePrefix = new Utf8String("__RMHSignature_");
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
 

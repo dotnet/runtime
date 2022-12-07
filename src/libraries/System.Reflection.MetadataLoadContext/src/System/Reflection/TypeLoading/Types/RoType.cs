@@ -288,6 +288,38 @@ namespace System.Reflection.TypeLoading
         private volatile RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
+#if NET7_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "Enum Types are not trimmed.")]
+        public override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            FieldInfo[] enumFields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            int numValues = enumFields.Length;
+            Array ret = Type.GetTypeCode(GetEnumUnderlyingType()) switch
+            {
+                TypeCode.Byte => new byte[numValues],
+                TypeCode.SByte => new sbyte[numValues],
+                TypeCode.UInt16 => new ushort[numValues],
+                TypeCode.Int16 => new short[numValues],
+                TypeCode.UInt32 => new uint[numValues],
+                TypeCode.Int32 => new int[numValues],
+                TypeCode.UInt64 => new ulong[numValues],
+                TypeCode.Int64 => new long[numValues],
+                _ => throw new NotSupportedException(),
+            };
+
+            for (int i = 0; i < numValues; i++)
+            {
+                ret.SetValue(enumFields[i].GetRawConstantValue(), i);
+            }
+
+            return ret;
+        }
+#endif
+
         // No trust environment to apply these to.
         public sealed override bool IsSecurityCritical => throw new InvalidOperationException(SR.InvalidOperation_IsSecurity);
         public sealed override bool IsSecuritySafeCritical => throw new InvalidOperationException(SR.InvalidOperation_IsSecurity);

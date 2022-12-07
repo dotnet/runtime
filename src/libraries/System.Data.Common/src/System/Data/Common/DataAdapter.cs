@@ -435,13 +435,13 @@ namespace System.Data.Common
                 }
 
                 int result = 0;
-                bool enforceContraints = false;
+                bool enforceConstraints = false;
                 DataSet? commonDataSet = dataTables[0].DataSet;
                 try
                 {
                     if (null != commonDataSet)
                     {
-                        enforceContraints = commonDataSet.EnforceConstraints;
+                        enforceConstraints = commonDataSet.EnforceConstraints;
                         commonDataSet.EnforceConstraints = false;
                     }
                     for (int i = 0; i < dataTables.Length; ++i)
@@ -489,12 +489,12 @@ namespace System.Data.Common
                 }
                 catch (ConstraintException)
                 {
-                    enforceContraints = false;
+                    enforceConstraints = false;
                     throw;
                 }
                 finally
                 {
-                    if (enforceContraints)
+                    if (enforceConstraints)
                     {
                         commonDataSet!.EnforceConstraints = true;
                     }

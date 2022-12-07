@@ -439,6 +439,82 @@ namespace System.Numerics.Tests
             RunCustomFormatToStringTests(s_random, "#\u2030000000", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 6, PerMilleSymbolFormatter);
         }
 
+        public static IEnumerable<object[]> RunFormatScientificNotationToBigIntegerAndViceVersaData()
+        {
+            yield return new object[] { "1E+1000", "1E+1000" };
+            yield return new object[] { "1E+1001", "1E+1001" };
+            yield return new object[] { "1E+10001", "1E+10001" };
+            yield return new object[] { "1E+100001", "1E+100001" };
+            yield return new object[] { "1E+99999", "1E+99999" };
+        }
+
+        [Theory]
+        [MemberData(nameof(RunFormatScientificNotationToBigIntegerAndViceVersaData))]
+        public static void RunFormatScientificNotationToBigIntegerAndViceVersa(string testingValue, string expectedResult)
+        {
+            BigInteger parsedValue;
+            string actualResult;
+
+            parsedValue = BigInteger.Parse(testingValue, NumberStyles.AllowExponent);
+            actualResult = parsedValue.ToString("E0");
+
+            Assert.Equal(expectedResult, actualResult);
+        }
+
+        public static IEnumerable<object[]> RunFormatScientificNotationToBigIntegerThrowsExceptionData()
+        {
+            yield return new object[] { "1E+1000000000" };
+            yield return new object[] { "1E+2147483647" };
+            yield return new object[] { "1E+21474836492" };
+        }
+
+        [Theory]
+        [MemberData(nameof(RunFormatScientificNotationToBigIntegerThrowsExceptionData))]
+        public static void RunFormatScientificNotationToBigIntegerThrowsException(string testingValue)
+        {
+            Assert.Throws<OverflowException>(() => BigInteger.Parse(testingValue, NumberStyles.AllowExponent));
+        }
+        
+        [Fact]
+        public static void ToString_InvalidFormat_ThrowsFormatException()
+        {
+            BigInteger b = new BigInteger(123456789000m);
+
+            // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+            // Check ParseFormatSpecifier in FormatProvider.Number.cs with `E` format
+            Assert.Throws<FormatException>(() => b.ToString("E" + int.MaxValue.ToString()));
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => b.ToString("E" + intMaxPlus1String));
+            Assert.Throws<FormatException>(() => b.ToString("E4772185890"));
+            Assert.Throws<FormatException>(() => b.ToString("E1000000000"));
+            Assert.Throws<FormatException>(() => b.ToString("E000001000000000"));
+
+            // Check ParseFormatSpecifier in BigNumber.cs with `G` format
+            Assert.Throws<FormatException>(() => b.ToString("G" + int.MaxValue.ToString()));
+            Assert.Throws<FormatException>(() => b.ToString("G" + intMaxPlus1String));
+            Assert.Throws<FormatException>(() => b.ToString("G4772185890"));
+            Assert.Throws<FormatException>(() => b.ToString("G1000000000"));
+            Assert.Throws<FormatException>(() => b.ToString("G000001000000000"));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
+        [OuterLoop("Takes a long time, allocates a lot of memory")]
+        public static void ToString_ValidLargeFormat()
+        {
+            BigInteger b = new BigInteger(123456789000m);
+
+            // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
+
+            // Check ParseFormatSpecifier in FormatProvider.Number.cs with `E` format
+            b.ToString("E999999999"); // Should not throw
+            b.ToString("E00000999999999"); // Should not throw
+
+            // Check ParseFormatSpecifier in BigNumber.cs with `G` format
+            b.ToString("G999999999"); // Should not throw
+            b.ToString("G00000999999999"); // Should not throw
+        }
+
         private static void RunSimpleProviderToStringTests(Random random, string format, NumberFormatInfo provider, int precision, StringFormatter formatter)
         {
             string test;

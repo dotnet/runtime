@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using ILCompiler.DependencyAnalysis.ARM;
 
 namespace ILCompiler.DependencyAnalysis
@@ -15,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
                                          [System.Runtime.CompilerServices.CallerLineNumber] int sourceLineNumber = 0)
         {
             ISymbolNode NYI_Assert = factory.ExternSymbol("NYI_Assert");
-            String CallInfoPrefix = " " + sourceFilePath + "(" + sourceLineNumber.ToString() + "): method " + memberName + ": ";
+            string CallInfoPrefix = " " + sourceFilePath + "(" + sourceLineNumber.ToString() + "): method " + memberName + ": ";
             ISymbolNode messageSymbol = factory.ConstantUtf8String(CallInfoPrefix + message);
             encoder.EmitMOV(encoder.TargetRegister.Arg0, messageSymbol);
             encoder.EmitJMP(NYI_Assert);

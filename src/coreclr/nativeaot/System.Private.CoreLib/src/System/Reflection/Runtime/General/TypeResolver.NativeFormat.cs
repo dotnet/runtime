@@ -180,7 +180,7 @@ namespace System.Reflection.Runtime.General
                 RuntimeTypeInfo? outerType = parent.ToTypeReferenceHandle(reader).TryResolveTypeReference(reader, ref exception);
                 if (outerType == null)
                     return null;
-                outerTypeInfo = outerType;   // Since we got to outerType via a metadata reference, we're assured GetTypeInfo() won't throw a MissingMetadataException.
+                outerTypeInfo = outerType;   // Since we got to outerType via a metadata reference, we're assured GetTypeInfo() won't throw a missing metadata exception.
             }
             if (outerTypeInfo != null)
             {
@@ -188,7 +188,7 @@ namespace System.Reflection.Runtime.General
                 TypeInfo? resolvedTypeInfo = outerTypeInfo.GetDeclaredNestedType(name);
                 if (resolvedTypeInfo == null)
                 {
-                    exception = ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(outerTypeInfo, name);
+                    exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly);
                     return null;
                 }
                 return resolvedTypeInfo.CastToRuntimeTypeInfo();

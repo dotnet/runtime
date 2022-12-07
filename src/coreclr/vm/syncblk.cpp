@@ -858,7 +858,7 @@ void SyncBlockCache::Grow()
 
 
         // We chain old table because we can't delete
-        // them before all the threads are stoppped
+        // them before all the threads are stopped
         // (next GC)
         SyncTableEntry::GetSyncTableEntry() [0].m_Object = (Object *)m_OldSyncTables;
         m_OldSyncTables = SyncTableEntry::GetSyncTableEntry();
@@ -1095,7 +1095,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
         //table logic above works correctly so that every ephemeral entry is promoted.
         //For verification, we make a copy of the sync table in relocation phase and promote it use the
         //slow approach and compare the result with the original one
-        DWORD freeSyncTalbeIndexCopy = m_FreeSyncTableIndex;
+        DWORD freeSyncTableIndexCopy = m_FreeSyncTableIndex;
         SyncTableEntry * syncTableShadow = NULL;
         if ((g_pConfig->GetHeapVerifyLevel()& EEConfig::HEAPVERIFY_SYNCBLK) && !((ScanContext*)lp1)->promotion)
         {
@@ -1178,7 +1178,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
                 delete []syncTableShadow;
                 syncTableShadow = NULL;
             }
-            if (freeSyncTalbeIndexCopy != m_FreeSyncTableIndex)
+            if (freeSyncTableIndexCopy != m_FreeSyncTableIndex)
                 DebugBreak ();
         }
 #endif //VERIFY_HEAP
@@ -2202,13 +2202,20 @@ SyncBlock *ObjHeader::GetSyncBlock()
                             _ASSERTE(lockThreadId != 0);
 
                             Thread *pThread = g_pThinLockThreadIdDispenser->IdToThreadWithValidation(lockThreadId);
+                            SIZE_T osThreadId;
 
                             if (pThread == NULL)
                             {
                                 // The lock is orphaned.
                                 pThread = (Thread*) -1;
+                                osThreadId = (SIZE_T)-1;
                             }
-                            syncBlock->InitState(recursionLevel + 1, pThread);
+                            else
+                            {
+                                osThreadId = pThread->GetOSThreadId64();
+                            }
+
+                            syncBlock->InitState(recursionLevel + 1, pThread, osThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -2237,8 +2244,8 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
                 LEAVE_SPIN_LOCK(this);
             }
-            // SyncBlockCache::LockHolder goes out of scope here
         }
+        // SyncBlockCache::LockHolder goes out of scope here
     }
 
     RETURN syncBlock;
@@ -2372,6 +2379,7 @@ void AwareLock::Enter()
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2434,6 +2442,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2541,21 +2550,31 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     // the object associated with this lock.
     _ASSERTE(pCurThread->PreemptiveGCDisabled());
 
-    BOOLEAN IsContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
-    LARGE_INTEGER startTicks = { {0} };
-
-    if (IsContentionKeywordEnabled)
-    {
-        QueryPerformanceCounter(&startTicks);
-
-        // Fire a contention start event for a managed contention
-        FireEtwContentionStart_V1(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId());
-    }
-
     LogContention();
     Thread::IncrementMonitorLockContentionCount(pCurThread);
 
     OBJECTREF obj = GetOwningObject();
+
+    LARGE_INTEGER startTicks = { {0} };
+    bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
+
+    if (isContentionKeywordEnabled)
+    {
+        QueryPerformanceCounter(&startTicks);
+
+        if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
+        {
+            FireEtwLockCreated(this, OBJECTREFToObject(obj), GetClrInstanceId());
+        }
+
+        // Fire a contention start event for a managed contention
+        FireEtwContentionStart_V2(
+            ETW::ContentionLog::ContentionStructs::ManagedContention,
+            GetClrInstanceId(),
+            this,
+            OBJECTREFToObject(obj),
+            m_HoldingOSThreadId);
+    }
 
     // We cannot allow the AwareLock to be cleaned up underneath us by the GC.
     IncrementTransientPrecious();
@@ -2684,7 +2703,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     GCPROTECT_END();
     DecrementTransientPrecious();
 
-    if (IsContentionKeywordEnabled)
+    if (isContentionKeywordEnabled)
     {
         LARGE_INTEGER endTicks;
         QueryPerformanceCounter(&endTicks);
@@ -2702,6 +2721,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     }
 
     m_HoldingThread = pCurThread;
+    m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -2764,7 +2784,6 @@ BOOL AwareLock::OwnedByCurrentThread()
     WRAPPER_NO_CONTRACT;
     return (GetThread() == m_HoldingThread);
 }
-
 
 // ***************************************************************************
 //
@@ -2950,8 +2969,7 @@ void ObjHeader::IllegalAlignPad()
     WRAPPER_NO_CONTRACT;
 #ifdef LOGGING
     void** object = ((void**) this) + 1;
-    LogSpewAlways("\n\n******** Illegal ObjHeader m_alignpad not 0, object" FMT_ADDR "\n\n",
-                  DBG_ADDR(object));
+    STRESS_LOG1(LF_ASSERT, LL_ALWAYS, "\n\n******** Illegal ObjHeader m_alignpad not 0, m_alignpad value: %d\n", m_alignpad);
 #endif
     _ASSERTE(m_alignpad == 0);
 }

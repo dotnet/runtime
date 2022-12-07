@@ -204,7 +204,7 @@ namespace System.Net
                     else
                     {
                         // We found '%', but not followed by 'u', i.e. we have a percent encoded octed: %XX
-                        if (!AddPercentEncodedOctetToRawOctetsList(encoding, _rawPath.Substring(index, 2)))
+                        if (!AddPercentEncodedOctetToRawOctetsList(_rawPath.Substring(index, 2)))
                         {
                             return ParsingResult.InvalidString;
                         }
@@ -270,7 +270,7 @@ namespace System.Net
             return false;
         }
 
-        private bool AddPercentEncodedOctetToRawOctetsList(Encoding encoding, string escapedCharacter)
+        private bool AddPercentEncodedOctetToRawOctetsList(string escapedCharacter)
         {
             byte encodedValue;
             if (!byte.TryParse(escapedCharacter, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out encodedValue))
@@ -413,7 +413,7 @@ namespace System.Net
             // - the first '#' character: This is never the case here, since http.sys won't accept
             //   Uris containing fragments. Also, RFC2616 doesn't allow fragments in request Uris.
             // - end of Uri string
-            int queryIndex = uriString.IndexOf('?');
+            int queryIndex = uriString.IndexOf('?', pathStartIndex);
             if (queryIndex == -1)
             {
                 queryIndex = uriString.Length;

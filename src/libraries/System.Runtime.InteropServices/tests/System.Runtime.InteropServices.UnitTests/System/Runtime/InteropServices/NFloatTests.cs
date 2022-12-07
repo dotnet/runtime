@@ -232,7 +232,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0.0f, 3.14f)]
         [InlineData(4567.0f, -3.14f)]
         [InlineData(4567.89101f, -3.14569f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65557", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public static void op_Addition(float left, float right)
         {
             NFloat result = new NFloat(left) + new NFloat(right);
@@ -253,7 +252,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0.0f, 3.14f)]
         [InlineData(4567.0f, -3.14f)]
         [InlineData(4567.89101f, -3.14569f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65557", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public static void op_Subtraction(float left, float right)
         {
             NFloat result = new NFloat(left) - new NFloat(right);
@@ -274,7 +272,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0.0f, 3.14f)]
         [InlineData(4567.0f, -3.14f)]
         [InlineData(4567.89101f, -3.14569f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65557", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public static void op_Multiply(float left, float right)
         {
             NFloat result = new NFloat(left) * new NFloat(right);
@@ -295,7 +292,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0.0f, 3.14f)]
         [InlineData(4567.0f, -3.14f)]
         [InlineData(4567.89101f, -3.14569f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65557", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public static void op_Division(float left, float right)
         {
             NFloat result = new NFloat(left) / new NFloat(right);

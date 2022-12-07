@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
     {
         /// <summary>
-        /// This is public from an EventSource consumer point of view, but since these defintions
+        /// This is public from an EventSource consumer point of view, but since these definitions
         /// are not needed outside this class
         /// </summary>
         public static class Keywords
@@ -516,7 +516,9 @@ namespace Microsoft.Extensions.Logging.EventSource
             else
             {
                 eventData.DataPointer = (IntPtr)Unsafe.AsPointer(ref value);
-                eventData.Size = Unsafe.SizeOf<T>();
+#pragma warning disable 8500 // sizeof of managed types
+                eventData.Size = sizeof(T);
+#pragma warning restore 8500
             }
         }
     }

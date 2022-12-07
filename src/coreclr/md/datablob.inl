@@ -63,7 +63,7 @@ DataBlob::DataBlob(
 
 // --------------------------------------------------------------------------------------
 //
-// Initializes memory block to empty data. The object could be already initialzied.
+// Initializes memory block to empty data. The object could be already initialized.
 //
 inline
 void

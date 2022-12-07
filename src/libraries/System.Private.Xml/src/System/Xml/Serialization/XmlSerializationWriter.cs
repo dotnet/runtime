@@ -39,7 +39,7 @@ namespace System.Xml.Serialization
         private bool _escapeName = true;
 
         // this method must be called before any generated serialization methods are called
-        internal void Init(XmlWriter w, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? idBase, TempAssembly? tempAssembly)
+        internal void Init(XmlWriter w, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? idBase)
         {
             _w = w;
             _namespaces = namespaces;
@@ -109,7 +109,7 @@ namespace System.Xml.Serialization
             return DynamicAssemblies.Get(assemblyFullName);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? FromByteArrayHex(byte[]? value)
         {
             return XmlCustomFormatter.FromByteArrayHex(value);
@@ -145,25 +145,25 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.FromEnum(value, values, ids, typeName);
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         protected static string? FromXmlName(string? name)
         {
             return XmlCustomFormatter.FromXmlName(name);
         }
 
-        [return: NotNullIfNotNull("ncName")]
+        [return: NotNullIfNotNull(nameof(ncName))]
         protected static string? FromXmlNCName(string? ncName)
         {
             return XmlCustomFormatter.FromXmlNCName(ncName);
         }
 
-        [return: NotNullIfNotNull("nmToken")]
+        [return: NotNullIfNotNull(nameof(nmToken))]
         protected static string? FromXmlNmToken(string? nmToken)
         {
             return XmlCustomFormatter.FromXmlNmToken(nmToken);
         }
 
-        [return: NotNullIfNotNull("nmTokens")]
+        [return: NotNullIfNotNull(nameof(nmTokens))]
         protected static string? FromXmlNmTokens(string? nmTokens)
         {
             return XmlCustomFormatter.FromXmlNmTokens(nmTokens);
@@ -2386,7 +2386,7 @@ namespace System.Xml.Serialization
             Writer.Write(")");
         }
 
-        private void WritePrimitiveValue(TypeDesc typeDesc, string source, bool isElement)
+        private void WritePrimitiveValue(TypeDesc typeDesc, string source)
         {
             if (typeDesc == StringTypeDesc || typeDesc.FormatterName == "String")
             {
@@ -2479,7 +2479,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                WritePrimitiveValue(typeDesc, source, isElement);
+                WritePrimitiveValue(typeDesc, source);
             }
 
             if (writeXsiType)
@@ -3378,7 +3378,7 @@ namespace System.Xml.Serialization
                     if (attribute.Mapping is EnumMapping)
                         WriteEnumValue((EnumMapping)attribute.Mapping, "ai");
                     else
-                        WritePrimitiveValue(arrayElementTypeDesc, "ai", true);
+                        WritePrimitiveValue(arrayElementTypeDesc, "ai");
                     Writer.WriteLine(");");
                 }
                 else
@@ -3860,7 +3860,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    WritePrimitiveValue(primitive.TypeDesc!, source, false);
+                    WritePrimitiveValue(primitive.TypeDesc!, source);
                 }
                 Writer.WriteLine(");");
             }

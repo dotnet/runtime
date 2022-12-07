@@ -1,6 +1,6 @@
 In order to verify whether ilasm produces correct portable pdb format one can do the following:
 
-1. Copy 'TestMethodDebugInformation' directory wiht its contents to:
+1. Copy 'TestMethodDebugInformation' directory with its contents to:
     - WINDOWS: C:\\tmp\\
     - LINUX:   /tmp/
 2. Run IlasmPortablePdb tests which reference .cs source files from 'TestMethodDebugInformation':

@@ -73,11 +73,9 @@ namespace System.Net
             _version = HttpVersion.Version10;
         }
 
-        private static readonly char[] s_separators = new char[] { ' ' };
-
         internal void SetRequestLine(string req)
         {
-            string[] parts = req.Split(s_separators, 3);
+            string[] parts = req.Split(' ', 3);
             if (parts.Length != 3)
             {
                 _context.ErrorMessage = "Invalid request line (parts).";

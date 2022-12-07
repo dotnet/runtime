@@ -632,7 +632,7 @@ namespace System.Security.AccessControl
                         out byteArray,
                         ref byteArraySize))
                 {
-                    error = Marshal.GetLastWin32Error();
+                    error = Marshal.GetLastPInvokeError();
 
                     if (error == Interop.Errors.ERROR_INVALID_PARAMETER ||
                         error == Interop.Errors.ERROR_INVALID_ACL ||

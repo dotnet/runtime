@@ -278,7 +278,7 @@ typespec-sig {
 methodspec-sig {
 	assembly assembly-with-generics.exe
 
-	#LAMESPEC spec is completelly wrong on this one. method spec holds simply a generic instantation
+	#LAMESPEC spec is completelly wrong on this one. method spec holds simply a generic instantiation
 	#no type on it
 
 	#first byte is the genericinst callconv 0xA

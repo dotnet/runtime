@@ -27,7 +27,8 @@ namespace System.Diagnostics.Tests
         private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
 
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported
-            => PlatformDetection.IsWindowsAndElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+            => PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer
+            && PlatformDetection.IsPrivilegedProcess && RemoteExecutor.IsSupported;
 
         [Fact]
         public void TestEnvironmentProperty()
@@ -278,6 +279,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void EnvironmentGetEnvironmentVariablesIsCaseSensitive()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -301,6 +303,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void ProcessStartInfoEnvironmentDoesNotThrowForCaseSensitiveDuplicates()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -325,6 +328,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void ProcessStartInfoEnvironmentVariablesDoesNotThrowForCaseSensitiveDuplicates()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -358,7 +362,7 @@ namespace System.Diagnostics.Tests
 
             // Environment Variables are case-insensitive on Windows.
             // But it's possible to start a process with duplicate case-sensitive env vars using CreateProcess API (see #42029)
-            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insenstive on Windows.
+            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insensitive on Windows.
             // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
             // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
             p.StartInfo.Environment
@@ -465,12 +469,7 @@ namespace System.Diagnostics.Tests
         public void TestUserCredentialsPropertiesOnWindows()
         {
             const string username = "testForDotnetRuntime";
-            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
-
-            uint removalResult = Interop.NetUserDel(null, username);
-            Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
-
-            Interop.NetUserAdd(username, password);
+            using WindowsTestAccount testAccount = new WindowsTestAccount(username);
 
             bool hasStarted = false;
             SafeProcessHandle handle = null;
@@ -493,7 +492,7 @@ namespace System.Diagnostics.Tests
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
-                p.StartInfo.PasswordInClearText = password;
+                p.StartInfo.PasswordInClearText = testAccount.Password;
 
                 try
                 {
@@ -504,22 +503,10 @@ namespace System.Diagnostics.Tests
                     throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
                 }
 
-                if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
-                {
-                    SecurityIdentifier sid;
-                    if (Interop.ProcessTokenToSid(handle, out sid))
-                    {
-                        string actualUserName = sid.Translate(typeof(NTAccount)).ToString();
-                        int indexOfDomain = actualUserName.IndexOf('\\');
-                        if (indexOfDomain != -1)
-                            actualUserName = actualUserName.Substring(indexOfDomain + 1);
 
-                        bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
-
-                        Assert.Equal(username, actualUserName);
-                        Assert.True(isProfileLoaded);
-                    }
-                }
+                Assert.Equal(username, Helpers.GetProcessUserName(p));
+                bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+                Assert.True(isProfileLoaded);
             }
             finally
             {
@@ -537,8 +524,6 @@ namespace System.Diagnostics.Tests
                 {
                     SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: false); // remove the access
                 }
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 

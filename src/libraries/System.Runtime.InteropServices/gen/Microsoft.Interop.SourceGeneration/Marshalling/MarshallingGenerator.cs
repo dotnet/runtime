@@ -85,8 +85,8 @@ namespace Microsoft.Interop
         /// Get the native type syntax for <paramref name="info"/>
         /// </summary>
         /// <param name="info">Object to marshal</param>
-        /// <returns>Type syntax for the native type representing <paramref name="info"/></returns>
-        TypeSyntax AsNativeType(TypePositionInfo info);
+        /// <returns>Managed type info for the native type representing <paramref name="info"/></returns>
+        ManagedTypeInfo AsNativeType(TypePositionInfo info);
 
         /// <summary>
         /// Get shape that represents the provided <paramref name="info"/> in the native signature
@@ -119,7 +119,7 @@ namespace Microsoft.Interop
 
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition
-        /// to an identifer for the managed value.
+        /// to an identifier for the managed value.
         /// </summary>
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Code generation context</param>

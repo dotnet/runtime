@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         protected override bool ReadAndCacheConstructorArgument(
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonParameterInfo jsonParameterInfo)
         {
@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         private static bool TryRead<TArg>(
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonParameterInfo jsonParameterInfo,
             out TArg arg)
@@ -71,6 +71,11 @@ namespace System.Text.Json.Serialization.Converters
                 ? (TArg?)info.DefaultValue! // Use default value specified on parameter, if any.
                 : value!;
 
+            if (success)
+            {
+                state.Current.MarkRequiredPropertyAsRead(jsonParameterInfo.MatchingProperty);
+            }
+
             return success;
         }
 
@@ -79,7 +84,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             typeInfo.CreateObjectWithArgs ??=
-                options.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
+                JsonSerializerOptions.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
 
             var arguments = new Arguments<TArg0, TArg1, TArg2, TArg3>();
 

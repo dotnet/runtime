@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class InterfaceDispatchCellNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public sealed class InterfaceDispatchCellNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private readonly MethodDesc _targetMethod;
         private readonly string _callSiteIdentifier;
@@ -106,16 +106,11 @@ namespace ILCompiler.DependencyAnalysis
 
             if (objData.TargetPointerSize == 8)
             {
-                // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer 
+                // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer
                 // width there since a pointer to the cache will be written into the cell. Emit additional
-                // 32 bits on targets whose pointer size is 64 bit. 
+                // 32 bits on targets whose pointer size is 64 bit.
                 objData.EmitInt(0);
             }
-        }
-
-        protected override void OnMarked(NodeFactory factory)
-        {
-            factory.InterfaceDispatchCellSection.AddEmbeddedObject(this);
         }
 
         public override int ClassCode => -2023802120;

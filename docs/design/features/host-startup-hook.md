@@ -221,7 +221,7 @@ Each startup hook will run on the same managed thread as the `Main`
 method, so thread state will persist between startup hooks. The
 threading apartment state will be set based on any attributes present
 in the `Main` method of the app, before startup hooks execute. As a
-result, attemps to explicitly set the thread apartment state in a
+result, attempts to explicitly set the thread apartment state in a
 startup hook will fail if the requested state is incompatible with the
 app's threading state.
 

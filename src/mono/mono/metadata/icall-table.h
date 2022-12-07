@@ -12,11 +12,11 @@
 #include "marshal.h"
 #include "icalls.h"
 
-#define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
+#define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
 
 typedef struct {
 	int version;
-	gpointer (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, gboolean *uses_handles);
+	gpointer (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, MonoInternalCallFlags *out_flags);
 	const char* (*lookup_icall_symbol) (gpointer func);
 } MonoIcallTableCallbacks;
 

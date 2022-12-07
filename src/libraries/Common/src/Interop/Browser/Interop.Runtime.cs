@@ -15,6 +15,8 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InvokeJSFunction(IntPtr bound_function_js_handle, void* data);
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeImport(IntPtr fn_handle, void* data);
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void MarshalPromise(void* data);
@@ -43,11 +45,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void CreateCSOwnedObjectRef(in string className, in object[] parms, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void TypedArrayCopyToRef(IntPtr jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void TypedArrayFromRef(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void TypedArrayCopyFromRef(IntPtr jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult, out object result);
 
         #endregion
 

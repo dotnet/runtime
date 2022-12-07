@@ -12,6 +12,11 @@ namespace System.Diagnostics.Tracing
     /// DiagnosticCounter is an abstract class that serves as the parent class for various Counter* classes,
     /// namely EventCounter, PollingCounter, IncrementingEventCounter, and IncrementingPollingCounter.
     /// </summary>
+#if !ES_BUILD_STANDALONE
+#if !FEATURE_WASM_PERFTRACING
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
+#endif
     public abstract class DiagnosticCounter : IDisposable
     {
         /// <summary>
@@ -22,8 +27,11 @@ namespace System.Diagnostics.Tracing
         /// <param name="EventSource">The event source.</param>
         internal DiagnosticCounter(string Name, EventSource EventSource)
         {
-            this.Name = Name ?? throw new ArgumentNullException(nameof(Name));
-            this.EventSource = EventSource ?? throw new ArgumentNullException(nameof(EventSource));
+            ArgumentNullException.ThrowIfNull(Name);
+            ArgumentNullException.ThrowIfNull(EventSource);
+
+            this.Name = Name;
+            this.EventSource = EventSource;
         }
 
         /// <summary>Adds the counter to the set that the EventSource will report on.</summary>
@@ -74,8 +82,7 @@ namespace System.Diagnostics.Tracing
             get => _displayName;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(DisplayName));
+                ArgumentNullException.ThrowIfNull(DisplayName);
                 _displayName = value;
             }
         }
@@ -86,8 +93,7 @@ namespace System.Diagnostics.Tracing
             get => _displayUnits;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(DisplayUnits));
+                ArgumentNullException.ThrowIfNull(DisplayUnits);
                 _displayUnits = value;
             }
         }

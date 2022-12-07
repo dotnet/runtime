@@ -80,7 +80,7 @@ namespace System.Transactions
             VolatileDemultiplexer demux = (VolatileDemultiplexer)state;
 
             // Don't block an enlistment thread (or a thread pool thread).  So
-            // try to get the transaction lock but if unsuccessfull give up and
+            // try to get the transaction lock but if unsuccessful give up and
             // queue this operation to try again later.
             bool tookLock = false;
             try
@@ -119,7 +119,7 @@ namespace System.Transactions
             VolatileDemultiplexer demux = (VolatileDemultiplexer)state;
 
             // Don't block an enlistment thread (or a thread pool thread).  So
-            // try to get the transaction lock but if unsuccessfull give up and
+            // try to get the transaction lock but if unsuccessful give up and
             // queue this operation to try again later.
             bool tookLock = false;
             try
@@ -158,7 +158,7 @@ namespace System.Transactions
             VolatileDemultiplexer demux = (VolatileDemultiplexer)state;
 
             // Don't block an enlistment thread (or a thread pool thread).  So
-            // try to get the transaction lock but if unsuccessfull give up and
+            // try to get the transaction lock but if unsuccessful give up and
             // queue this operation to try again later.
             bool tookLock = false;
             try
@@ -197,7 +197,7 @@ namespace System.Transactions
             VolatileDemultiplexer demux = (VolatileDemultiplexer)state;
 
             // Don't block an enlistment thread (or a thread pool thread).  So
-            // try to get the transaction lock but if unsuccessfull give up and
+            // try to get the transaction lock but if unsuccessful give up and
             // queue this operation to try again later.
             bool tookLock = false;
             try

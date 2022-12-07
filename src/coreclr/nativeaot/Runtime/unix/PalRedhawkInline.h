@@ -89,6 +89,11 @@ FORCEINLINE void PalYieldProcessor()
         "rep\n"
         "nop"
         );
+#elif defined(HOST_ARM64)
+    __asm__ __volatile__(
+        "dmb ishst\n"
+        "yield"
+        );
 #endif
 }
 

@@ -393,7 +393,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntites")]
+        [Variation("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntities")]
         public int TRReadOuterXml28()
         {
             string strExpected;

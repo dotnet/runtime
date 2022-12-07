@@ -763,6 +763,48 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => method.Invoke(null, new object?[] { Type.Missing }));
         }
 
+        public static IEnumerable<object[]> MethodNameAndArguments()
+        {
+            yield return new object[] { nameof(Sample.DefaultString), "Hello", "Hi" };
+            yield return new object[] { nameof(Sample.DefaultNullString), null, "Hi" };
+            yield return new object[] { nameof(Sample.DefaultNullableInt), 3, 5 };
+            yield return new object[] { nameof(Sample.DefaultNullableEnum), YesNo.Yes, YesNo.No };
+        }
+
+        [Theory]
+        [MemberData(nameof(MethodNameAndArguments))]
+        public static void InvokeCopiesBackMissingArgument(string methodName, object defaultValue, object passingValue)
+        {
+            MethodInfo method = typeof(Sample).GetMethod(methodName);
+            object[] args = new object[] { Missing.Value };
+
+            Assert.Equal(defaultValue, method.Invoke(null, args));
+            Assert.Equal(defaultValue, args[0]);
+
+            args[0] = passingValue;
+
+            Assert.Equal(passingValue, method.Invoke(null, args));
+            Assert.Equal(passingValue, args[0]);
+
+            args[0] = null;
+            Assert.Null(method.Invoke(null, args));
+            Assert.Null(args[0]);
+        }
+
+        [Fact]
+        public static void InvokeCopiesBackMissingParameterAndArgument()
+        {
+            MethodInfo method = typeof(Sample).GetMethod(nameof(Sample.DefaultMissing));
+            object[] args = new object[] { Missing.Value };
+
+            Assert.Null(method.Invoke(null, args));
+            Assert.Null(args[0]);
+
+            args[0] = null;
+            Assert.Null(method.Invoke(null, args));
+            Assert.Null(args[0]);
+        }
+
         [Fact]
         public void ValueTypeMembers_WithOverrides()
         {
@@ -1087,6 +1129,16 @@ namespace System.Reflection.Tests
         {
             return "";
         }
+
+        public static string DefaultString(string value = "Hello") => value;
+
+        public static string DefaultNullString(string value = null) => value;
+
+        public static YesNo? DefaultNullableEnum(YesNo? value = YesNo.Yes) => value;
+
+        public static int? DefaultNullableInt(int? value = 3) => value;
+
+        public static Missing DefaultMissing(Missing value = null) => value;
     }
 
     public class SampleG<T>

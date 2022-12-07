@@ -697,11 +697,7 @@ namespace System.Security.AccessControl
             [MemberNotNull(nameof(_sid))]
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _sid = value;
             }
         }
@@ -1312,28 +1308,28 @@ namespace System.Security.AccessControl
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } ACCESS_ALLOWED_CALLBACK_ACE, *PACCESS_ALLOWED_CALLBACK_ACE;
     //
     // typedef struct _ACCESS_DENIED_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } ACCESS_DENIED_CALLBACK_ACE, *PACCESS_DENIED_CALLBACK_ACE;
     //
     // typedef struct _SYSTEM_AUDIT_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } SYSTEM_AUDIT_CALLBACK_ACE, *PSYSTEM_AUDIT_CALLBACK_ACE;
     //
     // typedef struct _SYSTEM_ALARM_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } SYSTEM_ALARM_CALLBACK_ACE, *PSYSTEM_ALARM_CALLBACK_ACE;
     //
 
@@ -1653,7 +1649,7 @@ namespace System.Security.AccessControl
     //     GUID ObjectType;
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } ACCESS_ALLOWED_CALLBACK_OBJECT_ACE, *PACCESS_ALLOWED_CALLBACK_OBJECT_ACE;
     //
     // typedef struct _ACCESS_DENIED_CALLBACK_OBJECT_ACE {
@@ -1663,7 +1659,7 @@ namespace System.Security.AccessControl
     //     GUID ObjectType;
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } ACCESS_DENIED_CALLBACK_OBJECT_ACE, *PACCESS_DENIED_CALLBACK_OBJECT_ACE;
     //
     // typedef struct _SYSTEM_AUDIT_CALLBACK_OBJECT_ACE {
@@ -1673,7 +1669,7 @@ namespace System.Security.AccessControl
     //     GUID ObjectType;
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } SYSTEM_AUDIT_CALLBACK_OBJECT_ACE, *PSYSTEM_AUDIT_CALLBACK_OBJECT_ACE;
     //
     // typedef struct _SYSTEM_ALARM_CALLBACK_OBJECT_ACE {
@@ -1683,7 +1679,7 @@ namespace System.Security.AccessControl
     //     GUID ObjectType;
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
-    //     // Opaque resouce manager specific data
+    //     // Opaque resource manager specific data
     // } SYSTEM_ALARM_CALLBACK_OBJECT_ACE, *PSYSTEM_ALARM_CALLBACK_OBJECT_ACE;
     //
 

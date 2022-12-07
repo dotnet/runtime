@@ -44,7 +44,7 @@ static void unified_suspend_stop_world (MonoThreadInfoFlags flags, unified_suspe
 
 static TV_DECLARE (end_of_last_stw);
 
-guint64 mono_time_since_last_stw ()
+guint64 mono_time_since_last_stw (void)
 {
 	if (end_of_last_stw == 0)
 		return 0;
@@ -313,7 +313,7 @@ unified_suspend_stop_world (MonoThreadInfoFlags flags, unified_suspend_thread_st
 				info->client_info.suspend_done = FALSE;
 			} else {
 				/* skip threads suspended by previous phase. */
-				/* threads with info->client_info->skip set to TRUE will be skipped by unified_is_thread_in_current_stw. */
+				/* threads with info->client_info->skip set to TRUE will be skipped by is_thread_in_current_stw. */
 				if (info->client_info.suspend_done)
 					continue;
 			}

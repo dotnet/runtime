@@ -99,10 +99,10 @@ namespace System.Reflection.Emit.Tests
         {
             ModuleBuilder module = Helpers.DynamicModule();
             TypeBuilder type1 = module.DefineType("TestType1");
-            Type parent = type1.CreateTypeInfo().AsType();
+            Type parent = type1.CreateType();
 
             TypeBuilder type2 = module.DefineType("TestType2", TypeAttributes.NotPublic, parent);
-            Type createdType = type2.CreateTypeInfo().AsType();
+            Type createdType = type2.CreateType();
             Assert.Equal("TestType2", createdType.Name);
             Assert.Equal(TypeAttributes.NotPublic, createdType.GetTypeInfo().Attributes);
             Assert.Equal(parent, createdType.GetTypeInfo().BaseType);

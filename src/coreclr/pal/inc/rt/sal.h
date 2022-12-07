@@ -127,7 +127,7 @@
      _Success_(return != FALSE) BOOL
      PathCanonicalizeA(_Out_writes_(MAX_PATH) LPSTR pszBuf, LPCSTR pszPath) :
         pszBuf is only guaranteed to be NULL-terminated when TRUE is returned,
-        and FALSE indiates failure. In common practice, callers check for zero
+        and FALSE indicates failure. In common practice, callers check for zero
         vs. non-zero returns, so it is preferable to express the success
         criteria in terms of zero/non-zero, not checked for exactly TRUE.
 
@@ -260,7 +260,7 @@ enum __SAL_YesNo {_SAL_notpresent, _SAL_no, _SAL_maybe, _SAL_yes, _SAL_default};
 // Only applicable with functions that have  _Success_ or _Return_type_succss_.
 #define _Always_(annos)                  _Always_impl_(annos _SAL_nop_impl_)
 
-// Usable on a function defintion. Asserts that a function declaration is
+// Usable on a function definition. Asserts that a function declaration is
 // in scope, and its annotations are to be used. There are no other annotations
 // allowed on the function definition.
 #define _Use_decl_annotations_         _Use_decl_anno_impl_
@@ -2416,7 +2416,7 @@ extern "C" {
     /*
      __readonly l
      __notreadonly l
-     __mabyereadonly l
+     __maybereadonly l
 
      Annotates a location l. States that location l is not modified after
      this point.  If the annotation is placed on the precondition state of

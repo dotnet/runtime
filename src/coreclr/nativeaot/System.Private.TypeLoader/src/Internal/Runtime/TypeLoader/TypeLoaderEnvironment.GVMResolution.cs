@@ -72,13 +72,13 @@ namespace Internal.Runtime.TypeLoader
                         var sb = new System.Text.StringBuilder();
                         sb.AppendLine("Generic virtual method pointer lookup failure.");
                         sb.AppendLine();
-                        sb.AppendLine("Declaring type handle: " + declaringType.LowLevelToStringRawEETypeAddress());
-                        sb.AppendLine("Target type handle: " + targetHandle.LowLevelToStringRawEETypeAddress());
+                        sb.AppendLine("Declaring type handle: " + RuntimeAugments.GetLastResortString(declaringType));
+                        sb.AppendLine("Target type handle: " + RuntimeAugments.GetLastResortString(targetHandle));
                         sb.AppendLine("Method name: " + methodNameAndSignature.Name);
                         sb.AppendLine("Instantiation:");
                         for (int i = 0; i < genericArguments.Length; i++)
                         {
-                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + genericArguments[i].LowLevelToStringRawEETypeAddress());
+                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + RuntimeAugments.GetLastResortString(genericArguments[i]));
                         }
 
                         Environment.FailFast(sb.ToString());
@@ -282,54 +282,6 @@ namespace Internal.Runtime.TypeLoader
 
         private static bool ResolveInterfaceGenericVirtualMethodSlot(RuntimeTypeHandle targetTypeHandle, bool lookForDefaultImplementation, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature)
         {
-            if (IsPregeneratedOrTemplateRuntimeTypeHandle(targetTypeHandle))
-            {
-                // If the target type isn't dynamic, or at least is template type generated, the static lookup logic is what we want.
-                return ResolveInterfaceGenericVirtualMethodSlot_Static(targetTypeHandle, lookForDefaultImplementation, ref declaringType, ref methodNameAndSignature);
-            }
-            else
-            {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                TypeSystemContext context = TypeSystemContextFactory.Create();
-                DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
-
-                // Method being called...
-                MethodDesc targetVirtualMethod = ResolveTypeHandleAndMethodNameAndSigToVirtualMethodDesc(context, declaringType, methodNameAndSignature);
-
-                if (targetVirtualMethod == null)
-                {
-                    // If we can't find the method in the type system, it must only be present in the static environment. Search there instead.
-                    TypeSystemContextFactory.Recycle(context);
-                    return ResolveInterfaceGenericVirtualMethodSlot_Static(targetTypeHandle, ref declaringType, ref methodNameAndSignature);
-                }
-
-                TypeDesc instanceDefTypeToExamine;
-                MethodDesc newlyFoundVirtualMethod = LazyVTableResolver.ResolveInterfaceMethodToVirtualMethod(targetType, out instanceDefTypeToExamine, targetVirtualMethod);
-
-                targetVirtualMethod = newlyFoundVirtualMethod;
-
-                // The pregenerated base type must be the one that implements the interface method
-                // Call into Redhawk to deal with this.
-                if ((newlyFoundVirtualMethod == null) && (instanceDefTypeToExamine != null))
-                {
-                    TypeSystemContextFactory.Recycle(context);
-                    // If we can't find the method in the type system, the overload must be defined in the static environment. Search there instead.
-                    return ResolveInterfaceGenericVirtualMethodSlot_Static(instanceDefTypeToExamine.GetRuntimeTypeHandle(), ref declaringType, ref methodNameAndSignature);
-                }
-
-                declaringType = targetVirtualMethod.OwningType.GetRuntimeTypeHandle();
-                methodNameAndSignature = targetVirtualMethod.NameAndSignature;
-                TypeSystemContextFactory.Recycle(context);
-                return true;
-#else
-                Environment.FailFast("GVM Resolution for non template or pregenerated type");
-                return false;
-#endif
-            }
-        }
-
-        private static bool ResolveInterfaceGenericVirtualMethodSlot_Static(RuntimeTypeHandle targetTypeHandle, bool lookForDefaultImplementation, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature)
-        {
             // Get the open type definition of the containing type of the generic virtual method being resolved
             RuntimeTypeHandle openCallingTypeHandle = GetTypeDefinition(declaringType);
 
@@ -460,102 +412,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        public MethodDesc ResolveTypeHandleAndMethodNameAndSigToVirtualMethodDesc(TypeSystemContext context, RuntimeTypeHandle declaringTypeHandle, MethodNameAndSignature methodNameAndSignature)
-        {
-            TypeDesc declaringType = context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            MethodDesc targetVirtualMethod = null;
-            foreach (MethodDesc m in declaringType.GetAllMethods())
-            {
-                if (!m.IsVirtual)
-                    continue;
-
-                if (m.NameAndSignature.Equals(methodNameAndSignature))
-                {
-                    targetVirtualMethod = m;
-                }
-            }
-
-            return targetVirtualMethod;
-        }
-#endif
-
-        public static unsafe bool IsPregeneratedOrTemplateRuntimeTypeHandle(RuntimeTypeHandle rtth)
-        {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            if (!rtth.IsDynamicType())
-                return true;
-
-            if (rtth.ToEETypePtr()->DynamicModule == null)
-                return true;
-
-            return rtth.ToEETypePtr()->DynamicModule->DynamicTypeSlotDispatchResolve == null;
-#else
-            return true;
-#endif
-        }
-
-        private bool ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature callingMethodNameAndSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer)
-        {
-            if (IsPregeneratedOrTemplateRuntimeTypeHandle(targetTypeHandle))
-            {
-                // If the target type isn't dynamic, or at least is template type generated, the static lookup logic is what we want.
-                return ResolveGenericVirtualMethodTarget_Static(targetTypeHandle, declaringTypeHandle, genericArguments, callingMethodNameAndSignature, out methodPointer, out dictionaryPointer);
-            }
-            else
-            {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                methodPointer = IntPtr.Zero;
-                dictionaryPointer = IntPtr.Zero;
-
-                TypeSystemContext context = TypeSystemContextFactory.Create();
-                DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
-
-                // Method being called...
-                MethodDesc targetVirtualMethod = ResolveTypeHandleAndMethodNameAndSigToVirtualMethodDesc(context, declaringTypeHandle, callingMethodNameAndSignature);
-
-                if (targetVirtualMethod == null)
-                {
-                    // If we can't find the method in the type system, it must only be present in the static environment. Search there instead.
-                    TypeSystemContextFactory.Recycle(context);
-                    return ResolveGenericVirtualMethodTarget_Static(targetTypeHandle, declaringTypeHandle, genericArguments, callingMethodNameAndSignature, out methodPointer, out dictionaryPointer);
-                }
-
-                MethodDesc dispatchMethod = targetType.FindVirtualFunctionTargetMethodOnObjectType(targetVirtualMethod);
-
-                if (dispatchMethod == null)
-                    return false;
-
-                Instantiation targetMethodInstantiation = context.ResolveRuntimeTypeHandles(genericArguments);
-                MethodDesc instantiatedDispatchMethod = dispatchMethod.Context.ResolveGenericMethodInstantiation(dispatchMethod.OwningType.IsValueType/* get the unboxing stub */,
-                    dispatchMethod.OwningType.GetClosestDefType(),
-                    dispatchMethod.NameAndSignature,
-                    targetMethodInstantiation, IntPtr.Zero, false);
-
-                GenericDictionaryCell cell = GenericDictionaryCell.CreateMethodCell(instantiatedDispatchMethod, false);
-                using (LockHolder.Hold(_typeLoaderLock))
-                {
-                    // Now that we hold the lock, we may find that existing types can now find
-                    // their associated RuntimeTypeHandle. Flush the type builder states as a way
-                    // to force the reresolution of RuntimeTypeHandles which couldn't be found before.
-                    context.FlushTypeBuilderStates();
-
-                    TypeBuilder.ResolveSingleCell(cell, out methodPointer);
-                }
-
-                TypeSystemContextFactory.Recycle(context);
-
-                return true;
-#else
-                methodPointer = IntPtr.Zero;
-                dictionaryPointer = IntPtr.Zero;
-                Environment.FailFast("GVM Resolution for non template or pregenerated type");
-                return false;
-#endif
-            }
-        }
-
-        private unsafe bool ResolveGenericVirtualMethodTarget_Static(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature callingMethodNameAndSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer)
+        private bool ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature callingMethodNameAndSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer)
         {
             methodPointer = dictionaryPointer = IntPtr.Zero;
 
@@ -616,13 +473,13 @@ namespace Internal.Runtime.TypeLoader
                         var sb = new System.Text.StringBuilder();
                         sb.AppendLine("Generic virtual method pointer lookup failure.");
                         sb.AppendLine();
-                        sb.AppendLine("Declaring type handle: " + declaringType.LowLevelToStringRawEETypeAddress());
-                        sb.AppendLine("Target type handle: " + targetTypeHandle.LowLevelToStringRawEETypeAddress());
+                        sb.AppendLine("Declaring type handle: " + RuntimeAugments.GetLastResortString(declaringType));
+                        sb.AppendLine("Target type handle: " + RuntimeAugments.GetLastResortString(targetTypeHandle));
                         sb.AppendLine("Method name: " + targetMethodNameAndSignature.Name);
                         sb.AppendLine("Instantiation:");
                         for (int i = 0; i < genericArguments.Length; i++)
                         {
-                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + genericArguments[i].LowLevelToStringRawEETypeAddress());
+                            sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + RuntimeAugments.GetLastResortString(genericArguments[i]));
                         }
 
                         Environment.FailFast(sb.ToString());

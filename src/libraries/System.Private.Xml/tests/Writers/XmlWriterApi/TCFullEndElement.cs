@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using OLEDB.Test.ModuleCore;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterApiTests
 {
     //[TestCase(Name = "WriteFullEndElement")]
     public class TCFullEndElement
@@ -5091,7 +5091,7 @@ namespace System.Xml.Tests
                     Assert.True(utils.CompareReader("<Root a=\"Test Case\" b=\"Test\" />"));
                 }
 
-                // WriteRaw with entites and entitized characters
+                // WriteRaw with entities and entitized characters
                 [Theory]
                 [XmlWriterInlineData]
                 public void writeRaw_2(XmlWriterUtils utils)

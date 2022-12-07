@@ -194,6 +194,8 @@ namespace System.Numerics
         public static System.Numerics.BigInteger RotateLeft(System.Numerics.BigInteger value, int rotateAmount) { throw null; }
         public static System.Numerics.BigInteger RotateRight(System.Numerics.BigInteger value, int rotateAmount) { throw null; }
         public static System.Numerics.BigInteger Subtract(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
+        static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
         int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetShortestBitLength() { throw null; }
         bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -216,9 +218,9 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.BigInteger result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.BigInteger result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.BigInteger result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertToChecked<TOther>(System.Numerics.BigInteger value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertToSaturating<TOther>(System.Numerics.BigInteger value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertToTruncating<TOther>(System.Numerics.BigInteger value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertToChecked<TOther>(System.Numerics.BigInteger value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertToSaturating<TOther>(System.Numerics.BigInteger value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.TryConvertToTruncating<TOther>(System.Numerics.BigInteger value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static System.Numerics.BigInteger System.Numerics.INumber<System.Numerics.BigInteger>.MaxNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         static System.Numerics.BigInteger System.Numerics.INumber<System.Numerics.BigInteger>.MinNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         static int System.Numerics.INumber<System.Numerics.BigInteger>.Sign(System.Numerics.BigInteger value) { throw null; }
@@ -365,9 +367,9 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.Complex result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.Complex result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.Complex result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToChecked<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToSaturating<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToTruncating<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToChecked<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToSaturating<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Complex>.TryConvertToTruncating<TOther>(System.Numerics.Complex value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public static System.Numerics.Complex Tan(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tanh(System.Numerics.Complex value) { throw null; }
         public override string ToString() { throw null; }

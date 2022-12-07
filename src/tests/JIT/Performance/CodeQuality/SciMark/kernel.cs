@@ -124,7 +124,7 @@ namespace SciMark2
             //             +*   *    *    *  +
             //             +-----------------+
             //
-            // (as best reproducible with integer artihmetic)
+            // (as best reproducible with integer arithmetic)
             // Note that the first nr rows will have elements past
             // the diagonal.
 

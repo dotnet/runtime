@@ -325,7 +325,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void Uri_Relative_BaseVsTrippleDoubleDotSlashStartingCompressPath_ReturnsBaseWithoutPathPlusRelativePath()
+        public void Uri_Relative_BaseVsTripleDoubleDotSlashStartingCompressPath_ReturnsBaseWithoutPathPlusRelativePath()
         {
             string compressible = "../../../";
             string partialPath = "p1/p2/p3/p4/file1?AQuery#TheFragment";
@@ -458,7 +458,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void Uri_Relative_BaseVsTrippleDot_ReturnsBasePathPlusTrippleDot()
+        public void Uri_Relative_BaseVsTripleDot_ReturnsBasePathPlusTripleDot()
         {
             string nonCompressible = "...";
             Uri resolved = new Uri(_fullBaseUri, nonCompressible);
@@ -509,7 +509,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void Uri_Relative_BaseVsSlashTrippleDotSlash_ReturnsSlashTrippleDotSlash()
+        public void Uri_Relative_BaseVsSlashTripleDotSlash_ReturnsSlashTripleDotSlash()
         {
             string nonCompressible = "/.../";
             Uri resolved = new Uri(_fullBaseUri, nonCompressible);
@@ -537,7 +537,7 @@ namespace System.PrivateUri.Tests
         {
             Uri compareUri = new Uri("http://user:PLACEHOLDER@host:9090/path1/path2/path3/?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
-            Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
+            Uri reassembled = new Uri(_fullBaseUri, relative); // Symmetric
 
 
             string expectedResult = "./" + "?AQuery#AFragment"; // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
@@ -550,7 +550,7 @@ namespace System.PrivateUri.Tests
         {
             Uri compareUri = new Uri("http://user:PLACEHOLDER@host:9090/path1/path2/path3/");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
-            Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
+            Uri reassembled = new Uri(_fullBaseUri, relative); // Symmetric
 
             string expectedResult = "./";
             Assert.Equal(expectedResult, relative.ToString());
@@ -562,7 +562,7 @@ namespace System.PrivateUri.Tests
         {
             Uri compareUri = new Uri("http://user:PLACEHOLDER@host:9090/path1/path2/path3/Path4/fileb?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
-            Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
+            Uri reassembled = new Uri(_fullBaseUri, relative); // Symmetric
 
             string expectedResult = "Path4/fileb" + "?AQuery#AFragment"; // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
@@ -574,7 +574,7 @@ namespace System.PrivateUri.Tests
         {
             Uri compareUri = new Uri("http://user:PLACEHOLDER@host:9090/path1/path2/?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
-            Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
+            Uri reassembled = new Uri(_fullBaseUri, relative); // Symmetric
 
             string expectedResult = "../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
@@ -586,7 +586,7 @@ namespace System.PrivateUri.Tests
         {
             Uri compareUri = new Uri("http://user:PLACEHOLDER@host:9090/path1/?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
-            Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
+            Uri reassembled = new Uri(_fullBaseUri, relative); // Symmetric
 
             string expectedResult = "../../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());
@@ -594,11 +594,11 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void Uri_Relative_BaseMadeRelativeToEmptyPath_ReturnsTrippleDoubleDotSlashPlusQueryAndFragment()
+        public void Uri_Relative_BaseMadeRelativeToEmptyPath_ReturnsTripleDoubleDotSlashPlusQueryAndFragment()
         {
             Uri compareUri = new Uri("http://user:PLACEHOLDER@host:9090/?AQuery#AFragment");
             Uri relative = _fullBaseUri.MakeRelativeUri(compareUri);
-            Uri reassembled = new Uri(_fullBaseUri, relative); // Symetric
+            Uri reassembled = new Uri(_fullBaseUri, relative); // Symmetric
 
             string expectedResult = "../../../" + "?AQuery#AFragment";  // compareUri.GetParts(UriComponents.Query | UriComponents.Fragment, UriFormat.Unescaped);
             Assert.Equal(expectedResult, relative.ToString());

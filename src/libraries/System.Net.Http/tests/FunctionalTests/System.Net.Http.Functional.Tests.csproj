@@ -1,4 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
+
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL;HTTP3</DefineConstants>
@@ -9,6 +11,7 @@
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
     <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -17,10 +20,6 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Browser'">$(DefineConstants);TARGETS_BROWSER</DefineConstants>
   </PropertyGroup>
-
-  <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3Support" Value="true" />
-  </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
     <!-- This doesn't run on V8 because it lacks websocket support -->
@@ -39,16 +38,6 @@
     <NodeNpmModule Include="node-abort-controller" />
 
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'Browser'" />
-  </ItemGroup>
-
-  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
-
-  <!-- Browser specific files -->
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
-    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
-    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
-    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
-             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -82,6 +71,12 @@
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
              Link="Common\System\Net\Configuration.Certificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.Dynamic.cs"
+             Link="Common\System\Net\Configuration.Certificates.Dynamic.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
              Link="Common\System\Net\EventSourceTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs"
@@ -159,6 +154,7 @@
              Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
     <Compile Include="SocketsHttpHandlerTest.Cancellation.cs" />
+    <Compile Include="SocketsHttpHandlerTest.Http1KeepAlive.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2FlowControl.cs" />
     <Compile Include="SocketsHttpHandlerTest.Http2KeepAlivePing.cs" />
     <Compile Include="HttpClientHandlerTest.Connect.cs" />

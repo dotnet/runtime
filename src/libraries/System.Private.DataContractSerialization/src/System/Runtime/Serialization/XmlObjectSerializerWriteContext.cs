@@ -3,18 +3,20 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.DataContracts;
+using System.Security;
 using System.Text;
 using System.Xml;
-using System.Collections.Generic;
 using System.Xml.Serialization;
-using System.Security;
-using System.Runtime.CompilerServices;
+
 using ExtensionDataObject = System.Object;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -79,6 +81,7 @@ namespace System.Runtime.Serialization
             _isGetOnlyCollection = false;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void InternalSerializeReference(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -87,6 +90,7 @@ namespace System.Runtime.Serialization
             OnEndHandleReference(xmlWriter, obj, true /*canContainCyclicReference*/);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void InternalSerialize(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -117,12 +121,13 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void SerializeWithoutXsiType(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle declaredTypeHandle)
         {
             if (OnHandleIsReference(xmlWriter, dataContract, obj))
                 return;
-            if (dataContract.KnownDataContracts != null)
+            if (dataContract.KnownDataContracts?.Count > 0)
             {
                 scopedKnownTypes.Push(dataContract.KnownDataContracts);
                 WriteDataContractValue(dataContract, xmlWriter, obj, declaredTypeHandle);
@@ -134,13 +139,14 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void SerializeWithXsiTypeAtTopLevel(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle originalDeclaredTypeHandle, Type graphType)
         {
             Debug.Assert(rootTypeDataContract != null);
 
             bool verifyKnownType = false;
-            Type declaredType = rootTypeDataContract.UnderlyingType;
+            Type declaredType = rootTypeDataContract.OriginalUnderlyingType;
 
             if (declaredType.IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
@@ -156,6 +162,7 @@ namespace System.Runtime.Serialization
             SerializeAndVerifyType(dataContract, xmlWriter, obj, verifyKnownType, originalDeclaredTypeHandle, declaredType);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected virtual void SerializeWithXsiType(XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle objectTypeHandle, Type? objectType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, Type declaredType)
         {
@@ -220,11 +227,12 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected void SerializeAndVerifyType(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, bool verifyKnownType, RuntimeTypeHandle declaredTypeHandle, Type declaredType)
         {
             bool knownTypesAddedInCurrentScope = false;
-            if (dataContract.KnownDataContracts != null)
+            if (dataContract.KnownDataContracts?.Count > 0)
             {
                 scopedKnownTypes.Push(dataContract.KnownDataContracts);
                 knownTypesAddedInCurrentScope = true;
@@ -234,10 +242,10 @@ namespace System.Runtime.Serialization
             {
                 if (!IsKnownType(dataContract, declaredType))
                 {
-                    DataContract? knownContract = ResolveDataContractFromKnownTypes(dataContract.StableName.Name, dataContract.StableName.Namespace, null /*memberTypeContract*/, declaredType);
+                    DataContract? knownContract = ResolveDataContractFromKnownTypes(dataContract.XmlName.Name, dataContract.XmlName.Namespace, null /*memberTypeContract*/, declaredType);
                     if (knownContract == null || knownContract.UnderlyingType != dataContract.UnderlyingType)
                     {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DcTypeNotFoundOnSerialize, DataContract.GetClrTypeFullName(dataContract.UnderlyingType), dataContract.StableName.Name, dataContract.StableName.Namespace)));
+                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DcTypeNotFoundOnSerialize, DataContract.GetClrTypeFullName(dataContract.UnderlyingType), dataContract.XmlName.Name, dataContract.XmlName.Namespace)));
                     }
                 }
             }
@@ -280,6 +288,7 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteString(value);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void WriteString(XmlWriterDelegator xmlWriter, string? value, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -298,6 +307,7 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteBase64(value);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
         {
@@ -316,6 +326,7 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteUri(value);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
         {
@@ -334,6 +345,7 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteQName(value);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName? value, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -384,6 +396,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteNull(XmlWriterDelegator xmlWriter, Type memberType, bool isMemberTypeSerializable)
         {
@@ -391,6 +404,7 @@ namespace System.Runtime.Serialization
             WriteNull(xmlWriter);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteNull(XmlWriterDelegator xmlWriter, Type memberType, bool isMemberTypeSerializable, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -494,6 +508,7 @@ namespace System.Runtime.Serialization
             obj.GetObjectData(serInfo, context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void WriteISerializable(XmlWriterDelegator xmlWriter, ISerializable obj)
         {
@@ -501,15 +516,17 @@ namespace System.Runtime.Serialization
             var serInfo = new SerializationInfo(objType, XmlObjectSerializer.FormatterConverter /*!UnsafeTypeForwardingEnabled is always false*/);
             GetObjectData(obj, serInfo, GetStreamingContext());
 
-            if (!UnsafeTypeForwardingEnabled && serInfo.AssemblyName == Globals.MscorlibAssemblyName)
-            {
-                // Throw if a malicious type tries to set its assembly name to "0" to get deserialized in mscorlib
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ISerializableAssemblyNameSetToZero, DataContract.GetClrTypeFullName(obj.GetType()))));
-            }
+            // (!UnsafeTypeForwardingEnabled) is always false
+            //if (!UnsafeTypeForwardingEnabled && serInfo.AssemblyName == Globals.MscorlibAssemblyName)
+            //{
+            //    // Throw if a malicious type tries to set its assembly name to "0" to get deserialized in mscorlib
+            //    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ISerializableAssemblyNameSetToZero, DataContract.GetClrTypeFullName(obj.GetType()))));
+            //}
 
             WriteSerializationInfo(xmlWriter, objType, serInfo);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteSerializationInfo(XmlWriterDelegator xmlWriter, Type objType, SerializationInfo serInfo)
         {
@@ -526,7 +543,7 @@ namespace System.Runtime.Serialization
                 else
                 {
                     string typeName, typeNs;
-                    DataContract.GetDefaultStableName(serInfo.FullTypeName, out typeName, out typeNs);
+                    DataContract.GetDefaultXmlName(serInfo.FullTypeName, out typeName, out typeNs);
                     xmlWriter.WriteAttributeQualifiedName(Globals.SerPrefix, DictionaryGlobals.ISerializableFactoryTypeLocalName, DictionaryGlobals.SerializationNamespace, DataContract.GetClrTypeString(typeName), DataContract.GetClrTypeString(typeNs));
                 }
             }
@@ -551,6 +568,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected virtual void WriteDataContractValue(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -562,6 +580,7 @@ namespace System.Runtime.Serialization
             XmlObjectSerializer.WriteNull(xmlWriter);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void WriteResolvedTypeInfo(XmlWriterDelegator writer, Type objectType, Type declaredType)
         {
@@ -572,6 +591,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private bool ResolveType(Type objectType, Type declaredType, [NotNullWhen(true)] out XmlDictionaryString? typeName, [NotNullWhen(true)] out XmlDictionaryString? typeNamespace)
         {
@@ -599,6 +619,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected virtual bool WriteTypeInfo(XmlWriterDelegator writer, DataContract contract, DataContract declaredContract)
         {
@@ -628,6 +649,7 @@ namespace System.Runtime.Serialization
             writer.WriteAttributeQualifiedName(Globals.XsiPrefix, DictionaryGlobals.XsiTypeLocalName, DictionaryGlobals.SchemaInstanceNamespace, dataContractName, dataContractNamespace);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void WriteExtensionData(XmlWriterDelegator xmlWriter, ExtensionDataObject? extensionData, int memberIndex)
         {
@@ -648,6 +670,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void WriteExtensionDataMember(XmlWriterDelegator xmlWriter, ExtensionDataMember member)
         {
@@ -657,6 +680,7 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteEndElement();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void WriteExtensionDataTypeInfo(XmlWriterDelegator xmlWriter, IDataNode dataNode)
         {
@@ -666,6 +690,7 @@ namespace System.Runtime.Serialization
             WriteClrTypeInfo(xmlWriter, dataNode.DataType, dataNode.ClrTypeName, dataNode.ClrAssemblyName);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteExtensionDataValue(XmlWriterDelegator xmlWriter, IDataNode? dataNode)
         {
@@ -708,6 +733,7 @@ namespace System.Runtime.Serialization
                 OnEndHandleReference(xmlWriter, (dataNode.Value ?? dataNode), true  /*canContainCyclicReference*/);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool TryWriteDeserializedExtensionData(XmlWriterDelegator xmlWriter, IDataNode dataNode)
         {
@@ -720,6 +746,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void WriteExtensionClassData(XmlWriterDelegator xmlWriter, ClassDataNode dataNode)
         {
@@ -738,6 +765,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void WriteExtensionCollectionData(XmlWriterDelegator xmlWriter, CollectionDataNode dataNode)
         {
@@ -760,6 +788,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void WriteExtensionISerializableData(XmlWriterDelegator xmlWriter, ISerializableDataNode dataNode)
         {
@@ -784,6 +813,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void WriteExtensionXmlData(XmlWriterDelegator xmlWriter, XmlDataNode dataNode)
         {

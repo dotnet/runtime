@@ -75,7 +75,7 @@ static int __stdcall recursiveFtn() {
 
 /* Has mscorwks been instrumented so that calls are morphed into push XXXX call <helper> */
 static bool callsInstrumented() {
-        // Does the recusive function begin with push XXXX call <helper>
+        // Does the recursive function begin with push XXXX call <helper>
     PTR_BYTE ptr = PTR_BYTE(recursiveFtn);
 
     return (ptr[0] == 0x68 && ptr[5] == 0xe8);    // PUSH XXXX, call <helper>
@@ -393,7 +393,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
     // VC now has small helper calls that it uses in epilogs.  We need to walk into these
     // helpers if we are to decode the stack properly.  After we walk the helper we need
-    // to return and continue walking the epiliog.  This varaible remembers were to return to
+    // to return and continue walking the epiliog.  This variable remembers were to return to
     PTR_BYTE epilogCallRet = PTR_BYTE((TADDR)0);
 
     // The very first conditional jump that we are going to encounter is

@@ -63,7 +63,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         }
 
         /// <summary>
-        /// Parent RID to use for any unknown AdditionalRuntimeIdentifer.
+        /// Parent RID to use for any unknown AdditionalRuntimeIdentifier.
         /// </summary>
         public string AdditionalRuntimeIdentifierParent
         {

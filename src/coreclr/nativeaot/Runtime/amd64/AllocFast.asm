@@ -218,7 +218,7 @@ NESTED_ENTRY RhpNewArrayRare, _TEXT
         ; passing MethodTable in rcx
         mov         r8, rdx         ; numElements
         xor         rdx, rdx        ; uFlags
-        ; pasing pTransitionFrame in r9
+        ; passing pTransitionFrame in r9
 
         ; Call the rest of the allocation helper.
         ; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)

@@ -1,4 +1,4 @@
-//===------------------------- EHHeaderParser.hpp -------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -108,6 +108,8 @@ bool EHHeaderParser<A>::findFDE(A &addressSpace, pint_t pc, pint_t ehHdrStart,
   if (!EHHeaderParser<A>::decodeEHHdr(addressSpace, ehHdrStart, ehHdrEnd,
                                       hdrInfo))
     return false;
+
+  if (hdrInfo.fde_count == 0) return false;
 
   size_t tableEntrySize = getTableEntrySize(hdrInfo.table_enc);
   pint_t tableEntry;

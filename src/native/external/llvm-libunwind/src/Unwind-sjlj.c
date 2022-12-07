@@ -1,4 +1,4 @@
-//===--------------------------- Unwind-sjlj.c ----------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -32,14 +32,26 @@ struct _Unwind_FunctionContext {
   // next function in stack of handlers
   struct _Unwind_FunctionContext *prev;
 
+#if defined(__ve__)
+  // VE requires to store 64 bit pointers in the buffer for SjLj execption.
+  // We expand the size of values defined here.  This size must be matched
+  // to the size returned by TargetMachine::getSjLjDataSize().
+
+  // set by calling function before registering to be the landing pad
+  uint64_t                        resumeLocation;
+
+  // set by personality handler to be parameters passed to landing pad function
+  uint64_t                        resumeParameters[4];
+#else
   // set by calling function before registering to be the landing pad
   uint32_t                        resumeLocation;
 
   // set by personality handler to be parameters passed to landing pad function
   uint32_t                        resumeParameters[4];
+#endif
 
   // set by calling function before registering
-  __personality_routine           personality; // arm offset=24
+  _Unwind_Personality_Fn personality;          // arm offset=24
   uintptr_t                       lsda;        // arm offset=28
 
   // variable length array, contains registers to restore
@@ -268,7 +280,7 @@ unwind_phase2_forced(struct _Unwind_Exception *exception_object,
 
     // if there is a personality routine, tell it we are unwinding
     if (c->personality != NULL) {
-      __personality_routine p = (__personality_routine) c->personality;
+      _Unwind_Personality_Fn p = (_Unwind_Personality_Fn)c->personality;
       _LIBUNWIND_TRACE_UNWINDING("unwind_phase2_forced(ex_ojb=%p): "
                                  "calling personality function %p",
                                  (void *)exception_object, (void *)p);

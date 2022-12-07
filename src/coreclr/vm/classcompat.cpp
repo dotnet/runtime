@@ -1415,7 +1415,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
 
                     if (i >= NumDeclaredMethods())
                     {
-                        // if this interface has been layed out by our parent then
+                        // if this interface has been laid out by our parent then
                         // we do not need to define a new method desc for it
                         if(fParentInterface)
                         {
@@ -1460,7 +1460,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                     }
                     else
                     {
-                        // Found as declared method in class. If the interface was layed out by the parent we
+                        // Found as declared method in class. If the interface was laid out by the parent we
                         // will be overridding their slot so our method counts do not increase. We will fold
                         // our method into our parent's interface if we have not been placed.
                         if(fParentInterface)
@@ -1861,7 +1861,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceParentDeclaration(
 
     BOOL fRet = FALSE;
 
-    // Verify that the class of the declaration is in our heirarchy
+    // Verify that the class of the declaration is in our hierarchy
     MethodTable* declType = pDecl->GetMethodTable();
     MethodTable* pParentMT = bmtParent->pParentMethodTable;
     while(pParentMT != NULL)

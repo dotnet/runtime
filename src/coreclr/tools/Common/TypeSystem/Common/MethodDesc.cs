@@ -12,7 +12,6 @@ namespace Internal.TypeSystem
     public enum MethodSignatureFlags
     {
         None = 0x0000,
-        // TODO: Generic, etc.
 
         UnmanagedCallingConventionMask       = 0x000F,
         UnmanagedCallingConventionCdecl      = 0x0001,
@@ -61,7 +60,7 @@ namespace Internal.TypeSystem
         }
 
         // Provide a means to create a MethodSignature which ignores EmbeddedSignature data in the MethodSignatures it is compared to
-        public static EmbeddedSignatureData[] EmbeddedSignatureMismatchPermittedFlag = new EmbeddedSignatureData[0];
+        public static EmbeddedSignatureData[] EmbeddedSignatureMismatchPermittedFlag = Array.Empty<EmbeddedSignatureData>();
 
         public MethodSignature(MethodSignatureFlags flags, int genericParameterCount, TypeDesc returnType, TypeDesc[] parameters, EmbeddedSignatureData[] embeddedSignatureData = null)
         {
@@ -203,7 +202,6 @@ namespace Internal.TypeSystem
 
         private bool Equals(MethodSignature otherSignature, bool allowCovariantReturn)
         {
-            // TODO: Generics, etc.
             if (this._flags != otherSignature._flags)
                 return false;
 
@@ -249,12 +247,15 @@ namespace Internal.TypeSystem
 
                 for (int i = 0; i < this._embeddedSignatureData.Length; i++)
                 {
-                    if (this._embeddedSignatureData[i].index != otherSignature._embeddedSignatureData[i].index)
+                    ref EmbeddedSignatureData thisData = ref this._embeddedSignatureData[i];
+                    ref EmbeddedSignatureData otherData = ref otherSignature._embeddedSignatureData[i];
+
+                    if (thisData.index != otherData.index ||
+                        thisData.kind != otherData.kind ||
+                        thisData.type != otherData.type)
+                    {
                         return false;
-                    if (this._embeddedSignatureData[i].kind != otherSignature._embeddedSignatureData[i].kind)
-                        return false;
-                    if (this._embeddedSignatureData[i].type != otherSignature._embeddedSignatureData[i].type)
-                        return false;
+                    }
                 }
 
                 return true;
@@ -314,7 +315,7 @@ namespace Internal.TypeSystem
         private int _genericParameterCount;
         private TypeDesc _returnType;
         private TypeDesc[] _parameters;
-        private EmbeddedSignatureData[] _customModifiers;
+        private EmbeddedSignatureData[] _embeddedSignatureData;
 
         public MethodSignatureBuilder(MethodSignature template)
         {
@@ -324,7 +325,7 @@ namespace Internal.TypeSystem
             _genericParameterCount = template._genericParameterCount;
             _returnType = template._returnType;
             _parameters = template._parameters;
-            _customModifiers = template._embeddedSignatureData;
+            _embeddedSignatureData = template._embeddedSignatureData;
         }
 
         public MethodSignatureFlags Flags
@@ -371,15 +372,21 @@ namespace Internal.TypeSystem
             }
         }
 
+        public void SetEmbeddedSignatureData(EmbeddedSignatureData[] embeddedSignatureData)
+        {
+            _embeddedSignatureData = embeddedSignatureData;
+        }
+
         public MethodSignature ToSignature()
         {
             if (_template == null ||
                 _flags != _template._flags ||
                 _genericParameterCount != _template._genericParameterCount ||
                 _returnType != _template._returnType ||
-                _parameters != _template._parameters)
+                _parameters != _template._parameters ||
+                _embeddedSignatureData != _template._embeddedSignatureData)
             {
-                _template = new MethodSignature(_flags, _genericParameterCount, _returnType, _parameters, _customModifiers);
+                _template = new MethodSignature(_flags, _genericParameterCount, _returnType, _parameters, _embeddedSignatureData);
             }
 
             return _template;
@@ -438,8 +445,8 @@ namespace Internal.TypeSystem
         public override bool Equals(object o)
         {
             // Its only valid to compare two MethodDescs in the same context
-            Debug.Assert(o is not MethodDesc || object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
-            return object.ReferenceEquals(this, o);
+            Debug.Assert(o is not MethodDesc || ReferenceEquals(((MethodDesc)o).Context, this.Context));
+            return ReferenceEquals(this, o);
         }
 
         /// <summary>

@@ -37,39 +37,32 @@ namespace System.Reflection.Runtime.CustomAttributes
 
         public sealed override string ToString()
         {
-            try
-            {
-                string ctorArgs = "";
-                IList<CustomAttributeTypedArgument> constructorArguments = GetConstructorArguments(throwIfMissingMetadata: false);
-                if (constructorArguments == null)
-                    return LastResortToString;
-                for (int i = 0; i < constructorArguments.Count; i++)
-                    ctorArgs += string.Format(i == 0 ? "{0}" : ", {0}", ComputeTypedArgumentString(constructorArguments[i], typed: false));
-
-                string namedArgs = "";
-                IList<CustomAttributeNamedArgument> namedArguments = GetNamedArguments(throwIfMissingMetadata: false);
-                if (namedArguments == null)
-                    return LastResortToString;
-                for (int i = 0; i < namedArguments.Count; i++)
-                {
-                    CustomAttributeNamedArgument namedArgument = namedArguments[i];
-
-                    // Legacy: Desktop sets "typed" to "namedArgument.ArgumentType != typeof(Object)" - on Project N, this property is not available
-                    // (nor conveniently computable as it's not captured in the Project N metadata.) The only consequence is that for
-                    // the rare case of fields and properties typed "Object", we won't decorate the argument value with its actual type name.
-                    bool typed = true;
-                    namedArgs += string.Format(
-                        i == 0 && ctorArgs.Length == 0 ? "{0} = {1}" : ", {0} = {1}",
-                        namedArgument.MemberName,
-                        ComputeTypedArgumentString(namedArgument.TypedValue, typed));
-                }
-
-                return string.Format("[{0}({1}{2})]", AttributeTypeString, ctorArgs, namedArgs);
-            }
-            catch (MissingMetadataException)
-            {
+            string ctorArgs = "";
+            IList<CustomAttributeTypedArgument> constructorArguments = GetConstructorArguments(throwIfMissingMetadata: false);
+            if (constructorArguments == null)
                 return LastResortToString;
+            for (int i = 0; i < constructorArguments.Count; i++)
+                ctorArgs += string.Format(i == 0 ? "{0}" : ", {0}", ComputeTypedArgumentString(constructorArguments[i], typed: false));
+
+            string namedArgs = "";
+            IList<CustomAttributeNamedArgument> namedArguments = GetNamedArguments(throwIfMissingMetadata: false);
+            if (namedArguments == null)
+                return LastResortToString;
+            for (int i = 0; i < namedArguments.Count; i++)
+            {
+                CustomAttributeNamedArgument namedArgument = namedArguments[i];
+
+                // Legacy: Desktop sets "typed" to "namedArgument.ArgumentType != typeof(Object)" - on Project N, this property is not available
+                // (nor conveniently computable as it's not captured in the Project N metadata.) The only consequence is that for
+                // the rare case of fields and properties typed "Object", we won't decorate the argument value with its actual type name.
+                bool typed = true;
+                namedArgs += string.Format(
+                    i == 0 && ctorArgs.Length == 0 ? "{0} = {1}" : ", {0} = {1}",
+                    namedArgument.MemberName,
+                    ComputeTypedArgumentString(namedArgument.TypedValue, typed));
             }
+
+            return string.Format("[{0}({1}{2})]", AttributeType.FormatTypeNameForReflection(), ctorArgs, namedArgs);
         }
 
         protected static ConstructorInfo ResolveAttributeConstructor(
@@ -95,15 +88,13 @@ namespace System.Reflection.Runtime.CustomAttributes
             throw new MissingMethodException();
         }
 
-        internal abstract string AttributeTypeString { get; }
-
         //
-        // If throwIfMissingMetadata is false, returns null rather than throwing a MissingMetadataException.
+        // If throwIfMissingMetadata is false, returns null rather than throwing a missing metadata exception.
         //
         internal abstract IList<CustomAttributeTypedArgument> GetConstructorArguments(bool throwIfMissingMetadata);
 
         //
-        // If throwIfMissingMetadata is false, returns null rather than throwing a MissingMetadataException.
+        // If throwIfMissingMetadata is false, returns null rather than throwing a missing metadata exception.
         //
         internal abstract IList<CustomAttributeNamedArgument> GetNamedArguments(bool throwIfMissingMetadata);
 

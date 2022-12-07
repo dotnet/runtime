@@ -11,6 +11,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out JSObject? value)
         {
@@ -19,13 +20,14 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            value = JavaScriptExports.CreateCSOwnedProxy(slot.JSHandle);
+            value = JSHostImplementation.CreateCSOwnedProxy(slot.JSHandle);
         }
 
         /// <summary>
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(JSObject? value)
         {
@@ -49,6 +51,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out JSObject?[]? value)
         {
@@ -74,6 +77,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToJS(JSObject?[] value)
         {

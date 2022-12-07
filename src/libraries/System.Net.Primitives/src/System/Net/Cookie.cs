@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -41,8 +42,10 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        internal static readonly char[] ReservedToName = new char[] { '\t', '\r', '\n', '=', ';', ',' };
-        internal static readonly char[] ReservedToValue = new char[] { ';', ',' };
+        private static readonly IndexOfAnyValues<char> s_reservedToNameChars = IndexOfAnyValues.Create("\t\r\n=;,");
+
+        private static readonly IndexOfAnyValues<char> s_domainChars =
+            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -239,7 +242,7 @@ namespace System.Net
                 || value.StartsWith('$')
                 || value.StartsWith(' ')
                 || value.EndsWith(' ')
-                || value.IndexOfAny(ReservedToName) >= 0)
+                || value.AsSpan().IndexOfAny(s_reservedToNameChars) >= 0)
             {
                 m_name = string.Empty;
                 return false;
@@ -347,7 +350,7 @@ namespace System.Net
                 m_name.StartsWith('$') ||
                 m_name.StartsWith(' ') ||
                 m_name.EndsWith(' ') ||
-                m_name.IndexOfAny(ReservedToName) >= 0)
+                m_name.AsSpan().IndexOfAny(s_reservedToNameChars) >= 0)
             {
                 if (shouldThrow)
                 {
@@ -358,7 +361,7 @@ namespace System.Net
 
             // Check the value
             if (m_value == null ||
-                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.IndexOfAny(ReservedToValue) >= 0))
+                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().IndexOfAny(';', ',') >= 0))
             {
                 if (shouldThrow)
                 {
@@ -369,7 +372,7 @@ namespace System.Net
 
             // Check Comment syntax
             if (Comment != null && !(Comment.Length > 2 && Comment.StartsWith('\"') && Comment.EndsWith('\"'))
-                && (Comment.IndexOfAny(ReservedToValue) >= 0))
+                && (Comment.AsSpan().IndexOfAny(';', ',') >= 0))
             {
                 if (shouldThrow)
                 {
@@ -380,7 +383,7 @@ namespace System.Net
 
             // Check Path syntax
             if (Path != null && !(Path.Length > 2 && Path.StartsWith('\"') && Path.EndsWith('\"'))
-                && (Path.IndexOfAny(ReservedToValue) >= 0))
+                && (Path.AsSpan().IndexOfAny(';', ',') != -1))
             {
                 if (shouldThrow)
                 {
@@ -560,22 +563,9 @@ namespace System.Net
 
         // Very primitive test to make sure that the name does not have illegal characters
         // as per RFC 952 (relaxed on first char could be a digit and string can have '_').
-        private static bool DomainCharsTest(string name)
-        {
-            if (name == null || name.Length == 0)
-            {
-                return false;
-            }
-            for (int i = 0; i < name.Length; ++i)
-            {
-                char ch = name[i];
-                if (!(char.IsAsciiLetterOrDigit(ch) || ch == '.' || ch == '-' || ch == '_'))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+        private static bool DomainCharsTest(string name) =>
+            !string.IsNullOrEmpty(name) &&
+            name.AsSpan().IndexOfAnyExcept(s_domainChars) < 0;
 
         [AllowNull]
         public string Port
@@ -586,14 +576,17 @@ namespace System.Net
             }
             set
             {
-                m_port_implicit = false;
                 if (string.IsNullOrEmpty(value))
                 {
                     // "Port" is present but has no value.
+                    // Therefore; the effective port value is implicit.
+                    m_port_implicit = true;
                     m_port = string.Empty;
                 }
                 else
                 {
+                    // "Port" value is present, so we use the provided value rather than an implicit one.
+                    m_port_implicit = false;
                     // Parse port list
                     if (!value.StartsWith('\"') || !value.EndsWith('\"'))
                     {

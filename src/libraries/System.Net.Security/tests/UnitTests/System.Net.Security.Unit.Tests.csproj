@@ -13,8 +13,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
-    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
-    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -130,6 +128,8 @@
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.PackageType.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.PackageType.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"

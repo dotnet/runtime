@@ -76,7 +76,7 @@ namespace System.ComponentModel.Composition
         private static readonly ConstructorInfo ObjectCtor = typeof(object).GetConstructor(Type.EmptyTypes)!;
 
         // Must be called with _lock held
-        private static ModuleBuilder GetProxyModuleBuilder(bool requiresCritical)
+        private static ModuleBuilder GetProxyModuleBuilder()
         {
             if (transparentProxyModuleBuilder == null)
             {
@@ -184,9 +184,8 @@ namespace System.ComponentModel.Composition
             Type? proxyType;
             TypeBuilder proxyTypeBuilder;
             Type[] interfaces = { viewType };
-            bool requiresCritical = false;
 
-            var proxyModuleBuilder = GetProxyModuleBuilder(requiresCritical);
+            var proxyModuleBuilder = GetProxyModuleBuilder();
             proxyTypeBuilder = proxyModuleBuilder.DefineType(
                 $"_proxy_{viewType.FullName}_{Guid.NewGuid()}",
                 TypeAttributes.Public,
@@ -362,7 +361,7 @@ namespace System.ComponentModel.Composition
             // Finished implementing the constructor
             proxyCtorIL.Emit(OpCodes.Ret);
 
-            // Implemet the static factory
+            // Implement the static factory
             // public object Create(IDictionary<string, object>)
             // {
             //    return new <ProxyClass>(dictionary);

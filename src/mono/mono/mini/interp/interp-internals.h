@@ -20,6 +20,7 @@
 #define MINT_TYPE_R8 7
 #define MINT_TYPE_O  8
 #define MINT_TYPE_VT 9
+#define MINT_TYPE_VOID 10
 
 #define INLINED_METHOD_FLAG 0xffff
 #define TRACING_FLAG 0x1
@@ -297,6 +298,40 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 void
 mono_interp_error_cleanup (MonoError *error);
 
+gboolean
+mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method);
+
+#if HOST_BROWSER
+
+gboolean
+mono_jiterp_isinst (MonoObject* object, MonoClass* klass);
+
+void
+mono_jiterp_check_pending_unwind (ThreadContext *context);
+
+void *
+mono_jiterp_get_context (void);
+
+int
+mono_jiterp_overflow_check_i4 (gint32 lhs, gint32 rhs, int opcode);
+
+int
+mono_jiterp_overflow_check_u4 (guint32 lhs, guint32 rhs, int opcode);
+
+void
+mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source);
+
+int
+mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data);
+
+int
+mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data);
+
+gpointer
+mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size);
+
+#endif
+
 static inline int
 mint_type(MonoType *type)
 {
@@ -346,6 +381,8 @@ enum_type:
 	case MONO_TYPE_GENERICINST:
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto enum_type;
+	case MONO_TYPE_VOID:
+		return MINT_TYPE_VOID;
 	default:
 		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();

@@ -992,9 +992,6 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
         ThreadStore::AttachCurrentThread();
         Thread* pThread = ThreadStore::GetCurrentThread();
 
-        // Doing this prevents the GC from trying to walk this thread's stack for roots.
-        pThread->SetGCSpecial(true);
-
         // While doing the GC, much code assumes & asserts the thread doing the GC is in
         // cooperative mode.
         pThread->DisablePreemptiveMode();
@@ -1382,7 +1379,7 @@ void BulkTypeEventLogger::Cleanup() {}
 // Arguments:
 //      * thAsAddr - Type to batch
 //      * typeLogBehavior - Reminder of whether the type system log lock is held
-//          (useful if we need to recurively call back into TypeSystemLog), and whether
+//          (useful if we need to recursively call back into TypeSystemLog), and whether
 //          we even care to check if the type was already logged
 //
 
@@ -2283,7 +2280,7 @@ void ETW::TypeSystemLog::PostRegistrationInit()
         // Determine if a COMPLUS env var is overriding the frequency for the sampled
         // object allocated events
 
-        // Config value intentionally typed as string, b/c DWORD intepretation is hard-coded
+        // Config value intentionally typed as string, b/c DWORD interpretation is hard-coded
         // to hex, which is not what the user would expect.  This way I can force the
         // conversion to use decimal.
         NewArrayHolder<WCHAR> wszCustomObjectAllocationEventsPerTypePerSec(NULL);
@@ -2323,7 +2320,7 @@ void ETW::TypeSystemLog::OnKeywordsChanged()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // If the desired frequencey for the GCSampledObjectAllocation events has changed,
+    // If the desired frequency for the GCSampledObjectAllocation events has changed,
     // update our state.
     s_fHeapAllocLowEventEnabledNow = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_GCHEAPALLOCLOW_KEYWORD);
     s_fHeapAllocHighEventEnabledNow = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, TRACE_LEVEL_INFORMATION, CLR_GCHEAPALLOCHIGH_KEYWORD);
@@ -3579,9 +3576,9 @@ INT32 WideCharToMultiByte(LPCWSTR wszSrcStr, LPSTR szDstStr);
 
 #include <rotor_pal.h>
 
-// The possible value of COMPlus_ETWEnabled should be '0' or '1'
+// The possible value of DOTNET_ETWEnabled or COMPlus_ETWEnabled should be '0' or '1'
 #define SIZE_ETWEnabled 2
-// The possible value of COMPlus_EventInfo should be a string in the following format:
+// The possible value of DOTNET_ETWEnabled or COMPlus_EventInfo should be a string in the following format:
 // GUID:HexNumfer:Level
 // GUID: For example e13c0d23-ccbc-4e12-931b-d9cc2eee27e4 (36 bytes)
 // HewNumber: 0xffffffff (10 bytes)
@@ -3591,21 +3588,24 @@ INT32 WideCharToMultiByte(LPCWSTR wszSrcStr, LPSTR szDstStr);
 
 ULONG ETW::CEtwTracer::Register()
 {
-    // Get Env Var COMPlus_ETWEnabled
-    char szETWEnabled[SIZE_ETWEnabled];
-    DWORD newLen = GetEnvironmentVariableA("COMPlus_ETWEnabled", szETWEnabled, SIZE_ETWEnabled);
+    // Get Env Var DOTNET_ETWEnabled or COMPlus_ETWEnabled
+    char szETWEnabled[SIZE_ETWEnabled] = { '\0' };
+    DWORD newLen = GetEnvironmentVariableA("DOTNET_ETWEnabled", szETWEnabled, SIZE_ETWEnabled);
+    newLen = szETWEnabled[0] != '\0' ? newLen : GetEnvironmentVariableA("COMPlus_ETWEnabled", szETWEnabled, SIZE_ETWEnabled);
     if (newLen == 0 || newLen >= SIZE_ETWEnabled || strcmp(szETWEnabled, "1") != 0)
         return 0;
 
-    // Get Env Var COMPlus_EventInfo
-    char szEventInfo[SIZE_EventInfo];
-    newLen = GetEnvironmentVariableA("COMPlus_EventInfo", szEventInfo, SIZE_EventInfo);
+    // Get Env Var DOTNET_EventInfo or COMPlus_EventInfo
+    char szEventInfo[SIZE_EventInfo] = { '\0' };
+    newLen = GetEnvironmentVariableA("DOTNET_EventInfo", szEventInfo, SIZE_EventInfo);
+    newLen = szEventInfo[0] != '\0' ? newLen : GetEnvironmentVariableA("COMPlus_EventInfo", szEventInfo, SIZE_EventInfo);
     if (newLen == 0 || newLen >= SIZE_EventInfo || strchr(szEventInfo, ' ') != NULL)
         return 0;
 
-    // Get Env Var COMPlus_EventLogFileName
-    char szEventLogFN[_MAX_FNAME];
-    newLen = GetEnvironmentVariableA("COMPlus_EventLogFileName", szEventLogFN, _MAX_FNAME);
+    // Get Env Var DOTNET_EventLogFileName or COMPlus_EventLogFileName
+    char szEventLogFN[_MAX_FNAME] = { '\0' };
+    newLen = GetEnvironmentVariableA("DOTNET_EventLogFileName", szEventLogFN, _MAX_FNAME);
+    newLen = szEventLogFN[0] != '\0' ? newLen : GetEnvironmentVariableA("COMPlus_EventLogFileName", szEventLogFN, _MAX_FNAME);
     if (newLen == 0 || newLen >= _MAX_FNAME || strchr(szEventLogFN, '|') != NULL)
         return 0;
     char szEventLogFullPath[_MAX_PATH];
@@ -3842,7 +3842,9 @@ void ETW::ExceptionLog::ExceptionThrown(CrawlFrame* pCf, BOOL bIsReThrownExcepti
             OBJECTREF innerExceptionObj;
             STRINGREF exceptionMessageRef;
         } gc;
-        ZeroMemory(&gc, sizeof(gc));
+        gc.exceptionObj = NULL;
+        gc.innerExceptionObj = NULL;
+        gc.exceptionMessageRef = NULL;
         GCPROTECT_BEGIN(gc);
 
         gc.exceptionObj = pThread->GetThrowable();
@@ -4039,7 +4041,7 @@ void ETW::InfoLog::RuntimeInformation(INT32 type)
                 CLRHosted() || g_fEEHostedStartup || //CLR started through one of the Hosting API CLRHosted() returns true if CLR started through the V2 Interface while
                                                     // g_fEEHostedStartup is true if CLR is hosted through the V1 API.
                 g_fEEComActivatedStartup ||      //CLR started as a COM object
-                g_fEEOtherStartup);            //In case none of the 4 above mentioned cases are true for example ngen, ildasm then we asssume its a "other" startup
+                g_fEEOtherStartup);            //In case none of the 4 above mentioned cases are true for example ngen, ildasm then we assume its a "other" startup
 
 #ifdef FEATURE_CORECLR
             Sku = ETW::InfoLog::InfoStructs::CoreCLR;
@@ -4053,7 +4055,7 @@ void ETW::InfoLog::RuntimeInformation(INT32 type)
             USHORT vmBuildVersion = VER_PRODUCTBUILD;
             USHORT vmQfeVersion = VER_PRODUCTBUILD_QFE;
 
-            //version info for mscorlib.dll
+            //version info for System.Private.CoreLib.dll
             USHORT bclMajorVersion = VER_ASSEMBLYMAJORVERSION;
             USHORT bclMinorVersion = VER_ASSEMBLYMINORVERSION;
             USHORT bclBuildVersion = VER_ASSEMBLYBUILD;
@@ -4704,7 +4706,7 @@ void ETW::EnumerationLog::ProcessShutdown()
 
 /****************************************************************************/
 /****************************************************************************/
-/* Begining of helper functions */
+/* Beginning of helper functions */
 /****************************************************************************/
 /****************************************************************************/
 
@@ -5063,7 +5065,7 @@ static void GetCodeViewInfo(Module* pModule, CV_INFO_PDB70* pCvInfoIL, CV_INFO_P
         if (cbDebugData < (offsetof(CV_INFO_PDB70, magic) + sizeof(((CV_INFO_PDB70*)0)->magic)))
         {
             // raw data too small to contain magic number at expected spot, so its format
-            // is not recognizeable. Skip
+            // is not recognizable. Skip
             continue;
         }
 
@@ -5495,7 +5497,7 @@ void ETW::MethodLog::SendMethodEvent(MethodDesc* pMethodDesc, DWORD dwEventOptio
     ulColdMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::ColdSection; // Method Extent (bits 28, 29, 30, 31)
     ulMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::HotSection;         // Method Extent (bits 28, 29, 30, 31)
 
-    // MethodDesc ==> Code Address ==>JitMananger
+    // MethodDesc ==> Code Address ==>JitManager
     TADDR start = pCode ? pCode : PCODEToPINSTR(pMethodDesc->GetNativeCode());
     if (start == 0) {
         // this method hasn't been jitted
@@ -6162,7 +6164,7 @@ void ETW::EnumerationLog::IterateDomain(BaseDomain* pDomain, DWORD enumerationOp
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     // Do not call IterateDomain() directly with an AppDomain.  Use
-    // IterateAppDomain(), whch wraps this function with a hold on the
+    // IterateAppDomain(), which wraps this function with a hold on the
     // SystemDomain lock, which ensures pDomain's type data doesn't disappear
     // on us.
     if (pDomain->IsAppDomain())
@@ -6485,18 +6487,15 @@ void ETW::EnumerationLog::EnumerationHelper(Module* moduleFilter, BaseDomain* do
         }
         else
         {
-            AppDomainIterator appDomainIterator(FALSE);
-            while (appDomainIterator.Next())
+            AppDomain * pDomain = AppDomain::GetCurrentDomain();
+            if (pDomain != NULL)
             {
-                AppDomain* pDomain = appDomainIterator.GetDomain();
-                if (pDomain != NULL)
-                {
-                    // See code:#TableLockHolder
-                    ReJitManager::TableLockHolder lkRejitMgrAD(pDomain->GetReJitManager());
+                // See code:#TableLockHolder
+                ReJitManager::TableLockHolder lkRejitMgrAD(pDomain->GetReJitManager());
 
-                    ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
-                }
+                ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
             }
+
             ETW::EnumerationLog::IterateDomain(SharedDomain::GetDomain(), enumerationOptions);
         }
     }

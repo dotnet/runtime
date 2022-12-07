@@ -690,7 +690,11 @@ class CrstBase;
 class BulkTypeEventLogger;
 class TypeHandle;
 class Thread;
-
+template<typename ELEMENT, typename TRAITS>
+class SetSHash;
+template<typename ELEMENT>
+class PtrSetSHashTraits;
+typedef SetSHash<MethodDesc*, PtrSetSHashTraits<MethodDesc*>> MethodDescSet;
 
 // All ETW helpers must be a part of this namespace
 // We have auto-generated macros to directly fire the events
@@ -903,8 +907,8 @@ namespace ETW
         static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
         static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
         static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId);
-        static VOID SendMethodRichDebugInfo(MethodDesc * pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId);
-        static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, PCODE pNativeCodeStartAddress = 0, PrepareCodeConfig *pConfig = NULL);
+        static VOID SendMethodRichDebugInfo(MethodDesc * pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId, MethodDescSet* sentMethodDetailsSet);
+        static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, PCODE pNativeCodeStartAddress = 0, PrepareCodeConfig *pConfig = NULL, MethodDescSet* sentMethodDetailsSet = NULL);
         static VOID SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
     public:
         typedef union _MethodStructs
@@ -937,6 +941,7 @@ namespace ETW
         static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature);
         static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig);
         static VOID SendMethodDetailsEvent(MethodDesc *pMethodDesc);
+        static VOID SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set);
         static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
         static VOID StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers);
         static VOID MethodRestored(MethodDesc * pMethodDesc);

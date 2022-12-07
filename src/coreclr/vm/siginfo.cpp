@@ -492,7 +492,7 @@ void Signature::PrettyPrint(const CHAR * pszMethodName,
 
 //---------------------------------------------------------------------------------------
 //
-// Get the raw signature pointer contained in this Siganture.
+// Get the raw signature pointer contained in this Signature.
 //
 // Return Value:
 //    the raw signature pointer
@@ -511,7 +511,7 @@ PCCOR_SIGNATURE Signature::GetRawSig() const
 
 //---------------------------------------------------------------------------------------
 //
-// Get the length of the raw signature contained in this Siganture.
+// Get the length of the raw signature contained in this Signature.
 //
 // Return Value:
 //    the length of the raw signature
@@ -1868,121 +1868,6 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
 
 
 #ifndef DACCESS_COMPILE
-
-// Does this type contain class or method type parameters whose instantiation cannot
-// be determined at JIT-compile time from the instantiations in the method context?
-// Return a combination of hasClassVar and hasMethodVar flags.
-// See header file for more info.
-VarKind SigPointer::IsPolyType(const SigTypeContext *pTypeContext) const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    SigPointer psig = *this;
-    CorElementType typ;
-
-    if (FAILED(psig.GetElemType(&typ)))
-        return hasNoVars;
-
-    switch(typ) {
-        case ELEMENT_TYPE_VAR:
-        case ELEMENT_TYPE_MVAR:
-        {
-            VarKind res = (typ == ELEMENT_TYPE_VAR ? hasClassVar : hasMethodVar);
-            if (pTypeContext != NULL)
-            {
-                TypeHandle ty = psig.GetTypeVariable(typ, pTypeContext);
-                if (ty.IsCanonicalSubtype())
-                    res = (VarKind) (res | (typ == ELEMENT_TYPE_VAR ? hasSharableClassVar : hasSharableMethodVar));
-            }
-            return (res);
-        }
-
-        case ELEMENT_TYPE_U:
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_STRING:
-        case ELEMENT_TYPE_OBJECT:
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_BOOLEAN:
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_CHAR:
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-        case ELEMENT_TYPE_R4:
-        case ELEMENT_TYPE_R8:
-        case ELEMENT_TYPE_VOID:
-        case ELEMENT_TYPE_CLASS:
-        case ELEMENT_TYPE_VALUETYPE:
-        case ELEMENT_TYPE_TYPEDBYREF:
-            return(hasNoVars);
-
-        case ELEMENT_TYPE_GENERICINST:
-          {
-            VarKind k = psig.IsPolyType(pTypeContext);
-            if (FAILED(psig.SkipExactlyOne()))
-                return hasNoVars;
-
-            uint32_t ntypars;
-            if(FAILED(psig.GetData(&ntypars)))
-                return hasNoVars;
-
-            for (uint32_t i = 0; i < ntypars; i++)
-            {
-              k = (VarKind) (psig.IsPolyType(pTypeContext) | k);
-              if (FAILED(psig.SkipExactlyOne()))
-                return hasNoVars;
-            }
-            return(k);
-          }
-
-        case ELEMENT_TYPE_ARRAY:
-        case ELEMENT_TYPE_SZARRAY:
-        case ELEMENT_TYPE_PINNED:
-        case ELEMENT_TYPE_BYREF:
-        case ELEMENT_TYPE_PTR:
-        {
-            return(psig.IsPolyType(pTypeContext));
-        }
-
-        case ELEMENT_TYPE_FNPTR:
-        {
-            if (FAILED(psig.GetData(NULL)))
-                return hasNoVars;
-
-            // Get arg count;
-            uint32_t cArgs;
-            if (FAILED(psig.GetData(&cArgs)))
-                return hasNoVars;
-
-            VarKind k = psig.IsPolyType(pTypeContext);
-            if (FAILED(psig.SkipExactlyOne()))
-                return hasNoVars;
-
-            for (unsigned i = 0; i < cArgs; i++)
-            {
-                k = (VarKind) (psig.IsPolyType(pTypeContext) | k);
-                if (FAILED(psig.SkipExactlyOne()))
-                    return hasNoVars;
-            }
-
-            return(k);
-        }
-
-        default:
-            BAD_FORMAT_NOTHROW_ASSERT(!"Bad type");
-    }
-    return(hasNoVars);
-}
 
 BOOL SigPointer::IsStringType(Module* pModule, const SigTypeContext *pTypeContext) const
 {
@@ -4808,7 +4693,7 @@ BOOL MetaSig::CompareMethodConstraints(const Substitution *pSubst1,
                                        mdMethodDef tok1, //implementation
                                        const Substitution *pSubst2,
                                        Module *pModule2,
-                                       mdMethodDef tok2) //declaration w.r.t subsitution
+                                       mdMethodDef tok2) //declaration w.r.t substitution
 {
     CONTRACTL
     {

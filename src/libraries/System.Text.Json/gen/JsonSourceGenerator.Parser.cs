@@ -40,6 +40,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
+            private const string JsonRequiredAttributeFullName = "System.Text.Json.Serialization.JsonRequiredAttribute";
             private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
@@ -100,7 +101,7 @@ namespace System.Text.Json.SourceGeneration
 
             // Unsupported types
             private readonly Type _delegateType;
-            private readonly Type _typeType;
+            private readonly Type _memberInfoType;
             private readonly Type _serializationInfoType;
             private readonly Type _intPtrType;
             private readonly Type _uIntPtrType;
@@ -231,15 +232,15 @@ namespace System.Text.Json.SourceGeneration
                 _jsonObjectType = _metadataLoadContext.Resolve(JsonObjectFullName);
                 _jsonValueType = _metadataLoadContext.Resolve(JsonValueFullName);
                 _jsonDocumentType = _metadataLoadContext.Resolve(JsonDocumentFullName);
+                _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
+                _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
                 // Unsupported types.
                 _delegateType = _metadataLoadContext.Resolve(SpecialType.System_Delegate);
-                _typeType = _metadataLoadContext.Resolve(typeof(Type));
+                _memberInfoType = _metadataLoadContext.Resolve(typeof(MemberInfo));
                 _serializationInfoType = _metadataLoadContext.Resolve(typeof(Runtime.Serialization.SerializationInfo));
                 _intPtrType = _metadataLoadContext.Resolve(typeof(IntPtr));
                 _uIntPtrType = _metadataLoadContext.Resolve(typeof(UIntPtr));
-                _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
-                _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
                 _jsonConverterOfTType = _metadataLoadContext.Resolve(JsonConverterOfTFullName);
 
@@ -959,7 +960,10 @@ namespace System.Text.Json.SourceGeneration
                         }
                     }
                 }
-                else if (_knownUnsupportedTypes.Contains(type) || _delegateType.IsAssignableFrom(type))
+                else if (
+                    _knownUnsupportedTypes.Contains(type) ||
+                    _memberInfoType.IsAssignableFrom(type) ||
+                    _delegateType.IsAssignableFrom(type))
                 {
                     classType = ClassType.KnownUnsupportedType;
                 }
@@ -1022,7 +1026,8 @@ namespace System.Text.Json.SourceGeneration
 
                         bool propertyOrderSpecified = false;
 
-                        for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
+                        // Walk the type hierarchy starting from the current type up to the base type(s)
+                        foreach (Type currentType in type.GetSortedTypeHierarchy())
                         {
                             PropertyGenerationSpec spec;
 
@@ -1037,6 +1042,11 @@ namespace System.Text.Json.SourceGeneration
                                 }
 
                                 spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
+                                if (!spec.IsPublic && !propertyInfo.PropertyType.IsPublic)
+                                {
+                                    continue;
+                                }
+
                                 CacheMemberHelper(propertyInfo.GetDiagnosticLocation());
                             }
 
@@ -1048,6 +1058,11 @@ namespace System.Text.Json.SourceGeneration
                                 }
 
                                 spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
+                                if (!spec.IsPublic && !fieldInfo.FieldType.IsPublic)
+                                {
+                                    continue;
+                                }
+
                                 CacheMemberHelper(fieldInfo.GetDiagnosticLocation());
                             }
 
@@ -1197,11 +1212,11 @@ namespace System.Text.Json.SourceGeneration
                     out string? converterInstantiationLogic,
                     out int order,
                     out bool hasFactoryConverter,
-                    out bool isExtensionData);
+                    out bool isExtensionData,
+                    out bool isRequired);
 
                 ProcessMember(
                     memberInfo,
-                    memberCLRType,
                     hasJsonInclude,
                     out bool isReadOnly,
                     out bool isPublic,
@@ -1229,6 +1244,7 @@ namespace System.Text.Json.SourceGeneration
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
+                    IsRequired = isRequired,
                     JsonPropertyName = jsonPropertyName,
                     RuntimePropertyName = runtimePropertyName,
                     PropertyNameVarName = propertyNameVarName,
@@ -1245,6 +1261,7 @@ namespace System.Text.Json.SourceGeneration
                     IsExtensionData = isExtensionData,
                     TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
                     DeclaringTypeRef = memberInfo.DeclaringType.GetCompilableName(),
+                    DeclaringType = memberInfo.DeclaringType,
                     ConverterInstantiationLogic = converterInstantiationLogic,
                     HasFactoryConverter = hasFactoryConverter
                 };
@@ -1275,7 +1292,8 @@ namespace System.Text.Json.SourceGeneration
                 out string? converterInstantiationLogic,
                 out int order,
                 out bool hasFactoryConverter,
-                out bool isExtensionData)
+                out bool isExtensionData,
+                out bool isRequired)
             {
                 hasJsonInclude = false;
                 jsonPropertyName = null;
@@ -1284,6 +1302,7 @@ namespace System.Text.Json.SourceGeneration
                 converterInstantiationLogic = null;
                 order = 0;
                 isExtensionData = false;
+                isRequired = false;
 
                 bool foundDesignTimeCustomConverter = false;
                 hasFactoryConverter = false;
@@ -1350,6 +1369,11 @@ namespace System.Text.Json.SourceGeneration
                                     isExtensionData = true;
                                 }
                                 break;
+                            case JsonRequiredAttributeFullName:
+                                {
+                                    isRequired = true;
+                                }
+                                break;
                             default:
                                 break;
                         }
@@ -1359,7 +1383,6 @@ namespace System.Text.Json.SourceGeneration
 
             private static void ProcessMember(
                 MemberInfo memberInfo,
-                Type memberClrType,
                 bool hasJsonInclude,
                 out bool isReadOnly,
                 out bool isPublic,
@@ -1491,13 +1514,19 @@ namespace System.Text.Json.SourceGeneration
                 {
                     runtimePropName = jsonPropName;
                 }
-                else if (namingPolicy == JsonKnownNamingPolicy.CamelCase)
-                {
-                    runtimePropName = JsonNamingPolicy.CamelCase.ConvertName(clrPropName);
-                }
                 else
                 {
-                    runtimePropName = clrPropName;
+                    JsonNamingPolicy? instance = namingPolicy switch
+                    {
+                        JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
+                        JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,
+                        JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
+                        JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
+                        JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                        _ => null,
+                    };
+
+                    runtimePropName = instance?.ConvertName(clrPropName) ?? clrPropName;
                 }
 
                 return runtimePropName;
@@ -1580,7 +1609,6 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _jsonValueType);
                 AddTypeIfNotNull(_knownTypes, _jsonDocumentType);
 
-                _knownUnsupportedTypes.Add(_typeType);
                 _knownUnsupportedTypes.Add(_serializationInfoType);
                 _knownUnsupportedTypes.Add(_intPtrType);
                 _knownUnsupportedTypes.Add(_uIntPtrType);

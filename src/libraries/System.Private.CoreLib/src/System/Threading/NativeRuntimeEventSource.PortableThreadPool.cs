@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 {
     // This is part of the NativeRuntimeEventsource, which is the managed version of the Microsoft-Windows-DotNETRuntime provider.
-    // Contains the implementation of ThreadPool events. This implemention is used by runtime not supporting NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs.
+    // Contains the implementation of ThreadPool events. This implementation is used by runtime not supporting NativeRuntimeEventSource.PortableThreadPool.NativeSinks.cs.
     internal sealed partial class NativeRuntimeEventSource : EventSource
     {
         // We don't have these keywords defined from the genRuntimeEventSources.py, so we need to manually define them here.
@@ -91,6 +91,7 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(eventId, 3, data);
         }
 
+#pragma warning disable IDE0060
         [Event(50, Level = EventLevel.Informational, Message = Messages.WorkerThread, Task = Tasks.ThreadPoolWorkerThread, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         public unsafe void ThreadPoolWorkerThreadStart(
             uint ActiveWorkerThreadCount,
@@ -127,6 +128,7 @@ namespace System.Diagnostics.Tracing
                 WriteThreadEvent(57, ActiveWorkerThreadCount);
             }
         }
+#pragma warning restore IDE0060
 
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
@@ -269,7 +271,7 @@ namespace System.Diagnostics.Tracing
             {
                 ThreadPoolIOEnqueue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
                     false);
             }
         }
@@ -315,7 +317,7 @@ namespace System.Diagnostics.Tracing
             {
                 ThreadPoolIODequeue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
             }
         }
 
@@ -358,7 +360,7 @@ namespace System.Diagnostics.Tracing
             {
                 ThreadPoolIOPack(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
             }
         }
 

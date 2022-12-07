@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
         <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
-        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
+        <target state="translated">O tipo de empacotador '{0}' para o tipo gerenciado '{1}' deve ser uma classe estática ou uma estrutura.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">

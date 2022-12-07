@@ -16,17 +16,8 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <HighAotMemoryUsageAssembly Include="System.Text.Json.Tests.dll" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -125,7 +116,6 @@
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
-    <Compile Include="Serialization\CamelCaseUnitTests.cs" />
     <Compile Include="Serialization\CollectionTests.cs" />
     <Compile Include="Serialization\ConstructorTests.cs" />
     <Compile Include="Serialization\ContinuationTests.cs" />
@@ -159,6 +149,8 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ReadAhead.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultJsonPropertyInfo.cs" />
+    <Compile Include="Serialization\RequiredKeywordTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DomTests.cs" />
     <Compile Include="Serialization\DynamicTests.cs" />
@@ -182,6 +174,7 @@
     <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="Serialization\MetadataTests\TestResolver.cs" />
+    <Compile Include="Serialization\NamingPolicyUnitTests.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
@@ -224,6 +217,20 @@
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.String.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.StringArray.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ClassWithCustomConverter.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.DateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.DictionaryStringHighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.GetJsonTypeInfo.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.HighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.Int32.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ListDateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.PropertyNames.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.String.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.StringArray.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />
@@ -233,13 +240,21 @@
     <Compile Include="Utf8JsonWriterTests.cs" />
     <Compile Include="Utf8JsonWriterTests.WriteRaw.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="Serialization\ConvertersForUnsupportedTypesFunctionalTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreApp)'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
     </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="CommonTest\System\Buffers\ArrayBufferWriter.cs" />

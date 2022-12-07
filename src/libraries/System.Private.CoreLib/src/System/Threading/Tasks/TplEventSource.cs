@@ -390,7 +390,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Fired when the an asynchronous continuation for a task is scheduled
+        /// Fired when an asynchronous continuation for a task is scheduled
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -14,12 +15,12 @@ namespace System.Text.Json
         /// Returns the span for the given reader.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> GetSpan(this ref Utf8JsonReader reader)
+        public static ReadOnlySpan<byte> GetSpan(this scoped ref Utf8JsonReader reader)
         {
             return reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
         }
 
-#if !BUILDING_INBOX_LIBRARY
+#if !NETCOREAPP
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is a valid Unicode scalar
         /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
@@ -123,7 +124,7 @@ namespace System.Text.Json
 
         public static bool IsFinite(double value)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return double.IsFinite(value);
 #else
             return !(double.IsNaN(value) || double.IsInfinity(value));
@@ -132,7 +133,7 @@ namespace System.Text.Json
 
         public static bool IsFinite(float value)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return float.IsFinite(value);
 #else
             return !(float.IsNaN(value) || float.IsInfinity(value));
@@ -146,6 +147,20 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }
+        }
+
+        public static bool AllBitsEqual(this BitArray bitArray, bool value)
+        {
+            // Optimize this when https://github.com/dotnet/runtime/issues/72999 is fixed
+            for (int i = 0; i < bitArray.Count; i++)
+            {
+                if (bitArray[i] != value)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

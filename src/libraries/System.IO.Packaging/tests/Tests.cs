@@ -3698,7 +3698,7 @@ namespace System.IO.Packaging.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
         public void ZipPackage_CreateWithFileAccessWrite()
         {
-            string packageName = "test.zip";
+            string packageName = Path.Combine(TestDirectory, "test.zip");
 
             using (Package package = Package.Open(packageName, FileMode.Create, FileAccess.Write))
             {

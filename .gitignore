@@ -188,6 +188,8 @@ node_modules/
 *.metaproj.tmp
 bin.localpkg/
 src/mono/wasm/runtime/dotnet.d.ts.sha256
+src/mono/wasm/runtime/dotnet-legacy.d.ts.sha256
+
 src/mono/sample/wasm/browser-nextjs/public/
 
 # RIA/Silverlight projects
@@ -339,9 +341,6 @@ jit32
 
 # performance testing sandbox
 sandbox
-
-#IL linker for testing
-linker
 
 # Symbolic link for the shared portion of CoreLib to make grep/findstr work for runtime devs
 #

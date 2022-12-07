@@ -317,7 +317,6 @@ namespace System.Text.Json.Serialization.Tests
 #if BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("Multi-dim arrays not supported.")]
 #endif
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71838", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task ClassWithUnsupportedCollectionTypes()
         {
             Exception e;

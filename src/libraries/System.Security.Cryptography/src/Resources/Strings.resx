@@ -111,6 +111,9 @@
   <data name="Argument_InvalidRandomRange" xml:space="preserve">
     <value>Range of random number does not contain at least one possibility.</value>
   </data>
+  <data name="Argument_InvalidSerialNumberBytes" xml:space="preserve">
+    <value>The provided serial number is invalid. Ensure the input is in big-endian byte order and that all redundant leading bytes have been removed.</value>
+  </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>
@@ -225,6 +228,9 @@
   <data name="Cryptography_CertReq_DuplicateExtension" xml:space="preserve">
     <value>An X509Extension with OID '{0}' has already been specified.</value>
   </data>
+  <data name="Cryptography_CertReq_ExtensionRequestInOtherAttributes" xml:space="preserve">
+    <value>The OtherRequestAttributes collection contains a PKCS#9 Extension Request Attribute. This attribute cannot be manually specified, it is generated via the CertificateExtensions property.</value>
+  </data>
   <data name="Cryptography_CertReq_IssuerBasicConstraintsInvalid" xml:space="preserve">
     <value>The issuer certificate does not have an appropriate value for the Basic Constraints extension.</value>
   </data>
@@ -233,6 +239,18 @@
   </data>
   <data name="Cryptography_CertReq_IssuerRequiresPrivateKey" xml:space="preserve">
     <value>The provided issuer certificate does not have an associated private key.</value>
+  </data>
+  <data name="Cryptography_CertReq_Load_DuplicateExtensionRequests" xml:space="preserve">
+    <value>The PKCS#10 Certification Request contains multiple PKCS#9 Extension Request attributes.</value>
+  </data>
+  <data name="Cryptography_CertReq_Load_VersionTooNew" xml:space="preserve">
+    <value>The provided PKCS#10 Certification Request value has version '{0}', but version '{1}' is the maximum supported.</value>
+  </data>
+  <data name="Cryptography_CertReq_MissingOidInCollection" xml:space="preserve">
+    <value>The collection in the '{0}' property contains a value that has a null Oid value.</value>
+  </data>
+  <data name="Cryptography_CertReq_NullValueInCollection" xml:space="preserve">
+    <value>The collection in the '{0}' property contains a null value.</value>
   </data>
   <data name="Cryptography_CertReq_NoKeyProvided" xml:space="preserve">
     <value>This method cannot be used since no signing key was provided via a constructor, use an overload accepting an X509SignatureGenerator instead.</value>
@@ -246,6 +264,9 @@
   <data name="Cryptography_CertReq_RSAPaddingRequired" xml:space="preserve">
     <value>The issuer certificate uses an RSA key but no RSASignaturePadding was provided to a constructor. If one cannot be provided, use the X509SignatureGenerator overload.</value>
   </data>
+  <data name="Cryptography_CertReq_SignatureVerificationFailed" xml:space="preserve">
+    <value>The public key within the PKCS#10 Certification Request did not verify the embedded signature.</value>
+  </data>
   <data name="Cryptography_CipherModeFeedbackNotSupported" xml:space="preserve">
     <value>The specified feedback size '{0}' for CipherMode '{1}' is not supported.</value>
   </data>
@@ -257,6 +278,15 @@
   </data>
   <data name="Cryptography_Config_EncodedOIDError" xml:space="preserve">
     <value>Encoded OID length is too large (greater than 0x7f bytes).</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_DatesReversed" xml:space="preserve">
+    <value>The provided thisUpdate value is later than the nextUpdate value.</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_IssuerKeyUsageInvalid" xml:space="preserve">
+    <value>The issuer certificate's Key Usage extension is present but does not contain the CrlSign flag.</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_ReasonNotSupported" xml:space="preserve">
+    <value>The specified revocation reason is not supported.</value>
   </data>
   <data name="Cryptography_CryptoStream_FlushFinalBlockTwice" xml:space="preserve">
     <value>FlushFinalBlock() method was called twice on a CryptoStream. It can only be called once.</value>
@@ -453,6 +483,9 @@
   <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
     <value>TransformBlock may only process bytes in block sized increments.</value>
   </data>
+  <data name="Cryptography_NoPemOfLabel" xml:space="preserve">
+    <value>The contents do not contain a PEM with a '{0}' label, or the content is malformed.</value>
+  </data>
   <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
     <value>Key is not a valid private key.</value>
   </data>
@@ -509,6 +542,21 @@
   </data>
   <data name="Cryptography_Pfx_NoCertificates" xml:space="preserve">
     <value>The provided PFX data contains no certificates.</value>
+  </data>
+  <data name="Cryptography_Pkcs_InvalidSignatureParameters" xml:space="preserve">
+    <value>Invalid signature parameters.</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersHashMismatch" xml:space="preserve">
+    <value>This platform requires that the PSS hash algorithm ({0}) match the data digest algorithm ({1}).</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersMgfHashMismatch" xml:space="preserve">
+    <value>This platform does not support the MGF hash algorithm ({0}) being different from the signature hash algorithm ({1}).</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersMgfNotSupported" xml:space="preserve">
+    <value>Mask generation function '{0}' is not supported by this platform.</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersSaltMismatch" xml:space="preserve">
+    <value>PSS salt size {0} is not supported by this platform with hash algorithm {1}.</value>
   </data>
   <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
     <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
@@ -608,6 +656,15 @@
   </data>
   <data name="Cryptography_X509_AIA_NullValue" xml:space="preserve">
     <value>One of the ocspUris or caIssuersUris enumerables contains a null value.</value>
+  </data>
+  <data name="Cryptography_X509_AKID_NoSKID" xml:space="preserve">
+    <value>The provided certificate does not have a Subject Key Identifier extension.</value>
+  </data>
+  <data name="Cryptography_X509_CDP_MustNotBuildEmpty" xml:space="preserve">
+    <value>The collection of distribution URIs must be non-empty.</value>
+  </data>
+  <data name="Cryptography_X509_CDP_NullValue" xml:space="preserve">
+    <value>One of the provided CRL Distribution Point URIs is a null value.</value>
   </data>
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>
@@ -764,11 +821,5 @@
   </data>
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
-  </data>
-  <data name="Unknown_SubtleCrypto_Error" xml:space="preserve">
-    <value>SubtleCrypto returned an unknown error: '{0}'.</value>
-  </data>
-  <data name="PlatformNotSupported_CipherModeBrowser" xml:space="preserve">
-    <value>Only CipherMode.CBC is supported on this platform.</value>
   </data>
 </root>

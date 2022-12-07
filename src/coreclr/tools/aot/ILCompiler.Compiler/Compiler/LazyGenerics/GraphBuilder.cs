@@ -18,7 +18,7 @@ namespace ILCompiler
             {
                 _graph = new Graph<EcmaGenericParameter>();
                 _metadataReader = assembly.MetadataReader;
-                
+
                 foreach (TypeDefinitionHandle typeHandle in _metadataReader.TypeDefinitions)
                 {
                     TypeDefinition typeDefinition = _metadataReader.GetTypeDefinition(typeHandle);

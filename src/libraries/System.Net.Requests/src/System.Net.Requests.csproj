@@ -56,6 +56,8 @@
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpDateParser.cs"
              Link="Common\System\Net\HttpDateParser.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"

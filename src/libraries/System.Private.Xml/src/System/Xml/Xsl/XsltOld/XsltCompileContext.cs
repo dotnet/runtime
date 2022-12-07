@@ -184,7 +184,7 @@ namespace System.Xml.Xsl.XsltOld
         private const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
             Justification = XsltArgumentList.ExtensionObjectSuppresion)]
-        private IXsltContextFunction? GetExtentionMethod(string ns, string name, XPathResultType[]? argTypes, out object? extension)
+        private IXsltContextFunction? GetExtensionMethod(string ns, string name, XPathResultType[]? argTypes, out object? extension)
         {
             FuncExtension? result = null;
             extension = _processor!.GetScriptObject(ns);
@@ -229,7 +229,7 @@ namespace System.Xml.Xsl.XsltOld
                 else
                 {
                     object? extension;
-                    func = GetExtentionMethod(ns, name, argTypes, out extension);
+                    func = GetExtensionMethod(ns, name, argTypes, out extension);
                     if (extension == null)
                     {
                         throw XsltException.Create(SR.Xslt_ScriptInvalidPrefix, prefix);  // BugBug: It's better to say that method 'name' not found
@@ -332,7 +332,7 @@ namespace System.Xml.Xsl.XsltOld
                 );
                 if (checkDuplicates)
                 {
-                    // it's posible that this value already was assosiated with current node
+                    // it's possible that this value already was associated with current node
                     // but if this happened the node is last in the list of values.
                     if (value.ComparePosition((XPathNavigator?)list[list.Count - 1]) == XmlNodeOrder.Same)
                     {
@@ -486,8 +486,8 @@ namespace System.Xml.Xsl.XsltOld
             }
             else
             {
-                // Is this script or extention function?
-                return GetExtentionMethod(ns, name, /*argTypes*/null, out _) != null;
+                // Is this script or extension function?
+                return GetExtensionMethod(ns, name, /*argTypes*/null, out _) != null;
             }
         }
 
@@ -558,7 +558,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         return XPathResultType.NodeSet;
                     }
-                    // sdub: It be better to check that type is realy object and otherwise return XPathResultType.Error
+                    // sdub: It be better to check that type is really object and otherwise return XPathResultType.Error
                     return XPathResultType.Any;
                 case TypeCode.DateTime:
                     return XPathResultType.Error;
@@ -661,7 +661,7 @@ namespace System.Xml.Xsl.XsltOld
                 return string.Empty;
             }
 
-            [return: NotNullIfNotNull("argument")]
+            [return: NotNullIfNotNull(nameof(argument))]
             public static string? ToString(object argument)
             {
                 XPathNodeIterator? it = argument as XPathNodeIterator;
@@ -715,7 +715,7 @@ namespace System.Xml.Xsl.XsltOld
                 switch (xt)
                 {
                     case XPathResultType.String:
-                        // Unfortunetely XPathResultType.String == XPathResultType.Navigator (This is wrong but cant be changed in Everett)
+                        // Unfortunately XPathResultType.String == XPathResultType.Navigator (This is wrong but cant be changed in Everett)
                         // Fortunetely we have typeCode hare so let's discriminate by typeCode
                         if (type == typeof(string))
                         {
@@ -992,7 +992,7 @@ namespace System.Xml.Xsl.XsltOld
 
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
-                Debug.Assert(args.Length <= this.Minargs, "We cheking this on resolve time");
+                Debug.Assert(args.Length <= this.Minargs, "We are checking this on resolve time");
                 for (int i = args.Length - 1; 0 <= i; i--)
                 {
                     args[i] = ConvertToXPathType(args[i], this.ArgTypes[i], _types[i]);

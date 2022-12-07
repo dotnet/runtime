@@ -196,7 +196,6 @@ protected:
     void*     coldCodePtr;
     void*     consPtr;
 
-#ifdef DEBUG
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
 
@@ -204,7 +203,6 @@ protected:
     const char* genInsDisplayName(emitter::instrDesc* id);
 
     static const char* genSizeStr(emitAttr size);
-#endif // DEBUG
 
     void genInitialize();
 
@@ -236,7 +234,6 @@ protected:
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
 #ifdef TARGET_LOONGARCH64
-    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type);
     void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
                                  instruction     ins,
                                  regNumber       reg1,
@@ -954,8 +951,11 @@ protected:
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+
+#if defined(TARGET_ARMARCH)
     void genCodeForMulLong(GenTreeOp* mul);
 #endif // TARGET_ARMARCH
 
@@ -992,6 +992,13 @@ protected:
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
 #endif
+            LOAD_ZERO_EXTEND_SMALL_INT,
+            LOAD_SIGN_EXTEND_SMALL_INT,
+#ifdef TARGET_64BIT
+            LOAD_ZERO_EXTEND_INT,
+            LOAD_SIGN_EXTEND_INT,
+#endif
+            LOAD_SOURCE
         };
 
     private:
@@ -1047,8 +1054,10 @@ protected:
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
-    void genCodeForConditional(GenTreeConditional* tree);
+    void genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond);
+    void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
 #endif
+    void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTree* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
     void genPutArgReg(GenTreeOp* tree);
@@ -1388,7 +1397,6 @@ protected:
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
-    void genCodeForAddEx(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
@@ -1422,13 +1430,16 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
+#ifdef TARGET_XARCH
+    void genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);
+    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool trackSpAdjustments);
+    target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, bool trackSpAdjustments);
+    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta);
+#else  // !TARGET_XARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp);
     void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp);
     target_ssize_t genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp);
-
-#if defined(TARGET_XARCH)
-    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta, regNumber regTmp);
-#endif // defined(TARGET_XARCH)
+#endif // !TARGET_XARCH
 
     void genLclHeap(GenTree* tree);
 
@@ -1451,7 +1462,10 @@ protected:
 #endif // !FEATURE_PUT_STRUCT_ARG_STK
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
-    void genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar);
+    void genStackPointerCheck(bool      doStackPointerCheck,
+                              unsigned  lvaStackPointerVar,
+                              ssize_t   offset = 0,
+                              regNumber regTmp = REG_NA);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #ifdef DEBUG
@@ -1632,7 +1646,7 @@ public:
             if (m_indir == nullptr)
             {
                 GenTreeIndir indirForm = CodeGen::indirForm(m_indirType, m_addr);
-                memcpy(pIndirForm, &indirForm, sizeof(GenTreeIndir));
+                memcpy((void*)pIndirForm, (void*)&indirForm, sizeof(GenTreeIndir));
             }
             else
             {
@@ -1686,7 +1700,11 @@ public:
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);
+#if defined(TARGET_XARCH)
+    instruction ins_FloatConv(var_types to, var_types from, emitAttr attr);
+#elif defined(TARGET_ARM)
     instruction ins_FloatConv(var_types to, var_types from);
+#endif
     instruction ins_MathOp(genTreeOps oper, var_types type);
 
     void instGen_Return(unsigned stkArgSize);
@@ -1712,9 +1730,8 @@ public:
 #endif // TARGET_XARCH
 
 #ifdef TARGET_ARM64
-    static insCond InsCondForCompareOp(GenTree* tree);
-    static insCond InvertInsCond(insCond cond);
-    static insCflags InsCflagsForCcmp(insCond cond);
+    static insCflags InsCflagsForCcmp(GenCondition cond);
+    static insCond JumpKindToInsCond(emitJumpKind condition);
 #endif
 
 #ifndef TARGET_LOONGARCH64

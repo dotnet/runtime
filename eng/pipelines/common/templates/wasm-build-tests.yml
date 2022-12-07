@@ -1,7 +1,9 @@
 parameters:
   alwaysRun: false
   isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
   platforms: []
+  shouldContinueOnError: false
 
 jobs:
 
@@ -15,25 +17,32 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
-      - name: wasmbuildtestsContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
-      - name: allWasmContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
+      - name: shouldRunOnDefaultPipelines
+        value: $[
+          or(
+            eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
+          ]
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: WasmBuildTests
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
+      # if !alwaysRun, then:
+      #   if this is runtime-wasm (isWasmOnlyBuild):
+      #     - then run only if it would not have run on default pipelines (based
+      #       on path changes)
+      #     - else run based on path changes
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
+          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -42,3 +51,4 @@ jobs:
         extraHelixArguments: /p:BrowserHost=$(_hostedOs)
         scenarios:
         - buildwasmapps
+

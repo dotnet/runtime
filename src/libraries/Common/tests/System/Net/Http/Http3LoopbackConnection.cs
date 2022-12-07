@@ -49,6 +49,9 @@ namespace System.Net.Test.Common
         private Http3LoopbackStream _inboundControlStream;      // Inbound control stream from client
         private Http3LoopbackStream _outboundControlStream;     // Our outbound control stream
 
+        public Http3LoopbackStream OutboundControlStream => _outboundControlStream ?? throw new Exception("Control stream has not been opened yet");
+        public Http3LoopbackStream InboundControlStream => _inboundControlStream ?? throw new Exception("Inbound control stream has not been accepted yet");
+
         public Http3LoopbackConnection(QuicConnection connection)
         {
             _connection = connection;
@@ -69,19 +72,20 @@ namespace System.Net.Test.Common
                 await stream.DisposeAsync().ConfigureAwait(false);
             }
 
-            // We don't dispose the connection currently, because this causes races when the server connection is closed before
-            // the client has received and handled all response data.
-            // See discussion in https://github.com/dotnet/runtime/pull/57223#discussion_r687447832
-#if false
             // Dispose the connection
             // If we already waited for graceful shutdown from the client, then the connection is already closed and this will simply release the handle.
             // If not, then this will silently abort the connection.
-            _connection.Dispose();
+            await _connection.DisposeAsync();
 
             // Dispose control streams so that we release their handles too.
-            await _inboundControlStream?.DisposeAsync().ConfigureAwait(false);
-            await _outboundControlStream?.DisposeAsync().ConfigureAwait(false);
-#endif
+            if (_inboundControlStream is not null)
+            {
+                await _inboundControlStream.DisposeAsync().ConfigureAwait(false);
+            }
+            if (_outboundControlStream is not null)
+            {
+                await _outboundControlStream.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         public Task CloseAsync(long errorCode) => _connection.CloseAsync(errorCode).AsTask();

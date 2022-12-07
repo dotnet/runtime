@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     /// <summary>
@@ -23,6 +25,10 @@ namespace System.Net.NetworkInformation
         /// </summary>
         /// <param name="scopeLevel">The scope level.</param>
         /// <returns>The IPv6 scope identifier.</returns>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual long GetScopeId(ScopeLevel scopeLevel)
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);

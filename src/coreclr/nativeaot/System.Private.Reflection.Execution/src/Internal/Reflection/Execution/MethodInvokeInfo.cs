@@ -6,12 +6,14 @@ using global::System.Reflection;
 
 namespace Internal.Reflection.Execution
 {
-    internal sealed class MethodInvokeInfo
+    internal sealed class MethodInvokeInfo : DynamicInvokeInfo
     {
+        public MethodInvokeInfo(MethodBase method, IntPtr invokeThunk)
+            : base(method, invokeThunk)
+        {
+        }
+
         public IntPtr LdFtnResult { get; set; }
-        public IntPtr DynamicInvokeMethod { get; set; }
-        public IntPtr DynamicInvokeGenericDictionary { get; set; }
-        public MethodBase MethodInfo { get; set; }
         public IntPtr VirtualResolveData { get; set; }
     }
 }

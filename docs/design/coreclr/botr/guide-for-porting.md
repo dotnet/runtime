@@ -46,7 +46,7 @@ The process follows the following strategy
     not maintained as generally working. It is expected that the interpreter
     will take 1-2 months to enable for an engineer familiar with the CoreCLR
     codebase. A functional interpreter allows the porting team to have a set of
-    engineers which focus exclusively on the JIT and a set which focusses on the
+    engineers which focus exclusively on the JIT and a set which focuses on the
     VM portion of the runtime.
 
 -   Build up a set of scripts that will run the coreclr tests. The normal
@@ -311,7 +311,7 @@ must implement.
     components. The implementation made architecture specific via a long series of
     C preprocessor macros.
 
-6. `gcinfodecoder.h` The GC info format is archictecture specific as it holds
+6. `gcinfodecoder.h` The GC info format is architecture specific as it holds
    information about which specific registers hold GC data. The implementation
    is generally simplified to be defined in terms of register numbers, but if
    the architecture has more registers available for use than existing architectures
@@ -378,7 +378,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
 
     9.  `TheUMEntryPrestub`/ `UMThunkStub` - used to enter the runtime from
         non-managed code through entrypoints generated from the
-        Marshal.GetFunctionPointerForDelagate api.
+        Marshal.GetFunctionPointerForDelegate api.
 
     10. `OnHijackTripThread` - needed for thread suspension to support GC + other
         suspension requiring events. This is typically not needed for very early

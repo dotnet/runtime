@@ -122,7 +122,7 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] bool attributeOnly,
             IntPtr servercontrol,
             IntPtr clientcontrol,
-            int timelimit,
+            in LDAP_TIMEVAL timelimit,
             int sizelimit,
             ref int messageNumber);
 

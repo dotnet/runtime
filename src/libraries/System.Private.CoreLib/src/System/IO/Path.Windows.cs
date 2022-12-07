@@ -3,12 +3,15 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO
 {
-    public static partial class Path
+    public static unsafe partial class Path
     {
+        private static volatile delegate* unmanaged<int, char*, uint> s_GetTempPathWFunc;
+
         public static char[] GetInvalidFileNameChars() => new char[]
         {
             '\"', '<', '>', '|', '\0',
@@ -50,7 +53,7 @@ namespace System.IO
             // This is because the nulls will signal the end of the string to Win32 and therefore have
             // unpredictable results.
             if (path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+                throw new ArgumentException(SR.Argument_NullCharInPath, nameof(path));
 
             return GetFullPathInternal(path);
         }
@@ -64,7 +67,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
 
             if (basePath.Contains('\0') || path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
+                throw new ArgumentException(SR.Argument_NullCharInPath);
 
             if (IsPathFullyQualified(path))
                 return GetFullPathInternal(path);
@@ -151,10 +154,22 @@ namespace System.IO
             return path;
         }
 
-        private static void GetTempPath(ref ValueStringBuilder builder)
+        private static unsafe delegate* unmanaged<int, char*, uint> GetGetTempPathWFunc()
+        {
+            IntPtr kernel32 = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, 0, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+            if (!NativeLibrary.TryGetExport(kernel32, "GetTempPath2W", out IntPtr func))
+            {
+                func = NativeLibrary.GetExport(kernel32, "GetTempPathW");
+            }
+
+            return (delegate* unmanaged<int, char*, uint>)func;
+        }
+
+        internal static void GetTempPath(ref ValueStringBuilder builder)
         {
             uint result;
-            while ((result = Interop.Kernel32.GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
+            while ((result = GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
             {
                 // Reported size is greater than the buffer size. Increase the capacity.
                 builder.EnsureCapacity(checked((int)result));
@@ -164,31 +179,86 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForLastWin32Error();
 
             builder.Length = (int)result;
+
+            static uint GetTempPathW(int bufferLen, ref char buffer)
+            {
+                delegate* unmanaged<int, char*, uint> func = s_GetTempPathWFunc;
+#pragma warning disable IDE0074 // Use compound assignment
+                if (func == null)
+                {
+                    func = s_GetTempPathWFunc = GetGetTempPathWFunc();
+                }
+#pragma warning restore IDE0074
+
+                int lastError;
+                uint retVal;
+                fixed (char* ptr = &buffer)
+                {
+                    Marshal.SetLastSystemError(0);
+                    retVal = func(bufferLen, ptr);
+                    lastError = Marshal.GetLastSystemError();
+                }
+
+                Marshal.SetLastPInvokeError(lastError);
+                return retVal;
+            }
         }
 
         // Returns a unique temporary file name, and creates a 0-byte file by that
         // name on disk.
         public static string GetTempFileName()
         {
-            var tempPathBuilder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
+            // Avoid GetTempFileNameW because it is limited to 0xFFFF possibilities, which both
+            // means that it may have to make many attempts to create the file before
+            // finding an unused name, and also that if an app "leaks" such temp files,
+            // it can prevent GetTempFileNameW succeeding at all.
+            //
+            // To make this a little more robust, generate our own name with more
+            // entropy. We could use GetRandomFileName() here, but for consistency
+            // with Unix and to retain the ".tmp" extension we will use the "tmpXXXXXX.tmp" pattern.
+            // Using 32 characters for convenience, that gives us 32^^6 ~= 10^^9 possibilities,
+            // but we'll still loop to handle the unlikely case the file already exists.
 
-            GetTempPath(ref tempPathBuilder);
+            const int KeyLength = 4;
+            byte* bytes = stackalloc byte[KeyLength];
 
-            var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
+            Span<char> span = stackalloc char[13]; // tmpXXXXXX.tmp
+            span[0] = span[10] = 't';
+            span[1] = span[11] = 'm';
+            span[2] = span[12] = 'p';
+            span[9] = '.';
 
-            uint result = Interop.Kernel32.GetTempFileNameW(
-                ref tempPathBuilder.GetPinnableReference(), "tmp", 0, ref builder.GetPinnableReference());
+            int i = 0;
+            while (true)
+            {
+                Interop.GetRandomBytes(bytes, KeyLength);  // 4 bytes = more than 6 x 5 bits
 
-            tempPathBuilder.Dispose();
+                byte b0 = bytes[0];
+                byte b1 = bytes[1];
+                byte b2 = bytes[2];
+                byte b3 = bytes[3];
 
-            if (result == 0)
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                span[3] = (char)Base32Char[b0 & 0b0001_1111];
+                span[4] = (char)Base32Char[b1 & 0b0001_1111];
+                span[5] = (char)Base32Char[b2 & 0b0001_1111];
+                span[6] = (char)Base32Char[b3 & 0b0001_1111];
+                span[7] = (char)Base32Char[((b0 & 0b1110_0000) >> 5) | ((b1 & 0b1100_0000) >> 3)];
+                span[8] = (char)Base32Char[((b2 & 0b1110_0000) >> 5) | ((b3 & 0b1100_0000) >> 3)];
 
-            builder.Length = builder.RawChars.IndexOf('\0');
+                string path = string.Concat(Path.GetTempPath(), span);
 
-            string path = PathHelper.Normalize(ref builder);
-            builder.Dispose();
-            return path;
+                try
+                {
+                    File.OpenHandle(path, FileMode.CreateNew, FileAccess.Write).Dispose();
+                }
+                catch (IOException ex) when (i < 100 && Win32Marshal.TryMakeWin32ErrorCodeFromHR(ex.HResult) == Interop.Errors.ERROR_FILE_EXISTS)
+                {
+                    i++; // Don't let unforeseen circumstances cause us to loop forever
+                    continue; // File already exists: very, very unlikely
+                }
+
+                return path;
+            }
         }
 
         // Tests if the given path contains a root. A path is considered rooted

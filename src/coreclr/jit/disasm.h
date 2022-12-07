@@ -91,11 +91,11 @@ public:
     void disRecordRelocation(size_t relocAddr, size_t targetAddr);
 
 private:
-    /* Address of the hot and cold code blocks to dissasemble */
+    /* Address of the hot and cold code blocks to disassemble */
     size_t disHotCodeBlock;
     size_t disColdCodeBlock;
 
-    /* Size of the hot and cold code blocks to dissasemble */
+    /* Size of the hot and cold code blocks to disassemble */
     size_t disHotCodeSize;
     size_t disColdCodeSize;
 
@@ -108,7 +108,7 @@ private:
     /* Current offset in the code block */
     size_t disCurOffset;
 
-    /* Size (in bytes) of current dissasembled instruction */
+    /* Size (in bytes) of current disassembled instruction */
     size_t disInstSize;
 
     /* Target address of a jump */

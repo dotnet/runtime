@@ -673,13 +673,6 @@ Initialize(
             goto CLEANUP15;
         }
 
-        if (FALSE == NUMASupportInitialize())
-        {
-            ERROR("Unable to initialize NUMA support\n");
-            palError = ERROR_PALINIT_NUMA;
-            goto CLEANUP15;
-        }
-
         TRACE("First-time PAL initialization complete.\n");
         init_count++;
 
@@ -1054,7 +1047,7 @@ TerminateProcess along with PAL_Terminate and PAL_Initialize
 
 Return value :
     TRUE if critical section existed (and was acquired)
-    FALSE if critical section doens't exist yet
+    FALSE if critical section doesn't exist yet
 --*/
 BOOL PALInitLock(void)
 {

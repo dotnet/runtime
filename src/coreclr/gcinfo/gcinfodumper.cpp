@@ -41,7 +41,7 @@ size_t GcInfoDumper::GetGCInfoSize()
 //static*
 void GcInfoDumper::LivePointerCallback (
         LPVOID          hCallback,      // callback data
-        OBJECTREF*      pObject,        // address of obect-reference we are reporting
+        OBJECTREF*      pObject,        // address of object-reference we are reporting
         uint32_t        flags           // is this a pinned and/or interior pointer
         DAC_ARG(DacSlotLocation loc))   // the location of the slot
 {
@@ -108,7 +108,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
     };
 
     static RegisterInfo rgRegisters[] = {
-#define REG(reg, field) { FIELD_OFFSET(T_CONTEXT, field) }
+#define REG(reg, field) { offsetof(T_CONTEXT, field) }
 
 #ifdef TARGET_AMD64
         REG(rax, Rax),
@@ -129,13 +129,13 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(r15, R15),
 #elif defined(TARGET_ARM)
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(ArmVolatileContextPointer, field) }
+#define REG(reg, field) { offsetof(ArmVolatileContextPointer, field) }
         REG(r0, R0),
         REG(r1, R1),
         REG(r2, R2),
         REG(r3, R3),
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
+#define REG(reg, field) { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
         REG(r4, R4),
         REG(r5, R5),
         REG(r6, R6),
@@ -144,14 +144,14 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(r9, R9),
         REG(r10, R10),
         REG(r11, R11),
-        { FIELD_OFFSET(ArmVolatileContextPointer, R12) },
-        { FIELD_OFFSET(T_CONTEXT, Sp) },
-        { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, Lr) },
-        { FIELD_OFFSET(T_CONTEXT, Sp) },
-        { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, R7) },
+        { offsetof(ArmVolatileContextPointer, R12) },
+        { offsetof(T_CONTEXT, Sp) },
+        { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, Lr) },
+        { offsetof(T_CONTEXT, Sp) },
+        { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, R7) },
 #elif defined(TARGET_ARM64)
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(Arm64VolatileContextPointer, field) }
+#define REG(reg, field) { offsetof(Arm64VolatileContextPointer, field) }
         REG(x0, X0),
         REG(x1, X1),
         REG(x2, X2),
@@ -171,7 +171,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(x16, X16),
         REG(x17, X17),
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
+#define REG(reg, field) { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
         REG(x19, X19),
         REG(x20, X20),
         REG(x21, X21),
@@ -184,11 +184,11 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(x28, X28),
         REG(Fp,  Fp),
         REG(Lr,  Lr),
-        { FIELD_OFFSET(T_CONTEXT, Sp) },
+        { offsetof(T_CONTEXT, Sp) },
 #undef REG
 #elif defined(TARGET_LOONGARCH64)
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(Loongarch64VolatileContextPointer, field) }
+#define REG(reg, field) { offsetof(Loongarch64VolatileContextPointer, field) }
         REG(zero, R0),
         REG(a0, A0),
         REG(a1, A1),
@@ -209,7 +209,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(t8, T8),
         REG(x0, X0),
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
+#define REG(reg, field) { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
         REG(s0, S0),
         REG(s1, S1),
         REG(s2, S2),
@@ -222,7 +222,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(tp, Tp),
         REG(fp, Fp),
         REG(ra, Ra),
-        { FIELD_OFFSET(T_CONTEXT, Sp) },
+        { offsetof(T_CONTEXT, Sp) },
 #undef REG
 #else
 PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this platform.")
@@ -239,11 +239,11 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
     iFirstRegister = 0;
     nRegisters = nCONTEXTRegisters;
 #ifdef TARGET_AMD64
-    iSPRegister = (FIELD_OFFSET(CONTEXT, Rsp) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONGLONG);
+    iSPRegister = (offsetof(CONTEXT, Rsp) - offsetof(CONTEXT, Rax)) / sizeof(ULONGLONG);
 #elif defined(TARGET_ARM64)
-    iSPRegister = (FIELD_OFFSET(T_CONTEXT, Sp) - FIELD_OFFSET(T_CONTEXT, X0)) / sizeof(ULONGLONG);
+    iSPRegister = (offsetof(T_CONTEXT, Sp) - offsetof(T_CONTEXT, X0)) / sizeof(ULONGLONG);
 #elif defined(TARGET_ARM)
-    iSPRegister = (FIELD_OFFSET(T_CONTEXT, Sp) - FIELD_OFFSET(T_CONTEXT, R0)) / sizeof(ULONG);
+    iSPRegister = (offsetof(T_CONTEXT, Sp) - offsetof(T_CONTEXT, R0)) / sizeof(ULONG);
     UINT iBFRegister = m_StackBaseRegister;
 #elif defined(TARGET_LOONGARCH64)
     assert(!"unimplemented on LOONGARCH yet");

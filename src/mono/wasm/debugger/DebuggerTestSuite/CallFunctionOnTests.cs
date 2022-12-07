@@ -625,7 +625,12 @@ namespace DebuggerTests
 
                    // Auto properties show w/o getters, because they have
                    // a backing field
-                   DTAutoProperty = TDateTime(dt)
+                   DTAutoProperty = TDateTime(dt),
+
+                   // Static properties
+                   PublicStaticDTProp = TGetter("PublicStaticDTProp"),
+                   PrivateStaticDTProp = TGetter("PrivateStaticDTProp"),
+                   InternalStaticDTProp = TGetter("InternalStaticDTProp"),
                }, local_name);
 
                // Invoke getters, and check values

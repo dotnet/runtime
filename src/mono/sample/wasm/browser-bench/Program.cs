@@ -23,20 +23,20 @@ namespace Sample
             new AppStartTask(),
             new ExceptionsTask(),
             new JsonTask(),
+            new SpanTask(),
             new VectorTask(),
-            new WebSocketTask()
+            new JSInteropTask(),
+            new WebSocketTask(),
         };
         static Test instance = new Test();
         Formatter formatter = new HTMLFormatter();
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         [JSExport]
         public static Task<string> RunBenchmark()
         {
             return instance.RunTasks();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         // the constructors of the task we care about are already used when createing tasks field
         [UnconditionalSuppressMessage("Trim analysis error", "IL2057")]
         [UnconditionalSuppressMessage("Trim analysis error", "IL2072")]
@@ -76,7 +76,6 @@ namespace Sample
         }
 
         [JSExport]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static string GetFullJsonResults()
         {
             return instance.GetJsonResults();
@@ -209,7 +208,7 @@ namespace Sample
             public DateTime timeStamp;
         }
 
-        string GetJsonResults ()
+        string GetJsonResults()
         {
             var options = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
             var jsonObject = new JsonResultsData { results = results, minTimes = minTimes, timeStamp = DateTime.UtcNow };
@@ -219,7 +218,7 @@ namespace Sample
         private void PrintJsonResults()
         {
             Console.WriteLine("=== json results start ===");
-            Console.WriteLine(GetJsonResults ());
+            Console.WriteLine(GetJsonResults());
             Console.WriteLine("=== json results end ===");
         }
     }

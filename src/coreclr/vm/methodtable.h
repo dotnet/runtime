@@ -299,11 +299,9 @@ struct MethodTableWriteableData
     };
     DWORD      m_dwFlags;                  // Lot of empty bits here.
 
-    /*
-     * m_hExposedClassObject is LoaderAllocator slot index to
-     * a RuntimeType instance for this class.
-     */
-    LOADERHANDLE m_hExposedClassObject;
+    // Non-unloadable context: internal RuntimeType object handle
+    // Unloadable context: slot index in LoaderAllocator's pinned table
+    RUNTIMETYPEHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
     // to avoid verify same method table too many times when it's not changing, we cache the GC count
@@ -335,7 +333,7 @@ public:
 #endif
 
 
-    inline LOADERHANDLE GetExposedClassObjectHandle() const
+    inline RUNTIMETYPEHANDLE GetExposedClassObjectHandle() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_hExposedClassObject;
@@ -750,6 +748,7 @@ public:
     void CheckRunClassInitAsIfConstructingThrowing();
 
 #if defined(TARGET_LOONGARCH64)
+    static bool IsLoongArch64OnlyOneField(MethodTable * pMT);
     static int GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
@@ -832,7 +831,8 @@ public:
     // instantiations of the superclass or interfaces e.g. System.Int32 : IComparable<System.Int32>
 
     void AllocateRegularStaticBoxes();
-    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0);
+    void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
+    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0, bool canBeFrozen = false);
 
     void CheckRestore();
 
@@ -1485,6 +1485,9 @@ public:
     inline BOOL HasExplicitSize();
 
     inline BOOL IsAutoLayoutOrHasAutoLayoutField();
+
+    // Only accurate on types which are not auto layout
+    inline BOOL IsInt128OrHasInt128Fields();
 
     UINT32 GetNativeSize();
 
@@ -2421,7 +2424,7 @@ public:
     //
     // #KindsOfElementTypes
     // GetInternalCorElementType() retrieves the internal representation of the type. It's not always
-    // appropiate to use this. For example, we treat enums as their underlying type or some structs are
+    // appropriate to use this. For example, we treat enums as their underlying type or some structs are
     // optimized to be ints. To get the signature type or the verifier type (same as signature except for
     // enums are normalized to the primitive type that underlies them), use the APIs in Typehandle.h
     //
@@ -3377,7 +3380,7 @@ private:
         // low WORD of flags is reserved for the component size.
 
         // The following bits describe mutually exclusive locations of the type
-        // in the type hiearchy.
+        // in the type hierarchy.
         enum_flag_Category_Mask             = 0x000F0000,
 
         enum_flag_Category_Class            = 0x00000000,

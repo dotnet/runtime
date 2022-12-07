@@ -162,8 +162,9 @@ namespace System.SpanTests
             int[] arr1 = new[] { 1, 2, 3, 4, 5, 6 };
             int[] arr2 = new[] { -1, 2, -3, 4, -7, -8 };
 
-            Assert.Equal(4, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, AbsoluteValueComparer.Instance));
-            Assert.Equal(4, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, AbsoluteValueComparer.Instance));
+            EqualityComparer<int> absoluteValueComparer = EqualityComparer<int>.Create((x, y) => Math.Abs(x) == Math.Abs(y));
+            Assert.Equal(4, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, absoluteValueComparer));
+            Assert.Equal(4, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, absoluteValueComparer));
 
             Assert.Equal(0, MemoryExtensions.CommonPrefixLength((ReadOnlySpan<int>)arr1, arr2, NonDefaultEqualityComparer<int>.Instance));
             Assert.Equal(0, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, NonDefaultEqualityComparer<int>.Instance));
@@ -172,18 +173,10 @@ namespace System.SpanTests
             Assert.Equal(0, MemoryExtensions.CommonPrefixLength((Span<int>)arr1, arr2, EqualityComparer<int>.Default));
         }
 
-        private sealed class NonDefaultEqualityComparer<T> : IEqualityComparer<T>
+        private sealed class NonDefaultEqualityComparer<T>
         {
-            public static NonDefaultEqualityComparer<T> Instance { get; } = new NonDefaultEqualityComparer<T>();
-            public bool Equals(T? x, T? y) => EqualityComparer<T>.Default.Equals(x, y);
-            public int GetHashCode([DisallowNull] T obj) => EqualityComparer<T>.Default.GetHashCode(obj);
-        }
-
-        private sealed class AbsoluteValueComparer : IEqualityComparer<int>
-        {
-            public static AbsoluteValueComparer Instance { get; } = new AbsoluteValueComparer();
-            public bool Equals(int x, int y) => Math.Abs(x) == Math.Abs(y);
-            public int GetHashCode(int x) => Math.Abs(x).GetHashCode();
+            public static EqualityComparer<T> Instance { get; } = EqualityComparer<T>.Create(
+                (x, y) => EqualityComparer<T>.Default.Equals(x, y));
         }
     }
 }
