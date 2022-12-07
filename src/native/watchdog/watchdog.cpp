@@ -40,15 +40,15 @@ int run_timed_process(const long timeout, const int exe_argc, const char *exe_pa
         cmdline.append(exe_path_and_argv[i]);
     }
 
-    STARTUPINFO startup_info;
+    STARTUPINFOA startup_info;
     PROCESS_INFORMATION proc_info;
-    int exit_code;
+    unsigned long exit_code;
 
     ZeroMemory(&startup_info, sizeof(startup_info));
     startup_info.cb = sizeof(startup_info);
     ZeroMemory(&proc_info, sizeof(proc_info));
 
-    if (!CreateProcess(NULL, &cmdline[0], NULL, NULL, FALSE, 0, NULL, NULL,
+    if (!CreateProcessA(NULL, &cmdline[0], NULL, NULL, FALSE, 0, NULL, NULL,
                        &startup_info, &proc_info))
     {
         int error_code = GetLastError();
