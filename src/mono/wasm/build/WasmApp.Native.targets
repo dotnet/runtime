@@ -674,10 +674,12 @@
       <WasmMemorySnapshotCaptureLine Include="(await import('fs')).promises.writeFile('./$(WasmMemorySnapshotFileName)', Module.HEAP8)%3B" />
     </ItemGroup>
     <WriteLinesToFile File="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Lines="@(WasmMemorySnapshotCaptureLine)" Overwrite="true" Encoding="UTF-8" />
+    <Message Text="Snapshot runner generated at $(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Importance="High" />
     <Exec WorkingDirectory="$(WasmAppDir)" Command="$(EmscriptenNodeExecutable) $(WasmMemorySnapshotCaptureGenerator)" />
+    <Message Text="Snapshot taken at $(WasmAppDir)$(WasmMemorySnapshotFileName)" Importance="High" />
     <AppendMemorySnapshotToWasmFile Source="$(WasmAppDir)dotnet.wasm" Destination="$(WasmAppDir)dotnet2.wasm" DataSectionFile="$(WasmAppDir)$(WasmMemorySnapshotFileName)" />
     <Delete Files="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator);$(WasmAppDir)dotnet.wasm;$(WasmAppDir)$(WasmMemorySnapshotFileName)" />
     <Move SourceFiles="$(WasmAppDir)dotnet2.wasm" DestinationFiles="$(WasmAppDir)dotnet.wasm" />
-    <Message Text="Memory snapshot merged into the dotnet.wasm" Importance="High" />
+    <Message Text="Memory snapshot merged into the $(WasmAppDir)dotnet.wasm" Importance="High" />
   </Target>
 </Project>
