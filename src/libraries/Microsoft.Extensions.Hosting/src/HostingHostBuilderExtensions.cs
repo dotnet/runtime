@@ -198,6 +198,12 @@ namespace Microsoft.Extensions.Hosting
                           .UseServiceProviderFactory(context => new DefaultServiceProviderFactory(CreateDefaultServiceProviderOptions(context)));
         }
 
+        private static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
+        {
+            SetDefaultContentRoot(hostConfigBuilder);
+            AddDefaultHostConfigurationSources(hostConfigBuilder, args);
+        }
+
         internal static void SetDefaultContentRoot(IConfigurationBuilder hostConfigBuilder)
         {
             // If we're running anywhere other than C:\Windows\system32, we default to using the CWD for the ContentRoot.
@@ -225,12 +231,6 @@ namespace Microsoft.Extensions.Hosting
             {
                 hostConfigBuilder.AddCommandLine(args);
             }
-        }
-
-        private static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
-        {
-            SetDefaultContentRoot(hostConfigBuilder);
-            AddDefaultHostConfigurationSources(hostConfigBuilder, args);
         }
 
         internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[]? args)
