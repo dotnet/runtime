@@ -144,7 +144,6 @@ namespace Internal.Runtime.TypeLoader
             bool successful = false;
             IntPtr eeTypePtrPlusGCDesc = IntPtr.Zero;
             IntPtr writableDataPtr = IntPtr.Zero;
-            DynamicModule* dynamicModulePtr = null;
             IntPtr gcStaticData = IntPtr.Zero;
             IntPtr nonGcStaticData = IntPtr.Zero;
             IntPtr genericComposition = IntPtr.Zero;
@@ -161,10 +160,6 @@ namespace Internal.Runtime.TypeLoader
                 {
                     pTemplateEEType = pTemplateEEType->DynamicTemplateType;
                 }
-
-                ModuleInfo moduleInfo = TypeLoaderEnvironment.GetModuleInfoForType(state.TypeBeingBuilt);
-                dynamicModulePtr = moduleInfo.DynamicModulePtr;
-                Debug.Assert(dynamicModulePtr != null);
 
                 uint valueTypeFieldPaddingEncoded = 0;
                 int baseSize = 0;
@@ -304,8 +299,6 @@ namespace Internal.Runtime.TypeLoader
                         optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
                     }
 
-                    rareFlags |= (uint)EETypeRareFlags.HasDynamicModuleFlag;
-
                     optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
 
                     // Dispatch map is fetched from template type
@@ -348,9 +341,6 @@ namespace Internal.Runtime.TypeLoader
                     // Dynamic types have an extra pointer-sized field that contains a pointer to their template type
                     cbEEType += IntPtr.Size;
 
-                    // Add another pointer sized field for a DynamicModule
-                    cbEEType += IntPtr.Size;
-
                     int cbGCDesc = GetInstanceGCDescSize(state, pTemplateEEType, isValueType, isArray);
                     int cbGCDescAligned = MemoryHelpers.AlignUp(cbGCDesc, IntPtr.Size);
 
@@ -380,8 +370,6 @@ namespace Internal.Runtime.TypeLoader
                     // will assert that the type is dynamic, just to make sure we are not making any changes to statically compiled types
                     pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
                     optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
-
-                    pEEType->DynamicModule = dynamicModulePtr;
 
                     // Copy VTable entries from template type
                     IntPtr* pVtable = (IntPtr*)((byte*)pEEType + sizeof(MethodTable));

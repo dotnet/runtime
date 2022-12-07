@@ -2970,8 +2970,6 @@ public:
 
     typedef ArrayStack<GenTree*> GenTreeStack;
 
-    static bool gtHasCallOnStack(GenTreeStack* parentStack);
-
 //=========================================================================
 // BasicBlock functions
 #ifdef DEBUG

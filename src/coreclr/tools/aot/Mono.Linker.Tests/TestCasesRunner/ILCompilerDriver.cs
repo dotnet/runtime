@@ -16,7 +16,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class ILCompilerDriver
 	{
-		private const string DefaultSystemModule = "System.Private.CoreLib";
+		internal const string DefaultSystemModule = "System.Private.CoreLib";
 
 		public ILScanResults Trim (ILCompilerOptions options, ILogWriter logWriter)
 		{

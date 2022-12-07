@@ -61,13 +61,6 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
         }
 
-#if FEATURE_UNIVERSAL_GENERICS
-        public override IntPtr GetDelegateThunk(Delegate delegateObject, int thunkKind)
-        {
-            return CallConverterThunk.GetDelegateThunk(delegateObject, thunkKind);
-        }
-#endif
-
         public override bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, bool lookForDefaultImplementation, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
         {
             return TypeLoaderEnvironment.Instance.TryGetGenericVirtualTargetForTypeAndSlot(targetHandle, ref declaringType, genericArguments, ref methodName, ref methodSignature, lookForDefaultImplementation, out methodPointer, out dictionaryPointer, out slotUpdated);
@@ -589,58 +582,6 @@ namespace Internal.Runtime.TypeLoader
             return (targetMethod != IntPtr.Zero);
         }
 
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        public bool TryResolveSingleMetadataFixup(ModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
-        {
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                try
-                {
-                    return TypeBuilder.TryResolveSingleMetadataFixup((NativeFormatModuleInfo)module, metadataToken, fixupKind, out fixupResolution);
-                }
-                catch (Exception ex)
-                {
-                    Environment.FailFast("Failed to resolve metadata token " +
-                        ((uint)metadataToken).LowLevelToString() + ": " + ex.Message);
-                    fixupResolution = IntPtr.Zero;
-                    return false;
-                }
-            }
-        }
-#endif
-
-        public bool TryDispatchMethodOnTarget(NativeFormatModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
-        {
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return TryDispatchMethodOnTarget_Inner(
-                    module,
-                    metadataToken,
-                    targetInstanceType,
-                    out methodAddress);
-            }
-        }
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        internal DispatchCellInfo ConvertDispatchCellInfo(NativeFormatModuleInfo module, DispatchCellInfo cellInfo)
-        {
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return ConvertDispatchCellInfo_Inner(
-                    module,
-                    cellInfo);
-            }
-        }
-#endif
-
-        internal unsafe bool TryResolveTypeSlotDispatch(MethodTable* targetType, MethodTable* interfaceType, ushort slot, out IntPtr methodAddress)
-        {
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return TryResolveTypeSlotDispatch_Inner(targetType, interfaceType, slot, out methodAddress);
-            }
-        }
-
         public static IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)
         {
             if (FunctionPointerOps.IsGenericMethodPointer(unboxingFunctionPointer))
@@ -670,25 +611,6 @@ namespace Internal.Runtime.TypeLoader
                     exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(fatFunctionPointerTarget,
                                                                                         declaringType.ToIntPtr());
                 }
-#if FEATURE_UNIVERSAL_GENERICS
-                else
-                {
-                    IntPtr newExactTarget;
-                    // This check looks for unboxing and instantiating stubs generated dynamically as thunks in the calling convention converter
-                    if (CallConverterThunk.TryGetNonUnboxingFunctionPointerFromUnboxingAndInstantiatingStub(exactTarget,
-                        declaringType, out newExactTarget))
-                    {
-                        // CallingConventionConverter determined non-unboxing stub
-                        exactTarget = newExactTarget;
-                    }
-                    else
-                    {
-                        // Target method was a method on a generic, but it wasn't a shared generic, and thus none of the above
-                        // complex unboxing stub digging logic was necessary. Do nothing, and use exactTarget as discovered
-                        // from GetCodeTarget
-                    }
-                }
-#endif
             }
 
             return exactTarget;
