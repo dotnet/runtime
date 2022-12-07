@@ -7231,20 +7231,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			}
 			case CEE_MONO_TLS: {
-				gint32 key = read32 (td->ip + 1);
-				td->ip += 5;
-				g_assertf (key == TLS_KEY_SGEN_THREAD_INFO, "%d", key);
-				interp_add_ins (td, MINT_MONO_SGEN_THREAD_INFO);
-				push_simple_type (td, STACK_TYPE_MP);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				g_error ("We shouldn't use managed allocator with interpreter");
 				break;
 			}
 			case CEE_MONO_ATOMIC_STORE_I4:
-				CHECK_STACK (td, 2);
-				interp_add_ins (td, MINT_MONO_ATOMIC_STORE_I4);
-				td->sp -= 2;
-				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-				td->ip += 2;
+				g_error ("We shouldn't use managed allocator with interpreter");
 				break;
 			case CEE_MONO_SAVE_LMF:
 			case CEE_MONO_RESTORE_LMF:
