@@ -49,9 +49,43 @@ namespace Microsoft.Extensions.Internal
         /// <returns>The pretty printed type name.</returns>
         public static string GetTypeDisplayName(Type type, bool fullName = true, bool includeGenericParameterNames = false, bool includeGenericParameters = true, char nestedTypeDelimiter = DefaultNestedTypeDelimiter)
         {
-            var builder = new StringBuilder();
-            ProcessType(builder, type, new DisplayNameOptions(fullName, includeGenericParameterNames, includeGenericParameters, nestedTypeDelimiter));
-            return builder.ToString();
+            if (type.IsGenericType)
+            {
+                Type[] genericArguments = type.GetGenericArguments();
+                var builder = new StringBuilder();
+                ProcessGenericType(builder, type, genericArguments, genericArguments.Length, new DisplayNameOptions(fullName, includeGenericParameterNames, includeGenericParameters, nestedTypeDelimiter));
+                return builder.ToString();
+            }
+            else if (type.IsArray)
+            {
+                var builder = new StringBuilder();
+                ProcessArrayType(builder, type, new DisplayNameOptions(fullName, includeGenericParameterNames, includeGenericParameters, nestedTypeDelimiter));
+                return builder.ToString();
+            }
+            else if (_builtInTypeNames.TryGetValue(type, out string? builtInName))
+            {
+                return builtInName;
+            }
+            else if (type.IsGenericParameter)
+            {
+                if (includeGenericParameterNames)
+                {
+                    return type.Name;
+                }
+
+                return string.Empty;
+            }
+            else
+            {
+                string name = fullName ? type.FullName! : type.Name;
+
+                if (nestedTypeDelimiter != DefaultNestedTypeDelimiter)
+                {
+                    return name.Replace(DefaultNestedTypeDelimiter, nestedTypeDelimiter);
+                }
+
+                return name;
+            }
         }
 
         private static void ProcessType(StringBuilder builder, Type type, in DisplayNameOptions options)
