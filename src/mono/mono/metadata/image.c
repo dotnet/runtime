@@ -46,6 +46,7 @@
 #include <mono/metadata/metadata-update.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mono-private-unstable.h>
+#include <mono/metadata/webcil-loader.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -258,6 +259,10 @@ mono_images_init (void)
 	debug_assembly_unload = g_hasenv ("MONO_DEBUG_ASSEMBLY_UNLOAD");
 
 	install_pe_loader ();
+
+#ifndef DISABLE_WEBCIL
+	mono_webcil_loader_install ();
+#endif
 
 	mutex_inited = TRUE;
 }
