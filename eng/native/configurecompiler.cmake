@@ -480,9 +480,9 @@ if (CLR_CMAKE_HOST_UNIX)
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
   
-  # Separate functions so linker can remove them. But not on Apple mobile platforms because
+  # Separate functions so linker can remove them. But not on tvOS because
   # -ffunction-sections is not supported with -fembed-bitcode.
-  if (NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_IOS)
+  if (NOT CLR_CMAKE_HOST_TVOS)
     add_compile_options(-ffunction-sections)
   endif()
 
