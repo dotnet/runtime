@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -32,7 +31,7 @@ namespace System.Net.Http
             static string GetOrAddCachedValue([NotNull] ref string? cache, HeaderDescriptor descriptor, ReadOnlySpan<byte> value, Encoding? encoding)
             {
                 string? lastValue = cache;
-                if (lastValue is null || !Ascii.Equals(value, lastValue))
+                if (lastValue is null || !ByteArrayHelpers.EqualsOrdinalAscii(lastValue, value))
                 {
                     cache = lastValue = descriptor.GetHeaderValue(value, encoding);
                 }

@@ -13,9 +13,6 @@ namespace System
             Debug.Assert(left != null, "Expected non-null string");
             DebugAssertArrayInputs(right, rightStartIndex, rightLength);
 
-#if NET7_0_OR_GREATER
-            return Buffers.Text.Ascii.EndsWithIgnoreCase(left, right.AsSpan(rightStartIndex, rightLength));
-#else // used by System.Net.Http.WinHttpHandler which targets older TFMs
             if (left.Length != rightLength)
             {
                 return false;
@@ -40,7 +37,6 @@ namespace System
             }
 
             return true;
-#endif
         }
 
         internal static void Trim(char[] array, ref int startIndex, ref int length)

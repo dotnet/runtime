@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Text;
 using System.Diagnostics;
 using System.Text;
 
@@ -226,11 +225,11 @@ namespace System.Net.Mime
                 {
                     //if data contains Unicode and Unicode is permitted, then
                     //it is valid in a quoted string in a header.
-                    if (Ascii.IsAscii(data[offset]) && !Qtext[data[offset]])
+                    if (Ascii.IsValid(data[offset]) && !Qtext[data[offset]])
                         throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
                 //not permitting Unicode, in which case Unicode is a formatting error
-                else if (!Ascii.IsAscii(data[offset]) || !Qtext[data[offset]])
+                else if (!Ascii.IsValid(data[offset]) || !Qtext[data[offset]])
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
@@ -256,7 +255,7 @@ namespace System.Net.Mime
             int start = offset;
             for (; offset < data.Length; offset++)
             {
-                if (!Ascii.IsAscii(data[offset]))
+                if (!Ascii.IsValid(data[offset]))
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
@@ -367,7 +366,7 @@ namespace System.Net.Mime
 
         private static bool CheckForUnicode(char ch, bool allowUnicode)
         {
-            if (Ascii.IsAscii(ch))
+            if (Ascii.IsValid(ch))
             {
                 return false;
             }

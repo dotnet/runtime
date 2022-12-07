@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
-using System.Buffers.Text;
+using System.Text;
 using System.Buffers;
 
 namespace System.Runtime.InteropServices
@@ -498,7 +498,7 @@ namespace System.Runtime.InteropServices
         internal static unsafe byte* StringToAnsiString(char* pManaged, int lenUnicode, byte* pNative, bool terminateWithNull,
             bool bestFit, bool throwOnUnmappableChar)
         {
-            bool allAscii = Ascii.IsAscii(new ReadOnlySpan<char>(pManaged, lenUnicode));
+            bool allAscii = Ascii.IsValid(new ReadOnlySpan<char>(pManaged, lenUnicode));
             int length;
 
             if (allAscii) // If all ASCII, map one UNICODE character to one ANSI char
@@ -516,7 +516,7 @@ namespace System.Runtime.InteropServices
             }
             if (allAscii) // ASCII conversion
             {
-                OperationStatus conversionStatus = Ascii.FromUtf16(new ReadOnlySpan<char>(pManaged, length), new Span<byte>(pNative, length), out _, out _);
+                OperationStatus conversionStatus = Ascii.FromUtf16(new ReadOnlySpan<char>(pManaged, length), new Span<byte>(pNative, length), out _);
                 Debug.Assert(conversionStatus == OperationStatus.Done);
             }
             else // Let OS convert
@@ -545,7 +545,7 @@ namespace System.Runtime.InteropServices
         {
             ReadOnlySpan<byte> span = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pchBuffer);
             ansiBufferLen = span.Length;
-            bool allAscii = Ascii.IsAscii(span);
+            bool allAscii = Ascii.IsValid(span);
 
             if (allAscii)
             {

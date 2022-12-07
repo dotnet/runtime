@@ -1,19 +1,19 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Xunit;
 
-namespace System.Buffers.Text.Tests
+namespace System.Text.Tests
 {
     public static class ToUtf16Tests
     {
         [Fact]
         public static void EmptyInputs()
         {
-            Assert.Equal(OperationStatus.Done, Ascii.ToUtf16(ReadOnlySpan<byte>.Empty, Span<char>.Empty, out int bytesConsumed, out int charsWritten));
-            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(OperationStatus.Done, Ascii.ToUtf16(ReadOnlySpan<byte>.Empty, Span<char>.Empty, out int charsWritten));
             Assert.Equal(0, charsWritten);
         }
 
@@ -43,9 +43,8 @@ namespace System.Buffers.Text.Tests
 
                 // First, validate that the workhorse saw the incoming data as all-ASCII.
 
-                Assert.Equal(OperationStatus.Done, Ascii.ToUtf16(asciiSpan.Slice(i), utf16Span.Slice(i), out int bytesConsumed, out int charsWritten));
-                Assert.Equal(128 - i, bytesConsumed);
-                Assert.Equal(bytesConsumed, charsWritten);
+                Assert.Equal(OperationStatus.Done, Ascii.ToUtf16(asciiSpan.Slice(i), utf16Span.Slice(i), out int charsWritten));
+                Assert.Equal(128 - i, charsWritten);
 
                 // Then, validate that the data was transcoded properly.
 
@@ -88,9 +87,8 @@ namespace System.Buffers.Text.Tests
 
                 asciiSpan[i] |= (byte)0x80;
 
-                Assert.Equal(OperationStatus.InvalidData, Ascii.ToUtf16(asciiSpan, utf16Span, out int bytesConsumed, out int charsWritten));
-                Assert.Equal(i, bytesConsumed);
-                Assert.Equal(bytesConsumed, charsWritten);
+                Assert.Equal(OperationStatus.InvalidData, Ascii.ToUtf16(asciiSpan, utf16Span, out int charsWritten));
+                Assert.Equal(i, charsWritten);
 
                 // Next, validate that the ASCII data was transcoded properly.
 

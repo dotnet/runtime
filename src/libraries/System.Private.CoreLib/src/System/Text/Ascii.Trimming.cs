@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Numerics;
-using System.Text;
 
-namespace System.Buffers.Text
+namespace System.Text
 {
     public static partial class Ascii
     {

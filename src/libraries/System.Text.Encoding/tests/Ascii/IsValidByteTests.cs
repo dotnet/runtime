@@ -1,24 +1,24 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using Xunit;
 
-namespace System.Buffers.Text.Tests
+namespace System.Text.Tests
 {
-    public static class GetIndexOfFirstNonAsciiByteTests
+    public static class IsValidByteTests
     {
         private static byte GetNextValidAsciiByte() => (byte)Random.Shared.Next(0, 127 + 1);
         private static byte GetNextInvalidAsciiByte() => (byte)Random.Shared.Next(128, 255 + 1);
 
         [Fact]
-        public static void EmptyInput_IndexNotFound()
+        public static void EmptyInput_ReturnsTrue()
         {
-            Assert.Equal(-1, Ascii.GetIndexOfFirstNonAsciiByte(ReadOnlySpan<byte>.Empty));
-            Assert.True(Ascii.IsAscii(ReadOnlySpan<byte>.Empty));
+            Assert.True(Ascii.IsValid(ReadOnlySpan<byte>.Empty));
         }
 
         private static int[] BufferLengths = new[] {
@@ -45,11 +45,10 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(AsciiOnlyBuffers))]
-        public static void AllAscii_IndexNotFound(byte[] buffer)
+        public static void AllAscii_ReturnsTrue(byte[] buffer)
         {
-            Assert.Equal(-1, Ascii.GetIndexOfFirstNonAsciiByte(buffer));
-            Assert.True(Ascii.IsAscii(buffer));
-            Assert.All(buffer, character => Assert.True(Ascii.IsAscii(character)));
+            Assert.True(Ascii.IsValid(buffer));
+            Assert.All(buffer, character => Assert.True(Ascii.IsValid(character)));
         }
 
         public static IEnumerable<object[]> ContainingNonAsciiCharactersBuffers
@@ -75,14 +74,13 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ContainingNonAsciiCharactersBuffers))]
-        public static void NonAscii_IndexFound(int expectedIndex, byte[] buffer)
+        public static void NonAsciiAtGivenIndex(int nonAsciiIndex, byte[] buffer)
         {
-            Assert.Equal(expectedIndex, Ascii.GetIndexOfFirstNonAsciiByte(buffer));
-            Assert.False(Ascii.IsAscii(buffer));
+            Assert.False(Ascii.IsValid(buffer));
 
             for (int i = 0; i < buffer.Length; i++)
             {
-                Assert.Equal(i != expectedIndex, Ascii.IsAscii(buffer[i]));
+                Assert.Equal(i != nonAsciiIndex, Ascii.IsValid(buffer[i]));
             }
         }
 
@@ -109,7 +107,7 @@ namespace System.Buffers.Text.Tests
                 for (int i = 2 * Vector128<byte>.Count - 1; i >= 0; i--)
                 {
                     bytes[100 + i * 13] = 0x80; // 13 is relatively prime to 32, so it ensures all possible positions are hit
-                    Assert.Equal(100 + i * 13, Ascii.GetIndexOfFirstNonAsciiByte(bytes));
+                    Assert.False(Ascii.IsValid(bytes));
                 }
             }
         }
@@ -136,7 +134,7 @@ namespace System.Buffers.Text.Tests
 
                 for (int i = bytes.Length; i >= 0; i--)
                 {
-                    Assert.Equal(-1, Ascii.GetIndexOfFirstNonAsciiByte(bytes.Slice(0, i)));
+                    Assert.True(Ascii.IsValid(bytes.Slice(0, i)));
                 }
 
                 // Then, try it with non-ASCII bytes.
@@ -144,7 +142,7 @@ namespace System.Buffers.Text.Tests
                 for (int i = bytes.Length; i >= 1; i--)
                 {
                     bytes[i - 1] = 0x80; // set non-ASCII
-                    Assert.Equal(i - 1, Ascii.GetIndexOfFirstNonAsciiByte(bytes.Slice(0, i)));
+                    Assert.False(Ascii.IsValid(bytes.Slice(0, i)));
                 }
             }
         }

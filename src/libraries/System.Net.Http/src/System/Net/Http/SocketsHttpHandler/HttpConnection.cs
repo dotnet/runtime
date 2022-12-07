@@ -1023,7 +1023,7 @@ namespace System.Net.Http
             {
                 ReadOnlySpan<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                if (knownReasonPhrase != null && Ascii.Equals(reasonBytes, knownReasonPhrase))
+                if (knownReasonPhrase != null && ByteArrayHelpers.EqualsOrdinalAscii(knownReasonPhrase, reasonBytes))
                 {
                     response.SetReasonPhraseWithoutValidation(knownReasonPhrase);
                 }
@@ -1448,7 +1448,7 @@ namespace System.Net.Http
             int offset = _writeOffset;
             if (s.Length <= _writeBuffer.Length - offset)
             {
-                OperationStatus operationStatus = Ascii.FromUtf16(s, _writeBuffer.AsSpan(offset), out _, out int bytesWritten);
+                OperationStatus operationStatus = Ascii.FromUtf16(s, _writeBuffer.AsSpan(offset), out int bytesWritten);
                 Debug.Assert(operationStatus == OperationStatus.Done);
                 _writeOffset = offset + bytesWritten;
 
@@ -1462,7 +1462,7 @@ namespace System.Net.Http
 
         private async Task WriteStringAsyncSlow(string s, bool async)
         {
-            if (!Ascii.IsAscii(s))
+            if (!Ascii.IsValid(s))
             {
                 throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
             }

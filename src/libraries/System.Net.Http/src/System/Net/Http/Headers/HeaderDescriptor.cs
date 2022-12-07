@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -144,7 +143,7 @@ namespace System.Net.Http.Headers
                 {
                     for (int i = 0; i < knownValues.Length; i++)
                     {
-                        if (Ascii.Equals(headerValue, knownValues[i]))
+                        if (ByteArrayHelpers.EqualsOrdinalAscii(knownValues[i], headerValue))
                         {
                             return knownValues[i];
                         }
@@ -252,7 +251,7 @@ namespace System.Net.Http.Headers
 
             Debug.Assert(candidate is null || candidate.Length == contentTypeValue.Length);
 
-            return candidate != null && Ascii.Equals(contentTypeValue, candidate) ?
+            return candidate != null && ByteArrayHelpers.EqualsOrdinalAscii(candidate, contentTypeValue) ?
                 candidate :
                 null;
         }

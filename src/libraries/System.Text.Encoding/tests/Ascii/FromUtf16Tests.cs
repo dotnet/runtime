@@ -1,19 +1,19 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Security.Cryptography;
 using Xunit;
 
-namespace System.Buffers.Text.Tests
+namespace System.Text.Tests
 {
     public static class FromUtf16Tests
     {
         [Fact]
         public static unsafe void EmptyInputs()
         {
-            Assert.Equal(OperationStatus.Done, Ascii.FromUtf16(ReadOnlySpan<char>.Empty, Span<byte>.Empty, out int charsConsumed, out int bytesWritten));
-            Assert.Equal(0, charsConsumed);
-            Assert.Equal(charsConsumed, bytesWritten);
+            Assert.Equal(OperationStatus.Done, Ascii.FromUtf16(ReadOnlySpan<char>.Empty, Span<byte>.Empty, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
         }
 
         [Fact]
@@ -41,9 +41,8 @@ namespace System.Buffers.Text.Tests
                 asciiSpan.Clear(); // remove any data from previous iteration
 
                 // First, validate that the workhorse saw the incoming data as all-ASCII.
-                Assert.Equal(OperationStatus.Done, Ascii.FromUtf16(utf16Span.Slice(i), asciiSpan.Slice(i), out int charsConsumed, out int bytesWritten));
-                Assert.Equal(128 - i, charsConsumed);
-                Assert.Equal(charsConsumed, bytesWritten);
+                Assert.Equal(OperationStatus.Done, Ascii.FromUtf16(utf16Span.Slice(i), asciiSpan.Slice(i), out int bytesWritten));
+                Assert.Equal(128 - i, bytesWritten);
 
                 // Then, validate that the data was transcoded properly.
 
@@ -85,9 +84,8 @@ namespace System.Buffers.Text.Tests
                 // correctly saw the data as non-ASCII.
 
                 utf16Span[i] = '\u0123'; // use U+0123 instead of U+0080 since it catches inappropriate pmovmskb usage
-                Assert.Equal(OperationStatus.InvalidData, Ascii.FromUtf16(utf16Span, asciiSpan, out int charsConsumed, out int bytesWritten));
-                Assert.Equal(i, charsConsumed);
-                Assert.Equal(charsConsumed, bytesWritten);
+                Assert.Equal(OperationStatus.InvalidData, Ascii.FromUtf16(utf16Span, asciiSpan, out int bytesWritten));
+                Assert.Equal(i, bytesWritten);
 
                 // Next, validate that the ASCII data was transcoded properly.
 

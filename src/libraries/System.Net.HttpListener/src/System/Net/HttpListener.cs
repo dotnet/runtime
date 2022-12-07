@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Authentication.ExtendedProtection;
@@ -206,7 +205,7 @@ namespace System.Net
                         toLowerLength = destination.Length;
                     }
 
-                    if (!Ascii.TryToLowerInPlace(destination.Slice(0, toLowerLength), out _))
+                    if (Ascii.ToLowerInPlace(destination.Slice(0, toLowerLength), out _) != OperationStatus.Done)
                     {
                         throw new IndexOutOfRangeException(); // backward compat for non-ASCII characters
                     }

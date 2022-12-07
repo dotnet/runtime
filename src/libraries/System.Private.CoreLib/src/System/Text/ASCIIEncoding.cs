@@ -189,7 +189,7 @@ namespace System.Text
 
             if (!(fallback is EncoderReplacementFallback replacementFallback
                 && replacementFallback.MaxCharCount == 1
-                && Ascii.IsAscii(replacementFallback.DefaultString[0])))
+                && Ascii.IsValid(replacementFallback.DefaultString[0])))
             {
                 // Unrecognized fallback mechanism - count chars manually.
 
@@ -355,8 +355,8 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetBytesCommon
         private protected sealed override unsafe int GetBytesFast(char* pChars, int charsLength, byte* pBytes, int bytesLength, out int charsConsumed)
         {
-            Ascii.FromUtf16(new ReadOnlySpan<char>(pChars, charsLength), new Span<byte>(pBytes, bytesLength), out charsConsumed, out int bytesWritten);
-            return bytesWritten;
+            Ascii.FromUtf16(new ReadOnlySpan<char>(pChars, charsLength), new Span<byte>(pBytes, bytesLength), out charsConsumed);
+            return charsConsumed;
         }
 
         private protected sealed override unsafe int GetBytesWithFallback(ReadOnlySpan<char> chars, int originalCharsLength, Span<byte> bytes, int originalBytesLength, EncoderNLS? encoder)
@@ -367,7 +367,7 @@ namespace System.Text
 
             if (((encoder is null) ? this.EncoderFallback : encoder.Fallback) is EncoderReplacementFallback replacementFallback
                 && replacementFallback.MaxCharCount == 1
-                && Ascii.IsAscii(replacementFallback.DefaultString[0]))
+                && Ascii.IsValid(replacementFallback.DefaultString[0]))
             {
                 byte replacementByte = (byte)replacementFallback.DefaultString[0];
 
@@ -381,7 +381,7 @@ namespace System.Text
 
                     if (idx < numElementsToConvert)
                     {
-                        Ascii.FromUtf16(chars.Slice(idx), bytes.Slice(idx), out int charsConsumed, out _);
+                        Ascii.FromUtf16(chars.Slice(idx), bytes.Slice(idx), out int charsConsumed);
 
                         idx += charsConsumed;
                     }
@@ -627,8 +627,8 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetCharsCommon
         private protected sealed override unsafe int GetCharsFast(byte* pBytes, int bytesLength, char* pChars, int charsLength, out int bytesConsumed)
         {
-            Ascii.ToUtf16(new ReadOnlySpan<byte>(pBytes, bytesLength), new Span<char>(pChars, charsLength), out bytesConsumed, out int charsWritten);
-            return charsWritten;
+            Ascii.ToUtf16(new ReadOnlySpan<byte>(pBytes, bytesLength), new Span<char>(pChars, charsLength), out bytesConsumed);
+            return bytesConsumed;
         }
 
         private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder)
@@ -653,7 +653,7 @@ namespace System.Text
 
                     if (idx < numElementsToConvert)
                     {
-                        Ascii.ToUtf16(bytes.Slice(idx), chars.Slice(idx), out int bytesConsumed, out _);
+                        Ascii.ToUtf16(bytes.Slice(idx), chars.Slice(idx), out int bytesConsumed);
                         idx += bytesConsumed;
                     }
 
@@ -767,7 +767,7 @@ namespace System.Text
             if (!bytes.IsEmpty)
             {
                 byte b = bytes[0];
-                if (Ascii.IsAscii(b))
+                if (Ascii.IsValid(b))
                 {
                     // ASCII byte
 

@@ -26,7 +26,7 @@ namespace System.Text.Unicode
             Debug.Assert(pOutputBuffer != null || outputCharsRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
             // First, try vectorized conversion.
-            OperationStatus status = Ascii.ToUtf16(new ReadOnlySpan<byte>(pInputBuffer, inputLength), new Span<char>(pOutputBuffer, outputCharsRemaining), out int bytesConsumed, out _);
+            OperationStatus status = Ascii.ToUtf16(new ReadOnlySpan<byte>(pInputBuffer, inputLength), new Span<char>(pOutputBuffer, outputCharsRemaining), out int bytesConsumed);
 
             pInputBuffer += bytesConsumed;
             pOutputBuffer += bytesConsumed;
@@ -846,7 +846,7 @@ namespace System.Text.Unicode
             // First, try vectorized conversion.
 
             {
-                OperationStatus status = Ascii.FromUtf16(new ReadOnlySpan<char>(pInputBuffer, inputLength), new Span<byte>(pOutputBuffer, outputBytesRemaining), out int charsConsumed, out _);
+                OperationStatus status = Ascii.FromUtf16(new ReadOnlySpan<char>(pInputBuffer, inputLength), new Span<byte>(pOutputBuffer, outputBytesRemaining), out int charsConsumed);
 
                 pInputBuffer += charsConsumed;
                 pOutputBuffer += charsConsumed;

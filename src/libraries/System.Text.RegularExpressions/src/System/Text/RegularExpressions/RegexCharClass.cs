@@ -990,7 +990,7 @@ namespace System.Text.RegularExpressions
 
             return true;
 #else
-            return Buffers.Text.Ascii.IsAscii(s);
+            return Text.Ascii.IsValid(s);
 #endif
         }
 

@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace System.Buffers.Text
+namespace System.Text
 {
     public static partial class Ascii
     {
@@ -14,7 +14,7 @@ namespace System.Buffers.Text
         /// <param name="buffer">The buffer to scan.</param>
         /// <returns>The index in <paramref name="buffer"/> where the first non-ASCII
         /// byte appears, or -1 if the buffer contains only ASCII bytes.</returns>
-        public static unsafe int GetIndexOfFirstNonAsciiByte(ReadOnlySpan<byte> buffer)
+        internal static unsafe int GetIndexOfFirstNonAsciiByte(ReadOnlySpan<byte> buffer)
         {
             if (buffer.IsEmpty)
             {
@@ -36,7 +36,7 @@ namespace System.Buffers.Text
         /// <param name="buffer">The buffer to scan.</param>
         /// <returns>The index in <paramref name="buffer"/> where the first non-ASCII
         /// char appears, or -1 if the buffer contains only ASCII char.</returns>
-        public static unsafe int GetIndexOfFirstNonAsciiChar(ReadOnlySpan<char> buffer)
+        internal static unsafe int GetIndexOfFirstNonAsciiChar(ReadOnlySpan<char> buffer)
         {
             if (buffer.IsEmpty)
             {
@@ -58,7 +58,7 @@ namespace System.Buffers.Text
         /// <param name="value">The value to inspect.</param>
         /// <returns>True if <paramref name="value"/> contains only ASCII bytes or is
         /// empty; False otherwise.</returns>
-        public static unsafe bool IsAscii(ReadOnlySpan<byte> value) => value.IsEmpty || GetIndexOfFirstNonAsciiByte(value) < 0;
+        public static unsafe bool IsValid(ReadOnlySpan<byte> value) => value.IsEmpty || GetIndexOfFirstNonAsciiByte(value) < 0;
 
         /// <summary>
         /// Determines whether the provided value contains only ASCII chars.
@@ -66,20 +66,20 @@ namespace System.Buffers.Text
         /// <param name="value">The value to inspect.</param>
         /// <returns>True if <paramref name="value"/> contains only ASCII chars or is
         /// empty; False otherwise.</returns>
-        public static unsafe bool IsAscii(ReadOnlySpan<char> value) => value.IsEmpty || GetIndexOfFirstNonAsciiChar(value) < 0;
+        public static unsafe bool IsValid(ReadOnlySpan<char> value) => value.IsEmpty || GetIndexOfFirstNonAsciiChar(value) < 0;
 
         /// <summary>
         /// Determines whether the provided value is ASCII byte.
         /// </summary>
         /// <param name="value">The value to inspect.</param>
         /// <returns>True if <paramref name="value"/> is ASCII, False otherwise.</returns>
-        public static unsafe bool IsAscii(byte value) => value <= 127;
+        public static unsafe bool IsValid(byte value) => value <= 127;
 
         /// <summary>
         /// Determines whether the provided value is ASCII char.
         /// </summary>
         /// <param name="value">The value to inspect.</param>
         /// <returns>True if <paramref name="value"/> is ASCII, False otherwise.</returns>
-        public static unsafe bool IsAscii(char value) => value <= 127;
+        public static unsafe bool IsValid(char value) => value <= 127;
     }
 }

@@ -7090,71 +7090,6 @@ namespace System.Buffers
 }
 namespace System.Buffers.Text
 {
-    public static class Ascii
-    {
-        public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
-        public static int GetIndexOfFirstNonAsciiByte(System.ReadOnlySpan<byte> buffer) { throw null; }
-        public static int GetIndexOfFirstNonAsciiChar(System.ReadOnlySpan<char> buffer) { throw null; }
-        public static int IndexOf(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static int IndexOf(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static int IndexOfIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static int IndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static int IndexOfIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static int IndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static int LastIndexOf(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static int LastIndexOf(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static int LastIndexOfIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static bool IsAscii(System.ReadOnlySpan<byte> value) { throw null; }
-        public static bool IsAscii(System.ReadOnlySpan<char> value) { throw null; }
-        public static bool IsAscii(byte value) { throw null; }
-        public static bool IsAscii(char value) { throw null; }
-        public static bool TryGetHashCode(System.ReadOnlySpan<byte> value, out int hashCode) { throw null; }
-        public static bool TryGetHashCode(System.ReadOnlySpan<char> value, out int hashCode) { throw null; }
-        public static bool TryGetHashCodeIgnoreCase(System.ReadOnlySpan<byte> value, out int hashCode) { throw null; }
-        public static bool TryGetHashCodeIgnoreCase(System.ReadOnlySpan<char> value, out int hashCode) { throw null; }
-        public static int GetHashCode(System.ReadOnlySpan<byte> value) { throw null; }
-        public static int GetHashCode(System.ReadOnlySpan<char> value) { throw null; }
-        public static int GetHashCodeIgnoreCase(System.ReadOnlySpan<byte> value) { throw null; }
-        public static int GetHashCodeIgnoreCase(System.ReadOnlySpan<char> value) { throw null; }
-        public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
-        public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
-        public static bool EqualsIgnoreCase(System.ReadOnlySpan<char> left, System.ReadOnlySpan<char> right) { throw null; }
-        public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
-        public static bool EndsWith(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static bool EndsWith(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static bool EndsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static bool EndsWithIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static bool EndsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static bool EndsWithIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static bool StartsWith(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static bool StartsWith(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static bool StartsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static bool StartsWithIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static bool StartsWithIgnoreCase(System.ReadOnlySpan<byte> text, System.ReadOnlySpan<char> value) { throw null; }
-        public static bool StartsWithIgnoreCase(System.ReadOnlySpan<char> text, System.ReadOnlySpan<byte> value) { throw null; }
-        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
-        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsConsumed, out int charsWritten) { throw null; }
-        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten) { throw null; }
-        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
-        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
-        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsConsumed, out int charsWritten) { throw null; }
-        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten) { throw null; }
-        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
-        public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten) { throw null; }
-        public static bool TryToLowerInPlace(System.Span<byte> value, out int bytesProcessed) { throw null; }
-        public static bool TryToLowerInPlace(System.Span<char> value, out int charsProcessed) { throw null; }
-        public static bool TryToUpperInPlace(System.Span<byte> value, out int bytesProcessed) { throw null; }
-        public static bool TryToUpperInPlace(System.Span<char> value, out int charsProcessed) { throw null; }
-        public static System.Range Trim(System.ReadOnlySpan<byte> value) { throw null; }
-        public static System.Range Trim(System.ReadOnlySpan<char> value) { throw null; }
-        public static System.Range TrimEnd(System.ReadOnlySpan<byte> value) { throw null; }
-        public static System.Range TrimEnd(System.ReadOnlySpan<char> value) { throw null; }
-        public static System.Range TrimStart(System.ReadOnlySpan<byte> value) { throw null; }
-        public static System.Range TrimStart(System.ReadOnlySpan<char> value) { throw null; }
-    }
     public static partial class Base64
     {
         public static System.Buffers.OperationStatus DecodeFromUtf8(System.ReadOnlySpan<byte> utf8, System.Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
@@ -13843,6 +13778,33 @@ namespace System.Security.Principal
 }
 namespace System.Text
 {
+    public static class Ascii
+    {
+        public static bool IsValid(System.ReadOnlySpan<byte> value) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> value) { throw null; }
+        public static bool IsValid(byte value) { throw null; }
+        public static bool IsValid(char value) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLowerInPlace(System.Span<byte> value, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLowerInPlace(System.Span<char> value, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpperInPlace(System.Span<byte> value, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpperInPlace(System.Span<char> value, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Range Trim(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range Trim(System.ReadOnlySpan<char> value) { throw null; }
+        public static System.Range TrimEnd(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range TrimEnd(System.ReadOnlySpan<char> value) { throw null; }
+        public static System.Range TrimStart(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range TrimStart(System.ReadOnlySpan<char> value) { throw null; }
+    }
     public abstract partial class Decoder
     {
         protected Decoder() { }

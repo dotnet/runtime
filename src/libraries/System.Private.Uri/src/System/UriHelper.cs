@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Text;
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -138,7 +137,7 @@ namespace System
             Debug.Assert(!noEscape['%'], "Need to treat % specially; it should be part of any escaped set");
             int i = 0;
             char c;
-            for (; i < stringToEscape.Length && Ascii.IsAscii(c = stringToEscape[i]) && noEscape[c]; i++) ;
+            for (; i < stringToEscape.Length && Ascii.IsValid(c = stringToEscape[i]) && noEscape[c]; i++) ;
             if (i == stringToEscape.Length)
             {
                 return stringToEscape;
@@ -177,7 +176,7 @@ namespace System
             Debug.Assert(!noEscape['%'], "Need to treat % specially in case checkExistingEscaped is true");
             int i = 0;
             char c;
-            for (; i < stringToEscape.Length && Ascii.IsAscii(c = stringToEscape[i]) && noEscape[c]; i++) ;
+            for (; i < stringToEscape.Length && Ascii.IsValid(c = stringToEscape[i]) && noEscape[c]; i++) ;
             if (i == stringToEscape.Length)
             {
                 dest.Append(stringToEscape);

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -41,16 +40,14 @@ namespace System.Text.Tests
             EncodingHelpers.Decode(exceptionEncoding, bytes, index, count, expected);
 
             char[] actual = new char[expected.Length];
-            Assert.Equal(OperationStatus.Done, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out int bytesConsumed, out int charsWritten));
-            Assert.Equal(count, bytesConsumed);
+            Assert.Equal(OperationStatus.Done, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out int charsWritten));
             Assert.Equal(expected.Length, charsWritten);
             Assert.Equal(expected, new string(actual.AsSpan(0, charsWritten)));
 
             if (expected.Length > 1)
             {
                 actual = new char[expected.Length - 1];
-                Assert.Equal(OperationStatus.DestinationTooSmall, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out bytesConsumed, out charsWritten));
-                Assert.Equal(count - 1, bytesConsumed);
+                Assert.Equal(OperationStatus.DestinationTooSmall, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out charsWritten));
                 Assert.Equal(expected.Length - 1, charsWritten);
                 Assert.Equal(expected.Substring(0, expected.Length - 1), new string(actual.AsSpan(0, charsWritten)));
             }
@@ -82,9 +79,8 @@ namespace System.Text.Tests
             NegativeEncodingTests.Decode_Invalid(exceptionEncoding, bytes, index, count);
 
             char[] actual = new char[expected.Length];
-            Assert.Equal(OperationStatus.InvalidData, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out int bytesConsumed, out int charsWritten));
-            Assert.Equal(expectedBytesConsumed, bytesConsumed);
-            Assert.Equal(bytesConsumed, charsWritten);
+            Assert.Equal(OperationStatus.InvalidData, Ascii.ToUtf16(bytes.AsSpan(index, count), actual, out int charsWritten));
+            Assert.Equal(expectedBytesConsumed, charsWritten);
             Assert.Equal(expected.Take(charsWritten).ToArray(), actual.Take(charsWritten).ToArray());
         }
 

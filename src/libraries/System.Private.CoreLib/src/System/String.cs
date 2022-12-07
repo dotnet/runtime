@@ -692,7 +692,7 @@ namespace System
 
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
-            if (Ascii.IsAscii(this))
+            if (Ascii.IsValid(this))
             {
                 // If its ASCII && one of the 4 main forms, then its already normalized
                 if (normalizationForm == NormalizationForm.FormC ||
@@ -711,7 +711,7 @@ namespace System
 
         public string Normalize(NormalizationForm normalizationForm)
         {
-            if (Ascii.IsAscii(this))
+            if (Ascii.IsValid(this))
             {
                 // If its ASCII && one of the 4 main forms, then its already normalized
                 if (normalizationForm == NormalizationForm.FormC ||

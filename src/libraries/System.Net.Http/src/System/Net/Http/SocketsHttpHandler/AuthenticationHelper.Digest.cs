@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -89,7 +88,7 @@ namespace System.Net.Http
             }
             else
             {
-                if (!Ascii.IsAscii(credential.UserName))
+                if (!Ascii.IsValid(credential.UserName))
                 {
                     string usernameStar = HeaderUtilities.Encode5987(credential.UserName);
                     sb.AppendKeyValue(UsernameStar, usernameStar, includeQuotes: false);

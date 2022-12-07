@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace System.Buffers.Text
+namespace System.Text
 {
     public static partial class Ascii
     {

@@ -219,8 +219,8 @@ namespace System.Globalization
             if (IsAsciiCasingSameAsInvariant)
             {
                 OperationStatus operationStatus = toUpper
-                    ? Ascii.ToUpper(source, destination, out charsConsumed, out _)
-                    : Ascii.ToLower(source, destination, out charsConsumed, out _);
+                    ? Ascii.ToUpper(source, destination, out charsConsumed)
+                    : Ascii.ToLower(source, destination, out charsConsumed);
 
                 if (operationStatus != OperationStatus.InvalidData)
                 {

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -423,7 +422,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                     SR.net_http_headers_invalid_value, input));
             }
-            else if (!Ascii.IsAscii(result))
+            else if (!Ascii.IsValid(result))
             {
                 needsQuotes = true; // Encoded data must always be quoted, the equals signs are invalid in tokens.
                 result = EncodeMime(result); // =?utf-8?B?asdfasdfaesdf?=

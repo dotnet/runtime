@@ -1,68 +1,68 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using System.Text;
 using System.Text.Unicode;
 
-namespace System.Buffers.Text
+namespace System.Text
 {
     public static partial class Ascii
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static OperationStatus ToUpper(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
-            => ChangeCase<byte, byte, ToUpperConversion>(source, destination, out bytesConsumed, out bytesWritten);
+        public static OperationStatus ToUpper(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+            => ChangeCase<byte, byte, ToUpperConversion>(source, destination, out bytesWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static OperationStatus ToUpper(ReadOnlySpan<char> source, Span<char> destination, out int charsConsumed, out int charsWritten)
-            => ChangeCase<ushort, ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(source), MemoryMarshal.Cast<char, ushort>(destination), out charsConsumed, out charsWritten);
+        public static OperationStatus ToUpper(ReadOnlySpan<char> source, Span<char> destination, out int charsWritten)
+            => ChangeCase<ushort, ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(source), MemoryMarshal.Cast<char, ushort>(destination), out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static OperationStatus ToUpper(ReadOnlySpan<byte> source, Span<char> destination, out int bytesConsumed, out int charsWritten)
-            => ChangeCase<byte, ushort, ToUpperConversion>(source, MemoryMarshal.Cast<char, ushort>(destination), out bytesConsumed, out charsWritten);
+        public static OperationStatus ToUpper(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
+            => ChangeCase<byte, ushort, ToUpperConversion>(source, MemoryMarshal.Cast<char, ushort>(destination), out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static OperationStatus ToUpper(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
-            => ChangeCase<ushort, byte, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten);
+        public static OperationStatus ToUpper(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
+            => ChangeCase<ushort, byte, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out bytesWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static OperationStatus ToLower(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
-            => ChangeCase<byte, byte, ToLowerConversion>(source, destination, out bytesConsumed, out bytesWritten);
+        public static OperationStatus ToLower(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+            => ChangeCase<byte, byte, ToLowerConversion>(source, destination, out bytesWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<char> destination, out int charsConsumed, out int charsWritten)
-            => ChangeCase<ushort, ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), MemoryMarshal.Cast<char, ushort>(destination), out charsConsumed, out charsWritten);
+        public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<char> destination, out int charsWritten)
+            => ChangeCase<ushort, ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), MemoryMarshal.Cast<char, ushort>(destination), out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static OperationStatus ToLower(ReadOnlySpan<byte> source, Span<char> destination, out int bytesConsumed, out int charsWritten)
-            => ChangeCase<byte, ushort, ToLowerConversion>(source, MemoryMarshal.Cast<char, ushort>(destination), out bytesConsumed, out charsWritten);
+        public static OperationStatus ToLower(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
+            => ChangeCase<byte, ushort, ToLowerConversion>(source, MemoryMarshal.Cast<char, ushort>(destination), out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<byte> destination, out int charsConsumed, out int bytesWritten)
-            => ChangeCase<ushort, byte, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten);
+        public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
+            => ChangeCase<ushort, byte, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out bytesWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryToLowerInPlace(Span<byte> value, out int bytesProcessed)
-            => TryChangeCase<byte, ToLowerConversion>(value, out bytesProcessed);
+        public static OperationStatus ToLowerInPlace(Span<byte> value, out int bytesWritten)
+            => ChangeCase<byte, ToLowerConversion>(value, out bytesWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryToLowerInPlace(Span<char> value, out int charsProcessed)
-            => TryChangeCase<ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsProcessed);
+        public static OperationStatus ToLowerInPlace(Span<char> value, out int charsWritten)
+            => ChangeCase<ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryToUpperInPlace(Span<byte> value, out int bytesProcessed)
-            => TryChangeCase<byte, ToUpperConversion>(value, out bytesProcessed);
+        public static OperationStatus ToUpperInPlace(Span<byte> value, out int bytesWritten)
+            => ChangeCase<byte, ToUpperConversion>(value, out bytesWritten);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryToUpperInPlace(Span<char> value, out int charsProcessed)
-            => TryChangeCase<ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsProcessed);
+        public static OperationStatus ToUpperInPlace(Span<char> value, out int charsWritten)
+            => ChangeCase<ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsWritten);
 
-        private static unsafe OperationStatus ChangeCase<TFrom, TTo, TCasing>(ReadOnlySpan<TFrom> source, Span<TTo> destination, out int sourceElementsConsumed, out int destinationElementsWritten)
+        private static unsafe OperationStatus ChangeCase<TFrom, TTo, TCasing>(ReadOnlySpan<TFrom> source, Span<TTo> destination, out int destinationElementsWritten)
             where TFrom : unmanaged, IBinaryInteger<TFrom>
             where TTo : unmanaged, IBinaryInteger<TTo>
             where TCasing : struct
@@ -92,13 +92,12 @@ namespace System.Buffers.Text
                 nuint numElementsActuallyConverted = ChangeCase<TFrom, TTo, TCasing>(pSource, pDestination, numElementsToConvert);
                 Debug.Assert(numElementsActuallyConverted <= numElementsToConvert);
 
-                sourceElementsConsumed = (int)numElementsActuallyConverted;
                 destinationElementsWritten = (int)numElementsActuallyConverted;
                 return (numElementsToConvert == numElementsActuallyConverted) ? statusToReturnOnSuccess : OperationStatus.InvalidData;
             }
         }
 
-        private static unsafe bool TryChangeCase<T, TCasing>(Span<T> buffer, out int elementsProcessed)
+        private static unsafe OperationStatus ChangeCase<T, TCasing>(Span<T> buffer, out int elementsWritten)
             where T : unmanaged, IBinaryInteger<T>
             where TCasing : struct
         {
@@ -107,8 +106,8 @@ namespace System.Buffers.Text
                 nuint numElementsActuallyConverted = ChangeCase<T, T, TCasing>(pBuffer, pBuffer, (nuint)buffer.Length);
                 Debug.Assert(numElementsActuallyConverted <= (nuint)buffer.Length);
 
-                elementsProcessed = (int)numElementsActuallyConverted;
-                return elementsProcessed == buffer.Length;
+                elementsWritten = (int)numElementsActuallyConverted;
+                return elementsWritten == buffer.Length ? OperationStatus.Done : OperationStatus.InvalidData;
             }
         }
 

@@ -512,7 +512,7 @@ namespace System.Net
                     boundaryBytes = new byte["\r\n--".Length + boundary.Length + "--\r\n".Length];
                     "\r\n--"u8.CopyTo(boundaryBytes);
                     "--\r\n"u8.CopyTo(boundaryBytes.AsSpan("\r\n--".Length + boundary.Length));
-                    OperationStatus conversionStatus = Ascii.FromUtf16(boundary, boundaryBytes.AsSpan("\r\n--".Length), out _, out _);
+                    OperationStatus conversionStatus = Ascii.FromUtf16(boundary, boundaryBytes.AsSpan("\r\n--".Length), out _);
                     Debug.Assert(conversionStatus == OperationStatus.Done);
                 }
                 else

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Text;
+using System.Text;
 using System.Diagnostics;
 using System.Net.Mime;
 
@@ -53,7 +53,7 @@ namespace System.Net.Mail
             }
             else
             {
-                if (!permitUnicodeEscaping && !Ascii.IsAscii(data[index]))
+                if (!permitUnicodeEscaping && !Ascii.IsValid(data[index]))
                 {
                     if (throwExceptionIfFail)
                     {
