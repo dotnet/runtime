@@ -278,8 +278,6 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
         const asm = assembly_load(assembly);
         if (!asm)
             throw new Error("Could not find assembly: " + assembly);
-        // this needs to stay here for compatibility with assemblies generated in Net7, which don't have the __GeneratedInitializer class
-        cwraps.mono_wasm_runtime_run_module_cctor(asm);
 
         const klass = cwraps.mono_wasm_assembly_find_class(asm, runtimeHelpers.runtime_interop_namespace, "__GeneratedInitializer");
         if (klass) {
@@ -299,6 +297,10 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
                     outResult.release();
                 }
             }
+        } else {
+            // this needs to stay here for compatibility with assemblies generated in Net7
+            // it doesn't have the __GeneratedInitializer class
+            cwraps.mono_wasm_runtime_run_module_cctor(asm);
         }
         endMeasure(mark, MeasuredBlock.getAssemblyExports, assembly);
     }
