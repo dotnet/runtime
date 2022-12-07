@@ -55,9 +55,6 @@
 #cmakedefine01 HAVE_FDS_BITS
 #cmakedefine01 HAVE_PRIVATE_FDS_BITS
 #cmakedefine01 HAVE_STATFS
-#cmakedefine01 HAVE_MNTENT_H
-#cmakedefine01 HAVE_SIGNAL_KILL
-#cmakedefine01 HAVE_SYS_RESOURCE_H
 #cmakedefine01 HAVE_GETRUSAGE
 #cmakedefine01 HAVE_SYS_SOCKIO_H
 #cmakedefine01 HAVE_ETHTOOL_H
@@ -135,12 +132,9 @@
 #cmakedefine01 HAVE_CFMAKERAW
 #cmakedefine01 HAVE_GETGROUPLIST
 #cmakedefine01 HAVE_SYSLOG_H
-#cmakedefine01 HAVE_PWD_H
-#cmakedefine01 HAVE_GRP_H
 #cmakedefine01 HAVE_TERMIOS_H
 #cmakedefine01 HAVE_DLFCN_H
 #cmakedefine01 HAVE_PTHREAD_H
-#cmakedefine01 HAVE_SYS_WAIT_H
 #cmakedefine01 HAVE_SYS_STATVFS_H
 #cmakedefine01 HAVE_NET_IF_H
 #cmakedefine01 HAVE_SYS_PROCINFO_H

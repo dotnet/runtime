@@ -181,6 +181,11 @@ check_symbol_exists(
     HAVE_VFORK)
 
 check_symbol_exists(
+    pipe
+    unistd.h
+    HAVE_PIPE)
+
+check_symbol_exists(
     pipe2
     unistd.h
     HAVE_PIPE2)
@@ -371,19 +376,6 @@ check_symbol_exists(
     "statfs"
     ${STATFS_INCLUDES}
     HAVE_STATFS)
-
-check_symbol_exists(
-    "kill"
-    "signal.h"
-    HAVE_SIGNAL_KILL)
-
-check_include_files(
-     "mntent.h"
-     HAVE_MNTENT_H)
-
-check_include_files(
-     "sys/resource.h"
-     HAVE_SYS_RESOURCE_H)
 
 check_symbol_exists(
     "getrusage"
@@ -709,6 +701,16 @@ check_symbol_exists(
     HAVE_FUTIMENS)
 
 check_symbol_exists(
+    fchmod
+    sys/stat.h
+    HAVE_FCHMOD)
+
+check_symbol_exists(
+    chmod
+    sys/stat.h
+    HAVE_CHMOD)
+
+check_symbol_exists(
     utimensat
     sys/stat.h
     HAVE_UTIMENSAT)
@@ -908,16 +910,8 @@ check_symbol_exists(
     HAVE_GETGROUPLIST)
 
 check_include_files(
-    "grp.h"
-    HAVE_GRP_H)
-
-check_include_files(
     "syslog.h"
     HAVE_SYSLOG_H)
-
-check_include_files(
-    "pwd.h"
-    HAVE_PWD_H)
 
 check_include_files(
     "termios.h"
@@ -926,10 +920,6 @@ check_include_files(
 check_include_files(
     "dlfcn.h"
     HAVE_DLFCN_H)
-
-check_include_files(
-    "sys/wait.h"
-    HAVE_SYS_WAIT_H)
 
 check_include_files(
     "sys/statvfs.h"
