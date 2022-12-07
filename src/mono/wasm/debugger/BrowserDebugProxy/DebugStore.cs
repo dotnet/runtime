@@ -1232,7 +1232,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.FilePath = documentName;
 
             string escapedDocumentName = EscapePathForUri(documentName.Replace("\\", "/"));
-            this.FileUriEscaped = $"file:///{escapedDocumentName}";
+            this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
             this.DotNetUrlEscaped = $"dotnet://{assembly.Name}/{escapedDocumentName}";
             this.Url = new Uri(File.Exists(documentName) ? FileUriEscaped : DotNetUrlEscaped, UriKind.Absolute);
         }
