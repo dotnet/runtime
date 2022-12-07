@@ -3968,9 +3968,11 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             //
             // fgMightHaveLoop() is expensive; check it last, only if necessary.
             //
+            VARSET_TP* deadFields;
             if (call->IsTailCall() ||                              //
-                ((totalAppearances == 1) && call->IsNoReturn()) || //
-                ((totalAppearances == 1) && !fgMightHaveLoop()))
+                (((lcl->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lcl, &deadFields)))
+                //((totalAppearances == 1) && call->IsNoReturn()) || //
+                //((totalAppearances == 1) && !fgMightHaveLoop()))
             {
                 arg->SetEarlyNode(lcl);
                 JITDUMP("did not need to make outgoing copy for last use of implicit byref V%2d\n", varNum);
@@ -4733,10 +4735,12 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     JITDUMP("\nRewriting an implicit by-ref parameter %s:\n", isAddress ? "address" : "reference");
     DISPTREE(lclNode);
 
+    GenTreeFlags lastUse = lclNode->gtFlags & GTF_VAR_DEATH;
     lclNode->ChangeType(TYP_BYREF);
     lclNode->ChangeOper(GT_LCL_VAR);
     lclNode->SetLclNum(newLclNum);
     lclNode->SetAllEffectsFlags(GTF_EMPTY); // Implicit by-ref parameters cannot be address-exposed.
+    lclNode->gtFlags |= lastUse;
 
     GenTree* addrNode = lclNode;
     if (offset != 0)

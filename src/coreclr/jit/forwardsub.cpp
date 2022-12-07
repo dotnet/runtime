@@ -234,7 +234,8 @@ public:
                     isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
                 }
 
-                if (!isDef && !isAddr && !isCallTarget)
+                bool lastUse = node->gtFlags & GTF_VAR_DEATH;
+                if (!isDef && !isAddr && !isCallTarget && lastUse)
                 {
                     m_node       = node;
                     m_use        = use;
@@ -400,11 +401,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     }
 
     // Only fwd sub if we expect no code duplication
-    // We expect one def and one use.
     //
-    if (varDsc->lvRefCnt(RCS_EARLY) != 2)
+    if (varDsc->lvRefCnt(RCS_EARLY) < 2)
     {
-        JITDUMP(" not asg (single-use lcl)\n");
+        JITDUMP(" not asg (no use)\n");
         return false;
     }
 
@@ -489,7 +489,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     gtUpdateStmtSideEffects(nextStmt);
     gtUpdateStmtSideEffects(stmt);
 
-    // Scan for the (single) use.
+    // Scan for the (last) use.
     //
     ForwardSubVisitor fsv(this, lclNum);
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
@@ -497,7 +497,13 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // LclMorph (via RCS_Early) said there was just one use.
     // It had better have gotten this right.
     //
-    assert(fsv.GetUseCount() <= 1);
+    //assert(fsv.GetUseCount() <= 1);
+
+    if (fsv.GetUseCount() > 1)
+    {
+        JITDUMP(" next stmt has multiple uses\n");
+        return false;
+    }
 
     if ((fsv.GetUseCount() == 0) || (fsv.GetNode() == nullptr))
     {
@@ -505,7 +511,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
+    JITDUMP(" [%06u] is last use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
 
     // Qmarks must replace top-level uses. Also, restrict to GT_ASG.
     // And also to where neither local is normalize on store, otherwise
