@@ -961,6 +961,12 @@ namespace Microsoft.Win32
                     ArrayPool<char>.Shared.Return(name);
             }
 
+            // Shrink array to fit found items, if necessary
+            if (cpt < names.Length)
+            {
+                Array.Resize(ref names, cpt);
+            }
+
             return names;
         }
 
