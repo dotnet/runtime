@@ -3441,7 +3441,7 @@ weight_t BasicBlock::getBBWeight(Compiler* comp)
 class LclVarDsc_SmallCode_Less
 {
     const LclVarDsc* m_lvaTable;
-    RefCountState m_rcs;
+    RefCountState    m_rcs;
     INDEBUG(unsigned m_lvaCount;)
 
 public:
@@ -3552,7 +3552,7 @@ public:
 class LclVarDsc_BlendedCode_Less
 {
     const LclVarDsc* m_lvaTable;
-    RefCountState m_rcs;
+    RefCountState    m_rcs;
     INDEBUG(unsigned m_lvaCount;)
 
 public:

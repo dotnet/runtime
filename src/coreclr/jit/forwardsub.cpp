@@ -497,7 +497,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // LclMorph (via RCS_Early) said there was just one use.
     // It had better have gotten this right.
     //
-    //assert(fsv.GetUseCount() <= 1);
+    // assert(fsv.GetUseCount() <= 1);
 
     if (fsv.GetUseCount() > 1)
     {

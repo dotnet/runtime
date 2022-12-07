@@ -4701,7 +4701,10 @@ public:
                        VARSET_VALARG_TP volatileVars,
                        bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
-    GenTree* fgComputeLifeNode(GenTree* tree, VARSET_TP& life, const VARSET_TP& keepAliveVars, bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
+    GenTree* fgComputeLifeNode(GenTree*         tree,
+                               VARSET_TP&       life,
+                               const VARSET_TP& keepAliveVars,
+                               bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
     void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars);
 
@@ -10722,7 +10725,7 @@ protected:
         UseExecutionOrder = false,
         // Reverse the order operand nodes are visited in, allowing e.g. for a reverse post-order traversal.
         // Only valid if UseExecutionOrder == true.
-        ReverseOrder      = false,
+        ReverseOrder = false,
     };
 
     Compiler*            m_compiler;
@@ -10748,12 +10751,12 @@ protected:
     }
 
 private:
-    template<typename TUse, typename Iterator, typename TFunc>
+    template <typename TUse, typename Iterator, typename TFunc>
     fgWalkResult WalkOperandsInReverse(Iterator beg, Iterator end, TFunc visit)
     {
         // Intentionally leaving this kind of small to avoid large frames in
         // this recursive function. We alloca below for a larger limit.
-        TUse* inlineArr[8];
+        TUse*  inlineArr[8];
         size_t count = 0;
 
         for (Iterator cur = beg; cur != end; ++cur)
@@ -10827,14 +10830,14 @@ private:
         return WalkTree(edge, node);
     }
 
-    template<typename... TEdges>
+    template <typename... TEdges>
     fgWalkResult WalkEdges(GenTree* node, GenTree** edge, TEdges... edges)
     {
         if (TVisitor::ReverseOrder)
         {
             if (WalkEdges(node, edges...) == fgWalkResult::WALK_ABORT)
                 return fgWalkResult::WALK_ABORT;
-            
+
             return WalkTree(edge, node);
         }
         else
@@ -10988,12 +10991,11 @@ public:
             case GT_PHI:
                 if (TVisitor::ReverseOrder)
                 {
-                    result = WalkOperandsInReverse<GenTreePhi::Use>(
-                        node->AsPhi()->Uses().begin(),
-                        node->AsPhi()->Uses().end(),
-                        [this, node](GenTreePhi::Use* use) {
-                            return WalkTree(&use->NodeRef(), node);
-                        });
+                    result = WalkOperandsInReverse<GenTreePhi::Use>(node->AsPhi()->Uses().begin(),
+                                                                    node->AsPhi()->Uses().end(),
+                                                                    [this, node](GenTreePhi::Use* use) {
+                                                                        return WalkTree(&use->NodeRef(), node);
+                                                                    });
 
                     if (result == fgWalkResult::WALK_ABORT)
                     {
@@ -11016,12 +11018,11 @@ public:
             case GT_FIELD_LIST:
                 if (TVisitor::ReverseOrder)
                 {
-                    result = WalkOperandsInReverse<GenTreeFieldList::Use>(
-                        node->AsFieldList()->Uses().begin(),
-                        node->AsFieldList()->Uses().end(),
-                        [this, node](GenTreeFieldList::Use* use) {
-                            return WalkTree(&use->NodeRef(), node);
-                        });
+                    result = WalkOperandsInReverse<GenTreeFieldList::Use>(node->AsFieldList()->Uses().begin(),
+                                                                          node->AsFieldList()->Uses().end(),
+                                                                          [this, node](GenTreeFieldList::Use* use) {
+                                                                              return WalkTree(&use->NodeRef(), node);
+                                                                          });
 
                     if (result == fgWalkResult::WALK_ABORT)
                     {
@@ -11153,19 +11154,15 @@ public:
                         }
                     }
 
-                    WalkOperandsInReverse<CallArg>(
-                        call->gtArgs.LateArgs().begin(),
-                        call->gtArgs.LateArgs().end(),
-                        [this, call](CallArg* arg) {
-                            return WalkTree(&arg->LateNodeRef(), call);
-                        });
+                    WalkOperandsInReverse<CallArg>(call->gtArgs.LateArgs().begin(), call->gtArgs.LateArgs().end(),
+                                                   [this, call](CallArg* arg) {
+                                                       return WalkTree(&arg->LateNodeRef(), call);
+                                                   });
 
-                    WalkOperandsInReverse<CallArg>(
-                        call->gtArgs.EarlyArgs().begin(),
-                        call->gtArgs.EarlyArgs().end(),
-                        [this, call](CallArg* arg) {
-                            return WalkTree(&arg->EarlyNodeRef(), call);
-                        });
+                    WalkOperandsInReverse<CallArg>(call->gtArgs.EarlyArgs().begin(), call->gtArgs.EarlyArgs().end(),
+                                                   [this, call](CallArg* arg) {
+                                                       return WalkTree(&arg->EarlyNodeRef(), call);
+                                                   });
                 }
                 else
                 {
