@@ -343,6 +343,7 @@ else
     else
         git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
     fi
+    (cd $performance_directory && git show HEAD --stat)
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
