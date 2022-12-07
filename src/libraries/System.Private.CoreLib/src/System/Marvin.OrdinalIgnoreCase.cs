@@ -15,9 +15,7 @@ namespace System
         /// Compute a Marvin OrdinalIgnoreCase hash and collapse it into a 32-bit hash.
         /// n.b. <paramref name="count"/> is specified as char count, not byte count.
         /// </summary>
-        /// <remarks>Additional <paramref name="nonAsciiFound"/> is needed as it's impossible to distinguish
-        /// whether method returned 0 because it found some non-ASCII char or whether it calculated such hashcode.</remarks>
-        public static int ComputeHash32OrdinalIgnoreCase(ref char data, int count, uint p0, uint p1, out bool nonAsciiFound, bool stopOnNonAscii = false)
+        public static int ComputeHash32OrdinalIgnoreCase(ref char data, int count, uint p0, uint p1)
         {
             uint ucount = (uint)count; // in chars
             nuint byteOffset = 0; // in bytes
@@ -73,18 +71,10 @@ namespace System
             Block(ref p0, ref p1);
             Block(ref p0, ref p1);
 
-            nonAsciiFound = false;
             return (int)(p1 ^ p0);
 
         NotAscii:
             Debug.Assert(ucount <= int.MaxValue); // this should fit into a signed int
-
-            nonAsciiFound = true;
-            if (stopOnNonAscii)
-            {
-                return 0;
-            }
-
             return ComputeHash32OrdinalIgnoreCaseSlow(ref Unsafe.AddByteOffset(ref data, byteOffset), (int)ucount, p0, p1);
         }
 
@@ -109,76 +99,6 @@ namespace System
             }
 
             return hash;
-        }
-
-        /// <summary>
-        /// Compute a Marvin OrdinalIgnoreCase hash and collapse it into a 32-bit hash.
-        /// n.b. <paramref name="count"/> is specified as byte count.
-        /// </summary>
-        /// <returns>True if all bytes were ASCII, false otherwise</returns>
-        internal static bool TryComputeHash32ForAsciiIgnoreCase(ref byte data, int count, uint p0, uint p1, out int hashCode)
-        {
-            uint ucount = (uint)count; // in bytes
-            nuint byteOffset = 0; // in bytes
-            uint tempValue;
-
-            // We operate on 32-bit integers (four bytes) at a time.
-
-            while (ucount >= 4)
-            {
-                tempValue = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
-                if (!Utf8Utility.AllBytesInUInt32AreAscii(tempValue))
-                {
-                    goto NotAscii;
-                }
-                p0 += Utf8Utility.ConvertAllAsciiBytesInUInt32ToUppercase(tempValue);
-                Block(ref p0, ref p1);
-
-                byteOffset += 4;
-                ucount -= 4;
-            }
-
-            while (ucount > 0)
-            {
-                tempValue = Unsafe.AddByteOffset(ref data, byteOffset);
-                if (tempValue > 0x7Fu)
-                {
-                    goto NotAscii;
-                }
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    // addition is written with -0x80u to allow fall-through to next statement rather than jmp past it
-                    p0 += Utf8Utility.ConvertAllAsciiBytesInUInt32ToUppercase(tempValue) + (0x800000u - 0x80u);
-                }
-                else
-                {
-                    // as above, addition is modified to allow fall-through to next statement rather than jmp past it
-                    p0 += (Utf8Utility.ConvertAllAsciiBytesInUInt32ToUppercase(tempValue) << 16) + 0x8000u - 0x80000000u;
-                }
-
-                byteOffset += 1;
-                ucount -= 1;
-            }
-            if (BitConverter.IsLittleEndian)
-            {
-                p0 += 0x80u;
-            }
-            else
-            {
-                p0 += 0x80000000u;
-            }
-
-            Block(ref p0, ref p1);
-            Block(ref p0, ref p1);
-
-            hashCode = (int)(p1 ^ p0);
-            return true;
-
-        NotAscii:
-            Debug.Assert(ucount <= int.MaxValue); // this should fit into a signed int
-            hashCode = 0;
-            return false;
         }
     }
 }
