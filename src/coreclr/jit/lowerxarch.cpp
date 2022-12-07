@@ -5614,28 +5614,37 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
     // op1 and op2 are emitted as two separate instructions due to the
     // conditional nature of cmov, so both operands can be contained memory
     // operands.
-    if (IsContainableMemoryOp(op1))
+    unsigned operSize = genTypeSize(select);
+    assert((operSize == 4) || (operSize == TARGET_POINTER_SIZE));
+
+    if (genTypeSize(op1) == operSize)
     {
-        if (IsSafeToContainMem(select, op1))
+        if (IsContainableMemoryOp(op1))
         {
-            MakeSrcContained(select, op1);
+            if (IsSafeToContainMem(select, op1))
+            {
+                MakeSrcContained(select, op1);
+            }
         }
-    }
-    else if (IsSafeToContainMem(select, op1))
-    {
-        MakeSrcRegOptional(select, op1);
+        else if (IsSafeToContainMem(select, op1))
+        {
+            MakeSrcRegOptional(select, op1);
+        }
     }
 
-    if (IsContainableMemoryOp(op2))
+    if (genTypeSize(op2) == operSize)
     {
-        if (IsSafeToContainMem(select, op2))
+        if (IsContainableMemoryOp(op2))
         {
-            MakeSrcContained(select, op2);
+            if (IsSafeToContainMem(select, op2))
+            {
+                MakeSrcContained(select, op2);
+            }
         }
-    }
-    else if (IsSafeToContainMem(select, op2))
-    {
-        MakeSrcRegOptional(select, op2);
+        else if (IsSafeToContainMem(select, op2))
+        {
+            MakeSrcRegOptional(select, op2);
+        }
     }
 }
 
@@ -5800,8 +5809,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         binOpInRMW = IsBinOpInRMWStoreInd(node);
         if (!binOpInRMW)
         {
-            const unsigned operatorSize = genTypeSize(node->TypeGet());
-            if ((genTypeSize(op2->TypeGet()) == operatorSize) && IsContainableMemoryOp(op2))
+            if (IsContainableMemoryOpSize(node, op2) && IsContainableMemoryOp(op2))
             {
                 isSafeToContainOp2 = IsSafeToContainMem(node, op2);
                 if (isSafeToContainOp2)
@@ -5820,7 +5828,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
                     directlyEncodable = true;
                     operand           = op1;
                 }
-                else if ((genTypeSize(op1->TypeGet()) == operatorSize) && IsContainableMemoryOp(op1))
+                else if (IsContainableMemoryOpSize(node, op1) && IsContainableMemoryOp(op1))
                 {
                     isSafeToContainOp1 = IsSafeToContainMem(node, op1);
                     if (isSafeToContainOp1)

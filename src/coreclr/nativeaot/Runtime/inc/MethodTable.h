@@ -11,7 +11,6 @@
 class MethodTable;
 class TypeManager;
 struct TypeManagerHandle;
-class DynamicModule;
 struct EETypeRef;
 
 #if !defined(USE_PORTABLE_HELPERS)
@@ -93,8 +92,6 @@ enum EETypeField
     ETF_OptionalFieldsPtr,
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
-    ETF_DynamicDispatchMap,
-    ETF_DynamicModule,
     ETF_GenericDefinition,
     ETF_GenericComposition,
     ETF_DynamicGcStatics,
@@ -339,8 +336,6 @@ public:
 
     bool IsGeneric()
         { return (m_uFlags & IsGenericFlag) != 0; }
-
-    DynamicModule* get_DynamicModule();
 
     TypeManagerHandle* GetTypeManagerPtr();
 
