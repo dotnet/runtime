@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Internal
                 innerType = innerType.GetElementType()!;
             }
 
-            ProcessType(ref builder, innerType, options);
+            ProcessType(ref builder!, innerType, options);
 
             while (type.IsArray)
             {
@@ -161,7 +161,7 @@ namespace Microsoft.Extensions.Internal
                 builder.Append('<');
                 for (int i = offset; i < length; i++)
                 {
-                    ProcessType(ref builder, genericArguments[i], options);
+                    ProcessType(ref builder!, genericArguments[i], options);
                     if (i + 1 == length)
                     {
                         continue;
