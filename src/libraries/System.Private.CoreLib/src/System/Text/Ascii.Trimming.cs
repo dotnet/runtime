@@ -7,11 +7,34 @@ namespace System.Text
 {
     public static partial class Ascii
     {
+        /// <summary>
+        /// Trims all leading and trailing ASCII whitespaces from the buffer.
+        /// </summary>
+        /// <param name="value">The ASCII buffer.</param>
+        /// <returns>The Range of the untrimmed data.</returns>
         public static Range Trim(ReadOnlySpan<byte> value) => TrimHelper(value, TrimType.Both);
+
+        /// <inheritdoc cref="Trim(ReadOnlySpan{byte})"/>
         public static Range Trim(ReadOnlySpan<char> value) => TrimHelper(value, TrimType.Both);
+
+        /// <summary>
+        /// Trims all leading ASCII whitespaces from the buffer.
+        /// </summary>
+        /// <param name="value">The ASCII buffer.</param>
+        /// <returns>The Range of the untrimmed data.</returns>
         public static Range TrimStart(ReadOnlySpan<byte> value) => TrimHelper(value, TrimType.Head);
+
+        /// <inheritdoc cref="TrimStart(ReadOnlySpan{byte})"/>
         public static Range TrimStart(ReadOnlySpan<char> value) => TrimHelper(value, TrimType.Head);
+
+        /// <summary>
+        /// Trims all trailing ASCII whitespaces from the buffer.
+        /// </summary>
+        /// <param name="value">The ASCII buffer.</param>
+        /// <returns>The Range of the untrimmed data.</returns>
         public static Range TrimEnd(ReadOnlySpan<byte> value) => TrimHelper(value, TrimType.Tail);
+
+        /// <inheritdoc cref="TrimEnd(ReadOnlySpan{byte})"/>
         public static Range TrimEnd(ReadOnlySpan<char> value) => TrimHelper(value, TrimType.Tail);
 
         private static Range TrimHelper<T>(ReadOnlySpan<T> value, TrimType trimType)

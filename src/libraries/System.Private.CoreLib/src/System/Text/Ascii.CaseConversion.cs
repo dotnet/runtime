@@ -14,50 +14,142 @@ namespace System.Text
 {
     public static partial class Ascii
     {
+        /// <summary>
+        /// Copies text from a source buffer to a destination buffer, converting
+        /// ASCII letters to uppercase during the copy.
+        /// </summary>
+        /// <param name="source">The source buffer from which ASCII text is read.</param>
+        /// <param name="destination">The destination buffer to which uppercase text is written.</param>
+        /// <param name="bytesWritten">The number of bytes actually written to <paramref name="destination"/>. It's the same as the number of bytes actually read from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        /// <remarks>In-place conversion is prohibited, please use <see cref="ToUpperInPlace(Span{byte}, out int)"/> for that.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpper(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
             => ChangeCase<byte, byte, ToUpperConversion>(source, destination, out bytesWritten);
 
+        /// <summary>
+        /// Copies text from a source buffer to a destination buffer, converting
+        /// ASCII letters to uppercase during the copy.
+        /// </summary>
+        /// <param name="source">The source buffer from which ASCII text is read.</param>
+        /// <param name="destination">The destination buffer to which uppercase text is written.</param>
+        /// <param name="charsWritten">The number of characters actually written to <paramref name="destination"/>. It's the same as the number of characters actually read from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        /// <remarks>In-place conversion is prohibited, please use <see cref="ToUpperInPlace(Span{char}, out int)"/> for that.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpper(ReadOnlySpan<char> source, Span<char> destination, out int charsWritten)
             => ChangeCase<ushort, ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(source), MemoryMarshal.Cast<char, ushort>(destination), out charsWritten);
 
+        /// <summary>
+        /// Copies text from a source buffer to a destination buffer, converting
+        /// ASCII letters to uppercase during the copy.
+        /// </summary>
+        /// <param name="source">The source buffer from which ASCII text is read.</param>
+        /// <param name="destination">The destination buffer to which uppercase text is written.</param>
+        /// <param name="charsWritten">The number of characters actually written to <paramref name="destination"/>. It's the same as the number of bytes actually read from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpper(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
             => ChangeCase<byte, ushort, ToUpperConversion>(source, MemoryMarshal.Cast<char, ushort>(destination), out charsWritten);
 
+        /// <summary>
+        /// Copies text from a source buffer to a destination buffer, converting
+        /// ASCII letters to uppercase during the copy.
+        /// </summary>
+        /// <param name="source">The source buffer from which ASCII text is read.</param>
+        /// <param name="destination">The destination buffer to which uppercase text is written.</param>
+        /// <param name="bytesWritten">The number of bytes actually written to <paramref name="destination"/>. It's the same as the number of characters actually read from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpper(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
             => ChangeCase<ushort, byte, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out bytesWritten);
 
+        /// <summary>
+        /// Copies text from a source buffer to a destination buffer, converting
+        /// ASCII letters to lowercase during the copy.
+        /// </summary>
+        /// <param name="source">The source buffer from which ASCII text is read.</param>
+        /// <param name="destination">The destination buffer to which lowercase text is written.</param>
+        /// <param name="bytesWritten">The number of bytes actually written to <paramref name="destination"/>. It's the same as the number of bytes actually read from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        /// <remarks>In-place conversion is prohibited, please use <see cref="ToLowerInPlace(Span{byte}, out int)"/> for that.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLower(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
             => ChangeCase<byte, byte, ToLowerConversion>(source, destination, out bytesWritten);
 
+        /// <summary>
+        /// Copies text from a source buffer to a destination buffer, converting
+        /// ASCII letters to lowercase during the copy.
+        /// </summary>
+        /// <param name="source">The source buffer from which ASCII text is read.</param>
+        /// <param name="destination">The destination buffer to which lowercase text is written.</param>
+        /// <param name="charsWritten">The number of characters actually written to <paramref name="destination"/>. It's the same as the number of characters actually read from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        /// <remarks>In-place conversion is prohibited, please use <see cref="ToLowerInPlace(Span{char}, out int)"/> for that.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<char> destination, out int charsWritten)
             => ChangeCase<ushort, ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), MemoryMarshal.Cast<char, ushort>(destination), out charsWritten);
 
+        /// <summary>
+        /// Copies text from a source buffer to a destination buffer, converting
+        /// ASCII letters to lowercase during the copy.
+        /// </summary>
+        /// <param name="source">The source buffer from which ASCII text is read.</param>
+        /// <param name="destination">The destination buffer to which lowercase text is written.</param>
+        /// <param name="charsWritten">The number of characters actually written to <paramref name="destination"/>. It's the same as the number of bytes actually read from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLower(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
             => ChangeCase<byte, ushort, ToLowerConversion>(source, MemoryMarshal.Cast<char, ushort>(destination), out charsWritten);
 
+        /// <summary>
+        /// Copies text from a source buffer to a destination buffer, converting
+        /// ASCII letters to lowercase during the copy.
+        /// </summary>
+        /// <param name="source">The source buffer from which ASCII text is read.</param>
+        /// <param name="destination">The destination buffer to which lowercase text is written.</param>
+        /// <param name="bytesWritten">The number of bytes actually written to <paramref name="destination"/>. It's the same as the number of characters actually read from <paramref name="source"/>.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLower(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
             => ChangeCase<ushort, byte, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(source), destination, out bytesWritten);
 
+        /// <summary>
+        /// Performs in-place uppercase conversion.
+        /// </summary>
+        /// <param name="value">The ASCII text buffer.</param>
+        /// <param name="bytesWritten">The number of processed bytes.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLowerInPlace(Span<byte> value, out int bytesWritten)
             => ChangeCase<byte, ToLowerConversion>(value, out bytesWritten);
 
+        /// <summary>
+        /// Performs in-place uppercase conversion.
+        /// </summary>
+        /// <param name="value">The ASCII text buffer.</param>
+        /// <param name="charsWritten">The number of processed characters.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToLowerInPlace(Span<char> value, out int charsWritten)
             => ChangeCase<ushort, ToLowerConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsWritten);
 
+        /// <summary>
+        /// Performs in-place lowercase conversion.
+        /// </summary>
+        /// <param name="value">The ASCII text buffer.</param>
+        /// <param name="bytesWritten">The number of processed bytes.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpperInPlace(Span<byte> value, out int bytesWritten)
             => ChangeCase<byte, ToUpperConversion>(value, out bytesWritten);
 
+        /// <summary>
+        /// Performs in-place lowercase conversion.
+        /// </summary>
+        /// <param name="value">The ASCII text buffer.</param>
+        /// <param name="charsWritten">The number of processed characters.</param>
+        /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static OperationStatus ToUpperInPlace(Span<char> value, out int charsWritten)
             => ChangeCase<ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsWritten);
