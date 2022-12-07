@@ -363,6 +363,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
             yield return ("a*(?:a[ab]*?)*?", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
 
+            // Sequences of loops
+            yield return (@"(ver\.? |[_ ]+)?\d+(\.\d+){2,3}$", " Ver 2.0", RegexOptions.IgnoreCase, 0, 8, false, "");
+            yield return (@"(?:|a)?(?:\b\d){2,}", " a 0", RegexOptions.None, 0, 4, false, "");
+            yield return (@"(?:|a)?(\d){2,}", " a00a", RegexOptions.None, 0, 5, true, "a00");
+
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz");
             yield return (@"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.IgnoreCase, 0, 4, false, string.Empty);
