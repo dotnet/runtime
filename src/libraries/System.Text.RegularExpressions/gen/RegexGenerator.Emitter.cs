@@ -22,6 +22,10 @@ namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
+        /// <summary>Escapes '&amp;', '&lt;' and '&gt;' characters. We aren't using HtmlEncode as that would also escape single and double quotes.</summary>
+        private static string EscapeXmlComment(string text) =>
+            text.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
         private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
         {
@@ -405,9 +409,12 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Array.Sort(asciiChars);
 
+                string setLiteral = Literal(new string(asciiChars));
+
                 requiredHelpers.Add(helperName, new string[]
                 {
-                    $"internal static readonly IndexOfAnyValues<char> {fieldName} = IndexOfAnyValues.Create({Literal(new string(asciiChars))});",
+                    $"/// <summary>Cached data to efficiently search for a character in the set {EscapeXmlComment(setLiteral)}.</summary>",
+                    $"internal static readonly IndexOfAnyValues<char> {fieldName} = IndexOfAnyValues.Create({setLiteral});",
                 });
             }
 
@@ -5066,14 +5073,11 @@ namespace System.Text.RegularExpressions.Generator
                         _ => "",
                     };
 
-                    // Get a textual description of the node, making it safe for an XML comment (escaping the minimal amount necessary to
-                    // avoid compilation failures: we don't want to escape single and double quotes, as HtmlEncode would do).
                     string nodeDescription = DescribeNode(node, rm);
-                    nodeDescription = nodeDescription.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 
                     // Write out the line for the node.
                     const char BulletPoint = '\u25CB';
-                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{nodeDescription}<br/>");
+                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{EscapeXmlComment(nodeDescription)}<br/>");
                 }
 
                 // Process each child.
