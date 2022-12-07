@@ -56,8 +56,8 @@ namespace System.Net.Security
             // block potential future read and auth operations since SslStream is disposing.
             // This leaves the _nestedRead = 1 and _nestedAuth = 1, but that's ok, since
             // subsequent operations check the _exception sentinel first
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 0 &&
-                Interlocked.Exchange(ref _nestedAuth, 1) == 0)
+            if (Interlocked.Exchange(ref _nestedRead, 2) == 0 &&
+                Interlocked.Exchange(ref _nestedAuth, 2) == 0)
             {
                 _buffer.ReturnBuffer();
             }
@@ -162,13 +162,15 @@ namespace System.Net.Security
         private async Task RenegotiateAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
+            if (Interlocked.CompareExchange(ref _nestedAuth, 1, 0) != 0)
             {
+                ObjectDisposedException.ThrowIf(_nestedAuth > 1, this);
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
 
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) != 0)
             {
+                ObjectDisposedException.ThrowIf(_nestedRead > 1, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
@@ -763,12 +765,15 @@ namespace System.Net.Security
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            // Throw first if we already have exception.
+            // Check for disposal is not atomic so we will check again bellow.
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) != 0)
             {
+                ObjectDisposedException.ThrowIf(_nestedRead > 1, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
-
-            ThrowIfExceptionalOrNotAuthenticated();
 
             try
             {
