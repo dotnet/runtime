@@ -160,9 +160,8 @@ elseif (CLR_CMAKE_HOST_UNIX)
       list(JOIN CLR_LINK_SANITIZERS "," CLR_LINK_SANITIZERS_OPTIONS)
       list(APPEND CLR_SANITIZE_LINK_OPTIONS "-fsanitize=${CLR_LINK_SANITIZERS_OPTIONS}")
 
-      # -fdata-sections -ffunction-sections: each function has own section instead of one per .o file (needed for --gc-sections)
       # -O1: optimization level used instead of -O0 to avoid compile error "invalid operand for inline asm constraint"
-      add_compile_options("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;--ffunction-sections;-O1>")
+      add_compile_options("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;-O1>")
       add_linker_flag("${CLR_SANITIZE_LINK_OPTIONS}" DEBUG CHECKED)
       # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
       add_linker_flag("-Wl,--gc-sections" DEBUG CHECKED)
@@ -481,8 +480,11 @@ if (CLR_CMAKE_HOST_UNIX)
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
   
-  # Separate functions so linker can remove them
-  add_compile_options(-ffunction-sections)
+  # Separate functions so linker can remove them. But not on Apple mobile platforms because
+  # -ffunction-sections is not supported with -fembed-bitcode.
+  if (NOT CLR_CMAKE_HOST_TVOS AND NOT CLR_CMAKE_HOST_IOS)
+    add_compile_options(-ffunction-sections)
+  endif()
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
