@@ -116,7 +116,7 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-include("${CLR_SRC_NATIVE_DIR}/watchdog/CMakeLists.txt")
+add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(pal/prebuilt/inc)
