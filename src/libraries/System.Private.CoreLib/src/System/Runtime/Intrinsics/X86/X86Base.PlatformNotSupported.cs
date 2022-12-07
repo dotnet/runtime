@@ -106,7 +106,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   IDIV reg/m
         /// </summary>
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw new PlatformNotSupportedException(); }
-        
+
         /// <summary>
         /// void _mm_pause (void);
         ///   PAUSE
