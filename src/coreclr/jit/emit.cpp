@@ -1490,9 +1490,9 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     }
 
 #ifdef TARGET_XARCH
-    id = emitLastIns;
-    if (emitComp->opts.OptimizationEnabled() && (id != nullptr))
+    if (emitComp->opts.OptimizationEnabled() && (emitLastIns != nullptr))
     {
+        id = emitLastIns;
         // This isn't meant to be a comprehensive check. Just look for what
         // seems to be common.
         switch (id->idInsFmt())
@@ -1518,14 +1518,14 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
                 // Bail if movsx, we always have movsx sign extend to 8 bytes
                 if (id->idIns() == INS_movsx)
                 {
-                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                    regUpper32BitsZeroLookup &= ~(1 << (id->idReg1()));
                     break;
                 }
 
 #ifdef TARGET_AMD64
                 if (id->idIns() == INS_movsxd)
                 {
-                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                    regUpper32BitsZeroLookup &= ~(1 << (id->idReg1()));
                     break;
                 }
 #endif
@@ -1533,18 +1533,18 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
                 // movzx always zeroes the upper 32 bits.
                 if (id->idIns() == INS_movzx)
                 {
-                    regUpper32BitsZeroLookup |= 1UL << (id->idReg1());
+                    regUpper32BitsZeroLookup |= 1 << (id->idReg1());
                     break;
                 }
 
                 // Else rely on operation size.
                 if (id->idOpSize() == EA_4BYTE)
                 {
-                    regUpper32BitsZeroLookup |= 1UL << (id->idReg1());
+                    regUpper32BitsZeroLookup |= 1 << (id->idReg1());
                 }
                 else
                 {
-                    regUpper32BitsZeroLookup &= ~(1UL << (id->idReg1()));
+                    regUpper32BitsZeroLookup &= ~(1 << (id->idReg1()));
                 }
                 break;
             }
@@ -1556,8 +1556,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
                 break;
             }
         }
+        id = nullptr;
     }
-    id = nullptr;
 #endif // TARGET_XARCH
 
     /* Grab the space for the instruction */
