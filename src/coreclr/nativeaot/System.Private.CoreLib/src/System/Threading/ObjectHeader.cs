@@ -232,7 +232,7 @@ namespace System.Threading
         // close to the RAM latency.
         //
         // Considering that taking and releaseing the lock takes 2 CAS instructions + some overhead, we can estimate shortest
-        // time the lock can be held in hundreds of nanoseconds. (TODO: VS measure that) Thus it is unlikely to see more than
+        // time the lock can be held to be in hundreds of nanoseconds. Thus it is unlikely to see more than
         // 8-10 threads contending for the lock without inflating it. Therefore we can expect to acquire a thin lock in
         // under 16 tries.
         //
@@ -243,8 +243,8 @@ namespace System.Threading
         // Linear back-off
         //   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, . . . .
         //
-        // Here these strategies are close in terms of average and worst case latency, so we will prefer linear back-off
-        // as it favors low-contention scenario, which we expect.
+        // In this case these strategies are close in terms of average and worst case latency, so we will prefer linear
+        // back-off as it favors micro-contention scenario, which we expect.
         //
 
         // Returs:
@@ -271,36 +271,36 @@ namespace System.Threading
             Debug.Assert(!(obj is Lock),
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
-            // thread ID may be uninitialized (-1), that is ok, it will trigger the "uncommon" helper.
             int currentThreadID = Environment.CurrentManagedThreadIdUnchecked;
-
-            // for an object used in locking there are two common cases:
-            // - header bits are unused or
-            // - there is a sync entry
-            fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
+            // if thread ID is uninitialized too big, we do uncommon part.
+            if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID)
             {
-                int* pHeader = GetHeaderPtr(ppMethodTable);
-                int oldBits = *pHeader;
-                // if unused for anything, try setting our thread id
-                // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
-                if ((oldBits & MASK_HASHCODE_INDEX) == 0)
+                // for an object used in locking there are two common cases:
+                // - header bits are unused or
+                // - there is a sync entry
+                fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
                 {
-                    // if thread ID is too big or uninitialized, we do uncommon part.
-                    if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID &&
-                        Interlocked.CompareExchange(ref *pHeader, oldBits | currentThreadID, oldBits) == oldBits)
+                    int* pHeader = GetHeaderPtr(ppMethodTable);
+                    int oldBits = *pHeader;
+                    // if unused for anything, try setting our thread id
+                    // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
+                    if ((oldBits & MASK_HASHCODE_INDEX) == 0)
                     {
-                        return 1;
+                        if (Interlocked.CompareExchange(ref *pHeader, oldBits | currentThreadID, oldBits) == oldBits)
+                        {
+                            return 1;
+                        }
                     }
-                }
-                else if (GetSyncEntryIndex(oldBits, out int syncIndex))
-                {
-                    if (SyncTable.GetLockObject(syncIndex).TryAcquireOneShot(currentThreadID))
+                    else if (GetSyncEntryIndex(oldBits, out int syncIndex))
                     {
-                        return 1;
-                    }
+                        if (SyncTable.GetLockObject(syncIndex).TryAcquireOneShot(currentThreadID))
+                        {
+                            return 1;
+                        }
 
-                    // has sync entry -> slow path
-                    return syncIndex;
+                        // has sync entry -> slow path
+                        return syncIndex;
+                    }
                 }
             }
 
@@ -322,7 +322,7 @@ namespace System.Threading
 
             // retry when the lock is owned by somebody else.
             // this loop will spinwait between iterations.
-            for (int iteration = 0; iteration <= retries; iteration++)
+            for (int i = 0; i <= retries; i++)
             {
                 fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
                 {
@@ -392,7 +392,7 @@ namespace System.Threading
 
                 // spin a bit before retrying (1 spinwait is roughly 35 nsec)
                 // the object is not pinned here
-                Thread.SpinWaitInternal(iteration);
+                Thread.SpinWaitInternal(i);
             }
 
             // owned by somebody else
@@ -411,13 +411,13 @@ namespace System.Threading
             // thread ID may be uninitialized (-1), that is the same as not owning the lock.
             int currentThreadID = Environment.CurrentManagedThreadIdUnchecked;
 
-            int oldBits;
+            Lock fatLock;
             fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
                 while (true)
                 {
-                    oldBits = *pHeader;
+                    int oldBits = *pHeader;
 
                     // if we own the lock
                     if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
@@ -438,18 +438,18 @@ namespace System.Threading
                         continue;
                     }
 
+                    if (!GetSyncEntryIndex(oldBits, out int syncIndex))
+                    {
+                        // someone else owns or noone.
+                        throw new SynchronizationLockException();
+                    }
+
+                    fatLock = SyncTable.GetLockObject(syncIndex);
                     break;
                 }
             }
 
-            if (GetSyncEntryIndex(oldBits, out int syncIndex))
-            {
-                SyncTable.GetLockObject(syncIndex).Release(currentThreadID);
-                return;
-            }
-
-            // someone else owns or noone.
-            throw new SynchronizationLockException();
+            fatLock.ReleaseByThread(currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

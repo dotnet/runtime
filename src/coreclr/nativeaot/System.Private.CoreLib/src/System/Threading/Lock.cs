@@ -12,15 +12,15 @@ namespace System.Threading
     public sealed class Lock : IDisposable
     {
         // The following constants define characteristics of spinning logic in the Lock class
-        private const uint MaxSpinCount = 200;
-        private const uint MinSpinCount = 10;
-        private const uint SpinningNotInitialized = MaxSpinCount + 1;
+        private const uint MaxSpinLimit = 200;
+        private const uint MinSpinLimit = 10;
+        private const uint SpinningNotInitialized = MaxSpinLimit + 1;
         private const uint SpinningDisabled = 0;
 
         // We will use exponential backoff in cases when we need to change state atomically and cannot
         // make progress due to contention.
-        // While we cannot know how much wait we need between successfull attempts, exponential backoff
-        // should generally be within 2X of that and will do a lot less attempts than an eager retry.
+        // While we cannot know how much wait we need until a successfull attempt, exponential backoff
+        // should generally be not more than 2X of that and will do a lot less tries than an eager retry.
         // To protect against degenerate cases we will cap the iteration wait up to 1024 spinwaits.
         private const uint MaxExponentialBackoffBits = 10;
 
@@ -47,11 +47,11 @@ namespace System.Threading
         private const int Uncontended = 0;
 
         // state of the lock
-        private int _state;
+        private AutoResetEvent? _lazyEvent;
         private int _owningThreadId;
         private uint _recursionCount;
-        private uint _spinCount;
-        private AutoResetEvent? _lazyEvent;
+        private int _state;
+        private uint _spinLimit;
 
         // used to transfer the state when inflating thin locks
         internal void InitializeLocked(int threadId, int recursionCount)
@@ -61,7 +61,7 @@ namespace System.Threading
             _state = threadId == 0 ? Uncontended : Locked;
             _owningThreadId = threadId;
             _recursionCount = (uint)recursionCount;
-            _spinCount = SpinningNotInitialized;
+            _spinLimit = SpinningNotInitialized;
         }
 
         private AutoResetEvent Event
@@ -93,17 +93,8 @@ namespace System.Threading
         public void Acquire()
         {
             int currentThreadId = CurrentThreadId;
-
-            //
-            // Make one quick attempt to acquire an uncontended lock
-            //
-            if (Interlocked.CompareExchange(ref _state, Locked, Uncontended) == Uncontended)
-            {
-                Debug.Assert(_owningThreadId == 0);
-                Debug.Assert(_recursionCount == 0);
-                _owningThreadId = currentThreadId;
+            if (TryAcquireOneShot(currentThreadId))
                 return;
-            }
 
             //
             // Fall back to the slow path for contention
@@ -192,9 +183,9 @@ namespace System.Threading
                 s_processorCount = RuntimeImports.RhGetProcessCpuCount();
             }
 
-            if (_spinCount == SpinningNotInitialized)
+            if (_spinLimit == SpinningNotInitialized)
             {
-                _spinCount = (s_processorCount > 1) ? MaxSpinCount : SpinningDisabled;
+                _spinLimit = (s_processorCount > 1) ? MaxSpinLimit : SpinningDisabled;
             }
 
             bool hasWaited = false;
@@ -202,7 +193,7 @@ namespace System.Threading
             while (true)
             {
                 uint iteration = 0;
-                uint localSpinCount = _spinCount;
+                uint localSpinLimit = _spinLimit;
                 // inner loop where we try acquiring the lock or registering as a waiter
                 while (true)
                 {
@@ -220,18 +211,18 @@ namespace System.Threading
                         if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
                         {
                             // spinning was successful, update spin count
-                            if (iteration < localSpinCount && localSpinCount < MaxSpinCount)
-                                _spinCount = localSpinCount + 1;
+                            if (iteration < localSpinLimit && localSpinLimit < MaxSpinLimit)
+                                _spinLimit = localSpinLimit + 1;
 
                             goto GotTheLock;
                         }
                     }
 
                     // spinning was unsuccessful. reduce spin count.
-                    if (iteration == localSpinCount && localSpinCount > MinSpinCount)
-                        _spinCount = localSpinCount - 1;
+                    if (iteration == localSpinLimit && localSpinLimit > MinSpinLimit)
+                        _spinLimit = localSpinLimit - 1;
 
-                    if (iteration++ < localSpinCount)
+                    if (iteration++ < localSpinLimit)
                     {
                         Thread.SpinWaitInternal(1);
                         continue;
@@ -252,8 +243,8 @@ namespace System.Threading
                             break;
                     }
 
-                    Debug.Assert(iteration >= localSpinCount);
-                    ExponentialBackoff(iteration - localSpinCount);
+                    Debug.Assert(iteration >= localSpinLimit);
+                    ExponentialBackoff(iteration - localSpinLimit);
                 }
 
                 //
@@ -279,6 +270,8 @@ namespace System.Threading
             }
 
             // We timed out.  We're not going to wait again.
+            // We could not have observed a wake, or the wait would've succeeded
+            // so we do not bother about WaiterWoken
             {
                 uint iteration = 0;
                 while (true)
@@ -337,28 +330,25 @@ namespace System.Threading
             return acquired;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Release(int currentThreadId)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void Release()
         {
-            if (currentThreadId == _owningThreadId && _recursionCount == 0)
+            ReleaseByThread(CurrentThreadId);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ReleaseByThread(int threadId)
+        {
+            if (threadId != _owningThreadId)
+                throw new SynchronizationLockException();
+
+            if (_recursionCount == 0)
             {
                 ReleaseCore();
                 return;
             }
 
-            Release();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public void Release()
-        {
-            if (!IsAcquired)
-                throw new SynchronizationLockException();
-
-            if (_recursionCount > 0)
-                _recursionCount--;
-            else
-                ReleaseCore();
+            _recursionCount--;
         }
 
         internal uint ReleaseAll()

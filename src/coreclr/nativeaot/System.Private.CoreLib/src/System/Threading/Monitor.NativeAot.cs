@@ -38,7 +38,7 @@ namespace System.Threading
 
         #region Public Enter/Exit methods
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Enter(object obj)
         {
             int resultOrIndex = ObjectHeader.Acquire(obj);
@@ -55,8 +55,10 @@ namespace System.Threading
             TryAcquireContended(lck, obj, Timeout.Infinite);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Enter(object obj, ref bool lockTaken)
         {
+            // we are inlining lockTaken check as the check is likely be optimizied away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
@@ -64,6 +66,7 @@ namespace System.Threading
             lockTaken = true;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
             int resultOrIndex = ObjectHeader.TryAcquire(obj);
@@ -77,14 +80,17 @@ namespace System.Threading
             return lck.TryAcquire(0);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TryEnter(object obj, ref bool lockTaken)
         {
+            // we are inlining lockTaken check as the check is likely be optimizied away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
             lockTaken = TryEnter(obj);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
@@ -104,8 +110,10 @@ namespace System.Threading
             return TryAcquireContended(lck, obj, millisecondsTimeout);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
+            // we are inlining lockTaken check as the check is likely be optimizied away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 

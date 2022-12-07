@@ -353,6 +353,10 @@ namespace System.Threading
             /// </summary>
             public DependentHandle Owner;
 
+            // unusd field to make the entry even number of words.
+            // we will likely put something in here eventually.
+            internal nint _unusedPadding;
+
             /// <summary>
             /// For entries in use, this property gets or sets the hash code of the owner object.
             /// The zero value indicates the hash code has not yet been assigned.
