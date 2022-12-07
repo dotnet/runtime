@@ -1229,16 +1229,6 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.BaseType, factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(_type.BaseType)).WriteVertex(factory));
             }
 
-            if (!_type.IsArrayTypeWithoutGenericInterfaces() && ConstructedEETypeNode.CreationAllowed(_type))
-            {
-                SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
-
-                sealedVTable.BuildSealedVTableSlots(factory, relocsOnly: false /* This is the final emission phase */);
-
-                if (sealedVTable.NumSealedVTableEntries > 0)
-                    layoutInfo.AppendUnsigned(BagElementKind.SealedVTableEntries, (uint)sealedVTable.NumSealedVTableEntries);
-            }
-
             if (_type.GetTypeDefinition().HasVariance || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
             {
                 // Runtime casting logic relies on all interface types implemented on arrays

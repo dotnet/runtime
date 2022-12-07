@@ -473,11 +473,6 @@ namespace Internal.Runtime.TypeLoader
                         typeInfoParser.SkipInteger(); // Handled in type layout algorithm
                         break;
 
-                    case BagElementKind.SealedVTableEntries:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.SealedVTableEntries");
-                        state.NumSealedVTableEntries = typeInfoParser.GetUnsigned();
-                        break;
-
                     case BagElementKind.DictionaryLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
                         Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");

@@ -237,82 +237,76 @@ namespace Internal.Runtime.TypeLoader
 
                 // Optional fields encoding
                 int cbOptionalFieldsSize;
-                OptionalFieldsRuntimeBuilder optionalFields;
-                {
-                    optionalFields = new OptionalFieldsRuntimeBuilder(pTemplateEEType != null ? pTemplateEEType->OptionalFieldsPtr : null);
+                OptionalFieldsRuntimeBuilder optionalFields = new OptionalFieldsRuntimeBuilder(pTemplateEEType->OptionalFieldsPtr);
 
-                    uint rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
+                uint rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
 
-                    if (state.NumSealedVTableEntries > 0)
-                        rareFlags |= (uint)EETypeRareFlags.HasSealedVTableEntriesFlag;
+                if (state.NonGcDataSize != 0)
+                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithNonGcStatics;
 
-                    if (state.NonGcDataSize != 0)
-                        rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithNonGcStatics;
+                if (state.GcDataSize != 0)
+                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithGcStatics;
 
-                    if (state.GcDataSize != 0)
-                        rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithGcStatics;
-
-                    if (state.ThreadDataSize != 0)
-                        rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
+                if (state.ThreadDataSize != 0)
+                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
 
 #if TARGET_ARM
-                    if (state.FieldAlignment == 8)
-                        rareFlags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.RequiresAlign8Flag;
+                if (state.FieldAlignment == 8)
+                    rareFlags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
+                else
+                    rareFlags &= ~(uint)EETypeRareFlags.RequiresAlign8Flag;
 #endif
 
 #if TARGET_ARM || TARGET_ARM64
-                    if (state.IsHFA)
-                        rareFlags |= (uint)EETypeRareFlags.IsHFAFlag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.IsHFAFlag;
+                if (state.IsHFA)
+                    rareFlags |= (uint)EETypeRareFlags.IsHFAFlag;
+                else
+                    rareFlags &= ~(uint)EETypeRareFlags.IsHFAFlag;
 #endif
-                    if (state.HasStaticConstructor)
-                        rareFlags |= (uint)EETypeRareFlags.HasCctorFlag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.HasCctorFlag;
+                if (state.HasStaticConstructor)
+                    rareFlags |= (uint)EETypeRareFlags.HasCctorFlag;
+                else
+                    rareFlags &= ~(uint)EETypeRareFlags.HasCctorFlag;
 
-                    if (isAbstractClass)
-                        rareFlags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.IsAbstractClassFlag;
+                if (isAbstractClass)
+                    rareFlags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
+                else
+                    rareFlags &= ~(uint)EETypeRareFlags.IsAbstractClassFlag;
 
-                    if (isByRefLike)
-                        rareFlags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.IsByRefLikeFlag;
+                if (isByRefLike)
+                    rareFlags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
+                else
+                    rareFlags &= ~(uint)EETypeRareFlags.IsByRefLikeFlag;
 
-                    if (isNullable)
-                    {
-                        uint nullableValueOffset = state.NullableValueOffset;
+                if (isNullable)
+                {
+                    uint nullableValueOffset = state.NullableValueOffset;
 
-                        // The stored offset is never zero (Nullable has a boolean there indicating whether the value is valid).
-                        // If the real offset is one, then the field isn't set. Otherwise the offset is encoded - 1 to save space.
-                        if (nullableValueOffset == 1)
-                            optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
-                        else
-                            optionalFields.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, checked(nullableValueOffset - 1));
-                    }
-                    else
-                    {
+                    // The stored offset is never zero (Nullable has a boolean there indicating whether the value is valid).
+                    // If the real offset is one, then the field isn't set. Otherwise the offset is encoded - 1 to save space.
+                    if (nullableValueOffset == 1)
                         optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
-                    }
-
-                    optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
-
-                    // Dispatch map is fetched from template type
-                    optionalFields.ClearField(EETypeOptionalFieldTag.DispatchMap);
-
-                    optionalFields.ClearField(EETypeOptionalFieldTag.ValueTypeFieldPadding);
-
-                    if (valueTypeFieldPaddingEncoded != 0)
-                        optionalFields.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
-
-                    // Compute size of optional fields encoding
-                    cbOptionalFieldsSize = optionalFields.Encode();
-                    Debug.Assert(cbOptionalFieldsSize > 0);
+                    else
+                        optionalFields.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, checked(nullableValueOffset - 1));
                 }
+                else
+                {
+                    optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
+                }
+
+                optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
+
+                // Dispatch map is fetched from template type
+                optionalFields.ClearField(EETypeOptionalFieldTag.DispatchMap);
+
+                optionalFields.ClearField(EETypeOptionalFieldTag.ValueTypeFieldPadding);
+
+                if (valueTypeFieldPaddingEncoded != 0)
+                    optionalFields.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
+
+                // Compute size of optional fields encoding
+                cbOptionalFieldsSize = optionalFields.Encode();
+                Debug.Assert(cbOptionalFieldsSize > 0);
 
                 // Note: The number of vtable slots on the MethodTable to create is not necessary equal to the number of
                 // vtable slots on the template type for universal generics (see ComputeVTableLayout)
@@ -332,7 +326,7 @@ namespace Internal.Runtime.TypeLoader
                         runtimeInterfacesLength,
                         hasFinalizer,
                         true,
-                        state.NumSealedVTableEntries > 0,
+                        (rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0,
                         isGeneric,
                         state.NonGcDataSize != 0,
                         state.GcDataSize != 0,
@@ -385,18 +379,10 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 // Copy the sealed vtable entries if they exist on the template type
-                if (state.NumSealedVTableEntries > 0)
+                if ((rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
                 {
-                    state.HalfBakedSealedVTable = MemoryHelpers.AllocateMemory((int)state.NumSealedVTableEntries * IntPtr.Size);
-
                     uint cbSealedVirtualSlotsTypeOffset = pEEType->GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
-                    *((IntPtr*)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = state.HalfBakedSealedVTable;
-
-                    for (ushort i = 0; i < state.NumSealedVTableEntries; i++)
-                    {
-                        IntPtr value = pTemplateEEType->GetSealedVirtualSlot(i);
-                        pEEType->SetSealedVirtualSlot(value, i);
-                    }
+                    *((void**)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = pTemplateEEType->GetSealedVirtualTable();
                 }
 
                 if (MethodTable.SupportsWritableData)
@@ -455,7 +441,6 @@ namespace Internal.Runtime.TypeLoader
                     state.HalfBakedDictionary = state.Dictionary.Allocate();
 
                 Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
-                Debug.Assert((state.NumSealedVTableEntries == 0 && state.HalfBakedSealedVTable == IntPtr.Zero) || (state.NumSealedVTableEntries > 0 && state.HalfBakedSealedVTable != IntPtr.Zero));
                 Debug.Assert((state.Dictionary == null && state.HalfBakedDictionary == IntPtr.Zero) || (state.Dictionary != null && state.HalfBakedDictionary != IntPtr.Zero));
 
                 successful = true;
@@ -466,8 +451,6 @@ namespace Internal.Runtime.TypeLoader
                 {
                     if (eeTypePtrPlusGCDesc != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(eeTypePtrPlusGCDesc);
-                    if (state.HalfBakedSealedVTable != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(state.HalfBakedSealedVTable);
                     if (state.HalfBakedDictionary != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(state.HalfBakedDictionary);
                     if (gcStaticData != IntPtr.Zero)
@@ -749,7 +732,6 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(false == state.HasStaticConstructor);
                 Debug.Assert(0 == state.GcDataSize);
                 Debug.Assert(0 == state.ThreadStaticOffset);
-                Debug.Assert(0 == state.NumSealedVTableEntries);
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);
                 Debug.Assert(IntPtr.Zero == state.ThreadStaticDesc);
 
