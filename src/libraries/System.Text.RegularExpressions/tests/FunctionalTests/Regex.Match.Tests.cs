@@ -945,6 +945,9 @@ namespace System.Text.RegularExpressions.Tests
                 //mixed lazy and eager counting
                 yield return ("z(a{0,5}|a{0,10}?)", "xyzaaaaaaaaaxyz", options, 0, 15, true, "zaaaaa");
             }
+
+            // Test for a bug in NonBacktracking's subsumption rule for XY subsuming X??Y, which didn't check that X is nullable
+            yield return (@"XY|X??Y", "Y", RegexOptions.None, 0, 1, true, "Y");
         }
 
         [OuterLoop("Takes several seconds to run")]
