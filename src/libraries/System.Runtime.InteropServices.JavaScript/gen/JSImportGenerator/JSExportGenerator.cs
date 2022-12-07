@@ -139,8 +139,6 @@ namespace Microsoft.Interop.JavaScript
         }
 
         private static MemberDeclarationSyntax PrintGeneratedSource(
-            ContainingSyntax userDeclaredMethod,
-            JSSignatureContext stub,
             ContainingSyntaxContext containingSyntaxContext,
             BlockSyntax wrapperStatements, string wrapperName)
         {
@@ -314,7 +312,7 @@ namespace Microsoft.Interop.JavaScript
                     }
                     )))));
 
-            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, wrapper, wrapperName),
+            return (PrintGeneratedSource(incrementalContext.ContainingSyntaxContext, wrapper, wrapperName),
                 registration, registrationAttribute,
                 incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
