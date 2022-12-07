@@ -16408,33 +16408,6 @@ bool Compiler::gtHasCatchArg(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtHasCallOnStack:
-//
-// Arguments:
-//    parentStack: a context (stack of parent nodes)
-//
-// Return Value:
-//     returns true if any of the parent nodes are a GT_CALL
-//
-// Assumptions:
-//    We have a stack of parent nodes. This generally requires that
-//    we are performing a recursive tree walk using struct fgWalkData
-//
-//------------------------------------------------------------------------
-/* static */ bool Compiler::gtHasCallOnStack(GenTreeStack* parentStack)
-{
-    for (int i = 0; i < parentStack->Height(); i++)
-    {
-        GenTree* node = parentStack->Top(i);
-        if (node->OperGet() == GT_CALL)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
 // gtGetTypeProducerKind: determine if a tree produces a runtime type, and
 //    if so, how.
 //
@@ -16829,86 +16802,26 @@ bool GenTree::DefinesLocal(
 // Return Value:
 //    Whether "this" is a LCL_VAR|FLD_ADDR-equivalent tree.
 //
-// Notes:
-//    This function is contractually bound to recognize a superset of trees
-//    that "LocalAddressVisitor" recognizes, as it is used by "DefinesLocal"
-//    to detect stores to tracked locals.
-//
 bool GenTree::DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset)
 {
-    if (OperIs(GT_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    if (OperIs(GT_ADDR) || OperIsLocalAddr())
     {
-        GenTree* addrArg = this;
+        GenTree* lclNode = this;
         if (OperGet() == GT_ADDR)
         {
-            addrArg = AsOp()->gtOp1;
+            lclNode = AsOp()->gtOp1;
         }
 
-        if (addrArg->IsLocal() || addrArg->OperIsLocalAddr())
+        if (lclNode->IsLocal() || lclNode->OperIsLocalAddr())
         {
-            GenTreeLclVarCommon* addrArgLcl = addrArg->AsLclVarCommon();
-            *pLclVarTree                    = addrArgLcl;
+            *pLclVarTree = lclNode->AsLclVarCommon();
 
             if (pOffset != nullptr)
             {
-                *pOffset += addrArgLcl->GetLclOffs();
+                *pOffset += lclNode->AsLclVarCommon()->GetLclOffs();
             }
 
             return true;
-        }
-        else if (addrArg->OperGet() == GT_IND)
-        {
-            // A GT_ADDR of a GT_IND can both be optimized away, recurse using the child of the GT_IND
-            return addrArg->AsIndir()->Addr()->DefinesLocalAddr(pLclVarTree, pOffset);
-        }
-    }
-    else if (OperGet() == GT_ADD)
-    {
-        if (AsOp()->gtOp1->IsCnsIntOrI())
-        {
-            if (pOffset != nullptr)
-            {
-                *pOffset += AsOp()->gtOp1->AsIntCon()->IconValue();
-            }
-
-            return AsOp()->gtOp2->DefinesLocalAddr(pLclVarTree, pOffset);
-        }
-        else if (AsOp()->gtOp2->IsCnsIntOrI())
-        {
-            if (pOffset != nullptr)
-            {
-                *pOffset += AsOp()->gtOp2->AsIntCon()->IconValue();
-            }
-
-            return AsOp()->gtOp1->DefinesLocalAddr(pLclVarTree, pOffset);
-        }
-    }
-    // Post rationalization we could have GT_IND(GT_LEA(..)) trees.
-    else if (OperGet() == GT_LEA)
-    {
-        // This method gets invoked during liveness computation and therefore it is critical
-        // that we don't miss 'use' of any local.  The below logic is making the assumption
-        // that in case of LEA(base, index, offset) - only base can be a GT_LCL_VAR_ADDR
-        // and index is not.
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-        GenTree* index = AsOp()->gtOp2;
-        if (index != nullptr)
-        {
-            assert(!index->DefinesLocalAddr(pLclVarTree, pOffset));
-        }
-#endif // DEBUG
-
-        GenTree* base = AsAddrMode()->Base();
-        if (base != nullptr)
-        {
-            if (pOffset != nullptr)
-            {
-                *pOffset += AsAddrMode()->Offset();
-            }
-
-            return base->DefinesLocalAddr(pLclVarTree, pOffset);
         }
     }
 
@@ -16929,17 +16842,7 @@ const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
     {
         return this->AsLclVarCommon();
     }
-    else if (OperGet() == GT_ADD)
-    {
-        if (AsOp()->gtOp1->OperGet() == GT_CNS_INT)
-        {
-            return AsOp()->gtOp2->IsLocalAddrExpr();
-        }
-        else if (AsOp()->gtOp2->OperGet() == GT_CNS_INT)
-        {
-            return AsOp()->gtOp1->IsLocalAddrExpr();
-        }
-    }
+
     // Otherwise...
     return nullptr;
 }
@@ -18395,12 +18298,6 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 // Returns:
 //   A tree representing the address of a local.
 //
-// Remarks:
-//   This function should not be used until after morph when local address
-//   nodes have been normalized. However, before that IsOptimizingRetBufAsLocal
-//   can be used to at least check if the call has a retbuf that we are
-//   optimizing.
-//
 GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 {
     if (!call->IsOptimizingRetBufAsLocal())
@@ -18427,10 +18324,7 @@ GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-#ifdef DEBUG
-    GenTreeLclVarCommon* lcl;
-    assert(node->DefinesLocalAddr(&lcl) && lvaGetDesc(lcl)->lvHiddenBufferStructArg);
-#endif
+    assert(node->OperIsLocalAddr() && lvaGetDesc(node->AsLclVarCommon())->lvHiddenBufferStructArg);
 
     return node;
 }

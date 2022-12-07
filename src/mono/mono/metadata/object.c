@@ -6720,17 +6720,10 @@ leave:
 }
 
 gboolean
-mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
+mono_object_isinst_vtable_mbyref (MonoVTable *vt, MonoClass *klass, MonoError *error)
 {
-	error_init (error);
-
 	gboolean result = FALSE;
-
-	if (MONO_HANDLE_IS_NULL (obj))
-		goto leave;
-
-	MonoVTable *vt;
-	vt = MONO_HANDLE_GETVAL (obj, vtable);
+	MonoClass *oklass = vt->klass;
 
 	if (mono_class_is_interface (klass)) {
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, m_class_get_interface_id (klass))) {
@@ -6740,19 +6733,18 @@ mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, Mo
 
 		/* casting an array one of the invariant interfaces that must act as such */
 		if (m_class_is_array_special_interface (klass)) {
-			if (mono_class_is_assignable_from_internal (klass, vt->klass)) {
+			if (mono_class_is_assignable_from_internal (klass, oklass)) {
 				result = TRUE;
 				goto leave;
 			}
 		}
 
 		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
-		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from_internal (klass, mono_handle_class (obj))) {
+		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from_internal (klass, oklass)) {
 			result = TRUE;
 			goto leave;
 		}
 	} else {
-		MonoClass *oklass = vt->klass;
 		mono_class_setup_supertypes (klass);
 		if (mono_class_has_parent_fast (oklass, klass)) {
 			result = TRUE;
@@ -6761,6 +6753,17 @@ mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, Mo
 	}
 leave:
 	return result;
+}
+
+gboolean
+mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
+{
+	error_init (error);
+
+	if (MONO_HANDLE_IS_NULL (obj))
+		return FALSE;
+	else
+		return mono_object_isinst_vtable_mbyref (MONO_HANDLE_GETVAL (obj, vtable), klass, error);
 }
 
 /**

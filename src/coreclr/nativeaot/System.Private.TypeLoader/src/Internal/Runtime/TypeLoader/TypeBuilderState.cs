@@ -4,18 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Text;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
-
-using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
-using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -54,7 +45,6 @@ namespace Internal.Runtime.TypeLoader
 
         public RuntimeTypeHandle HalfBakedRuntimeTypeHandle;
         public IntPtr HalfBakedDictionary;
-        public IntPtr HalfBakedSealedVTable;
 
         private bool _templateComputed;
         private bool _nativeLayoutTokenComputed;
@@ -353,7 +343,6 @@ namespace Internal.Runtime.TypeLoader
         public IntPtr GcStaticDesc;
         public IntPtr ThreadStaticDesc;
         public uint ThreadStaticOffset;
-        public uint NumSealedVTableEntries;
         public GenericVariance[] GenericVarianceFlags;
 
         // Sentinel static to allow us to initialize _instanceLayout to something

@@ -281,11 +281,8 @@ private:
         GenTree* const op1 = tree->gtGetOp1();
         GenTree* const op2 = tree->gtGetOp2();
 
-        const unsigned operatorSize = genTypeSize(tree->TypeGet());
-
-        const bool op1Legal =
-            isSafeToMarkOp1 && tree->OperIsCommutative() && (operatorSize == genTypeSize(op1->TypeGet()));
-        const bool op2Legal = isSafeToMarkOp2 && (operatorSize == genTypeSize(op2->TypeGet()));
+        const bool op1Legal = isSafeToMarkOp1 && tree->OperIsCommutative() && IsContainableMemoryOpSize(tree, op1);
+        const bool op2Legal = isSafeToMarkOp2 && IsContainableMemoryOpSize(tree, op2);
 
         GenTree* regOptionalOperand = nullptr;
 
@@ -450,6 +447,30 @@ public:
     bool IsContainableMemoryOp(GenTree* node) const
     {
         return m_lsra->isContainableMemoryOp(node);
+    }
+
+    // Return true if 'childNode' is a containable memory op by its size relative to the 'parentNode'.
+    // Currently very conservative.
+    bool IsContainableMemoryOpSize(GenTree* parentNode, GenTree* childNode) const
+    {
+        if (parentNode->OperIsBinary())
+        {
+            const unsigned operatorSize = genTypeSize(parentNode->TypeGet());
+
+#ifdef TARGET_XARCH
+
+            // Conservative - only do this for AND, OR, XOR.
+            if (parentNode->OperIs(GT_AND, GT_OR, GT_XOR))
+            {
+                return genTypeSize(childNode->TypeGet()) >= operatorSize;
+            }
+
+#endif // TARGET_XARCH
+
+            return genTypeSize(childNode->TypeGet()) == operatorSize;
+        }
+
+        return false;
     }
 
 #ifdef TARGET_ARM64
