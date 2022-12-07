@@ -2870,7 +2870,7 @@ extern "C" EXPORT_API void EXPORT_CC mono_set_break_policy(MonoBreakPolicyFunc p
 
 extern "C" EXPORT_API void EXPORT_CC mono_set_crash_chaining (gboolean)
 {
-    ASSERT_NOT_IMPLEMENTED;
+    // NOP
 }
 
 extern "C" EXPORT_API void EXPORT_CC mono_set_defaults(int verbose_level, guint32 opts)
@@ -3300,7 +3300,8 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_assembly_mempool_chunk_foreach (
 #if defined(HOST_OSX) || defined(HOST_UNIX)
 extern "C" EXPORT_API int EXPORT_CC mono_unity_backtrace_from_context(void* context, void* array[], int count)
 {
-    ASSERT_NOT_IMPLEMENTED;
+    // Not implemented yet. Returning no frames allows code to continue without
+    // stack trace support.
     return 0;
 }
 #endif
