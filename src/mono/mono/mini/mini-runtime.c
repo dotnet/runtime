@@ -4972,7 +4972,8 @@ register_icalls (void)
 	register_icall (mono_array_new_n_icall, mono_icall_sig_object_ptr_int_ptr, FALSE);
 	register_icall (mono_get_native_calli_wrapper, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_resume_unwind, mono_icall_sig_void_ptr, TRUE);
-	register_icall (mono_gsharedvt_constrained_call, mono_icall_sig_object_ptr_ptr_ptr_ptr_ptr, FALSE);
+	register_icall (mono_gsharedvt_constrained_call, mono_icall_sig_object_ptr_ptr_ptr_ptr_ptr_ptr, FALSE);
+	register_icall (mono_gsharedvt_constrained_call_fast, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_gsharedvt_value_copy, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
 	//WARNING We do runtime selection here but the string *MUST* be to a fallback function that has same signature and behavior
