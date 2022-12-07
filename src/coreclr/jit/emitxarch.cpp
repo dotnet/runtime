@@ -468,6 +468,92 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 }
 
 //------------------------------------------------------------------------
+// TryGetDestinationRegisterFromLastInstruction: ..
+//
+// Arguments:
+//    reg - output parameter
+//    isUpper32BitsZero - output parameter
+//
+// Return Value:
+//    true if ..
+//    false if ..
+//
+bool emitter::TryGetDestinationRegisterFromLastInstruction(regNumber* reg, bool* isUpper32BitsZero)
+{
+    if (emitLastIns == nullptr)
+    {
+        return false;
+    }
+
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    instrDesc* id = emitLastIns;
+
+    // This isn't meant to be a comprehensive check. Just look for what
+    // seems to be common.
+    switch (id->idInsFmt())
+    {
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_MRD:
+        case IF_RWR_SRD:
+        case IF_RWR_ARD:
+        {
+#ifdef TARGET_AMD64
+            if ((id->idReg1() < REG_RAX) || (id->idReg1() > REG_R15))
+#else
+            if ((id->idReg1() < REG_EAX) || (id->idReg1() > REG_EDI))
+#endif // !TARGET_AMD64
+            {
+                *reg = REG_NA;
+                *isUpper32BitsZero = false;
+                return true;
+            }
+
+            *reg = id->idReg1();
+
+            // Bail if movsx, we always have movsx sign extend to 8 bytes
+            if (id->idIns() == INS_movsx)
+            {
+                *isUpper32BitsZero = false;
+            }
+
+#ifdef TARGET_AMD64
+            if (id->idIns() == INS_movsxd)
+            {
+                *isUpper32BitsZero = false;
+                return true;
+            }
+#endif
+
+            // movzx always zeroes the upper 32 bits.
+            if (id->idIns() == INS_movzx)
+            {
+                *isUpper32BitsZero = true;
+            }
+
+            // Else rely on operation size.
+            *isUpper32BitsZero = (id->idOpSize() == EA_4BYTE);
+
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // AreUpper32BitsZero: check if some previously emitted
 //     instruction set the upper 32 bits of reg to zero.
 //
@@ -483,62 +569,19 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 //
 //    movsx eax, ... might seem viable but we always encode this
 //    instruction with a 64 bit destination. See TakesRexWPrefix.
-
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-    // Only consider if safe
-    //
-    if (!emitCanPeepholeLastIns())
+    if (emitComp->opts.OptimizationDisabled())
     {
         return false;
     }
 
-    instrDesc* id  = emitLastIns;
-    insFormat  fmt = id->idInsFmt();
-
-    // This isn't meant to be a comprehensive check. Just look for what
-    // seems to be common.
-    switch (fmt)
+    regNumber dstReg            = REG_NA;
+    bool      isUpper32BitsZero = false;
+    if (TryGetDestinationRegisterFromLastInstruction(&dstReg, &isUpper32BitsZero) && (dstReg == reg) &&
+        isUpper32BitsZero)
     {
-        case IF_RWR_CNS:
-        case IF_RRW_CNS:
-        case IF_RRW_SHF:
-        case IF_RWR_RRD:
-        case IF_RRW_RRD:
-        case IF_RWR_MRD:
-        case IF_RWR_SRD:
-        case IF_RWR_ARD:
-
-            // Bail if not writing to the right register
-            if (id->idReg1() != reg)
-            {
-                break;
-            }
-
-            // Bail if movsx, we always have movsx sign extend to 8 bytes
-            if (id->idIns() == INS_movsx)
-            {
-                return false;
-            }
-
-#ifdef TARGET_AMD64
-            if (id->idIns() == INS_movsxd)
-            {
-                return false;
-            }
-#endif
-
-            // movzx always zeroes the upper 32 bits.
-            if (id->idIns() == INS_movzx)
-            {
-                return true;
-            }
-
-            // Else rely on operation size.
-            return (id->idOpSize() == EA_4BYTE);
-
-        default:
-            return false;
+        return true;
     }
 
 #ifdef TARGET_AMD64
