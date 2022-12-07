@@ -35,14 +35,14 @@ INST(invalid,       "INVALID",        0,    BAD_CODE)
 INST(nop,           "nop",            0,    0x00000013)
 
 //// R_R
-INST(mov,           "mov",            0,    0x00000003)
+INST(mov,           "mov",            0,    0x00000013)
 
 ////R_I
 INST(lui,           "lui",            0,    0x00000037)
 INST(auipc,         "auipc",          0,    0x00000017)
 
 //// R_R_I
-INST(addi,          "addi",           0,    0x00000003)
+INST(addi,          "addi",           0,    0x00000013)
 INST(slti,          "slti",           0,    0x00002013)
 INST(sltiu,         "sltiu",          0,    0x00003013)
 INST(xori,          "xori",           0,    0x00004013)

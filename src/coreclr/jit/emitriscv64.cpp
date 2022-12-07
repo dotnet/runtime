@@ -880,7 +880,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         }
         else
         {
-            id->idCodeSize(16); // TODO NEED TO CHECK LATER
+            id->idCodeSize(32); // TODO NEED TO CHECK LATER
         }
     }
 
@@ -1358,8 +1358,704 @@ AGAIN:
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return 0;
+    BYTE*       dstRW  = *dp + writeableOffset;
+    BYTE*       dstRW2 = dstRW + 4; // addr for updating gc info if needed.
+    code_t      code   = 0;
+    instruction ins;
+    size_t      sz; // = emitSizeOfInsDsc(id);
+
+#ifdef DEBUG
+#if DUMP_GC_TABLES
+    bool dspOffs = emitComp->opts.dspGCtbls;
+#else
+    bool dspOffs = !emitComp->opts.disDiffable;
+#endif
+#endif // DEBUG
+
+    assert(REG_NA == (int)REG_NA);
+
+    insOpts insOp = id->idInsOpt();
+
+    switch (insOp)
+    {
+        case INS_OPTS_RELOC:
+        {
+            regNumber reg1 = id->idReg1();
+
+            *(code_t*)dstRW = 0x00000017 | (code_t)(reg1 << 7);
+
+            dstRW += 4;
+
+#ifdef DEBUG
+            code = emitInsCode(INS_auipc);
+            assert(code == 0x00000017);
+            code = emitInsCode(INS_addi);
+            assert(code == 0x00000013);
+            code = emitInsCode(INS_ld);
+            assert(code == 0x00003003);
+#endif
+
+            if (id->idIsCnsReloc())
+            {
+                ins             = INS_addi;
+                *(code_t*)dstRW = 0x00000013 | (code_t)(reg1 << 7) | (code_t)(reg1 << 15);
+            }
+            else
+            {
+                assert(id->idIsDspReloc());
+                ins             = INS_ld;
+                *(code_t*)dstRW = 0x00003003 | (code_t)(reg1 << 7) | (code_t)(reg1 << 15);
+            }
+
+            dstRW += 4;
+
+            emitRecordRelocation(dstRW - 8 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
+
+            sz = sizeof(instrDesc);
+        }
+        break;
+        case INS_OPTS_I:
+        {
+            ssize_t   imm  = (ssize_t)(id->idAddr()->iiaAddr);
+            regNumber reg1 = id->idReg1();
+
+            switch (id->idCodeSize())
+            {
+                case 8:
+                {
+                    if (id->idReg2())
+                    { // special for INT64_MAX or UINT32_MAX;
+                        code = emitInsCode(INS_addi);
+                        code |= (code_t)reg1 << 7;
+                        code |= (code_t)REG_R0 << 15;
+                        code |= 0xfff << 10;
+
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        ssize_t ui6 = (imm == INT64_MAX) ? 1 : 32;
+                        code        = emitInsCode(INS_srli);
+                        code |= ((code_t)(reg1 << 7) | ((code_t)(reg1 << 15)) | (ui6 << 20));
+                        *(code_t*)dstRW = code;
+                    }
+                    else
+                    {
+                        code = emitInsCode(INS_lui);
+                        code |= (code_t)(reg1 << 7);
+                        code |= ((code_t)((imm + 0x800) >> 12) & 0xfffff) << 12;
+
+                        *(code_t*)dstRW = code;
+                        dstRW += 4;
+
+                        code = emitInsCode(INS_addi);
+                        code |= (code_t)reg1 << 7;
+                        code |= (code_t)reg1 << 15;
+                        code |= (code_t)(imm & 0xfff) << 20;
+                        *(code_t*)dstRW = code;
+                    }
+                    break;
+                }
+                case 32:
+                {
+                    ssize_t high = (imm >> 32) & 0xffffffff;
+                    code = emitInsCode(INS_lui);
+                    code |= (code_t)reg1;
+                    code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
+
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_addi);
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)(high & 0xfff) << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    ssize_t low = imm & 0xffffffff;
+
+                    code = emitInsCode(INS_slli);
+                    code |= (code_t) reg1 << 7;
+                    code |= (code_t) reg1 << 15;
+                    code |= (code_t) 11 << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_addi);
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)((low >> 21) & 0x7ff) << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_slli);
+                    code |= (code_t) reg1 << 7;
+                    code |= (code_t) reg1 << 15;
+                    code |= (code_t) 11 << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_addi);
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)((low >> 10) & 0x7ff) << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_slli);
+                    code |= (code_t) reg1 << 7;
+                    code |= (code_t) reg1 << 15;
+                    code |= (code_t) 10 << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_addi);
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)((low) & 0x3ff) << 20;
+                    *(code_t*)dstRW = code;
+                    break;
+                }
+                default:
+                    unreached();
+                    break;
+            }
+
+            ins = INS_ori;
+            dstRW += 4;
+
+            sz = sizeof(instrDesc);
+        }
+        break;
+        case INS_OPTS_RC:
+        {
+            // Reference to JIT data
+            assert(id->idAddr()->iiaIsJitDataOffset());
+            assert(id->idGCref() == GCT_NONE);
+
+            int doff = id->idAddr()->iiaGetJitDataOffset();
+            assert(doff >= 0);
+
+            ssize_t imm = emitGetInsSC(id);
+            assert((imm >= 0) && (imm < 0x4000)); // 0x4000 is arbitrary, currently 'imm' is always 0.
+
+            unsigned dataOffs = (unsigned)(doff + imm);
+
+            assert(dataOffs < emitDataSize());
+
+            ins            = id->idIns();
+            regNumber reg1 = id->idReg1();
+
+            if (id->idIsReloc())
+            {
+                // get the addr-offset of the data.
+                imm = (ssize_t)emitConsBlock - (ssize_t)(dstRW - writeableOffset) + dataOffs;
+                assert(imm > 0);
+                assert(!(imm & 3));
+
+                doff = (int)(imm & 0x800);
+                imm += doff;
+                assert(isValidSimm20(imm >> 12));
+
+                doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
+
+#ifdef DEBUG
+                code = emitInsCode(INS_auipc);
+                assert(code == 0x00000017);
+#endif
+                code            = 0x00000017 | (1 << 7); // TODO R21 => RA
+                *(code_t*)dstRW = code | (((code_t)imm & 0xfffff000));
+                dstRW += 4;
+
+                if (ins == INS_jalr)
+                {
+                    assert(isGeneralRegister(reg1));
+                    ins = INS_addi;
+#ifdef DEBUG
+                    code = emitInsCode(INS_addi);
+                    assert(code == 0x00000013);
+#endif
+                    code            = 0x00000013 | (1 << 15);
+                    *(code_t*)dstRW = code | (code_t)reg1 | (((code_t)doff & 0xfff) << 20);
+                }
+                else
+                {
+                    code = emitInsCode(ins);
+                    code |= (code_t)(reg1 << 7);
+                    code |= (code_t)REG_RA << 15; // NOTE:here must be REG_R21 !!! // TODO R21 => RA
+                    code |= (code_t)(doff & 0xfff) << 20;
+                    *(code_t*)dstRW = code;
+                }
+                dstRW += 4;
+            }
+            else
+            {
+                // get the addr of the data.
+                imm = (ssize_t)emitConsBlock + dataOffs;
+
+                code = emitInsCode(INS_lui);
+                if (ins == INS_jalr)
+                {
+                    assert((imm >> 32) == 0xff);
+
+                    doff = (int)imm >> 12;
+                    code |= (code_t)REG_RA; // TODO R21 => RA
+                    code |= ((code_t)doff & 0xfffff) << 5;
+
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+
+                    code = emitInsCode(INS_ori);
+                    code |= (code_t)REG_RA << 7;
+                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)(imm & 0xfff) << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_lui);
+                    code |= (code_t)reg1 << 7;
+                    code |= 0xff << 12;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_slli);
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)32 << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    ins  = INS_add;
+                    code = emitInsCode(INS_add);
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)REG_RA << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+                }
+                else
+                {
+                    doff = (int)(imm & 0x800);
+                    imm += doff;
+                    doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
+
+                    assert((imm >> 32) == 0xff);
+
+                    dataOffs = (unsigned)(imm >> 12); // addr-hi-20bits.
+                    code |= (code_t)REG_RA << 7; // TODO CHECK R21 => RA
+                    code |= ((code_t)dataOffs & 0xfffff) << 12;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_lui);
+                    code |= (code_t)reg1 << 7;
+                    code |= 0xff << 12;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_slli);
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)32 << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(INS_add);
+                    code |= (code_t)REG_RA << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)REG_RA << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+
+                    code = emitInsCode(ins);
+                    code |= (code_t)(reg1 & 0x1f) << 7;
+                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)(doff & 0xfff) << 20;
+                    *(code_t*)dstRW = code;
+                    dstRW += 4;
+                }
+            }
+
+            sz = sizeof(instrDesc);
+        }
+        break;
+
+        case INS_OPTS_RL:
+        {
+            insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
+            id->idAddr()->iiaIGlabel = tgtIG;
+
+            regNumber reg1 = id->idReg1();
+            assert(isGeneralRegister(reg1));
+
+            if (id->idIsReloc())
+            {
+                ssize_t imm = (ssize_t)tgtIG->igOffs;
+                imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)(dstRW - writeableOffset);
+                assert((imm & 3) == 0);
+
+                int doff = (int)(imm & 0x800);
+                imm += doff;
+                assert(isValidSimm20(imm >> 12));
+
+                doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
+
+                code            = 0x00000017;
+                *(code_t*)dstRW = code | (code_t)reg1 << 7 | (imm & 0xfffff000);
+                dstRW += 4;
+#ifdef DEBUG
+                code = emitInsCode(INS_auipc);
+                assert(code == 0x00000017);
+                code = emitInsCode(INS_addi);
+                assert(code == 0x00000013);
+#endif
+                ins             = INS_addi;
+                *(code_t*)dstRW = 0x00000013 | ((code_t)reg1 << 7) | ((code_t)reg1 << 15) | ((doff & 0xfff) << 20);
+            }
+            else
+            {
+                ssize_t imm = (ssize_t)tgtIG->igOffs + (ssize_t)emitCodeBlock;
+                assert((imm >> 32) == 0xff);
+
+                code = emitInsCode(INS_lui);
+                code |= (code_t)REG_RA; // TODO CHECK R21 => RA
+                code |= ((code_t)(imm >> 12) & 0xfffff) << 5;
+
+                *(code_t*)dstRW = code;
+                dstRW += 4;
+
+                code = emitInsCode(INS_ori);
+                code |= (code_t)REG_RA;
+                code |= (code_t)REG_RA << 5;
+                code |= (code_t)(imm & 0xfff) << 10;
+                *(code_t*)dstRW = code;
+                dstRW += 4;
+
+                code = emitInsCode(INS_lui);
+                code |= (code_t)reg1 << 7;
+                code |= 0xff << 12;
+                *(code_t*)dstRW = code;
+                dstRW += 4;
+
+                code = emitInsCode(INS_slli);
+                code |= (code_t)reg1 << 7;
+                code |= (code_t)reg1 << 15;
+                code |= (code_t)32 << 20;
+                *(code_t*)dstRW = code;
+                dstRW += 4;
+
+                ins = INS_add;
+                code = emitInsCode(INS_add);
+                code |= (code_t)reg1 << 7;
+                code |= (code_t)reg1 << 15;
+                code |= (code_t)REG_RA << 20;
+                *(code_t*)dstRW = code;
+            }
+
+            dstRW += 4;
+
+            sz = sizeof(instrDesc);
+        }
+        break;
+        case INS_OPTS_JALR:
+            {
+                instrDescJmp* jmp = (instrDescJmp*)id;
+
+                regNumber reg1 = id->idReg1();
+                {
+                    ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset();
+                    imm -= 4;
+
+                    assert((imm & 0x3) == 0);
+
+                    ins = jmp->idIns();
+                    assert(jmp->idCodeSize() > 4); // The original INS_OPTS_JIRL: not used by now!!!
+                    switch (jmp->idCodeSize())
+                    {
+                        case 8:
+                        {
+                            regNumber reg2 = id->idReg2();
+                            // assert((INS_bceqz <= ins) && (ins <= INS_bgeu));
+
+                            if ((INS_beq == ins) || (INS_bne == ins))
+                            {
+                                if ((-0x1000 <= imm) && (imm < 0x1000))
+                                {
+                                    code = emitInsCode(INS_xor);
+                                    code |= (code_t)REG_RA << 7; // TODO R21 => RA
+                                    code |= (code_t)reg1 << 15;
+                                    code |= (code_t)reg2 << 20;
+
+                                    *(code_t*)dstRW = code;
+                                    dstRW += 4;
+
+                                    code = emitInsCode(ins);
+                                    code |= (code_t)REG_RA << 15; // TODO R21 => RA
+                                    code |= ((imm >> 11) & 0x1)  << 7;
+                                    code |= ((imm >> 1)  & 0xf)  << 8;
+                                    code |= ((imm >> 5)  & 0x3f) << 25;
+                                    code |= ((imm >> 12) & 0x1)  << 31;
+                                     *(code_t*)dstRW = code;
+                                    dstRW += 4;
+                                }
+                                else
+                                {
+                                    assert((-0x100000 <= imm) && (imm < 0x100000));
+                                    assert((INS_bne & 0xefff) == INS_beq);
+
+                                    code = emitInsCode((instruction)((int)ins ^ 0x1000));
+                                    code |= ((code_t)(reg1) /*& 0x1f */) << 15; /* rj */
+                                    code |= ((code_t)(reg2) /*& 0x1f */) << 20;      /* rd */
+                                    code |= 0x8 << 7;
+                                    *(code_t*)dstRW = code;
+                                    dstRW += 4;
+
+
+                                    code = emitInsCode(INS_jal);
+                                    code |= ((imm >> 12) & 0xff)  << 12;
+                                    code |= ((imm >> 11)  & 0x1)  << 20;
+                                    code |= ((imm >> 1)  & 0x3ff) << 21;
+                                    code |= ((imm >> 20) & 0x1)  << 31;
+
+                                    *(code_t*)dstRW = code;
+                                    dstRW += 4;
+                                }
+                            }
+                            else if ((INS_blt <= ins) && (ins <= INS_bgeu))
+                            {
+                                assert((-0x100000 <= imm) && (imm < 0x100000));
+                                assert((INS_bge & 0xefff) == INS_blt);
+                                assert((INS_bgeu & 0xefff) == INS_bltu);
+
+                                code = emitInsCode((instruction)((int)ins ^ 0x1000));
+                                code |= ((code_t)(reg1) /*& 0x1f */) << 15; /* rj */
+                                code |= ((code_t)(reg2) /*& 0x1f */) << 20;   /* rd */
+                                code |= 0x8 << 7;
+                                *(code_t*)dstRW = code;
+                                dstRW += 4;
+
+                                code = emitInsCode(INS_jal);
+                                code |= ((imm >> 12) & 0xff)  << 12;
+                                code |= ((imm >> 11)  & 0x1)  << 20;
+                                code |= ((imm >> 1)  & 0x3ff) << 21;
+                                code |= ((imm >> 20) & 0x1)  << 31;
+                                *(code_t*)dstRW = code;
+                                dstRW += 4;
+                            }
+                            break;
+                        }
+
+                        default:
+                            unreached();
+                            break;
+                    }
+                }
+                sz = sizeof(instrDescJmp);
+            }
+            break;
+        case INS_OPTS_J_cond:
+            {
+                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+                assert((OFFSET_DIST_SMALL_MAX_NEG << 2) <= imm && imm <= (OFFSET_DIST_SMALL_MAX_POS << 2));
+                assert(!(imm & 1));
+
+                ins  = id->idIns();
+                code = emitInsCode(ins);
+                code |= ((code_t)id->idReg1()) << 15;
+                code |= ((code_t)id->idReg2()) << 20;
+                code |= ((imm >> 11) & 0x1)  << 7;
+                code |= ((imm >> 1)  & 0xf)  << 8;
+                code |= ((imm >> 5)  & 0x3f) << 25;
+                code |= ((imm >> 12) & 0x1)  << 31;
+                 *(code_t*)dstRW = code;
+                dstRW += 4;
+
+                sz = sizeof(instrDescJmp);
+            }
+            break;
+        case INS_OPTS_J:
+            //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dstRW-relative.
+            {
+                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+                assert((imm & 3) == 0);
+
+                ins  = id->idIns();
+                code = emitInsCode(ins);
+                if (ins == INS_jal)
+                {
+                    code |= ((imm >> 12) & 0xff)  << 12;
+                    code |= ((imm >> 11)  & 0x1)  << 20;
+                    code |= ((imm >> 1)  & 0x3ff) << 21;
+                    code |= ((imm >> 20) & 0x1)  << 31;
+                }
+                else if (ins == INS_jalr)
+                {
+                    code |= ((code_t)(imm & 0xfff) << 20);
+                }
+                else if (ins == INS_bnez || ins == INS_beqz)
+                {
+                    code |= (code_t)id->idReg1() << 15;
+                    code |= ((imm >> 11) & 0x1)  << 7;
+                    code |= ((imm >> 1)  & 0xf)  << 8;
+                    code |= ((imm >> 5)  & 0x3f) << 25;
+                    code |= ((imm >> 12) & 0x1)  << 31;
+                }
+                else if ((INS_beq <= ins) && (ins <= INS_bgeu))
+                {
+                    code |= ((code_t)id->idReg1()) << 15;
+                    code |= ((code_t)id->idReg2()) << 20;
+                    code |= ((imm >> 11) & 0x1)  << 7;
+                    code |= ((imm >> 1)  & 0xf)  << 8;
+                    code |= ((imm >> 5)  & 0x3f) << 25;
+                    code |= ((imm >> 12) & 0x1)  << 31;
+                }
+                else
+                {
+                    assert(!"unimplemented on LOONGARCH yet");
+                }
+
+                *(code_t*)dstRW = code;
+                dstRW += 4;
+
+                sz = sizeof(instrDescJmp);
+            }
+            break;
+
+        case INS_OPTS_C:
+            if (id->idIsLargeCall())
+            {
+                /* Must be a "fat" call descriptor */
+                sz = sizeof(instrDescCGCA);
+            }
+            else
+            {
+                assert(!id->idIsLargeDsp());
+                assert(!id->idIsLargeCns());
+                sz = sizeof(instrDesc);
+            }
+            dstRW += emitOutputCall(ig, *dp, id, 0);
+
+            dstRW2 = dstRW;
+            ins    = INS_nop;
+            break;
+
+        // case INS_OPTS_NONE:
+        default:
+            *(code_t*)dstRW = id->idAddr()->iiaGetInstrEncode();
+            dstRW += 4;
+            ins = id->idIns();
+            sz  = emitSizeOfInsDsc(id);
+            break;
+    }
+
+    // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
+    // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
+    // GC ref to register "id->idReg1()".  (It may, apparently, also not be GC_NONE in other cases, such as
+    // for stores, but we ignore those cases here.)
+    if (emitInsMayWriteToGCReg(ins)) // True if "id->idIns()" writes to a register than can hold GC ref.
+    {
+        // We assume that "idReg1" is the primary destination register for all instructions
+        if (id->idGCref() != GCT_NONE)
+        {
+            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dstRW2 - writeableOffset);
+        }
+        else
+        {
+            emitGCregDeadUpd(id->idReg1(), dstRW2 - writeableOffset);
+        }
+    }
+
+    // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC
+    // ref or overwritten one.
+    if (emitInsWritesToLclVarStackLoc(id) /*|| emitInsWritesToLclVarStackLocPair(id)*/)
+    {
+        int      varNum = id->idAddr()->iiaLclVar.lvaVarNum();
+        unsigned ofs    = AlignDown(id->idAddr()->iiaLclVar.lvaOffset(), TARGET_POINTER_SIZE);
+        bool     FPbased;
+        int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
+        if (id->idGCref() != GCT_NONE)
+        {
+            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dstRW2 - writeableOffset DEBUG_ARG(varNum));
+        }
+        else
+        {
+            // If the type of the local is a gc ref type, update the liveness.
+            var_types vt;
+            if (varNum >= 0)
+            {
+                // "Regular" (non-spill-temp) local.
+                vt = var_types(emitComp->lvaTable[varNum].lvType);
+            }
+            else
+            {
+                TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
+                vt              = tmpDsc->tdTempType();
+            }
+            if (vt == TYP_REF || vt == TYP_BYREF)
+                emitGCvarDeadUpd(adr + ofs, dstRW2 - writeableOffset DEBUG_ARG(varNum));
+        }
+        // if (emitInsWritesToLclVarStackLocPair(id))
+        //{
+        //    unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
+        //    if (id->idGCrefReg2() != GCT_NONE)
+        //    {
+        //        emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), *dp);
+        //    }
+        //    else
+        //    {
+        //        // If the type of the local is a gc ref type, update the liveness.
+        //        var_types vt;
+        //        if (varNum >= 0)
+        //        {
+        //            // "Regular" (non-spill-temp) local.
+        //            vt = var_types(emitComp->lvaTable[varNum].lvType);
+        //        }
+        //        else
+        //        {
+        //            TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
+        //            vt              = tmpDsc->tdTempType();
+        //        }
+        //        if (vt == TYP_REF || vt == TYP_BYREF)
+        //            emitGCvarDeadUpd(adr + ofs2, *dp);
+        //    }
+        //}
+    }
+
+#ifdef DEBUG
+    /* Make sure we set the instruction descriptor size correctly */
+
+    // size_t expected = emitSizeOfInsDsc(id);
+    // assert(sz == expected);
+
+    if (emitComp->opts.disAsm || emitComp->verbose)
+    {
+        code_t* cp = (code_t*)(*dp + writeableOffset);
+        while ((BYTE*)cp != dstRW)
+        {
+            emitDisInsName(*cp, (BYTE*)cp, id);
+            cp++;
+        }
+    }
+
+    if (emitComp->compDebugBreak)
+    {
+        // For example, set JitBreakEmitOutputInstr=a6 will break when this method is called for
+        // emitting instruction a6, (i.e. IN00a6 in jitdump).
+        if ((unsigned)JitConfig.JitBreakEmitOutputInstr() == id->idDebugOnlyInfo()->idNum)
+        {
+            assert(!"JitBreakEmitOutputInstr reached");
+        }
+    }
+#endif
+
+    /* All instructions are expected to generate code */
+
+    assert(*dp != (dstRW - writeableOffset));
+
+    *dp = dstRW - writeableOffset;
+
+    return sz;
 }
 
 /*****************************************************************************/
