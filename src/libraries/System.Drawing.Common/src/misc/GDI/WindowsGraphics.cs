@@ -88,7 +88,7 @@ namespace System.Drawing.Internal
 
                 if (clip is not null)
                 {
-                    // We have to create the WindowsRegion and dipose the Region object before locking the Graphics object,
+                    // We have to create the WindowsRegion and dispose the Region object before locking the Graphics object,
                     // in case of an unlikely exception before releasing the WindowsRegion, the finalizer will do it for us.
                     // (no try-finally block since this method is used frequently - perf).
 

@@ -22,6 +22,10 @@ namespace System.Buffers
         internal override char[] GetValues() => _lookup.GetCharValues();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal override bool ContainsCore(char value) =>
+            _lookup.Contains128(value);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
             IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
 

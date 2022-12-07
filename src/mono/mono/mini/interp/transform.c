@@ -1856,19 +1856,27 @@ interp_emit_ldobj (TransformData *td, MonoClass *klass)
 }
 
 static void
-interp_emit_stobj (TransformData *td, MonoClass *klass)
+interp_emit_stobj (TransformData *td, MonoClass *klass, gboolean reverse_order)
 {
 	int mt = mint_type (m_class_get_byval_arg (klass));
 
 	if (mt == MINT_TYPE_VT) {
-		interp_add_ins (td, MINT_STOBJ_VT);
-		td->last_ins->data [0] = get_data_item_index (td, klass);
+		if (m_class_has_references (klass)) {
+			interp_add_ins (td, MINT_STOBJ_VT);
+			td->last_ins->data [0] = get_data_item_index (td, klass);
+		} else {
+			interp_add_ins (td, MINT_STOBJ_VT_NOREF);
+			td->last_ins->data [0] = GINT32_TO_UINT16 (mono_class_value_size (klass, NULL));
+		}
 	} else {
 		int opcode = interp_get_stind_for_mt (mt);
 		interp_add_ins (td, opcode);
 	}
 	td->sp -= 2;
-	interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+	if (reverse_order)
+		interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
+	else
+		interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
 }
 
 static void
@@ -1993,7 +2001,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			store_local (td, local);
 			interp_emit_ldelema (td, target_method->klass, value_class);
 			load_local (td, local);
-			interp_emit_stobj (td, element_class);
+			interp_emit_stobj (td, element_class, FALSE);
 			td->ip += 5;
 			return TRUE;
 		} else if (!strcmp (tm, "UnsafeStore")) {
@@ -2056,30 +2064,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Text") && !strcmp (klass_name, "ASCIIUtility")) {
 		if (!strcmp (tm, "WidenAsciiToUtf16"))
 			*op = MINT_INTRINS_WIDEN_ASCII_TO_UTF16;
-	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Number")) {
-		if (!strcmp (tm, "UInt32ToDecStr") && csignature->param_count == 1) {
-			ERROR_DECL(error);
-			MonoVTable *vtable = mono_class_vtable_checked (target_method->klass, error);
-			if (!is_ok (error)) {
-				mono_interp_error_cleanup (error);
-				return FALSE;
-			}
-			/* Don't use intrinsic if cctor not yet run */
-			if (!vtable->initialized)
-				return FALSE;
-			/* The cache is the first static field. Update this if bcl code changes */
-			MonoClassField *field = m_class_get_fields (target_method->klass);
-			g_assert (!strcmp (field->name, "s_singleDigitStringCache"));
-			interp_add_ins (td, MINT_INTRINS_U32_TO_DECSTR);
-			td->last_ins->data [0] = get_data_item_index (td, mono_static_field_get_addr (vtable, field));
-			td->last_ins->data [1] = get_data_item_index (td, mono_class_vtable_checked (mono_defaults.string_class, error));
-			td->sp--;
-			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			push_type (td, STACK_TYPE_O, mono_defaults.string_class);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			td->ip += 5;
-			return TRUE;
-		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") &&
 			(!strcmp (klass_name, "Math") || !strcmp (klass_name, "MathF"))) {
 		gboolean is_float = strcmp (klass_name, "MathF") == 0;
@@ -2234,7 +2218,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			MonoClass *klass = mono_class_from_mono_type_internal (type);
 
 			interp_emit_ldobj (td, klass);
-			interp_emit_stobj (td, klass);
+			interp_emit_stobj (td, klass, FALSE);
 
 			td->ip += 5;
 			return TRUE;
@@ -4170,6 +4154,12 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 	MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	return_if_nok (error);
 
+	MonoType *ftype = mono_field_get_type_internal (field);
+	if (ftype->attrs & FIELD_ATTRIBUTE_LITERAL) {
+		mono_error_set_generic_error (error, "System", "MissingFieldException", "Using static instructions with literal field");
+		return;
+	}
+
 	if (mono_class_field_is_special_static (field)) {
 		guint32 offset = GPOINTER_TO_UINT (mono_special_static_field_get_offset (field, error));
 		mono_error_assert_ok (error);
@@ -4199,12 +4189,7 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			}
 		} else {
-			int opcode = (mt == MINT_TYPE_VT) ? MINT_STOBJ_VT : interp_get_stind_for_mt (mt);
-			interp_add_ins (td, opcode);
-			td->sp -= 2;
-			interp_ins_set_sregs2 (td->last_ins, td->sp [1].local, td->sp [0].local);
-			if (mt == MINT_TYPE_VT)
-				td->last_ins->data [0] = get_data_item_index (td, field_class);
+			interp_emit_stobj (td, field_class, TRUE);
 		}
 	} else {
 		gpointer field_addr = mono_static_field_get_addr (vtable, field);
@@ -4212,7 +4197,6 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 		if (mt == MINT_TYPE_VT)
 			size = mono_class_value_size (field_class, NULL);
 		if (is_load) {
-			MonoType *ftype = mono_field_get_type_internal (field);
 			if (ftype->attrs & FIELD_ATTRIBUTE_INIT_ONLY && vtable->initialized) {
 				if (interp_emit_load_const (td, field_addr, mt))
 					return;
@@ -5666,9 +5650,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (m_class_is_valuetype (klass)) {
 				mt = mint_type (m_class_get_byval_arg (klass));
 				td->sp -= 2;
-				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_CPOBJ_VT : MINT_CPOBJ);
+				if (mt == MINT_TYPE_VT && !m_class_has_references (klass)) {
+					interp_add_ins (td, MINT_CPOBJ_VT_NOREF);
+					td->last_ins->data [0] = GINT32_TO_UINT16 (mono_class_value_size (klass, NULL));
+				} else {
+					interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_CPOBJ_VT : MINT_CPOBJ);
+					td->last_ins->data [0] = get_data_item_index (td, klass);
+				}
 				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-				td->last_ins->data [0] = get_data_item_index(td, klass);
 			} else {
 				td->sp--;
 				interp_add_ins (td, MINT_LDIND_I);
@@ -6225,7 +6214,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						interp_emit_metadata_update_ldflda (td, field, error);
 						goto_if_nok (error, exit);
 						load_local (td, local);
-						interp_emit_stobj (td, field_class);
+						interp_emit_stobj (td, field_class, FALSE);
 						td->ip += 5;
 						break;
 					}
@@ -6321,7 +6310,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			BARRIER_IF_VOLATILE (td, MONO_MEMORY_BARRIER_REL);
 
-			interp_emit_stobj (td, klass);
+			interp_emit_stobj (td, klass, FALSE);
 
 			td->ip += 5;
 			break;
@@ -9449,6 +9438,24 @@ interp_super_instructions (TransformData *td)
 					}
 
 				}
+			} else if (opcode == MINT_STOBJ_VT_NOREF) {
+				int sreg_src = ins->sregs [1];
+				InterpInst *def = td->locals [sreg_src].def;
+				if (def != NULL && interp_prev_ins (ins) == def && def->opcode == MINT_LDOBJ_VT && ins->data [0] == def->data [0] && td->local_ref_count [sreg_src] == 1) {
+					InterpInst *new_inst = interp_insert_ins (td, ins, MINT_CPOBJ_VT_NOREF);
+					new_inst->sregs [0] = ins->sregs [0]; // dst
+					new_inst->sregs [1] = def->sregs [0]; // src
+					new_inst->data [0] = ins->data [0];   // size
+
+					interp_clear_ins (def);
+					interp_clear_ins (ins);
+					local_ref_count [sreg_src]--;
+					mono_interp_stats.super_instructions++;
+					if (td->verbose_level) {
+						g_print ("superins: ");
+						dump_interp_inst (new_inst);
+					}
+				}
 			}
 			noe += get_inst_length (ins);
 		}
@@ -10071,8 +10078,7 @@ retry:
 		interp_optimize_code (td);
 		interp_alloc_offsets (td);
 #if HOST_BROWSER
-		if (mono_interp_tiering_enabled ())
-			jiterp_insert_entry_points (td);
+		jiterp_insert_entry_points (td);
 #endif
 	}
 

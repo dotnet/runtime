@@ -213,7 +213,13 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     if (retType == TYP_STRUCT)
     {
         simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &simdSize);
-        retType         = getSIMDTypeForSize(simdSize);
+        if ((simdBaseJitType == CORINFO_TYPE_UNDEF) || !varTypeIsArithmetic(JitType2PreciseVarType(simdBaseJitType)) ||
+            (simdSize == 0))
+        {
+            // Unsupported type
+            return nullptr;
+        }
+        retType = getSIMDTypeForSize(simdSize);
     }
     else if (numArgs != 0)
     {
@@ -1860,8 +1866,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         dest->gtType = simdType;
         dest->gtFlags |= GTF_GLOB_REF;
 
-        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc, /* isVolatile */ false, /* isCopyBlock */ true);
-        retNode->gtFlags |= ((copyBlkDst->gtFlags | copyBlkSrc->gtFlags) & GTF_ALL_EFFECT);
+        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);
 
         return retNode;
     }

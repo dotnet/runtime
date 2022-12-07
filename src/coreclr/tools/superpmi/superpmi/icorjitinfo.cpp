@@ -1481,17 +1481,10 @@ unsigned MyICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection
     return jitInstance->mc->repGetClassDomainID(cls, ppIndirection);
 }
 
-// return the data's address (for static fields only)
-void* MyICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getFieldAddress");
-    return jitInstance->mc->repGetFieldAddress(field, ppIndirection);
-}
-
-bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
-    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
+    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
 }
 
 // return the class handle for the current value of a static field

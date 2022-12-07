@@ -8,6 +8,7 @@ using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Runtime.ExceptionServices;
 using System.Threading;
+using ImmutableArrayExtensions = System.Linq.ImmutableArrayExtensions;
 
 namespace System.Reflection.PortableExecutable
 {
@@ -726,7 +727,7 @@ namespace System.Reflection.PortableExecutable
 
             // First try .pdb file specified in CodeView data (we prefer .pdb file on disk over embedded PDB
             // since embedded PDB needs decompression which is less efficient than memory-mapping the file).
-            var codeViewEntry = entries.FirstOrDefault(e => e.IsPortableCodeView);
+            var codeViewEntry = ImmutableArrayExtensions.FirstOrDefault(entries, e => e.IsPortableCodeView);
             if (codeViewEntry.DataSize != 0 &&
                 TryOpenCodeViewPortablePdb(codeViewEntry, peImageDirectory!, pdbFileStreamProvider, out pdbReaderProvider, out pdbPath, ref errorToReport))
             {
@@ -734,7 +735,7 @@ namespace System.Reflection.PortableExecutable
             }
 
             // if it failed try Embedded Portable PDB (if available):
-            var embeddedPdbEntry = entries.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+            var embeddedPdbEntry = ImmutableArrayExtensions.FirstOrDefault(entries, e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
             if (embeddedPdbEntry.DataSize != 0)
             {
                 bool openedEmbeddedPdb = false;

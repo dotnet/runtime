@@ -22,10 +22,7 @@ namespace System.Diagnostics.Tracing
 
         internal TraceLoggingTypeInfo(Type dataType)
         {
-            if (dataType is null)
-            {
-                throw new ArgumentNullException(nameof(dataType));
-            }
+            ArgumentNullException.ThrowIfNull(dataType);
 
             this.name = dataType.Name;
             this.dataType = dataType;
@@ -40,14 +37,8 @@ namespace System.Diagnostics.Tracing
             EventKeywords keywords,
             EventTags tags)
         {
-            if (dataType is null)
-            {
-                throw new ArgumentNullException(nameof(dataType));
-            }
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(dataType);
+            ArgumentNullException.ThrowIfNull(name);
 
             Statics.CheckName(name);
 

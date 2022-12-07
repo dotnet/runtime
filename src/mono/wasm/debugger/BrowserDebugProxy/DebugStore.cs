@@ -350,6 +350,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
         internal bool IsCompilerGenerated { get; }
+        private readonly AsyncScopeDebugInformation[] _asyncScopes;
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
@@ -361,6 +362,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.TypeInfo = type;
             TypeInfo.Methods.Add(this);
             assembly.Methods[methodToken] = this;
+            _asyncScopes = Array.Empty<AsyncScopeDebugInformation>();
         }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -447,7 +449,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
             if (pdbMetadataReader != null)
+            {
                 localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
+                byte[] scopeDebugInformation =
+                        (from cdiHandle in pdbMetadataReader.GetCustomDebugInformation(methodDefHandle)
+                        let cdi = pdbMetadataReader.GetCustomDebugInformation(cdiHandle)
+                        where pdbMetadataReader.GetGuid(cdi.Kind) == PortableCustomDebugInfoKinds.StateMachineHoistedLocalScopes
+                        select pdbMetadataReader.GetBlobBytes(cdi.Value)).FirstOrDefault();
+
+                if (scopeDebugInformation != null)
+                {
+                    _asyncScopes = new AsyncScopeDebugInformation[scopeDebugInformation.Length / 8];
+                    for (int i = 0; i < _asyncScopes.Length; i++)
+                    {
+                        int scopeOffset = BitConverter.ToInt32(scopeDebugInformation, i * 8);
+                        int scopeLen = BitConverter.ToInt32(scopeDebugInformation, (i * 8) + 4);
+                        _asyncScopes[i] = new AsyncScopeDebugInformation(scopeOffset, scopeOffset + scopeLen);
+                    }
+                }
+
+                _asyncScopes ??= Array.Empty<AsyncScopeDebugInformation>();
+            }
+        }
+
+        public bool ContainsAsyncScope(int oneBasedIdx, int offset)
+        {
+            int arrIdx = oneBasedIdx - 1;
+            return arrIdx >= 0 && arrIdx < _asyncScopes.Length &&
+                    offset >= _asyncScopes[arrIdx].StartOffset && offset <= _asyncScopes[arrIdx].EndOffset;
         }
 
         public ParameterInfo[] GetParametersInfo()
@@ -617,6 +646,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return loc.Source.Id;
             }
         }
+
+        private record struct AsyncScopeDebugInformation(int StartOffset, int EndOffset);
     }
 
     internal sealed class ParameterInfo
