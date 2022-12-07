@@ -40,7 +40,7 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7
 
     - container: Linux_x86
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-x86-linux-staging
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-x86-linux
       env:
         ROOTFS_DIR: /crossrootfs/x86
 
