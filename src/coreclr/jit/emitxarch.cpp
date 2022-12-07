@@ -468,7 +468,7 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 }
 
 //------------------------------------------------------------------------
-// TryGetDestinationRegisterFromLastInstruction: ..
+// TryGetPeepholeInfoFromLastInstruction: ..
 //
 // Arguments:
 //    reg - output parameter
@@ -478,7 +478,7 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 //    true if ..
 //    false if ..
 //
-bool emitter::TryGetDestinationRegisterFromLastInstruction(regNumber* reg, bool* isUpper32BitsZero)
+bool emitter::TryGetPeepholeInfoFromLastInstruction(regNumber* reg, bool* isUpper32BitsZero)
 {
     if (emitLastIns == nullptr)
     {
