@@ -41,7 +41,7 @@ namespace System.Net.NetworkInformation
             if (pingBinary != null)
             {
                 FileInfo info = new FileInfo(pingBinary);
-                // This is Windows way how to say it is symlink
+                // Workaround until there is a better API to determine symlink: https://github.com/dotnet/runtime/issues/53577
                 if (info?.Attributes.HasFlag(FileAttributes.ReparsePoint) == true)
                 {
                     System.IO.FileSystemInfo? linkInfo = File.ResolveLinkTarget(pingBinary, returnFinalTarget: true);
