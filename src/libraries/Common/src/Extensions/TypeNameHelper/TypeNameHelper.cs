@@ -61,7 +61,6 @@ namespace Microsoft.Extensions.Internal
                 Type[] genericArguments = type.GetGenericArguments();
                 builder ??= new StringBuilder();
                 ProcessGenericType(builder, type, genericArguments, genericArguments.Length, options);
-
             }
             else if (type.IsArray)
             {
