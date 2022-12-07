@@ -754,8 +754,8 @@ namespace System
             //
             ReadOnlySpan<char> resourceSpan = resource;
             Span<Range> resources = stackalloc Range[3];
-            int numResources = resourceSpan.Split(resources, ',');
-            if (numResources != 2)
+            resources = resources.Slice(0, resourceSpan.Split(resources, ','));
+            if (resources.Length != 2)
             {
                 return string.Empty;
             }

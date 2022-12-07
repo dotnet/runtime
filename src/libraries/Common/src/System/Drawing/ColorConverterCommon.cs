@@ -53,10 +53,7 @@ namespace System.Drawing
                 }
             }
 
-            // Nope. Parse the RGBA from the text.
-            // We should now have a number of parsed integer values.
             // We support 1, 3, or 4 arguments:
-            //
             // 1 -- full ARGB encoded
             // 3 -- RGB
             // 4 -- ARGB

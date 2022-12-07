@@ -3523,7 +3523,7 @@ namespace System
                     rangeCount++;
                 }
 
-                // Reset to be just passed the separator, and loop around to go again.
+                // Reset to be just past the separator, and loop around to go again.
                 startInclusive = untrimmedEndEclusive + separatorLength;
             }
 
