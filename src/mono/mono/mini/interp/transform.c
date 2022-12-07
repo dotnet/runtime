@@ -143,11 +143,15 @@ MonoInterpStats mono_interp_stats;
 #define MINT_LDNULL MINT_LDC_I8_0
 #define MINT_LDIND_I MINT_LDIND_I8
 #define MINT_STIND_I MINT_STIND_I8
+#define MINT_LDELEM_I MINT_LDELEM_I8
+#define MINT_STELEM_I MINT_STELEM_I8
 #else
 #define MINT_MOV_P MINT_MOV_4
 #define MINT_LDNULL MINT_LDC_I4_0
 #define MINT_LDIND_I MINT_LDIND_I4
 #define MINT_STIND_I MINT_STIND_I4
+#define MINT_LDELEM_I MINT_LDELEM_I4
+#define MINT_STELEM_I MINT_STELEM_I4
 #endif
 
 static const char *stack_type_string [] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
