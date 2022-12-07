@@ -3881,7 +3881,8 @@ namespace System.Text.RegularExpressions.Generator
                     // only to find we can't iterate further, and will need to clear any pushed state from the backtracking
                     // stack.  For both cases, we need to store the starting stack index so it can be reset to that position.
                     startingStackpos = ReserveName("startingStackpos");
-                    writer.WriteLine($"int {startingStackpos} = stackpos;");
+                    additionalDeclarations.Add($"int {startingStackpos} = 0;");
+                    writer.WriteLine($"{startingStackpos} = stackpos;");
                 }
 
                 string originalDoneLabel = doneLabel;
