@@ -7880,7 +7880,7 @@ get_short_brop (int opcode)
 			return opcode;
 	}
 
-	if (opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_R8)
+	if (opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_I8)
 		return opcode + MINT_BRFALSE_I4_S - MINT_BRFALSE_I4;
 
 	if (opcode >= MINT_BEQ_I4 && opcode <= MINT_BLT_UN_R8)
