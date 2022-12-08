@@ -31,7 +31,16 @@ try {
     }
 
     const runtime = await dotnet
+        .withConfig({
+            mainAssemblyName: "Wasm.Browser.Bench.Sample.dll",
+            assets: [{
+                behavior: "dotnetwasm",
+                name: "dotnet.wasm"
+            }],
+            memory: true
+        })
         .withModuleConfig({
+            configSrc: null,
             printErr: () => undefined,
             print: () => undefined,
             onConfigLoaded: (config) => {

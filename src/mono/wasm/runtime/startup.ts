@@ -560,6 +560,15 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
     }
     configLoaded = true;
     if (!configFilePath) {
+        if (Module.onConfigLoaded) {
+            try {
+                await Module.onConfigLoaded(<MonoConfig>runtimeHelpers.config);
+            }
+            catch (err: any) {
+                _print_error("MONO_WASM: onConfigLoaded() failed", err);
+                throw err;
+            }
+        }
         normalize();
         afterConfigLoaded.promise_control.resolve(runtimeHelpers.config);
         return;

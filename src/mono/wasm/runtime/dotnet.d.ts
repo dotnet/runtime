@@ -128,7 +128,7 @@ type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number;
-    memory?: Int8Array;
+    memory?: Int8Array | boolean;
 };
 interface ResourceRequest {
     name: string;

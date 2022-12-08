@@ -183,6 +183,17 @@ try {
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])
         .withElementOnExit()
         .withExitCodeLogging()
+        .withConfig({
+            mainAssemblyName: "Wasm.Browser.Bench.Sample.dll",
+            assets: [{
+                behavior: "dotnetwasm",
+                name: "dotnet.wasm"
+            }],
+            memory: true
+        })
+        .withModuleConfig({
+            configSrc: null,
+        })
         .create();
 
     await mainApp.init(runtime);
