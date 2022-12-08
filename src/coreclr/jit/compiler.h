@@ -11101,6 +11101,10 @@ public:
                            ((retBuf->GetEarlyNode() == nullptr) != (retBuf->GetLateNode() == nullptr)));
                     GenTree** use = retBuf->GetLateNode() == nullptr ? &retBuf->EarlyNodeRef() : &retBuf->LateNodeRef();
                     result        = WalkTree(use, call);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
                 }
 
                 break;
