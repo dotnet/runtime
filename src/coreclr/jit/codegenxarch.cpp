@@ -4893,12 +4893,12 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Updating variable liveness after instruction was emitted
     if (targetReg != REG_NA)
     {
-        genUpdateLife(tree);
-        varDsc->SetRegNum(REG_STK);
+        genProduceReg(tree);
     }
     else
     {
-        genProduceReg(tree);
+        genUpdateLife(tree);
+        varDsc->SetRegNum(REG_STK);
     }
 }
 
@@ -5018,13 +5018,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                                 emitTypeSize(targetType));
             }
         }
+        // Updating variable liveness after instruction was emitted
         if (targetReg != REG_NA)
         {
             genProduceReg(lclNode);
         }
         else
         {
-            // Updating variable liveness after instruction was emitted
             genUpdateLife(lclNode);
             varDsc->SetRegNum(REG_STK);
         }
