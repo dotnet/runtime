@@ -224,20 +224,17 @@ namespace System.Collections.Immutable
             /// <returns>An immutable array.</returns>
             public ImmutableArray<T> DrainToImmutable()
             {
-                ImmutableArray<T> result;
+                T[] result = _elements;
 
-                if (Capacity == Count)
+                if (result.Length != _count)
                 {
-                    result = MoveToImmutable();
-                }
-                else
-                {
-                    result = ToImmutable();
-                    _elements = ImmutableArray<T>.Empty.array!;
-                    _count = 0;
+                    result = ToArray();
                 }
 
-                return result;
+                _elements = ImmutableArray<T>.Empty.array!;
+                _count = 0;
+
+                return new ImmutableArray<T>(result);
             }
 
             /// <summary>
