@@ -8,7 +8,8 @@
  * optype describes the contents of the instruction, following the dreg/sreg offsets.
  *
  * IROPDEF is like OPDEF but for instructions that are never executed by the interpreter,
- *  meant for use by transform.c and other internals.
+ *  meant for use by transform.c and other internals. They *must* be defined at the end after
+ *  all regular OPDEFs.
  *
  * This file is parsed by genmintops.py to generate typescript during the wasm build process,
  *  so if you make any changes to its syntax you will need to update that script.
@@ -116,8 +117,8 @@ OPDEF(MINT_LDSFLDA, "ldsflda", 4, 1, 0, MintOpTwoShorts)
 OPDEF(MINT_LDTSFLDA, "ldtsflda", 4, 1, 0, MintOpInt)
 
 // These two opcodes are resolved to a normal MINT_MOV when emitting compacted instructions
-IROPDEF(MINT_MOV_SRC_OFF, "mov.src.off", 6, 1, 1, MintOpTwoShorts)
-IROPDEF(MINT_MOV_DST_OFF, "mov.dst.off", 6, 1, 1, MintOpTwoShorts)
+OPDEF(MINT_MOV_SRC_OFF, "mov.src.off", 6, 1, 1, MintOpTwoShorts)
+OPDEF(MINT_MOV_DST_OFF, "mov.dst.off", 6, 1, 1, MintOpTwoShorts)
 
 OPDEF(MINT_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, MintOpNoArgs)
