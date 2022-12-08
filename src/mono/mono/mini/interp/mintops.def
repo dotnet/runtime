@@ -16,6 +16,10 @@
  * Any preprocessing directives are removed without being parsed!
  */
 
+#ifndef __MONO_CONFIG_H__
+#error You must include config.h before including mintops.def
+#endif
+
 // Compatibility shim for old code
 #ifndef IROPDEF
 #define __DEFINED_IROPDEF__
