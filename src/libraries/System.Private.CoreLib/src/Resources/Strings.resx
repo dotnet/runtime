@@ -1053,7 +1053,7 @@
   <data name="Argument_GenericsInvalid" xml:space="preserve">
     <value>Generic types are not valid.</value>
   </data>
-  <data name="Argument_GlobalFunctionHasToBeStatic" xml:space="preserve">
+  <data name="Argument_GlobalMembersMustBeStatic" xml:space="preserve">
     <value>Global members must be static.</value>
   </data>
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
@@ -1110,7 +1110,7 @@
   <data name="Argument_InvalidArrayLength" xml:space="preserve">
     <value>Length of the array must be {0}.</value>
   </data>
-  <data name="Argument_InvalidArrayType" xml:space="preserve">
+  <data name="Argument_IncompatibleArrayType" xml:space="preserve">
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
   <data name="InvalidAssemblyName" xml:space="preserve">

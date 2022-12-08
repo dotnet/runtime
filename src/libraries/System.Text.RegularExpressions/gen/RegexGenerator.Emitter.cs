@@ -3862,10 +3862,16 @@ namespace System.Text.RegularExpressions.Generator
 
                 bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
                 string? startingStackpos = null;
-                if (isAtomic)
+                if (isAtomic || minIterations > 1)
                 {
+                    // If the loop is atomic, constructs will need to backtrack around it, and as such any backtracking
+                    // state pushed by the loop should be removed prior to exiting the loop.  Similarly, if the loop has
+                    // a minimum iteration count greater than 1, we might end up with at least one successful iteration
+                    // only to find we can't iterate further, and will need to clear any pushed state from the backtracking
+                    // stack.  For both cases, we need to store the starting stack index so it can be reset to that position.
                     startingStackpos = ReserveName("startingStackpos");
-                    writer.WriteLine($"int {startingStackpos} = stackpos;");
+                    additionalDeclarations.Add($"int {startingStackpos} = 0;");
+                    writer.WriteLine($"{startingStackpos} = stackpos;");
                 }
 
                 string originalDoneLabel = doneLabel;
@@ -4058,6 +4064,22 @@ namespace System.Text.RegularExpressions.Generator
                         using (EmitBlock(writer, $"if ({CountIsLessThan(iterationCount, minIterations)})"))
                         {
                             writer.WriteLine($"// All possible iterations have matched, but it's below the required minimum of {minIterations}. Fail the loop.");
+
+                            // If the minimum iterations is 1, then since we're only here if there are fewer, there must be 0
+                            // iterations, in which case there's nothing to reset.  If, however, the minimum iteration count is
+                            // greater than 1, we need to check if there was at least one successful iteration, in which case
+                            // any backtracking state still set needs to be reset; otherwise, constructs earlier in the sequence
+                            // trying to pop their own state will erroneously pop this state instead.
+                            if (minIterations > 1)
+                            {
+                                Debug.Assert(startingStackpos is not null);
+                                using (EmitBlock(writer, $"if ({iterationCount} != 0)"))
+                                {
+                                    writer.WriteLine($"// Ensure any stale backtracking state is removed.");
+                                    writer.WriteLine($"stackpos = {startingStackpos};");
+                                }
+                            }
+
                             Goto(originalDoneLabel);
                         }
                         writer.WriteLine();

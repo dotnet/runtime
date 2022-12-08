@@ -257,7 +257,7 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
     const parts = function_name.split(".");
     if (js_module_name) {
         scope = importedModules.get(js_module_name);
-        mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.Import() first.`);
+        mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() first.`);
     }
     else if (parts[0] === "INTERNAL") {
         scope = INTERNAL;

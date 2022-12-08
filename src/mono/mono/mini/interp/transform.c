@@ -143,11 +143,15 @@ MonoInterpStats mono_interp_stats;
 #define MINT_LDNULL MINT_LDC_I8_0
 #define MINT_LDIND_I MINT_LDIND_I8
 #define MINT_STIND_I MINT_STIND_I8
+#define MINT_LDELEM_I MINT_LDELEM_I8
+#define MINT_STELEM_I MINT_STELEM_I8
 #else
 #define MINT_MOV_P MINT_MOV_4
 #define MINT_LDNULL MINT_LDC_I4_0
 #define MINT_LDIND_I MINT_LDIND_I4
 #define MINT_STIND_I MINT_STIND_I4
+#define MINT_LDELEM_I MINT_LDELEM_I4
+#define MINT_STELEM_I MINT_STELEM_I4
 #endif
 
 static const char *stack_type_string [] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
@@ -1967,6 +1971,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_GETCHR;
 			else if (strcmp (tm, "get_Length") == 0)
 				*op = MINT_STRLEN;
+		} else if (tm [0] == 'F') {
+			if (strcmp (tm, "FastAllocateString") == 0)
+				*op = MINT_NEWSTR;
 		}
 	} else if (mono_class_is_subclass_of_internal (target_method->klass, mono_defaults.array_class, FALSE)) {
 		if (!strcmp (tm, "get_Rank")) {
@@ -1975,8 +1982,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_LDLEN;
 		} else if (!strcmp (tm, "GetElementSize")) {
 			*op = MINT_ARRAY_ELEMENT_SIZE;
-		} else if (!strcmp (tm, "IsPrimitive")) {
-			*op = MINT_ARRAY_IS_PRIMITIVE;
 		} else if (!strcmp (tm, "Address")) {
 			MonoClass *check_class = readonly ? NULL : m_class_get_element_class (target_method->klass);
 			interp_emit_ldelema (td, target_method->klass, check_class);
@@ -7236,20 +7241,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			}
 			case CEE_MONO_TLS: {
-				gint32 key = read32 (td->ip + 1);
-				td->ip += 5;
-				g_assertf (key == TLS_KEY_SGEN_THREAD_INFO, "%d", key);
-				interp_add_ins (td, MINT_MONO_SGEN_THREAD_INFO);
-				push_simple_type (td, STACK_TYPE_MP);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				g_error ("We shouldn't use managed allocator with interpreter");
 				break;
 			}
 			case CEE_MONO_ATOMIC_STORE_I4:
-				CHECK_STACK (td, 2);
-				interp_add_ins (td, MINT_MONO_ATOMIC_STORE_I4);
-				td->sp -= 2;
-				interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
-				td->ip += 2;
+				g_error ("We shouldn't use managed allocator with interpreter");
 				break;
 			case CEE_MONO_SAVE_LMF:
 			case CEE_MONO_RESTORE_LMF:
@@ -7894,7 +7890,7 @@ get_short_brop (int opcode)
 			return opcode;
 	}
 
-	if (opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_R8)
+	if (opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_I8)
 		return opcode + MINT_BRFALSE_I4_S - MINT_BRFALSE_I4;
 
 	if (opcode >= MINT_BEQ_I4 && opcode <= MINT_BLT_UN_R8)
