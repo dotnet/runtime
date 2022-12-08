@@ -123,7 +123,7 @@ int run_timed_process(const long timeout, const int exe_argc, const char *exe_pa
 
     printf("Child process took too long and timed out... Exiting it...\n");
     kill(child_pid, SIGKILL);
-    free(args);
+    delete[] args; // Don't leak memory :)
 #endif
     return ETIMEDOUT;
 }
