@@ -14,28 +14,11 @@ namespace Internal.Runtime.TypeLoader
     /// </summary>
     public partial class TypeLoaderTypeSystemContext : TypeSystemContext
     {
-        private static readonly NoMetadataFieldLayoutAlgorithm s_noMetadataFieldLayoutAlgorithm = new NoMetadataFieldLayoutAlgorithm();
         private static readonly NoMetadataRuntimeInterfacesAlgorithm s_noMetadataRuntimeInterfacesAlgorithm = new NoMetadataRuntimeInterfacesAlgorithm();
-        private static readonly NativeLayoutFieldAlgorithm s_nativeLayoutFieldAlgorithm = new NativeLayoutFieldAlgorithm();
         private static readonly NativeLayoutInterfacesAlgorithm s_nativeLayoutInterfacesAlgorithm = new NativeLayoutInterfacesAlgorithm();
 
         public TypeLoaderTypeSystemContext(TargetDetails targetDetails) : base(targetDetails)
         {
-        }
-
-        public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
-        {
-            if (type.RetrieveRuntimeTypeHandleIfPossible())
-            {
-                // If the type is already constructed, use the NoMetadataFieldLayoutAlgorithm.
-                // its more efficient than loading from native layout or metadata.
-                return s_noMetadataFieldLayoutAlgorithm;
-            }
-            if (type.HasNativeLayout)
-            {
-                return s_nativeLayoutFieldAlgorithm;
-            }
-            return s_noMetadataFieldLayoutAlgorithm;
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
