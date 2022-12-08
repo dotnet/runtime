@@ -1882,7 +1882,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
 
             enum
             {
-                DoPostOrder       = true,
+                DoPreOrder        = true,
                 UseExecutionOrder = true,
                 ReverseOrder      = true,
             };
@@ -1892,9 +1892,50 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
             {
             }
 
-            fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+            fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
             {
-                GenTree* newNode = m_compiler->fgComputeLifeNode(*use, m_life, m_keepAliveVars,
+                GenTree* node = *use;
+
+                if (ComputeLife(node) == fgWalkResult::WALK_ABORT)
+                    return WALK_ABORT;
+
+                if (node->OperIs(GT_ASG))
+                {
+                    if ((node->gtFlags & GTF_REVERSE_OPS) != 0)
+                    {
+                        return WALK_CONTINUE;
+                    }
+
+                    // In forward traversal the order we want is op1Operands -> op2 (tree) -> op1 (root) -> node
+                    // So in reverse traversal we want node -> op1 (root) -> op2 (tree) -> op1Operands
+                    if (ComputeLife(node->gtGetOp1()) == fgWalkResult::WALK_ABORT)
+                        return WALK_ABORT;
+
+                    if (WalkTree(&node->AsOp()->gtOp2, node) == fgWalkResult::WALK_ABORT)
+                        return WALK_ABORT;
+
+                    if (node->gtGetOp1()->OperIsLocal() ||
+                        (node->gtGetOp1()->OperIs(GT_FIELD) && node->gtGetOp1()->AsField()->IsStatic()))
+                    {
+                        // op1 is a leaf
+                    }
+                    else
+                    {
+                        assert(node->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ, GT_FIELD));
+                        // Visit address of indir, which is actually evaluated.
+                        if (WalkTree(&node->AsOp()->gtOp1->AsUnOp()->gtOp1, node->AsOp()->gtOp1) == fgWalkResult::WALK_ABORT)
+                            return WALK_ABORT;
+                    }
+
+                    return WALK_SKIP_SUBTREES;
+                }
+
+                return WALK_CONTINUE;
+            }
+
+            fgWalkResult ComputeLife(GenTree* node)
+            {
+                GenTree* newNode = m_compiler->fgComputeLifeNode(node, m_life, m_keepAliveVars,
                                                                  m_pStmtInfoDirty DEBUGARG(&MadeChanges));
                 if (newNode == nullptr)
                     return fgWalkResult::WALK_ABORT;
