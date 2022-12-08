@@ -480,19 +480,6 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
     // This is conservative. Just look for what seems to be common.
     switch (id->idInsFmt())
     {
-        case IF_LABEL:
-        case IF_RWR_LABEL:
-        case IF_SWR_LABEL:
-        case IF_METHOD:
-        case IF_METHPTR:
-        {
-            // If we were not able to get peephole info, we assume
-            // that looking at information from previous instructions is not safe.
-            // Therefore, we must reset the lookup.
-            upper32BitsZeroRegLookup = 0;
-            return;
-        }
-
         case IF_RRD:
         case IF_RWR:
         case IF_RRW:
@@ -589,6 +576,19 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
             }
         }
 
+        case IF_LABEL:
+        case IF_RWR_LABEL:
+        case IF_SWR_LABEL:
+        case IF_METHOD:
+        case IF_METHPTR:
+        {
+            // If we were not able to get peephole info, we assume
+            // that looking at information from previous instructions is not safe.
+            // Therefore, we must reset the lookup.
+            upper32BitsZeroRegLookup = 0;
+            return;
+        }
+
         default:
         {
             return;
@@ -628,15 +628,6 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
 
     switch (id->idInsFmt())
     {
-        case IF_LABEL:
-        case IF_RWR_LABEL:
-        case IF_SWR_LABEL:
-        case IF_METHOD:
-        case IF_METHPTR:
-        {
-            return false;
-        }
-
         case IF_RRD:
         case IF_RWR:
         case IF_RRW:
@@ -729,6 +720,15 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
             // otherwise rely on operation size.
             *outIsDstRegUpper32BitsZero = (id->idOpSize() == EA_4BYTE);
             return true;
+        }
+
+        case IF_LABEL:
+        case IF_RWR_LABEL:
+        case IF_SWR_LABEL:
+        case IF_METHOD:
+        case IF_METHPTR:
+        {
+            return false;
         }
 
         default:
