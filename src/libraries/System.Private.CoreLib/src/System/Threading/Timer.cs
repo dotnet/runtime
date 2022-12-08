@@ -526,7 +526,10 @@ namespace System.Threading
             lock (_associatedTimerQueue)
             {
                 if (_canceled)
-                    return throwIfDisposed ? throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic) : false;
+                {
+                    ObjectDisposedException.ThrowIf(throwIfDisposed, this);
+                    return false;
+                }
 
                 _period = period;
 

@@ -294,10 +294,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerJTrue(node->AsOp());
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
+
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
+            ContainCheckSelect(node->AsOp());
+            break;
+#endif
 
         case GT_JMP:
             LowerJmpMethod(node);
@@ -2935,17 +2939,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
                 if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
-                    GenTree* op1 = castOp->gtGetOp1();
-                    if ((op1 != nullptr) && !op1->IsCnsIntOrI())
-                    {
-                        op1->ClearContained();
-                    }
-
-                    GenTree* op2 = castOp->gtGetOp2();
-                    if ((op2 != nullptr) && !op2->IsCnsIntOrI())
-                    {
-                        op2->ClearContained();
-                    }
+                    castOp->gtGetOp1()->ClearContained();
+                    castOp->gtGetOp2()->ClearContained();
+                    ContainCheckBinary(castOp->AsOp());
                 }
 
                 cmp->AsOp()->gtOp1 = castOp;
@@ -6993,9 +6989,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
 
         case GT_ADD:

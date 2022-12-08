@@ -47,7 +47,6 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(!tree->isContained());
     int       srcCount;
     int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -793,10 +792,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_SELECT:
             assert(dstCount == 1);
-            srcCount = BuildOperandUses(tree->AsConditional()->gtCond);
-            srcCount += BuildOperandUses(tree->AsConditional()->gtOp1);
-            srcCount += BuildOperandUses(tree->AsConditional()->gtOp2);
-            BuildDef(tree, dstCandidates);
+            srcCount = BuildSelect(tree->AsConditional());
             break;
 
     } // end switch (tree->OperGet())

@@ -256,7 +256,7 @@ namespace System.Reflection
                 {
                     return GetMetadataToken();
                 }
-                throw new ArgumentException("Can't produce MetadataToken for member of type " + MemberImpl.GetType());
+                throw new ArgumentException(SR.NoMetadataTokenAvailable);
             }
         }
 

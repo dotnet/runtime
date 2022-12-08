@@ -15,5 +15,17 @@ namespace ILLink.RoslynAnalyzer.Tests.Attributes
 			return RunTest (allowMissingWarnings: true);
 		}
 
+		[Fact]
+		public Task SecurityAttributesOnUsedMethodAreRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task SecurityAttributesOnUsedTypeAreRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
 	}
 }

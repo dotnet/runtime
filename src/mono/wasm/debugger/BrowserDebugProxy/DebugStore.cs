@@ -99,10 +99,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string urlRegex = request?["urlRegex"].Value<string>();
                 var regex = new Regex(urlRegex);
-                return regex.IsMatch(sourceFile.Url.ToString()) || regex.IsMatch(sourceFile.DocUrl);
+                return regex.IsMatch(sourceFile.Url.ToString()) || regex.IsMatch(sourceFile.FilePath);
             }
 
-            return sourceFile.Url.ToString() == url || sourceFile.DotNetUrl == url;
+            return sourceFile.Url.ToString() == url || sourceFile.DotNetUrlEscaped == url;
         }
 
         public bool TryResolve(SourceFile sourceFile)
@@ -117,7 +117,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             Assembly = sourceFile.AssemblyName;
-            File = sourceFile.DebuggerFileName;
+            File = sourceFile.FilePath;
             Line = line.Value;
             Column = column.Value;
             return true;
@@ -327,7 +327,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public SourceId SourceId => Source.SourceId;
 
-        public string SourceName => Source.DebuggerFileName;
+        public string SourceName => Source.FilePath;
 
         public string Name { get; }
         public MethodDebugInformation DebugInformation;
@@ -1200,14 +1200,26 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     internal sealed class SourceFile
     {
+        private static readonly Regex regexForEscapeFileName = new(@"([:/])", RegexOptions.Compiled);
         private Dictionary<int, MethodInfo> methods;
         private AssemblyInfo assembly;
         private Document doc;
         private DocumentHandle docHandle;
-        private string url;
         internal List<int> BreakableLines { get; }
 
-        internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, Uri sourceLinkUri, string url)
+        public string FilePath { get; init; }
+        public string FileUriEscaped { get; init; }
+        public string DotNetUrlEscaped { get; init; }
+
+        public Uri Url { get; init; }
+        public Uri SourceLinkUri { get; init; }
+
+        public int Id { get; }
+        public string AssemblyName => assembly.Name;
+        public SourceId SourceId => new SourceId(assembly.Id, this.Id);
+        public IEnumerable<MethodInfo> Methods => this.methods.Values;
+
+        internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, Uri sourceLinkUri, string documentName)
         {
             this.methods = new Dictionary<int, MethodInfo>();
             this.SourceLinkUri = sourceLinkUri;
@@ -1215,19 +1227,27 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.Id = id;
             this.doc = assembly.pdbMetadataReader.GetDocument(docHandle);
             this.docHandle = docHandle;
-            this.url = url;
-            this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
             this.BreakableLines = new List<int>();
 
-            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + url, UriKind.RelativeOrAbsolute);
-            if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
+            this.FilePath = documentName;
+
+            string escapedDocumentName = EscapePathForUri(documentName.Replace("\\", "/"));
+            this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
+            this.DotNetUrlEscaped = $"dotnet://{assembly.Name}/{escapedDocumentName}";
+            this.Url = new Uri(File.Exists(documentName) ? FileUriEscaped : DotNetUrlEscaped, UriKind.Absolute);
+        }
+
+        private static string EscapePathForUri(string path)
+        {
+            var builder = new StringBuilder();
+            foreach (var part in regexForEscapeFileName.Split(path))
             {
-                this.Url = this.SourceUri.ToString();
+                if (part == ":" || part == "/")
+                    builder.Append(part);
+                else
+                    builder.Append(Uri.EscapeDataString(part));
             }
-            else
-            {
-                this.Url = DotNetUrl;
-            }
+            return builder.ToString();
         }
 
         internal void AddMethod(MethodInfo mi)
@@ -1238,20 +1258,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public string DebuggerFileName { get; }
-        public string Url { get; }
-        public int Id { get; }
-        public string AssemblyName => assembly.Name;
-        public string DotNetUrl => $"dotnet://{assembly.Name}/{DebuggerFileName}";
-
-        public SourceId SourceId => new SourceId(assembly.Id, this.Id);
-        public Uri SourceLinkUri { get; }
-        public Uri SourceUri { get; }
-
-        public IEnumerable<MethodInfo> Methods => this.methods.Values;
-
-        public string DocUrl => url;
-
         public (int startLine, int startColumn, int endLine, int endColumn) GetExtents()
         {
             MethodInfo start = Methods.OrderBy(m => m.StartLocation.Line).ThenBy(m => m.StartLocation.Column).First();
@@ -1259,14 +1265,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return (start.StartLocation.Line, start.StartLocation.Column, end.EndLocation.Line, end.EndLocation.Column);
         }
 
-        private async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
+        private static async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
         {
             var mem = new MemoryStream();
             try
             {
                 if (uri.IsFile && File.Exists(uri.LocalPath))
                 {
-                    using (FileStream file = File.Open(SourceUri.LocalPath, FileMode.Open))
+                    using (FileStream file = File.Open(uri.LocalPath, FileMode.Open))
                     {
                         await file.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;
@@ -1340,7 +1346,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            foreach (Uri url in new[] { SourceUri, SourceLinkUri })
+            foreach (Uri url in new[] { new Uri(FileUriEscaped), SourceLinkUri })
             {
                 MemoryStream mem = await GetDataAsync(url, token).ConfigureAwait(false);
                 if (mem != null && mem.Length > 0 && (!checkHash || CheckPdbHash(ComputePdbHash(mem))))
@@ -1358,11 +1364,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new
             {
                 scriptId = SourceId.ToString(),
-                url = Url,
+                url = Url.OriginalString,
                 executionContextId,
                 executionContextAuxData,
                 //hash:  should be the v8 hash algo, managed implementation is pending
-                dotNetUrl = DotNetUrl,
+                dotNetUrl = DotNetUrlEscaped
             };
         }
     }
@@ -1614,7 +1620,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             request.TryResolve(this);
 
             AssemblyInfo asm = assemblies.FirstOrDefault(a => a.Name.Equals(request.Assembly, StringComparison.OrdinalIgnoreCase));
-            SourceFile sourceFile = asm?.Sources?.SingleOrDefault(s => s.DebuggerFileName.Equals(request.File, StringComparison.OrdinalIgnoreCase));
+            SourceFile sourceFile = asm?.Sources?.SingleOrDefault(s => s.FilePath.Equals(request.File, StringComparison.OrdinalIgnoreCase));
 
             if (sourceFile == null)
                 yield break;
@@ -1680,6 +1686,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url : "";
+        public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url.OriginalString : "";
     }
 }

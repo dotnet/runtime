@@ -1663,8 +1663,8 @@ namespace System.Text
                 {
                     // If arg is ISpanFormattable and the beginning doesn't need padding,
                     // try formatting it into the remaining current chunk.
-                    if (arg is ISpanFormattable spanFormattableArg &&
-                        (leftJustify || width == 0) &&
+                    if ((leftJustify || width == 0) &&
+                        arg is ISpanFormattable spanFormattableArg &&
                         spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormatSpan, provider))
                     {
                         if ((uint)charsWritten > (uint)RemainingCurrentChunk.Length)
@@ -2640,6 +2640,17 @@ namespace System.Text
                             AppendFormattedWithTempSpace(value, 0, format: null);
                         }
                     }
+                    else if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _stringBuilder.RemainingCurrentChunk, out int charsWritten))
+                        {
+                            _stringBuilder.m_ChunkLength += charsWritten;
+                        }
+                        else
+                        {
+                            AppendFormattedWithTempSpace(value, 0, format: null);
+                        }
+                    }
                     else
                     {
                         _stringBuilder.Append(((IFormattable)value).ToString(format: null, _provider)); // constrained call avoiding boxing for value types
@@ -2672,7 +2683,18 @@ namespace System.Text
                     // if it only implements IFormattable, we come out even: only if it implements both do we
                     // end up paying for an extra interface check.
 
-                    if (value is ISpanFormattable)
+                    if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _stringBuilder.RemainingCurrentChunk, out int charsWritten, format))
+                        {
+                            _stringBuilder.m_ChunkLength += charsWritten;
+                        }
+                        else
+                        {
+                            AppendFormattedWithTempSpace(value, 0, format);
+                        }
+                    }
+                    else if (value is ISpanFormattable)
                     {
                         Span<char> destination = _stringBuilder.RemainingCurrentChunk;
                         if (((ISpanFormattable)value).TryFormat(destination, out int charsWritten, format, _provider)) // constrained call avoiding boxing for value types

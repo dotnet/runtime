@@ -4028,7 +4028,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     // Copy the valuetype to the temp
     GenTree* dest    = gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet());
-    GenTree* copyBlk = gtNewBlkOpNode(dest, argx, false /* not volatile */, true /* copyBlock */);
+    GenTree* copyBlk = gtNewBlkOpNode(dest, argx);
     copyBlk          = fgMorphCopyBlock(copyBlk);
 
     call->gtArgs.SetTemp(arg, tmp);
@@ -4927,7 +4927,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
     else
     {
-        tree = fgMorphExpandStaticField(tree);
+        assert(!"Normal statics are expected to be handled in the importer");
     }
 
     // Pass down the current mac; if non null we are computing an address
@@ -5269,102 +5269,6 @@ GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
     tree->ChangeOper(GT_ADD);
     tree->AsOp()->gtOp1 = tlsRef;
     tree->AsOp()->gtOp2 = offsetNode;
-
-    return tree;
-}
-
-//------------------------------------------------------------------------
-// fgMorphExpandStaticField: Expand a simple static field load.
-//
-// Transforms the field into an explicit indirection off of a constant
-// address.
-//
-// Arguments:
-//    tree - The GT_FIELD tree
-//
-// Return Value:
-//    The expanded tree - a GT_IND.
-//
-GenTree* Compiler::fgMorphExpandStaticField(GenTree* tree)
-{
-    // Note we do not support "FIELD_ADDR"s for simple statics.
-    assert(tree->OperIs(GT_FIELD) && tree->AsField()->IsStatic());
-
-    // If we can we access the static's address directly
-    // then pFldAddr will be NULL and
-    //      fldAddr will be the actual address of the static field
-    //
-    CORINFO_FIELD_HANDLE fieldHandle = tree->AsField()->gtFldHnd;
-    void**               pFldAddr    = nullptr;
-    void*                fldAddr     = info.compCompHnd->getFieldAddress(fieldHandle, (void**)&pFldAddr);
-
-    // We should always be able to access this static field address directly
-    //
-    assert(pFldAddr == nullptr);
-
-    // For boxed statics, this direct address will be for the box. We have already added
-    // the indirection for the field itself and attached the sequence, in importation.
-    FieldSeq* fieldSeq      = nullptr;
-    bool      isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), fieldHandle);
-    if (!isBoxedStatic)
-    {
-        // Only simple statics get importred as GT_FIELDs.
-        fieldSeq = GetFieldSeqStore()->Create(fieldHandle, reinterpret_cast<size_t>(fldAddr),
-                                              FieldSeq::FieldKind::SimpleStaticKnownAddress);
-    }
-
-    // TODO-CQ: enable this optimization for 32 bit targets.
-    bool isStaticReadOnlyInited = false;
-#ifdef TARGET_64BIT
-    if (tree->TypeIs(TYP_REF) && !isBoxedStatic)
-    {
-        bool pIsSpeculative = true;
-        if (info.compCompHnd->getStaticFieldCurrentClass(fieldHandle, &pIsSpeculative) != NO_CLASS_HANDLE)
-        {
-            isStaticReadOnlyInited = !pIsSpeculative;
-        }
-    }
-#endif // TARGET_64BIT
-
-    GenTreeFlags handleKind = GTF_EMPTY;
-    if (isBoxedStatic)
-    {
-        handleKind = GTF_ICON_STATIC_BOX_PTR;
-    }
-    else if (isStaticReadOnlyInited)
-    {
-        handleKind = GTF_ICON_CONST_PTR;
-    }
-    else
-    {
-        handleKind = GTF_ICON_STATIC_HDL;
-    }
-    GenTreeIntCon* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
-    INDEBUG(addr->gtTargetHandle = reinterpret_cast<size_t>(fieldHandle));
-
-    // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
-    if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
-    {
-        tree->gtFlags &= ~GTF_FLD_INITCLASS;
-        addr->gtFlags |= GTF_ICON_INITCLASS;
-    }
-
-    tree->SetOper(GT_IND);
-    tree->AsOp()->gtOp1 = addr;
-
-    if (isBoxedStatic)
-    {
-        // The box for the static cannot be null, and is logically invariant, since it
-        // represents (a base for) the static's address.
-        tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-    }
-    else if (isStaticReadOnlyInited)
-    {
-        JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(fieldHandle, false));
-
-        // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
-        tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-    }
 
     return tree;
 }
@@ -5747,7 +5651,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #ifdef TARGET_ARM
         if (arg.AbiInfo.IsSplit())
         {
-            reportFastTailCallDecision("Splitted argument in callee is not supported on ARM32");
+            reportFastTailCallDecision("Argument splitting in callee is not supported on ARM32");
             return false;
         }
 #endif // TARGET_ARM
@@ -5758,7 +5662,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #ifdef TARGET_ARM
     if (compHasSplitParam)
     {
-        reportFastTailCallDecision("Splitted argument in caller is not supported on ARM32");
+        reportFastTailCallDecision("Argument splitting in caller is not supported on ARM32");
         return false;
     }
 
@@ -7870,14 +7774,12 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                     GenTree* init = nullptr;
                     if (varTypeIsStruct(lclType))
                     {
-                        const bool isVolatile  = false;
-                        const bool isCopyBlock = false;
-                        init                   = gtNewBlkOpNode(lcl, gtNewIconNode(0), isVolatile, isCopyBlock);
-                        init                   = fgMorphInitBlock(init);
+                        init = gtNewBlkOpNode(lcl, gtNewIconNode(0));
+                        init = fgMorphInitBlock(init);
                     }
                     else
                     {
-                        GenTree* zero = gtNewZeroConNode(genActualType(lclType));
+                        GenTree* zero = gtNewZeroConNode(lclType);
                         init          = gtNewAssignNode(lcl, zero);
                     }
                     Statement* initStmt = gtNewStmt(init, callDI);
@@ -9256,20 +9158,29 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
         ASSIGN_HELPER_FOR_MOD:
 
-            // For "val % 1", return 0 if op1 doesn't have any side effects
-            // and we are not in the CSE phase, we cannot discard 'tree'
-            // because it may contain CSE expressions that we haven't yet examined.
-            //
-            if (((op1->gtFlags & GTF_SIDE_EFFECT) == 0) && !optValnumCSE_phase)
+            if (!optValnumCSE_phase)
             {
-                if (op2->IsIntegralConst(1))
+                if (tree->OperIs(GT_MOD, GT_UMOD) && (op2->IsIntegralConst(1)))
                 {
-                    GenTree* zeroNode = gtNewZeroConNode(typ);
-#ifdef DEBUG
-                    zeroNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-                    DEBUG_DESTROY_NODE(tree);
-                    return zeroNode;
+                    // Transformation: a % 1 = 0
+                    GenTree* optimizedTree = fgMorphModToZero(tree->AsOp());
+                    if (optimizedTree != nullptr)
+                    {
+                        tree = optimizedTree;
+
+                        if (tree->OperIs(GT_COMMA))
+                        {
+                            op1 = tree->gtGetOp1();
+                            op2 = tree->gtGetOp2();
+                        }
+                        else
+                        {
+                            assert(tree->IsIntegralConst());
+                            op1 = nullptr;
+                            op2 = nullptr;
+                        }
+                        break;
+                    }
                 }
             }
 
@@ -11372,33 +11283,29 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
     if (opts.OptimizationEnabled())
     {
-        // Reduce local addresses: "ADD(ADDR(LCL_VAR), OFFSET)" => "ADDR(LCL_FLD OFFSET)".
-        // TODO-ADDR: do "ADD(LCL_FLD/VAR_ADDR, OFFSET)" => "LCL_FLD_ADDR" instead.
+        // Reduce local addresses: "ADD(LCL_ADDR, OFFSET)" => "LCL_FLD_ADDR".
         //
-        if (op1->OperIs(GT_ADDR) && op2->IsCnsIntOrI() && op1->gtGetOp1()->OperIsLocalRead())
+        if (op1->OperIsLocalAddr() && op2->IsCnsIntOrI())
         {
-            GenTreeUnOp*         addrNode   = op1->AsUnOp();
-            GenTreeLclVarCommon* lclNode    = addrNode->gtGetOp1()->AsLclVarCommon();
-            GenTreeIntCon*       offsetNode = op2->AsIntCon();
+            GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
+            GenTreeIntCon*       offsetNode  = op2->AsIntCon();
             if (FitsIn<uint16_t>(offsetNode->IconValue()))
             {
-                unsigned offset = lclNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
+                unsigned offset = lclAddrNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
 
                 // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
-                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclNode->GetLclNum())))
+                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclAddrNode->GetLclNum())))
                 {
-                    // Types of location nodes under ADDRs do not matter. We arbitrarily choose TYP_UBYTE.
-                    lclNode->ChangeType(TYP_UBYTE);
-                    lclNode->SetOper(GT_LCL_FLD);
-                    lclNode->AsLclFld()->SetLclOffs(offset);
-                    lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+                    lclAddrNode->SetOper(GT_LCL_FLD_ADDR);
+                    lclAddrNode->AsLclFld()->SetLclOffs(offset);
+                    assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
-                    addrNode->SetVNsFromNode(add);
+                    lclAddrNode->SetVNsFromNode(add);
 
                     DEBUG_DESTROY_NODE(offsetNode);
                     DEBUG_DESTROY_NODE(add);
 
-                    return addrNode;
+                    return lclAddrNode;
                 }
             }
         }
@@ -12324,6 +12231,67 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     return multiOp;
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
+//------------------------------------------------------------------------
+// fgMorphModToZero: Transform 'a % 1' into the equivalent '0'.
+//
+// Arguments:
+//    tree - The GT_MOD/GT_UMOD tree to morph
+//
+// Returns:
+//    The morphed tree, will be a GT_COMMA or a zero constant node.
+//    Can return null if the transformation did not happen.
+//
+GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MOD, GT_UMOD));
+    assert(tree->gtOp2->IsIntegralConst(1));
+
+    if (opts.OptimizationDisabled())
+        return nullptr;
+
+    // Do not transform this if there are side effects and we are not in global morph.
+    // If we want to allow this, we need to update value numbers for the GT_COMMA.
+    if (!fgGlobalMorph && ((tree->gtGetOp1()->gtFlags & GTF_SIDE_EFFECT) != 0))
+        return nullptr;
+
+    JITDUMP("\nMorphing MOD/UMOD [%06u] to Zero\n", dspTreeID(tree));
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    op2->AsIntConCommon()->SetIntegralValue(0);
+    fgUpdateConstTreeValueNumber(op2);
+
+    GenTree* const zero = op2;
+
+    GenTree* op1SideEffects = nullptr;
+    gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
+    if (op1SideEffects != nullptr)
+    {
+        GenTree* comma = gtNewOperNode(GT_COMMA, zero->TypeGet(), op1SideEffects, zero);
+
+#ifdef DEBUG
+        // op1 may already have been morphed, so unset this bit.
+        op1SideEffects->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
+
+        INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        DEBUG_DESTROY_NODE(tree);
+
+        return comma;
+    }
+    else
+    {
+        INDEBUG(zero->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        DEBUG_DESTROY_NODE(tree->gtOp1);
+        DEBUG_DESTROY_NODE(tree);
+
+        return zero;
+    }
+}
 
 //------------------------------------------------------------------------
 // fgMorphModToSubMulDiv: Transform a % b into the equivalent a - (a / b) * b

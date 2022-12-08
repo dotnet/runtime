@@ -415,7 +415,7 @@ bb_formation_il_pass (const unsigned char *start, const unsigned char *end, Mono
 			if (!branch)
 				return;
 
-			/*If we splitted the current BB*/
+			/*If we split the current BB*/
 			if (offset < cli_addr && branch->start > current->start)
 				current = branch;
 			if (ip < end) {

@@ -253,7 +253,7 @@ public class WasmAppBuilder : Task
                 string fullPath = assembly.GetMetadata("Identity");
                 if (string.IsNullOrEmpty(culture))
                 {
-                    Log.LogWarning($"Missing CultureName metadata for satellite assembly {fullPath}");
+                    Log.LogWarning(null, "WASM0002", "", "", 0, 0, 0, 0, $"Missing CultureName metadata for satellite assembly {fullPath}");
                     continue;
                 }
                 // FIXME: validate the culture?
@@ -290,7 +290,7 @@ public class WasmAppBuilder : Task
 
                     if (firstPath == secondPath)
                     {
-                        Log.LogWarning($"Found identical vfs mappings for target path: {targetPath}, source file: {firstPath}. Ignoring.");
+                        Log.LogWarning(null, "WASM0003", "", "", 0, 0, 0, 0, $"Found identical vfs mappings for target path: {targetPath}, source file: {firstPath}. Ignoring.");
                         continue;
                     }
 
