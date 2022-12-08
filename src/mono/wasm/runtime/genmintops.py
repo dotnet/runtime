@@ -23,7 +23,7 @@ header_lines = src.read().splitlines()
 header = "\n".join((tab + l) for l in header_lines if not l.startswith("#"))
 src.close()
 
-opdef_regex = r'\s(IR|WASM)?OPDEF\((\w+),\s*(.+?),\s*(MintOp\w+)\)'
+opdef_regex = r'\s(IR)?OPDEF\((\w+),\s*(.+?),\s*(MintOp\w+)\)'
 enum_values = re.sub(
     opdef_regex, lambda m : f"{m.group(2)}{' = 0' if (m.group(2) == 'MINT_NOP') else ''},", header
 )
