@@ -543,31 +543,11 @@ bool emitter::TryGetPeepholeInfoFromLastInstruction(regNumber* outDstReg, bool* 
             if (id->idIns() == INS_movzx)
             {
                 *outIsDstRegUpper32BitsZero = true;
-
-#ifdef DEBUG
-                if (emitComp->verbose)
-                {
-                    printf("\n");
-                    printf("upper 32-bits are zero for reg: %i\n", reg);
-                    printf("\n");
-                }
-#endif // DEBUG
-
                 return true;
             }
 
             // otherwise rely on operation size.
             *outIsDstRegUpper32BitsZero = (id->idOpSize() == EA_4BYTE);
-
-#ifdef DEBUG
-            if (emitComp->verbose && *outIsDstRegUpper32BitsZero)
-            {
-                printf("\n");
-                printf("upper 32-bits are zero for reg: %i\n", reg);
-                printf("\n");
-            }
-#endif // DEBUG
-
             return true;
         }
 
@@ -600,6 +580,14 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     bool      isUpper32BitsZero;
     if (TryGetPeepholeInfoFromLastInstruction(&dstReg, &isUpper32BitsZero) && (dstReg != REG_NA) && (dstReg == reg))
     {
+#ifdef DEBUG
+        if (emitComp->verbose && isUpper32BitsZero)
+        {
+            printf("\n");
+            printf("upper 32-bits are zero for reg: %i\n", reg);
+            printf("\n");
+        }
+#endif // DEBUG
         return isUpper32BitsZero;
     }
 
@@ -622,7 +610,16 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 #endif // !TARGET_AMD64
     {
         // Checks if the register's upper 32-bits are zero.
-        return (regLookup >> reg) & 1;
+        isUpper32BitsZero = (regLookup >> reg) & 1;
+#ifdef DEBUG
+        if (emitComp->verbose && isUpper32BitsZero)
+        {
+            printf("\n");
+            printf("upper 32-bits are zero for reg: %i\n", reg);
+            printf("\n");
+        }
+#endif // DEBUG
+        return isUpper32BitsZero;
     }
 
     return false;
