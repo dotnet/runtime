@@ -214,6 +214,33 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Returns the current contents as an <see cref="ImmutableArray{T}"/> and sets the collection to a zero length array.
+            /// </summary>
+            /// <remarks>
+            /// If <see cref="Capacity"/> equals <see cref="Count"/>, the internal array will be extracted
+            /// as an <see cref="ImmutableArray{T}"/> without copying the contents. Otherwise, the contents
+            /// will be copied into a new array. The collection will then be set to a zero length array.
+            /// </remarks>
+            /// <returns>An immutable array.</returns>
+            public ImmutableArray<T> DrainToImmutable()
+            {
+                ImmutableArray<T> result;
+
+                if (Capacity == Count)
+                {
+                    result = MoveToImmutable();
+                }
+                else
+                {
+                    result = ToImmutable();
+                    _elements = ImmutableArray<T>.Empty.array!;
+                    _count = 0;
+                }
+
+                return result;
+            }
+
+            /// <summary>
             /// Removes all items from the <see cref="ICollection{T}"/>.
             /// </summary>
             public void Clear()
