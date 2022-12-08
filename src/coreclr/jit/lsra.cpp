@@ -6187,7 +6187,6 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     assert(foundUse);
 
     GenTree* parent = treeUse.User();
-    //
     genTreeOps oper;
     if (refPosition->reload)
     {
