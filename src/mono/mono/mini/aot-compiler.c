@@ -187,6 +187,7 @@ typedef struct MonoAotOptions {
 	char *outfile;
 	char *llvm_outfile;
 	char *data_outfile;
+	char *export_symbols_outfile;
 	GList *profile_files;
 	GList *mibc_profile_files;
 	gboolean save_temps;
@@ -406,6 +407,7 @@ typedef struct MonoAotCompile {
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
+	FILE *export_symbols_outfile;
 	int datafile_offset;
 	int gc_name_offset;
 	// In this mode, we are emitting dedupable methods that we encounter
@@ -5103,6 +5105,12 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
+	if (acfg->aot_opts.export_symbols_outfile) {
+		acfg->export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "a");
+		if (!acfg->export_symbols_outfile)
+			fprintf (stderr, "Unable to open file '%s': %s\n", acfg->aot_opts.export_symbols_outfile, strerror (errno));
+	}
+
 	/* native-to-managed wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
@@ -5252,8 +5260,12 @@ MONO_RESTORE_WARNING
 				mono_error_assert_ok (error);
 
 				add_method (acfg, wrapper);
-				if (export_name)
+				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
+
+					if (acfg->export_symbols_outfile)
+						fprintf (acfg->export_symbols_outfile, "%s\n", export_name);
+				}
 			}
 
 			g_free (cattr);
@@ -5264,6 +5276,11 @@ MONO_RESTORE_WARNING
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
 		}
 	}
+
+	if (acfg->aot_opts.export_symbols_outfile)
+		g_free (acfg->aot_opts.export_symbols_outfile);
+	if (acfg->export_symbols_outfile)
+		fclose (acfg->export_symbols_outfile);
 
 	/* StructureToPtr/PtrToStructure wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
@@ -8445,6 +8462,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
 		} else if (str_begins_with (arg, "llvm-outfile=")) {
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
+		} else if (str_begins_with (arg, "export-symbols-outfile=")) {
+			opts->export_symbols_outfile = g_strdup (arg + strlen ("export-symbols-outfile="));
 		} else if (str_begins_with (arg, "temp-path=")) {
 			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {
