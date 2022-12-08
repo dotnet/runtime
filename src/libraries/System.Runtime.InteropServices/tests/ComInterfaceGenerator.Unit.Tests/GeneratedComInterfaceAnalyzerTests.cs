@@ -10,6 +10,7 @@ using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifi
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class GeneratedComInterfaceAnalyzerTests
     {
         static string _usings = $$"""
