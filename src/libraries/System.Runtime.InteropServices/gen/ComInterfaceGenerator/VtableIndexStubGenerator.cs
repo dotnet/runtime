@@ -382,24 +382,22 @@ namespace Microsoft.Interop
 
         private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexData virtualMethodIndexData)
         {
-            if (!virtualMethodIndexData.ExceptionMarshallingDefined)
+            if (virtualMethodIndexData.ExceptionMarshallingDefined)
             {
-                return NoMarshallingInfo.Instance;
-            }
+                // User specified ExceptionMarshalling.Custom without specifying ExceptionMarshallingCustomType
+                if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Custom && virtualMethodIndexData.ExceptionMarshallingCustomType is null)
+                {
+                    diagnostics.ReportInvalidExceptionMarshallingConfiguration(
+                        virtualMethodIndexAttr, symbol.Name, SR.InvalidExceptionMarshallingConfigurationMissingCustomType);
+                    return NoMarshallingInfo.Instance;
+                }
 
-            // User specified ExceptionMarshalling.Custom without specifying ExceptionMarshallingCustomType
-            if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Custom && virtualMethodIndexData.ExceptionMarshallingCustomType is null)
-            {
-                diagnostics.ReportInvalidExceptionMarshallingConfiguration(
-                    virtualMethodIndexAttr, symbol.Name, SR.InvalidExceptionMarshallingConfigurationMissingCustomType);
-                return NoMarshallingInfo.Instance;
-            }
-
-            // User specified something other than ExceptionMarshalling.Custom while specifying ExceptionMarshallingCustomType
-            if (virtualMethodIndexData.ExceptionMarshalling != ExceptionMarshalling.Custom && virtualMethodIndexData.ExceptionMarshallingCustomType is not null)
-            {
-                diagnostics.ReportInvalidExceptionMarshallingConfiguration(
-                    virtualMethodIndexAttr, symbol.Name, SR.InvalidExceptionMarshallingConfigurationNotCustom);
+                // User specified something other than ExceptionMarshalling.Custom while specifying ExceptionMarshallingCustomType
+                if (virtualMethodIndexData.ExceptionMarshalling != ExceptionMarshalling.Custom && virtualMethodIndexData.ExceptionMarshallingCustomType is not null)
+                {
+                    diagnostics.ReportInvalidExceptionMarshallingConfiguration(
+                        virtualMethodIndexAttr, symbol.Name, SR.InvalidExceptionMarshallingConfigurationNotCustom);
+                }
             }
 
             if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Com)
@@ -408,7 +406,9 @@ namespace Microsoft.Interop
             }
             if (virtualMethodIndexData.ExceptionMarshalling == ExceptionMarshalling.Custom)
             {
-                return CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
+                return virtualMethodIndexData.ExceptionMarshallingCustomType is null
+                    ? NoMarshallingInfo.Instance
+                    : CustomMarshallingInfoHelper.CreateNativeMarshallingInfoForNonSignatureElement(
                         compilation.GetTypeByMetadataName(TypeNames.System_Exception),
                         virtualMethodIndexData.ExceptionMarshallingCustomType!,
                         virtualMethodIndexAttr,
