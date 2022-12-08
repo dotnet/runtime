@@ -1495,6 +1495,14 @@ namespace DebuggerTests
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
         }
 
+
+        internal async Task SetSymbolOptions(JObject param)
+        {
+            var res = await cli.SendCommand("DotnetDebugger.setSymbolOptions", param, token);
+            Assert.True(res.IsOk);
+        }
+
+
         internal async Task CheckEvaluateFail(string id, params (string expression, string message)[] args)
         {
             foreach (var arg in args)

@@ -563,7 +563,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 DebugStore store = await RuntimeReady(id, token);
                                 store.CreateSymbolServer();
-                                await store.LoadPDBFromSymbolServer(token);
+                                var asmList = await store.LoadPDBFromSymbolServer(token);
+                                foreach (var asm in asmList)
+                                {
+                                    foreach (var source in asm.Sources)
+                                        await OnSourceFileAdded(id, source, context, token);
+                                }
                             }
                         }
                         return true;

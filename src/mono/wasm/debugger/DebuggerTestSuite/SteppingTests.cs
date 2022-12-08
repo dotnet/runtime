@@ -1043,21 +1043,27 @@ namespace DebuggerTests
         [InlineData(false)]
         public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServer(bool justMyCode)
         {
+            string cachePath = System.IO.Path.GetTempPath();
+            var searchPaths = new JArray();
+            searchPaths.Add("https://symbols.nuget.org/download/symbols");
+
+            var symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
+            await SetSymbolOptions(symbolOptions);
             await SetJustMyCode(justMyCode);
+
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] TestLoadSymbols:Run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 1516, 8,
                 "TestLoadSymbols.Run"
             );
-
-            await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 1518, 8, justMyCode ? "TestLoadSymbols.Run" : "",
+            await StepAndCheck(StepKind.Into, justMyCode ? "dotnet://debugger-test.dll/debugger-test.cs" : "dotnet://Newtonsoft.Json.dll/JArray.cs", justMyCode ? 1519 : 350, justMyCode ? 8 : 12, justMyCode ? "TestLoadSymbols.Run" : "Newtonsoft.Json.Linq.JArray.Add",
                 locals_fn: async (locals) =>
                 {
                     if (!justMyCode)
                         await CheckObject(locals, "this", "Newtonsoft.Json.Linq.JArray", description: "[]");
                     else
-                        await CheckObject(locals, "array", "Newtonsoft.Json.Linq.JArray", description: "[]");
-                }
+                        await CheckObject(locals, "array", "Newtonsoft.Json.Linq.JArray", description: "[\n  \"Manual text\"\n]");
+                }, times: 2
             );
         }
     }

@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.SymbolStore;
 using Microsoft.SymbolStore.SymbolStores;
+using Microsoft.FileFormats.PE;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -456,12 +457,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return paramsInfo;
         }
 
-        public void UpdatePdbInformation(MethodDefinitionHandle methodDefHandleToUpdateLocals)
+        public void UpdatePdbInformation(MethodDefinitionHandle methodDefHandleParm)
         {
-            if (pdbMetadataReader == null || methodDefHandle.ToDebugInformationHandle().IsNil)
+            if (pdbMetadataReader == null || methodDefHandleParm.ToDebugInformationHandle().IsNil)
                 return;
-            DebugInformation = pdbMetadataReader.GetMethodDebugInformation(methodDefHandle.ToDebugInformationHandle());
-            if (!DebugInformation.Document.IsNil && Source == null)
+            DebugInformation = pdbMetadataReader.GetMethodDebugInformation(methodDefHandleParm.ToDebugInformationHandle());
+            if (Source == null && !DebugInformation.Document.IsNil)
             {
                 var document = pdbMetadataReader.GetDocument(DebugInformation.Document);
                 var documentName = pdbMetadataReader.GetString(document.Name);
@@ -474,14 +475,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var sps = DebugInformation.GetSequencePoints();
                 SequencePoint start = sps.First();
                 SequencePoint end = sps.First();
+                Source.BreakableLines.Add(start.StartLine);
 
                 foreach (SequencePoint sp in sps)
                 {
+                    if (Source.BreakableLines.Last<int>() != sp.StartLine)
+                        Source.BreakableLines.Add(sp.StartLine);
+
+                    if (sp.IsHidden)
+                        continue;
+
                     if (sp.StartLine < start.StartLine)
                         start = sp;
                     else if (sp.StartLine == start.StartLine && sp.StartColumn < start.StartColumn)
                         start = sp;
 
+                    if (end.EndLine == SequencePoint.HiddenLine)
+                        end = sp;
                     if (sp.EndLine > end.EndLine)
                         end = sp;
                     else if (sp.EndLine == end.EndLine && sp.EndColumn > end.EndColumn)
@@ -491,10 +501,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 StartLocation = new SourceLocation(this, start);
                 EndLocation = new SourceLocation(this, end);
             }
-            localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandleToUpdateLocals);
+            localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandleParm);
 
             byte[] scopeDebugInformation =
-                    (from cdiHandle in pdbMetadataReader.GetCustomDebugInformation(methodDefHandle)
+                    (from cdiHandle in pdbMetadataReader.GetCustomDebugInformation(methodDefHandleParm)
                     let cdi = pdbMetadataReader.GetCustomDebugInformation(cdiHandle)
                     where pdbMetadataReader.GetGuid(cdi.Kind) == PortableCustomDebugInfoKinds.StateMachineHoistedLocalScopes
                     select pdbMetadataReader.GetBlobBytes(cdi.Value)).FirstOrDefault();
@@ -849,34 +859,38 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
 
+        internal List<PdbChecksum> PdbChecksums { get; }
+
         public AssemblyInfo(ILogger logger)
         {
             debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
             this.logger = logger;
+            PdbChecksums = new();
         }
 
-        public unsafe AssemblyInfo(DebugStore debugStore, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
+        public unsafe AssemblyInfo(DebugStore debugStore, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token): this(logger)
         {
-            debugId = -1;
-            this.id = Interlocked.Increment(ref next_id);
-            this.logger = logger;
             this.debugStore = debugStore;
             using var asmStream = new MemoryStream(assembly);
             peReader = new PEReader(asmStream);
             var entries = peReader.ReadDebugDirectory();
-            if (entries.Length > 0)
+            foreach (var entry in peReader.ReadDebugDirectory())
             {
-                var codeView = entries[0];
-                if (codeView.Type == DebugDirectoryEntryType.CodeView)
+                if (entry.Type == DebugDirectoryEntryType.CodeView)
                 {
-                    CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
+                    CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(entry);
                     PdbAge = codeViewData.Age;
-                    if (codeView.IsPortableCodeView)
+                    if (entry.IsPortableCodeView)
                         IsPortableCodeView = true;
                     PdbGuid = codeViewData.Guid;
                     PdbName = codeViewData.Path;
                     CodeViewInformationAvailable = true;
+                }
+                if (entry.Type == DebugDirectoryEntryType.PdbChecksum)
+                {
+                    var checksum = peReader.ReadPdbChecksumDebugDirectoryData(entry);
+                    PdbChecksums.Add(new PdbChecksum(checksum.AlgorithmName, checksum.Checksum.ToArray()));
                 }
             }
             asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
@@ -1176,7 +1190,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        internal void UpdatePdbInformation(Stream streamToReadFrom)
+        internal void UpdatePdbInformationFromSymbolServer(Stream streamToReadFrom)
         {
             var pdbStream = new MemoryStream();
             streamToReadFrom.Position = 0;
@@ -1190,6 +1204,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 method.Value.pdbMetadataReader = pdbMetadataReader;
                 method.Value.UpdatePdbInformation(method.Value.methodDefHandle);
+                method.Value.DebuggerAttrInfo.HasNonUserCode = true;
             }
         }
 
@@ -1689,15 +1704,18 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url : "";
-        internal async Task LoadPDBFromSymbolServer(CancellationToken token)
+        internal async Task<IEnumerable<AssemblyInfo>> LoadPDBFromSymbolServer(CancellationToken token)
         {
+            List<AssemblyInfo> ret = new List<AssemblyInfo> ();
             if (symbolStore == null)
-                return;
+                return ret;
             foreach (var asm in assemblies.Where(asm => asm.pdbMetadataReader == null))
             {
                 asm.TriedToLoadSymbolsOnDemand = false; //force to load again because added another symbol server
                 await LoadPDBFromSymbolServer(asm, token);
+                ret.Add(asm);
             }
+            return ret;
         }
         internal async Task LoadPDBFromSymbolServer(AssemblyInfo asm, CancellationToken token)
         {
@@ -1706,11 +1724,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             var pdbName = Path.GetFileName(asm.PdbName);
             var pdbGuid = asm.PdbGuid.ToString("N").ToUpperInvariant() + (asm.IsPortableCodeView ? "FFFFFFFF" : asm.PdbAge);
             var key = $"{pdbName}/{pdbGuid}/{pdbName}";
-            SymbolStoreFile file = await symbolStore.GetFile(new SymbolStoreKey(key, asm.PdbName), token);
+            SymbolStoreFile file = await symbolStore.GetFile(new SymbolStoreKey(key, asm.PdbName, false, asm.PdbChecksums), token);
             asm.TriedToLoadSymbolsOnDemand = true;
             if (file == null)
                 return;
-            asm.UpdatePdbInformation(file.Stream);
+            asm.UpdatePdbInformationFromSymbolServer(file.Stream);
         }
 
         internal void CreateSymbolServer()
