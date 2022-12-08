@@ -881,13 +881,35 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void DrainToImmutableEmptyZeroCapacity()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(0);
+            var array = builder.DrainToImmutable();
+            Assert.Equal(0, array.Length);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void DrainToImmutableEmptyNonZeroCapacity()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(10);
+            var array = builder.DrainToImmutable();
+            Assert.Equal(0, array.Length);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
         public void DrainToImmutableAtCapacity()
         {
-            var builder = CreateBuilderWithCount<string>(2);
-            Assert.Equal(2, builder.Count);
-            Assert.Equal(2, builder.Capacity);
+            var builder = ImmutableArray.CreateBuilder<string>(2);
+            builder.Count = 2;
             builder[1] = "b";
             builder[0] = "a";
+            Assert.Equal(2, builder.Count);
+            Assert.Equal(2, builder.Capacity);
+
             var array = builder.DrainToImmutable();
             Assert.Equal(new[] { "a", "b" }, array);
             Assert.Equal(0, builder.Count);
@@ -898,10 +920,10 @@ namespace System.Collections.Immutable.Tests
         public void DrainToImmutablePartialFill()
         {
             var builder = ImmutableArray.CreateBuilder<int>(4);
-            builder.Add(42);
-            builder.Add(13);
+            builder.AddRange(42, 13);
             Assert.Equal(4, builder.Capacity);
             Assert.Equal(2, builder.Count);
+
             var array = builder.DrainToImmutable();
             Assert.Equal(new[] { 42, 13 }, array);
             Assert.Equal(0, builder.Capacity);
@@ -912,11 +934,11 @@ namespace System.Collections.Immutable.Tests
         public void DrainToImmutablePartialFillWithCountUpdate()
         {
             var builder = ImmutableArray.CreateBuilder<int>(4);
-            builder.Add(42);
-            builder.Add(13);
-            Assert.Equal(4, builder.Capacity);
-            Assert.Equal(2, builder.Count);
+            builder.AddRange(42, 13);
             builder.Count = builder.Capacity;
+            Assert.Equal(4, builder.Capacity);
+            Assert.Equal(4, builder.Count);
+
             var array = builder.DrainToImmutable();
             Assert.Equal(new[] { 42, 13, 0, 0 }, array);
             Assert.Equal(0, builder.Capacity);
@@ -926,35 +948,39 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void DrainToImmutableRepeat()
         {
-            var builder = CreateBuilderWithCount<string>(2);
-            builder[0] = "a";
-            builder[1] = "b";
+            var builder = ImmutableArray.CreateBuilder<string>(2);
+            builder.AddRange("a", "b");
+
             var array1 = builder.DrainToImmutable();
             var array2 = builder.DrainToImmutable();
             Assert.Equal(new[] { "a", "b" }, array1);
             Assert.Equal(0, array2.Length);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
         }
 
         [Fact]
         public void DrainToImmutableThenUse()
         {
-            var builder = CreateBuilderWithCount<string>(2);
+            var builder = ImmutableArray.CreateBuilder<string>(2);
+            builder.Count = 2;
             Assert.Equal(2, builder.DrainToImmutable().Length);
             Assert.Equal(0, builder.Capacity);
-            builder.Add("a");
-            builder.Add("b");
+            builder.AddRange("a", "b");
             Assert.Equal(2, builder.Count);
             Assert.True(builder.Capacity >= 2);
-            Assert.Equal(new[] { "a", "b" }, builder.DrainToImmutable());
+
+            var array = builder.DrainToImmutable();
+            Assert.Equal(new[] { "a", "b" }, array);
         }
 
         [Fact]
         public void DrainToImmutableAfterClear()
         {
-            var builder = CreateBuilderWithCount<string>(2);
-            builder[0] = "a";
-            builder[1] = "b";
+            var builder = ImmutableArray.CreateBuilder<string>(2);
+            builder.AddRange("a", "b");
             builder.Clear();
+
             var array = builder.DrainToImmutable();
             Assert.Equal(0, array.Length);
             Assert.Equal(0, builder.Capacity);
@@ -964,21 +990,25 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void DrainToImmutableAtCapacityClearsCollection()
         {
-            var builder = CreateBuilderWithCount<int>(2);
+            var builder = ImmutableArray.CreateBuilder<int>(2);
             builder.AddRange(1, 2);
             builder.DrainToImmutable();
             builder.Count = 4;
-            Assert.Equal(new[] { 0, 0, 0, 0 }, builder.DrainToImmutable());
+
+            var array = builder.DrainToImmutable();
+            Assert.Equal(new[] { 0, 0, 0, 0 }, array);
         }
 
         [Fact]
         public void DrainToImmutablePartialFillClearsCollection()
         {
-            var builder = CreateBuilderWithCount<int>(4);
+            var builder = ImmutableArray.CreateBuilder<int>(4);
             builder.AddRange(1, 2);
             builder.DrainToImmutable();
             builder.Count = 6;
-            Assert.Equal(new[] { 0, 0, 0, 0, 0, 0 }, builder.DrainToImmutable());
+
+            var array = builder.DrainToImmutable();
+            Assert.Equal(new[] { 0, 0, 0, 0, 0, 0 }, array);
         }
 
         [Fact]
