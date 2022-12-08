@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Interop;
 using Microsoft.Interop.Analyzers;
 using Xunit;
+
 using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.GeneratedComInterfaceAttributeAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
@@ -20,6 +21,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             #pragma warning restore CS8019
             """;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
         public class InterfaceHasInterfaceTypeAttributeOnly
         {
             [Fact]
@@ -181,6 +183,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
         public class InterfaceHasGeneratedComInterfaceAttributeOnly
         {
             [Fact]
@@ -344,6 +347,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
         public class InterfaceHasGeneratedComInterfaceAttributeAndInterfaceTypeAttribute
         {
             [Fact]
@@ -539,6 +543,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
         public class PartialInterfaceHasGeneratedComInterfaceAttributeAndInterfaceTypeAttribute
         {
             [Fact]
