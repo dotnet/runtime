@@ -3711,8 +3711,8 @@ static const unsigned PACKED_GTF_SPILLED = 2;
 //
 inline GenTreeFlags GetMultiRegSpillFlagsByIdx(MultiRegSpillFlags flags, unsigned idx)
 {
-    static_assert_no_msg(MAX_RET_REG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
-    assert(idx < MAX_RET_REG_COUNT);
+    static_assert_no_msg(MAX_MULTIREG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
+    assert(idx < MAX_MULTIREG_COUNT);
 
     unsigned     bits       = flags >> (idx * 2); // It doesn't matter that we possibly leave other high bits here.
     GenTreeFlags spillFlags = GTF_EMPTY;
@@ -3743,8 +3743,8 @@ inline GenTreeFlags GetMultiRegSpillFlagsByIdx(MultiRegSpillFlags flags, unsigne
 //
 inline MultiRegSpillFlags SetMultiRegSpillFlagsByIdx(MultiRegSpillFlags oldFlags, GenTreeFlags flagsToSet, unsigned idx)
 {
-    static_assert_no_msg(MAX_RET_REG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
-    assert(idx < MAX_RET_REG_COUNT);
+    static_assert_no_msg(MAX_MULTIREG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
+    assert(idx < MAX_MULTIREG_COUNT);
 
     MultiRegSpillFlags newFlags = oldFlags;
     unsigned           bits     = 0;
@@ -8045,7 +8045,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     // State required to support copy/reload of a multi-reg call node.
     // The first register is always given by GetRegNum().
     //
-    regNumberSmall gtOtherRegs[MAX_RET_REG_COUNT - 1];
+    regNumberSmall gtOtherRegs[MAX_MULTIREG_COUNT - 1];
 #endif
 
     //----------------------------------------------------------
@@ -8060,7 +8060,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     void ClearOtherRegs()
     {
 #if FEATURE_MULTIREG_RET
-        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        for (unsigned i = 0; i < MAX_MULTIREG_COUNT - 1; ++i)
         {
             gtOtherRegs[i] = REG_NA;
         }
@@ -8078,7 +8078,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     //
     regNumber GetRegNumByIdx(unsigned idx) const
     {
-        assert(idx < MAX_RET_REG_COUNT);
+        assert(idx < MAX_MULTIREG_COUNT);
 
         if (idx == 0)
         {
@@ -8104,7 +8104,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     //
     void SetRegNumByIdx(regNumber reg, unsigned idx)
     {
-        assert(idx < MAX_RET_REG_COUNT);
+        assert(idx < MAX_MULTIREG_COUNT);
 
         if (idx == 0)
         {
@@ -8141,7 +8141,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
         assert(OperGet() == from->OperGet());
 
 #ifdef UNIX_AMD64_ABI
-        for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
+        for (unsigned i = 0; i < MAX_MULTIREG_COUNT - 1; ++i)
         {
             gtOtherRegs[i] = from->gtOtherRegs[i];
         }
@@ -8158,7 +8158,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
         // but for COPY or RELOAD there is only a valid register for the register positions
         // that must be copied or reloaded.
         //
-        for (unsigned i = MAX_RET_REG_COUNT; i > 1; i--)
+        for (unsigned i = MAX_MULTIREG_COUNT; i > 1; i--)
         {
             if (gtOtherRegs[i - 2] != REG_NA)
             {
