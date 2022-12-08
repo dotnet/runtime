@@ -2745,12 +2745,15 @@ void Compiler::fgInterBlockLocalVarLiveness()
         if (fgIsDoingEarlyLiveness)
         {
 #ifdef DEBUG
-            VARSET_TP allVars(VarSetOps::Union(this, block->bbLiveIn, life));
-            JITDUMP(FMT_BB " LIFE(%d)=", block->bbNum, VarSetOps::Count(this, life));
-            lvaDispVarSet(life, allVars);
-            JITDUMP("\n     IN  (%d)=", VarSetOps::Count(this, block->bbLiveIn));
-            lvaDispVarSet(block->bbLiveIn, allVars);
-            JITDUMP("\n\n");
+            if (verbose)
+            {
+                VARSET_TP allVars(VarSetOps::Union(this, block->bbLiveIn, life));
+                printf(FMT_BB " LIFE(%d)=", block->bbNum, VarSetOps::Count(this, life));
+                lvaDispVarSet(life, allVars);
+                printf("\n     IN  (%d)=", VarSetOps::Count(this, block->bbLiveIn));
+                lvaDispVarSet(block->bbLiveIn, allVars);
+                printf("\n\n");
+            }
 #endif
 
             assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
@@ -2926,23 +2929,26 @@ PhaseStatus Compiler::fgEarlyLiveness()
         }
 
 #ifdef DEBUG
-        JITDUMP(FMT_BB " locals: ", bb->bbNum);
-        bool first = true;
-        for (GenTree* cur = bb->GetFirstSequencedNode(); cur != nullptr; cur = cur->gtNext)
+        if (verbose)
         {
-            if (!first)
+            printf(FMT_BB " locals: ", bb->bbNum);
+            bool first = true;
+            for (GenTree* cur = bb->GetFirstSequencedNode(); cur != nullptr; cur = cur->gtNext)
             {
-                JITDUMP(" -> [%06u]", dspTreeID(cur));
-            }
-            else
-            {
-                JITDUMP(" [%06u]", dspTreeID(cur));
+                if (!first)
+                {
+                    printf(" -> [%06u]", dspTreeID(cur));
+                }
+                else
+                {
+                    printf(" [%06u]", dspTreeID(cur));
+                }
+
+                first = false;
             }
 
-            first = false;
+            printf("\n");
         }
-
-        JITDUMP("\n");
 #endif
     }
 
