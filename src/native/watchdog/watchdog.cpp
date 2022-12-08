@@ -26,7 +26,7 @@ int main(const int argc, const char *argv[])
     int exit_code = run_timed_process(timeout_ms, argc-2, &argv[2]);
 
     printf("App Exit Code: %d\n", exit_code);
-    return EXIT_SUCCESS;
+    return exit_code;
 }
 
 int run_timed_process(const long timeout, const int exe_argc, const char *exe_path_and_argv[])
@@ -105,8 +105,9 @@ int run_timed_process(const long timeout, const int exe_argc, const char *exe_pa
             if (wait_code == -1)
                 return EINVAL;
 
-            // Passing ms * 1000 because usleep() receives its parameter in microseconds.
-            usleep(check_interval * 1000);
+            // TODO: Explain why we are multiplying by 25 here, and dividing
+            // by 40 in the while clause.
+            usleep(check_interval * 25);
 
             if (wait_code)
             {
@@ -117,7 +118,7 @@ int run_timed_process(const long timeout, const int exe_argc, const char *exe_pa
                     return WEXITSTATUS(child_status);
                 }
             }
-        } while (check_count++ < (timeout / check_interval));
+        } while (check_count++ < ((timeout / check_interval) * 40));
     }
 
     printf("Child process took too long and timed out... Exiting it...\n");
