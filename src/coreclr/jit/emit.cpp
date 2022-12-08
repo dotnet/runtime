@@ -1167,7 +1167,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
 #ifdef TARGET_XARCH
-    regUpper32BitsZeroLookup = 0;
+    upper32BitsZeroRegLookup = 0;
 #endif // TARGET_XARCH
 
     emitLastIns = nullptr;
@@ -1422,6 +1422,37 @@ size_t emitter::emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp)
 
 void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
+#ifdef TARGET_XARCH
+    // Record the last instruction's peephole info on whether or not
+    // the instruction's destination register has its upper 32-bits set to zero.
+    if (emitComp->opts.OptimizationEnabled())
+    {
+        regNumber dstReg;
+        bool      isDstRegUpper32BitsZero;
+        if (TryGetPeepholeInfoFromLastInstruction(&dstReg, &isDstRegUpper32BitsZero))
+        {
+            if (dstReg != REG_NA)
+            {
+                if (isDstRegUpper32BitsZero)
+                {
+                    upper32BitsZeroRegLookup |= (1 << dstReg);
+                }
+                else
+                {
+                    upper32BitsZeroRegLookup &= ~(1 << dstReg);
+                }
+            }
+        }
+        else
+        {
+            // If we were not able to get peephole info, we assume
+            // that looking at information from previous instructions is not safe.
+            // Therefore, we must reset the lookup.
+            upper32BitsZeroRegLookup = 0;
+        }
+    }
+#endif // TARGET_XARCH
+
     instrDesc* id;
 
 #ifdef DEBUG
@@ -1488,33 +1519,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     {
         emitNxtIG(true);
     }
-
-#ifdef TARGET_XARCH
-    if (emitComp->opts.OptimizationEnabled())
-    {
-        regNumber dstReg            = REG_NA;
-        bool      isUpper32BitsZero = false;
-        if (TryGetPeepholeInfoFromLastInstruction(&dstReg, &isUpper32BitsZero))
-        {
-            if (dstReg != REG_NA)
-            {
-                if (isUpper32BitsZero)
-                {
-                    regUpper32BitsZeroLookup |= (1 << dstReg);
-                }
-                else
-                {
-                    regUpper32BitsZeroLookup &= ~(1 << dstReg);
-                }
-            }
-        }
-        else
-        {
-            // Reset
-            regUpper32BitsZeroLookup = 0;
-        }
-    }
-#endif // TARGET_XARCH
 
     /* Grab the space for the instruction */
 

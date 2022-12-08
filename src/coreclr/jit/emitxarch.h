@@ -123,7 +123,7 @@ bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumbe
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 
-bool TryGetPeepholeInfoFromLastInstruction(regNumber* reg, bool* isUpper32BitsZero);
+bool TryGetPeepholeInfoFromLastInstruction(regNumber* outDstReg, bool* outIsDstRegUpper32BitsZero);
 bool AreUpper32BitsZero(regNumber reg);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);

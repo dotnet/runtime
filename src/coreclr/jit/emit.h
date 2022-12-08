@@ -2173,12 +2173,6 @@ private:
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
-#ifdef TARGET_XARCH
-    // Lookup to determine if registers have their upper bits zero'ed out.
-    // GPR only.
-    unsigned int regUpper32BitsZeroLookup;
-#endif // TARGET_XARCH
-
     instrDesc* emitLastIns;
 
     // Check if a peephole optimization involving emitLastIns is safe.
@@ -2186,7 +2180,7 @@ private:
     // We must have a lastInstr to consult.
     // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
     // The final check prevents looking across an IG boundary unless we're in an extension IG.
-    bool emitCanPeepholeLastIns()
+    bool emitCanPeepholeLastIns() const
     {
         return (emitLastIns != nullptr) &&                 // there is an emitLastInstr
                !emitForceNewIG &&                          // and we're not about to start a new IG
@@ -2194,6 +2188,33 @@ private:
                 ((emitCurIG->igFlags & IGF_EXTEND) != 0)); //    or we are at the start of a new IG,
                                                            //    and it's an extension IG
     }
+
+#ifdef TARGET_XARCH
+    // IMPORTANT: Only contains information from **before** the last emitted instruction.
+    // A lookup where each bit position corresponds to a register.
+    // A bit that is set means the register's upper 32-bits are zero.
+    // This effectively keeps track of which registers have their upper 32-bits set to zero.
+    // GPRs (general-purpose registers) only.
+    // For peephole optimizations, use the function 'GetSafeUpper32BitsZeroRegLookup' to
+    // get the lookup instead of directly referencing this.
+    unsigned int upper32BitsZeroRegLookup;
+
+    //------------------------------------------------------------------------
+    // GetSafeUpper32BitsZeroRegLookup: Gets the upper 32-bits zero register lookup.
+    //
+    // Return Value:
+    //    Unsigned integer where each bit position corresponds to the register and whether or not its upper 32-bits are
+    //    set to zero. Will return zero if it is not safe to do peephole optimizations.
+    //
+    inline unsigned int GetSafeUpper32BitsZeroRegLookup() const
+    {
+        if (emitCanPeepholeLastIns())
+        {
+            return upper32BitsZeroRegLookup;
+        }
+        return 0;
+    }
+#endif // TARGET_XARCH
 
 #ifdef TARGET_ARMARCH
     instrDesc* emitLastMemBarrier;
