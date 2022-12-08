@@ -4395,7 +4395,7 @@ void Module::RunEagerFixupsUnlocked()
     TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
 
     ExecutionManager::AddCodeRange(
-        base, base + (TADDR)pNativeImage->GetVirtualSize() - 1,
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
         ExecutionManager::GetReadyToRunJitManager(),
         RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);

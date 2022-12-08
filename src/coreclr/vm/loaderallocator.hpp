@@ -41,8 +41,6 @@ class CustomAssemblyBinder;
 
 
 // This implements the Add/Remove rangelist api on top of the CodeRangeMap in the code manager
-// It does not implement the IsInRange api, and destruction isn't safe either. Systems which need
-// to check IsInRange must use the CodeRangeMap directly. 
 class CodeRangeMapRangeList : public RangeList
 {
 public:
@@ -118,8 +116,6 @@ protected:
 #ifndef DACCESS_COMPILE
         BOOL result = FALSE;
 
-        --end; // The RangeList apis surface works with ranges which are represented as open intervals,
-               // But the RangeSectionMap uses a closed interval
         EX_TRY
         {
             AddRangeWorkerHelper((TADDR)start, (TADDR)end, id);

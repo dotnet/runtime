@@ -11,5 +11,5 @@ inline BOOL ExecutionManager::IsCollectibleMethod(const METHODTOKEN& MethodToken
 
 inline TADDR IJitManager::JitTokenToModuleBase(const METHODTOKEN& MethodToken)
 {
-    return MethodToken.m_pRangeSection->_range.begin;
+    return MethodToken.m_pRangeSection->_range.RangeStart();
 }

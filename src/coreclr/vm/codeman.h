@@ -616,12 +616,41 @@ class RangeSectionMap;
 
 class Range
 {
-public:
-    Range(TADDR begin, TADDR end) : begin(begin), end(end) {}
-
-    // [begin,end] (This is an inclusive range)
+    // [begin,end) (This is an inclusive range)
     TADDR begin;
     TADDR end;
+
+public:
+    Range(TADDR begin, TADDR end) : begin(begin), end(end)
+    {
+        assert(end >= begin);
+    }
+
+    bool IsInRange(TADDR address) const
+    {
+        return address >= begin && address < end;
+    }
+
+    TADDR RangeSize() const
+    {
+        return end - begin;
+    }
+
+    TADDR RangeStart() const
+    {
+        return begin;
+    }
+
+    TADDR RangeEnd() const
+    {
+        assert(RangeSize() > 0);
+        return end - 1;
+    }
+
+    TADDR RangeEndOpen() const
+    {
+        return end;
+    }
 };
 
 struct RangeSection
@@ -799,7 +828,7 @@ class RangeSectionMap
         RangeSectionFragmentPointer pRangeSectionFragmentNext;
         Range _range;
         PTR_RangeSection pRangeSection;
-        bool InRange(TADDR address) { return address >= _range.begin && address <= _range.end && pRangeSection->_pRangeSectionNextForDelete == NULL; }
+        bool InRange(TADDR address) { return _range.IsInRange(address) && pRangeSection->_pRangeSectionNextForDelete == NULL; }
         bool isPrimaryRangeSectionFragment; // RangeSectionFragment are allocated in arrays, but we only need to free the first allocated one. It will be marked with this flag.
         bool isCollectibleRangeSectionFragment; // RangeSectionFragments
     };
@@ -931,9 +960,12 @@ class RangeSectionMap
 
     uintptr_t RangeSectionFragmentCount(PTR_RangeSection pRangeSection)
     {
-        uintptr_t rangeSize = (pRangeSection->_range.end - pRangeSection->_range.begin);
-        rangeSize /= bytesAtLastLevel;
-        return rangeSize + 1;
+        uintptr_t rangeSize = pRangeSection->_range.RangeSize();
+        if (rangeSize == 0)
+            return 0;
+        
+        uintptr_t fragmentCount = ((rangeSize - 1) / bytesAtLastLevel) + 1;
+        return fragmentCount;
     }
 
     TADDR IncrementAddressByMaxSizeOfFragment(TADDR input)
@@ -944,6 +976,11 @@ class RangeSectionMap
     bool AttachRangeSectionToMap(PTR_RangeSection pRangeSection, RangeSectionLockState *pLockState)
     {
         assert(*pLockState == RangeSectionLockState::ReaderLocked); // Must be locked so that the cannot fail case, can't fail. NOTE: This only needs the reader lock, as the attach process can happen in parallel to reads.
+
+        // Currently all use of the RangeSection should be with aligned addresses, so validate that the start and end are at aligned boundaries
+        assert((pRangeSection->_range.RangeStart() & 0xF) == 0);
+        assert((pRangeSection->_range.RangeEnd() & 0xF) == 0xF);
+        assert((pRangeSection->_range.RangeEndOpen() & 0xF) == 0);
 
         uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSection);
         size_t fragmentsSize = rangeSectionFragmentCount * sizeof(RangeSectionFragment);
@@ -966,7 +1003,16 @@ class RangeSectionMap
 
         fragments[0].isPrimaryRangeSectionFragment = true;
 
-        TADDR addressToPrepForUpdate = pRangeSection->_range.begin;
+        TADDR addressToPrepForUpdate = pRangeSection->_range.RangeStart();
+
+        // Assert that range is not already mapped in any way
+        assert(LookupRangeSection(addressToPrepForUpdate, pLockState) == NULL);
+        assert(LookupRangeSection(pRangeSection->_range.RangeEnd(), pLockState) == NULL);
+        for (TADDR fragmentAddress = addressToPrepForUpdate; pRangeSection->_range.IsInRange(fragmentAddress); fragmentAddress = IncrementAddressByMaxSizeOfFragment(fragmentAddress))
+        {
+            assert(LookupRangeSection(fragmentAddress, pLockState) == NULL);
+        }
+
         for (uintptr_t iFragment = 0; iFragment < rangeSectionFragmentCount; iFragment++)
         {
             fragments[iFragment].pRangeSection = pRangeSection;
@@ -994,6 +1040,14 @@ class RangeSectionMap
                 if (entriesInMapToUpdate[iFragment]->AtomicReplace(&(fragments[iFragment]), initialFragmentInMap))
                     break;
             } while (true);
+        }
+
+        // Assert that range is now found via lookup
+        assert(LookupRangeSection(pRangeSection->_range.RangeStart(), pLockState) == pRangeSection);
+        assert(LookupRangeSection(pRangeSection->_range.RangeEnd(), pLockState) == pRangeSection);
+        for (TADDR fragmentAddress = pRangeSection->_range.RangeStart(); pRangeSection->_range.IsInRange(fragmentAddress); fragmentAddress = IncrementAddressByMaxSizeOfFragment(fragmentAddress))
+        {
+            assert(LookupRangeSection(fragmentAddress, pLockState) == pRangeSection);
         }
 
         // entriesInMapToUpdate was just a temporary allocation
@@ -1106,7 +1160,14 @@ public:
 
             uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSectionToCleanup);
 
-            TADDR addressToPrepForCleanup = pRangeSectionToCleanup->_range.begin;
+            TADDR addressToPrepForCleanup = pRangeSectionToCleanup->_range.RangeStart();
+
+            assert(LookupRangeSection(addressToPrepForCleanup, pLockState) == NULL);
+            assert(LookupRangeSection(pRangeSectionToCleanup->_range.RangeEnd(), pLockState) == NULL);
+            for (TADDR fragmentAddress = addressToPrepForCleanup; fragmentAddress < pRangeSectionToCleanup->_range.RangeEnd(); fragmentAddress = IncrementAddressByMaxSizeOfFragment(fragmentAddress))
+            {
+                assert(LookupRangeSection(fragmentAddress, pLockState) == NULL);
+            }
 
             // Remove fragments from each of the fragment linked lists
             for (uintptr_t iFragment = 0; iFragment < rangeSectionFragmentCount; iFragment++)

@@ -390,7 +390,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     if (pRS != NULL)
     {
         for(int i = 0; i < unwindInfoCount; i++)
-            AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, &unwindInfo[i], pRS->_range.begin, pRS->_range.end);
+            AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, &unwindInfo[i], pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
     }
 }
 
@@ -415,7 +415,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
             EEJitManager* pJitMgr = (EEJitManager*)(pRS->_pjit);
             CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(entryPoint);
             for(ULONG i = 0; i < pHeader->GetNumberOfUnwindInfos(); i++)
-                RemoveFromUnwindInfoTable(&pRS->_pUnwindInfoTable, pRS->_range.begin, pRS->_range.begin + pHeader->GetUnwindInfo(i)->BeginAddress);
+                RemoveFromUnwindInfoTable(&pRS->_pUnwindInfoTable, pRS->_range.RangeStart(), pRS->_range.RangeStart() + pHeader->GetUnwindInfo(i)->BeginAddress);
         }
     }
 }
@@ -460,7 +460,7 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
                     CodeHeader * pHeader = pJitMgr->GetCodeHeaderFromStartAddress(methodEntry);
                     int unwindInfoCount = pHeader->GetNumberOfUnwindInfos();
                     for(int i = 0; i < unwindInfoCount; i++)
-                        AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, pHeader->GetUnwindInfo(i), pRS->_range.begin, pRS->_range.end);
+                        AddToUnwindInfoTable(&pRS->_pUnwindInfoTable, pHeader->GetUnwindInfo(i), pRS->_range.RangeStart(), pRS->_range.RangeEndOpen());
                 }
             }
         }
@@ -5969,7 +5969,7 @@ StubCodeBlockKind ReadyToRunJitManager::GetStubCodeBlockKind(RangeSection * pRan
     }
     CONTRACTL_END;
 
-    DWORD rva = (DWORD)(currentPC - pRangeSection->_range.begin);
+    DWORD rva = (DWORD)(currentPC - pRangeSection->_range.RangeStart());
 
     PTR_ReadyToRunInfo pReadyToRunInfo = pRangeSection->_pR2RModule->GetReadyToRunInfo();
 
@@ -6120,7 +6120,7 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
     TADDR currentInstr = PCODEToPINSTR(currentPC);
 
-    TADDR ImageBase = pRangeSection->_range.begin;
+    TADDR ImageBase = pRangeSection->_range.RangeStart();
 
     DWORD RelativePc = (DWORD)(currentInstr - ImageBase);
 
