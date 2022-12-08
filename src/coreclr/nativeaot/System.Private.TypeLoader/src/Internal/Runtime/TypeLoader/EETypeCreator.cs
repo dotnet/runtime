@@ -221,34 +221,6 @@ namespace Internal.Runtime.TypeLoader
                 if (state.ThreadDataSize != 0)
                     rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
 
-#if TARGET_ARM
-                if (state.FieldAlignment == 8)
-                    rareFlags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
-                else
-                    rareFlags &= ~(uint)EETypeRareFlags.RequiresAlign8Flag;
-#endif
-
-#if TARGET_ARM || TARGET_ARM64
-                if (state.IsHFA)
-                    rareFlags |= (uint)EETypeRareFlags.IsHFAFlag;
-                else
-                    rareFlags &= ~(uint)EETypeRareFlags.IsHFAFlag;
-#endif
-                if (state.HasStaticConstructor)
-                    rareFlags |= (uint)EETypeRareFlags.HasCctorFlag;
-                else
-                    rareFlags &= ~(uint)EETypeRareFlags.HasCctorFlag;
-
-                if (isAbstractClass)
-                    rareFlags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
-                else
-                    rareFlags &= ~(uint)EETypeRareFlags.IsAbstractClassFlag;
-
-                if (isByRefLike)
-                    rareFlags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
-                else
-                    rareFlags &= ~(uint)EETypeRareFlags.IsByRefLikeFlag;
-
                 optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
 
                 // Dispatch map is fetched from template type
