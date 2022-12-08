@@ -67,7 +67,6 @@ public class WebcilWriter
         var headers = peReader.PEHeaders;
         var peHeader = headers.PEHeader!;
         var coffHeader = headers.CoffHeader!;
-        var corHeader = headers.CorHeader!;
         var sections = headers.SectionHeaders;
         header.id[0] = (byte)'W';
         header.id[1] = (byte)'C';
