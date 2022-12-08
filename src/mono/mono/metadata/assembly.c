@@ -717,10 +717,21 @@ search_bundle_for_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *anam
 	MonoImage *image;
 	MonoAssemblyLoadRequest req;
 	image = mono_assembly_open_from_bundle (alc, aname->name, &status, aname->culture);
+#ifndef DISABLE_WEBCIL
+	if (!image && !g_str_has_suffix (aname->name, ".webcil")) {
+		char *name = g_strdup_printf ("%s.webcil", aname->name);
+		image = mono_assembly_open_from_bundle (alc, name, &status, aname->culture);
+		g_free (name);
+	}
+#endif
 	if (!image && !g_str_has_suffix (aname->name, ".dll")) {
 		char *name = g_strdup_printf ("%s.dll", aname->name);
 		image = mono_assembly_open_from_bundle (alc, name, &status, aname->culture);
+		g_free (name);
 	}
+	// Webcil: we could add some code here to look for .webcil files if they ask for .dll, but
+	// it's not clear if that should be a bug in the callers of mono_assembly_open.  They
+	// shouldn't be passing an extension.
 	if (image) {
 		mono_assembly_request_prepare_load (&req, alc);
 		return mono_assembly_request_load_from (image, aname->name, &req, &status);
@@ -2708,6 +2719,14 @@ mono_assembly_load_corlib (void)
 		corlib = mono_assembly_request_open (corlib_name, &req, &status);
 		g_free (corlib_name);
 	}
+#ifndef DISABLE_WEBCIL
+	if (!corlib) {
+		/* Maybe its in a bundle */
+		char *corlib_name = g_strdup_printf ("%s.webcil", MONO_ASSEMBLY_CORLIB_NAME);
+		corlib = mono_assembly_request_open (corlib_name, &req, &status);
+		g_free (corlib_name);
+	}
+#endif
 	g_assert (corlib);
 
 	// exit the process if we weren't able to load corlib

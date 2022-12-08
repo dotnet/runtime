@@ -48,6 +48,7 @@ public class WasmAppBuilder : Task
     public string? MainHTMLPath { get; set; }
     public bool IncludeThreadsWorker {get; set; }
     public int PThreadPoolSize {get; set; }
+    public bool DisableWebcil { get; set; }
 
     // <summary>
     // Extra json elements to add to mono-config.json
@@ -177,10 +178,13 @@ public class WasmAppBuilder : Task
                 _assemblies.Add(asm);
         }
         MainAssemblyName = Path.GetFileName(MainAssemblyName);
+        var mainAssemblyNameForConfig = MainAssemblyName;
+        if (!DisableWebcil)
+            mainAssemblyNameForConfig = Path.ChangeExtension(mainAssemblyNameForConfig, ".webcil");
 
         var config = new WasmAppConfig ()
         {
-            MainAssemblyName = MainAssemblyName,
+            MainAssemblyName = mainAssemblyNameForConfig,
         };
 
         // Create app
@@ -189,7 +193,18 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(asmRootPath);
         foreach (var assembly in _assemblies)
         {
-            FileCopyChecked(assembly, Path.Combine(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
+            if (!DisableWebcil)
+            {
+                var tmpWebcil = Path.GetTempFileName();
+                var webcilWriter = new Microsoft.WebAssembly.Build.Tasks.WebcilWriter(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
+                webcilWriter.Write();
+                var finalWebcil = Path.ChangeExtension(assembly, ".webcil");
+                FileCopyChecked(tmpWebcil, Path.Combine(asmRootPath, Path.GetFileName(finalWebcil)), "Assemblies");
+            }
+            else
+            {
+                FileCopyChecked(assembly, Path.Combine(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
+            }
             if (DebugLevel != 0)
             {
                 var pdb = assembly;
@@ -234,7 +249,10 @@ public class WasmAppBuilder : Task
 
         foreach (var assembly in _assemblies)
         {
-            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly)));
+            string assemblyPath = assembly;
+            if (!DisableWebcil)
+                assemblyPath = Path.ChangeExtension(assemblyPath, ".webcil");
+            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assemblyPath)));
             if (DebugLevel != 0) {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
@@ -247,6 +265,7 @@ public class WasmAppBuilder : Task
 
         if (SatelliteAssemblies != null)
         {
+            // FIXME: TODO: run WebcilWriter on satellite assemblies too
             foreach (var assembly in SatelliteAssemblies)
             {
                 string culture = assembly.GetMetadata("CultureName") ?? string.Empty;

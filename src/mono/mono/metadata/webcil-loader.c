@@ -23,12 +23,12 @@ typedef struct MonoWebCilHeader {
 	uint16_t reserved1; // 0
 	// 8 bytes
 
-	uint32_t metadata_rva;
-	uint32_t metadata_size;
+	uint32_t metadata_rva; // FIXME: unused
+	uint32_t metadata_size; // FIXME: unused
 	// 16 bytes
 
-	uint32_t cli_flags;
-	int32_t cli_entry_point;
+	uint32_t cli_flags;  // FIXME: unused
+	int32_t cli_entry_point; // FIXME: unused
 	// 24 bytes
 
 	uint32_t pe_cli_header_rva;
