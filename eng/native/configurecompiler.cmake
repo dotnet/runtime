@@ -482,9 +482,7 @@ if (CLR_CMAKE_HOST_UNIX)
   
   # Separate functions so linker can remove them. But not on tvOS because
   # -ffunction-sections is not supported with -fembed-bitcode.
-  if (NOT CLR_CMAKE_HOST_TVOS)
-    add_compile_options(-ffunction-sections)
-  endif()
+  add_compile_options(-ffunction-sections)
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
