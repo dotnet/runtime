@@ -13959,6 +13959,9 @@ void Compiler::fgMorphBlocks()
         // Make the current basic block address available globally.
         compCurBB = block;
 
+        block->SetFirstSequencedNode(nullptr);
+        block->SetLastSequencedNode(nullptr);
+
         // Process all statement trees in the basic block.
         fgMorphStmts(block);
 

@@ -491,84 +491,10 @@ void Compiler::fgPerBlockLocalVarLiveness()
         {
             assert(fgIsDoingEarlyLiveness);
 
-            struct LocalLivenessVisitor : GenTreeVisitor<LocalLivenessVisitor>
+            for (GenTree* cur = block->GetFirstSequencedNode(); cur != nullptr; cur = cur->gtNext)
             {
-                enum
-                {
-                    DoPreOrder        = true,
-                    DoPostOrder       = true,
-                    UseExecutionOrder = true,
-                };
-
-                LocalLivenessVisitor(Compiler* comp) : GenTreeVisitor(comp)
-                {
-                }
-
-                fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-                {
-                    GenTree* node = *use;
-                    // GT_ASG is special in that the top level LHS node (the
-                    // "location") is not actually evaluated. However, it is
-                    // marked with GTF_VAR_DEF to indicate that it is being
-                    // defined, and fgPerNodeLocalVarLiveness uses this to mark
-                    // defs.
-                    // GenTreeVisitor does not handle this in any special way
-                    // -- it always visits the full LHS/RHS operands and so we
-                    // will often see the location before the RHS here.
-                    // If the RHS involves a use of the written location then
-                    // that is a problem, as we will not consider it live. We
-                    // handle assignments specially here to fix this problem.
-                    // We could do this in GenTreeVisitor, but GT_ASG is
-                    // expected (hoped) to go away, and there would perhaps be
-                    // some clean ups required to make this work.
-                    //
-                    // Note that the situation does not occur for later
-                    // liveness as morph will mark GTF_REVERSE_OPS on all
-                    // assignments that define tracked locals.
-                    //
-                    if (node->OperIs(GT_ASG))
-                    {
-                        if ((node->gtFlags & GTF_REVERSE_OPS) != 0)
-                        {
-                            // Normal visit order is 'correct'.
-                            return WALK_CONTINUE;
-                        }
-
-                        if (node->gtGetOp1()->OperIsLocal() ||
-                            (node->gtGetOp1()->OperIs(GT_FIELD) && node->gtGetOp1()->AsField()->IsStatic()))
-                        {
-                            WalkTree(&node->AsOp()->gtOp2, node);
-                        }
-                        else
-                        {
-                            assert(node->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ, GT_FIELD));
-                            // Visit address of indir, which is actually evaluated.
-                            WalkTree(&node->AsOp()->gtOp1->AsUnOp()->gtOp1, node->AsOp()->gtOp1);
-                            WalkTree(&node->AsOp()->gtOp2, node);
-                        }
-
-                        // Post-order visit.
-                        m_compiler->fgPerNodeLocalVarLiveness(node->gtGetOp1());
-                        m_compiler->fgPerNodeLocalVarLiveness(node);
-
-                        return WALK_SKIP_SUBTREES;
-                    }
-
-                    return fgWalkResult::WALK_CONTINUE;
-                }
-
-                fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-                {
-                    m_compiler->fgPerNodeLocalVarLiveness(*use);
-                    return WALK_CONTINUE;
-                }
-            };
-
-            LocalLivenessVisitor visitor(this);
-            for (Statement* const stmt : block->Statements())
-            {
-                compCurStmt = stmt;
-                visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+                fgMarkUseDef(cur->AsLclVarCommon());
             }
         }
 
@@ -2844,7 +2770,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
         {
             fgComputeLifeLIR(life, block, volatileVars);
         }
-        else
+        else if (fgStmtListThreaded)
         {
             /* Get the first statement in the block */
 
@@ -2891,27 +2817,55 @@ void Compiler::fgInterBlockLocalVarLiveness()
 #endif // DEBUG
             } while (compCurStmt != firstStmt);
         }
+        else
+        {
+            assert(fgIsDoingEarlyLiveness);
+            compCurStmt = nullptr;
+            VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
+
+            for (GenTree* cur = block->GetLastSequencedNode(); cur != nullptr; cur = cur->gtPrev)
+            {
+                assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+                fgComputeLifeLocal(life, keepAliveVars, cur);
+            }
+        }
 
         /* Done with the current block - if we removed any statements, some
          * variables may have become dead at the beginning of the block
          * -> have to update bbLiveIn */
 
-        if (!VarSetOps::Equal(this, life, block->bbLiveIn))
+        if (fgIsDoingEarlyLiveness)
         {
-            /* some variables have become dead all across the block
-               So life should be a subset of block->bbLiveIn */
+#ifdef DEBUG
+            VARSET_TP allVars(VarSetOps::Union(this, block->bbLiveIn, life));
+            JITDUMP(FMT_BB " LIFE(%d)=", block->bbNum, VarSetOps::Count(this, life));
+            lvaDispVarSet(life, allVars);
+            JITDUMP("\n     IN  (%d)=", VarSetOps::Count(this, block->bbLiveIn));
+            lvaDispVarSet(block->bbLiveIn, allVars);
+            JITDUMP("\n\n");
+#endif
 
-            // We changed the liveIn of the block, which may affect liveOut of others,
-            // which may expose more dead stores.
-            fgLocalVarLivenessChanged = true;
+            assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
+        }
+        else
+        {
+            if (!VarSetOps::Equal(this, life, block->bbLiveIn))
+            {
+                /* some variables have become dead all across the block
+                   So life should be a subset of block->bbLiveIn */
 
-            noway_assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
+                   // We changed the liveIn of the block, which may affect liveOut of others,
+                   // which may expose more dead stores.
+                fgLocalVarLivenessChanged = true;
 
-            /* set the new bbLiveIn */
+                noway_assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
 
-            VarSetOps::Assign(this, block->bbLiveIn, life);
+                /* set the new bbLiveIn */
 
-            /* compute the new bbLiveOut for all the predecessors of this block */
+                VarSetOps::Assign(this, block->bbLiveIn, life);
+
+                /* compute the new bbLiveOut for all the predecessors of this block */
+            }
         }
 
         noway_assert(compCurBB == block);
@@ -2986,6 +2940,103 @@ PhaseStatus Compiler::fgEarlyLiveness()
 
     // Initialize the per-block var sets.
     fgInitBlockVarSets();
+
+    struct EarlyLivenessSequencer : GenTreeVisitor<EarlyLivenessSequencer>
+    {
+        GenTree* PrevNode;
+
+        enum
+        {
+            DoPostOrder = true,
+            UseExecutionOrder = true,
+        };
+
+        EarlyLivenessSequencer(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (node->OperIsLocal() || node->OperIsLocalAddr())
+            {
+                LclVarDsc* dsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
+                if (dsc->lvTracked || dsc->lvPromoted)
+                {
+                    node->gtPrev = PrevNode;
+                    PrevNode->gtNext = node;
+                    PrevNode = node;
+                }
+            }
+
+            if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
+            {
+                GenTree* lcl = node->gtGetOp1();
+                if (lcl->gtNext != nullptr)
+                {
+                    assert(PrevNode != lcl);
+
+                    GenTree* prev = lcl->gtPrev;
+                    GenTree* next = lcl->gtNext;
+                    // Fix the def of the local to appear after uses on the RHS.
+                    if (prev != nullptr)
+                        prev->gtNext = next;
+
+                    next->gtPrev = prev;
+
+                    PrevNode->gtNext = lcl;
+                    lcl->gtPrev = PrevNode;
+                    lcl->gtNext = nullptr;
+                    PrevNode = lcl;
+                }
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    GenTree* sentinelNode = gtNewNothingNode();
+    EarlyLivenessSequencer sequencer(this);
+
+    for (BasicBlock* bb : Blocks())
+    {
+        sequencer.PrevNode = sentinelNode;
+        sentinelNode->gtNext = nullptr;
+
+        for (Statement* stmt : bb->Statements())
+        {
+            // TODO-TP: This could be done in local morph to save TP, but it
+            // would create a quite inelegant dependency.
+            sequencer.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        if (sentinelNode->gtNext != nullptr)
+        {
+            sentinelNode->gtNext->gtPrev = nullptr;
+            bb->SetFirstSequencedNode(sentinelNode->gtNext);
+            bb->SetLastSequencedNode(sequencer.PrevNode);
+        }
+
+#ifdef DEBUG
+        JITDUMP(FMT_BB " locals: ", bb->bbNum);
+        bool first = true;
+        for (GenTree* cur = bb->GetFirstSequencedNode(); cur != nullptr; cur = cur->gtNext)
+        {
+            if (!first)
+            {
+                JITDUMP(" -> [%06u]", dspTreeID(cur));
+            }
+            else
+            {
+                JITDUMP(" [%06u]", dspTreeID(cur));
+            }
+
+            first = false;
+        }
+
+        JITDUMP("\n");
+#endif
+    }
 
     fgLocalVarLivenessChanged = false;
     do

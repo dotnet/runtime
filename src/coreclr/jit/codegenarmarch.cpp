@@ -5359,7 +5359,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         SetHasTailCalls(true);
 
         noway_assert(block->bbJumpKind == BBJ_RETURN);
-        noway_assert(block->GetFirstLIRNode() != nullptr);
+        noway_assert(block->GetFirstSequencedNode() != nullptr);
 
         /* figure out what jump we have */
         GenTree* jmpNode = lastNode;

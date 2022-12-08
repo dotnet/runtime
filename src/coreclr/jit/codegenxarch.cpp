@@ -9972,7 +9972,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     if (jmpEpilog)
     {
         noway_assert(block->bbJumpKind == BBJ_RETURN);
-        noway_assert(block->GetFirstLIRNode());
+        noway_assert(block->GetFirstSequencedNode());
 
         // figure out what jump we have
         GenTree* jmpNode = block->lastNode();

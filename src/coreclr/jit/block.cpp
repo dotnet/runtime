@@ -1006,7 +1006,7 @@ bool BasicBlock::isValid() const
     else
     {
         // Should not have tree list before LIR.
-        return (GetFirstLIRNode() == nullptr);
+        return true; //(GetFirstSequencedNode() == nullptr);
     }
 }
 

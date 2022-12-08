@@ -890,14 +890,24 @@ struct BasicBlock : private LIR::Range
 
     Statement* bbStmtList;
 
-    GenTree* GetFirstLIRNode() const
+    GenTree* GetFirstSequencedNode() const
     {
         return m_firstNode;
     }
 
-    void SetFirstLIRNode(GenTree* tree)
+    void SetFirstSequencedNode(GenTree* tree)
     {
         m_firstNode = tree;
+    }
+
+    GenTree* GetLastSequencedNode() const
+    {
+        return m_lastNode;
+    }
+
+    void SetLastSequencedNode(GenTree* tree)
+    {
+        m_lastNode = tree;
     }
 
     union {
