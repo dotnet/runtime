@@ -5105,12 +5105,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
-	if (acfg->aot_opts.export_symbols_outfile) {
-		acfg->export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "a");
-		if (!acfg->export_symbols_outfile)
-			fprintf (stderr, "Unable to open file '%s': %s\n", acfg->aot_opts.export_symbols_outfile, strerror (errno));
-	}
-
+	GString *export_symbols = g_string_new ("");
 	/* native-to-managed wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
@@ -5262,9 +5257,7 @@ MONO_RESTORE_WARNING
 				add_method (acfg, wrapper);
 				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
-
-					if (acfg->export_symbols_outfile)
-						fprintf (acfg->export_symbols_outfile, "%s\n", export_name);
+					g_string_append_printf (export_symbols, "_%s\n", export_name);
 				}
 			}
 
@@ -5277,10 +5270,19 @@ MONO_RESTORE_WARNING
 		}
 	}
 
-	if (acfg->aot_opts.export_symbols_outfile)
+	if (acfg->aot_opts.export_symbols_outfile && export_symbols->len) {
+		char *export_symbols_out = g_string_free (export_symbols, FALSE);
+		acfg->export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
 		g_free (acfg->aot_opts.export_symbols_outfile);
-	if (acfg->export_symbols_outfile)
+		if (!acfg->export_symbols_outfile) {
+			fprintf (stderr, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
+			g_free (export_symbols_out);
+			exit (1);
+		}
+		fprintf (acfg->export_symbols_outfile, "%s", export_symbols_out);
+		g_free (export_symbols_out);
 		fclose (acfg->export_symbols_outfile);
+	}
 
 	/* StructureToPtr/PtrToStructure wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
