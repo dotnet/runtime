@@ -472,17 +472,8 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 //
 void emitter::UpdateUpper32BitsZeroRegLookup()
 {
-    // Only consider if safe
-    //
-    if (!emitCanPeepholeLastIns())
-    {
-        // Looking at information from previous instructions is not safe.
-        // Therefore, we must reset the lookup.
-        upper32BitsZeroRegLookup = 0;
-        return;
-    }
+    assert(emitCanPeepholeLastIns());
 
-    // This is conservative. Just look for what seems to be common.
     switch (emitLastIns->idInsFmt())
     {
         case IF_RRD:
@@ -538,9 +529,9 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
         case IF_RWR_RRD_ARD_RRD:
         {
 #ifdef TARGET_AMD64
-            assert(emitLastIns->idReg1() >= REG_RAX && emitLastIns->idReg1() <= REG_XMM15);
+            assert((emitLastIns->idReg1() >= REG_RAX) && (emitLastIns->idReg1() <= REG_XMM15));
 #else
-            assert(emitLastIns->idReg1() >= REG_EAX && emitLastIns->idReg1() <= REG_XMM7);
+            assert((emitLastIns->idReg1() >= REG_EAX) && (emitLastIns->idReg1() <= REG_XMM7));
 #endif // !TARGET_AMD64
 
             // movsx always sign extends to 8 bytes.
@@ -574,6 +565,7 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
             {
                 upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
             }
+            return;
         }
 
         case IF_LABEL:
@@ -581,7 +573,6 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
         case IF_SWR_LABEL:
         case IF_METHOD:
         case IF_METHPTR:
-        case IF_SWR_RRD:
         {
             // Looking at information from previous instructions is not safe.
             // Therefore, we must reset the lookup.
@@ -597,26 +588,26 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
 }
 
 //------------------------------------------------------------------------
-// TryGetUpper32BitsInfoFromLastInstruction: Using the previously emitted instruction,
-//     get instruction information such as the destination register and if the destiniation register is guaranteed
-//     to have its upper 32-bits set to zero.
+// AreUpper32BitsZero: check if some previously emitted
+//     instruction set the upper 32 bits of reg to zero.
 //
 // Arguments:
-//    outDstReg - output arg - destination register of the last emitted instruction; will return REG_NA if it is not
-//                             using a register but the last emitted instruction is safe and
-//                             supported for peephole optimizations
-//    outIsDstRegUpper32BitsZero - output arg - 'true' means that the destination register's upper 32-bits are zero
+//    reg - register of interest
 //
 // Return Value:
-//    'true' if the last emitted instruction is safe and supported for peephole optimizations.
-//    'false' if the last emitted instruction is not safe or supported for peephole optimizations; output args will not
-//    be set in this case.
+//    true if previous instruction zeroed reg's upper 32 bits.
+//    false if it did not, or if we can't safely determine.
 //
-// Notes:
-//    movsx eax, ... might seem viable but we always encode this
-//    instruction with a 64 bit destination. See TakesRexWPrefix.
-bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, bool* outIsDstRegUpper32BitsZero)
+bool emitter::AreUpper32BitsZero(regNumber reg)
 {
+#ifdef TARGET_AMD64
+    if (!((reg >= REG_RAX) && (reg <= REG_XMM15)))
+        return false;
+#else
+    if (!((reg >= REG_EAX) && (reg <= REG_XMM7)))
+        return false;
+#endif // !TARGET_AMD64
+
     // Only consider if safe
     //
     if (!emitCanPeepholeLastIns())
@@ -624,9 +615,7 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
         return false;
     }
 
-    instrDesc* id = emitLastIns;
-
-    switch (id->idInsFmt())
+    switch (emitLastIns->idInsFmt())
     {
         case IF_RRD:
         case IF_RWR:
@@ -681,38 +670,37 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
         case IF_RWR_RRD_ARD_RRD:
         {
 #ifdef TARGET_AMD64
-            assert(emitLastIns->idReg1() >= REG_RAX && emitLastIns->idReg1() <= REG_XMM15);
+            assert((emitLastIns->idReg1() >= REG_RAX) && (emitLastIns->idReg1() <= REG_XMM15));
 #else
-            assert(emitLastIns->idReg1() >= REG_EAX && emitLastIns->idReg1() <= REG_XMM7);
+            assert((emitLastIns->idReg1() >= REG_EAX) && (emitLastIns->idReg1() <= REG_XMM7));
 #endif // !TARGET_AMD64
 
-            regNumber reg = *outDstReg = id->idReg1();
+            if (emitLastIns->idReg1() != reg)
+            {
+                return ((upper32BitsZeroRegLookup >> reg) & 1);
+            }
 
             // movsx always sign extends to 8 bytes.
-            if (id->idIns() == INS_movsx)
+            if (emitLastIns->idIns() == INS_movsx)
             {
-                *outIsDstRegUpper32BitsZero = false;
-                return true;
+                return false;
             }
 
 #ifdef TARGET_AMD64
-            if (id->idIns() == INS_movsxd)
+            if (emitLastIns->idIns() == INS_movsxd)
             {
-                *outIsDstRegUpper32BitsZero = false;
-                return true;
+                return false;
             }
 #endif
 
             // movzx always zeroes the upper 32 bits.
-            if (id->idIns() == INS_movzx)
+            if (emitLastIns->idIns() == INS_movzx)
             {
-                *outIsDstRegUpper32BitsZero = true;
                 return true;
             }
 
             // otherwise rely on operation size.
-            *outIsDstRegUpper32BitsZero = (id->idOpSize() == EA_4BYTE);
-            return true;
+            return (emitLastIns->idOpSize() == EA_4BYTE);
         }
 
         case IF_LABEL:
@@ -726,61 +714,9 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
 
         default:
         {
-            *outDstReg                  = REG_NA;
-            *outIsDstRegUpper32BitsZero = false;
-            return true;
+            return ((upper32BitsZeroRegLookup >> reg) & 1);
         }
     }
-}
-
-//------------------------------------------------------------------------
-// AreUpper32BitsZero: check if some previously emitted
-//     instruction set the upper 32 bits of reg to zero.
-//
-// Arguments:
-//    reg - register of interest
-//
-// Return Value:
-//    true if previous instruction zeroed reg's upper 32 bits.
-//    false if it did not, or if we can't safely determine.
-//
-bool emitter::AreUpper32BitsZero(regNumber reg)
-{
-    regNumber dstReg;
-    bool      isUpper32BitsZero;
-    bool      isSafe = TryGetUpper32BitsInfoFromLastInstruction(&dstReg, &isUpper32BitsZero);
-
-    if (!isSafe)
-    {
-        return false;
-    }
-
-    if ((dstReg != REG_NA) && (dstReg == reg))
-    {
-        return isUpper32BitsZero;
-    }
-
-    // If the last emitted instruction was safe and supported for peephole optimizations,
-    // but was not able to determine if our given register's upper 32-bits is zero,
-    // then try to use the lookup.
-
-    // Lookup is zero so no information, return false.
-    if (upper32BitsZeroRegLookup == 0)
-    {
-        false;
-    }
-
-#ifdef TARGET_AMD64
-    if ((reg >= REG_RAX) && (reg <= REG_R15))
-#else
-    if ((reg >= REG_EAX) && (reg <= REG_EDI))
-#endif // !TARGET_AMD64
-    {
-        // Checks if the register's upper 32-bits are zero.
-        return (upper32BitsZeroRegLookup >> reg) & 1;
-    }
-
-    return false;
 }
 
 //------------------------------------------------------------------------

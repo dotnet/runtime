@@ -124,7 +124,6 @@ static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 
 void UpdateUpper32BitsZeroRegLookup();
-bool TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, bool* outIsDstRegUpper32BitsZero);
 bool AreUpper32BitsZero(regNumber reg);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);

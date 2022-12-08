@@ -1425,7 +1425,18 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #ifdef TARGET_XARCH
     if (emitComp->opts.OptimizationEnabled())
     {
-        UpdateUpper32BitsZeroRegLookup();
+        // Only consider if safe
+        //
+        if (emitCanPeepholeLastIns())
+        {
+            UpdateUpper32BitsZeroRegLookup();
+        }
+        else
+        {
+            // Looking at information from previous instructions is not safe.
+            // Therefore, we must reset the lookup.
+            upper32BitsZeroRegLookup = 0;
+        }
     }
 #endif // TARGET_XARCH
 
