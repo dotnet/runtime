@@ -12946,7 +12946,7 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
         all_heaps_free      += hp->free_regions[kind].get_size_free_regions();
         all_heaps_committed += hp->free_regions[kind].get_size_committed_in_free();
     }
-    dprintf (REGIONS_LOG, ("%s free regions: %zd (%zd commit) heap, %zd (%zd commit) global",
+    dprintf (REGIONS_LOG, ("dcif: %s free regions: %zd (%zd commit) heap, %zd (%zd commit) global",
         kind_name[kind],
         all_heaps_free,
         all_heaps_committed,
@@ -23079,7 +23079,7 @@ void gc_heap::garbage_collect (int n)
                 all_heaps_committed += hp->free_regions[kind].get_size_committed_in_free();
             }
             const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
-            dprintf (REGIONS_LOG, ("%s free regions: %zd (zd commit) heap, %zd (%zd commit) global",
+            dprintf (REGIONS_LOG, ("%s free regions: %zd (%zd commit) heap, %zd (%zd commit) global",
                 kind_name[kind],
                 all_heaps_free,
                 all_heaps_committed,
@@ -35686,6 +35686,27 @@ void gc_heap::background_mark_phase ()
         if (informational_event_enabled_p)
             last_mark_time = GetHighPrecisionTimeStamp();
 #endif //FEATURE_EVENT_TRACE
+
+#ifdef USE_REGIONS
+        // age and print all kinds of free regions
+        // safe to do here because the EE is suspended and we are joined
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+#else
+        {
+            gc_heap* hp = pGenGCHeap;
+            int i = 0;
+#endif //MULTIPLE_HEAPS
+            region_free_list::age_free_regions (hp->free_regions);
+            region_free_list::print (hp->free_regions, i, "END");
+        }
+#ifdef MULTIPLE_HEAPS
+        region_free_list::age_free_regions (global_free_regions);
+        region_free_list::print (global_free_regions, -1, "END");
+#endif //MULTIPLE_HEAPS
+#endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
         dprintf(3, ("Joining BGC threads after absorb"));
