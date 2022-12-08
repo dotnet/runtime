@@ -1971,6 +1971,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_GETCHR;
 			else if (strcmp (tm, "get_Length") == 0)
 				*op = MINT_STRLEN;
+		} else if (tm [0] == 'F') {
+			if (strcmp (tm, "FastAllocateString") == 0)
+				*op = MINT_NEWSTR;
 		}
 	} else if (mono_class_is_subclass_of_internal (target_method->klass, mono_defaults.array_class, FALSE)) {
 		if (!strcmp (tm, "get_Rank")) {
