@@ -20,20 +20,25 @@ format.
 As our starting point we take section II.25.1 "Structure of the
 runtime file format" from ECMA-335 6th Edition.
 
+| |
 |--------|
 | PE Headers |
 | CLI Header |
 | CLI Data |
 | Native Image Sections |
+| |
+
 
 
 A Webcil file follows a similar structure
 
 
+| |
 |--------|
 | Webcil Headers |
 | CLI Header |
 | CLI Data |
+| |
 
 ## Webcil Headers
 
@@ -71,7 +76,7 @@ above) of section headers giving their virtual address and virtual size, as well
 file and the size in the file.
 
 ``` c
-struct SectionTable {
+struct SectionHeader {
     uint32_t st_virtual_size;
     uint32_t st_virtual_address;
     uint32_t st_raw_data_size;
