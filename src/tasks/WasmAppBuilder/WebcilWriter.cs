@@ -33,7 +33,7 @@ public class WebcilWriter
     {
         Log.LogMessage($"Writing Webcil (input {_inputPath}) output to {_outputPath}");
 
-        using var inputStream = File.Open(_inputPath, FileMode.Open);
+        using var inputStream = File.Open(_inputPath, FileMode.Open, FileAccess.Read);
         ImmutableArray<CoffSectionHeaderBuilder> sectionsHeaders;
         ImmutableArray<SectionHeader> peSections;
         WCHeader header;
@@ -43,7 +43,7 @@ public class WebcilWriter
             FillHeader(peReader, out header, out peSections, out sectionsHeaders);
         }
 
-        using var outputStream = File.Open(_outputPath, FileMode.Create);
+        using var outputStream = File.Open(_outputPath, FileMode.Create, FileAccess.Write);
         WriteHeader(outputStream, header);
         WriteSectionHeaders(outputStream, sectionsHeaders);
         CopySections(outputStream, inputStream, peSections);
