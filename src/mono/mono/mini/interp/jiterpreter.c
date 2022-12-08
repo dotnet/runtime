@@ -786,7 +786,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		else if (
 			// array operations
 			// some of these like the _I ones aren't implemented yet but are rare
-			(opcode >= MINT_LDELEM_I) &&
+			(opcode >= MINT_LDELEM_I1) &&
 			(opcode <= MINT_GETITEM_LOCALSPAN)
 		)
 			return TRACE_CONTINUE;
