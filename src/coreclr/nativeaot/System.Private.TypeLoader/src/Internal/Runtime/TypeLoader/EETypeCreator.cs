@@ -170,8 +170,6 @@ namespace Internal.Runtime.TypeLoader
                 bool isGeneric;
                 uint flags;
                 ushort runtimeInterfacesLength = 0;
-                bool isAbstractClass;
-                bool isByRefLike;
                 IntPtr typeManager = IntPtr.Zero;
 
                 if (state.RuntimeInterfaces != null)
@@ -186,8 +184,6 @@ namespace Internal.Runtime.TypeLoader
                 flags = pTemplateEEType->Flags;
                 isArray = pTemplateEEType->IsArray;
                 isGeneric = pTemplateEEType->IsGeneric;
-                isAbstractClass = pTemplateEEType->IsAbstract && !pTemplateEEType->IsInterface;
-                isByRefLike = pTemplateEEType->IsByRefLike;
                 typeManager = pTemplateEEType->PointerToTypeManager;
                 Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
 
