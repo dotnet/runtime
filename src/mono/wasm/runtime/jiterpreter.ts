@@ -1262,7 +1262,7 @@ function generate_wasm_body (
                     if (!emit_math_intrinsic(builder, ip, opcode))
                         ip = abort;
                 } else if (
-                    (opcode >= MintOpcode.MINT_LDELEM_I) &&
+                    (opcode >= MintOpcode.MINT_LDELEM_I1) &&
                     (opcode <= MintOpcode.MINT_LDLEN)
                 ) {
                     if (!emit_arrayop(builder, ip, opcode))
@@ -2775,7 +2775,7 @@ function append_getelema1 (
 function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
     const isLoad = (
             (opcode <= MintOpcode.MINT_LDELEMA_TC) &&
-            (opcode >= MintOpcode.MINT_LDELEM_I)
+            (opcode >= MintOpcode.MINT_LDELEM_I1)
         ) || (opcode === MintOpcode.MINT_LDLEN),
         objectOffset = getArgU16(ip, isLoad ? 2 : 1),
         valueOffset = getArgU16(ip, isLoad ? 1 : 3),

@@ -64,17 +64,29 @@ namespace Microsoft.Interop
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-            // <nativeIdentifier> = <marshallerType>.ConvertToUnmanaged(<managedIdentifier>);
-            yield return ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(nativeIdentifier),
-                    InvocationExpression(
+            // <marshallerType>.ConvertToUnmanaged(<managedIdentifier>)
+            ExpressionSyntax convertToUnmanaged = InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             _marshallerTypeSyntax,
                             IdentifierName(ShapeMemberNames.Value.Stateless.ConvertToUnmanaged)),
                         ArgumentList(SingletonSeparatedList(
-                            Argument(IdentifierName(managedIdentifier)))))));
+                            Argument(IdentifierName(managedIdentifier)))));
+
+            if (_unmanagedType == SpecialTypeInfo.Void)
+            {
+                // To support our exception marshalling scenarios, we allow a "marshal to void" marshaller.
+                // In this case, we don't assign the result to the native identifier because there is no native identifier.
+                // <convertToUnmanaged>
+                yield return ExpressionStatement(convertToUnmanaged);
+                yield break;
+            }
+
+            // <nativeIdentifier> = <convertToUnmanaged>;
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(nativeIdentifier),
+                    convertToUnmanaged));
         }
 
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context)

@@ -1091,41 +1091,39 @@ namespace Internal.Runtime
             return result;
         }
 
-        internal IntPtr GetSealedVirtualSlot(ushort slotNumber)
+#if TYPE_LOADER_IMPLEMENTATION
+        internal
+#else
+        private
+#endif
+        void* GetSealedVirtualTable()
         {
             Debug.Assert((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0);
 
-            fixed (MethodTable* pThis = &this)
+            uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
+            byte* pThis = (byte*)Unsafe.AsPointer(ref this);
+            if (IsDynamicType || !SupportsRelativePointers)
             {
-                if (IsDynamicType || !SupportsRelativePointers)
-                {
-                    uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
-                    IntPtr* pSealedVirtualsSlotTable = *(IntPtr**)((byte*)pThis + cbSealedVirtualSlotsTypeOffset);
-                    return pSealedVirtualsSlotTable[slotNumber];
-                }
-                else
-                {
-                    uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
-                    int* pSealedVirtualsSlotTable = (int*)FollowRelativePointer((int*)((byte*)pThis + cbSealedVirtualSlotsTypeOffset));
-                    IntPtr result = FollowRelativePointer(&pSealedVirtualsSlotTable[slotNumber]);
-                    return result;
-                }
+                return *(void**)(pThis + cbSealedVirtualSlotsTypeOffset);
+            }
+            else
+            {
+                return (void*)FollowRelativePointer((int*)(pThis + cbSealedVirtualSlotsTypeOffset));
             }
         }
 
-#if TYPE_LOADER_IMPLEMENTATION
-        internal void SetSealedVirtualSlot(IntPtr value, ushort slotNumber)
+        internal IntPtr GetSealedVirtualSlot(ushort slotNumber)
         {
-            Debug.Assert(IsDynamicType);
-
-            fixed (MethodTable* pThis = &this)
+            void* pSealedVtable = GetSealedVirtualTable();
+            if (!SupportsRelativePointers)
             {
-                uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
-                IntPtr* pSealedVirtualsSlotTable = *(IntPtr**)((byte*)pThis + cbSealedVirtualSlotsTypeOffset);
-                pSealedVirtualsSlotTable[slotNumber] = value;
+                return ((IntPtr*)pSealedVtable)[slotNumber];
+            }
+            else
+            {
+                return FollowRelativePointer(&((int*)pSealedVtable)[slotNumber]);
             }
         }
-#endif
 
         internal byte* OptionalFieldsPtr
         {

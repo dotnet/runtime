@@ -6143,9 +6143,15 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 MonoStringHandle
 mono_string_new_size_handle (gint32 len, MonoError *error)
 {
+	return MONO_HANDLE_NEW (MonoString, mono_string_new_size_checked (len, error));
+}
+
+MonoString*
+mono_string_new_size_checked (gint32 len, MonoError *error)
+{
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoStringHandle s;
+	MonoString *s;
 	MonoVTable *vtable;
 	size_t size;
 
@@ -6154,28 +6160,21 @@ mono_string_new_size_handle (gint32 len, MonoError *error)
 	/* check for overflow */
 	if (len < 0 || len > ((SIZE_MAX - G_STRUCT_OFFSET (MonoString, chars) - 8) / 2)) {
 		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", -1);
-		return NULL_HANDLE_STRING;
+		return NULL;
 	}
 
 	size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)len + 1) * 2));
 	g_assert (size > 0);
 
 	vtable = mono_class_vtable_checked (mono_defaults.string_class, error);
-	return_val_if_nok (error, NULL_HANDLE_STRING);
+	return_val_if_nok (error, NULL);
 
-	s = mono_gc_alloc_handle_string (vtable, size, len);
+	s = mono_gc_alloc_string (vtable, size, len);
 
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (s)))
+	if (G_UNLIKELY (!s))
 		mono_error_set_out_of_memory (error, "Could not allocate %" G_GSIZE_FORMAT " bytes", size);
 
 	return s;
-}
-
-MonoString *
-mono_string_new_size_checked (gint32 length, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_size_handle (length, error));
 }
 
 /**
@@ -6720,17 +6719,10 @@ leave:
 }
 
 gboolean
-mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
+mono_object_isinst_vtable_mbyref (MonoVTable *vt, MonoClass *klass, MonoError *error)
 {
-	error_init (error);
-
 	gboolean result = FALSE;
-
-	if (MONO_HANDLE_IS_NULL (obj))
-		goto leave;
-
-	MonoVTable *vt;
-	vt = MONO_HANDLE_GETVAL (obj, vtable);
+	MonoClass *oklass = vt->klass;
 
 	if (mono_class_is_interface (klass)) {
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, m_class_get_interface_id (klass))) {
@@ -6740,19 +6732,18 @@ mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, Mo
 
 		/* casting an array one of the invariant interfaces that must act as such */
 		if (m_class_is_array_special_interface (klass)) {
-			if (mono_class_is_assignable_from_internal (klass, vt->klass)) {
+			if (mono_class_is_assignable_from_internal (klass, oklass)) {
 				result = TRUE;
 				goto leave;
 			}
 		}
 
 		/*If the above check fails we are in the slow path of possibly raising an exception. So it's ok to it this way.*/
-		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from_internal (klass, mono_handle_class (obj))) {
+		else if (mono_class_has_variant_generic_params (klass) && mono_class_is_assignable_from_internal (klass, oklass)) {
 			result = TRUE;
 			goto leave;
 		}
 	} else {
-		MonoClass *oklass = vt->klass;
 		mono_class_setup_supertypes (klass);
 		if (mono_class_has_parent_fast (oklass, klass)) {
 			result = TRUE;
@@ -6761,6 +6752,17 @@ mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, Mo
 	}
 leave:
 	return result;
+}
+
+gboolean
+mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
+{
+	error_init (error);
+
+	if (MONO_HANDLE_IS_NULL (obj))
+		return FALSE;
+	else
+		return mono_object_isinst_vtable_mbyref (MONO_HANDLE_GETVAL (obj, vtable), klass, error);
 }
 
 /**

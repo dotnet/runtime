@@ -113,7 +113,8 @@ const iffeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: outputCodePlugins
+    plugins: outputCodePlugins,
+    onwarn: onwarn
 };
 const typesConfig = {
     input: "./export-types.ts",
@@ -326,4 +327,16 @@ function findWebWorkerInputs(basePath) {
         }
     }
     return results;
+}
+
+function onwarn(warning) {
+    if (warning.code === "CIRCULAR_DEPENDENCY") {
+        return;
+    }
+
+    if (warning.code === "UNRESOLVED_IMPORT" && warning.exporter === "process") {
+        return;
+    }
+
+    console.warn(`(!) ${warning.toString()}`);
 }
