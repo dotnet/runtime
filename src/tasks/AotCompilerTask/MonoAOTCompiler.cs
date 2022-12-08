@@ -164,6 +164,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string LibraryFilePrefix { get; set; } = "";
 
     /// <summary>
+    /// Enables exporting symbols of methods decorated with UnmanagedCallersOnly Attribute containing a specified EntryPoint
+    /// </summary>
+    public bool EnableUnmanagedCallersOnlyMethodsExport { get; set; }
+
+    /// <summary>
     /// Path to the directory where LLVM binaries (opt and llc) are found.
     /// It's required if UseLLVM is set
     /// </summary>
@@ -727,6 +732,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
                 aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
             }
+        }
+
+        if ((parsedAotMode == MonoAotMode.Full ||
+            parsedAotMode == MonoAotMode.FullInterp ||
+            parsedAotMode == MonoAotMode.LLVMOnly ||
+            parsedAotMode == MonoAotMode.LLVMOnlyInterp) &&
+            EnableUnmanagedCallersOnlyMethodsExport)
+        {
+            string exportSymbolsFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".exportsymbols"));
+            ProxyFile proxyFile = _cache.NewFile(exportSymbolsFile);
+            proxyFiles.Add(proxyFile);
+
+            aotArgs.Add($"export-symbols-outfile={proxyFile.TempFile}");
+            aotAssembly.SetMetadata("ExportSymbolsFile", proxyFile.TargetFile);
         }
 
         // pass msym-dir if specified
