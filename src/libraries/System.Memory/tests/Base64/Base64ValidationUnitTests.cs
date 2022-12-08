@@ -193,9 +193,42 @@ namespace System.Buffers.Text.Tests
         [InlineData("YQ==", 1)]
         [InlineData("YWI=", 2)]
         [InlineData("YWJj", 3)]
-        public void ValidateWithPaddingReturnsCorrectCount(string utf8WithByteToBeIgnored, int expectedLength)
+        [InlineData(" YWI=", 2)]
+        [InlineData("Y WI=", 2)]
+        [InlineData("YW I=", 2)]
+        [InlineData("YWI =", 2)]
+        [InlineData("YWI= ", 2)]
+        [InlineData(" YQ==", 1)]
+        [InlineData("Y Q==", 1)]
+        [InlineData("YQ ==", 1)]
+        [InlineData("YQ= =", 1)]
+        [InlineData("YQ== ", 1)]
+        public void ValidateWithPaddingReturnsCorrectCountBytes(string utf8WithByteToBeIgnored, int expectedLength)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+
+            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(expectedLength, decodedLength);
+        }
+
+        [Theory]
+        [InlineData("YQ==", 1)]
+        [InlineData("YWI=", 2)]
+        [InlineData("YWJj", 3)]
+        [InlineData(" YWI=", 2)]
+        [InlineData("Y WI=", 2)]
+        [InlineData("YW I=", 2)]
+        [InlineData("YWI =", 2)]
+        [InlineData("YWI= ", 2)]
+        [InlineData(" YQ==", 1)]
+        [InlineData("Y Q==", 1)]
+        [InlineData("YQ ==", 1)]
+        [InlineData("YQ= =", 1)]
+        [InlineData("YQ== ", 1)]
+        public void ValidateWithPaddingReturnsCorrectCountChars(string utf8WithByteToBeIgnored, int expectedLength)
+        {
+            ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
 
             Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
             Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
@@ -213,6 +246,81 @@ namespace System.Buffers.Text.Tests
             Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
             Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
             Assert.Equal(expectedLength, decodedLength);
+        }
+
+        [Theory]
+        [InlineData("YWJ")]
+        [InlineData("YW")]
+        [InlineData("Y")]
+        public void InvalidSizeBytes(string utf8WithByteToBeIgnored)
+        {
+            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+
+            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(0, decodedLength);
+        }
+
+        [Theory]
+        [InlineData("YWJ")]
+        [InlineData("YW")]
+        [InlineData("Y")]
+        public void InvalidSizeChars(string utf8WithByteToBeIgnored)
+        {
+            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+
+            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(0, decodedLength);
+        }
+
+        [Theory]
+        [InlineData("YQ===")]
+        [InlineData("YQ=a=")]
+        [InlineData("YWI=a")]
+        [InlineData(" aYWI=a")]
+        [InlineData("a YWI=a")]
+        [InlineData("aY WI=a")]
+        [InlineData("aYW I=a")]
+        [InlineData("aYWI =a")]
+        [InlineData("aYWI= a")]
+        [InlineData("a YQ==a")]
+        [InlineData("aY Q==a")]
+        [InlineData("aYQ ==a")]
+        [InlineData("aYQ= =a")]
+        [InlineData("aYQ== a")]
+        [InlineData("aYQ==a ")]
+        public void InvalidBase64Bytes(string utf8WithByteToBeIgnored)
+        {
+            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+
+            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(0, decodedLength);
+        }
+
+        [Theory]
+        [InlineData("YQ===")]
+        [InlineData("YQ=a=")]
+        [InlineData("YWI=a")]
+        [InlineData("a YWI=a")]
+        [InlineData("aY WI=a")]
+        [InlineData("aYW I=a")]
+        [InlineData("aYWI =a")]
+        [InlineData("aYWI= a")]
+        [InlineData("a YQ==a")]
+        [InlineData("aY Q==a")]
+        [InlineData("aYQ ==a")]
+        [InlineData("aYQ= =a")]
+        [InlineData("aYQ== a")]
+        [InlineData("aYQ==a ")]
+        public void InvalidBase64Chars(string utf8WithByteToBeIgnored)
+        {
+            byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
+
+            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored));
+            Assert.False(Base64.IsValid(utf8BytesWithByteToBeIgnored, out int decodedLength));
+            Assert.Equal(0, decodedLength);
         }
     }
 }

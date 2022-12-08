@@ -29,50 +29,64 @@ namespace System.Buffers.Text
                 return true;
             }
 
-            // Check for invalid chars
-            int indexOfFirstNonBase64 = base64Text.IndexOfAnyExcept(ValidBase64CharsSortedAsc);
-            if (indexOfFirstNonBase64 >= 0)
-            {
-                decodedLength = 0;
-                return false;
-            }
-
             int length = base64Text.Length;
             int paddingCount = 0;
 
-            // Check if there are chars that need to be ignored while determining the length
-            if (base64Text.IndexOfAny(CharsToIgnore) > -1)
+            int indexOfPaddingInvalidOrWhitespace = base64Text.IndexOfAnyExcept(validBase64Chars);
+            if (indexOfPaddingInvalidOrWhitespace >= 0)
             {
-                fixed (char* srcChars = &MemoryMarshal.GetReference(base64Text))
+                while (indexOfPaddingInvalidOrWhitespace >= 0)
                 {
-                    int numberOfCharsToIgnore = 0;
-                    char* src = srcChars;
-
-                    for (int i = 0; i < length; i++)
+                    char charToValidate = base64Text[indexOfPaddingInvalidOrWhitespace];
+                    if (IsCharToBeIgnored(charToValidate))
                     {
-                        char charToValidate = *src++;
-                        if (IsCharToBeIgnored(charToValidate))
+                        // Chars to be ignored (e,g, whitespace...) should not count towards the length.
+                        length--;
+                    }
+                    else if (charToValidate == EncodingPad)
+                    {
+                        // There can be at most 2 padding chars.
+                        if (paddingCount == 2)
                         {
-                            numberOfCharsToIgnore++;
+                            decodedLength = 0;
+                            return false;
                         }
-                        else if (charToValidate == EncodingPad)
-                        {
-                            paddingCount++;
-                        }
+
+                        paddingCount++;
+                    }
+                    else
+                    {
+                        // An invalid char was encountered.
+                        decodedLength = 0;
+                        return false;
                     }
 
-                    length -= numberOfCharsToIgnore;
+                    if (indexOfPaddingInvalidOrWhitespace == base64Text.Length - 1)
+                    {
+                        // The end of the input has been reached.
+                        break;
+                    }
+
+                    // If no padding is found, slice and use IndexOfAnyExcept to look for the next invalid char.
+                    if (paddingCount == 0)
+                    {
+                        indexOfPaddingInvalidOrWhitespace = base64Text
+                            .Slice(indexOfPaddingInvalidOrWhitespace + 1, base64Text.Length - indexOfPaddingInvalidOrWhitespace - 1)
+                            .IndexOfAnyExcept(validBase64Chars)
+                            + indexOfPaddingInvalidOrWhitespace + 1; // Add current index offset.
+                    }
+                    // If padding is already found, simply increment, as the common case might have 2 sequential padding chars.
+                    else
+                    {
+                        indexOfPaddingInvalidOrWhitespace++;
+                    }
                 }
-            }
-            else if (length >= 4)
-            {
-                if (base64Text[length - 1] == EncodingPad)
+
+                // If the invalid chars all consisted of whitespace, the input will be empty.
+                if (length == 0)
                 {
-                    paddingCount++;
-                }
-                if (base64Text[length - 2] == EncodingPad)
-                {
-                    paddingCount++;
+                    decodedLength = 0;
+                    return true;
                 }
             }
 
@@ -100,7 +114,7 @@ namespace System.Buffers.Text
         /// <param name="base64TextUtf8">The input span which contains UTF-8 encoded text in base64 that needs to be validated.</param>
         /// <param name="decodedLength">The maximum length (in bytes) if you were to decode the base 64 encoded text <paramref name="base64TextUtf8"/> within a byte span.</param>
         /// <returns>true if <paramref name="base64TextUtf8"/> is decodable; otherwise, false.</returns>
-        public static unsafe bool IsValid(ReadOnlySpan<byte> base64TextUtf8, out int decodedLength)
+        public static bool IsValid(ReadOnlySpan<byte> base64TextUtf8, out int decodedLength)
         {
             if (base64TextUtf8.IsEmpty)
             {
@@ -108,50 +122,64 @@ namespace System.Buffers.Text
                 return true;
             }
 
-            // Check for invalid chars
-            int indexOfFirstNonBase64 = base64TextUtf8.IndexOfAnyExcept(ValidBase64BytesSortedAsc);
-            if (indexOfFirstNonBase64 >= 0)
-            {
-                decodedLength = 0;
-                return false;
-            }
-
             int length = base64TextUtf8.Length;
             int paddingCount = 0;
 
-            // Check if there are chars that need to be ignored while determining the length
-            if (base64TextUtf8.IndexOfAny(BytesToIgnore) > -1)
+            int indexOfPaddingInvalidOrWhitespace = base64TextUtf8.IndexOfAnyExcept(validBase64Bytes);
+            if (indexOfPaddingInvalidOrWhitespace >= 0)
             {
-                fixed (byte* srcBytes = &MemoryMarshal.GetReference(base64TextUtf8))
+                while (indexOfPaddingInvalidOrWhitespace >= 0)
                 {
-                    int numberOfBytesToIgnore = 0;
-                    byte* src = srcBytes;
-
-                    for (int i = 0; i < length; i++)
+                    byte byteToValidate = base64TextUtf8[indexOfPaddingInvalidOrWhitespace];
+                    if (IsByteToBeIgnored(byteToValidate))
                     {
-                        byte byteToValidate = *src++;
-                        if (IsByteToBeIgnored(byteToValidate))
+                        // Bytes to be ignored (e,g, whitespace...) should not count towards the length.
+                        length--;
+                    }
+                    else if (byteToValidate == EncodingPad)
+                    {
+                        // There can be at most 2 padding chars.
+                        if (paddingCount == 2)
                         {
-                            numberOfBytesToIgnore++;
+                            decodedLength = 0;
+                            return false;
                         }
-                        else if (byteToValidate == EncodingPad)
-                        {
-                            paddingCount++;
-                        }
+
+                        paddingCount++;
+                    }
+                    else
+                    {
+                        // An invalid char was encountered.
+                        decodedLength = 0;
+                        return false;
                     }
 
-                    length -= numberOfBytesToIgnore;
+                    if (indexOfPaddingInvalidOrWhitespace == base64TextUtf8.Length - 1)
+                    {
+                        // The end of the input has been reached.
+                        break;
+                    }
+
+                    // If no padding is found, slice and use IndexOfAnyExcept to look for the next invalid char.
+                    if (paddingCount == 0)
+                    {
+                        indexOfPaddingInvalidOrWhitespace = base64TextUtf8
+                            .Slice(indexOfPaddingInvalidOrWhitespace + 1, base64TextUtf8.Length - indexOfPaddingInvalidOrWhitespace - 1)
+                            .IndexOfAnyExcept(validBase64Bytes)
+                            + indexOfPaddingInvalidOrWhitespace + 1; // Add current index offset.
+                    }
+                    // If padding is already found, simply increment, as the common case might have 2 sequential padding chars.
+                    else
+                    {
+                        indexOfPaddingInvalidOrWhitespace++;
+                    }
                 }
-            }
-            else if (length >= 4)
-            {
-                if (base64TextUtf8[length - 1] == EncodingPad)
+
+                // If the invalid chars all consisted of whitespace, the input will be empty.
+                if (length == 0)
                 {
-                    paddingCount++;
-                }
-                if (base64TextUtf8[length - 2] == EncodingPad)
-                {
-                    paddingCount++;
+                    decodedLength = 0;
+                    return true;
                 }
             }
 
@@ -181,34 +209,8 @@ namespace System.Buffers.Text
             }
         }
 
-        private static IndexOfAnyValues<byte> ValidBase64BytesSortedAsc => IndexOfAnyValues.Create(new byte[] {
-            9, 10, 13, 32, 43, 47,                   //Line feed, Horizontal tab, Carriage return, Space, +, /
-            48, 49, 50, 51, 52, 53, 54, 55, 56, 57,  //0..9,
-            61,                                      //=
-            65, 66, 67, 68, 69, 70, 71, 72,          //A..H
-            73, 74, 75, 76, 77, 78, 79, 80,          //I..P
-            81, 82, 83, 84, 85, 86, 87, 88,          //Q..X
-            89, 90, 97, 98, 99, 100, 101, 102,       //Y..Z, a..f
-            103, 104, 105, 106, 107, 108, 109, 110,  //g..n
-            111, 112, 113, 114, 115, 116, 117, 118,  //o..v
-            119, 120, 121, 122,                      //w..z
-        });
+        private static readonly IndexOfAnyValues<byte> validBase64Bytes = IndexOfAnyValues.Create(EncodingMap);
 
-        private static IndexOfAnyValues<char> ValidBase64CharsSortedAsc => IndexOfAnyValues.Create(new char[] {
-            '\n', '\t', '\r', ' ', '+', '/',
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            '=',
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-            'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-            'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-            'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
-            'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-            'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-            'w', 'x', 'y', 'z',
-        });
-
-        private static IndexOfAnyValues<byte> BytesToIgnore => IndexOfAnyValues.Create(new byte[] { 9, 10, 13, 32 });
-
-        private static IndexOfAnyValues<char> CharsToIgnore => IndexOfAnyValues.Create(new char[] { '\n', '\t', '\r', ' ' });
+        private static readonly IndexOfAnyValues<char> validBase64Chars = IndexOfAnyValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
     }
 }
