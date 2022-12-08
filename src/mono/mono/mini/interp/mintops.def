@@ -6,39 +6,22 @@
  *
  * OPDEF (opsymbol, opstring, oplength (in uint16s), num_dregs (0 or 1), num_sregs, optype)
  * optype describes the contents of the instruction, following the dreg/sreg offsets.
+ *
  * IROPDEF is like OPDEF but for instructions that are never executed by the interpreter,
  *  meant for use by transform.c and other internals.
- * WASMOPDEF are special opcodes that only run in WASM builds and can be ignored on other targets
- */
-
-/*
+ *
  * This file is parsed by genmintops.py to generate typescript during the wasm build process,
  *  so if you make any changes to its syntax you will need to update that script.
  * Any preprocessing directives are removed without being parsed!
  */
 
-// Compatibility shims for old code
-
+// Compatibility shim for old code
 #ifndef IROPDEF
 #define __DEFINED_IROPDEF__
 #define IROPDEF(opsymbol, opstring, oplength, num_dregs, num_sregs, optype) OPDEF(opsymbol, opstring, oplength, num_dregs, num_sregs, optype)
 #endif // IROPDEF
 
-#ifndef WASMOPDEF
-#define __DEFINED_WASMOPDEF__
-#if HOST_BROWSER
-#define WASMOPDEF(opsymbol, opstring, oplength, num_dregs, num_sregs, optype) OPDEF(opsymbol, opstring, oplength, num_dregs, num_sregs, optype)
-#else
-#define WASMOPDEF(opsymbol, opstring, oplength, num_dregs, num_sregs, optype)
-#endif // HOST_BROWSER
-#endif // WASMOPDEF
-
-IROPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)
-IROPDEF(MINT_NIY, "niy", 1, 0, 0, MintOpNoArgs)
-IROPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
-IROPDEF(MINT_IL_SEQ_POINT, "il_seq_point", 1, 0, 0, MintOpNoArgs)
-IROPDEF(MINT_DUMMY_USE, "dummy_use", 2, 0, 1, MintOpNoArgs)
-IROPDEF(MINT_TIER_PATCHPOINT_DATA, "tier_patchpoint_data", 2, 0, 0, MintOpShortInt)
+OPDEF(MINT_TIER_PATCHPOINT_DATA, "tier_patchpoint_data", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_BREAK, "break", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_BREAKPOINT, "breakpoint", 1, 0, 0, MintOpNoArgs)
 
@@ -828,16 +811,20 @@ OPDEF(MINT_INTRINS_WIDEN_ASCII_TO_UTF16, "intrins_widen_ascii_to_utf16", 5, 1, 3
 
 OPDEF(MINT_METADATA_UPDATE_LDFLDA, "metadata_update.ldflda", 5, 1, 1, MintOpTwoShorts)
 
-WASMOPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 3, 0, 0, MintOpInt)
-WASMOPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 3, 0, 0, MintOpInt)
-WASMOPDEF(MINT_TIER_ENTER_JITERPRETER, "tier_enter_jiterpreter", 3, 0, 0, MintOpInt)
+// Note: genmintops does not implement ifdefs, but that's fine since it's for wasm
+#if HOST_BROWSER
+OPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 3, 0, 0, MintOpInt)
+OPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 3, 0, 0, MintOpInt)
+OPDEF(MINT_TIER_ENTER_JITERPRETER, "tier_enter_jiterpreter", 3, 0, 0, MintOpInt)
+#endif
+
+IROPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)
+IROPDEF(MINT_NIY, "niy", 1, 0, 0, MintOpNoArgs)
+IROPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
+IROPDEF(MINT_IL_SEQ_POINT, "il_seq_point", 1, 0, 0, MintOpNoArgs)
+IROPDEF(MINT_DUMMY_USE, "dummy_use", 2, 0, 1, MintOpNoArgs)
 
 #ifdef __DEFINED_IROPDEF__
 #undef IROPDEF
 #undef __DEFINED_IROPDEF__
-#endif
-
-#ifdef __DEFINED_WASMOPDEF__
-#undef WASMOPDEF
-#undef __DEFINED_WASMOPDEF__
 #endif

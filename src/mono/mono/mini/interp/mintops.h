@@ -59,7 +59,11 @@ typedef enum {
 
 #define MINT_SWITCH_LEN(n) (4 + (n) * 2)
 
+#if HOST_BROWSER
+#define MINT_IS_NOP(op) ((op) == MINT_NOP || (op) == MINT_DEF || (op) == MINT_DUMMY_USE || (op) == MINT_IL_SEQ_POINT || (op) == MINT_TIER_NOP_JITERPRETER)
+#else
 #define MINT_IS_NOP(op) ((op) == MINT_NOP || (op) == MINT_DEF || (op) == MINT_DUMMY_USE || (op) == MINT_IL_SEQ_POINT)
+#endif
 #define MINT_IS_MOV(op) ((op) >= MINT_MOV_I4_I1 && (op) <= MINT_MOV_VT)
 #define MINT_IS_UNCONDITIONAL_BRANCH(op) ((op) >= MINT_BR && (op) <= MINT_CALL_HANDLER_S)
 #define MINT_IS_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BLT_UN_R8_S)

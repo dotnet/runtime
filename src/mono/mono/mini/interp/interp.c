@@ -3730,6 +3730,7 @@ mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClause
 #if USE_COMPUTED_GOTO
 	static void * const in_labels[] = {
 #define OPDEF(a,b,c,d,e,f) &&LAB_ ## a,
+#define IROPDEF(a,b,c,d,e,f)
 #include "mintops.def"
 	};
 #endif
@@ -7611,17 +7612,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 #endif
 
 #if USE_COMPUTED_GOTO
-// Generate assert_not_reached handler for all unhandled IR opcodes that don't have cases
-#define OPDEF(opsymbol, u1, u2, u3, u4, u5)
-#define IROPDEF(opsymbol, u1, u2, u3, u4, u5) MINT_IN_CASE(opsymbol)
-// WASM doesn't have computed goto so we can safely assume that this is a non-wasm target
-#define WASMOPDEF(opsymbol, u1, u2, u3, u4, u5) MINT_IN_CASE(opsymbol)
-#include "mintops.def"
-#undef OPDEF
-#undef IROPDEF
-#undef WASMOPDEF
-			g_assert_not_reached ();
-			MINT_IN_BREAK;
 #else
 		default:
 			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), GPTRDIFF_TO_INT (ip - frame->imethod->code));
