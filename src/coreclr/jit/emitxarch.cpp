@@ -472,13 +472,18 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 //
 void emitter::UpdateUpper32BitsZeroRegLookup()
 {
-    if (emitLastIns == nullptr)
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
+    {
+        // Looking at information from previous instructions is not safe.
+        // Therefore, we must reset the lookup.
+        upper32BitsZeroRegLookup = 0;
         return;
-
-    instrDesc* id = emitLastIns;
+    }
 
     // This is conservative. Just look for what seems to be common.
-    switch (id->idInsFmt())
+    switch (emitLastIns->idInsFmt())
     {
         case IF_RRD:
         case IF_RWR:
@@ -532,55 +537,45 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
         case IF_RWR_RRD_ARD_CNS:
         case IF_RWR_RRD_ARD_RRD:
         {
-            // Only consider if safe
-            //
-            if (!emitCanPeepholeLastIns())
-            {
-                upper32BitsZeroRegLookup = 0;
-                return;
-            }
-
-            regNumber dstReg = id->idReg1();
-
 #ifdef TARGET_AMD64
-            if ((dstReg < REG_RAX) || (dstReg > REG_R15))
+            if ((emitLastIns->idReg1() < REG_RAX) || (emitLastIns->idReg1() > REG_R15))
 #else
-            if ((dstReg < REG_EAX) || (dstReg > REG_EDI))
+            if ((emitLastIns->idReg1() < REG_EAX) || (emitLastIns->idReg1() > REG_EDI))
 #endif // !TARGET_AMD64
             {
                 return;
             }
 
             // movsx always sign extends to 8 bytes.
-            if (id->idIns() == INS_movsx)
+            if (emitLastIns->idIns() == INS_movsx)
             {
-                upper32BitsZeroRegLookup &= ~(1 << dstReg);
+                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
                 return;
             }
 
 #ifdef TARGET_AMD64
-            if (id->idIns() == INS_movsxd)
+            if (emitLastIns->idIns() == INS_movsxd)
             {
-                upper32BitsZeroRegLookup &= ~(1 << dstReg);
+                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
                 return;
             }
 #endif
 
             // movzx always zeroes the upper 32 bits.
-            if (id->idIns() == INS_movzx)
+            if (emitLastIns->idIns() == INS_movzx)
             {
-                upper32BitsZeroRegLookup |= (1 << dstReg);
+                upper32BitsZeroRegLookup |= (1 << emitLastIns->idReg1());
                 return;
             }
 
             // otherwise rely on operation size.
-            if (id->idOpSize() == EA_4BYTE)
+            if (emitLastIns->idOpSize() == EA_4BYTE)
             {
-                upper32BitsZeroRegLookup |= (1 << dstReg);
+                upper32BitsZeroRegLookup |= (1 << emitLastIns->idReg1());
             }
             else
             {
-                upper32BitsZeroRegLookup &= ~(1 << dstReg);
+                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
             }
         }
 
@@ -590,21 +585,12 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
         case IF_METHOD:
         case IF_METHPTR:
         {
-            // If we were not able to get peephole info, we assume
-            // that looking at information from previous instructions is not safe.
-            // Therefore, we must reset the lookup.
             upper32BitsZeroRegLookup = 0;
             return;
         }
 
         default:
         {
-            // Only consider if safe
-            //
-            if (!emitCanPeepholeLastIns())
-            {
-                upper32BitsZeroRegLookup = 0;
-            }
             return;
         }
     }

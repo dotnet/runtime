@@ -2195,7 +2195,7 @@ private:
     // A bit that is set means the register's upper 32-bits are zero.
     // This effectively keeps track of which registers have their upper 32-bits set to zero.
     // GPRs (general-purpose registers) only.
-    unsigned int upper32BitsZeroRegLookup;
+    regMaskTP upper32BitsZeroRegLookup;
 #endif // TARGET_XARCH
 
 #ifdef TARGET_ARMARCH
