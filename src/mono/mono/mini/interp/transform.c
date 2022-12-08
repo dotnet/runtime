@@ -7576,6 +7576,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_UNUSED57: ves_abort(); break;
 #endif
 			case CEE_ENDFILTER:
+				td->sp--;
+				if (td->sp != td->stack || td->sp->type != STACK_TYPE_I4) {
+					mono_error_set_generic_error (error, "System", "InvalidProgramException", "");
+					goto exit;
+				}
+
 				interp_add_ins (td, MINT_ENDFILTER);
 				interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
 				++td->ip;
