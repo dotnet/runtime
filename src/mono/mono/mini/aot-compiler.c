@@ -5257,7 +5257,11 @@ MONO_RESTORE_WARNING
 				add_method (acfg, wrapper);
 				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
+#ifdef TARGET_APPLE_MOBILE
 					g_string_append_printf (export_symbols, "_%s\n", export_name);
+#else
+					g_string_append_printf (export_symbols, "%s\n", export_name);
+#endif
 				}
 			}
 
