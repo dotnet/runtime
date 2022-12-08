@@ -354,5 +354,83 @@ namespace System.Net.Http.Json.Functional.Tests
                     await server.HandleRequestAsync(content: json, headers: headers);
                 });
         }
+
+        [Theory]
+        [InlineData(100, 100, true)]
+        [InlineData(100, 100, false)]
+        [InlineData(100, 101, true)]
+        [InlineData(100, 101, false)]
+        public async Task GetFromJsonAsync_EnforcesMaxResponseContentBufferSize(int limit, int contentLength, bool chunked)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var client = new HttpClient { MaxResponseContentBufferSize = limit };
+
+                if (contentLength > limit)
+                {
+                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync<string>(uri));
+                    Assert.Contains(limit.ToString(), ex.Message);
+                }
+                else
+                {
+                    await client.GetFromJsonAsync<string>(uri);
+                }
+            },
+            async server =>
+            {
+                List<HttpHeaderData> headers = new();
+                string content = $"\"{new string('a', contentLength - 2)}\"";
+
+                if (chunked)
+                {
+                    headers.Add(new HttpHeaderData("Transfer-Encoding", "chunked"));
+                    content = $"{Convert.ToString(contentLength, 16)}\r\n{content}\r\n0\r\n\r\n";
+                }
+
+                await server.HandleRequestAsync(headers: headers, content: content);
+            });
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetFromJsonAsync_EnforcesTimeout(bool slowHeaders)
+        {
+            TaskCompletionSource<byte> exceptionThrown = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(100) };
+
+                Exception ex = await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetFromJsonAsync<string>(uri));
+
+#if NETCORE
+                Assert.Contains("HttpClient.Timeout", ex.Message);
+                Assert.IsType<TimeoutException>(ex.InnerException);
+#endif
+
+                exceptionThrown.SetResult(0);
+            },
+            async server =>
+            {
+                // The client may timeout before even connecting the server
+                await Task.WhenAny(exceptionThrown.Task, Task.Run(async () =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            if (!slowHeaders)
+                            {
+                                await connection.SendPartialResponseHeadersAsync(headers: new[] { new HttpHeaderData("Content-Length", "42") });
+                            }
+
+                            await exceptionThrown.Task;
+                        });
+                    }
+                    catch { }
+                }));
+            });
+        }
     }
 }
