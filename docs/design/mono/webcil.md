@@ -52,28 +52,14 @@ struct WebcilHeader {
 	uint16_t reserved1; // 0
 	// 8 bytes
 
-	uint32_t metadata_rva;
-	uint32_t metadata_size;
-	// 16 bytes
-
-	uint32_t cli_flags;
-	int32_t cli_entry_point;
-	// 24 bytes
-
 	uint32_t pe_cli_header_rva;
 	uint32_t pe_cli_header_size;
-	// 32 bytes
+	// 16 bytes
 };
 ```
 
 The Webcil header starts with the magic characters 'W' 'C' followed by the version (must be 0).
 Then a reserved byte that must be 0 followed by a count of the section headers and 2 more reserved bytes.
-
-The next 4 integers are a subset of ECMA-335 II.25.3.3 (CLI header) containing the RVA and the size
-of the ECMA-335 metadata root, the Flags and EntryPointToken values.  The runtime treats all other
-CLI header values as their default values or zero.
-
-**FIXME** why do we need the CLI header fields if we're copying the CLI header anyway?
 
 The last 2 integers are a subset of the PE Header data directory specifying the RVA and size of the CLI header.
 

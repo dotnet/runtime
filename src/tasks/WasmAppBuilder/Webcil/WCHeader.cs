@@ -23,16 +23,7 @@ public unsafe struct WCHeader
     public ushort coff_sections;
     public ushort reserved1; // 0
     // 8 bytes
-
-    public uint metadata_rva;
-    public uint metadata_size;
-    // 16 bytes
-
-    public uint cli_flags;
-    public int cli_entry_point;
-    // 24 bytes
-
     public uint pe_cli_header_rva;
     public uint pe_cli_header_size;
-    // 32 bytes
+    // 16 bytes
 }

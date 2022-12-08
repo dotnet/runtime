@@ -75,10 +75,6 @@ public class WebcilWriter
         header.reserved0 = 0;
         header.coff_sections = (ushort)coffHeader.NumberOfSections;
         header.reserved1 = 0;
-        header.metadata_rva = (uint)corHeader.MetadataDirectory.RelativeVirtualAddress;
-        header.metadata_size = (uint)corHeader.MetadataDirectory.Size;
-        header.cli_flags = (uint)corHeader.Flags;
-        header.cli_entry_point = corHeader.EntryPointTokenOrRelativeVirtualAddress;
         header.pe_cli_header_rva = (uint)peHeader.CorHeaderTableDirectory.RelativeVirtualAddress;
         header.pe_cli_header_size = (uint)peHeader.CorHeaderTableDirectory.Size;
 
