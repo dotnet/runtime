@@ -468,6 +468,135 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 }
 
 //------------------------------------------------------------------------
+// UpdateUpper32BitsZeroRegLookup: TODO
+//
+void emitter::UpdateUpper32BitsZeroRegLookup()
+{
+    if (emitLastIns == nullptr)
+        return;
+
+    instrDesc* id = emitLastIns;
+
+    // This is conservative. Just look for what seems to be common.
+    switch (id->idInsFmt())
+    {
+        case IF_LABEL:
+        case IF_RWR_LABEL:
+        case IF_SWR_LABEL:
+        case IF_METHOD:
+        case IF_METHPTR:
+        {
+            // If we were not able to get peephole info, we assume
+            // that looking at information from previous instructions is not safe.
+            // Therefore, we must reset the lookup.
+            upper32BitsZeroRegLookup = 0;
+            return;
+        }
+
+        case IF_RRD:
+        case IF_RWR:
+        case IF_RRW:
+
+        case IF_RRD_CNS:
+        case IF_RWR_CNS:
+        case IF_RRW_CNS:
+        case IF_RRW_SHF:
+
+        case IF_RRD_RRD:
+        case IF_RWR_RRD:
+        case IF_RRW_RRD:
+        case IF_RRW_RRW:
+        case IF_RRW_RRW_CNS:
+
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_RRD_CNS:
+
+        case IF_RWR_RRD_RRD_RRD:
+
+        case IF_RRD_MRD:
+        case IF_RWR_MRD:
+        case IF_RRW_MRD:
+        case IF_RRW_MRD_CNS:
+
+        case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_CNS:
+        case IF_RWR_RRD_MRD_CNS:
+        case IF_RWR_RRD_MRD_RRD:
+        case IF_MRD_OFF:
+
+        case IF_RRD_SRD:
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RRW_SRD_CNS:
+
+        case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_CNS:
+        case IF_RWR_RRD_SRD_CNS:
+        case IF_RWR_RRD_SRD_RRD:
+
+        case IF_RRD_ARD:
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RRW_ARD_CNS:
+
+        case IF_RWR_RRD_ARD:
+        case IF_RWR_ARD_CNS:
+        case IF_RWR_ARD_RRD:
+        case IF_RWR_RRD_ARD_CNS:
+        case IF_RWR_RRD_ARD_RRD:
+        {
+            regNumber dstReg = id->idReg1();
+
+#ifdef TARGET_AMD64
+            if ((dstReg < REG_RAX) || (dstReg > REG_R15))
+#else
+            if ((dstReg < REG_EAX) || (dstReg > REG_EDI))
+#endif // !TARGET_AMD64
+            {
+                return;
+            }
+
+            // movsx always sign extends to 8 bytes.
+            if (id->idIns() == INS_movsx)
+            {
+                upper32BitsZeroRegLookup &= ~(1 << dstReg);
+                return;
+            }
+
+#ifdef TARGET_AMD64
+            if (id->idIns() == INS_movsxd)
+            {
+                upper32BitsZeroRegLookup &= ~(1 << dstReg);
+                return;
+            }
+#endif
+
+            // movzx always zeroes the upper 32 bits.
+            if (id->idIns() == INS_movzx)
+            {
+                upper32BitsZeroRegLookup |= (1 << dstReg);
+                return;
+            }
+
+            // otherwise rely on operation size.
+            if (id->idOpSize() == EA_4BYTE)
+            {
+                upper32BitsZeroRegLookup |= (1 << dstReg);
+            }
+            else
+            {
+                upper32BitsZeroRegLookup &= ~(1 << dstReg);
+            }
+        }
+
+        default:
+        {
+            return;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // TryGetUpper32BitsInfoFromLastInstruction: Using the previously emitted instruction,
 //     get instruction information such as the destination register and if the destiniation register is guaranteed
 //     to have its upper 32-bits set to zero.
@@ -497,17 +626,68 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
 
     instrDesc* id = emitLastIns;
 
-    // This is conservative. Just look for what seems to be common.
     switch (id->idInsFmt())
     {
+        case IF_LABEL:
+        case IF_RWR_LABEL:
+        case IF_SWR_LABEL:
+        case IF_METHOD:
+        case IF_METHPTR:
+        {
+            return false;
+        }
+
+        case IF_RRD:
+        case IF_RWR:
+        case IF_RRW:
+
+        case IF_RRD_CNS:
         case IF_RWR_CNS:
         case IF_RRW_CNS:
         case IF_RRW_SHF:
+
+        case IF_RRD_RRD:
         case IF_RWR_RRD:
         case IF_RRW_RRD:
+        case IF_RRW_RRW:
+        case IF_RRW_RRW_CNS:
+
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_RRD_CNS:
+
+        case IF_RWR_RRD_RRD_RRD:
+
+        case IF_RRD_MRD:
         case IF_RWR_MRD:
+        case IF_RRW_MRD:
+        case IF_RRW_MRD_CNS:
+
+        case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_CNS:
+        case IF_RWR_RRD_MRD_CNS:
+        case IF_RWR_RRD_MRD_RRD:
+        case IF_MRD_OFF:
+
+        case IF_RRD_SRD:
         case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RRW_SRD_CNS:
+
+        case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_CNS:
+        case IF_RWR_RRD_SRD_CNS:
+        case IF_RWR_RRD_SRD_RRD:
+
+        case IF_RRD_ARD:
         case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RRW_ARD_CNS:
+
+        case IF_RWR_RRD_ARD:
+        case IF_RWR_ARD_CNS:
+        case IF_RWR_ARD_RRD:
+        case IF_RWR_RRD_ARD_CNS:
+        case IF_RWR_RRD_ARD_RRD:
         {
             regNumber reg = id->idReg1();
 
@@ -553,7 +733,9 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
 
         default:
         {
-            return false;
+            *outDstReg                  = REG_NA;
+            *outIsDstRegUpper32BitsZero = false;
+            return true;
         }
     }
 }
@@ -571,11 +753,6 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
 //
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-    if (emitComp->opts.OptimizationDisabled())
-    {
-        return false;
-    }
-
     regNumber dstReg;
     bool      isUpper32BitsZero;
     bool      isSafe = TryGetUpper32BitsInfoFromLastInstruction(&dstReg, &isUpper32BitsZero);

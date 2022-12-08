@@ -1423,33 +1423,9 @@ size_t emitter::emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp)
 void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
 #ifdef TARGET_XARCH
-    // Record the last instruction's peephole info on whether or not
-    // the instruction's destination register has its upper 32-bits set to zero.
     if (emitComp->opts.OptimizationEnabled())
     {
-        regNumber dstReg;
-        bool      isDstRegUpper32BitsZero;
-        if (TryGetUpper32BitsInfoFromLastInstruction(&dstReg, &isDstRegUpper32BitsZero))
-        {
-            if (dstReg != REG_NA)
-            {
-                if (isDstRegUpper32BitsZero)
-                {
-                    upper32BitsZeroRegLookup |= (1 << dstReg);
-                }
-                else
-                {
-                    upper32BitsZeroRegLookup &= ~(1 << dstReg);
-                }
-            }
-        }
-        else
-        {
-            // If we were not able to get peephole info, we assume
-            // that looking at information from previous instructions is not safe.
-            // Therefore, we must reset the lookup.
-            upper32BitsZeroRegLookup = 0;
-        }
+        UpdateUpper32BitsZeroRegLookup();
     }
 #endif // TARGET_XARCH
 

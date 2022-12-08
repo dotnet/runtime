@@ -6893,7 +6893,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         case GenIntCastDesc::LOAD_ZERO_EXTEND_INT:
             ins     = INS_mov;
             insSize = 4;
-            canSkip = emit->AreUpper32BitsZero(srcReg);
+            canSkip = compiler->opts.OptimizationEnabled() && emit->AreUpper32BitsZero(srcReg);
             break;
         case GenIntCastDesc::SIGN_EXTEND_INT:
         case GenIntCastDesc::LOAD_SIGN_EXTEND_INT:
