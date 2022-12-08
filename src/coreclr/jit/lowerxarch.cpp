@@ -6500,14 +6500,26 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
             GenTree* op1                    = hwintrinsic->Op(1);
             bool     op1SupportsRegOptional = false;
 
-            if (IsContainableHWIntrinsicOp(parentNode, hwintrinsic, op1, &op1SupportsRegOptional) ||
-                op1SupportsRegOptional)
+            if (IsContainableHWIntrinsicOp(parentNode, hwintrinsic, op1, &op1SupportsRegOptional))
             {
-                // We have CreateScalarUnsafe where the underlying scalar is containable
-                // or was marked reg optional. As such, we'll say can contain the CreateScalarUnsafe
-                // and consume the value directly in codegen.
+                // We have CreateScalarUnsafe where the underlying scalar is contained
+                // As such, we can contain the CreateScalarUnsafe and consume the value
+                // directly in codegen.
 
-                assert(op1->isContained() || op1->IsRegOptional());
+                assert(op1->isContained());
+                return true;
+            }
+
+            if (op1SupportsRegOptional && varTypeIsFloating(op1))
+            {
+                // We have CreateScalarUnsafe where the underlying scalar was marked reg optional.
+                // As such, we can contain the CreateScalarUnsafe and consume the value directly
+                // in codegen.
+                //
+                // We only want to do this when op1 produces a floating-point value since that means
+                // it will already be in a SIMD register in the scenario it isn't spilled.
+
+                assert(op1->IsRegOptional());
                 return true;
             }
 
