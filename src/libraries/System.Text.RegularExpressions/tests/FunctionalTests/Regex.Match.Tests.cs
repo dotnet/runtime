@@ -392,6 +392,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(ver\.? |[_ ]+)?\d+(\.\d+){2,3}$", " Ver 2.0", RegexOptions.IgnoreCase, 0, 8, false, "");
             yield return (@"(?:|a)?(?:\b\d){2,}", " a 0", RegexOptions.None, 0, 4, false, "");
             yield return (@"(?:|a)?(\d){2,}", " a00a", RegexOptions.None, 0, 5, true, "a00");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", " 12345678901234567", RegexOptions.None, 0, 18, false, "");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", " 123456789012345678", RegexOptions.None, 0, 19, true, " 123456789012345678");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", "  123456789012345678", RegexOptions.None, 0, 20, true, "  123456789012345678");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", "   123456789012345678", RegexOptions.None, 0, 21, false, "");
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz");
