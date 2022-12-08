@@ -514,7 +514,7 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
         case IF_RWR_MRD_CNS:
         case IF_RWR_RRD_MRD_CNS:
         case IF_RWR_RRD_MRD_RRD:
-        case IF_MRD_OFF:
+        case IF_RWR_MRD_OFF:
 
         case IF_RRD_SRD:
         case IF_RWR_SRD:
@@ -538,13 +538,10 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
         case IF_RWR_RRD_ARD_RRD:
         {
 #ifdef TARGET_AMD64
-            if ((emitLastIns->idReg1() < REG_RAX) || (emitLastIns->idReg1() > REG_R15))
+            assert(emitLastIns->idReg1() >= REG_RAX && emitLastIns->idReg1() <= REG_XMM15);
 #else
-            if ((emitLastIns->idReg1() < REG_EAX) || (emitLastIns->idReg1() > REG_EDI))
+            assert(emitLastIns->idReg1() >= REG_EAX && emitLastIns->idReg1() <= REG_XMM7);
 #endif // !TARGET_AMD64
-            {
-                return;
-            }
 
             // movsx always sign extends to 8 bytes.
             if (emitLastIns->idIns() == INS_movsx)
@@ -584,7 +581,10 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
         case IF_SWR_LABEL:
         case IF_METHOD:
         case IF_METHPTR:
+        case IF_SWR_RRD:
         {
+            // Looking at information from previous instructions is not safe.
+            // Therefore, we must reset the lookup.
             upper32BitsZeroRegLookup = 0;
             return;
         }
@@ -657,7 +657,7 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
         case IF_RWR_MRD_CNS:
         case IF_RWR_RRD_MRD_CNS:
         case IF_RWR_RRD_MRD_RRD:
-        case IF_MRD_OFF:
+        case IF_RWR_MRD_OFF:
 
         case IF_RRD_SRD:
         case IF_RWR_SRD:
@@ -680,20 +680,13 @@ bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, boo
         case IF_RWR_RRD_ARD_CNS:
         case IF_RWR_RRD_ARD_RRD:
         {
-            regNumber reg = id->idReg1();
-
 #ifdef TARGET_AMD64
-            if ((reg < REG_RAX) || (reg > REG_R15))
+            assert(emitLastIns->idReg1() >= REG_RAX && emitLastIns->idReg1() <= REG_XMM15);
 #else
-            if ((reg < REG_EAX) || (reg > REG_EDI))
+            assert(emitLastIns->idReg1() >= REG_EAX && emitLastIns->idReg1() <= REG_XMM7);
 #endif // !TARGET_AMD64
-            {
-                *outDstReg                  = REG_NA;
-                *outIsDstRegUpper32BitsZero = false;
-                return true;
-            }
 
-            *outDstReg = reg;
+            regNumber reg = *outDstReg = id->idReg1();
 
             // movsx always sign extends to 8 bytes.
             if (id->idIns() == INS_movsx)
