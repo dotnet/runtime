@@ -4918,10 +4918,14 @@ namespace System.Text.RegularExpressions
                     if (analysis.IsInLoop(node))
                     {
                         // Store the loop's state
-                        EmitStackResizeIfNeeded(1 + (startingPos is not null ? 1 : 0));
+                        EmitStackResizeIfNeeded(1 + (startingPos is not null ? 1 : 0) + (startingStackpos is not null ? 1 : 0));
                         if (startingPos is not null)
                         {
                             EmitStackPush(() => Ldloc(startingPos));
+                        }
+                        if (startingStackpos is not null)
+                        {
+                            EmitStackPush(() => Ldloc(startingStackpos));
                         }
                         EmitStackPush(() => Ldloc(iterationCount));
 
@@ -4941,6 +4945,11 @@ namespace System.Text.RegularExpressions
                         // startingPos = base.runstack[--runstack];
                         EmitStackPop();
                         Stloc(iterationCount);
+                        if (startingStackpos is not null)
+                        {
+                            EmitStackPop();
+                            Stloc(startingStackpos);
+                        }
                         if (startingPos is not null)
                         {
                             EmitStackPop();
