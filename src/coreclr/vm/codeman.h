@@ -984,8 +984,10 @@ class RangeSectionMap
 
         uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSection);
         size_t fragmentsSize = rangeSectionFragmentCount * sizeof(RangeSectionFragment);
-        RangeSectionFragment* fragments = (RangeSectionFragment*)malloc(fragmentsSize);
-        memset(fragments, 0, fragmentsSize);
+        void* fragmentsMemory = (RangeSectionFragment*)malloc(fragmentsSize);
+        memset(fragmentsMemory, 0, fragmentsSize);
+
+        RangeSectionFragment* fragments = (RangeSectionFragment*)fragmentsMemory;
 
         if (fragments == NULL)
         {
