@@ -14,9 +14,6 @@ namespace Internal.Runtime.TypeLoader
     /// </summary>
     internal class NoMetadataFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new MetadataFieldLayoutAlgorithm();
-#endif
         private static NativeLayoutFieldAlgorithm s_nativeLayoutFieldAlgorithm = new NativeLayoutFieldAlgorithm();
 
         public override unsafe bool ComputeContainsGCPointers(DefType type)
@@ -33,19 +30,8 @@ namespace Internal.Runtime.TypeLoader
             // If we need the field information, delegate to the native layout algorithm or metadata algorithm
             if (layoutKind != InstanceLayoutKind.TypeOnly)
             {
-                if (type.HasNativeLayout)
-                {
-                    return s_nativeLayoutFieldAlgorithm.ComputeInstanceLayout(type, layoutKind);
-                }
-                else
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    return _metadataFieldLayoutAlgorithm.ComputeInstanceLayout(type, layoutKind);
-#else
-                    Debug.Assert(false);
-                    return default;
-#endif
-                }
+                Debug.Assert(type.HasNativeLayout);
+                return s_nativeLayoutFieldAlgorithm.ComputeInstanceLayout(type, layoutKind);
             }
 
             type.RetrieveRuntimeTypeHandleIfPossible();
@@ -80,28 +66,8 @@ namespace Internal.Runtime.TypeLoader
 
         public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
         {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            // We can only reach this for pre-created types where we actually need field information
-            // In that case, fall through to one of the other field layout algorithms.
-            if (type.HasNativeLayout)
-                return s_nativeLayoutFieldAlgorithm.ComputeStaticFieldLayout(type, layoutKind);
-            else if (type is MetadataType)
-                return _metadataFieldLayoutAlgorithm.ComputeStaticFieldLayout(type, layoutKind);
-
-            // No statics information available
-            ComputedStaticFieldLayout staticLayout = new ComputedStaticFieldLayout()
-            {
-                GcStatics = default(StaticsBlock),
-                NonGcStatics = default(StaticsBlock),
-                Offsets = Array.Empty<FieldAndOffset>(), // No fields are considered to exist for completely NoMetadataTypes
-                ThreadGcStatics = default(StaticsBlock),
-                ThreadNonGcStatics = default(StaticsBlock),
-            };
-            return staticLayout;
-#else
             Debug.Assert(false);
             return default;
-#endif
         }
 
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)

@@ -4,7 +4,7 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossBuild: false
-  framework: 'net7.0'
+  framework: 'net8.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''

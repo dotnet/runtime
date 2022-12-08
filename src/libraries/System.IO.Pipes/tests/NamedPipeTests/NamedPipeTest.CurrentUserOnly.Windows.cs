@@ -210,6 +210,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79180", TestRuntimes.Mono)]
         [ConditionalTheory(nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
         [InlineData(false)]
         [InlineData(true)]

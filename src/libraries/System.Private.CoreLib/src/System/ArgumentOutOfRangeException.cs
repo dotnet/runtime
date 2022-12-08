@@ -90,45 +90,45 @@ namespace System
         public virtual object? ActualValue => _actualValue;
 
         [DoesNotReturn]
-        private static void ThrowZero(string? paramName)
+        private static void ThrowZero<T>(string? paramName, T value)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonZero, paramName));
+            throw new ArgumentOutOfRangeException(paramName, value, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonZero, paramName));
         }
 
         [DoesNotReturn]
-        private static void ThrowNegative(string? paramName)
+        private static void ThrowNegative<T>(string? paramName, T value)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegative, paramName));
+            throw new ArgumentOutOfRangeException(paramName, value, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegative, paramName));
         }
 
         [DoesNotReturn]
-        private static void ThrowNegativeOrZero(string? paramName)
+        private static void ThrowNegativeOrZero<T>(string? paramName, T value)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, paramName));
+            throw new ArgumentOutOfRangeException(paramName, value, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, paramName));
         }
 
         [DoesNotReturn]
-        private static void ThrowGreater<T>(string? paramName, T other)
+        private static void ThrowGreater<T>(string? paramName, T value, T other)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, paramName, other));
+            throw new ArgumentOutOfRangeException(paramName, value, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowGreaterEqual<T>(string? paramName, T other)
+        private static void ThrowGreaterEqual<T>(string? paramName, T value, T other)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLess, paramName, other));
+            throw new ArgumentOutOfRangeException(paramName, value, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLess, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowLess<T>(string? paramName, T other)
+        private static void ThrowLess<T>(string? paramName, T value, T other)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, paramName, other));
+            throw new ArgumentOutOfRangeException(paramName, value, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, paramName, other));
         }
 
         [DoesNotReturn]
-        private static void ThrowLessEqual<T>(string? paramName, T other)
+        private static void ThrowLessEqual<T>(string? paramName, T value, T other)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreater, paramName, other));
+            throw new ArgumentOutOfRangeException(paramName, value, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreater, paramName, other));
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is zero.</summary>
@@ -138,7 +138,7 @@ namespace System
             where T : INumberBase<T>
         {
             if (T.IsZero(value))
-                ThrowZero(paramName);
+                ThrowZero(paramName, value);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is negative.</summary>
@@ -148,7 +148,7 @@ namespace System
             where T : INumberBase<T>
         {
             if (T.IsNegative(value))
-                ThrowNegative(paramName);
+                ThrowNegative(paramName, value);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is negative or zero.</summary>
@@ -158,7 +158,7 @@ namespace System
             where T : INumberBase<T>
         {
             if (T.IsNegative(value) || T.IsZero(value))
-                ThrowNegativeOrZero(paramName);
+                ThrowNegativeOrZero(paramName, value);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is greater than <paramref name="other"/>.</summary>
@@ -169,7 +169,7 @@ namespace System
             where T : IComparable<T>
         {
             if (value.CompareTo(other) > 0)
-                ThrowGreater(paramName, other);
+                ThrowGreater(paramName, value, other);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is greater than or equal <paramref name="other"/>.</summary>
@@ -180,7 +180,7 @@ namespace System
             where T : IComparable<T>
         {
             if (value.CompareTo(other) >= 0)
-                ThrowGreaterEqual(paramName, other);
+                ThrowGreaterEqual(paramName, value, other);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is less than <paramref name="other"/>.</summary>
@@ -191,7 +191,7 @@ namespace System
             where T : IComparable<T>
         {
             if (value.CompareTo(other) < 0)
-                ThrowLess(paramName, other);
+                ThrowLess(paramName, value, other);
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is less than or equal <paramref name="other"/>.</summary>
@@ -202,7 +202,7 @@ namespace System
             where T : IComparable<T>
         {
             if (value.CompareTo(other) <= 0)
-                ThrowLessEqual(paramName, other);
+                ThrowLessEqual(paramName, value, other);
         }
     }
 }

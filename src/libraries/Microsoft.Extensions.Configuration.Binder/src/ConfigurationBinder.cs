@@ -361,24 +361,26 @@ namespace Microsoft.Extensions.Configuration
                     }
                 }
 
+                Debug.Assert(bindingPoint.Value is not null);
+
                 // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
                 // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
                 Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
 
                 if (dictionaryInterface != null)
                 {
-                    BindDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
+                    BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
                 }
                 else
                 {
                     Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
                     if (collectionInterface != null)
                     {
-                        BindCollection(bindingPoint.Value!, collectionInterface, config, options);
+                        BindCollection(bindingPoint.Value, collectionInterface, config, options);
                     }
                     else
                     {
-                        BindProperties(bindingPoint.Value!, config, options);
+                        BindProperties(bindingPoint.Value, config, options);
                     }
                 }
             }
@@ -590,17 +592,8 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            Debug.Assert(dictionary is not null);
-
-
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
-            PropertyInfo? indexerProperty  = dictionaryType.GetProperty("Item", DeclaredOnlyLookup);
-
-            if (indexerProperty is null || !indexerProperty.CanWrite)
-            {
-                // Cannot set any item on the dictionary object.
-                return;
-            }
+            PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
 
             foreach (IConfigurationSection child in config.GetChildren())
             {

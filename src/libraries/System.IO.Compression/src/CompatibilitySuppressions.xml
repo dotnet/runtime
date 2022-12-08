@@ -4,19 +4,5 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.IO.Compression.ZLibException</Target>
-    <Left>ref/net7.0/System.IO.Compression.dll</Left>
-    <Right>runtimes/browser/lib/net7.0/System.IO.Compression.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.IO.Compression.ZLibException</Target>
-    <Left>ref/net7.0/System.IO.Compression.dll</Left>
-    <Right>runtimes/unix/lib/net7.0/System.IO.Compression.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.IO.Compression.ZLibException</Target>
-    <Left>ref/net7.0/System.IO.Compression.dll</Left>
-    <Right>runtimes/win/lib/net7.0/System.IO.Compression.dll</Right>
   </Suppression>
 </Suppressions>
