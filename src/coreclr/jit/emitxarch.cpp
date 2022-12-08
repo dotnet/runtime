@@ -532,6 +532,14 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
         case IF_RWR_RRD_ARD_CNS:
         case IF_RWR_RRD_ARD_RRD:
         {
+            // Only consider if safe
+            //
+            if (!emitCanPeepholeLastIns())
+            {
+                upper32BitsZeroRegLookup = 0;
+                return;
+            }
+
             regNumber dstReg = id->idReg1();
 
 #ifdef TARGET_AMD64
@@ -591,6 +599,12 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
 
         default:
         {
+            // Only consider if safe
+            //
+            if (!emitCanPeepholeLastIns())
+            {
+                upper32BitsZeroRegLookup = 0;
+            }
             return;
         }
     }
