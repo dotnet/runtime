@@ -1436,10 +1436,30 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
                 if (isDstRegUpper32BitsZero)
                 {
                     upper32BitsZeroRegLookup |= (1 << dstReg);
+#ifdef DEBUG
+                    if (emitComp->verbose)
+                    {
+                        printf("\n");
+                        printf("Started tracking upper 32-bits for reg: %i\n", dstReg);
+                        printf("Last instruction: ");
+                        dispIns(emitLastIns);
+                        printf("\n");
+                    }
+#endif // DEBUG
                 }
                 else
                 {
                     upper32BitsZeroRegLookup &= ~(1 << dstReg);
+#ifdef DEBUG
+                    if (emitComp->verbose)
+                    {
+                        printf("\n");
+                        printf("Stopped tracking upper 32-bits for reg: %i\n", dstReg);
+                        printf("Last instruction: ");
+                        dispIns(emitLastIns);
+                        printf("\n");
+                    }
+#endif // DEBUG
                 }
             }
         }
@@ -1449,6 +1469,14 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
             // that looking at information from previous instructions is not safe.
             // Therefore, we must reset the lookup.
             upper32BitsZeroRegLookup = 0;
+#ifdef DEBUG
+            if (emitComp->verbose)
+            {
+                printf("\n");
+                printf("Tracking upper 32-bits reset\n");
+                printf("\n");
+            }
+#endif // DEBUG
         }
     }
 #endif // TARGET_XARCH
