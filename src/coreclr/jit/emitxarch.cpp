@@ -584,7 +584,12 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         if (emitComp->verbose && isUpper32BitsZero)
         {
             printf("\n");
-            printf("upper 32-bits are zero for reg: %i\n", reg);
+            printf("**peephole info - upper 32-bits are zero for reg: %i\n", reg);
+            if (emitLastIns)
+            {
+                printf("Last instruction: ");
+                dispIns(emitLastIns);
+            }
             printf("\n");
         }
 #endif // DEBUG
@@ -615,7 +620,12 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         if (emitComp->verbose && isUpper32BitsZero)
         {
             printf("\n");
-            printf("upper 32-bits are zero for reg: %i\n", reg);
+            printf("**lookup - upper 32-bits are zero for reg: %i\n", reg);
+            if (emitLastIns)
+            {
+                printf("Last instruction: ");
+                dispIns(emitLastIns);
+            }
             printf("\n");
         }
 #endif // DEBUG
