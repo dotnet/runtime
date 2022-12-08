@@ -4872,6 +4872,7 @@ namespace System.Text.RegularExpressions
                         EmitTimeoutCheckIfNeeded();
 
                         // iterationCount = base.runstack[--runstack];
+                        // startingStackpos = base.runstack[--runstack];
                         // startingPos = base.runstack[--runstack];
                         EmitStackPop();
                         Stloc(iterationCount);
