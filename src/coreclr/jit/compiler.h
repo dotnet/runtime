@@ -10997,22 +10997,74 @@ public:
             {
                 GenTreeCall* const call = node->AsCall();
 
-                for (CallArg& arg : call->gtArgs.EarlyArgs())
+                CallArg* cur = call->gtArgs.Args().begin().GetArg();
+                if (TVisitor::UseExecutionOrder && call->IsOptimizingRetBufAsLocal())
                 {
-                    result = WalkTree(&arg.EarlyNodeRef(), call);
-                    if (result == fgWalkResult::WALK_ABORT)
+                    while (cur->GetWellKnownArg() != WellKnownArg::RetBuffer)
                     {
-                        return result;
+                        if (cur->GetEarlyNode() != nullptr)
+                        {
+                            result = WalkTree(&cur->EarlyNodeRef(), call);
+                            if (result == fgWalkResult::WALK_ABORT)
+                            {
+                                return result;
+                            }
+                        }
+
+                        cur = cur->GetNext();
+                        assert(cur != nullptr);
+                    }
+
+                    // Skip retbuf arg; we consider it 'evaluated' right before
+                    // the call when the call defines it.
+                    cur = cur->GetNext();
+                }
+
+                while (cur != nullptr)
+                {
+                    if (cur->GetEarlyNode() != nullptr)
+                    {
+                        result = WalkTree(&cur->EarlyNodeRef(), call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    cur = cur->GetNext();
+                }
+
+                cur = call->gtArgs.LateArgs().begin().GetArg();
+                if (TVisitor::UseExecutionOrder && call->IsOptimizingRetBufAsLocal())
+                {
+                    while ((cur != nullptr) && (cur->GetWellKnownArg() != WellKnownArg::RetBuffer))
+                    {
+                        result = WalkTree(&cur->LateNodeRef(), call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+
+                        cur = cur->GetLateNext();
+                    }
+
+                    // Skip retbuf arg; we consider it 'evaluated' right before
+                    // the call when the call defines it.
+                    if (cur != nullptr)
+                    {
+                        cur = cur->GetLateNext();
                     }
                 }
 
-                for (CallArg& arg : call->gtArgs.LateArgs())
+                while (cur != nullptr)
                 {
-                    result = WalkTree(&arg.LateNodeRef(), call);
+                    result = WalkTree(&cur->LateNodeRef(), call);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;
                     }
+
+                    cur = cur->GetLateNext();
                 }
 
                 if (call->gtCallType == CT_INDIRECT)
@@ -11040,6 +11092,15 @@ public:
                     {
                         return result;
                     }
+                }
+
+                if (TVisitor::UseExecutionOrder && call->IsOptimizingRetBufAsLocal())
+                {
+                    CallArg* retBuf = call->gtArgs.GetRetBufferArg();
+                    assert((retBuf != nullptr) &&
+                           ((retBuf->GetEarlyNode() == nullptr) != (retBuf->GetLateNode() == nullptr)));
+                    GenTree** use = retBuf->GetLateNode() == nullptr ? &retBuf->EarlyNodeRef() : &retBuf->LateNodeRef();
+                    result        = WalkTree(use, call);
                 }
 
                 break;

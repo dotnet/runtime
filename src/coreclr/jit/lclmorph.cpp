@@ -660,15 +660,14 @@ private:
 
         GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
         bool         hasHiddenStructArg = false;
+        GenTreeFlags defFlag            = GTF_EMPTY;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
             IsValidLclAddr(lclNum, val.Offset()))
         {
-            // We will only attempt this optimization for locals that are:
-            // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
-            // b) Do not later turn into indirections.
+            // We will only attempt this optimization for locals that do not
+            // later turn into indirections.
             //
-            bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && varDsc->lvIsTemp && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
+            bool isSuitableLocal = varTypeIsStruct(varDsc) && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
 #ifdef TARGET_X86
             if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {
@@ -682,6 +681,7 @@ private:
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                 hasHiddenStructArg = true;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                defFlag |= GTF_VAR_DEF;
             }
         }
 
@@ -706,6 +706,8 @@ private:
 #endif // TARGET_64BIT
 
         MorphLocalAddress(val.Node(), lclNum, val.Offset());
+
+        val.Node()->gtFlags |= defFlag;
 
         INDEBUG(val.Consume();)
     }
