@@ -379,6 +379,34 @@ namespace System
             return result;
         }
 
+        internal static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2, ReadOnlySpan<char> str3, ReadOnlySpan<char> str4)
+        {
+            int length = checked(str0.Length + str1.Length + str2.Length + str3.Length + str4.Length);
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
+            Span<char> resultSpan = new Span<char>(ref result._firstChar, result.Length);
+
+            str0.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str0.Length);
+
+            str1.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str1.Length);
+
+            str2.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str2.Length);
+
+            str3.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str3.Length);
+
+            str4.CopyTo(resultSpan);
+
+            return result;
+        }
+
         public static string Concat(params string?[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
