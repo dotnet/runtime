@@ -1357,6 +1357,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Remainder/Regressions/Regression1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/79022</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
             <Issue>https://github.com/dotnet/runtime/issues/74223</Issue>
         </ExcludeList>
