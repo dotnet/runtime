@@ -468,7 +468,7 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 }
 
 //------------------------------------------------------------------------
-// TryGetPeepholeInfoFromLastInstruction: Using the previously emitted instruction,
+// TryGetUpper32BitsInfoFromLastInstruction: Using the previously emitted instruction,
 //     get instruction information such as the destination register and if the destiniation register is guaranteed
 //     to have its upper 32-bits set to zero.
 //
@@ -486,7 +486,7 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 // Notes:
 //    movsx eax, ... might seem viable but we always encode this
 //    instruction with a 64 bit destination. See TakesRexWPrefix.
-bool emitter::TryGetPeepholeInfoFromLastInstruction(regNumber* outDstReg, bool* outIsDstRegUpper32BitsZero)
+bool emitter::TryGetUpper32BitsInfoFromLastInstruction(regNumber* outDstReg, bool* outIsDstRegUpper32BitsZero)
 {
     // Only consider if safe
     //
@@ -578,34 +578,26 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
     regNumber dstReg;
     bool      isUpper32BitsZero;
-    if (TryGetPeepholeInfoFromLastInstruction(&dstReg, &isUpper32BitsZero) && (dstReg != REG_NA) && (dstReg == reg))
+    bool      isSafe = TryGetUpper32BitsInfoFromLastInstruction(&dstReg, &isUpper32BitsZero);
+
+    if (!isSafe)
     {
-#ifdef DEBUG
-        if (emitComp->verbose && isUpper32BitsZero)
-        {
-            printf("\n");
-            printf("**peephole info - upper 32-bits are zero for reg: %i\n", reg);
-            if (emitLastIns)
-            {
-                printf("Last instruction: ");
-                dispIns(emitLastIns);
-            }
-            printf("\n");
-        }
-#endif // DEBUG
+        return false;
+    }
+
+    if ((dstReg != REG_NA) && (dstReg == reg))
+    {
         return isUpper32BitsZero;
     }
 
-    // If the last emitted instruction was safe for peephole optimizations,
+    // If the last emitted instruction was safe and supported for peephole optimizations,
     // but was not able to determine if our given register's upper 32-bits is zero,
     // then try to use the lookup.
-    unsigned int regLookup = GetSafeUpper32BitsZeroRegLookup();
 
     // Lookup is zero so no information, return false.
-    // The lookup can be zero if peephole optimizations are currently not safe.
-    if (regLookup == 0)
+    if (upper32BitsZeroRegLookup == 0)
     {
-        return false;
+        false;
     }
 
 #ifdef TARGET_AMD64
@@ -615,21 +607,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 #endif // !TARGET_AMD64
     {
         // Checks if the register's upper 32-bits are zero.
-        isUpper32BitsZero = (regLookup >> reg) & 1;
-#ifdef DEBUG
-        if (emitComp->verbose && isUpper32BitsZero)
-        {
-            printf("\n");
-            printf("**lookup - upper 32-bits are zero for reg: %i\n", reg);
-            if (emitLastIns)
-            {
-                printf("Last instruction: ");
-                dispIns(emitLastIns);
-            }
-            printf("\n");
-        }
-#endif // DEBUG
-        return isUpper32BitsZero;
+        return (upper32BitsZeroRegLookup >> reg) & 1;
     }
 
     return false;

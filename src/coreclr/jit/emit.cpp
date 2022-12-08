@@ -1429,56 +1429,22 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     {
         regNumber dstReg;
         bool      isDstRegUpper32BitsZero;
-        if (TryGetPeepholeInfoFromLastInstruction(&dstReg, &isDstRegUpper32BitsZero))
+        if (TryGetUpper32BitsInfoFromLastInstruction(&dstReg, &isDstRegUpper32BitsZero))
         {
             if (dstReg != REG_NA)
             {
                 if (isDstRegUpper32BitsZero)
                 {
-#ifdef DEBUG
-                    if (emitComp->verbose && !((upper32BitsZeroRegLookup >> dstReg) & 1))
-                    {
-                        printf("\n");
-                        printf("Started tracking upper 32-bits for reg: %i\n", dstReg);
-                        printf("Last instruction: ");
-                        dispIns(emitLastIns);
-                        printf("\n");
-                    }
-#endif // DEBUG
                     upper32BitsZeroRegLookup |= (1 << dstReg);
                 }
                 else
                 {
-#ifdef DEBUG
-                    if (emitComp->verbose && ((upper32BitsZeroRegLookup >> dstReg) & 1))
-                    {
-                        printf("\n");
-                        printf("Stopped tracking upper 32-bits for reg: %i\n", dstReg);
-                        printf("Last instruction: ");
-                        dispIns(emitLastIns);
-                        printf("\n");
-                    }
-#endif // DEBUG
                     upper32BitsZeroRegLookup &= ~(1 << dstReg);
                 }
             }
         }
         else
         {
-#ifdef DEBUG
-            if (emitComp->verbose && (upper32BitsZeroRegLookup != 0))
-            {
-                printf("\n");
-                printf("Tracking upper 32-bits reset\n");
-                if (emitLastIns)
-                {
-                    printf("Last instruction: ");
-                    dispIns(emitLastIns);
-                }
-                printf("\n");
-            }
-#endif // DEBUG
-
             // If we were not able to get peephole info, we assume
             // that looking at information from previous instructions is not safe.
             // Therefore, we must reset the lookup.
