@@ -838,7 +838,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             isBlackBoxed = false,
             introductionType = "scriptElement",
             resourceType = "source",
-            dotNetUrl = source.DotNetUrl
+            dotNetUrl = source.DotNetUrlEscaped
         });
         JObject sourcesJObj;
         if (!string.IsNullOrEmpty(ctx.GlobalName))
@@ -1014,8 +1014,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
 
         try
         {
-            var uri = new Uri(src_file.Url);
-            string source = $"// Unable to find document {src_file.SourceUri}";
+            string source = $"// Unable to find document {src_file.FileUriEscaped}";
 
             using (Stream data = await src_file.GetSourceAsync(checkHash: false, token: token))
             {
@@ -1032,7 +1031,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             var o = JObject.FromObject(new
             {
                 source = $"// Unable to read document ({e.Message})\n" +
-                $"Local path: {src_file?.SourceUri}\n" +
+                $"Local path: {src_file?.FileUriEscaped}\n" +
                 $"SourceLink path: {src_file?.SourceLinkUri}\n",
                 from = script_id
             });

@@ -155,28 +155,6 @@ namespace Internal.Runtime.TypeLoader
             return new MethodNameAndSignature(methodName, methodSig);
         }
 
-        internal static bool IsStaticMethodSignature(RuntimeSignature methodSig)
-        {
-            if (methodSig.IsNativeLayoutSignature)
-            {
-                NativeReader reader = GetNativeLayoutInfoReader(methodSig);
-                NativeParser parser = new NativeParser(reader, methodSig.NativeLayoutOffset);
-
-                MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
-                return callingConvention.HasFlag(MethodCallingConvention.Static);
-            }
-            else
-            {
-                ModuleInfo module = methodSig.GetModuleInfo();
-                NativeFormatModuleInfo nativeFormatModule = (NativeFormatModuleInfo)module;
-                var metadataReader = nativeFormatModule.MetadataReader;
-                var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(metadataReader);
-
-                var method = methodHandle.GetMethod(metadataReader);
-                return (method.Flags & MethodAttributes.Static) != 0;
-            }
-        }
-
         #region Private Helpers
 
         private bool TryGetTypeFromSimpleTypeSignature(ref NativeParser parser, NativeFormatModuleInfo moduleHandle, out RuntimeTypeHandle typeHandle)

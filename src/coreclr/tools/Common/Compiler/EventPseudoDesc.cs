@@ -71,6 +71,14 @@ namespace ILCompiler
             }
         }
 
+        public EventDefinitionHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        }
+
         public EventPseudoDesc(EcmaType type, EventDefinitionHandle handle)
         {
             _type = type;
