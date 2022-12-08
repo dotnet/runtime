@@ -2765,8 +2765,8 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 /* some variables have become dead all across the block
                    So life should be a subset of block->bbLiveIn */
 
-                   // We changed the liveIn of the block, which may affect liveOut of others,
-                   // which may expose more dead stores.
+                // We changed the liveIn of the block, which may affect liveOut of others,
+                // which may expose more dead stores.
                 fgLocalVarLivenessChanged = true;
 
                 noway_assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
@@ -2858,7 +2858,7 @@ PhaseStatus Compiler::fgEarlyLiveness()
 
         enum
         {
-            DoPostOrder = true,
+            DoPostOrder       = true,
             UseExecutionOrder = true,
         };
 
@@ -2874,9 +2874,9 @@ PhaseStatus Compiler::fgEarlyLiveness()
                 LclVarDsc* dsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
                 if (dsc->lvTracked || dsc->lvPromoted)
                 {
-                    node->gtPrev = PrevNode;
+                    node->gtPrev     = PrevNode;
                     PrevNode->gtNext = node;
-                    PrevNode = node;
+                    PrevNode         = node;
                 }
             }
 
@@ -2896,9 +2896,9 @@ PhaseStatus Compiler::fgEarlyLiveness()
                     next->gtPrev = prev;
 
                     PrevNode->gtNext = lcl;
-                    lcl->gtPrev = PrevNode;
-                    lcl->gtNext = nullptr;
-                    PrevNode = lcl;
+                    lcl->gtPrev      = PrevNode;
+                    lcl->gtNext      = nullptr;
+                    PrevNode         = lcl;
                 }
             }
 
@@ -2906,12 +2906,12 @@ PhaseStatus Compiler::fgEarlyLiveness()
         }
     };
 
-    GenTree* sentinelNode = gtNewNothingNode();
+    GenTree*               sentinelNode = gtNewNothingNode();
     EarlyLivenessSequencer sequencer(this);
 
     for (BasicBlock* bb : Blocks())
     {
-        sequencer.PrevNode = sentinelNode;
+        sequencer.PrevNode   = sentinelNode;
         sentinelNode->gtNext = nullptr;
 
         for (Statement* stmt : bb->Statements())
