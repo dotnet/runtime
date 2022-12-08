@@ -7611,8 +7611,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		}
 #endif
 
-#if USE_COMPUTED_GOTO
-#else
+#if !USE_COMPUTED_GOTO
 		default:
 			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), GPTRDIFF_TO_INT (ip - frame->imethod->code));
 #endif // USE_COMPUTED_GOTO
