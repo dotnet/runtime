@@ -4701,11 +4701,6 @@ public:
                        VARSET_VALARG_TP volatileVars,
                        bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
-    GenTree* fgComputeLifeNode(GenTree*         tree,
-                               VARSET_TP&       life,
-                               const VARSET_TP& keepAliveVars,
-                               bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
-
     void fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars);
 
     bool fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange);

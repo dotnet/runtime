@@ -209,6 +209,12 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
     switch (tree->gtOper)
     {
+        case GT_QMARK:
+        case GT_COLON:
+            // We never should encounter a GT_QMARK or GT_COLON node
+            noway_assert(!"unexpected GT_QMARK/GT_COLON");
+            break;
+
         case GT_LCL_VAR:
         case GT_LCL_FLD:
         case GT_LCL_VAR_ADDR:
@@ -254,7 +260,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         // These should have been morphed away to become GT_INDs:
         case GT_FIELD:
-            fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+            unreached();
             break;
 
         // We'll assume these are use-then-defs of memory.
@@ -1795,108 +1801,13 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
 
     noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
 
-    if (fgIsDoingEarlyLiveness)
+    assert(!fgIsDoingEarlyLiveness);
+    // NOTE: Live variable analysis will not work if you try
+    // to use the result of an assignment node directly!
+    for (GenTree* tree = node; tree != nullptr; tree = tree->gtPrev)
     {
-        class LifeVisitor : public GenTreeVisitor<LifeVisitor>
-        {
-            VARSET_TP&       m_life;
-            const VARSET_TP& m_keepAliveVars;
-            bool*            m_pStmtInfoDirty;
-
-        public:
-            INDEBUG(bool MadeChanges = false);
-
-            enum
-            {
-                DoPreOrder        = true,
-                UseExecutionOrder = true,
-                ReverseOrder      = true,
-            };
-
-            LifeVisitor(Compiler* comp, VARSET_TP& life, const VARSET_TP& keepAliveVars, bool* pStmtInfoDirty)
-                : GenTreeVisitor(comp), m_life(life), m_keepAliveVars(keepAliveVars), m_pStmtInfoDirty(pStmtInfoDirty)
-            {
-            }
-
-            fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-            {
-                GenTree* node = *use;
-
-                if (ComputeLife(node) == fgWalkResult::WALK_ABORT)
-                    return WALK_ABORT;
-
-                if (node->OperIs(GT_ASG))
-                {
-                    if ((node->gtFlags & GTF_REVERSE_OPS) != 0)
-                    {
-                        return WALK_CONTINUE;
-                    }
-
-                    // In forward traversal the order we want is op1Operands -> op2 (tree) -> op1 (root) -> node
-                    // So in reverse traversal we want node -> op1 (root) -> op2 (tree) -> op1Operands
-                    if (ComputeLife(node->gtGetOp1()) == fgWalkResult::WALK_ABORT)
-                        return WALK_ABORT;
-
-                    if (WalkTree(&node->AsOp()->gtOp2, node) == fgWalkResult::WALK_ABORT)
-                        return WALK_ABORT;
-
-                    if (node->gtGetOp1()->OperIsLocal() ||
-                        (node->gtGetOp1()->OperIs(GT_FIELD) && node->gtGetOp1()->AsField()->IsStatic()))
-                    {
-                        // op1 is a leaf
-                    }
-                    else
-                    {
-                        assert(node->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ, GT_FIELD));
-                        // Visit address of indir, which is actually evaluated.
-                        if (WalkTree(&node->AsOp()->gtOp1->AsUnOp()->gtOp1, node->AsOp()->gtOp1) ==
-                            fgWalkResult::WALK_ABORT)
-                            return WALK_ABORT;
-                    }
-
-                    return WALK_SKIP_SUBTREES;
-                }
-
-                return WALK_CONTINUE;
-            }
-
-            fgWalkResult ComputeLife(GenTree* node)
-            {
-                GenTree* newNode = m_compiler->fgComputeLifeNode(node, m_life, m_keepAliveVars,
-                                                                 m_pStmtInfoDirty DEBUGARG(&MadeChanges));
-                if (newNode == nullptr)
-                    return fgWalkResult::WALK_ABORT;
-
-                return fgWalkResult::WALK_CONTINUE;
-            }
-        };
-
-        LifeVisitor lifeVisitor(this, life, keepAliveVars, pStmtInfoDirty);
-        lifeVisitor.WalkTree(&node, nullptr);
-        INDEBUG(*treeModf |= lifeVisitor.MadeChanges);
-    }
-    else
-    {
-        // NOTE: Live variable analysis will not work if you try
-        // to use the result of an assignment node directly!
-        for (GenTree* tree = node; tree != nullptr; tree = tree->gtPrev)
-        {
-            GenTree* newNode = fgComputeLifeNode(tree, life, keepAliveVars, pStmtInfoDirty DEBUGARG(treeModf));
-            if (newNode == nullptr)
-                break;
-
-            tree = newNode;
-        }
-    }
-}
-
-GenTree* Compiler::fgComputeLifeNode(GenTree*         tree,
-                                     VARSET_TP&       life,
-                                     const VARSET_TP& keepAliveVars,
-                                     bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
-{
-    while (true)
-    {
+    AGAIN:
+        assert(tree->OperGet() != GT_QMARK);
         if (tree->gtOper == GT_CALL)
         {
             fgComputeLifeCall(life, tree->AsCall());
@@ -1913,7 +1824,8 @@ GenTree* Compiler::fgComputeLifeNode(GenTree*         tree,
 
                 if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty, &storeRemoved DEBUGARG(treeModf)))
                 {
-                    return nullptr;
+                    assert(!doAgain);
+                    break;
                 }
 
                 if (isUse && !storeRemoved)
@@ -1940,15 +1852,11 @@ GenTree* Compiler::fgComputeLifeNode(GenTree*         tree,
 
                 if (doAgain)
                 {
-                    continue;
+                    goto AGAIN;
                 }
             }
         }
-
-        break;
     }
-
-    return tree;
 }
 
 void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars)
