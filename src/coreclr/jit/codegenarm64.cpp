@@ -910,7 +910,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     // Save integer registers at higher addresses than floating-point registers.
 
-    regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
+    regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT(compiler);
     regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
 
     if (maskSaveRegsFloat != RBM_NONE)
@@ -1027,7 +1027,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
 
     // Save integer registers at higher addresses than floating-point registers.
 
-    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
+    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT(compiler);
     regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
 
     // Restore in the opposite order of saving.
@@ -1352,7 +1352,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT(compiler);
     regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
 
     // Funclets must always save LR and FP, since when we have funclets we must have an FP frame.
@@ -1556,7 +1556,7 @@ void CodeGen::genFuncletEpilog()
         unwindStarted = true;
     }
 
-    regMaskTP maskRestoreRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskTP maskRestoreRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT(compiler);
     regMaskTP maskRestoreRegsInt   = genFuncletInfo.fiSaveRegs & ~maskRestoreRegsFloat;
 
     // Funclets must always save LR and FP, since when we have funclets we must have an FP frame.
@@ -5256,7 +5256,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
     {
         // Note that we cannot use targetReg before consuming all float source operands.
         // Therefore use an internal temp register
-        vectorReg = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
+        vectorReg = simdNode->GetSingleTempReg(RBM_ALLFLOAT(compiler));
     }
 
     // We will first consume the list items in execution (left to right) order,

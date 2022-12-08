@@ -693,8 +693,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableIntRegs &= ~RBM_FPBASE;
 #endif // ETW_EBP_FRAMED
 
-    availableFloatRegs  = RBM_ALLFLOAT;
-    availableDoubleRegs = RBM_ALLDOUBLE;
+    availableFloatRegs  = RBM_ALLFLOAT(compiler);
+    availableDoubleRegs = RBM_ALLDOUBLE(compiler);
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
@@ -706,17 +706,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
         availableDoubleRegs &= ~RBM_CALLEE_SAVED;
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
-
-#if defined(TARGET_AMD64)
-    // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independetly
-    // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
-    // we cannot use EVEX at all)
-    if (!compiler->DoJitStressEvexEncoding())
-    {
-        availableFloatRegs &= ~RBM_HIGHFLOAT;
-        availableDoubleRegs &= ~RBM_HIGHFLOAT;
-    }
-#endif
 
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
@@ -7483,7 +7472,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
     if (type == TYP_DOUBLE)
     {
         // Exclude any doubles for which the odd half isn't in freeRegs.
-        freeRegs = freeRegs & ((freeRegs << 1) & RBM_ALLDOUBLE);
+        freeRegs = freeRegs & ((freeRegs << 1) & RBM_ALLDOUBLE(this));
     }
 #endif
 
@@ -8985,14 +8974,16 @@ void dumpRegMask(regMaskTP regs)
     {
         printf("[allIntButFP]");
     }
-    else if (regs == RBM_ALLFLOAT)
+    /*
+    else if (regs == RBM_ALLFLOAT(0))
     {
         printf("[allFloat]");
     }
-    else if (regs == RBM_ALLDOUBLE)
+    else if (regs == RBM_ALLDOUBLE(0))
     {
         printf("[allDouble]");
     }
+    */
     else
     {
         dspRegMask(regs);

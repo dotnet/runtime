@@ -811,7 +811,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     // Floating point to integer casts requires a temporary register.
     if (varTypeIsFloating(srcType) && !varTypeIsFloating(castType))
     {
-        buildInternalFloatRegisterDefForNode(cast, RBM_ALLFLOAT);
+        buildInternalFloatRegisterDefForNode(cast, RBM_ALLFLOAT(compiler));
         setInternalRegsDelayFree = true;
     }
 #endif

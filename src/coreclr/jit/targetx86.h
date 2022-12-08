@@ -88,13 +88,13 @@
 
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3)
 
-  #define RBM_ALLFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7)
-  #define RBM_ALLDOUBLE            RBM_ALLFLOAT
+  #define RBM_ALLFLOAT(c)         (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7)
+  #define RBM_ALLDOUBLE(c)        RBM_ALLFLOAT(c)
 
   // TODO-CQ: Currently we are following the x86 ABI for SSE2 registers.
   // This should be reconsidered.
   #define RBM_FLT_CALLEE_SAVED     RBM_NONE
-  #define RBM_FLT_CALLEE_TRASH(c)     RBM_ALLFLOAT
+  #define RBM_FLT_CALLEE_TRASH(c)  RBM_ALLFLOAT(c)
   #define REG_VAR_ORDER_FLT        REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7
 
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6

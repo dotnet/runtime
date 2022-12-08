@@ -2634,7 +2634,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     if (shouldUse16ByteWideInstrs)
     {
-        const regNumber simdReg = node->GetSingleTempReg(RBM_ALLFLOAT);
+        const regNumber simdReg = node->GetSingleTempReg(RBM_ALLFLOAT(compiler));
 
         const int initValue = (src->AsIntCon()->IconValue() & 0xFF);
         emit->emitIns_R_I(INS_movi, EA_16BYTE, simdReg, initValue, INS_OPTS_16B);
@@ -2960,8 +2960,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (shouldUse16ByteWideInstrs)
     {
-        const regNumber simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
-        const regNumber simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT);
+        const regNumber simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT(compiler));
+        const regNumber simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT(compiler));
 
         helper.Unroll(FP_REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
     }
@@ -4693,7 +4693,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // DEBUG
 
 #if defined(TARGET_ARM)
-    regMaskTP maskPushRegsFloat = rsPushRegs & RBM_ALLFLOAT;
+    regMaskTP maskPushRegsFloat = rsPushRegs & RBM_ALLFLOAT(compiler);
     regMaskTP maskPushRegsInt   = rsPushRegs & ~maskPushRegsFloat;
 
     maskPushRegsInt |= genStackAllocRegisterMask(compiler->compLclFrameSize, maskPushRegsFloat);
@@ -4800,7 +4800,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
 
-    regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
+    regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT(compiler);
     regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
 
 #ifdef DEBUG

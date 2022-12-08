@@ -2023,7 +2023,7 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 
     if ((argDsc->GetArgReg() != REG_STK) && (argDsc->GetArgReg() != REG_NA))
     {
-        if (genRegMask(argDsc->GetArgReg()) & (RBM_ALLFLOAT))
+        if (genRegMask(argDsc->GetArgReg()) & (RBM_ALLFLOAT(compiler)))
         {
             assert(genRegMask(argDsc->GetArgReg()) & (RBM_FLTARG_REGS));
             floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
@@ -2037,7 +2037,7 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 
     if ((argDsc->GetOtherArgReg() != REG_STK) && (argDsc->GetOtherArgReg() != REG_NA))
     {
-        if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT))
+        if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT(compiler)))
         {
             assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_FLTARG_REGS));
             floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
@@ -3859,7 +3859,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                     break;
                 case TYP_DOUBLE:
                     // We ONLY want the valid double register in the RBM_DOUBLERET mask.
-                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
+                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE(compiler));
                     break;
                 case TYP_LONG:
                     useCandidates = RBM_LNGRET;

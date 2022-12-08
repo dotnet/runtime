@@ -3593,15 +3593,15 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 fpAvailMask = RBM_FLT_CALLEE_TRASH(compiler) & ~regArgMaskLive;
                 if (GlobalJitOptions::compFeatureHfa)
                 {
-                    fpAvailMask &= RBM_ALLDOUBLE;
+                    fpAvailMask &= RBM_ALLDOUBLE(compiler);
                 }
 
                 if (fpAvailMask == RBM_NONE)
                 {
-                    fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
+                    fpAvailMask = RBM_ALLFLOAT(compiler) & ~regArgMaskLive;
                     if (GlobalJitOptions::compFeatureHfa)
                     {
-                        fpAvailMask &= RBM_ALLDOUBLE;
+                        fpAvailMask &= RBM_ALLDOUBLE(compiler);
                     }
                 }
 
@@ -5304,7 +5304,7 @@ void CodeGen::genFinalizeFrame()
 
 #if defined(TARGET_ARM)
     // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
-    regMaskTP maskPushRegsFloat = maskCalleeRegsPushed & RBM_ALLFLOAT;
+    regMaskTP maskPushRegsFloat = maskCalleeRegsPushed & RBM_ALLFLOAT(compiler);
     regMaskTP maskPushRegsInt   = maskCalleeRegsPushed & ~maskPushRegsFloat;
 
     if ((maskPushRegsFloat != RBM_NONE) ||

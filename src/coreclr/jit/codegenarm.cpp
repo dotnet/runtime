@@ -1909,7 +1909,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 void CodeGen::genPushFltRegs(regMaskTP regMask)
 {
     assert(regMask != 0);                        // Don't call uness we have some registers to push
-    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+    assert((regMask & RBM_ALLFLOAT(compiler)) == regMask); // Only floasting point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
@@ -1928,7 +1928,7 @@ void CodeGen::genPushFltRegs(regMaskTP regMask)
 void CodeGen::genPopFltRegs(regMaskTP regMask)
 {
     assert(regMask != 0);                        // Don't call uness we have some registers to pop
-    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+    assert((regMask & RBM_ALLFLOAT(compiler)) == regMask); // Only floasting point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
@@ -2135,7 +2135,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     assert(compiler->compGeneratingEpilog);
 
     regMaskTP maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
-    regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
+    regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT(compiler);
     regMaskTP maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
 
     // First, pop float registers
@@ -2295,7 +2295,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    regMaskTP maskPushRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskTP maskPushRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT(compiler);
     regMaskTP maskPushRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
 
     regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
@@ -2391,7 +2391,7 @@ void CodeGen::genFuncletEpilog()
     /* The saved regs info saves the LR register. We need to pop the PC register to return */
     assert(genFuncletInfo.fiSaveRegs & RBM_LR);
 
-    regMaskTP maskPopRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskTP maskPopRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT(compiler);
     regMaskTP maskPopRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
 
     regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);

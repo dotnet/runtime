@@ -193,7 +193,7 @@ void Compiler::unwindEndEpilog()
 void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
 {
     // floating point registers cannot be specified in 'maskInt'
-    assert((maskInt & RBM_ALLFLOAT) == 0);
+    assert((maskInt & RBM_ALLFLOAT(this)) == 0);
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -280,7 +280,7 @@ void Compiler::unwindPushPopMaskInt(regMaskTP maskInt, bool useOpsize16)
 void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
 {
     // Only floating pointer registers can be specified in 'maskFloat'
-    assert((maskFloat & ~RBM_ALLFLOAT) == 0);
+    assert((maskFloat & ~RBM_ALLFLOAT(this)) == 0);
 
     // If the maskFloat is zero there is no unwind code to emit
     //
@@ -339,7 +339,7 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
 void Compiler::unwindPushMaskFloat(regMaskTP maskFloat)
 {
     // Only floating point registers should be in maskFloat
-    assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
+    assert((maskFloat & RBM_ALLFLOAT(this)) == maskFloat);
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -390,7 +390,7 @@ void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 #endif // FEATURE_CFI_SUPPORT
 
     // Only floating point registers should be in maskFloat
-    assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
+    assert((maskFloat & RBM_ALLFLOAT(this)) == maskFloat);
     unwindPushPopMaskFloat(maskFloat);
 }
 

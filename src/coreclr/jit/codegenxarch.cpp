@@ -2869,7 +2869,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     if (willUseSimdMov)
     {
-        regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
+        regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT(compiler));
 
         unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
                                ? YMM_REGSIZE_BYTES
@@ -3137,7 +3137,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (size >= XMM_REGSIZE_BYTES)
     {
-        regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
+        regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT(compiler));
 
         instruction simdMov = simdUnalignedMovIns();
 
@@ -3459,7 +3459,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     if (loadSize >= XMM_REGSIZE_BYTES)
 #endif
     {
-        xmmTmpReg = putArgNode->GetSingleTempReg(RBM_ALLFLOAT);
+        xmmTmpReg = putArgNode->GetSingleTempReg(RBM_ALLFLOAT(compiler));
     }
     if ((loadSize % XMM_REGSIZE_BYTES) != 0)
     {
@@ -7910,13 +7910,13 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             intTmpReg = putArgStk->GetSingleTempReg(RBM_ALLINT);
             assert(genIsValidIntReg(intTmpReg));
         }
-        if ((rsvdRegs & RBM_ALLFLOAT) != 0)
+        if ((rsvdRegs & RBM_ALLFLOAT(compiler)) != 0)
         {
-            simdTmpReg = putArgStk->GetSingleTempReg(RBM_ALLFLOAT);
+            simdTmpReg = putArgStk->GetSingleTempReg(RBM_ALLFLOAT(compiler));
             assert(genIsValidFloatReg(simdTmpReg));
         }
         assert(genCountBits(rsvdRegs) == (unsigned)((intTmpReg == REG_NA) ? 0 : 1) + ((simdTmpReg == REG_NA) ? 0 : 1));
-    }
+    }    
 
     for (GenTreeFieldList::Use& use : fieldList->Uses())
     {
