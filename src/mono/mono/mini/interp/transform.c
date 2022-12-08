@@ -7576,7 +7576,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_UNUSED57: ves_abort(); break;
 #endif
 			case CEE_ENDFILTER:
-				if (td->sp - 1 != td->stack || (td->sp - 1)->type != STACK_TYPE_I4) {
+				if (td->sp - 1 != td->stack || td->sp->type != STACK_TYPE_I4) {
 					mono_error_set_generic_error (error, "System", "InvalidProgramException", "");
 					goto exit;
 				}
