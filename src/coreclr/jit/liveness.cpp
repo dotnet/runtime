@@ -1923,7 +1923,8 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
                     {
                         assert(node->gtGetOp1()->OperIs(GT_IND, GT_BLK, GT_OBJ, GT_FIELD));
                         // Visit address of indir, which is actually evaluated.
-                        if (WalkTree(&node->AsOp()->gtOp1->AsUnOp()->gtOp1, node->AsOp()->gtOp1) == fgWalkResult::WALK_ABORT)
+                        if (WalkTree(&node->AsOp()->gtOp1->AsUnOp()->gtOp1, node->AsOp()->gtOp1) ==
+                            fgWalkResult::WALK_ABORT)
                             return WALK_ABORT;
                     }
 
@@ -3000,6 +3001,6 @@ PhaseStatus Compiler::fgEarlyLiveness()
     } while (fgStmtRemoved && fgLocalVarLivenessChanged);
 
     fgIsDoingEarlyLiveness = false;
-    fgDidEarlyLiveness = true;
+    fgDidEarlyLiveness     = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

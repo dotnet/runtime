@@ -3975,7 +3975,8 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                 if (fgDidEarlyLiveness)
                 {
                     VARSET_TP* deadFields;
-                    omitCopy = ((lcl->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lcl, &deadFields);
+                    omitCopy =
+                        ((lcl->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lcl, &deadFields);
                 }
                 else
                 {
