@@ -3956,6 +3956,7 @@ struct GenTreeCast : public GenTreeOp
     }
 
     bool usedForIndexing = false;
+    bool skippedGenForIndexing = false;
 };
 
 // GT_BOX nodes are place markers for boxed values.  The "real" tree

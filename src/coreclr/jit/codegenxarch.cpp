@@ -6914,8 +6914,29 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             unreached();
     }
 
+
     if (srcReg != REG_NA)
     {
+        if (cast->usedForIndexing)
+        {
+            GenTree* leaOper = cast->gtNext;
+            if (leaOper != nullptr && leaOper->OperIs(GT_LEA))
+            {
+                GenTree* indirOper = leaOper->gtNext;
+                if (indirOper != nullptr && indirOper->OperIs(GT_IND))
+                {
+                    regNumber indexReg = indirOper->AsIndir()->Index()->GetReg();
+                    regNumber indirReg = indirOper->GetRegNum();
+
+                    if (indexReg != REG_NA && indirReg != REG_NA && dstReg == indexReg && dstReg == indirReg)
+                    {
+                        cast->skippedGenForIndexing = true;
+                        return;
+                    }
+                }
+            }
+
+        }
         emit->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, canSkip);
     }
     else
