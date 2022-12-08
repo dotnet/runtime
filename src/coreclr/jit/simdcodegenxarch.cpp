@@ -974,6 +974,12 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
         // Store upper 4 bytes
         GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, operandReg, varNum, offs + 8);
+
+        // Update the life of treeNode
+        genUpdateLife(treeNode);
+
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        varDsc->SetRegNum(REG_STK);
     }
 }
 
