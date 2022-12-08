@@ -363,6 +363,14 @@ PAL_ERROR CorUnix::CPalThread::DisableMachExceptions()
 extern "C"
 void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 dwRCX, DWORD64 dwR8, DWORD64 dwR9, PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
 #elif defined(HOST_ARM64)
+
+extern "C"
+void
+RestoreCompleteContext(
+  PCONTEXT ContextRecord,
+  PEXCEPTION_RECORD ExceptionRecord
+);
+
 extern "C"
 void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
 #endif
@@ -395,7 +403,7 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
 #if defined(HOST_ARM64)
         // RtlRestoreContext assembly corrupts X16 & X17, so it cannot be
         // used for GCStress=C restore
-        MachSetThreadContext(pContext);
+        RestoreCompleteContext(pContext, pExRecord);
 #else
         RtlRestoreContext(pContext, pExRecord);
 #endif
@@ -1148,8 +1156,25 @@ SEHExceptionThread(void *args)
 
             if (!feFound)
             {
-                NONPAL_TRACE("HijackFaultingThread thread %08x\n", thread);
-                HijackFaultingThread(thread, mach_task_self(), sMessage);
+#ifdef HOST_ARM64
+                // Check for a special case of invalid instruction that is used to implement RestoreCompleteContext
+                mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
+                arm_thread_state64_t threadState;
+                machret = thread_get_state(thread, ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
+                CHECK_MACH("thread_get_state", machret);
+                if (arm_thread_state64_get_pc_fptr(threadState) == (void*)RestoreCompleteContext)
+                {
+                    // The CONTEXT pointer was passed to RestoreCompleteContext in x0
+                    CONTEXT *pContext = (CONTEXT *)threadState.__x[0];
+                    machret = CONTEXT_SetThreadContextOnPort(thread, pContext);
+                    CHECK_MACH("CONTEXT_SetThreadContextOnPort", machret);
+                }
+                else
+#endif // HOST_ARM64
+                {
+                    NONPAL_TRACE("HijackFaultingThread thread %08x\n", thread);
+                    HijackFaultingThread(thread, mach_task_self(), sMessage);
+                }
 
                 // Send the result of handling the exception back in a reply.
                 NONPAL_TRACE("ReplyToNotification KERN_SUCCESS thread %08x port %08x\n", thread, sMessage.GetRemotePort());
