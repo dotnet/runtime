@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Runtime.InteropServices.JavaScript
 {
     // this maps to src\mono\wasm\runtime\legacy\corebindings.ts
-    // the methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
+    // the public methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
     internal static unsafe partial class LegacyExports
     {
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        public static void CreateCSOwnedProxyRef(nint jsHandle, JSHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
+        public static void CreateCSOwnedProxyRef(nint jsHandle, LegacyHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
         {
             JSObject? res = null;
 
@@ -69,12 +69,12 @@ namespace System.Runtime.InteropServices.JavaScript
 #pragma warning disable CS0612 // Type or member is obsolete
                     res = mappedType switch
                     {
-                        JSHostImplementation.MappedType.JSObject => new JSObject(jsHandle),
-                        JSHostImplementation.MappedType.Array => new Array(jsHandle),
-                        JSHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
-                        JSHostImplementation.MappedType.DataView => new DataView(jsHandle),
-                        JSHostImplementation.MappedType.Function => new Function(jsHandle),
-                        JSHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
+                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle),
+                        LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
+                        LegacyHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
+                        LegacyHostImplementation.MappedType.DataView => new DataView(jsHandle),
+                        LegacyHostImplementation.MappedType.Function => new Function(jsHandle),
+                        LegacyHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
 #pragma warning restore CS0612 // Type or member is obsolete
@@ -265,8 +265,8 @@ namespace System.Runtime.InteropServices.JavaScript
             for (int i = 0; i < parmsLength; i++)
             {
                 Type t = parms[i].ParameterType;
-                var mt = JSHostImplementation.GetMarshalTypeFromType(t);
-                result[i] = JSHostImplementation.GetCallSignatureCharacterForMarshalType(mt, null);
+                var mt = LegacyHostImplementation.GetMarshalTypeFromType(t);
+                result[i] = LegacyHostImplementation.GetCallSignatureCharacterForMarshalType(mt, null);
             }
 
             return new string(result);
