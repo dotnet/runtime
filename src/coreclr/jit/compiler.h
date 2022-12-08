@@ -9110,6 +9110,7 @@ public:
     bool fgLocalVarLivenessDone; // Note that this one is used outside of debug.
     bool fgLocalVarLivenessChanged;
     bool fgIsDoingEarlyLiveness;
+    bool fgDidEarlyLiveness;
     bool compLSRADone;
     bool compRationalIRForm;
 

@@ -3968,11 +3968,22 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             //
             // fgMightHaveLoop() is expensive; check it last, only if necessary.
             //
-            VARSET_TP* deadFields;
-            if (call->IsTailCall() || //
-                (((lcl->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lcl, &deadFields)))
-            //((totalAppearances == 1) && call->IsNoReturn()) || //
-            //((totalAppearances == 1) && !fgMightHaveLoop()))
+            bool omitCopy = call->IsTailCall();
+
+            if (!omitCopy)
+            {
+                if (fgDidEarlyLiveness)
+                {
+                    VARSET_TP* deadFields;
+                    omitCopy = ((lcl->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lcl, &deadFields);
+                }
+                else
+                {
+                    omitCopy = (totalAppearances == 1) && (call->IsNoReturn() || !fgMightHaveLoop());
+                }
+            }
+
+            if (omitCopy)
             {
                 arg->SetEarlyNode(lcl);
                 JITDUMP("did not need to make outgoing copy for last use of implicit byref V%2d\n", varNum);

@@ -2922,11 +2922,20 @@ void Compiler::fgDispBBLiveness()
 
 PhaseStatus Compiler::fgEarlyLiveness()
 {
-    fgIsDoingEarlyLiveness = false;
     if (!opts.OptimizationEnabled())
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
+
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableEarlyLivenessRange;
+    JitEnableEarlyLivenessRange.EnsureInit(JitConfig.JitEnableEarlyLivenessRange());
+    const unsigned hash = info.compMethodHash();
+    if (!JitEnableEarlyLivenessRange.Contains(hash))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
 
     fgIsDoingEarlyLiveness = true;
     lvaSortByRefCount(RCS_EARLY);
@@ -2950,5 +2959,6 @@ PhaseStatus Compiler::fgEarlyLiveness()
     } while (fgStmtRemoved && fgLocalVarLivenessChanged);
 
     fgIsDoingEarlyLiveness = false;
-    return PhaseStatus::MODIFIED_NOTHING;
+    fgDidEarlyLiveness = true;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }

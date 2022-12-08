@@ -234,7 +234,7 @@ public:
                     isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
                 }
 
-                bool lastUse = node->gtFlags & GTF_VAR_DEATH;
+                bool lastUse = !m_compiler->fgDidEarlyLiveness || ((node->gtFlags & GTF_VAR_DEATH) != 0);
                 if (!isDef && !isAddr && !isCallTarget && lastUse)
                 {
                     m_node       = node;
@@ -402,10 +402,21 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Only fwd sub if we expect no code duplication
     //
-    if (varDsc->lvRefCnt(RCS_EARLY) < 2)
+    if (fgDidEarlyLiveness)
     {
-        JITDUMP(" not asg (no use)\n");
-        return false;
+        if (varDsc->lvRefCnt(RCS_EARLY) < 2)
+        {
+            JITDUMP(" not asg (no use)\n");
+            return false;
+        }
+    }
+    else
+    {
+        if (varDsc->lvRefCnt(RCS_EARLY) != 2)
+        {
+            JITDUMP(" not asg (single-use lcl)\n");
+            return false;
+        }
     }
 
     // And local is unalised
@@ -494,15 +505,20 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     ForwardSubVisitor fsv(this, lclNum);
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
-    // LclMorph (via RCS_Early) said there was just one use.
-    // It had better have gotten this right.
-    //
-    // assert(fsv.GetUseCount() <= 1);
-
-    if (fsv.GetUseCount() > 1)
+    if (fgDidEarlyLiveness)
     {
-        JITDUMP(" next stmt has multiple uses\n");
-        return false;
+        if (fsv.GetUseCount() > 1)
+        {
+            JITDUMP(" next stmt has multiple uses\n");
+            return false;
+        }
+    }
+    else
+    {
+        // LclMorph (via RCS_Early) said there was just one use.
+        // It had better have gotten this right.
+        //
+        assert(fsv.GetUseCount() <= 1);
     }
 
     if ((fsv.GetUseCount() == 0) || (fsv.GetNode() == nullptr))
