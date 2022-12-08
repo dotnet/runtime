@@ -355,7 +355,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // No Socket support
         [InlineData(100, 100, true)]
         [InlineData(100, 100, false)]
         [InlineData(100, 101, true)]
@@ -391,7 +391,7 @@ namespace System.Net.Http.Json.Functional.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // No Socket support
         [InlineData(true)]
         [InlineData(false)]
         public async Task GetFromJsonAsync_EnforcesTimeout(bool slowHeaders)
