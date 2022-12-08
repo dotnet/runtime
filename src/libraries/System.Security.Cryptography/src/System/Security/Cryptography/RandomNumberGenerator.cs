@@ -251,7 +251,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="destination">The buffer to receive the characters.</param>
         /// <param name="lowercase">
-        ///   <see langword="true" /> if the hexadecimal characters should be uppercase; <see langword="true" /> if lowercase.
+        ///   <see langword="true" /> if the hexadecimal characters should be lowercase; <see langword="false" /> if they should be uppercase.
         ///   The default is <see langword="false" />.
         /// </param>
         /// <remarks>
@@ -272,7 +272,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="stringLength">The length of string to create.</param>
         /// <param name="lowercase">
-        ///   <see langword="true" /> if the hexadecimal characters should be uppercase; <see langword="true" /> if lowercase.
+        ///   <see langword="true" /> if the hexadecimal characters should be lowercase; <see langword="false" /> if they should be uppercase.
         ///   The default is <see langword="false" />.
         /// </param>
         /// <returns>A string populated with random hexadecimal characters.</returns>
