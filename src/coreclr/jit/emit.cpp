@@ -1435,9 +1435,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
             {
                 if (isDstRegUpper32BitsZero)
                 {
-                    upper32BitsZeroRegLookup |= (1 << dstReg);
 #ifdef DEBUG
-                    if (emitComp->verbose)
+                    if (emitComp->verbose && !((upper32BitsZeroRegLookup >> dstReg) & 1))
                     {
                         printf("\n");
                         printf("Started tracking upper 32-bits for reg: %i\n", dstReg);
@@ -1446,12 +1445,12 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
                         printf("\n");
                     }
 #endif // DEBUG
+                    upper32BitsZeroRegLookup |= (1 << dstReg);
                 }
                 else
                 {
-                    upper32BitsZeroRegLookup &= ~(1 << dstReg);
 #ifdef DEBUG
-                    if (emitComp->verbose)
+                    if (emitComp->verbose && ((upper32BitsZeroRegLookup >> dstReg) & 1))
                     {
                         printf("\n");
                         printf("Stopped tracking upper 32-bits for reg: %i\n", dstReg);
@@ -1460,23 +1459,30 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
                         printf("\n");
                     }
 #endif // DEBUG
+                    upper32BitsZeroRegLookup &= ~(1 << dstReg);
                 }
             }
         }
         else
         {
+#ifdef DEBUG
+            if (emitComp->verbose && (upper32BitsZeroRegLookup != 0))
+            {
+                printf("\n");
+                printf("Tracking upper 32-bits reset\n");
+                if (emitLastIns)
+                {
+                    printf("Last instruction: ");
+                    dispIns(emitLastIns);
+                }
+                printf("\n");
+            }
+#endif // DEBUG
+
             // If we were not able to get peephole info, we assume
             // that looking at information from previous instructions is not safe.
             // Therefore, we must reset the lookup.
             upper32BitsZeroRegLookup = 0;
-#ifdef DEBUG
-            if (emitComp->verbose)
-            {
-                printf("\n");
-                printf("Tracking upper 32-bits reset\n");
-                printf("\n");
-            }
-#endif // DEBUG
         }
     }
 #endif // TARGET_XARCH

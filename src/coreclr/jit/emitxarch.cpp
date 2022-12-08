@@ -543,11 +543,31 @@ bool emitter::TryGetPeepholeInfoFromLastInstruction(regNumber* outDstReg, bool* 
             if (id->idIns() == INS_movzx)
             {
                 *outIsDstRegUpper32BitsZero = true;
+
+#ifdef DEBUG
+                if (emitComp->verbose)
+                {
+                    printf("\n");
+                    printf("upper 32-bits are zero for reg: %i\n", reg);
+                    printf("\n");
+                }
+#endif // DEBUG
+
                 return true;
             }
 
             // otherwise rely on operation size.
             *outIsDstRegUpper32BitsZero = (id->idOpSize() == EA_4BYTE);
+
+#ifdef DEBUG
+            if (emitComp->verbose && *outIsDstRegUpper32BitsZero)
+            {
+                printf("\n");
+                printf("upper 32-bits are zero for reg: %i\n", reg);
+                printf("\n");
+            }
+#endif // DEBUG
+
             return true;
         }
 
