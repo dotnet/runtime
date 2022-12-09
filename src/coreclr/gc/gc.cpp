@@ -45187,6 +45187,9 @@ HRESULT GCHeap::Init(size_t hn)
 //System wide initialization
 HRESULT GCHeap::Initialize()
 {
+#ifndef TRACE_GC
+    STRESS_LOG_VA (1, (ThreadStressLog::gcLoggingIsOffMsg()));
+#endif
     HRESULT hr = S_OK;
 
     qpf = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
