@@ -39,11 +39,11 @@ namespace System.Reflection.Emit
 {
     [ComVisible(true)]
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class GenericTypeParameterBuilder : TypeInfo
+    internal sealed class RuntimeGenericTypeParameterBuilder : GenericTypeParameterBuilder
     {
 #region Sync with MonoReflectionGenericParam in object-internals.h
         private TypeBuilder tbuilder;
-        private MethodBuilder? mbuilder;
+        private RuntimeMethodBuilder? mbuilder;
         private string name;
         private int index;
         private Type? base_type;
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
 #endregion
 
         [DynamicDependency(nameof(attrs))]  // Automatically keeps all previous fields too due to StructLayout
-        internal GenericTypeParameterBuilder(TypeBuilder tbuilder, MethodBuilder? mbuilder, string name, int index)
+        internal RuntimeGenericTypeParameterBuilder(TypeBuilder tbuilder, RuntimeMethodBuilder? mbuilder, string name, int index)
         {
             this.tbuilder = tbuilder;
             this.mbuilder = mbuilder;
@@ -61,17 +61,17 @@ namespace System.Reflection.Emit
             this.index = index;
         }
 
-        public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
+        public override void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
             this.base_type = baseTypeConstraint ?? typeof(object);
         }
 
-        public void SetInterfaceConstraints(params Type[]? interfaceConstraints)
+        public override void SetInterfaceConstraints(params Type[]? interfaceConstraints)
         {
             this.iface_constraints = interfaceConstraints;
         }
 
-        public void SetGenericParameterAttributes(GenericParameterAttributes genericParameterAttributes)
+        public override void SetGenericParameterAttributes(GenericParameterAttributes genericParameterAttributes)
         {
             this.attrs = genericParameterAttributes;
         }
@@ -424,7 +424,7 @@ namespace System.Reflection.Emit
             get { return mbuilder; }
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
@@ -443,7 +443,7 @@ namespace System.Reflection.Emit
         }
 
         // FIXME: "unverified implementation"
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }

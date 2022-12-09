@@ -44,7 +44,7 @@ using System.Globalization;
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
-    public partial class ModuleBuilder : Module
+    internal sealed partial class RuntimeModuleBuilder : ModuleBuilder
     {
 #region Sync with MonoReflectionModuleBuilder in object-internals.h
 
@@ -60,10 +60,10 @@ namespace System.Reflection.Emit
 
         private UIntPtr dynamic_image; /* GC-tracked */
         private int num_types;
-        private TypeBuilder[]? types;
+        private RuntimeTypeBuilder[]? types;
         private CustomAttributeBuilder[]? cattrs;
         private int table_idx;
-        internal AssemblyBuilder assemblyb;
+        internal RuntimeAssemblyBuilder assemblyb;
         private object[]? global_methods;
         private object[]? global_fields;
         private bool is_main;
@@ -76,7 +76,7 @@ namespace System.Reflection.Emit
         private TypeBuilder? global_type;
         private bool global_type_created;
         // name_cache keys are display names
-        private Dictionary<ITypeName, TypeBuilder> name_cache;
+        private Dictionary<ITypeName, RuntimeTypeBuilder> name_cache;
         private Dictionary<string, int> us_string_cache;
         private ModuleBuilderTokenGenerator? token_gen;
 
@@ -87,14 +87,14 @@ namespace System.Reflection.Emit
         private static extern void set_wrappers_type(ModuleBuilder mb, Type? ab);
 
         [DynamicDependency(nameof(table_indexes))]  // Automatically keeps all previous fields too due to StructLayout
-        internal ModuleBuilder(AssemblyBuilder assb, string name)
+        internal RuntimeModuleBuilder(RuntimeAssemblyBuilder assb, string name)
         {
             this.name = this.scopename = name;
             this.fqname = name;
             this.assembly = this.assemblyb = assb;
             guid = Guid.NewGuid().ToByteArray();
             table_idx = get_next_table_index(0x00, 1);
-            name_cache = new Dictionary<ITypeName, TypeBuilder>();
+            name_cache = new Dictionary<ITypeName, RuntimeTypeBuilder>();
             us_string_cache = new Dictionary<string, int>(512);
             this.global_type_created = false;
 
@@ -102,7 +102,7 @@ namespace System.Reflection.Emit
 
             CreateGlobalType();
 
-            TypeBuilder tb = new TypeBuilder(this, TypeAttributes.Abstract, 0xFFFFFF); /*last valid token*/
+            RuntimeTypeBuilder tb = new RuntimeTypeBuilder(this, TypeAttributes.Abstract, 0xFFFFFF); /*last valid token*/
             Type? type = tb.CreateTypeInfo();
             set_wrappers_type(this, type);
         }
@@ -120,7 +120,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void CreateGlobalFunctions()
+        public override void CreateGlobalFunctions()
         {
             if (global_type_created)
                 throw new InvalidOperationException("global methods already created");
@@ -131,18 +131,18 @@ namespace System.Reflection.Emit
             }
         }
 
-        public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
+        public override FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
         {
             ArgumentNullException.ThrowIfNull(data);
 
             FieldAttributes maskedAttributes = attributes & ~FieldAttributes.ReservedMask;
-            FieldBuilder fb = DefineDataImpl(name, data.Length, maskedAttributes | FieldAttributes.HasFieldRVA);
+            RuntimeFieldBuilder fb = (RuntimeFieldBuilder)DefineDataImpl(name, data.Length, maskedAttributes | FieldAttributes.HasFieldRVA);
             fb.SetRVAData(data);
 
             return fb;
         }
 
-        public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
+        public override FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
         {
             return DefineDataImpl(name, size, attributes & ~FieldAttributes.ReservedMask);
         }
@@ -165,7 +165,7 @@ namespace System.Reflection.Emit
             {
                 TypeBuilder tb = DefineType(typeName,
                     TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                             typeof(ValueType), null, FieldBuilder.RVADataPackingSize(size), size);
+                                             typeof(ValueType), null, RuntimeFieldBuilder.RVADataPackingSize(size), size);
                 tb.CreateType();
                 datablobtype = tb;
             }
@@ -200,7 +200,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
+        public override MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
         {
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
@@ -215,7 +215,7 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        public override MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
@@ -229,20 +229,20 @@ namespace System.Reflection.Emit
             return mb;
         }
 
-        private void AddType(TypeBuilder tb)
+        private void AddType(RuntimeTypeBuilder tb)
         {
             if (types != null)
             {
                 if (types.Length == num_types)
                 {
-                    TypeBuilder[] new_types = new TypeBuilder[types.Length * 2];
+                    RuntimeTypeBuilder[] new_types = new RuntimeTypeBuilder[types.Length * 2];
                     Array.Copy(types, new_types, num_types);
                     types = new_types;
                 }
             }
             else
             {
-                types = new TypeBuilder[1];
+                types = new RuntimeTypeBuilder[1];
             }
             types[num_types] = tb;
             num_types++;
@@ -254,7 +254,7 @@ namespace System.Reflection.Emit
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
                 throw new ArgumentException("Duplicate type name within an assembly.");
-            TypeBuilder res = new TypeBuilder(this, name, attr, parent, interfaces, packingSize, typesize, null);
+            RuntimeTypeBuilder res = new RuntimeTypeBuilder(this, name, attr, parent, interfaces, packingSize, typesize, null);
             AddType(res);
 
             name_cache.Add(ident, res);
@@ -262,41 +262,41 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        internal void RegisterTypeName(TypeBuilder tb, ITypeName name)
+        internal void RegisterTypeName(RuntimeTypeBuilder tb, ITypeName name)
         {
             name_cache.Add(name, tb);
         }
 
-        internal TypeBuilder? GetRegisteredType(ITypeName name)
+        internal RuntimeTypeBuilder? GetRegisteredType(ITypeName name)
         {
-            TypeBuilder? result;
+            RuntimeTypeBuilder? result;
             name_cache.TryGetValue(name, out result);
             return result;
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
+        public override TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             return DefineType(name, attr, parent, interfaces, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
         }
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
+        public override TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
         {
             return DefineType(name, attr, parent, null, packingSize, typesize);
         }
 
-        public MethodInfo GetArrayMethod(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
+        public override MethodInfo GetArrayMethod(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
             return new MonoArrayMethod(arrayClass, methodName, callingConvention, returnType!, parameterTypes!); // FIXME: nulls should be allowed
         }
 
-        public EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
+        public override EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
         {
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
                 throw new ArgumentException("Duplicate type name within an assembly.");
 
-            EnumBuilder eb = new EnumBuilder(this, name, visibility, underlyingType);
-            TypeBuilder res = eb.GetTypeBuilder();
+            RuntimeEnumBuilder eb = new RuntimeEnumBuilder(this, name, visibility, underlyingType);
+            RuntimeTypeBuilder res = eb.GetTypeBuilder();
             AddType(res);
             name_cache.Add(ident, res);
             return eb;
@@ -314,7 +314,7 @@ namespace System.Reflection.Emit
             return GetType(className, false, ignoreCase);
         }
 
-        private static TypeBuilder? search_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
+        private static RuntimeTypeBuilder? search_in_array(RuntimeTypeBuilder[] arr, int validElementsInArray, ITypeName className)
         {
             int i;
             for (i = 0; i < validElementsInArray; ++i)
@@ -327,7 +327,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        private static TypeBuilder? search_nested_in_array(TypeBuilder[] arr, int validElementsInArray, ITypeName className)
+        private static RuntimeTypeBuilder? search_nested_in_array(RuntimeTypeBuilder[] arr, int validElementsInArray, ITypeName className)
         {
             int i;
             for (i = 0; i < validElementsInArray; ++i)
@@ -338,9 +338,9 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        private static TypeBuilder? GetMaybeNested(TypeBuilder t, IEnumerable<ITypeName> nested)
+        private static RuntimeTypeBuilder? GetMaybeNested(RuntimeTypeBuilder t, IEnumerable<ITypeName> nested)
         {
-            TypeBuilder? result = t;
+            RuntimeTypeBuilder? result = t;
 
             foreach (ITypeName pname in nested)
             {
@@ -358,7 +358,7 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(className);
 
-            TypeBuilder? result = null;
+            RuntimeTypeBuilder? result = null;
 
             if (types == null && throwOnError)
                 throw new TypeLoadException(className);
@@ -384,9 +384,8 @@ namespace System.Reflection.Emit
             if (result != null && (ts.HasModifiers || ts.IsByRef))
             {
                 Type mt = result;
-                if (result is TypeBuilder)
+                if (result is RuntimeTypeBuilder tb)
                 {
-                    var tb = result as TypeBuilder;
                     if (tb.is_created)
                         mt = tb.CreateType()!;
                 }
@@ -407,7 +406,7 @@ namespace System.Reflection.Emit
                 }
                 if (ts.IsByRef)
                     mt = mt.MakeByRefType();
-                result = mt as TypeBuilder;
+                result = mt as RuntimeTypeBuilder;
                 if (result == null)
                     return mt;
             }
@@ -433,7 +432,7 @@ namespace System.Reflection.Emit
             return index;
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
             if (cattrs != null)
@@ -450,7 +449,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
@@ -493,14 +492,14 @@ namespace System.Reflection.Emit
             return GetMethodToken(GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes));
         }
 
-        internal static int GetConstructorToken(ConstructorInfo con)
+        public override int GetConstructorToken(ConstructorInfo con)
         {
             ArgumentNullException.ThrowIfNull(con);
 
             return con.MetadataToken;
         }
 
-        internal static int GetFieldToken(FieldInfo field)
+        public override int GetFieldToken(FieldInfo field)
         {
             ArgumentNullException.ThrowIfNull(field);
 
@@ -524,19 +523,19 @@ namespace System.Reflection.Emit
             throw new NotImplementedException();
         }
 
-        internal int GetSignatureToken(SignatureHelper sigHelper)
+        public override int GetSignatureToken(SignatureHelper sigHelper)
         {
             ArgumentNullException.ThrowIfNull(sigHelper);
             return GetToken(sigHelper);
         }
 
-        internal int GetStringConstant(string str)
+        public override int GetStringConstant(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
             return GetToken(str);
         }
 
-        internal static int GetTypeToken(Type type)
+        public override int GetTypeToken(Type type, bool getGenericDefinition = true)
         {
             ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)
@@ -625,21 +624,21 @@ namespace System.Reflection.Emit
                 else
                     token = typeref_tokengen--;
             }
-            else if (member is EnumBuilder eb)
+            else if (member is RuntimeEnumBuilder eb)
             {
                 token = GetPseudoToken(eb.GetTypeBuilder(), create_open_instance);
                 dict[member] = token;
                 // n.b. don't register with the runtime, the TypeBuilder already did it.
                 return token;
             }
-            else if (member is ConstructorBuilder cb)
+            else if (member is RuntimeConstructorBuilder cb)
             {
                 if (member.Module == this && !cb.TypeBuilder.ContainsGenericParameters)
                     token = methoddef_tokengen--;
                 else
                     token = memberref_tokengen--;
             }
-            else if (member is MethodBuilder mb)
+            else if (member is RuntimeMethodBuilder mb)
             {
                 if (member.Module == this && !mb.TypeBuilder.ContainsGenericParameters && !mb.IsGenericMethodDefinition)
                     token = methoddef_tokengen--;
@@ -715,13 +714,13 @@ namespace System.Reflection.Emit
         // Called from the runtime to return the corresponding finished reflection object
         internal static object RuntimeResolve(object obj)
         {
-            if (obj is MethodBuilder mb)
+            if (obj is RuntimeMethodBuilder mb)
                 return mb.RuntimeResolve();
-            if (obj is ConstructorBuilder cb)
+            if (obj is RuntimeConstructorBuilder cb)
                 return cb.RuntimeResolve();
-            if (obj is FieldBuilder fb)
+            if (obj is RuntimeFieldBuilder fb)
                 return fb.RuntimeResolve();
-            if (obj is GenericTypeParameterBuilder gtpb)
+            if (obj is RuntimeGenericTypeParameterBuilder gtpb)
                 return gtpb.RuntimeResolve();
             if (obj is FieldOnTypeBuilderInst fotbi)
                 return fotbi.RuntimeResolve();
@@ -752,7 +751,7 @@ namespace System.Reflection.Emit
 
         internal void CreateGlobalType()
         {
-            global_type ??= new TypeBuilder(this, 0, 1, true);
+            global_type ??= new RuntimeTypeBuilder(this, 0, 1, true);
         }
 
         public override Assembly Assembly
@@ -784,7 +783,7 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        internal ModuleBuilder InternalModule => this;
+        internal RuntimeModuleBuilder InternalModule => this;
 
         internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
 
@@ -929,14 +928,23 @@ namespace System.Reflection.Emit
                 return RuntimeModule.get_MetadataToken(this);
             }
         }
+
+        public override ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
+            => RuntimeTypeBuilder.GetConstructor(type, constructor);
+
+        public override FieldInfo GetField(Type type, FieldInfo field)
+            => RuntimeTypeBuilder.GetField(type, field);
+
+        public override MethodInfo GetMethod(Type type, MethodInfo method)
+            => RuntimeTypeBuilder.GetMethod(type, method);
     }
 
     internal sealed class ModuleBuilderTokenGenerator : ITokenGenerator
     {
 
-        private ModuleBuilder mb;
+        private RuntimeModuleBuilder mb;
 
-        public ModuleBuilderTokenGenerator(ModuleBuilder mb)
+        public ModuleBuilderTokenGenerator(RuntimeModuleBuilder mb)
         {
             this.mb = mb;
         }

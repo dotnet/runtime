@@ -172,38 +172,63 @@ namespace System.Reflection.Emit
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public sealed partial class AssemblyBuilder : Assembly
+    public partial class AssemblyBuilder
+    {
+        private UIntPtr dynamic_assembly; /* GC-tracked */
+        private Module[]? loaded_modules;
+
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
+        {
+            ArgumentNullException.ThrowIfNull(name);
+
+            return new RuntimeAssemblyBuilder(name, access);
+        }
+
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        {
+            AssemblyBuilder ab = DefineDynamicAssembly(name, access);
+            if (assemblyAttributes != null)
+            {
+                foreach (CustomAttributeBuilder attr in assemblyAttributes)
+                    ab.SetCustomAttribute(attr);
+            }
+
+            return ab;
+        }
+    }
+
+    internal sealed partial class RuntimeAssemblyBuilder : AssemblyBuilder
     {
         //
         // AssemblyBuilder inherits from Assembly, but the runtime thinks its layout inherits from RuntimeAssembly
         //
-#region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
+    #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
 
-        private UIntPtr dynamic_assembly; /* GC-tracked */
-        private ModuleBuilder[] modules;
+        private RuntimeModuleBuilder[] modules;
         private string? name;
         private CustomAttributeBuilder[]? cattrs;
         private string? version;
         private string? culture;
         private byte[]? public_key_token;
-        private Module[]? loaded_modules;
         private uint access;
 #endregion
 
         private AssemblyName aname;
-        private ModuleBuilder manifest_module;
+        private RuntimeModuleBuilder manifest_module;
         private bool manifest_module_used;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [DynamicDependency("RuntimeResolve", typeof(ModuleBuilder))]
+        [DynamicDependency("RuntimeResolve", typeof(RuntimeModuleBuilder))]
         private static extern void basic_init(AssemblyBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
 
         [DynamicDependency(nameof(access))] // Automatically keeps all previous fields too due to StructLayout
-        private AssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access)
+        internal RuntimeAssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access)
         {
             aname = (AssemblyName)n.Clone();
 
@@ -228,8 +253,8 @@ namespace System.Reflection.Emit
             basic_init(this);
 
             // Netcore only allows one module per assembly
-            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule");
-            modules = new ModuleBuilder[] { manifest_module };
+            manifest_module = new RuntimeModuleBuilder(this, "RefEmit_InMemoryManifestModule");
+            modules = new RuntimeModuleBuilder[] { manifest_module };
         }
 
         public override bool ReflectionOnly
@@ -237,28 +262,7 @@ namespace System.Reflection.Emit
             get { return base.ReflectionOnly; }
         }
 
-        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
-        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
-        {
-            ArgumentNullException.ThrowIfNull(name);
-
-            return new AssemblyBuilder(name, access);
-        }
-
-        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
-        public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-        {
-            AssemblyBuilder ab = DefineDynamicAssembly(name, access);
-            if (assemblyAttributes != null)
-            {
-                foreach (CustomAttributeBuilder attr in assemblyAttributes)
-                    ab.SetCustomAttribute(attr);
-            }
-
-            return ab;
-        }
-
-        public ModuleBuilder DefineDynamicModule(string name)
+        public override ModuleBuilder DefineDynamicModule(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             if (name[0] == '\0')
@@ -273,15 +277,13 @@ namespace System.Reflection.Emit
         internal static AssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
-            Assembly? _ /*callingAssembly*/,
-            AssemblyLoadContext? assemblyLoadContext,
+            AssemblyLoadContext? _,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            Debug.Assert(assemblyLoadContext is null);
             return DefineDynamicAssembly(name, access, assemblyAttributes);
         }
 
-        public ModuleBuilder? GetDynamicModule(string name)
+        public override ModuleBuilder? GetDynamicModule(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
@@ -295,7 +297,7 @@ namespace System.Reflection.Emit
 
         public override bool IsCollectible => access == (uint)AssemblyBuilderAccess.RunAndCollect;
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
@@ -315,7 +317,7 @@ namespace System.Reflection.Emit
             UpdateNativeCustomAttributes(this);
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);

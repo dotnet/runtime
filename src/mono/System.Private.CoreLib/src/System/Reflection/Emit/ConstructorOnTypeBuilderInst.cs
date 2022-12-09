@@ -123,7 +123,7 @@ namespace System.Reflection.Emit
         internal override ParameterInfo[] GetParametersInternal()
         {
             ParameterInfo[] res;
-            if (cb is ConstructorBuilder cbuilder)
+            if (cb is RuntimeConstructorBuilder cbuilder)
             {
                 res = new ParameterInfo[cbuilder.parameters!.Length];
                 for (int i = 0; i < cbuilder.parameters.Length; i++)
@@ -147,7 +147,7 @@ namespace System.Reflection.Emit
 
         internal override Type[] GetParameterTypes()
         {
-            if (cb is ConstructorBuilder builder)
+            if (cb is RuntimeConstructorBuilder builder)
             {
                 return builder.parameters!;
             }

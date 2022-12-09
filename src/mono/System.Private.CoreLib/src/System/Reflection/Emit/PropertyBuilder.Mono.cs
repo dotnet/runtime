@@ -41,7 +41,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
-    public sealed partial class PropertyBuilder : PropertyInfo
+    internal sealed partial class RuntimePropertyBuilder : PropertyBuilder
     {
 #region Sync with MonoReflectionPropertyBuilder in object-internals.h
         private PropertyAttributes attrs;
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
         private MethodBuilder? set_method;
         private MethodBuilder? get_method;
         private int table_idx;
-        internal TypeBuilder typeb;
+        internal RuntimeTypeBuilder typeb;
         private Type[]? returnModReq;
         private Type[]? returnModOpt;
         private Type[][]? paramModReq;
@@ -61,7 +61,7 @@ namespace System.Reflection.Emit
         private CallingConventions callingConvention;
 #endregion
 
-        internal PropertyBuilder(TypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
+        internal RuntimePropertyBuilder(RuntimeTypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             this.name = name;
             this.attrs = attributes;
@@ -109,7 +109,7 @@ namespace System.Reflection.Emit
             get { return typeb; }
         }
 
-        public void AddOtherMethod(MethodBuilder mdBuilder)
+        public override void AddOtherMethod(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             typeb.check_not_created();
@@ -153,13 +153,13 @@ namespace System.Reflection.Emit
         {
             throw not_supported();
         }
-        public void SetConstant(object? defaultValue)
+        public override void SetConstant(object? defaultValue)
         {
             typeb.check_not_created();
             def_value = defaultValue;
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
             typeb.check_not_created();
@@ -184,19 +184,19 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public void SetGetMethod(MethodBuilder mdBuilder)
+        public override void SetGetMethod(MethodBuilder mdBuilder)
         {
             typeb.check_not_created();
             ArgumentNullException.ThrowIfNull(mdBuilder);
             get_method = mdBuilder;
         }
 
-        public void SetSetMethod(MethodBuilder mdBuilder)
+        public override void SetSetMethod(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             set_method = mdBuilder;

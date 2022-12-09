@@ -9,7 +9,7 @@ namespace System.Reflection.Emit
         {
         }
 
-        public virtual void SetConstant(object defaultValue)
+        public virtual void SetConstant(object? defaultValue)
             => SetConstant(defaultValue);
 
         public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
