@@ -286,13 +286,14 @@ public class WasmAppBuilder : Task
                     webcilWriter.Write();
                     var finalWebcil = Path.ChangeExtension(name, ".webcil");
                     FileCopyChecked(tmpWebcil, Path.Combine(directory, finalWebcil), "SatelliteAssemblies");
+                    config.Assets.Add(new SatelliteAssemblyEntry(finalWebcil, culture));
                 }
                 else
                 {
                     FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
+                    config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
                 }
 
-                config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
             }
         }
 
