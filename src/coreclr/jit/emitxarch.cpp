@@ -468,133 +468,6 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 }
 
 //------------------------------------------------------------------------
-// UpdateUpper32BitsZeroRegLookup: TODO
-//
-void emitter::UpdateUpper32BitsZeroRegLookup()
-{
-    assert(emitCanPeepholeLastIns());
-
-    switch (emitLastIns->idInsFmt())
-    {
-        case IF_RRD:
-        case IF_RWR:
-        case IF_RRW:
-
-        case IF_RRD_CNS:
-        case IF_RWR_CNS:
-        case IF_RRW_CNS:
-        case IF_RRW_SHF:
-
-        case IF_RRD_RRD:
-        case IF_RWR_RRD:
-        case IF_RRW_RRD:
-        case IF_RRW_RRW:
-        case IF_RRW_RRW_CNS:
-
-        case IF_RWR_RRD_RRD:
-        case IF_RWR_RRD_RRD_CNS:
-
-        case IF_RWR_RRD_RRD_RRD:
-
-        case IF_RRD_MRD:
-        case IF_RWR_MRD:
-        case IF_RRW_MRD:
-        case IF_RRW_MRD_CNS:
-
-        case IF_RWR_RRD_MRD:
-        case IF_RWR_MRD_CNS:
-        case IF_RWR_RRD_MRD_CNS:
-        case IF_RWR_RRD_MRD_RRD:
-        case IF_RWR_MRD_OFF:
-
-        case IF_RRD_SRD:
-        case IF_RWR_SRD:
-        case IF_RRW_SRD:
-        case IF_RRW_SRD_CNS:
-
-        case IF_RWR_RRD_SRD:
-        case IF_RWR_SRD_CNS:
-        case IF_RWR_RRD_SRD_CNS:
-        case IF_RWR_RRD_SRD_RRD:
-
-        case IF_RRD_ARD:
-        case IF_RWR_ARD:
-        case IF_RRW_ARD:
-        case IF_RRW_ARD_CNS:
-
-        case IF_RWR_RRD_ARD:
-        case IF_RWR_ARD_CNS:
-        case IF_RWR_ARD_RRD:
-        case IF_RWR_RRD_ARD_CNS:
-        case IF_RWR_RRD_ARD_RRD:
-        {
-#ifdef TARGET_AMD64
-            assert((emitLastIns->idReg1() >= REG_RAX) && (emitLastIns->idReg1() <= REG_XMM15));
-#else
-            assert((emitLastIns->idReg1() >= REG_EAX) && (emitLastIns->idReg1() <= REG_XMM7));
-#endif // !TARGET_AMD64
-
-            // movsx always sign extends to 8 bytes.
-            if (emitLastIns->idIns() == INS_movsx)
-            {
-                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
-                return;
-            }
-
-#ifdef TARGET_AMD64
-            if (emitLastIns->idIns() == INS_movsxd)
-            {
-                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
-                return;
-            }
-#endif
-
-            // movzx always zeroes the upper 32 bits.
-            if (emitLastIns->idIns() == INS_movzx)
-            {
-                upper32BitsZeroRegLookup |= (1 << emitLastIns->idReg1());
-                return;
-            }
-
-            if (instrHasImplicitRegPairDest(emitLastIns->idIns()))
-            {
-                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
-                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg2());
-                return;
-            }
-
-            // otherwise rely on operation size.
-            if (emitLastIns->idOpSize() == EA_4BYTE)
-            {
-                upper32BitsZeroRegLookup |= (1 << emitLastIns->idReg1());
-            }
-            else
-            {
-                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
-            }
-            return;
-        }
-
-        case IF_LABEL:
-        case IF_RWR_LABEL:
-        case IF_SWR_LABEL:
-        case IF_METHOD:
-        case IF_METHPTR:
-        {
-            // Looking at information from previous instructions is not safe.
-            // Therefore, we must reset the lookup.
-            upper32BitsZeroRegLookup = 0;
-            return;
-        }
-
-        default:
-        {
-            return;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
 // AreUpper32BitsZero: check if some previously emitted
 //     instruction set the upper 32 bits of reg to zero.
 //
@@ -622,7 +495,9 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         return false;
     }
 
-    switch (emitLastIns->idInsFmt())
+    instrDesc* id = emitGetLastIns();
+
+    switch (id->idInsFmt())
     {
         case IF_RRD:
         case IF_RWR:
@@ -677,42 +552,42 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         case IF_RWR_RRD_ARD_RRD:
         {
 #ifdef TARGET_AMD64
-            assert((emitLastIns->idReg1() >= REG_RAX) && (emitLastIns->idReg1() <= REG_XMM15));
+            assert((id->idReg1() >= REG_RAX) && (id->idReg1() <= REG_XMM15));
 #else
-            assert((emitLastIns->idReg1() >= REG_EAX) && (emitLastIns->idReg1() <= REG_XMM7));
+            assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_XMM7));
 #endif // !TARGET_AMD64
 
-            if (instrHasImplicitRegPairDest(emitLastIns->idIns()))
+            if (instrHasImplicitRegPairDest(id->idIns()))
             {
                 return false;
             }
 
-            if (emitLastIns->idReg1() != reg)
+            if (id->idReg1() != reg)
             {
-                return ((upper32BitsZeroRegLookup >> reg) & 1);
+                return false;
             }
 
             // movsx always sign extends to 8 bytes.
-            if (emitLastIns->idIns() == INS_movsx)
+            if (id->idIns() == INS_movsx)
             {
                 return false;
             }
 
 #ifdef TARGET_AMD64
-            if (emitLastIns->idIns() == INS_movsxd)
+            if (id->idIns() == INS_movsxd)
             {
                 return false;
             }
 #endif
 
             // movzx always zeroes the upper 32 bits.
-            if (emitLastIns->idIns() == INS_movzx)
+            if (id->idIns() == INS_movzx)
             {
                 return true;
             }
 
             // otherwise rely on operation size.
-            return (emitLastIns->idOpSize() == EA_4BYTE);
+            return (id->idOpSize() == EA_4BYTE);
         }
 
         case IF_LABEL:
@@ -726,7 +601,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
         default:
         {
-            return ((upper32BitsZeroRegLookup >> reg) & 1);
+            return false;
         }
     }
 }
@@ -762,7 +637,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return false;
     }
 
-    instrDesc*  id      = emitLastIns;
+    instrDesc*  id      = emitGetLastIns();
     instruction lastIns = id->idIns();
     insFormat   fmt     = id->idInsFmt();
 
@@ -846,7 +721,7 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree*
         return false;
     }
 
-    instrDesc*  id      = emitLastIns;
+    instrDesc*  id      = emitGetLastIns();
     instruction lastIns = id->idIns();
     insFormat   fmt     = id->idInsFmt();
 
@@ -2067,7 +1942,7 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
  */
 bool emitter::emitIsLastInsCall()
 {
-    if ((emitLastIns != nullptr) && (emitLastIns->idIns() == INS_call))
+    if (emitHasLastIns() && (emitGetLastIns()->idIns() == INS_call))
     {
         return true;
     }
@@ -5899,15 +5774,15 @@ bool emitter::IsRedundantMov(
     // functionality even if their actual identifier differs and we should optimize these
 
     if (!emitCanPeepholeLastIns() ||         // Don't optimize if unsafe
-        (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
-        (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
-        (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
+        (emitGetLastIns()->idIns() != ins) || // or if the instruction is different from the last instruction
+        (emitGetLastIns()->idOpSize() != size) || // or if the operand size is different from the last instruction
+        (emitGetLastIns()->idInsFmt() != fmt))    // or if the format is different from the last instruction
     {
         return false;
     }
 
-    regNumber lastDst = emitLastIns->idReg1();
-    regNumber lastSrc = emitLastIns->idReg2();
+    regNumber lastDst = emitGetLastIns()->idReg1();
+    regNumber lastSrc = emitGetLastIns()->idReg2();
 
     // Check if we did same move in last instruction, side effects don't matter since they already happened
     if ((lastDst == dst) && (lastSrc == src))
@@ -8589,21 +8464,21 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     // functionality even if their actual identifier differs and we should optimize these
 
     if (!emitCanPeepholeLastIns() ||       // Don't optimize if unsafe
-        (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
-        (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
+        (emitGetLastIns()->idIns() != ins) || // or if the instruction is different from the last instruction
+        (emitGetLastIns()->idOpSize() != size)) // or if the operand size is different from the last instruction
     {
         return false;
     }
 
     // Don't optimize if the last instruction is also not a Load/Store.
-    if (!((emitLastIns->idInsFmt() == IF_SWR_RRD) || (emitLastIns->idInsFmt() == IF_RWR_SRD)))
+    if (!((emitGetLastIns()->idInsFmt() == IF_SWR_RRD) || (emitGetLastIns()->idInsFmt() == IF_RWR_SRD)))
     {
         return false;
     }
 
-    regNumber lastReg1 = emitLastIns->idReg1();
-    int       varNum   = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
-    int       lastOffs = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+    regNumber lastReg1 = emitGetLastIns()->idReg1();
+    int       varNum   = emitGetLastIns()->idAddr()->iiaLclVar.lvaVarNum();
+    int       lastOffs = emitGetLastIns()->idAddr()->iiaLclVar.lvaOffset();
 
     const bool hasSideEffect = HasSideEffect(ins, size);
 
@@ -8611,8 +8486,8 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     if (varNum == varx && lastReg1 == ireg && lastOffs == offs)
     {
         // Check if we did a switched mov in the last instruction  and don't have a side effect
-        if ((((emitLastIns->idInsFmt() == IF_RWR_SRD) && (fmt == IF_SWR_RRD)) ||
-             ((emitLastIns->idInsFmt() == IF_SWR_RRD) && (fmt == IF_RWR_SRD))) &&
+        if ((((emitGetLastIns()->idInsFmt() == IF_RWR_SRD) && (fmt == IF_SWR_RRD)) ||
+             ((emitGetLastIns()->idInsFmt() == IF_SWR_RRD) && (fmt == IF_RWR_SRD))) &&
             !hasSideEffect) // or if the format is different from the last instruction
         {
             JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src and the mov has "
@@ -8620,7 +8495,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
             return true;
         }
         // Check if we did same move in last instruction, side effects don't matter since they already happened
-        if (emitLastIns->idInsFmt() == fmt)
+        if (emitGetLastIns()->idInsFmt() == fmt)
         {
             JITDUMP("\n -- suppressing mov because last instruction already moved from src to dst.\n");
             return true;

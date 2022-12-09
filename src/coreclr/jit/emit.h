@@ -2173,7 +2173,12 @@ private:
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
-    instrDesc* emitLastIns;
+    instrDesc* emitLastInstrs[16];
+
+    inline bool emitHasLastIns() const
+    {
+        return (emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] != nullptr);
+    }
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
@@ -2182,21 +2187,17 @@ private:
     // The final check prevents looking across an IG boundary unless we're in an extension IG.
     bool emitCanPeepholeLastIns() const
     {
-        return (emitLastIns != nullptr) &&                 // there is an emitLastInstr
-               !emitForceNewIG &&                          // and we're not about to start a new IG
-               ((emitCurIGinsCnt > 0) ||                   // and we're not at the start of a new IG
-                ((emitCurIG->igFlags & IGF_EXTEND) != 0)); //    or we are at the start of a new IG,
-                                                           //    and it's an extension IG
+        return emitHasLastIns() &&
+               !emitForceNewIG &&                             // and we're not about to start a new IG
+               ((emitCurIGinsCnt > 0) ||                      // and we're not at the start of a new IG
+                ((emitCurIG->igFlags & IGF_EXTEND) != 0));    //    or we are at the start of a new IG,
+                                                              //    and it's an extension IG
     }
 
-#ifdef TARGET_XARCH
-    // IMPORTANT: Only contains information from **before** the last emitted instruction.
-    // A lookup where each bit position corresponds to a register.
-    // A bit that is set means the register's upper 32-bits are zero.
-    // This effectively keeps track of which registers have their upper 32-bits set to zero.
-    // GPRs (general-purpose registers) only.
-    regMaskTP upper32BitsZeroRegLookup;
-#endif // TARGET_XARCH
+    inline instrDesc* emitGetLastIns() const
+    {
+        return emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)];
+    }
 
 #ifdef TARGET_ARMARCH
     instrDesc* emitLastMemBarrier;

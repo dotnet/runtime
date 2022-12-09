@@ -1005,19 +1005,19 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     if (sz != 0)
     {
-        assert(emitLastIns != nullptr);
-        assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
-        assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
+        assert(emitHasLastIns());
+        assert(emitCurIGfreeBase <= (BYTE*)emitGetLastIns());
+        assert((BYTE*)emitGetLastIns() < emitCurIGfreeBase + sz);
 
 #if defined(TARGET_XARCH)
-        assert(emitLastIns != nullptr);
-        if (emitLastIns->idIns() == INS_jmp)
+        assert(emitHasLastIns());
+        if (emitGetLastIns()->idIns() == INS_jmp)
         {
             ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
         }
 #endif
 
-        emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
+        emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] = (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
     }
 
     // Reset the buffer free pointers
@@ -1166,11 +1166,7 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-#ifdef TARGET_XARCH
-    upper32BitsZeroRegLookup = 0;
-#endif // TARGET_XARCH
-
-    emitLastIns = nullptr;
+    memset(&emitLastInstrs, 0, ArrLen(emitLastInstrs));
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
@@ -1422,24 +1418,6 @@ size_t emitter::emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp)
 
 void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
-#ifdef TARGET_XARCH
-    if (emitComp->opts.OptimizationEnabled())
-    {
-        // Only consider if safe
-        //
-        if (emitCanPeepholeLastIns())
-        {
-            UpdateUpper32BitsZeroRegLookup();
-        }
-        else
-        {
-            // Looking at information from previous instructions is not safe.
-            // Therefore, we must reset the lookup.
-            upper32BitsZeroRegLookup = 0;
-        }
-    }
-#endif // TARGET_XARCH
-
     instrDesc* id;
 
 #ifdef DEBUG
@@ -1509,7 +1487,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     /* Grab the space for the instruction */
 
-    emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitCurIGfreeNext += fullSize;
 
     assert(sz >= sizeof(void*));
@@ -1530,8 +1508,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #endif // TARGET_XARCH
     C_ASSERT(sizeof(emitLclVarAddr) <= sizeof(void*));
     C_ASSERT(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
-
-    emitInsCount++;
 
     if (m_debugInfoSize > 0)
     {
@@ -5324,7 +5300,7 @@ void emitter::emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp))
     emitLongLoopAlign(paddingBytes DEBUG_ARG(isPlacedBehindJmp));
 #endif
 
-    assert(emitLastIns->idIns() == INS_align);
+    assert(emitGetLastIns()->idIns() == INS_align);
 
     JITDUMP("Adding 'align' instruction of %d bytes in %s.\n", paddingBytes, emitLabelString(emitCurIG));
 }
