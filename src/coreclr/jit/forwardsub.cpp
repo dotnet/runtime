@@ -215,8 +215,6 @@ public:
 
             if (lclNum == m_lclNum)
             {
-                m_useCount++;
-
                 // Screen out contextual "uses"
                 //
                 GenTree* const parent = user;
@@ -267,9 +265,17 @@ public:
         // Stores to and uses of address-exposed locals are modelled as global refs.
         //
         GenTree* lclNode = nullptr;
-        if (node->OperIsLocal() && !isDef)
+        if (node->OperIsLocal())
         {
-            lclNode = node;
+            if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
+            {
+                m_useCount++;
+            }
+
+            if (!isDef)
+            {
+                lclNode = node;
+            }
         }
         else if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
         {
