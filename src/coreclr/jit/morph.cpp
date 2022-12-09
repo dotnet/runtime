@@ -3997,6 +3997,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                     lcl->ChangeOper(GT_LCL_VAR_ADDR);
                     lcl->gtType = TYP_I_IMPL;
                     lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+
+                    // Copy prop could allow creating another later use of lcl if there are live assertions about it.
+                    fgKillDependentAssertions(varNum DEBUGARG(lcl));
                 }
 
                 JITDUMP("did not need to make outgoing copy for last use of V%02d\n", varNum);
