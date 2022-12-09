@@ -83,11 +83,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="metadataReader">Metadata reader corresponding to the handle</param>
         /// <param name="handle">Metadata handle to parse</param>
-        /// <param name="namespaceQualified">Include namespace in type names</param>
-        public static string FormatHandle(MetadataReader metadataReader, Handle handle, bool namespaceQualified = true, string owningTypeOverride = null, string signaturePrefix = "")
+        public static string FormatHandle(MetadataReader metadataReader, Handle handle, string owningTypeOverride = null, string signaturePrefix = "")
         {
             MetadataNameFormatter formatter = new MetadataNameFormatter(metadataReader);
-            return formatter.EmitHandleName(handle, namespaceQualified, owningTypeOverride, signaturePrefix);
+            return formatter.EmitHandleName(handle, owningTypeOverride, signaturePrefix);
         }
 
         public static ReadyToRunSignature FormatSignature(IAssemblyResolver assemblyResolver, ReadyToRunReader r2rReader, int imageOffset)
@@ -102,7 +101,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Emit a given token to a specified string builder.
         /// </summary>
         /// <param name="methodToken">ECMA token to provide string representation for</param>
-        private string EmitHandleName(Handle handle, bool namespaceQualified, string owningTypeOverride, string signaturePrefix = "")
+        private string EmitHandleName(Handle handle, string owningTypeOverride, string signaturePrefix = "")
         {
             try
             {
@@ -118,16 +117,16 @@ namespace ILCompiler.Reflection.ReadyToRun
                         return EmitMethodDefinitionName((MethodDefinitionHandle)handle, owningTypeOverride, signaturePrefix);
 
                     case HandleKind.TypeReference:
-                        return EmitTypeReferenceName((TypeReferenceHandle)handle, namespaceQualified, signaturePrefix);
+                        return EmitTypeReferenceName((TypeReferenceHandle)handle, signaturePrefix);
 
                     case HandleKind.TypeSpecification:
-                        return EmitTypeSpecificationName((TypeSpecificationHandle)handle, namespaceQualified, signaturePrefix);
+                        return EmitTypeSpecificationName((TypeSpecificationHandle)handle, signaturePrefix);
 
                     case HandleKind.TypeDefinition:
-                        return EmitTypeDefinitionName((TypeDefinitionHandle)handle, namespaceQualified, signaturePrefix);
+                        return EmitTypeDefinitionName((TypeDefinitionHandle)handle, signaturePrefix);
 
                     case HandleKind.FieldDefinition:
-                        return EmitFieldDefinitionName((FieldDefinitionHandle)handle, namespaceQualified, owningTypeOverride, signaturePrefix);
+                        return EmitFieldDefinitionName((FieldDefinitionHandle)handle, owningTypeOverride, signaturePrefix);
 
                     default:
                         throw new NotImplementedException();
@@ -162,7 +161,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             ValidateHandle(methodSpecHandle, TableIndex.MethodSpec);
             MethodSpecification methodSpec = _metadataReader.GetMethodSpecification(methodSpecHandle);
             DisassemblingGenericContext genericContext = new DisassemblingGenericContext(Array.Empty<string>(), Array.Empty<string>());
-            return EmitHandleName(methodSpec.Method, namespaceQualified: true, owningTypeOverride: owningTypeOverride, signaturePrefix: signaturePrefix)
+            return EmitHandleName(methodSpec.Method, owningTypeOverride: owningTypeOverride, signaturePrefix: signaturePrefix)
                 + methodSpec.DecodeSignature<string, DisassemblingGenericContext>(this, genericContext);
         }
 
@@ -219,7 +218,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             builder.Append(" ");
             if (owningTypeOverride == null)
             {
-                owningTypeOverride = EmitHandleName(methodDef.GetDeclaringType(), namespaceQualified: true, owningTypeOverride: null);
+                owningTypeOverride = EmitHandleName(methodDef.GetDeclaringType(), owningTypeOverride: null);
             }
             builder.Append(owningTypeOverride);
             builder.Append(".");
@@ -283,7 +282,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             if (owningTypeOverride == null)
             {
-                owningTypeOverride = EmitHandleName(memberRef.Parent, namespaceQualified: true, owningTypeOverride: null);
+                owningTypeOverride = EmitHandleName(memberRef.Parent, owningTypeOverride: null);
             }
             return owningTypeOverride + "." + signaturePrefix + EmitString(memberRef.Name);
         }
@@ -292,9 +291,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Emit type reference.
         /// </summary>
         /// <param name="typeRefHandle">Type reference handle</param>
-        /// <param name="namespaceQualified">When set to true, include namespace information</param>
         /// <param name="signaturePrefix">Optional type name signature prefix</param>
-        private string EmitTypeReferenceName(TypeReferenceHandle typeRefHandle, bool namespaceQualified, string signaturePrefix)
+        private string EmitTypeReferenceName(TypeReferenceHandle typeRefHandle, string signaturePrefix)
         {
             ValidateHandle(typeRefHandle, TableIndex.TypeRef);
             TypeReference typeRef = _metadataReader.GetTypeReference(typeRefHandle);
@@ -302,9 +300,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             if ((typeRef.ResolutionScope.Kind != HandleKind.AssemblyReference) && (typeRef.ResolutionScope.Kind != HandleKind.ModuleReference))
             {
                 // Nested type - format enclosing type followed by the nested type
-                return EmitHandleName(typeRef.ResolutionScope, namespaceQualified, owningTypeOverride: null) + "+" + typeName;
+                return EmitHandleName(typeRef.ResolutionScope, owningTypeOverride: null) + "+" + typeName;
             }
-            return GetQualificationPrefix(typeRef.Namespace, namespaceQualified) + signaturePrefix + typeName;
+            return GetQualificationPrefix(typeRef.Namespace) + signaturePrefix + typeName;
         }
 
         /// <summary>
@@ -320,10 +318,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Emit a type definition.
         /// </summary>
         /// <param name="typeDefHandle">Type definition handle</param>
-        /// <param name="namespaceQualified">true = prefix type name with namespace information</param>
         /// <param name="signaturePrefix">Optional type name signature prefix</param>
         /// <returns></returns>
-        private string EmitTypeDefinitionName(TypeDefinitionHandle typeDefHandle, bool namespaceQualified, string signaturePrefix)
+        private string EmitTypeDefinitionName(TypeDefinitionHandle typeDefHandle, string signaturePrefix)
         {
             ValidateHandle(typeDefHandle, TableIndex.TypeDef);
             TypeDefinition typeDef = _metadataReader.GetTypeDefinition(typeDefHandle);
@@ -331,10 +328,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (typeDef.IsNested)
             {
                 // Nested type
-                return EmitHandleName(typeDef.GetDeclaringType(), namespaceQualified, owningTypeOverride: null) + "+" + typeName;
+                return EmitHandleName(typeDef.GetDeclaringType(), owningTypeOverride: null) + "+" + typeName;
             }
 
-            return GetQualificationPrefix(typeDef.Namespace, namespaceQualified) + typeName;
+            return GetQualificationPrefix(typeDef.Namespace) + typeName;
         }
 
         /// <summary>
@@ -343,12 +340,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="namespaceNameHandle">Namespace name handle</param>
         /// <param name="namespaceQualified">true = qualify type name with assembly / namespace</param>
         /// <returns></returns>
-        private string GetQualificationPrefix(StringHandle namespaceNameHandle, bool namespaceQualified)
+        private string GetQualificationPrefix(StringHandle namespaceNameHandle)
         {
-            if (!namespaceQualified)
-            {
-                return "";
-            }
             string namespaceName = _metadataReader.GetString(namespaceNameHandle);
             if (!string.IsNullOrEmpty(namespaceName))
             {
@@ -362,7 +355,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="typeSpecHandle">Type specification handle</param>
         /// <param name="namespaceQualified">When set to true, include namespace information</param>
-        private string EmitTypeSpecificationName(TypeSpecificationHandle typeSpecHandle, bool namespaceQualified, string signaturePrefix)
+        private string EmitTypeSpecificationName(TypeSpecificationHandle typeSpecHandle, string signaturePrefix)
         {
             ValidateHandle(typeSpecHandle, TableIndex.TypeSpec);
             TypeSpecification typeSpec = _metadataReader.GetTypeSpecification(typeSpecHandle);
@@ -374,11 +367,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Emit the textual representation of a FieldDef metadata record.
         /// </summary>
         /// <param name="fieldDefHandle">Field definition handle to format</param>
-        /// <param name="namespaceQualified">True = display namespace information for the owning type</param>
         /// <param name="owningTypeOverride">Owning type override when non-null</param>
         /// <param name="signaturePrefix">Optional field name signature prefix</param>
         /// <returns>Textual representation of the field declaration</returns>
-        private string EmitFieldDefinitionName(FieldDefinitionHandle fieldDefHandle, bool namespaceQualified, string owningTypeOverride, string signaturePrefix)
+        private string EmitFieldDefinitionName(FieldDefinitionHandle fieldDefHandle, string owningTypeOverride, string signaturePrefix)
         {
             ValidateHandle(fieldDefHandle, TableIndex.Field);
             FieldDefinition fieldDef = _metadataReader.GetFieldDefinition(fieldDefHandle);
@@ -386,7 +378,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             StringBuilder output = new StringBuilder();
             output.Append(fieldDef.DecodeSignature<string, DisassemblingGenericContext>(this, genericContext));
             output.Append(' ');
-            output.Append(EmitHandleName(fieldDef.GetDeclaringType(), namespaceQualified, owningTypeOverride));
+            output.Append(EmitHandleName(fieldDef.GetDeclaringType(), owningTypeOverride));
             output.Append('.');
             output.Append(signaturePrefix);
             output.Append(_metadataReader.GetString(fieldDef.Name));
@@ -979,7 +971,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return MetadataNameFormatter.FormatHandle(
                     reader,
                     MetadataTokens.Handle((int)methodDefToken),
-                    namespaceQualified: true,
                     owningTypeOverride: owningTypeOverride);
             }
 
@@ -989,7 +980,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return MetadataNameFormatter.FormatHandle(
                     reader,
                     MetadataTokens.Handle((int)methodRefToken),
-                    namespaceQualified: true,
                     owningTypeOverride: owningTypeOverride);
             }
 
@@ -1528,7 +1518,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             builder.Append(MetadataNameFormatter.FormatHandle(
                 _metadataReader,
                 MetadataTokens.Handle((int)methodDefToken),
-                namespaceQualified: true,
                 owningTypeOverride: owningTypeOverride,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
             return methodDefToken;
@@ -1546,7 +1535,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             builder.Append(MetadataNameFormatter.FormatHandle(
                 _metadataReader,
                 MetadataTokens.Handle((int)methodRefToken),
-                namespaceQualified: false,
                 owningTypeOverride: owningTypeOverride,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
             return methodRefToken;
@@ -1579,7 +1567,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             builder.Append(MetadataNameFormatter.FormatHandle(
                 _metadataReader,
                 MetadataTokens.Handle((int)fieldToken),
-                namespaceQualified: false,
                 owningTypeOverride: owningTypeOverride,
                 signaturePrefix: signaturePrefixBuilder.ToString()));
         }
