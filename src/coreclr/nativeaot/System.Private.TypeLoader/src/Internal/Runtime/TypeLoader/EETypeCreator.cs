@@ -658,14 +658,6 @@ namespace Internal.Runtime.TypeLoader
 
                 pTemplateEEType = templateTypeHandle.ToEETypePtr();
             }
-            else if (type.IsMdArray || (type.IsSzArray && ((ArrayType)type).ElementType.IsPointer))
-            {
-                // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and
-                // we don't need to do much for them in terms of type building. We can pretty much just take
-                // the MethodTable for any of those, massage the bits that matter (GCDesc, element type,
-                // component size,...) to be of the right shape and we're done.
-                pTemplateEEType = typeof(object[,]).TypeHandle.ToEETypePtr();
-            }
             else
             {
                 Debug.Assert(state.TemplateType != null && !state.TemplateType.RuntimeTypeHandle.IsNull());
