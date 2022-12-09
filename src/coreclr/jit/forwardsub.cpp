@@ -190,16 +190,22 @@ public:
     };
 
     ForwardSubVisitor(Compiler* compiler, unsigned lclNum)
-        : GenTreeVisitor<ForwardSubVisitor>(compiler)
+        : GenTreeVisitor(compiler)
         , m_use(nullptr)
         , m_node(nullptr)
         , m_parentNode(nullptr)
         , m_lclNum(lclNum)
+        , m_useLclNum(lclNum)
         , m_useCount(0)
         , m_useFlags(GTF_EMPTY)
         , m_accumulatedFlags(GTF_EMPTY)
         , m_treeSize(0)
     {
+        LclVarDsc* dsc = compiler->lvaGetDesc(m_lclNum);
+        if (dsc->lvIsStructField)
+        {
+            m_useLclNum = dsc->lvParentLcl;
+        }
     }
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
@@ -264,25 +270,34 @@ public:
 
         // Stores to and uses of address-exposed locals are modelled as global refs.
         //
-        GenTree* lclNode = nullptr;
+        LclVarDsc* lclDsc = nullptr;
         if (node->OperIsLocal())
         {
-            if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
+            unsigned   lclNum    = node->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* dsc       = m_compiler->lvaGetDesc(lclNum);
+            unsigned   useLclNum = lclNum;
+            if (dsc->lvIsStructField)
             {
+                useLclNum = dsc->lvParentLcl;
+            }
+
+            if (useLclNum == m_useLclNum)
+            {
+                // TODO-TP: Abort the walk early above and here.
                 m_useCount++;
             }
 
             if (!isDef)
             {
-                lclNode = node;
+                lclDsc = dsc;
             }
         }
         else if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
         {
-            lclNode = node->gtGetOp1();
+            lclDsc = m_compiler->lvaGetDesc(node->gtGetOp1()->AsLclVarCommon());
         }
 
-        if ((lclNode != nullptr) && m_compiler->lvaGetDesc(lclNode->AsLclVarCommon())->IsAddressExposed())
+        if ((lclDsc != nullptr) && lclDsc->IsAddressExposed())
         {
             m_accumulatedFlags |= GTF_GLOB_REF;
         }
@@ -328,10 +343,13 @@ public:
     }
 
 private:
-    GenTree**    m_use;
-    GenTree*     m_node;
-    GenTree*     m_parentNode;
-    unsigned     m_lclNum;
+    GenTree** m_use;
+    GenTree*  m_node;
+    GenTree*  m_parentNode;
+    unsigned  m_lclNum;
+    // The local num to consider when counting uses (parent local if this
+    // m_lclNum is a struct field, otherwise the same as m_lclNum).
+    unsigned     m_useLclNum;
     unsigned     m_useCount;
     GenTreeFlags m_useFlags;
     GenTreeFlags m_accumulatedFlags;
