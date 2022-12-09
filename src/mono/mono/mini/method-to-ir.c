@@ -4321,6 +4321,11 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	// FIXME: Do we need to do something here for i8 indexes, like in ldelema_1_ins ?
 #endif
 
+	if (COMPILE_LLVM (cfg)) {
+		// null checking in LLVM to address https://github.com/dotnet/runtime/issues/79022
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, arr->dreg, 0);
+		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
+	}
 	/* range checking */
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg,
 				       arr->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
