@@ -862,7 +862,7 @@ class RangeSectionMap
     RangeSection* _pCleanupList;
 
     const uintptr_t bitsAtLastLevel = maxSetBit - (bitsPerLevel * mapLevels) + 1;
-    const uintptr_t bytesAtLastLevel = (((uintptr_t)1) << (bitsAtLastLevel - 1));
+    const uintptr_t bytesAtLastLevel = (((uintptr_t)1) << bitsAtLastLevel);
 
     RangeSection* EndOfCleanupListMarker() { return (RangeSection*)1; }
 
@@ -877,7 +877,7 @@ class RangeSectionMap
     uintptr_t EffectiveBitsForLevel(TADDR address, uintptr_t level)
     {
         TADDR addressAsInt = address;
-        TADDR addressBitsUsedInMap = addressAsInt >> (maxSetBit - (mapLevels * bitsPerLevel));
+        TADDR addressBitsUsedInMap = addressAsInt >> (maxSetBit + 1 - (mapLevels * bitsPerLevel));
         TADDR addressBitsShifted = addressBitsUsedInMap >> ((level - 1) * bitsPerLevel);
         TADDR addressBitsUsedInLevel = (entriesPerMapLevel - 1) & addressBitsShifted;
         return addressBitsUsedInLevel;
@@ -963,6 +963,9 @@ class RangeSectionMap
         uintptr_t rangeSize = pRangeSection->_range.RangeSize();
         if (rangeSize == 0)
             return 0;
+
+        // Account for the range not starting at the beginning of a last level fragment
+        rangeSize += pRangeSection->_range.RangeStart() & (this->bytesAtLastLevel - 1);
         
         uintptr_t fragmentCount = ((rangeSize - 1) / bytesAtLastLevel) + 1;
         return fragmentCount;
@@ -1166,7 +1169,7 @@ public:
 
             assert(LookupRangeSection(addressToPrepForCleanup, pLockState) == NULL);
             assert(LookupRangeSection(pRangeSectionToCleanup->_range.RangeEnd(), pLockState) == NULL);
-            for (TADDR fragmentAddress = addressToPrepForCleanup; fragmentAddress < pRangeSectionToCleanup->_range.RangeEnd(); fragmentAddress = IncrementAddressByMaxSizeOfFragment(fragmentAddress))
+            for (TADDR fragmentAddress = addressToPrepForCleanup; pRangeSectionToCleanup->_range.IsInRange(fragmentAddress); fragmentAddress = IncrementAddressByMaxSizeOfFragment(fragmentAddress))
             {
                 assert(LookupRangeSection(fragmentAddress, pLockState) == NULL);
             }
