@@ -3516,8 +3516,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			} else if (is_virtual) {
 				interp_add_ins (td, MINT_CALLVIRT_FAST);
 				td->last_ins->data [1] = get_virt_method_slot (target_method);
-			} else if (is_virtual) {
-				interp_add_ins (td, MINT_CALLVIRT);
 			} else {
 				interp_add_ins (td, MINT_CALL);
 			}

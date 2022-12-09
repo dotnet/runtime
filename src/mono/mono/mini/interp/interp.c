@@ -4153,29 +4153,6 @@ main_loop:
 			goto call;
 		}
 
-		MINT_IN_CASE(MINT_CALLVIRT) {
-			// FIXME CALLVIRT opcodes are not used on netcore. We should kill them.
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
-			return_offset = ip [1];
-			call_args_offset = ip [2];
-
-			MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*);
-
-			// FIXME push/pop LMF
-			cmethod = get_virtual_method (cmethod, this_arg->vtable);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
-				/* unbox */
-				gpointer unboxed = mono_object_unbox_internal (this_arg);
-				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
-			}
-
-#ifdef ENABLE_EXPERIMENT_TIERED
-			ip += 5;
-#else
-			ip += 4;
-#endif
-			goto call;
-		}
 		MINT_IN_CASE(MINT_CALL) {
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			return_offset = ip [1];
