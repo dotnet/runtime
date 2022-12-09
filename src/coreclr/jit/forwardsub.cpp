@@ -189,7 +189,7 @@ public:
         UseExecutionOrder = true
     };
 
-    ForwardSubVisitor(Compiler* compiler, unsigned lclNum)
+    ForwardSubVisitor(Compiler* compiler, unsigned lclNum, bool livenessBased)
         : GenTreeVisitor(compiler)
         , m_use(nullptr)
         , m_node(nullptr)
@@ -200,6 +200,7 @@ public:
         , m_useFlags(GTF_EMPTY)
         , m_accumulatedFlags(GTF_EMPTY)
         , m_treeSize(0)
+        , m_livenessBased(livenessBased)
     {
         LclVarDsc* dsc = compiler->lvaGetDesc(m_lclNum);
         if (dsc->lvIsStructField)
@@ -239,7 +240,7 @@ public:
                 }
 
                 bool lastUse;
-                if (m_compiler->fgDidEarlyLiveness)
+                if (m_livenessBased)
                 {
                     if ((node->gtFlags & GTF_VAR_DEATH) != 0)
                     {
@@ -254,7 +255,7 @@ public:
                 }
                 else
                 {
-                    // When we don't have early liveness we can only get here when we have exactly 2 global references.
+                    // When not liveness based we can only get here when we have exactly 2 global references.
                     lastUse = true;
                 }
 
@@ -354,6 +355,7 @@ private:
     GenTreeFlags m_useFlags;
     GenTreeFlags m_accumulatedFlags;
     unsigned     m_treeSize;
+    bool         m_livenessBased;
 };
 
 //------------------------------------------------------------------------
@@ -445,21 +447,22 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Only fwd sub if we expect no code duplication
     //
-    if (fgDidEarlyLiveness)
+    bool livenessBased = false;
+    if (varDsc->lvRefCnt(RCS_EARLY) != 2)
     {
+        if (!fgDidEarlyLiveness)
+        {
+            JITDUMP(" not asg (single-use lcl)\n");
+            return false;
+        }
+
         if (varDsc->lvRefCnt(RCS_EARLY) < 2)
         {
             JITDUMP(" not asg (no use)\n");
             return false;
         }
-    }
-    else
-    {
-        if (varDsc->lvRefCnt(RCS_EARLY) != 2)
-        {
-            JITDUMP(" not asg (single-use lcl)\n");
-            return false;
-        }
+
+        livenessBased = true;
     }
 
     // And local is unalised
@@ -545,10 +548,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Scan for the (last) use.
     //
-    ForwardSubVisitor fsv(this, lclNum);
+    ForwardSubVisitor fsv(this, lclNum, livenessBased);
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
-    if (fgDidEarlyLiveness)
+    if (livenessBased)
     {
         if (fsv.GetUseCount() > 1)
         {
