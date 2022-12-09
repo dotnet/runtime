@@ -1949,19 +1949,20 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code)
 // emitGetPrefixSize: Get size of rex or vex prefix emitted in code
 //
 // Arguments:
+//    id                    -- The instruction descriptor for which to get its prefix size
 //    code                  -- The current opcode and any known prefixes
 //    includeRexPrefixSize  -- If Rex Prefix size should be included or not
 //
-unsigned emitter::emitGetPrefixSize(code_t code, bool includeRexPrefixSize)
+unsigned emitter::emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexPrefixSize)
 {
     if (hasEvexPrefix(code))
     {
-        return 4;
+        return emitGetEvexPrefixSize(id);
     }
 
     if (hasVexPrefix(code))
     {
-        return 3;
+        return emitGetVexPrefixSize(id);
     }
 
     if (includeRexPrefixSize && hasRexPrefix(code))
@@ -2832,14 +2833,15 @@ bool emitter::emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1
 // emitInsSize: Estimate the size (in bytes of generated code) of the given instruction.
 //
 // Arguments:
+//    id    -- The instruction descriptor for which to estimate its size
 //    code  -- The current opcode and any known prefixes
 //    includeRexPrefixSize  -- If Rex Prefix size should be included or not
 //
-inline UNATIVE_OFFSET emitter::emitInsSize(code_t code, bool includeRexPrefixSize)
+inline UNATIVE_OFFSET emitter::emitInsSize(instrDesc* id, code_t code, bool includeRexPrefixSize)
 {
     UNATIVE_OFFSET size = (code & 0xFF000000) ? 4 : (code & 0x00FF0000) ? 3 : 2;
 #ifdef TARGET_AMD64
-    size += emitGetPrefixSize(code, includeRexPrefixSize);
+    size += emitGetPrefixSize(id, code, includeRexPrefixSize);
 #endif
     return size;
 }
@@ -2868,7 +2870,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code)
         includeRexPrefixSize = !IsVexEncodedInstruction(ins);
     }
 
-    sz += emitInsSize(code, includeRexPrefixSize);
+    sz += emitInsSize(id, code, includeRexPrefixSize);
 
     return sz;
 }
@@ -2955,11 +2957,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        sz += IsAvx512OrPriorInstruction(ins) ? emitInsSize(code, includeRexPrefixSize) : 5;
+        sz += IsAvx512OrPriorInstruction(ins) ? emitInsSize(id, code, includeRexPrefixSize) : 5;
     }
     else
     {
-        sz += emitInsSize(insEncodeRMreg(ins, code), includeRexPrefixSize);
+        sz += emitInsSize(id, insEncodeRMreg(ins, code), includeRexPrefixSize);
     }
 
     return sz;
@@ -2979,7 +2981,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 //
 inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp)
 {
-    UNATIVE_OFFSET size = emitInsSize(code, /* includeRexPrefixSize */ true);
+    UNATIVE_OFFSET size = emitInsSize(id, code, /* includeRexPrefixSize */ true);
     UNATIVE_OFFSET offs;
     bool           offsIsUpperBound = true;
     bool           EBPbased         = true;
@@ -3542,7 +3544,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
         includeRexPrefixSize = false;
     }
 
-    return size + emitInsSize(code, includeRexPrefixSize);
+    return size + emitInsSize(id, code, includeRexPrefixSize);
 }
 
 inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code, int val)
@@ -4966,6 +4968,11 @@ void emitter::emitIns_R_I(instruction ins,
     // (it is always encoded in a byte). Let's not complicate things until this is needed.
     assert(ins != INS_bt);
 
+    // TODO-Cleanup: This is used to track whether a call to emitInsSize is necessary. The call
+    // has existed for quite some time, historically, but it is likely problematic in practice.
+    // However, it is non-trivial to prove it is safe to remove at this time.
+    bool isSimdInsAndValInByte = false;
+
     // Figure out the size of the instruction
     switch (ins)
     {
@@ -5012,16 +5019,8 @@ void emitter::emitIns_R_I(instruction ins,
             {
                 if (IsAvx512OrPriorInstruction(ins))
                 {
-                    bool includeRexPrefixSize = true;
-                    // Do not get the RexSize() but just decide if it will be included down further and if yes,
-                    // do not include it again.
-                    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, size) || instrIsExtendedReg3opImul(ins))
-                    {
-                        includeRexPrefixSize = false;
-                    }
-
-                    sz = emitInsSize(insCodeMI(ins), includeRexPrefixSize);
-                    sz += 1;
+                    sz                    = 1;
+                    isSimdInsAndValInByte = true;
                 }
                 else if (size == EA_1BYTE && reg == REG_EAX && !instrIs3opImul(ins))
                 {
@@ -5069,6 +5068,20 @@ void emitter::emitIns_R_I(instruction ins,
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
 #endif
+
+    if (isSimdInsAndValInByte)
+    {
+        bool includeRexPrefixSize = true;
+
+        // Do not get the RexSize() but just decide if it will be included down further and if yes,
+        // do not include it again.
+        if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, size) || instrIsExtendedReg3opImul(ins))
+        {
+            includeRexPrefixSize = false;
+        }
+
+        sz += emitInsSize(id, insCodeMI(ins), includeRexPrefixSize);
+    }
 
     sz += emitGetAdjustedSize(id, insCodeMI(ins));
 
