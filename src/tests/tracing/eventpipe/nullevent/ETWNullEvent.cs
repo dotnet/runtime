@@ -1,53 +1,83 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Diagnostics.Tracing;
-using System.Collections.Generic;
-using Tracing.Tests.Common;
+using BasicEventSourceTests;
 using Microsoft.Diagnostics.NETCore.Client;
+using Microsoft.Diagnostics.Tracing;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.Linq;
+using System.Threading.Tasks;
+using Tracing.Tests.Common;
+using Xunit;
+
+[EventSource(Name = "Test.EventSourceNull")]
+class EventSourceNullTest : EventSource
+{
+    [Event(1)]
+    public void EventNullString(string str, int i, float f, long l)
+    {
+        WriteEvent(1, str, i, f, l);
+    }
+
+    [Event(2)]
+    public void EventNullByteArray(byte[] bytes, int i, float f, long l)
+    {
+        WriteEvent(2, bytes, i, f, l);
+    }
+}
+
 
 namespace Tracing.Tests.ETWNullEvent
 {
     public class ProviderValidation
     {
-        public static int Main(string[] args)
+        public static void Main(string[] args)
         {
             Console.WriteLine("----------------------------------------------------");
             Console.WriteLine("ETW Null event test!!!!");
             Console.WriteLine("----------------------------------------------------");
-            var providers = new List<EventPipeProvider>()
+
+            List<EventPipeProvider> providers = new List<EventPipeProvider>
             {
-                new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose),
-                //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
-                new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)
+                new EventPipeProvider("Test.EventSourceNull", EventLevel.Verbose)
             };
 
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024);
-        }
-
-        private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
-        {
-            { "Microsoft-Windows-DotNETRuntime", new ExpectedEventCount(1000, 0.2f) },
-            { "Microsoft-Windows-DotNETRuntimeRundown", -1 },
-            { "Microsoft-DotNETCore-SampleProfiler", -1 }
-        };
-
-        private static Action _eventGeneratingAction = () =>
-        {
-            for (int i = 0; i < 1000; i++)
+            int processId = Process.GetCurrentProcess().Id;
+            DiagnosticsClient client = new DiagnosticsClient(processId);
+            using (EventPipeSession session = client.StartEventPipeSession(providers, /* requestRunDown */ false))
             {
-                if (i % 100 == 0)
-                    Logger.logger.Log($"Thrown an exception {i} times...");
-                try
+                using (var log = new EventSourceNullTest())
                 {
-                    throw new ArgumentNullException("Throw ArgumentNullException");
-                }
-                catch (Exception e)
-                {
-                    //Do nothing
+                    using (var el = new LoudListener(log))
+                    {
+                        string s = null;
+                        log.EventNullString(s, 10, 11, 12);
+                        Assert.Equal(1, LoudListener.t_lastEvent.EventId);
+                        Assert.Equal(4, LoudListener.t_lastEvent.Payload.Count);
+                        Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
+                        Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[1]);
+                        Assert.Equal(11, (float)LoudListener.t_lastEvent.Payload[2]);
+                        Assert.Equal(12, (long)LoudListener.t_lastEvent.Payload[3]);
+
+                        byte[] b = null;
+                        byte[] expected = new byte[0];
+                        log.EventNullByteArray(b, 10, 11, 12);
+                        Assert.Equal(1, LoudListener.t_lastEvent.EventId);
+                        Assert.Equal(4, LoudListener.t_lastEvent.Payload.Count);
+                        Assert.Equal(expected, (string)LoudListener.t_lastEvent.Payload[0]);
+                        Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[1]);
+                        Assert.Equal(11, (float)LoudListener.t_lastEvent.Payload[2]);
+                        Assert.Equal(12, (long)LoudListener.t_lastEvent.Payload[3]);
+
+                        var events = new EventPipeEventSource(session.EventStream);
+                        events.Process();
+                    }
+                    session.Stop();
                 }
             }
-        };
+        }
     }
 }

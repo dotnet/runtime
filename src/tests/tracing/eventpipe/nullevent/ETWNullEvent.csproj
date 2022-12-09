@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ETWNullEvent.cs" />
+    <Compile Include="..\..\..\..\libraries\System.Diagnostics.Tracing\tests\BasicEventSourceTest\LoudListener.cs" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <ProjectReference Include="../common/common.csproj" />
     <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
