@@ -226,6 +226,10 @@ namespace Internal.Runtime.TypeLoader
                 // Compute size of optional fields encoding
                 cbOptionalFieldsSize = optionalFields.Encode();
 
+                // Clear the optional fields flag. We'll set it if we set optional fields later in this method.
+                if (cbOptionalFieldsSize == 0)
+                    flags &= ~(uint)EETypeFlags.OptionalFieldsFlag;
+
                 // Note: The number of vtable slots on the MethodTable to create is not necessary equal to the number of
                 // vtable slots on the template type for universal generics (see ComputeVTableLayout)
                 ushort numVtableSlots = state.NumVTableSlots;

@@ -858,10 +858,13 @@ namespace Internal.Runtime
                 if (NumInterfaces == 0)
                     return false;
                 byte* optionalFields = OptionalFieldsPtr;
-                if (optionalFields == null)
-                    return false;
-                uint idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
-                if (idxDispatchMap == 0xffffffff)
+
+                const uint NoDispatchMap = 0xffffffff;
+                uint idxDispatchMap = NoDispatchMap;
+                if (optionalFields != null)
+                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
+
+                if (idxDispatchMap == NoDispatchMap)
                 {
                     if (IsDynamicType)
                         return DynamicTemplateType->HasDispatchMap;
@@ -878,12 +881,15 @@ namespace Internal.Runtime
                 if (NumInterfaces == 0)
                     return null;
                 byte* optionalFields = OptionalFieldsPtr;
-                if (optionalFields == null)
-                    return null;
-                uint idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
-                if (idxDispatchMap == 0xffffffff && IsDynamicType)
+                const uint NoDispatchMap = 0xffffffff;
+                uint idxDispatchMap = NoDispatchMap;
+                if (optionalFields != null)
+                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
+                if (idxDispatchMap == NoDispatchMap)
                 {
-                    return DynamicTemplateType->DispatchMap;
+                    if (IsDynamicType)
+                        return DynamicTemplateType->DispatchMap;
+                    return null;
                 }
 
                 if (SupportsRelativePointers)
