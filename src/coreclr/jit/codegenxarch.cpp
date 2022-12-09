@@ -6925,7 +6925,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 GenTree* indirOper = leaOper->gtNext;
                 if (indirOper != nullptr && indirOper->OperIs(GT_IND))
                 {
-                    regNumber indexReg = indirOper->AsIndir()->Index()->GetReg();
+                    regNumber indexReg = indirOper->AsIndir()->Index()->GetRegNum();
                     regNumber indirReg = indirOper->GetRegNum();
 
                     if (indexReg != REG_NA && indirReg != REG_NA && dstReg == indexReg && dstReg == indirReg)

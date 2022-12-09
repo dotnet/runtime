@@ -4195,7 +4195,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
             assert(!index->isContained());
             if (index->OperIs(GT_CAST) && index->AsCast()->usedForIndexing && index->AsCast()->skippedGenForIndexing)
             {
-                amIndxReg = index->AsCast()->CastOp()->GetReg();
+                amIndxReg = index->AsCast()->CastOp()->GetRegNum();
             }
             else
             {
