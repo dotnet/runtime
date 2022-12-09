@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
@@ -205,10 +206,8 @@ namespace System.Net
                         toLowerLength = destination.Length;
                     }
 
-                    if (Ascii.ToLowerInPlace(destination.Slice(0, toLowerLength), out _) != OperationStatus.Done)
-                    {
-                        throw new IndexOutOfRangeException(); // backward compat for non-ASCII characters
-                    }
+                    OperationStatus operationStatus = Ascii.ToLowerInPlace(destination.Slice(0, toLowerLength), out _);
+                    Debug.Assert(operationStatus == OperationStatus.Done);
                 });
             }
         }

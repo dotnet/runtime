@@ -992,7 +992,7 @@ namespace System.Text.RegularExpressions
 
             return true;
 #else
-            return Text.Ascii.IsValid(s);
+            return Ascii.IsValid(s);
 #endif
         }
 

@@ -58,7 +58,7 @@ namespace System.Text
         /// <param name="value">The value to inspect.</param>
         /// <returns>True if <paramref name="value"/> contains only ASCII bytes or is
         /// empty; False otherwise.</returns>
-        public static unsafe bool IsValid(ReadOnlySpan<byte> value) => value.IsEmpty || GetIndexOfFirstNonAsciiByte(value) < 0;
+        public static unsafe bool IsValid(ReadOnlySpan<byte> value) => GetIndexOfFirstNonAsciiByte(value) < 0;
 
         /// <summary>
         /// Determines whether the provided value contains only ASCII chars.
@@ -66,7 +66,7 @@ namespace System.Text
         /// <param name="value">The value to inspect.</param>
         /// <returns>True if <paramref name="value"/> contains only ASCII chars or is
         /// empty; False otherwise.</returns>
-        public static unsafe bool IsValid(ReadOnlySpan<char> value) => value.IsEmpty || GetIndexOfFirstNonAsciiChar(value) < 0;
+        public static unsafe bool IsValid(ReadOnlySpan<char> value) => GetIndexOfFirstNonAsciiChar(value) < 0;
 
         /// <summary>
         /// Determines whether the provided value is ASCII byte.
