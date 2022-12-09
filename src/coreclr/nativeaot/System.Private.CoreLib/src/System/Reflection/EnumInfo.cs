@@ -34,7 +34,10 @@ namespace System.Reflection
         {
             Debug.Assert(values.Length == names.Length);
 
-            Array.Sort(keys: values, items: names);
+            if (!Enum.AreSorted(values))
+            {
+                Array.Sort(keys: (Array)values, items: names); // using non-generic overload to avoid generic expansion for every underlying enum type
+            }
 
             Values = values;
             ValuesAreSequentialFromZero = Enum.AreSequentialFromZero(values);

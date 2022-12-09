@@ -2293,5 +2293,18 @@ namespace System
 
             return true;
         }
+
+        internal static bool AreSorted<TUnderlyingValue>(TUnderlyingValue[] values) where TUnderlyingValue : struct, IComparable<TUnderlyingValue>
+        {
+            for (int i = 1; i < values.Length; i++)
+            {
+                if (values[i - 1].CompareTo(values[i]) > 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }
