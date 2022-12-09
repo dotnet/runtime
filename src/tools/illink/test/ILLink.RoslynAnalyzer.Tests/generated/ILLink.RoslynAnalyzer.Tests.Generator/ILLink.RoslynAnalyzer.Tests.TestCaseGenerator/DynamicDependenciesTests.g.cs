@@ -94,6 +94,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task DynamicDependencyOnForwardedType ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task DynamicDependencyOnUnusedMethodInNonReferencedAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);

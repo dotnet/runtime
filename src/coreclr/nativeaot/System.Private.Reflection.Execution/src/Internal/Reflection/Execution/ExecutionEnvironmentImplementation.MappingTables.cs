@@ -27,10 +27,6 @@ using CanonicalFormKind = global::Internal.TypeSystem.CanonicalFormKind;
 
 
 using Debug = System.Diagnostics.Debug;
-#if FEATURE_UNIVERSAL_GENERICS
-using ThunkKind = Internal.Runtime.TypeLoader.CallConverterThunk.ThunkKind;
-#endif
-using Interlocked = System.Threading.Interlocked;
 
 namespace Internal.Reflection.Execution
 {
@@ -408,21 +404,6 @@ namespace Internal.Reflection.Execution
             return extRefs.GetFunctionPointerFromIndex(cookie);
         }
 
-#if FEATURE_UNIVERSAL_GENERICS
-        private static IntPtr GetDynamicMethodInvokerThunk(MethodBase methodInfo)
-        {
-            MethodParametersInfo methodParamsInfo = new MethodParametersInfo(methodInfo);
-            return CallConverterThunk.MakeThunk(
-                ThunkKind.ReflectionDynamicInvokeThunk,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                false,
-                methodParamsInfo.ReturnTypeAndParameterTypeHandles.ToArray(),
-                methodParamsInfo.ReturnTypeAndParametersByRefFlags,
-                null);
-        }
-#endif
-
         private static RuntimeTypeHandle[] GetTypeSequence(ref ExternalReferencesTable extRefs, ref NativeParser parser)
         {
             uint count = parser.GetUnsigned();
@@ -496,37 +477,11 @@ namespace Internal.Reflection.Execution
                 return null;
             }
 
-#if FEATURE_UNIVERSAL_GENERICS
-            if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0)
-            {
-                // Wrap the method entry point in a calling convention converter thunk if it's a universal canonical implementation
-                Debug.Assert(canonFormKind == CanonicalFormKind.Universal);
-                methodInvokeMetadata.MethodEntryPoint = GetCallingConventionConverterForMethodEntrypoint(
-                    methodHandle.NativeFormatReader,
-                    declaringTypeHandle,
-                    methodInvokeMetadata.MethodEntryPoint,
-                    methodInvokeMetadata.DictionaryComponent,
-                    methodInfo,
-                    methodHandle.NativeFormatHandle);
-            }
-#endif
-
             IntPtr dynamicInvokeMethod;
-            if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.NeedsParameterInterpretation) != 0)
-            {
-#if FEATURE_UNIVERSAL_GENERICS
-                dynamicInvokeMethod = GetDynamicMethodInvokerThunk(methodInfo);
-                dynamicInvokeMethodGenericDictionary = IntPtr.Zero;
-#else
-                throw new NotSupportedException();
-#endif
-            }
-            else
-            {
-                dynamicInvokeMethod = GetDynamicMethodInvoke(
-                    methodInvokeMetadata.MappingTableModule,
-                    methodInvokeMetadata.DynamicInvokeCookie);
-            }
+            Debug.Assert((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.NeedsParameterInterpretation) == 0);
+            dynamicInvokeMethod = GetDynamicMethodInvoke(
+                methodInvokeMetadata.MappingTableModule,
+                methodInvokeMetadata.DynamicInvokeCookie);
 
             IntPtr resolver = IntPtr.Zero;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.HasVirtualInvoke) != 0)
@@ -547,59 +502,6 @@ namespace Internal.Reflection.Execution
             };
             return methodInvokeInfo;
         }
-
-#if FEATURE_UNIVERSAL_GENERICS
-        private static IntPtr GetCallingConventionConverterForMethodEntrypoint(MetadataReader metadataReader, RuntimeTypeHandle declaringType, IntPtr methodEntrypoint, IntPtr dictionary, MethodBase methodBase, MethodHandle mdHandle)
-        {
-            MethodParametersInfo methodParamsInfo = new MethodParametersInfo(metadataReader, methodBase, mdHandle);
-
-            bool[] forcedByRefParameters;
-            if (methodParamsInfo.RequiresCallingConventionConverter(out forcedByRefParameters))
-            {
-                RuntimeTypeHandle[] parameterTypeHandles = methodParamsInfo.ReturnTypeAndParameterTypeHandles.ToArray();
-                bool[] byRefParameters = methodParamsInfo.ReturnTypeAndParametersByRefFlags;
-
-                Debug.Assert(parameterTypeHandles.Length == byRefParameters.Length && byRefParameters.Length == forcedByRefParameters.Length);
-
-                ThunkKind thunkKind;
-                if (methodBase.IsGenericMethod)
-                {
-                    thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiating;
-                }
-                else if (RuntimeAugments.IsValueType(declaringType))
-                {
-                    // Unboxing instantiating stub
-                    if (dictionary == IntPtr.Zero)
-                    {
-                        Debug.Assert(!methodBase.IsStatic);
-                        thunkKind = CallConverterThunk.ThunkKind.StandardToGeneric;
-                    }
-                    else
-                        thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiating;
-                }
-                else
-                {
-                    thunkKind = CallConverterThunk.ThunkKind.StandardToGenericInstantiatingIfNotHasThis;
-                }
-
-                return CallConverterThunk.MakeThunk(
-                    thunkKind,
-                    methodEntrypoint,
-                    dictionary,
-                    !methodBase.IsStatic,
-                    parameterTypeHandles,
-                    byRefParameters,
-                    forcedByRefParameters);
-            }
-            else
-            {
-                if (dictionary == IntPtr.Zero)
-                    return methodEntrypoint;
-                else
-                    return FunctionPointerOps.GetGenericMethodFunctionPointer(methodEntrypoint, dictionary);
-            }
-        }
-#endif
 
         private static RuntimeTypeHandle GetExactDeclaringType(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
         {
@@ -802,14 +704,8 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-#if FEATURE_UNIVERSAL_GENERICS
-                // The thunk could have been created by the TypeLoader as a dictionary slot for USG code
-                if (!CallConverterThunk.TryGetCallConversionTargetPointerAndInstantiatingArg(originalLdFtnResult, out canonOriginalLdFtnResult, out instantiationArgument))
-#endif
-                {
-                    canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
-                    instantiationArgument = IntPtr.Zero;
-                }
+                canonOriginalLdFtnResult = RuntimeAugments.GetCodeTarget(originalLdFtnResult);
+                instantiationArgument = IntPtr.Zero;
             }
         }
 

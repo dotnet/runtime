@@ -9158,20 +9158,29 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
         ASSIGN_HELPER_FOR_MOD:
 
-            // For "val % 1", return 0 if op1 doesn't have any side effects
-            // and we are not in the CSE phase, we cannot discard 'tree'
-            // because it may contain CSE expressions that we haven't yet examined.
-            //
-            if (((op1->gtFlags & GTF_SIDE_EFFECT) == 0) && !optValnumCSE_phase)
+            if (!optValnumCSE_phase)
             {
-                if (op2->IsIntegralConst(1))
+                if (tree->OperIs(GT_MOD, GT_UMOD) && (op2->IsIntegralConst(1)))
                 {
-                    GenTree* zeroNode = gtNewZeroConNode(typ);
-#ifdef DEBUG
-                    zeroNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-                    DEBUG_DESTROY_NODE(tree);
-                    return zeroNode;
+                    // Transformation: a % 1 = 0
+                    GenTree* optimizedTree = fgMorphModToZero(tree->AsOp());
+                    if (optimizedTree != nullptr)
+                    {
+                        tree = optimizedTree;
+
+                        if (tree->OperIs(GT_COMMA))
+                        {
+                            op1 = tree->gtGetOp1();
+                            op2 = tree->gtGetOp2();
+                        }
+                        else
+                        {
+                            assert(tree->IsIntegralConst());
+                            op1 = nullptr;
+                            op2 = nullptr;
+                        }
+                        break;
+                    }
                 }
             }
 
@@ -11274,33 +11283,29 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
     if (opts.OptimizationEnabled())
     {
-        // Reduce local addresses: "ADD(ADDR(LCL_VAR), OFFSET)" => "ADDR(LCL_FLD OFFSET)".
-        // TODO-ADDR: do "ADD(LCL_FLD/VAR_ADDR, OFFSET)" => "LCL_FLD_ADDR" instead.
+        // Reduce local addresses: "ADD(LCL_ADDR, OFFSET)" => "LCL_FLD_ADDR".
         //
-        if (op1->OperIs(GT_ADDR) && op2->IsCnsIntOrI() && op1->gtGetOp1()->OperIsLocalRead())
+        if (op1->OperIsLocalAddr() && op2->IsCnsIntOrI())
         {
-            GenTreeUnOp*         addrNode   = op1->AsUnOp();
-            GenTreeLclVarCommon* lclNode    = addrNode->gtGetOp1()->AsLclVarCommon();
-            GenTreeIntCon*       offsetNode = op2->AsIntCon();
+            GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
+            GenTreeIntCon*       offsetNode  = op2->AsIntCon();
             if (FitsIn<uint16_t>(offsetNode->IconValue()))
             {
-                unsigned offset = lclNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
+                unsigned offset = lclAddrNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
 
                 // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
-                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclNode->GetLclNum())))
+                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclAddrNode->GetLclNum())))
                 {
-                    // Types of location nodes under ADDRs do not matter. We arbitrarily choose TYP_UBYTE.
-                    lclNode->ChangeType(TYP_UBYTE);
-                    lclNode->SetOper(GT_LCL_FLD);
-                    lclNode->AsLclFld()->SetLclOffs(offset);
-                    lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+                    lclAddrNode->SetOper(GT_LCL_FLD_ADDR);
+                    lclAddrNode->AsLclFld()->SetLclOffs(offset);
+                    assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
-                    addrNode->SetVNsFromNode(add);
+                    lclAddrNode->SetVNsFromNode(add);
 
                     DEBUG_DESTROY_NODE(offsetNode);
                     DEBUG_DESTROY_NODE(add);
 
-                    return addrNode;
+                    return lclAddrNode;
                 }
             }
         }
@@ -12226,6 +12231,67 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     return multiOp;
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+
+//------------------------------------------------------------------------
+// fgMorphModToZero: Transform 'a % 1' into the equivalent '0'.
+//
+// Arguments:
+//    tree - The GT_MOD/GT_UMOD tree to morph
+//
+// Returns:
+//    The morphed tree, will be a GT_COMMA or a zero constant node.
+//    Can return null if the transformation did not happen.
+//
+GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_MOD, GT_UMOD));
+    assert(tree->gtOp2->IsIntegralConst(1));
+
+    if (opts.OptimizationDisabled())
+        return nullptr;
+
+    // Do not transform this if there are side effects and we are not in global morph.
+    // If we want to allow this, we need to update value numbers for the GT_COMMA.
+    if (!fgGlobalMorph && ((tree->gtGetOp1()->gtFlags & GTF_SIDE_EFFECT) != 0))
+        return nullptr;
+
+    JITDUMP("\nMorphing MOD/UMOD [%06u] to Zero\n", dspTreeID(tree));
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    op2->AsIntConCommon()->SetIntegralValue(0);
+    fgUpdateConstTreeValueNumber(op2);
+
+    GenTree* const zero = op2;
+
+    GenTree* op1SideEffects = nullptr;
+    gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
+    if (op1SideEffects != nullptr)
+    {
+        GenTree* comma = gtNewOperNode(GT_COMMA, zero->TypeGet(), op1SideEffects, zero);
+
+#ifdef DEBUG
+        // op1 may already have been morphed, so unset this bit.
+        op1SideEffects->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
+
+        INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        DEBUG_DESTROY_NODE(tree);
+
+        return comma;
+    }
+    else
+    {
+        INDEBUG(zero->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        DEBUG_DESTROY_NODE(tree->gtOp1);
+        DEBUG_DESTROY_NODE(tree);
+
+        return zero;
+    }
+}
 
 //------------------------------------------------------------------------
 // fgMorphModToSubMulDiv: Transform a % b into the equivalent a - (a / b) * b

@@ -10,6 +10,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		protected override string TestSuiteName => "UnreachableBlock";
 
+		[Fact (Skip = "ILLink analyzers don't support constant propagation https://github.com/dotnet/linker/issues/2715")]
+		public Task CompilerGeneratedCodeSubstitutions ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
 		[Fact]
 		public Task TryFilterBlocks ()
 		{

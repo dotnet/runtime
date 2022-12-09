@@ -519,6 +519,11 @@ struct ProcessModIter
         {
             m_nextDomain = false;
 
+            if (AppDomain::GetCurrentDomain() == nullptr)
+            {
+                return NULL;
+            }
+
             m_assemIter = AppDomain::GetCurrentDomain()->IterateAssembliesEx((AssemblyIterationFlags)(
                 kIncludeLoaded | kIncludeExecution));
         }

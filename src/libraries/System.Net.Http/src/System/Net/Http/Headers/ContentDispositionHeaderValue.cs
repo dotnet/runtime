@@ -470,9 +470,13 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            string[] parts = processedInput.Split('?');
+            Span<Range> parts = stackalloc Range[6];
+            ReadOnlySpan<char> processedInputSpan = processedInput;
             // "=, encodingName, encodingType, encodedData, ="
-            if (parts.Length != 5 || parts[0] != "\"=" || parts[4] != "=\"" || parts[2].ToLowerInvariant() != "b")
+            if (processedInputSpan.Split(parts, '?') != 5 ||
+                processedInputSpan[parts[0]] is not "\"=" ||
+                processedInputSpan[parts[4]] is not "=\"" ||
+                !processedInputSpan[parts[2]].Equals("b", StringComparison.OrdinalIgnoreCase))
             {
                 // Not encoded.
                 // This does not support multi-line encoding.
@@ -482,8 +486,8 @@ namespace System.Net.Http.Headers
 
             try
             {
-                Encoding encoding = Encoding.GetEncoding(parts[1]);
-                byte[] bytes = Convert.FromBase64String(parts[3]);
+                Encoding encoding = Encoding.GetEncoding(processedInput[parts[1]]);
+                byte[] bytes = Convert.FromBase64String(processedInput[parts[3]]);
                 output = encoding.GetString(bytes, 0, bytes.Length);
                 return true;
             }

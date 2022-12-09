@@ -1357,6 +1357,10 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     return true;
 }
 
+void GCToEEInterface::LogErrorToHost(const char *message)
+{
+}
+
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     UNREFERENCED_PARAMETER(privateKey);

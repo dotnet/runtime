@@ -14,7 +14,6 @@
 #include "eventtrace.h"
 #include "dbginterface.h"
 #include "peimagelayout.inl"
-#include "dlwrap.h"
 #include "invokeutil.h"
 #include "strongnameinternal.h"
 

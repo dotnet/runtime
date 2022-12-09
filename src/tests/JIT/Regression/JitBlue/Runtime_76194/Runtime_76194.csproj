@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>
