@@ -90,7 +90,6 @@ jobs:
         sudo apt-get update &&
         sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates &&
         $(HelixPreCommandsWasmOnLinux) &&
-        export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1 &&
         export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"
         || export PERF_PREREQS_INSTALL_FAILED=1;
         test "x$PERF_PREREQS_INSTALL_FAILED" = "x1" && echo "** Error: Failed to install prerequites **"

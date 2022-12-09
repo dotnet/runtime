@@ -35,6 +35,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				StripDescriptors = GetOptionAttributeValue (nameof (StripDescriptorsAttribute), true),
 				StripSubstitutions = GetOptionAttributeValue (nameof (StripSubstitutionsAttribute), true),
 				StripLinkAttributes = GetOptionAttributeValue (nameof (StripLinkAttributesAttribute), true),
+				IlcFrameworkCompilation = _testCaseTypeDefinition.HasAttribute (nameof (SetupIlcWholeProgramAnalysisAttribute)),
 			};
 
 			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute))) {

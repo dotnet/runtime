@@ -26,9 +26,9 @@
                       PrivateAssets="all"
                       Private="true"
                       IncludeReferenceAssemblyInPackage="true" />
-    <!-- Only include the 4.4 version in the ref pack, since targeting net7.0 requires Roslyn 4.4 -->
-    <AnalyzerReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj"
-                       Pack="true"
-                       ReferenceAnalyzer="false" />
+    <!-- Only include the 4.4 version in the ref pack, since targeting net7.0 or greater requires Roslyn 4.4 -->
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj"
+                      ReferenceOutputAssembly="false"
+                      PackAsAnalyzer="true" />
   </ItemGroup>
 </Project>

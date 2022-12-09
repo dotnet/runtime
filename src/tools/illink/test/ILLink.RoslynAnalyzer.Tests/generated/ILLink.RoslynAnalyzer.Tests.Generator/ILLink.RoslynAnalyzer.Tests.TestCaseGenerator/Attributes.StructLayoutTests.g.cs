@@ -27,5 +27,11 @@ namespace ILLink.RoslynAnalyzer.Tests.Attributes
 			return RunTest (allowMissingWarnings: true);
 		}
 
+		[Fact]
+		public Task UnusedTypeWithSequentialLayoutIsRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
 	}
 }

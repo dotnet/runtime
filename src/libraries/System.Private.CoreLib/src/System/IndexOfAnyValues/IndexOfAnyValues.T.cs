@@ -23,6 +23,15 @@ namespace System.Buffers
         /// <summary>Used by <see cref="IndexOfAnyValuesDebugView{T}"/>.</summary>
         internal virtual T[] GetValues() => throw new UnreachableException();
 
+        /// <summary>
+        /// Searches for the specified value and returns true if found. If not found, returns false.
+        /// </summary>
+        /// <param name="value">The value to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Contains(T value) => ContainsCore(value);
+
+        internal virtual bool ContainsCore(T value) => throw new UnreachableException();
+
         internal virtual int IndexOfAny(ReadOnlySpan<T> span) => throw new UnreachableException();
         internal virtual int IndexOfAnyExcept(ReadOnlySpan<T> span) => throw new UnreachableException();
         internal virtual int LastIndexOfAny(ReadOnlySpan<T> span) => throw new UnreachableException();

@@ -124,7 +124,7 @@ namespace System.Text.Json
 
             try
             {
-                WriteCore(writer, value, jsonTypeInfo);
+                jsonTypeInfo.Serialize(writer, value);
                 return output.WrittenMemory.ToArray();
             }
             finally
@@ -141,7 +141,7 @@ namespace System.Text.Json
 
             try
             {
-                WriteCoreAsObject(writer, value, jsonTypeInfo);
+                jsonTypeInfo.SerializeAsObject(writer, value);
                 return output.WrittenMemory.ToArray();
             }
             finally

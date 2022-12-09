@@ -189,6 +189,8 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentOutOfRange(nameof(instructionEncoder), SR.TooManyExceptionRegions);
             }
 
+            flowBuilder?.ValidateNotInSwitch();
+
             // Note (see also https://github.com/dotnet/runtime/issues/24948)
             //
             // We could potentially automatically determine whether a tiny method with no variables and InitLocals flag set
