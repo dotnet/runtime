@@ -7,7 +7,6 @@ using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 
@@ -300,21 +299,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             ValidateHandle(typeRefHandle, TableIndex.TypeRef);
             TypeReference typeRef = _metadataReader.GetTypeReference(typeRefHandle);
             string typeName = EmitString(typeRef.Name);
-            string output = "";
             if ((typeRef.ResolutionScope.Kind != HandleKind.AssemblyReference) && (typeRef.ResolutionScope.Kind != HandleKind.ModuleReference))
             {
                 // Nested type - format enclosing type followed by the nested type
                 return EmitHandleName(typeRef.ResolutionScope, namespaceQualified, owningTypeOverride: null) + "+" + typeName;
             }
-            if (namespaceQualified)
-            {
-                output = EmitString(typeRef.Namespace);
-                if (!string.IsNullOrEmpty(output))
-                {
-                    output += ".";
-                }
-            }
-            return output + signaturePrefix + typeName;
+            return GetQualificationPrefix(typeRef.Namespace, namespaceQualified) + signaturePrefix + typeName;
+        }
+
+        /// <summary>
+        /// Return simple assembly name represented by the metadata reader.
+        /// </summary>
+        /// <returns></returns>
+        private string GetAssemblyName()
+        {
+            return _metadataReader.GetString(_metadataReader.GetAssemblyDefinition().Name);
         }
 
         /// <summary>
@@ -335,20 +334,27 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return EmitHandleName(typeDef.GetDeclaringType(), namespaceQualified, owningTypeOverride: null) + "+" + typeName;
             }
 
-            string output;
-            if (namespaceQualified)
+            return GetQualificationPrefix(typeDef.Namespace, namespaceQualified) + typeName;
+        }
+
+        /// <summary>
+        /// Return assembly / namespace qualification prefix to use for formatting type names
+        /// </summary>
+        /// <param name="namespaceNameHandle">Namespace name handle</param>
+        /// <param name="namespaceQualified">true = qualify type name with assembly / namespace</param>
+        /// <returns></returns>
+        private string GetQualificationPrefix(StringHandle namespaceNameHandle, bool namespaceQualified)
+        {
+            if (!namespaceQualified)
             {
-                output = EmitString(typeDef.Namespace);
-                if (!string.IsNullOrEmpty(output))
-                {
-                    output += ".";
-                }
+                return "";
             }
-            else
+            string namespaceName = _metadataReader.GetString(namespaceNameHandle);
+            if (!string.IsNullOrEmpty(namespaceName))
             {
-                output = "";
+                namespaceName += ".";
             }
-            return output + typeName;
+            return "[" + GetAssemblyName() + "]" + namespaceName;
         }
 
         /// <summary>
