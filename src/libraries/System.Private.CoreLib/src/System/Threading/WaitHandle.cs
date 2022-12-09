@@ -77,8 +77,8 @@ namespace System.Threading
         internal static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
-            ArgumentOutOfRangeException.ThrowIfLessThan(timeoutMilliseconds, -1);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(timeoutMilliseconds, int.MaxValue);
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeoutMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(timeoutMilliseconds, int.MaxValue, nameof(timeout));
             return (int)timeoutMilliseconds;
         }
 

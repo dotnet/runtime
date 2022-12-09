@@ -841,7 +841,7 @@ namespace System.Threading
             ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTm, MaxSupportedTimeout, nameof(dueTime));
 
             long periodTm = (long)period.TotalMilliseconds;
-            ArgumentOutOfRangeException.ThrowIfLessThan(periodTm, -1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(periodTm, -1, nameof(period));
             ArgumentOutOfRangeException.ThrowIfGreaterThan(periodTm, MaxSupportedTimeout, nameof(period));
 
             TimerSetup(callback, state, (uint)dueTm, (uint)periodTm);
