@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace ComWrappersTests
 {
     using System;
@@ -132,6 +134,7 @@ namespace ComWrappersTests
                 Assert.Equal(sourceWrappers.Registration, target.Registration);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static (WeakReference<WeakReferenceableWrapper>, IntPtr) GetWeakReference(TestComWrappers cw)
         {
             IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
@@ -142,6 +145,7 @@ namespace ComWrappersTests
             return (wr, objRaw);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static IntPtr SetWeakReferenceTarget(WeakReference<WeakReferenceableWrapper> wr, TestComWrappers cw)
         {
             IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
@@ -263,6 +267,7 @@ namespace ComWrappersTests
             Assert.Null(handle.Target);
             Assert.False(weakRef.TryGetTarget(out _));
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static (GCHandle handle, WeakReference<DerivedObject>) GetWeakReference()
             {
                 DerivedObject obj = new DerivedObject(TestComWrappers.TrackerSupportInstance);
