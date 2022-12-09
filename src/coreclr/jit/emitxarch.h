@@ -72,6 +72,9 @@ unsigned emitGetEvexPrefixSize(instruction ins);
 unsigned emitGetPrefixSize(code_t code, bool includeRexPrefixSize);
 unsigned emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code);
 
+code_t emitExtractVexPrefix(instruction ins, code_t& code);
+code_t emitExtractEvexPrefix(instruction ins, code_t& code);
+
 unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code);
 unsigned insEncodeReg345(instruction ins, regNumber reg, emitAttr size, code_t* code);
 code_t insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, code_t code);
