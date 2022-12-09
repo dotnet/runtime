@@ -4451,8 +4451,8 @@ namespace System.Text.RegularExpressions.Generator
                 Span<char> setChars = stackalloc char[5]; // current max that's vectorized
                 int setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars);
 
-                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 2-5 values that fit in a single range
-                if (setCharsCount != 1 && RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
+                // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
+                if (setCharsCount is not (1 or 2) && RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
                 {
                     string indexOfAnyInRangeName = !negated ?
                         "IndexOfAnyInRange" :

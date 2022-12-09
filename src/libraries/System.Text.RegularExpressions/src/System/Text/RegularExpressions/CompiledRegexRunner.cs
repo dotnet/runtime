@@ -10,13 +10,13 @@ namespace System.Text.RegularExpressions
     {
         private readonly ScanDelegate _scanMethod;
 
-#pragma warning disable CA1823 // Avoid unused private fields. Justification: Used via reflection to cache the Case behavior if needed.
-#pragma warning disable CS0169
         private readonly IndexOfAnyValues<char>[]? _indexOfAnyValues;
 
         /// <summary>This field will only be set if the pattern contains backreferences and has RegexOptions.IgnoreCase</summary>
         private readonly CultureInfo? _culture;
 
+#pragma warning disable CA1823 // Avoid unused private fields. Justification: Used via reflection to cache the Case behavior if needed.
+#pragma warning disable CS0169
         private RegexCaseBehavior _caseBehavior;
 #pragma warning restore CS0169
 #pragma warning restore CA1823

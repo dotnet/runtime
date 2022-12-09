@@ -3482,7 +3482,7 @@ namespace System.Text.RegularExpressions
                         {
                             Debug.Assert(node.Ch < 128);
                             Array.Resize(ref asciiChars, asciiChars.Length + 1);
-                            asciiChars[asciiChars.Length - 1] = node.Ch;
+                            asciiChars[^1] = node.Ch;
                         }
                         LoadIndexOfAnyValues(asciiChars);
                         Call(s_spanIndexOfAnyIndexOfAnyValues);
@@ -5005,8 +5005,8 @@ namespace System.Text.RegularExpressions
                     int setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars);
 
                     // IndexOfAny{Except}InRange
-                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of 2-5 values that fit in a single range
-                    if (setCharsCount != 1 && RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
+                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
+                    if (setCharsCount is not (1 or 2) && RegexCharClass.TryGetSingleRange(node.Str, out char lowInclusive, out char highInclusive))
                     {
                         if (lowInclusive == highInclusive)
                         {

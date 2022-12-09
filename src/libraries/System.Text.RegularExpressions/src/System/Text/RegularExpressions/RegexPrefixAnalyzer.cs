@@ -203,15 +203,20 @@ namespace System.Text.RegularExpressions
                 result.Negated = RegexCharClass.IsNegated(result.Set);
 
                 int count = RegexCharClass.GetSetChars(result.Set, scratch);
+
+                // We only use IndexOfAnyExcept for primary sets with a single value.
+                // For non-negated sets, we use IndexOfAny for up to 5 values.
                 if (result.Negated ? (count == 1) : (count > 0))
                 {
                     result.Chars = scratch.Slice(0, count).ToArray();
                 }
 
-                if (thorough)
+                // 'Count == 1' will always be handeled by Chars above.
+                if (thorough && count != 1)
                 {
-                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of 2-5 values that fit in a single range
-                    if (count != 1 && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
+                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
+                    // Chars may be null for 'Count == 2' if we're dealing with a negated set.
+                    if ((count != 2 || result.Chars is null) && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
                     {
                         result.Chars = null;
                         result.Range = (lowInclusive, highInclusive);
