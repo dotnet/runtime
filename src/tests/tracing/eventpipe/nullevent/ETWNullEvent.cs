@@ -36,10 +36,6 @@ namespace Tracing.Tests.ETWNullEvent
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine("----------------------------------------------------");
-            Console.WriteLine("ETW Null event test!!!!");
-            Console.WriteLine("----------------------------------------------------");
-
             List<EventPipeProvider> providers = new List<EventPipeProvider>
             {
                 new EventPipeProvider("Test.EventSourceNull", EventLevel.Verbose)
@@ -53,8 +49,7 @@ namespace Tracing.Tests.ETWNullEvent
                 {
                     using (var el = new LoudListener(log))
                     {
-                        string s = null;
-                        log.EventNullString(s, 10, 11, 12);
+                        log.EventNullString(null, 10, 11, 12);
                         Assert.Equal(1, LoudListener.t_lastEvent.EventId);
                         Assert.Equal(4, LoudListener.t_lastEvent.Payload.Count);
                         Assert.Equal("", (string)LoudListener.t_lastEvent.Payload[0]);
@@ -62,12 +57,10 @@ namespace Tracing.Tests.ETWNullEvent
                         Assert.Equal(11, (float)LoudListener.t_lastEvent.Payload[2]);
                         Assert.Equal(12, (long)LoudListener.t_lastEvent.Payload[3]);
 
-                        byte[] b = null;
-                        byte[] expected = new byte[0];
-                        log.EventNullByteArray(b, 10, 11, 12);
-                        Assert.Equal(1, LoudListener.t_lastEvent.EventId);
+                        log.EventNullByteArray(null, 10, 11, 12);
+                        Assert.Equal(2, LoudListener.t_lastEvent.EventId);
                         Assert.Equal(4, LoudListener.t_lastEvent.Payload.Count);
-                        Assert.Equal(expected, (string)LoudListener.t_lastEvent.Payload[0]);
+                        Assert.Equal(new byte[0], (byte[])LoudListener.t_lastEvent.Payload[0]);
                         Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[1]);
                         Assert.Equal(11, (float)LoudListener.t_lastEvent.Payload[2]);
                         Assert.Equal(12, (long)LoudListener.t_lastEvent.Payload[3]);
