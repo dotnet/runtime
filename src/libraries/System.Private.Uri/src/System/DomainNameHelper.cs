@@ -198,11 +198,7 @@ namespace System
             if (Ascii.IsValid(hostname))
             {
                 // just lowercase for ascii
-                return string.Create(hostname.Length, hostname, static (chars, asciiHostName) =>
-                {
-                    OperationStatus status = Ascii.ToLower(asciiHostName, chars, out _);
-                    Debug.Assert(status == OperationStatus.Done);
-                });
+                return hostname.ToLowerInvariant();
             }
 
             string bidiStrippedHost = UriHelper.StripBidiControlCharacters(hostname, hostname);
