@@ -281,6 +281,10 @@ int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* pro
             tls->alpn_announced = 1;
             tls->alpn_received = 1 ;
         }
+        else
+        {
+            *pOSStatus = errSecNotAvailable;
+        }
     }
 
     CFRelease(value);
