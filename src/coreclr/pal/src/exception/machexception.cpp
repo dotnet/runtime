@@ -642,8 +642,7 @@ Function :
 
 Parameters:
     thread - thread the exception happened
-    task - task the exception happened
-    message - exception message
+    exceptionInfo - exception info
 
 Return value :
     None
@@ -651,11 +650,9 @@ Return value :
 static
 void
 HijackFaultingThread(
-    mach_port_t thread,             // [in] thread the exception happened on
-    mach_port_t task,               // [in] task the exception happened on
-    MachMessage& message)           // [in] exception message
+    mach_port_t thread,               // [in] thread the exception happened on
+    MachExceptionInfo& exceptionInfo) // [in] exception info
 {
-    MachExceptionInfo exceptionInfo(thread, message);
     EXCEPTION_RECORD exceptionRecord;
     CONTEXT threadContext;
     kern_return_t machret;
@@ -1156,16 +1153,14 @@ SEHExceptionThread(void *args)
 
             if (!feFound)
             {
-#ifdef HOST_ARM64
+                MachExceptionInfo exceptionInfo(thread, sMessage);
+
+#if defined(HOST_ARM64)
                 // Check for a special case of invalid instruction that is used to implement RestoreCompleteContext
-                mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
-                arm_thread_state64_t threadState;
-                machret = thread_get_state(thread, ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
-                CHECK_MACH("thread_get_state", machret);
-                if (arm_thread_state64_get_pc_fptr(threadState) == (void*)RestoreCompleteContext)
+                if (arm_thread_state64_get_pc_fptr(exceptionInfo.ThreadState) == (void*)RestoreCompleteContext)
                 {
                     // The CONTEXT pointer was passed to RestoreCompleteContext in x0
-                    CONTEXT *pContext = (CONTEXT *)threadState.__x[0];
+                    CONTEXT *pContext = (CONTEXT *)exceptionInfo.ThreadState.__x[0];
                     machret = CONTEXT_SetThreadContextOnPort(thread, pContext);
                     CHECK_MACH("CONTEXT_SetThreadContextOnPort", machret);
                 }
@@ -1173,7 +1168,7 @@ SEHExceptionThread(void *args)
 #endif // HOST_ARM64
                 {
                     NONPAL_TRACE("HijackFaultingThread thread %08x\n", thread);
-                    HijackFaultingThread(thread, mach_task_self(), sMessage);
+                    HijackFaultingThread(thread, exceptionInfo);
                 }
 
                 // Send the result of handling the exception back in a reply.

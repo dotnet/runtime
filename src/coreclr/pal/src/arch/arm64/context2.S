@@ -221,12 +221,12 @@ LEAF_END RtlRestoreContext, _TEXT
 //
 LEAF_ENTRY RestoreCompleteContext, _TEXT
     // We cannot restore all registers in the user mode code, so we rely on a help from kernel here. 
-    // The following instruction is an invalid instruction. In the hardware exception handler, we check
+    // The following instruction is an undefined instruction. In the hardware exception handler, we check
     // if the faulting address is the RtlRestoreContext and in case it is, we update the context of
     // the faulting thread using the CONTEXT pointed to by the x0 register.
     // While this could be used for the full fidelity RtlRestoreContext implementation, it is too
     // expensive for general usage of the RtlRestoreContext.
-    .quad 0xBADC0DE3
+    UDF #0
 LEAF_END RestoreCompleteContext, _TEXT
 
 #endif // __APPLE__
