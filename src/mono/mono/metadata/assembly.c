@@ -1451,19 +1451,19 @@ absolute_dir (const gchar *filename)
 }
 
 static gboolean
-bundled_assembly_match (const MonoBundledAssembly *b, const char *name)
+bundled_assembly_match (const char *bundled_name, const char *name)
 {
 #ifdef DISABLE_WEBCIL
-	return strcmp (b->name, name) == 0;
+	return strcmp (bundled_name, name) == 0;
 #else
-	if (strcmp (b->name, name) == 0)
+	if (strcmp (bundled_name, name) == 0)
 		return TRUE;
 	/* if they want a .dll and we have the matching .webcil, return it */
-	if (g_str_has_suffix (b->name, ".webcil") && g_str_has_suffix (name, ".dll")) {
-		size_t bprefix = strlen (b->name) - 7;
+	if (g_str_has_suffix (bundled_name, ".webcil") && g_str_has_suffix (name, ".dll")) {
+		size_t bprefix = strlen (bundled_name) - 7;
 		size_t nprefix = strlen (name) - 4;
 		size_t longer = MAX(bprefix, nprefix);
-		if (strncmp (b->name, name, longer) == 0)
+		if (strncmp (bundled_name, name, longer) == 0)
 			return TRUE;
 	}
 	return FALSE;
@@ -1479,7 +1479,7 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	MonoImage *image = NULL;
 	char *name = is_satellite ? g_strdup (filename) : g_path_get_basename (filename);
 	for (int i = 0; !image && bundles [i]; ++i) {
-		if (bundled_assembly_match (bundles[i], name)) {
+		if (bundled_assembly_match (bundles[i]->name, name)) {
 			// Since bundled images don't exist on disk, don't give them a legit filename
 			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, FALSE, name, NULL);
 			break;
@@ -1500,7 +1500,7 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 	char *name = g_strdup (filename);
 
 	for (int i = 0; !image && satellite_bundles [i]; ++i) {
-		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
+		if (bundled_assembly_match (satellite_bundles[i]->name, name) && strcmp (satellite_bundles [i]->culture, culture) == 0) {
 			char *bundle_name = g_strconcat (culture, "/", name, (const char *)NULL);
 			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, bundle_name, NULL);
 			g_free (bundle_name);
