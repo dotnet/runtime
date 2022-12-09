@@ -355,25 +355,31 @@ namespace System.Net.Http.Json.Functional.Tests
                 });
         }
 
+        public static IEnumerable<object[]> GetFromJsonAsync_EnforcesMaxResponseContentBufferSize_MemberData() =>
+            from useDeleteAsync in new[] { true, false }
+            from limit in new[] { 2, 100, 100000 }
+            from contentLength in new[] { limit, limit + 1 }
+            from chunked in new[] { true, false }
+            select new object[] { useDeleteAsync, limit, contentLength, chunked };
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // No Socket support
-        [InlineData(100, 100, true)]
-        [InlineData(100, 100, false)]
-        [InlineData(100, 101, true)]
-        [InlineData(100, 101, false)]
-        public async Task GetFromJsonAsync_EnforcesMaxResponseContentBufferSize(int limit, int contentLength, bool chunked)
+        [MemberData(nameof(GetFromJsonAsync_EnforcesMaxResponseContentBufferSize_MemberData))]
+        public async Task GetFromJsonAsync_EnforcesMaxResponseContentBufferSize(bool useDeleteAsync, int limit, int contentLength, bool chunked)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using var client = new HttpClient { MaxResponseContentBufferSize = limit };
 
+                Func<Task> testMethod = () => useDeleteAsync ? client.DeleteFromJsonAsync<string>(uri) : client.GetFromJsonAsync<string>(uri);
+
                 if (contentLength > limit)
                 {
-                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetFromJsonAsync<string>(uri));
+                    Exception ex = await Assert.ThrowsAsync<HttpRequestException>(testMethod);
                     Assert.Contains(limit.ToString(), ex.Message);
                 }
                 else
                 {
-                    await client.GetFromJsonAsync<string>(uri);
+                    await testMethod();
                 }
             },
             async server =>
@@ -392,9 +398,11 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // No Socket support
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task GetFromJsonAsync_EnforcesTimeout(bool slowHeaders)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task GetFromJsonAsync_EnforcesTimeout(bool useDeleteAsync, bool slowHeaders)
         {
             TaskCompletionSource<byte> exceptionThrown = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -402,7 +410,8 @@ namespace System.Net.Http.Json.Functional.Tests
             {
                 using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(100) };
 
-                Exception ex = await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetFromJsonAsync<string>(uri));
+                Exception ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                    useDeleteAsync ? client.DeleteFromJsonAsync<string>(uri) : client.GetFromJsonAsync<string>(uri));
 
 #if NETCORE
                 Assert.Contains("HttpClient.Timeout", ex.Message);

@@ -66,11 +66,14 @@ namespace System.Net.Http.Json
                 throw;
             }
 
-            return Core(client, responseTask, linkedCTS, deserializeMethod, jsonOptions, cancellationToken);
+            bool usingResponseHeadersRead = !ReferenceEquals(getMethod, s_deleteAsync);
+
+            return Core(client, responseTask, usingResponseHeadersRead, linkedCTS, deserializeMethod, jsonOptions, cancellationToken);
 
             static async Task<TValue?> Core(
                 HttpClient client,
                 Task<HttpResponseMessage> responseTask,
+                bool usingResponseHeadersRead,
                 CancellationTokenSource? linkedCTS,
                 Func<Stream, TJsonOptions, CancellationToken, ValueTask<TValue?>> deserializeMethod,
                 TJsonOptions jsonOptions,
@@ -95,9 +98,12 @@ namespace System.Net.Http.Json
                     {
                         using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(content, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
 
-                        var lengthLimitStream = new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize);
+                        // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront. No need to check the limit again.
+                        Stream readStream = usingResponseHeadersRead
+                            ? new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize)
+                            : contentStream;
 
-                        return await deserializeMethod(lengthLimitStream, jsonOptions, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
+                        return await deserializeMethod(readStream, jsonOptions, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException oce) when ((linkedCTS?.Token.IsCancellationRequested == true) && !cancellationToken.IsCancellationRequested)
                     {
