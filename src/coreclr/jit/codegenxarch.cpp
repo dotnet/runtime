@@ -6864,6 +6864,12 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     assert(genIsValidIntReg(dstReg));
 
+    if ((cast->gtFlags & GTF_CAST_IGNORE) && (dstReg == srcReg) && !src->isContained())
+    {
+        genProduceReg(cast);
+        return;
+    }
+
     GenIntCastDesc desc(cast);
 
     if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)

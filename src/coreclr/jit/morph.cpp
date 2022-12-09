@@ -10455,6 +10455,59 @@ void Compiler::fgTryReplaceStructLocalWithField(GenTree* tree)
     }
 }
 
+void Compiler::fgOptimizeCastIgnore(GenTreeCast* cast)
+{
+    if (cast->gtFlags & GTF_CAST_IGNORE)
+        return;
+
+    if (opts.OptimizationEnabled() && cast->CastOp()->OperIs(GT_LCL_VAR) && !cast->gtOverflow() &&
+        varTypeIsIntegral(cast))
+    {
+        GenTreeLclVarCommon* lclVar = cast->CastOp()->AsLclVarCommon();
+
+        if (gtIsActiveCSE_Candidate(cast) || gtIsActiveCSE_Candidate(lclVar))
+            return;
+
+        LclVarDsc* varDsc = lvaGetDesc(lclVar->GetLclNum());
+
+        if (varDsc->lvNormalizeOnLoad())
+            return;
+
+        if (varDsc->lvNormalizeOnStore())
+            return;
+
+        var_types lclVarType = varDsc->TypeGet();
+
+        if (!varTypeIsIntegral(lclVarType) || lclVarType == TYP_BOOL)
+            return;
+
+        var_types castToType = cast->CastToType();
+
+        if (!varTypeIsIntegral(castToType) || castToType == TYP_BOOL)
+            return;
+
+        if (genTypeSize(castToType) <= genTypeSize(lclVar))
+            return;
+
+        if (!varTypeIsUnsigned(castToType))
+            return;
+
+        if (lclVar->HasSsaName())
+        {
+            if ((lclVar->TypeGet() == varDsc->TypeGet()) && (genActualType(cast) == genActualType(castToType)))
+            {
+                LclSsaVarDsc* ssaDsc = varDsc->GetPerSsaData(lclVar->GetSsaNum());
+
+                GenTree* ssaAsg = ssaDsc->GetAssignment();
+                if (ssaAsg != nullptr && (ssaAsg->gtGetOp1()->gtEffectiveVal()->TypeIs(TYP_INT)))
+                {
+                    cast->gtFlags |= GTF_CAST_IGNORE;
+                }
+            }
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // fgOptimizeCast: Optimizes the supplied GT_CAST tree.
 //
@@ -10553,6 +10606,8 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
             }
         }
     }
+
+    fgOptimizeCastIgnore(cast);
 
     return cast;
 }
