@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
@@ -97,7 +98,9 @@ namespace Internal.Reflection.Core.Execution
         // Other
         //==============================================================================================
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
-        public abstract EnumInfo GetEnumInfo(RuntimeTypeHandle typeHandle);
+        public abstract EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeTypeHandle typeHandle)
+            where TUnderlyingValue : struct, INumber<TUnderlyingValue>;
+
         public abstract IntPtr GetDynamicInvokeThunk(MethodInvoker invoker);
 
         //==============================================================================================

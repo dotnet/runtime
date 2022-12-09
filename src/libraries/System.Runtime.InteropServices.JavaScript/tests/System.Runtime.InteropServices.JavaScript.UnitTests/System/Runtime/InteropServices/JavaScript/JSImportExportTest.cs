@@ -541,8 +541,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             yield return new object[] { (char)42 };
             yield return new object[] { (char)1 };
-            yield return new object[] { 'Ž' };
-            yield return new object[] { '♡' };
+            yield return new object[] { '\u017D' };
+            yield return new object[] { '\u2661' };
             yield return new object[] { char.MaxValue };
             yield return new object[] { char.MinValue };
         }
@@ -1391,6 +1391,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public void JSImportReturnError()
+        {
+            var err = JavaScriptTestHelper.returnError() as Exception;
+            Assert.NotNull(err);
+            Assert.Contains("this-is-error", err.Message);
+        }
+
+        [Fact]
         public void JsExportCatchToString()
         {
             var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
@@ -1478,6 +1486,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77334")]
         public async Task JsImportTaskTypes()
         {
             object a = new object();

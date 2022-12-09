@@ -266,7 +266,23 @@ namespace System
         private const int CharStackBufferSize = 32;
         private const string PosNumberFormat = "#";
 
-        private static readonly string[] s_singleDigitStringCache = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        /// <summary>The non-inclusive upper bound of <see cref="s_smallNumberCache"/>.</summary>
+        /// <remarks>
+        /// This is a semi-arbitrary bound. For mono, which is often used for more size-constrained workloads,
+        /// we keep the size really small, supporting only single digit values.  For coreclr, we use a larger
+        /// value, still relatively small but large enough to accomodate common sources of numbers to strings, e.g. HTTP success status codes.
+        /// By being >= 255, it also accomodates all byte.ToString()s.  If no small numbers are ever formatted, we incur
+        /// the ~2400 bytes on 64-bit for the array itself.  If all small numbers are formatted, we incur ~11,500 bytes
+        /// on 64-bit for the array and all the strings.
+        /// </remarks>
+        private const int SmallNumberCacheLength =
+#if MONO
+            10;
+#else
+            300;
+#endif
+        /// <summary>Lazily-populated cache of strings for uint values in the range [0, <see cref="SmallNumberCacheLength"/>).</summary>
+        private static readonly string[] s_smallNumberCache = new string[SmallNumberCacheLength];
 
         private static readonly string[] s_posCurrencyFormats =
         {
@@ -1575,7 +1591,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void WriteTwoDigits(byte* ptr, uint value)
+        internal static unsafe void WriteTwoDigits(byte* ptr, uint value)
         {
             Debug.Assert(value <= 99);
             Unsafe.WriteUnaligned(ptr,
@@ -1685,12 +1701,27 @@ namespace System
 
         internal static unsafe string UInt32ToDecStr(uint value)
         {
-            // For single-digit values that are very common, especially 0 and 1, just return cached strings.
-            if (value < 10)
+            // For small numbers, consult a lazily-populated cache.
+            if (value < SmallNumberCacheLength)
             {
-                return s_singleDigitStringCache[value];
+                return UInt32ToDecStrForKnownSmallNumber(value);
             }
 
+            return UInt32ToDecStr_NoSmallNumberCheck(value);
+        }
+
+        internal static string UInt32ToDecStrForKnownSmallNumber(uint value)
+        {
+            Debug.Assert(value < SmallNumberCacheLength);
+            return s_smallNumberCache[value] ?? CreateAndCacheString(value);
+
+            [MethodImpl(MethodImplOptions.NoInlining)] // keep rare usage out of fast path
+            static string CreateAndCacheString(uint value) =>
+                s_smallNumberCache[value] = UInt32ToDecStr_NoSmallNumberCheck(value);
+        }
+
+        private static unsafe string UInt32ToDecStr_NoSmallNumberCheck(uint value)
+        {
             int bufferLength = FormattingHelpers.CountDigits(value);
 
             string result = string.FastAllocateString(bufferLength);
@@ -2086,10 +2117,10 @@ namespace System
 
         internal static unsafe string UInt64ToDecStr(ulong value)
         {
-            // For single-digit values that are very common, especially 0 and 1, just return cached strings.
-            if (value < 10)
+            // For small numbers, consult a lazily-populated cache.
+            if (value < SmallNumberCacheLength)
             {
-                return s_singleDigitStringCache[value];
+                return UInt32ToDecStrForKnownSmallNumber((uint)value);
             }
 
             int bufferLength = FormattingHelpers.CountDigits(value);
@@ -2374,14 +2405,12 @@ namespace System
 
         internal static unsafe string UInt128ToDecStr(UInt128 value)
         {
-            // Intrinsified in mono interpreter
-            int bufferLength = FormattingHelpers.CountDigits(value);
-
-            // For single-digit values that are very common, especially 0 and 1, just return cached strings.
-            if (bufferLength == 1)
+            if (value.Upper == 0)
             {
-                return s_singleDigitStringCache[value.Lower];
+                return UInt64ToDecStr(value.Lower);
             }
+
+            int bufferLength = FormattingHelpers.CountDigits(value);
 
             string result = string.FastAllocateString(bufferLength);
             fixed (char* buffer = result)

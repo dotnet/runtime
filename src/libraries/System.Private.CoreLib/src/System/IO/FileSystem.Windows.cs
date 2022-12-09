@@ -120,13 +120,6 @@ namespace System.IO
         public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle) =>
             GetAttributeData(fileHandle).ftCreationTime.ToDateTimeOffset();
 
-        public static FileSystemInfo GetFileSystemInfo(string fullPath, bool asDirectory)
-        {
-            return asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-        }
-
         public static DateTimeOffset GetLastAccessTime(string fullPath) =>
             GetAttributeData(fullPath).ftLastAccessTime.ToDateTimeOffset();
 
@@ -180,7 +173,7 @@ namespace System.IO
             data.nFileSizeLow = fileInformationData.nFileSizeLow;
         }
 
-        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool _ /*isCaseSensitiveRename*/)
         {
             // Source and destination must have the same root.
             ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourceFullPath);

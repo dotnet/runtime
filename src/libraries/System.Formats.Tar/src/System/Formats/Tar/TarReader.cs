@@ -401,7 +401,7 @@ namespace System.Formats.Tar
                 TarEntryType.LongLink or
                 TarEntryType.LongPath)
             {
-                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
+                throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
             }
 
             // Replace all the attributes representing standard fields with the extended ones, if any
@@ -433,13 +433,13 @@ namespace System.Formats.Tar
                 TarEntryType.LongLink or
                 TarEntryType.LongPath)
             {
-                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
+                throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
             }
 
             // Can't have two extended attribute metadata entries in a row
             if (actualHeader._typeFlag is TarEntryType.ExtendedAttributes)
             {
-                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
+                throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
             }
 
             // Replace all the attributes representing standard fields with the extended ones, if any
@@ -468,7 +468,7 @@ namespace System.Formats.Tar
             // Can't have two identical metadata entries in a row
             if (secondHeader._typeFlag == header._typeFlag)
             {
-                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
+                throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
             }
 
             // It's possible to have the two different metadata entries in a row
@@ -486,7 +486,7 @@ namespace System.Formats.Tar
                 // Can't have three GNU metadata entries in a row
                 if (thirdHeader._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
                 {
-                    throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
+                    throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
                 }
 
                 if (header._typeFlag is TarEntryType.LongLink)
@@ -543,7 +543,7 @@ namespace System.Formats.Tar
             // Can't have two identical metadata entries in a row
             if (secondHeader._typeFlag == header._typeFlag)
             {
-                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
+                throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
             }
 
             TarHeader finalHeader;
@@ -562,7 +562,7 @@ namespace System.Formats.Tar
                 // Can't have three GNU metadata entries in a row
                 if (thirdHeader._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
                 {
-                    throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
+                    throw new InvalidDataException(SR.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
                 }
 
                 if (header._typeFlag is TarEntryType.LongLink)

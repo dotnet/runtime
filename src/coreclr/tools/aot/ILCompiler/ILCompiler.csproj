@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
-    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />

@@ -6667,8 +6667,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method && !cfg->deopt && !cfg->interp_entry_only) {
 		if (header->num_clauses) {
-			/* deopt is only disabled for gsharedvt */
-			g_assert (cfg->gsharedvt);
 			for (guint i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */
@@ -10007,7 +10005,7 @@ calli_end:
 				}
 
 				if (il_op == MONO_CEE_LDFLDA) {
-					if (sp [0]->type == STACK_OBJ) {
+					if (sp [0]->type == STACK_OBJ || sp [0]->type == STACK_PTR) {
 						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
 						MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
 					}

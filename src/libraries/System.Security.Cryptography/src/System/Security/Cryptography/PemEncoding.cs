@@ -572,26 +572,24 @@ namespace System.Security.Cryptography
 
             int encodedSize = GetEncodedSize(label.Length, data.Length);
 
-            fixed (char* pLabel = label)
-            fixed (byte* pData = data)
-            {
-                return string.Create(
-                    encodedSize,
-                    (LabelPointer : new IntPtr(pLabel), LabelLength : label.Length, DataPointer : new IntPtr(pData), DataLength : data.Length),
-                    static (destination, state) =>
+#pragma warning disable CS8500 // takes address of managed type
+            return string.Create(
+                encodedSize,
+                (LabelPointer: (IntPtr)(&label), DataPointer: (IntPtr)(&data)),
+                static (destination, state) =>
+                {
+                    ReadOnlySpan<char> label = *(ReadOnlySpan<char>*)state.LabelPointer;
+                    ReadOnlySpan<byte> data = *(ReadOnlySpan<byte>*)state.DataPointer;
+
+                    int charsWritten = WriteCore(label, data, destination);
+
+                    if (charsWritten != destination.Length)
                     {
-                        ReadOnlySpan<byte> data = new ReadOnlySpan<byte>(state.DataPointer.ToPointer(), state.DataLength);
-                        ReadOnlySpan<char> label = new ReadOnlySpan<char>(state.LabelPointer.ToPointer(), state.LabelLength);
-
-                        int charsWritten = WriteCore(label, data, destination);
-
-                        if (charsWritten != destination.Length)
-                        {
-                            Debug.Fail("WriteCore wrote the wrong amount of data");
-                            throw new CryptographicException();
-                        }
-                    });
-            }
+                        Debug.Fail("WriteCore wrote the wrong amount of data");
+                        throw new CryptographicException();
+                    }
+                });
+#pragma warning restore CS8500
         }
     }
 }

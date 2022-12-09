@@ -64,8 +64,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlGetVersion.cs"
              Link="Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenProcessToken.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.OpenProcessToken.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
@@ -79,6 +79,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
 
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"/>
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="Common\System\IO\PathInternal.Windows.cs" />
   </ItemGroup>

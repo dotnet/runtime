@@ -6,5 +6,6 @@
     <UseAppHost>false</UseAppHost>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <OutputPath>$(RuntimeBinDir)</OutputPath>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 </Project>

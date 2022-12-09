@@ -50,7 +50,7 @@ namespace System.Collections.ObjectModel
                 // We can't cast array of value type to object[], so we don't support widening of primitive types here.
                 if (array is not object?[] objects)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
 
                 try
@@ -62,7 +62,7 @@ namespace System.Collections.ObjectModel
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
         }

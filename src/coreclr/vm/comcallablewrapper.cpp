@@ -339,8 +339,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     HRESULT hr = S_OK;
     PCODE retAddr = NULL;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     PCODE pStub = NULL;
     BOOL fNonTransientExceptionThrown = FALSE;
 
@@ -530,9 +528,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     retAddr = NULL;
 
 Exit:
-
-    END_ENTRYPOINT_VOIDRET;
-
     RETURN retAddr;
 }
 

@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics.Arm;
 
 namespace System.Runtime.Intrinsics
 {
+    /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 64-bit vectors.</summary>
     public static class Vector64
     {
         internal const int Size = 8;
@@ -525,6 +526,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance with all elements initialized to the specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{T}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
@@ -857,8 +859,9 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<T> CreateScalar<T>(T value)
+        public static unsafe Vector64<T> CreateScalar<T>(T value)
             where T : struct
         {
             Vector64<T> result = Vector64<T>.Zero;
@@ -869,171 +872,100 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<byte> CreateScalar(byte value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<byte>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<byte>(value);
-            }
-        }
+        public static unsafe Vector64<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Double}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<double> CreateScalar(double value) => Create(value);
+        public static unsafe Vector64<double> CreateScalar(double value) => CreateScalar<double>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<short> CreateScalar(short value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<short>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<short>(value);
-            }
-        }
+        public static unsafe Vector64<short> CreateScalar(short value) => CreateScalar<short>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> CreateScalar(int value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<int>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<int>(value);
-            }
-        }
+        public static unsafe Vector64<int> CreateScalar(int value) => CreateScalar<int>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<long> CreateScalar(long value) => Create(value);
+        public static unsafe Vector64<long> CreateScalar(long value) => CreateScalar<long>(value);
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<nint> CreateScalar(nint value)
-        {
-#if TARGET_64BIT
-            return CreateScalar((long)(value)).AsNInt();
-#else
-            return CreateScalar((int)(value)).AsNInt();
-#endif
-        }
+        public static unsafe Vector64<nint> CreateScalar(nint value) => CreateScalar<nint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<nuint> CreateScalar(nuint value)
-        {
-#if TARGET_64BIT
-            return CreateScalar((ulong)(value)).AsNUInt();
-#else
-            return CreateScalar((uint)(value)).AsNUInt();
-#endif
-        }
+        public static unsafe Vector64<nuint> CreateScalar(nuint value) => CreateScalar<nuint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{SByte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<sbyte> CreateScalar(sbyte value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<sbyte>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<sbyte>(value);
-            }
-        }
+        public static unsafe Vector64<sbyte> CreateScalar(sbyte value) => CreateScalar<sbyte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<float> CreateScalar(float value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<float>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<float>(value);
-            }
-        }
+        public static unsafe Vector64<float> CreateScalar(float value) => CreateScalar<float>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ushort> CreateScalar(ushort value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<ushort>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<ushort>(value);
-            }
-        }
+        public static unsafe Vector64<ushort> CreateScalar(ushort value) => CreateScalar<ushort>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> CreateScalar(uint value)
-        {
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.Insert(Vector64<uint>.Zero, 0, value);
-            }
-            else
-            {
-                return CreateScalar<uint>(value);
-            }
-        }
+        public static unsafe Vector64<uint> CreateScalar(uint value) => CreateScalar<uint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ulong> CreateScalar(ulong value) => Create(value);
+        public static unsafe Vector64<ulong> CreateScalar(ulong value) => CreateScalar<ulong>(value);
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector64<T> CreateScalarUnsafe<T>(T value)
+        public static Vector64<T> CreateScalarUnsafe<T>(T value)
             where T : struct
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -1053,6 +985,13 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<byte> CreateScalarUnsafe(byte value) => CreateScalarUnsafe<byte>(value);
 
+        /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{Double}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<double> CreateScalarUnsafe(double value) => CreateScalarUnsafe<double>(value);
+
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
@@ -1070,18 +1009,21 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<long> CreateScalarUnsafe(long value) => Create(value);
+        public static unsafe Vector64<long> CreateScalarUnsafe(long value) => CreateScalarUnsafe<long>(value);
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<nint> CreateScalarUnsafe(nint value) => CreateScalarUnsafe<nint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<nuint> CreateScalarUnsafe(nuint value) => CreateScalarUnsafe<nuint>(value);
@@ -1117,6 +1059,14 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<uint> CreateScalarUnsafe(uint value) => CreateScalarUnsafe<uint>(value);
 
+        /// <summary>Creates a new <see cref="Vector64{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{UInt64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
+
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -1126,6 +1076,16 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Divide<T>(Vector64<T> left, Vector64<T> right)
+            where T : struct => left / right;
+
+        /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
+        /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
+        /// <param name="right">The scalar that will divide <paramref name="left" />.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> Divide<T>(Vector64<T> left, T right)
             where T : struct => left / right;
 
         /// <summary>Computes the dot product of two vectors.</summary>
@@ -1907,18 +1867,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<byte> ShiftLeft(Vector64<byte> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<byte> result);
-
-            for (int index = 0; index < Vector64<byte>.Count; index++)
-            {
-                byte element = Scalar<byte>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<byte> ShiftLeft(Vector64<byte> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -1926,18 +1875,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<short> ShiftLeft(Vector64<short> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<short> result);
-
-            for (int index = 0; index < Vector64<short>.Count; index++)
-            {
-                short element = Scalar<short>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<short> ShiftLeft(Vector64<short> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -1945,18 +1883,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<int> ShiftLeft(Vector64<int> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<int> result);
-
-            for (int index = 0; index < Vector64<int>.Count; index++)
-            {
-                int element = Scalar<int>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<int> ShiftLeft(Vector64<int> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -1964,18 +1891,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<long> ShiftLeft(Vector64<long> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<long> result);
-
-            for (int index = 0; index < Vector64<long>.Count; index++)
-            {
-                long element = Scalar<long>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<long> ShiftLeft(Vector64<long> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -1983,18 +1899,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<nint> ShiftLeft(Vector64<nint> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<nint> result);
-
-            for (int index = 0; index < Vector64<nint>.Count; index++)
-            {
-                nint element = Scalar<nint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<nint> ShiftLeft(Vector64<nint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2003,18 +1908,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<nuint> ShiftLeft(Vector64<nuint> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<nuint> result);
-
-            for (int index = 0; index < Vector64<nuint>.Count; index++)
-            {
-                nuint element = Scalar<nuint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<nuint> ShiftLeft(Vector64<nuint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2023,18 +1917,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<sbyte> ShiftLeft(Vector64<sbyte> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<sbyte> result);
-
-            for (int index = 0; index < Vector64<sbyte>.Count; index++)
-            {
-                sbyte element = Scalar<sbyte>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<sbyte> ShiftLeft(Vector64<sbyte> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2043,18 +1926,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<ushort> ShiftLeft(Vector64<ushort> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<ushort> result);
-
-            for (int index = 0; index < Vector64<ushort>.Count; index++)
-            {
-                ushort element = Scalar<ushort>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<ushort> ShiftLeft(Vector64<ushort> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2063,18 +1935,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<uint> ShiftLeft(Vector64<uint> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<uint> result);
-
-            for (int index = 0; index < Vector64<uint>.Count; index++)
-            {
-                uint element = Scalar<uint>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<uint> ShiftLeft(Vector64<uint> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2083,18 +1944,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<ulong> ShiftLeft(Vector64<ulong> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<ulong> result);
-
-            for (int index = 0; index < Vector64<ulong>.Count; index++)
-            {
-                ulong element = Scalar<ulong>.ShiftLeft(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<ulong> ShiftLeft(Vector64<ulong> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2102,18 +1952,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<short> ShiftRightArithmetic(Vector64<short> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<short> result);
-
-            for (int index = 0; index < Vector64<short>.Count; index++)
-            {
-                short element = Scalar<short>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<short> ShiftRightArithmetic(Vector64<short> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2121,18 +1960,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<int> ShiftRightArithmetic(Vector64<int> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<int> result);
-
-            for (int index = 0; index < Vector64<int>.Count; index++)
-            {
-                int element = Scalar<int>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<int> ShiftRightArithmetic(Vector64<int> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2140,18 +1968,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<long> ShiftRightArithmetic(Vector64<long> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<long> result);
-
-            for (int index = 0; index < Vector64<long>.Count; index++)
-            {
-                long element = Scalar<long>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<long> ShiftRightArithmetic(Vector64<long> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2159,18 +1976,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<nint> ShiftRightArithmetic(Vector64<nint> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<nint> result);
-
-            for (int index = 0; index < Vector64<nint>.Count; index++)
-            {
-                nint element = Scalar<nint>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<nint> ShiftRightArithmetic(Vector64<nint> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2179,18 +1985,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<sbyte> ShiftRightArithmetic(Vector64<sbyte> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<sbyte> result);
-
-            for (int index = 0; index < Vector64<sbyte>.Count; index++)
-            {
-                sbyte element = Scalar<sbyte>.ShiftRightArithmetic(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<sbyte> ShiftRightArithmetic(Vector64<sbyte> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2198,18 +1993,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<byte> ShiftRightLogical(Vector64<byte> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<byte> result);
-
-            for (int index = 0; index < Vector64<byte>.Count; index++)
-            {
-                byte element = Scalar<byte>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<byte> ShiftRightLogical(Vector64<byte> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2217,18 +2001,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<short> ShiftRightLogical(Vector64<short> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<short> result);
-
-            for (int index = 0; index < Vector64<short>.Count; index++)
-            {
-                short element = Scalar<short>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<short> ShiftRightLogical(Vector64<short> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2236,18 +2009,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<int> ShiftRightLogical(Vector64<int> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<int> result);
-
-            for (int index = 0; index < Vector64<int>.Count; index++)
-            {
-                int element = Scalar<int>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<int> ShiftRightLogical(Vector64<int> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2255,18 +2017,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<long> ShiftRightLogical(Vector64<long> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<long> result);
-
-            for (int index = 0; index < Vector64<long>.Count; index++)
-            {
-                long element = Scalar<long>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<long> ShiftRightLogical(Vector64<long> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2274,18 +2025,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<nint> ShiftRightLogical(Vector64<nint> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<nint> result);
-
-            for (int index = 0; index < Vector64<nint>.Count; index++)
-            {
-                nint element = Scalar<nint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<nint> ShiftRightLogical(Vector64<nint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2294,18 +2034,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<nuint> ShiftRightLogical(Vector64<nuint> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<nuint> result);
-
-            for (int index = 0; index < Vector64<nuint>.Count; index++)
-            {
-                nuint element = Scalar<nuint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<nuint> ShiftRightLogical(Vector64<nuint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2314,18 +2043,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<sbyte> ShiftRightLogical(Vector64<sbyte> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<sbyte> result);
-
-            for (int index = 0; index < Vector64<sbyte>.Count; index++)
-            {
-                sbyte element = Scalar<sbyte>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<sbyte> ShiftRightLogical(Vector64<sbyte> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2334,18 +2052,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<ushort> ShiftRightLogical(Vector64<ushort> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<ushort> result);
-
-            for (int index = 0; index < Vector64<ushort>.Count; index++)
-            {
-                ushort element = Scalar<ushort>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<ushort> ShiftRightLogical(Vector64<ushort> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2354,18 +2061,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<uint> ShiftRightLogical(Vector64<uint> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<uint> result);
-
-            for (int index = 0; index < Vector64<uint>.Count; index++)
-            {
-                uint element = Scalar<uint>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<uint> ShiftRightLogical(Vector64<uint> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2374,18 +2070,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<ulong> ShiftRightLogical(Vector64<ulong> vector, int shiftCount)
-        {
-            Unsafe.SkipInit(out Vector64<ulong> result);
-
-            for (int index = 0; index < Vector64<ulong>.Count; index++)
-            {
-                ulong element = Scalar<ulong>.ShiftRightLogical(vector.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
-        }
+        public static Vector64<ulong> ShiftRightLogical(Vector64<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
@@ -2802,6 +2487,266 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (Vector64<ulong> Lower, Vector64<ulong> Upper) Widen(Vector64<uint> source) => (WidenLower(source), WidenUpper(source));
 
+        /// <summary>Widens the lower half of a <see cref="Vector64{Byte}" /> into a <see cref="Vector64{UInt16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<ushort> WidenLower(Vector64<byte> source)
+        {
+            Unsafe.SkipInit(out Vector64<ushort> lower);
+
+            for (int i = 0; i < Vector64<ushort>.Count; i++)
+            {
+                ushort value = source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector64{Int16}" /> into a <see cref="Vector64{Int32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<int> WidenLower(Vector64<short> source)
+        {
+            Unsafe.SkipInit(out Vector64<int> lower);
+
+            for (int i = 0; i < Vector64<int>.Count; i++)
+            {
+                int value = source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector64{Int32}" /> into a <see cref="Vector64{Int64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<long> WidenLower(Vector64<int> source)
+        {
+            Unsafe.SkipInit(out Vector64<long> lower);
+
+            for (int i = 0; i < Vector64<long>.Count; i++)
+            {
+                long value = source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector64{SByte}" /> into a <see cref="Vector64{Int16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<short> WidenLower(Vector64<sbyte> source)
+        {
+            Unsafe.SkipInit(out Vector64<short> lower);
+
+            for (int i = 0; i < Vector64<short>.Count; i++)
+            {
+                short value = source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector64{Single}" /> into a <see cref="Vector64{Double} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<double> WidenLower(Vector64<float> source)
+        {
+            Unsafe.SkipInit(out Vector64<double> lower);
+
+            for (int i = 0; i < Vector64<double>.Count; i++)
+            {
+                double value = source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector64{UInt16}" /> into a <see cref="Vector64{UInt32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<uint> WidenLower(Vector64<ushort> source)
+        {
+            Unsafe.SkipInit(out Vector64<uint> lower);
+
+            for (int i = 0; i < Vector64<uint>.Count; i++)
+            {
+                uint value = source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        /// <summary>Widens the lower half of a <see cref="Vector64{UInt32}" /> into a <see cref="Vector64{UInt64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<ulong> WidenLower(Vector64<uint> source)
+        {
+            Unsafe.SkipInit(out Vector64<ulong> lower);
+
+            for (int i = 0; i < Vector64<ulong>.Count; i++)
+            {
+                ulong value = source.GetElementUnsafe(i);
+                lower.SetElementUnsafe(i, value);
+            }
+
+            return lower;
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector64{Byte}" /> into a <see cref="Vector64{UInt16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<ushort> WidenUpper(Vector64<byte> source)
+        {
+            Unsafe.SkipInit(out Vector64<ushort> upper);
+
+            for (int i = Vector64<ushort>.Count; i < Vector64<byte>.Count; i++)
+            {
+                ushort value = source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector64<ushort>.Count, value);
+            }
+
+            return upper;
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector64{Int16}" /> into a <see cref="Vector64{Int32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<int> WidenUpper(Vector64<short> source)
+        {
+            Unsafe.SkipInit(out Vector64<int> upper);
+
+            for (int i = Vector64<int>.Count; i < Vector64<short>.Count; i++)
+            {
+                int value = source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector64<int>.Count, value);
+            }
+
+            return upper;
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector64{Int32}" /> into a <see cref="Vector64{Int64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<long> WidenUpper(Vector64<int> source)
+        {
+            Unsafe.SkipInit(out Vector64<long> upper);
+
+            for (int i = Vector64<long>.Count; i < Vector64<int>.Count; i++)
+            {
+                long value = source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector64<long>.Count, value);
+            }
+
+            return upper;
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector64{SByte}" /> into a <see cref="Vector64{Int16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<short> WidenUpper(Vector64<sbyte> source)
+        {
+            Unsafe.SkipInit(out Vector64<short> upper);
+
+            for (int i = Vector64<short>.Count; i < Vector64<sbyte>.Count; i++)
+            {
+                short value = source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector64<short>.Count, value);
+            }
+
+            return upper;
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector64{Single}" /> into a <see cref="Vector64{Double} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<double> WidenUpper(Vector64<float> source)
+        {
+            Unsafe.SkipInit(out Vector64<double> upper);
+
+            for (int i = Vector64<double>.Count; i < Vector64<float>.Count; i++)
+            {
+                double value = source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector64<double>.Count, value);
+            }
+
+            return upper;
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector64{UInt16}" /> into a <see cref="Vector64{UInt32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<uint> WidenUpper(Vector64<ushort> source)
+        {
+            Unsafe.SkipInit(out Vector64<uint> upper);
+
+            for (int i = Vector64<uint>.Count; i < Vector64<ushort>.Count; i++)
+            {
+                uint value = source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector64<uint>.Count, value);
+            }
+
+            return upper;
+        }
+
+        /// <summary>Widens the upper half of a <see cref="Vector64{UInt32}" /> into a <see cref="Vector64{UInt64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<ulong> WidenUpper(Vector64<uint> source)
+        {
+            Unsafe.SkipInit(out Vector64<ulong> upper);
+
+            for (int i = Vector64<ulong>.Count; i < Vector64<uint>.Count; i++)
+            {
+                ulong value = source.GetElementUnsafe(i);
+                upper.SetElementUnsafe(i - Vector64<ulong>.Count, value);
+            }
+
+            return upper;
+        }
+
         /// <summary>Creates a new <see cref="Vector64{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to get the remaining elements from.</param>
@@ -2852,216 +2797,6 @@ namespace System.Runtime.Intrinsics
             Debug.Assert((index >= 0) && (index < Vector64<T>.Count));
             ref T address = ref Unsafe.As<Vector64<T>, T>(ref Unsafe.AsRef(in vector));
             Unsafe.Add(ref address, index) = value;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector64<ushort> WidenLower(Vector64<byte> source)
-        {
-            Unsafe.SkipInit(out Vector64<ushort> lower);
-
-            for (int i = 0; i < Vector64<ushort>.Count; i++)
-            {
-                ushort value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            return lower;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<int> WidenLower(Vector64<short> source)
-        {
-            Unsafe.SkipInit(out Vector64<int> lower);
-
-            for (int i = 0; i < Vector64<int>.Count; i++)
-            {
-                int value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            return lower;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<long> WidenLower(Vector64<int> source)
-        {
-            Unsafe.SkipInit(out Vector64<long> lower);
-
-            for (int i = 0; i < Vector64<long>.Count; i++)
-            {
-                long value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            return lower;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<short> WidenLower(Vector64<sbyte> source)
-        {
-            Unsafe.SkipInit(out Vector64<short> lower);
-
-            for (int i = 0; i < Vector64<short>.Count; i++)
-            {
-                short value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            return lower;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<double> WidenLower(Vector64<float> source)
-        {
-            Unsafe.SkipInit(out Vector64<double> lower);
-
-            for (int i = 0; i < Vector64<double>.Count; i++)
-            {
-                double value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            return lower;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<uint> WidenLower(Vector64<ushort> source)
-        {
-            Unsafe.SkipInit(out Vector64<uint> lower);
-
-            for (int i = 0; i < Vector64<uint>.Count; i++)
-            {
-                uint value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            return lower;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<ulong> WidenLower(Vector64<uint> source)
-        {
-            Unsafe.SkipInit(out Vector64<ulong> lower);
-
-            for (int i = 0; i < Vector64<ulong>.Count; i++)
-            {
-                ulong value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
-            }
-
-            return lower;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector64<ushort> WidenUpper(Vector64<byte> source)
-        {
-            Unsafe.SkipInit(out Vector64<ushort> upper);
-
-            for (int i = Vector64<ushort>.Count; i < Vector64<byte>.Count; i++)
-            {
-                ushort value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector64<ushort>.Count, value);
-            }
-
-            return upper;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<int> WidenUpper(Vector64<short> source)
-        {
-            Unsafe.SkipInit(out Vector64<int> upper);
-
-            for (int i = Vector64<int>.Count; i < Vector64<short>.Count; i++)
-            {
-                int value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector64<int>.Count, value);
-            }
-
-            return upper;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<long> WidenUpper(Vector64<int> source)
-        {
-            Unsafe.SkipInit(out Vector64<long> upper);
-
-            for (int i = Vector64<long>.Count; i < Vector64<int>.Count; i++)
-            {
-                long value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector64<long>.Count, value);
-            }
-
-            return upper;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<short> WidenUpper(Vector64<sbyte> source)
-        {
-            Unsafe.SkipInit(out Vector64<short> upper);
-
-            for (int i = Vector64<short>.Count; i < Vector64<sbyte>.Count; i++)
-            {
-                short value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector64<short>.Count, value);
-            }
-
-            return upper;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<double> WidenUpper(Vector64<float> source)
-        {
-            Unsafe.SkipInit(out Vector64<double> upper);
-
-            for (int i = Vector64<double>.Count; i < Vector64<float>.Count; i++)
-            {
-                double value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector64<double>.Count, value);
-            }
-
-            return upper;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<uint> WidenUpper(Vector64<ushort> source)
-        {
-            Unsafe.SkipInit(out Vector64<uint> upper);
-
-            for (int i = Vector64<uint>.Count; i < Vector64<ushort>.Count; i++)
-            {
-                uint value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector64<uint>.Count, value);
-            }
-
-            return upper;
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Vector64<ulong> WidenUpper(Vector64<uint> source)
-        {
-            Unsafe.SkipInit(out Vector64<ulong> upper);
-
-            for (int i = Vector64<ulong>.Count; i < Vector64<uint>.Count; i++)
-            {
-                ulong value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector64<ulong>.Count, value);
-            }
-
-            return upper;
         }
     }
 }

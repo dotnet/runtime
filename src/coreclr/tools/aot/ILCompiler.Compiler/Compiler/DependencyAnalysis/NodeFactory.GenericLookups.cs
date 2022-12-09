@@ -77,44 +77,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new ObjectAllocatorGenericLookupResult(type);
                 });
 
-                _arrayAllocators = new NodeCache<TypeDesc, GenericLookupResult>(type =>
-                {
-                    return new ArrayAllocatorGenericLookupResult(type);
-                });
-
-                _isInstHelpers = new NodeCache<TypeDesc, GenericLookupResult>(type =>
-                {
-                    return new IsInstGenericLookupResult(type);
-                });
-
-                _castClassHelpers = new NodeCache<TypeDesc, GenericLookupResult>(type =>
-                {
-                    return new CastClassGenericLookupResult(type);
-                });
-
                 _defaultCtors = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new DefaultConstructorLookupResult(type);
-                });
-
-                _fieldOffsets = new NodeCache<FieldDesc, GenericLookupResult>(field =>
-                {
-                    return new FieldOffsetGenericLookupResult(field);
-                });
-
-                _vtableOffsets = new NodeCache<MethodDesc, GenericLookupResult>(method =>
-                {
-                    return new VTableOffsetGenericLookupResult(method);
-                });
-
-                _callingConventionConverters = new NodeCache<CallingConventionConverterKey, GenericLookupResult>(key =>
-                {
-                    return new CallingConventionConverterLookupResult(key);
-                });
-
-                _typeSizes = new NodeCache<TypeDesc, GenericLookupResult>(type =>
-                {
-                    return new TypeSizeLookupResult(type);
                 });
 
                 _constrainedMethodUses = new NodeCache<ConstrainedMethodUseKey, GenericLookupResult>(constrainedMethodUse =>
@@ -214,27 +179,6 @@ namespace ILCompiler.DependencyAnalysis
                 return _objectAllocators.GetOrAdd(type);
             }
 
-            private NodeCache<TypeDesc, GenericLookupResult> _arrayAllocators;
-
-            public GenericLookupResult ArrayAllocator(TypeDesc type)
-            {
-                return _arrayAllocators.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, GenericLookupResult> _isInstHelpers;
-
-            public GenericLookupResult IsInstHelper(TypeDesc type)
-            {
-                return _isInstHelpers.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, GenericLookupResult> _castClassHelpers;
-
-            public GenericLookupResult CastClassHelper(TypeDesc type)
-            {
-                return _castClassHelpers.GetOrAdd(type);
-            }
-
             private NodeCache<TypeDesc, GenericLookupResult> _defaultCtors;
 
             public GenericLookupResult DefaultCtorLookupResult(TypeDesc type)
@@ -242,58 +186,10 @@ namespace ILCompiler.DependencyAnalysis
                 return _defaultCtors.GetOrAdd(type);
             }
 
-            private NodeCache<FieldDesc, GenericLookupResult> _fieldOffsets;
-
-            public GenericLookupResult FieldOffsetLookupResult(FieldDesc field)
-            {
-                return _fieldOffsets.GetOrAdd(field);
-            }
-
-            private NodeCache<MethodDesc, GenericLookupResult> _vtableOffsets;
-
-            public GenericLookupResult VTableOffsetLookupResult(MethodDesc method)
-            {
-                return _vtableOffsets.GetOrAdd(method);
-            }
-
-            private NodeCache<CallingConventionConverterKey, GenericLookupResult> _callingConventionConverters;
-
-            public GenericLookupResult CallingConventionConverterLookupResult(CallingConventionConverterKey key)
-            {
-                return _callingConventionConverters.GetOrAdd(key);
-            }
-
-            private NodeCache<TypeDesc, GenericLookupResult> _typeSizes;
-
-            public GenericLookupResult TypeSize(TypeDesc type)
-            {
-                return _typeSizes.GetOrAdd(type);
-            }
-
             private NodeCache<ConstrainedMethodUseKey, GenericLookupResult> _constrainedMethodUses;
             public GenericLookupResult ConstrainedMethodUse(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
             {
                 return _constrainedMethodUses.GetOrAdd(new ConstrainedMethodUseKey(constrainedMethod, constraintType, directCall));
-            }
-
-            private static NodeCache<int, GenericLookupResult> s_integers = new NodeCache<int, GenericLookupResult>(slotIndex =>
-            {
-                return new IntegerLookupResult(slotIndex);
-            });
-
-            public static GenericLookupResult Integer(int integer)
-            {
-                return s_integers.GetOrAdd(integer);
-            }
-
-            private static NodeCache<int, GenericLookupResult> s_pointersToSlots = new NodeCache<int, GenericLookupResult>(slotIndex =>
-            {
-                return new PointerToSlotLookupResult(slotIndex);
-            });
-
-            public static GenericLookupResult PointerToSlot(int slotIndex)
-            {
-                return s_pointersToSlots.GetOrAdd(slotIndex);
             }
         }
 

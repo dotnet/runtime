@@ -265,8 +265,6 @@ static HRESULT PostErrorVA(                      // Returned error.
     WCHAR      *rcMsg = (WCHAR*)alloca(cchMsg * sizeof(WCHAR));             // Error message.
     HRESULT     hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // Return warnings without text.
     if (!FAILED(hrRpt))
         goto ErrExit;
@@ -290,8 +288,6 @@ static HRESULT PostErrorVA(                      // Returned error.
     _ASSERTE(hr == S_OK);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
 
 #endif // FEATURE_COMINTEROP
 

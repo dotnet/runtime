@@ -369,27 +369,10 @@ namespace Internal.Runtime.TypeLoader
             else
             {
                 ModuleInfo moduleInfo = methodData->MethodSignature.GetModuleInfo();
-
-                string name;
-#if ECMA_METADATA_SUPPORT
-                if (moduleInfo is NativeFormatModuleInfo)
-#endif
-                {
-                    var metadataReader = ((NativeFormatModuleInfo)moduleInfo).MetadataReader;
-                    var methodHandle = methodData->MethodSignature.Token.AsHandle().ToMethodHandle(metadataReader);
-                    var method = methodHandle.GetMethod(metadataReader);
-                    name = metadataReader.GetConstantStringValue(method.Name).Value;
-                }
-#if ECMA_METADATA_SUPPORT
-                else
-                {
-                    var ecmaReader = ((EcmaModuleInfo)moduleInfo).MetadataReader;
-                    var ecmaHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(methodData->MethodSignature.Token);
-                    var ecmaMethodHandle = (System.Reflection.Metadata.MethodDefinitionHandle)ecmaHandle;
-                    var ecmaMethod = ecmaReader.GetMethodDefinition(ecmaMethodHandle);
-                    name = ecmaReader.GetString(ecmaMethod.Name);
-                }
-#endif
+                var metadataReader = ((NativeFormatModuleInfo)moduleInfo).MetadataReader;
+                var methodHandle = methodData->MethodSignature.Token.AsHandle().ToMethodHandle(metadataReader);
+                var method = methodHandle.GetMethod(metadataReader);
+                var name = metadataReader.GetConstantStringValue(method.Name).Value;
                 nameAndSignature = new MethodNameAndSignature(name, methodData->MethodSignature);
             }
 

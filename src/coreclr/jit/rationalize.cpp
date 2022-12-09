@@ -53,30 +53,14 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
 
-    // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
-    indir->gtFlags &= ~GTF_IND_ASG_LHS;
-
-    if (indir->OperIs(GT_IND))
+    if (varTypeIsSIMD(indir))
     {
-        if (varTypeIsSIMD(indir))
-        {
-            RewriteSIMDIndir(use);
-        }
-    }
-    else if (indir->OperIs(GT_OBJ))
-    {
-        assert((indir->TypeGet() == TYP_STRUCT) || !use.User()->OperIsInitBlkOp());
-        if (varTypeIsSIMD(indir->TypeGet()))
+        if (indir->OperIs(GT_BLK, GT_OBJ))
         {
             indir->SetOper(GT_IND);
-            RewriteSIMDIndir(use);
         }
-    }
-    else
-    {
-        assert(indir->OperIs(GT_BLK));
-        // We should only see GT_BLK for TYP_STRUCT or for InitBlocks.
-        assert((indir->TypeGet() == TYP_STRUCT) || use.User()->OperIsInitBlkOp());
+
+        RewriteSIMDIndir(use);
     }
 }
 
@@ -85,8 +69,8 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 // Arguments:
 //    use - A use of a GT_IND node of SIMD type
 //
-// TODO-1stClassStructs: These should be eliminated earlier, once we can handle
-// lclVars in all the places that used to have GT_OBJ.
+// TODO-ADDR: delete this once block morphing stops taking addresses of locals
+// under COMMAs.
 //
 void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 {
@@ -413,45 +397,18 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
     genTreeOps locationOp = location->OperGet();
 
-    if (assignment->OperIsBlkOp())
+    if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
     {
-#ifdef FEATURE_SIMD
-        if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
-        {
-            if (location->OperIs(GT_LCL_VAR))
-            {
-                var_types simdType = location->TypeGet();
-                GenTree*  initVal  = assignment->AsOp()->gtOp2;
+        var_types simdType = location->TypeGet();
+        GenTree*  initVal  = assignment->AsOp()->gtOp2;
+        GenTree*  zeroCon  = comp->gtNewZeroConNode(simdType);
+        noway_assert(initVal->IsIntegralConst(0)); // All SIMD InitBlks are zero inits.
 
-                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
-                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-                {
-                    // Lie about the type if we don't know/have it.
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
-                }
+        assignment->gtOp2 = zeroCon;
+        value             = zeroCon;
 
-                if (initVal->IsIntegralConst(0))
-                {
-                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType);
-
-                    assignment->gtOp2 = zeroCon;
-                    value             = zeroCon;
-
-                    BlockRange().InsertAfter(initVal, zeroCon);
-                    BlockRange().Remove(initVal);
-                }
-                else
-                {
-                    GenTreeSIMD* simdTree = comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType,
-                                                                genTypeSize(simdType));
-                    assignment->gtOp2 = simdTree;
-                    value             = simdTree;
-
-                    BlockRange().InsertAfter(initVal, simdTree);
-                }
-            }
-        }
-#endif // FEATURE_SIMD
+        BlockRange().InsertAfter(initVal, zeroCon);
+        BlockRange().Remove(initVal);
     }
 
     switch (locationOp)
@@ -614,8 +571,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // args as these have now been sequenced.
             for (CallArg& arg : node->AsCall()->gtArgs.EarlyArgs())
             {
-                if (!arg.GetEarlyNode()->IsValue())
+                if (arg.GetLateNode() != nullptr)
                 {
+                    if (arg.GetEarlyNode()->IsValue())
+                    {
+                        arg.GetEarlyNode()->SetUnusedValue();
+                    }
                     arg.SetEarlyNode(nullptr);
                 }
             }

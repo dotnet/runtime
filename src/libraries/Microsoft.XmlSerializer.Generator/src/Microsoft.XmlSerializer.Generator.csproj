@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>dotnet-Microsoft.XmlSerializer.Generator</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>..\..\System.Private.Xml\src\Resources\Strings.resx</StringResourcesPath>
     <StringResourcesName>FxResources.$(AssemblyName.Replace('-', '_')).SR</StringResourcesName>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netstandard2.0</TargetFramework>
     <Nullable>disable</Nullable>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <IsPackable>true</IsPackable>

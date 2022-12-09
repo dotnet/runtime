@@ -2277,17 +2277,12 @@ gboolean
 mono_metadata_method_has_param_attrs (MonoImage *m, int def)
 {
 	MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
-	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
-	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
+	guint lastp, i, param_index;
 
-	if (param_index == 0)
+	param_index = mono_metadata_get_method_params (m, def, (uint32_t*)&lastp);
+
+	if (!param_index)
 		return FALSE;
-
-	/* FIXME: metadata-update */
-	if (GINT_TO_UINT32(def) < table_info_get_rows (methodt))
-		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
-	else
-		lastp = table_info_get_rows (&m->tables [MONO_TABLE_PARAM]) + 1;
 
 	for (i = param_index; i < lastp; ++i) {
 		guint32 flags = mono_metadata_decode_row_col (paramt, i - 1, MONO_PARAM_FLAGS);
@@ -2313,20 +2308,14 @@ int*
 mono_metadata_get_param_attrs (MonoImage *m, int def, guint32 param_count)
 {
 	MonoTableInfo *paramt = &m->tables [MONO_TABLE_PARAM];
-	MonoTableInfo *methodt = &m->tables [MONO_TABLE_METHOD];
 	guint32 cols [MONO_PARAM_SIZE];
-	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
+	guint lastp, i, param_index;
 	int *pattrs = NULL;
 
-	/* hot reload deltas may specify 0 for the param table index */
-	if (param_index == 0)
-		return NULL;
+	param_index = mono_metadata_get_method_params (m, def, (uint32_t*)&lastp);
 
-	/* FIXME: metadata-update */
-	if (GINT_TO_UINT32(def) < mono_metadata_table_num_rows (m, MONO_TABLE_METHOD))
-		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
-	else
-		lastp = table_info_get_rows (paramt) + 1;
+	if (!param_index)
+		return NULL;
 
 	for (i = param_index; i < lastp; ++i) {
 		mono_metadata_decode_row (paramt, i - 1, cols, MONO_PARAM_SIZE);
@@ -6191,7 +6180,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 				       MonoMarshalSpec **marshal_spec, gboolean alloc_from_image)
 {
 	MonoTableInfo *tdef;
-	locator_t loc;
+	locator_t loc = {0,};
 
 	loc.idx = index + 1;
 	if (meta->uncompressed_metadata)
@@ -6203,7 +6192,7 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 		loc.col_idx = MONO_FIELD_LAYOUT_FIELD;
 		loc.t = tdef;
 
-		/* FIXME: metadata-update */
+		/* metadata-update: explicit layout not supported, just return -1 */
 
 		if (tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator)) {
 			*offset = mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_LAYOUT_OFFSET);
@@ -6217,7 +6206,14 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 		loc.col_idx = MONO_FIELD_RVA_FIELD;
 		loc.t = tdef;
 
-		if (tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator)) {
+                gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
+
+                if (G_UNLIKELY (meta->has_updates)) {
+                        if (!found)
+                                found = (mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator) != NULL);
+                }
+
+		if (found) {
 			/*
 			 * LAMESPEC: There is no signature, no nothing, just the raw data.
 			 */
@@ -6331,6 +6327,12 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_EVENT_MAP_EVENTLIST);
+        /*
+         * metadata-update: note this next line needs block needs to look at the number of rows in
+         * EventMap and Event of the base image.  Updates will add rows for new properties,
+         * but they won't be contiguous.  if we set end to the number of rows in the updated
+         * Property table, the range will include properties from some other class
+         */
 	if (loc.result + 1 < table_info_get_rows (tdef)) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_EVENT_MAP_EVENTLIST) - 1;
 	} else {
@@ -6444,10 +6446,16 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_PROPERTY_MAP_PROPERTY_LIST);
-	if (loc.result + 1 < mono_metadata_table_num_rows (meta, MONO_TABLE_PROPERTYMAP)) {
+        /*
+         * metadata-update: note this next line needs block needs to look at the number of rows in
+         * PropertyMap and Property of the base image.  Updates will add rows for new properties,
+         * but they won't be contiguous.  if we set end to the number of rows in the updated
+         * Property table, the range will include properties from some other class
+         */
+	if (loc.result + 1 < table_info_get_rows (&meta->tables [MONO_TABLE_PROPERTYMAP])) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_PROPERTY_MAP_PROPERTY_LIST) - 1;
 	} else {
-		end = mono_metadata_table_num_rows (meta, MONO_TABLE_PROPERTY);
+		end = table_info_get_rows (&meta->tables [MONO_TABLE_PROPERTY]);
 	}
 
 	*end_idx = GUINT32_TO_UINT(end);
@@ -6950,21 +6958,21 @@ handle_enum:
 const char*
 mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 {
-	locator_t loc;
+	locator_t loc = {0,};
 	MonoTableInfo *tdef  = &meta->tables [MONO_TABLE_FIELDMARSHAL];
-
-	if (!tdef->base)
-		return NULL;
 
 	loc.t = tdef;
 	loc.col_idx = MONO_FIELD_MARSHAL_PARENT;
 	loc.idx = ((idx + 1) << MONO_HAS_FIELD_MARSHAL_BITS) | (is_field? MONO_HAS_FIELD_MARSHAL_FIELDSREF: MONO_HAS_FIELD_MARSHAL_PARAMDEF);
 
-	/* FIXME: metadata-update */
 	/* FIXME: Index translation */
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
-		return NULL;
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
+
+        if (G_UNLIKELY (meta->has_updates)) {
+                if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+                        return NULL;
+        }
 
 	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
 }
@@ -8123,4 +8131,41 @@ mono_metadata_get_class_guid (MonoClass* klass, guint8* guid, MonoError *error)
 	else
 		g_warning ("Generated GUIDs only implemented for interfaces!");
 #endif
+}
+
+uint32_t
+mono_metadata_get_method_params (MonoImage *image, uint32_t method_idx, uint32_t *last_param_out)
+{
+	if (last_param_out)
+		*last_param_out = 0;
+	if (!method_idx)
+		return 0;
+
+	MonoTableInfo *methodt = &image->tables [MONO_TABLE_METHOD];
+
+	uint32_t param_index, lastp;
+
+	param_index = mono_metadata_decode_row_col (methodt, method_idx - 1, MONO_METHOD_PARAMLIST);
+
+	if (G_UNLIKELY (param_index == 0 && image->has_updates)) {
+		uint32_t count;
+		param_index = mono_metadata_update_get_method_params (image, mono_metadata_make_token (MONO_TABLE_METHOD, method_idx), &count);
+		if (!param_index)
+			return 0;
+		lastp = param_index + count;
+	} else {
+		/* lastp is the starting param index for the next method in the table, or
+		 * one past the last row if this is the last method
+		 */
+
+		if (method_idx < table_info_get_rows (methodt))
+			lastp = mono_metadata_decode_row_col (methodt, method_idx, MONO_METHOD_PARAMLIST);
+		else
+			lastp = table_info_get_rows (&image->tables [MONO_TABLE_PARAM]) + 1;
+	}
+
+	if (last_param_out)
+		*last_param_out = lastp;
+
+	return param_index;
 }

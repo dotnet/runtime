@@ -60,7 +60,7 @@ build_Tests()
     export MSBUILDDEBUGPATH
 
     if [[ "$__SkipNative" != 1 && "$__BuildTestWrappersOnly" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
-        "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
+        "$__TargetOS" != "Browser" && "$__TargetOS" != "wasi" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
         build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then

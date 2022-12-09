@@ -297,8 +297,7 @@ namespace System.Data.SqlTypes
                 throw new SqlNullValueException();
 
             // Validate the arguments
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
 
             if (offset > Length || offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -343,8 +342,7 @@ namespace System.Data.SqlTypes
             else
             {
                 // Validate the arguments
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer));
+                ArgumentNullException.ThrowIfNull(buffer);
 
                 if (_rgbBuf == null)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);

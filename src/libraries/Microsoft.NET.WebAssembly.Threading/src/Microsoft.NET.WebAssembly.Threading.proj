@@ -8,7 +8,7 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Exposes Threading APIs for WebAssembly projects</PackageDescription>
     <!-- 
-      NU5128 suppresses missing net7.0 dependencies.
+      NU5128 suppresses missing $(NetCoreAppCurrent) dependencies.
       PKV004 suppresses APICompat rule for missing runtime asset.
      -->
     <NoWarn>$(NoWarn);NU5128;NU5131;PKV004</NoWarn>

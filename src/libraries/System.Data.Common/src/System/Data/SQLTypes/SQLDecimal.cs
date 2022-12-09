@@ -458,10 +458,9 @@ namespace System.Data.SqlTypes
         }
 
 
-
         // constructor
         // construct a Null
-        private SqlDecimal(bool fNull)
+        private SqlDecimal(bool _)
         {
             _bLen =
             _bPrec =
@@ -580,9 +579,8 @@ namespace System.Data.SqlTypes
         public SqlDecimal(byte bPrecision, byte bScale, bool fPositive, int[] bits)
         {
             CheckValidPrecScale(bPrecision, bScale);
-            if (bits == null)
-                throw new ArgumentNullException(nameof(bits));
-            else if (bits.Length != 4)
+            ArgumentNullException.ThrowIfNull(bits);
+            if (bits.Length != 4)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage, nameof(bits));
 
             _bPrec = bPrecision;
@@ -988,8 +986,7 @@ namespace System.Data.SqlTypes
 
         public static SqlDecimal Parse(string s)
         {
-            if (s == null)
-                throw new ArgumentNullException(nameof(s));
+            ArgumentNullException.ThrowIfNull(s);
 
             if (s == SQLResource.NullString)
                 return SqlDecimal.Null;
