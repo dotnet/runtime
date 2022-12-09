@@ -717,21 +717,11 @@ search_bundle_for_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *anam
 	MonoImage *image;
 	MonoAssemblyLoadRequest req;
 	image = mono_assembly_open_from_bundle (alc, aname->name, &status, aname->culture);
-#ifndef DISABLE_WEBCIL
-	if (!image && !g_str_has_suffix (aname->name, ".webcil")) {
-		char *name = g_strdup_printf ("%s.webcil", aname->name);
-		image = mono_assembly_open_from_bundle (alc, name, &status, aname->culture);
-		g_free (name);
-	}
-#endif
 	if (!image && !g_str_has_suffix (aname->name, ".dll")) {
 		char *name = g_strdup_printf ("%s.dll", aname->name);
 		image = mono_assembly_open_from_bundle (alc, name, &status, aname->culture);
 		g_free (name);
 	}
-	// Webcil: we could add some code here to look for .webcil files if they ask for .dll, but
-	// it's not clear if that should be a bug in the callers of mono_assembly_open.  They
-	// shouldn't be passing an extension.
 	if (image) {
 		mono_assembly_request_prepare_load (&req, alc);
 		return mono_assembly_request_load_from (image, aname->name, &req, &status);
@@ -1460,6 +1450,26 @@ absolute_dir (const gchar *filename)
 	return res;
 }
 
+static gboolean
+bundled_assembly_match (const MonoBundledAssembly *b, const char *name)
+{
+#ifdef DISABLE_WEBCIL
+	return strcmp (b->name, name) == 0;
+#else
+	if (strcmp (b->name, name) == 0)
+		return TRUE;
+	/* if they want a .dll and we have the matching .webcil, return it */
+	if (g_str_has_suffix (b->name, ".webcil") && g_str_has_suffix (name, ".dll")) {
+		size_t bprefix = strlen (b->name) - 7;
+		size_t nprefix = strlen (name) - 4;
+		size_t longer = MAX(bprefix, nprefix);
+		if (strncmp (b->name, name, longer) == 0)
+			return TRUE;
+	}
+	return FALSE;
+#endif
+}
+
 static MonoImage *
 open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean is_satellite)
 {
@@ -1469,7 +1479,7 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	MonoImage *image = NULL;
 	char *name = is_satellite ? g_strdup (filename) : g_path_get_basename (filename);
 	for (int i = 0; !image && bundles [i]; ++i) {
-		if (strcmp (bundles [i]->name, name) == 0) {
+		if (bundled_assembly_match (bundles[i], name)) {
 			// Since bundled images don't exist on disk, don't give them a legit filename
 			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, FALSE, name, NULL);
 			break;
