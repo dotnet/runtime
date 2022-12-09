@@ -2737,33 +2737,33 @@ namespace System
             return members;
         }
 
-        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type ifaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            ArgumentNullException.ThrowIfNull(ifaceType);
+            ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType? ifaceRtType = ifaceType as RuntimeType;
+            RuntimeType? ifaceRtType = interfaceType as RuntimeType;
 
             if (ifaceRtType == null)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.TypeHandle;
 
             TypeHandle.VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
-            Debug.Assert(ifaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
+            Debug.Assert(interfaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
             Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
-            if (IsSZArray && ifaceType.IsGenericType)
+            if (IsSZArray && interfaceType.IsGenericType)
                 throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
 
             int ifaceVirtualMethodCount = RuntimeTypeHandle.GetNumVirtualsAndStaticVirtuals(ifaceRtType);
 
             InterfaceMapping im;
-            im.InterfaceType = ifaceType;
+            im.InterfaceType = interfaceType;
             im.TargetType = this;
             im.InterfaceMethods = new MethodInfo[ifaceVirtualMethodCount];
             im.TargetMethods = new MethodInfo[ifaceVirtualMethodCount];

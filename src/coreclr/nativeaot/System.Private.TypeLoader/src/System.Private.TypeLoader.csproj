@@ -281,10 +281,8 @@
     <Compile Include="Internal\Runtime\TypeLoader\MetadataNameExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldAlgorithm.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInfoLoadContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInterfacesAlgorithm.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\NoMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NoMetadataRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\OptionalFields.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TemplateLocator.cs" />

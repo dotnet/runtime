@@ -3862,10 +3862,16 @@ namespace System.Text.RegularExpressions.Generator
 
                 bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
                 string? startingStackpos = null;
-                if (isAtomic)
+                if (isAtomic || minIterations > 1)
                 {
+                    // If the loop is atomic, constructs will need to backtrack around it, and as such any backtracking
+                    // state pushed by the loop should be removed prior to exiting the loop.  Similarly, if the loop has
+                    // a minimum iteration count greater than 1, we might end up with at least one successful iteration
+                    // only to find we can't iterate further, and will need to clear any pushed state from the backtracking
+                    // stack.  For both cases, we need to store the starting stack index so it can be reset to that position.
                     startingStackpos = ReserveName("startingStackpos");
-                    writer.WriteLine($"int {startingStackpos} = stackpos;");
+                    additionalDeclarations.Add($"int {startingStackpos} = 0;");
+                    writer.WriteLine($"{startingStackpos} = stackpos;");
                 }
 
                 string originalDoneLabel = doneLabel;
@@ -4058,6 +4064,22 @@ namespace System.Text.RegularExpressions.Generator
                         using (EmitBlock(writer, $"if ({CountIsLessThan(iterationCount, minIterations)})"))
                         {
                             writer.WriteLine($"// All possible iterations have matched, but it's below the required minimum of {minIterations}. Fail the loop.");
+
+                            // If the minimum iterations is 1, then since we're only here if there are fewer, there must be 0
+                            // iterations, in which case there's nothing to reset.  If, however, the minimum iteration count is
+                            // greater than 1, we need to check if there was at least one successful iteration, in which case
+                            // any backtracking state still set needs to be reset; otherwise, constructs earlier in the sequence
+                            // trying to pop their own state will erroneously pop this state instead.
+                            if (minIterations > 1)
+                            {
+                                Debug.Assert(startingStackpos is not null);
+                                using (EmitBlock(writer, $"if ({iterationCount} != 0)"))
+                                {
+                                    writer.WriteLine($"// Ensure any stale backtracking state is removed.");
+                                    writer.WriteLine($"stackpos = {startingStackpos};");
+                                }
+                            }
+
                             Goto(originalDoneLabel);
                         }
                         writer.WriteLine();
@@ -4113,8 +4135,10 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine();
 
                         // Store the loop's state
-                        EmitStackPush(iterationMayBeEmpty ?
-                            new[] { startingPos!, iterationCount } :
+                        EmitStackPush(
+                            startingPos is not null && startingStackpos is not null ? new[] { startingPos, startingStackpos, iterationCount } :
+                            startingPos is not null ? new[] { startingPos, iterationCount } :
+                            startingStackpos is not null ? new[] { startingStackpos, iterationCount } :
                             new[] { iterationCount });
 
                         // Skip past the backtracking section
@@ -4125,8 +4149,10 @@ namespace System.Text.RegularExpressions.Generator
                         // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
-                        EmitStackPop(iterationMayBeEmpty ?
-                            new[] { iterationCount, startingPos! } :
+                        EmitStackPop(
+                            startingPos is not null && startingStackpos is not null ? new[] { iterationCount, startingStackpos, startingPos } :
+                            startingPos is not null ? new[] { iterationCount, startingPos } :
+                            startingStackpos is not null ? new[] { iterationCount, startingStackpos } :
                             new[] { iterationCount });
 
                         // We're backtracking.  Check the timeout.

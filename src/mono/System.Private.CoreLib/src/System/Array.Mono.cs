@@ -393,9 +393,6 @@ namespace System
         [Intrinsic]
         internal int GetElementSize() => GetElementSize();
 
-        [Intrinsic]
-        internal bool IsPrimitive() => IsPrimitive();
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern CorElementType GetCorElementTypeOfElementTypeInternal(ObjectHandleOnStack arr);
 

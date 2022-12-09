@@ -140,7 +140,7 @@ namespace System.Reflection.Emit
         private void RejectIfCreated()
         {
             if (typeb.is_created)
-                throw new InvalidOperationException("Type definition of the method is complete.");
+                throw new InvalidOperationException(SR.InvalidOperation_MethodBaked);
         }
     }
 }

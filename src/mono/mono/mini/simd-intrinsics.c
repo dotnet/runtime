@@ -1487,10 +1487,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 	}
 	case SN_Narrow: {
-#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
+#ifdef TARGET_ARM64
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
 
@@ -1581,6 +1581,33 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return NULL;
 			}
 		}
+#elif defined(TARGET_WASM)
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+
+		if (size != 16)
+			return NULL;
+
+		int intrins = -1;
+		switch (arg0_type) {
+		case MONO_TYPE_I2:
+			intrins = INTRINS_WASM_NARROW_SIGNED_V16;
+			break;
+		case MONO_TYPE_I4:
+			intrins = INTRINS_WASM_NARROW_SIGNED_V8;
+			break;
+		case MONO_TYPE_U2:
+			intrins = INTRINS_WASM_NARROW_UNSIGNED_V16;
+			break;
+		case MONO_TYPE_U4:
+			intrins = INTRINS_WASM_NARROW_UNSIGNED_V8;
+			break;
+		}
+
+		if (intrins != -1)
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
+
+		return NULL;
 #else
 		return NULL;
 #endif
