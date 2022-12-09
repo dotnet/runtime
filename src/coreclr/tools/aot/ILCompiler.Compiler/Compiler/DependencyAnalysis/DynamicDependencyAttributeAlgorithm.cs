@@ -71,51 +71,52 @@ namespace ILCompiler.DependencyAnalysis
 
             if (fixedArgs.Length > 0 && fixedArgs[0].Value is string sigFromAttribute)
             {
-                if (fixedArgs.Length == 1)
+                switch (fixedArgs.Length)
                 {
                     // DynamicDependencyAttribute(String)
-                    targetType = owningType;
-                }
-                else if (fixedArgs.Length == 2 && fixedArgs[1].Value is TypeDesc typeFromAttribute)
-                {
-                    // DynamicDependencyAttribute(String, Type)
-                    targetType = typeFromAttribute;
-                }
-                else if (fixedArgs.Length == 3 && fixedArgs[1].Value is string typeStringFromAttribute
-                    && fixedArgs[2].Value is string assemblyStringFromAttribute)
-                {
-                    // DynamicDependencyAttribute(String, String, String)
-                    ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
-                    if (asm == null)
-                    {
-                        (factory.MetadataManager as UsageBasedMetadataManager)?.Logger?.LogWarning(
-                            new MessageOrigin(entity),
-                            DiagnosticId.UnresolvedAssemblyInDynamicDependencyAttribute,
-                            assemblyStringFromAttribute);
-                        return;
-                    }
+                    case 1:
+                        targetType = owningType;
+                        break;
 
-                    targetType = DocumentationSignatureParser.GetTypeByDocumentationSignature((IAssemblyDesc)asm, typeStringFromAttribute);
-                    if (targetType == null)
-                    {
-                        (factory.MetadataManager as UsageBasedMetadataManager)?.Logger?.LogWarning(
-                            new MessageOrigin(entity),
-                            DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute,
-                            typeStringFromAttribute);
+                    // DynamicDependencyAttribute(String, Type)
+                    case 2 when fixedArgs[1].Value is TypeDesc typeFromAttribute:
+                        targetType = typeFromAttribute;
+                        break;
+
+                    // DynamicDependencyAttribute(String, String, String)
+                    case 3 when fixedArgs[1].Value is string typeStringFromAttribute
+                        && fixedArgs[2].Value is string assemblyStringFromAttribute:
+                        ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
+                        if (asm == null)
+                        {
+                            ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                                new MessageOrigin(entity),
+                                DiagnosticId.UnresolvedAssemblyInDynamicDependencyAttribute,
+                                assemblyStringFromAttribute);
+                            return;
+                        }
+
+                        targetType = DocumentationSignatureParser.GetTypeByDocumentationSignature((IAssemblyDesc)asm, typeStringFromAttribute);
+                        if (targetType == null)
+                        {
+                            ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                                new MessageOrigin(entity),
+                                DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute,
+                                typeStringFromAttribute);
+                            return;
+                        }
+                        break;
+
+                    default:
+                        Debug.Fail("Did we introduce a new overload?");
                         return;
-                    }
-                }
-                else
-                {
-                    Debug.Fail("Did we introduce a new overload?");
-                    return;
                 }
 
                 members = DocumentationSignatureParser.GetMembersByDocumentationSignature(Linkerify(targetType), sigFromAttribute, acceptName: true);
 
                 if (!members.Any())
                 {
-                    (factory.MetadataManager as UsageBasedMetadataManager)?.Logger?.LogWarning(
+                    ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
                         new MessageOrigin(entity),
                         DiagnosticId.NoMembersResolvedForMemberSignatureOrType,
                         sigFromAttribute,
@@ -137,7 +138,7 @@ namespace ILCompiler.DependencyAnalysis
                     ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
                     if (asm == null)
                     {
-                        (factory.MetadataManager as UsageBasedMetadataManager)?.Logger?.LogWarning(
+                        ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
                             new MessageOrigin(entity),
                             DiagnosticId.UnresolvedAssemblyInDynamicDependencyAttribute,
                             assemblyStringFromAttribute);
@@ -147,7 +148,7 @@ namespace ILCompiler.DependencyAnalysis
                     targetType = DocumentationSignatureParser.GetTypeByDocumentationSignature((IAssemblyDesc)asm, typeStringFromAttribute);
                     if (targetType == null)
                     {
-                        (factory.MetadataManager as UsageBasedMetadataManager)?.Logger?.LogWarning(
+                        ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
                             new MessageOrigin(entity),
                             DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute,
                             typeStringFromAttribute);
@@ -164,8 +165,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!members.Any())
                 {
-                    (factory.MetadataManager as UsageBasedMetadataManager)?.Logger?.LogWarning(
-                        new MessageOrigin(entity),
+                    ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                    new MessageOrigin(entity),
                         DiagnosticId.NoMembersResolvedForMemberSignatureOrType,
                         memberTypesFromAttribute.ToString(),
                         targetType.GetDisplayName());
