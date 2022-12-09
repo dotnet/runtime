@@ -234,7 +234,26 @@ public:
                     isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
                 }
 
-                bool lastUse = !m_compiler->fgDidEarlyLiveness || ((node->gtFlags & GTF_VAR_DEATH) != 0);
+                bool lastUse;
+                if (m_compiler->fgDidEarlyLiveness)
+                {
+                    if ((node->gtFlags & GTF_VAR_DEATH) != 0)
+                    {
+                        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
+                        VARSET_TP* deadFields;
+                        lastUse = !dsc->lvPromoted || !m_compiler->LookupPromotedStructDeathVars(node, &deadFields);
+                    }
+                    else
+                    {
+                        lastUse = false;
+                    }
+                }
+                else
+                {
+                    // When we don't have early liveness we can only get here when we have exactly 2 global references.
+                    lastUse = true;
+                }
+
                 if (!isDef && !isAddr && !isCallTarget && lastUse)
                 {
                     m_node       = node;
