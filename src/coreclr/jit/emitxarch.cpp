@@ -556,6 +556,13 @@ void emitter::UpdateUpper32BitsZeroRegLookup()
                 return;
             }
 
+            if (instrHasImplicitRegPairDest(emitLastIns->idIns()))
+            {
+                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg1());
+                upper32BitsZeroRegLookup &= ~(1 << emitLastIns->idReg2());
+                return;
+            }
+
             // otherwise rely on operation size.
             if (emitLastIns->idOpSize() == EA_4BYTE)
             {
@@ -674,6 +681,11 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 #else
             assert((emitLastIns->idReg1() >= REG_EAX) && (emitLastIns->idReg1() <= REG_XMM7));
 #endif // !TARGET_AMD64
+
+            if (instrHasImplicitRegPairDest(emitLastIns->idIns()))
+            {
+                return false;
+            }
 
             if (emitLastIns->idReg1() != reg)
             {
