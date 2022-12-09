@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyBuilderTests.cs" />
+    <Compile Include="DynamicMethodTests.cs" />
     <Compile Include="OpCodesTests.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderDefineParameter.cs" />
     <Compile Include="ConstructorBuilder\ConstructorBuilderGetILGenerator.cs" />

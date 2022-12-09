@@ -430,6 +430,9 @@ namespace System.Reflection.Emit
 
             public override CallingConventions CallingConvention => _callingConvention;
 
+            public override Delegate CreateDelegate(Type delegateType) => _owner.CreateDelegate(delegateType);
+            public override Delegate CreateDelegate(Type delegateType, object? target) => _owner.CreateDelegate(delegateType, target);
+
             public override MethodInfo GetBaseDefinition()
             {
                 return this;
