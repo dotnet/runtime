@@ -266,6 +266,22 @@ namespace Internal.Runtime.CompilerHelpers
                         WriteRelPtr32(pDest, ReadRelPtr32(pFixups + payload));
                         pDest += sizeof(int);
                         break;
+                    case DehydratedDataCommand.InlinePtrReloc:
+                        while (payload-- > 0)
+                        {
+                            *(void**)pDest = ReadRelPtr32(pCurrent);
+                            pDest += sizeof(void*);
+                            pCurrent += sizeof(int);
+                        }
+                        break;
+                    case DehydratedDataCommand.InlineRelPtr32Reloc:
+                        while (payload-- > 0)
+                        {
+                            WriteRelPtr32(pDest, ReadRelPtr32(pCurrent));
+                            pDest += sizeof(int);
+                            pCurrent += sizeof(int);
+                        }
+                        break;
                 }
             }
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -532,6 +533,18 @@ namespace System
         public static int IndexOfAnyExcept<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>? =>
             IndexOfAnyExcept((ReadOnlySpan<T>)span, values);
 
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="values"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The values to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
+        /// If all of the values are in <paramref name="values"/>, returns -1.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAnyExcept<T>(this Span<T> span, IndexOfAnyValues<T> values) where T : IEquatable<T>? =>
+            IndexOfAnyExcept((ReadOnlySpan<T>)span, values);
+
         /// <summary>Searches for the first index of any value other than the specified <paramref name="value"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
         /// <param name="span">The span to search.</param>
@@ -716,6 +729,36 @@ namespace System
                     return IndexOfAnyExcept(span, values[0], values[1], values[2], values[3]);
 
                 default:
+                    if (RuntimeHelpers.IsBitwiseEquatable<T>())
+                    {
+                        if (Unsafe.SizeOf<T>() == sizeof(byte) && values.Length == 5)
+                        {
+                            ref byte valuesRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
+
+                            return SpanHelpers.IndexOfAnyExceptValueType(
+                                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                                valuesRef,
+                                Unsafe.Add(ref valuesRef, 1),
+                                Unsafe.Add(ref valuesRef, 2),
+                                Unsafe.Add(ref valuesRef, 3),
+                                Unsafe.Add(ref valuesRef, 4),
+                                span.Length);
+                        }
+                        else if (Unsafe.SizeOf<T>() == sizeof(short) && values.Length == 5)
+                        {
+                            ref short valuesRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(values));
+
+                            return SpanHelpers.IndexOfAnyExceptValueType(
+                                ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                                valuesRef,
+                                Unsafe.Add(ref valuesRef, 1),
+                                Unsafe.Add(ref valuesRef, 2),
+                                Unsafe.Add(ref valuesRef, 3),
+                                Unsafe.Add(ref valuesRef, 4),
+                                span.Length);
+                        }
+                    }
+
                     if (RuntimeHelpers.IsBitwiseEquatable<T>() && Unsafe.SizeOf<T>() == sizeof(char))
                     {
                         return ProbabilisticMap.IndexOfAnyExcept(
@@ -736,6 +779,18 @@ namespace System
                     return -1;
             }
         }
+
+        /// <summary>Searches for the first index of any value other than the specified <paramref name="values"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The values to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
+        /// If all of the values are in <paramref name="values"/>, returns -1.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, IndexOfAnyValues<T> values) where T : IEquatable<T>? =>
+            IndexOfAnyValues<T>.IndexOfAnyExcept(span, values);
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
@@ -782,6 +837,18 @@ namespace System
         /// If all of the values are in <paramref name="values"/>, returns -1.
         /// </returns>
         public static int LastIndexOfAnyExcept<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>? =>
+            LastIndexOfAnyExcept((ReadOnlySpan<T>)span, values);
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="values"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The values to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
+        /// If all of the values are in <paramref name="values"/>, returns -1.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAnyExcept<T>(this Span<T> span, IndexOfAnyValues<T> values) where T : IEquatable<T>? =>
             LastIndexOfAnyExcept((ReadOnlySpan<T>)span, values);
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value"/>.</summary>
@@ -969,6 +1036,36 @@ namespace System
                     return LastIndexOfAnyExcept(span, values[0], values[1], values[2], values[3]);
 
                 default:
+                    if (RuntimeHelpers.IsBitwiseEquatable<T>())
+                    {
+                        if (Unsafe.SizeOf<T>() == sizeof(byte) && values.Length == 5)
+                        {
+                            ref byte valuesRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
+
+                            return SpanHelpers.LastIndexOfAnyExceptValueType(
+                                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                                valuesRef,
+                                Unsafe.Add(ref valuesRef, 1),
+                                Unsafe.Add(ref valuesRef, 2),
+                                Unsafe.Add(ref valuesRef, 3),
+                                Unsafe.Add(ref valuesRef, 4),
+                                span.Length);
+                        }
+                        else if (Unsafe.SizeOf<T>() == sizeof(short) && values.Length == 5)
+                        {
+                            ref short valuesRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(values));
+
+                            return SpanHelpers.LastIndexOfAnyExceptValueType(
+                                ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                                valuesRef,
+                                Unsafe.Add(ref valuesRef, 1),
+                                Unsafe.Add(ref valuesRef, 2),
+                                Unsafe.Add(ref valuesRef, 3),
+                                Unsafe.Add(ref valuesRef, 4),
+                                span.Length);
+                        }
+                    }
+
                     if (RuntimeHelpers.IsBitwiseEquatable<T>() && Unsafe.SizeOf<T>() == sizeof(char))
                     {
                         return ProbabilisticMap.LastIndexOfAnyExcept(
@@ -989,6 +1086,18 @@ namespace System
                     return -1;
             }
         }
+
+        /// <summary>Searches for the last index of any value other than the specified <paramref name="values"/>.</summary>
+        /// <typeparam name="T">The type of the span and values.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The values to avoid.</param>
+        /// <returns>
+        /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
+        /// If all of the values are in <paramref name="values"/>, returns -1.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, IndexOfAnyValues<T> values) where T : IEquatable<T>? =>
+            IndexOfAnyValues<T>.LastIndexOfAnyExcept(span, values);
 
         /// <inheritdoc cref="IndexOfAnyInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1530,6 +1639,15 @@ namespace System
         /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
         /// </summary>
         /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAny<T>(this Span<T> span, IndexOfAnyValues<T> values) where T : IEquatable<T>? =>
+            IndexOfAny((ReadOnlySpan<T>)span, values);
+
+        /// <summary>
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1708,6 +1826,15 @@ namespace System
         }
 
         /// <summary>
+        /// Searches for the first index of any of the specified values similar to calling IndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, IndexOfAnyValues<T> values) where T : IEquatable<T>? =>
+            IndexOfAnyValues<T>.IndexOfAny(span, values);
+
+        /// <summary>
         /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
         /// </summary>
         /// <param name="span">The span to search.</param>
@@ -1781,6 +1908,15 @@ namespace System
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>? =>
+            LastIndexOfAny((ReadOnlySpan<T>)span, values);
+
+        /// <summary>
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this Span<T> span, IndexOfAnyValues<T> values) where T : IEquatable<T>? =>
             LastIndexOfAny((ReadOnlySpan<T>)span, values);
 
         /// <summary>
@@ -1897,6 +2033,16 @@ namespace System
                                 Unsafe.Add(ref valueRef, 3),
                                 span.Length);
 #endif
+
+                        case 5:
+                            return SpanHelpers.LastIndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                Unsafe.Add(ref valueRef, 3),
+                                Unsafe.Add(ref valueRef, 4),
+                                span.Length);
                     }
                 }
 
@@ -1938,6 +2084,16 @@ namespace System
                                 span.Length);
 #endif
 
+                        case 5:
+                            return SpanHelpers.LastIndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                Unsafe.Add(ref valueRef, 3),
+                                Unsafe.Add(ref valueRef, 4),
+                                span.Length);
+
                         default:
                             return ProbabilisticMap.LastIndexOfAny(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
                     }
@@ -1946,6 +2102,15 @@ namespace System
 
             return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
         }
+
+        /// <summary>
+        /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="values">The set of values to search for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, IndexOfAnyValues<T> values) where T : IEquatable<T>? =>
+            IndexOfAnyValues<T>.LastIndexOfAny(span, values);
 
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).

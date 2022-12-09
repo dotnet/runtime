@@ -150,16 +150,17 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: false);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToLowerInvariant(char c)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToLower(c);
-            }
-
             if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToLowerAsciiInvariant(c);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
             }
 
             return Invariant.ChangeCase(c, toUpper: false);
@@ -483,16 +484,17 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: true);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToUpperInvariant(char c)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToUpper(c);
-            }
-
             if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToUpperAsciiInvariant(c);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
             }
 
             return Invariant.ChangeCase(c, toUpper: true);

@@ -155,8 +155,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             _inputFilesToCompare = Get(command.InputFilesToCompare);
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
-        private T Get<T>(Argument<T> argument) => _command.Result.GetValueForArgument(argument);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
         private bool IsSet<T>(Option<T> option) => _command.Result.FindResultFor(option) != null;
 
         private static int Main(string[] args) =>

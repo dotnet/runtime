@@ -1036,7 +1036,7 @@ namespace System.Reflection.Emit
                 if (!RuntimeMethodHandle.IsDynamicMethod(rmhi))
                 {
                     RuntimeType type = RuntimeMethodHandle.GetDeclaringType(rmhi);
-                    if ((type != null) && RuntimeTypeHandle.HasInstantiation(type))
+                    if (type.IsGenericType)
                     {
                         // Do we really need to retrieve this much info just to throw an exception?
                         MethodBase m = RuntimeType.GetMethodBase(methodReal)!;
