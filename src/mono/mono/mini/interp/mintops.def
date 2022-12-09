@@ -811,10 +811,12 @@ OPDEF(MINT_INTRINS_WIDEN_ASCII_TO_UTF16, "intrins_widen_ascii_to_utf16", 5, 1, 3
 
 OPDEF(MINT_METADATA_UPDATE_LDFLDA, "metadata_update.ldflda", 5, 1, 1, MintOpTwoShorts)
 
-// FIXME: Adding an #if HOST_BROWSER here causes test crashes
+// This ifdef is fine because genmintops.py is generating output for HOST_BROWSER
+#if HOST_BROWSER
 OPDEF(MINT_TIER_PREPARE_JITERPRETER, "tier_prepare_jiterpreter", 3, 0, 0, MintOpInt)
 OPDEF(MINT_TIER_NOP_JITERPRETER, "tier_nop_jiterpreter", 3, 0, 0, MintOpInt)
 OPDEF(MINT_TIER_ENTER_JITERPRETER, "tier_enter_jiterpreter", 3, 0, 0, MintOpInt)
+#endif // HOST_BROWSER
 
 IROPDEF(MINT_NOP, "nop", 1, 0, 0, MintOpNoArgs)
 IROPDEF(MINT_NIY, "niy", 1, 0, 0, MintOpNoArgs)
@@ -829,4 +831,4 @@ IROPDEF(MINT_MOV_DST_OFF, "mov.dst.off", 6, 1, 1, MintOpTwoShorts)
 #ifdef __DEFINED_IROPDEF__
 #undef IROPDEF
 #undef __DEFINED_IROPDEF__
-#endif
+#endif // __DEFINED_IROPDEF__
