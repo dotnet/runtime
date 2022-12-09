@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 
-namespace Tracing.Tests.ETWNullEventTest
+namespace Tracing.Tests.ETWNullEvent
 {
     public class ProviderValidation
     {
