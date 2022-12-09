@@ -65,8 +65,7 @@ BYTE* emitOutputRRR(BYTE* dst, instrDesc* id);
 
 BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 
-unsigned emitOutputSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
-unsigned emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
+unsigned emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
 unsigned emitGetVexPrefixSize(instruction ins, emitAttr attr);
 unsigned emitGetEvexPrefixSize(instruction ins);

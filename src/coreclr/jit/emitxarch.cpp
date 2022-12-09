@@ -1280,7 +1280,7 @@ bool isPrefix(BYTE b)
 }
 
 //------------------------------------------------------------------------
-// emitOutputSimdPrefixIfNeeded: Outputs EVEX prefix (in case of AVX512 instructions),
+// emitOutputRexOrSimdPrefixIfNeeded: Outputs EVEX prefix (in case of AVX512 instructions),
 // VEX prefix (in case of AVX instructions) and REX.R/X/W/B otherwise.
 //
 // Arguments:
@@ -1292,7 +1292,7 @@ bool isPrefix(BYTE b)
 // Return Value:
 //    Size of prefix.
 //
-unsigned emitter::emitOutputSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code)
+unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code)
 {
     // TODO-XArch-AVX512: Remove redundant code and collapse into single pathway for EVEX and VEX if possible.
     if (hasEvexPrefix(code))
@@ -1398,246 +1398,6 @@ unsigned emitter::emitOutputSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_
         return 4;
     }
     else if (hasVexPrefix(code))
-    {
-        // Only AVX instructions should have a VEX prefix
-        assert(UseVEXEncoding() && IsVexEncodedInstruction(ins));
-        code_t vexPrefix = (code >> 32) & 0x00FFFFFF;
-        code &= 0x00000000FFFFFFFFLL;
-
-        WORD leadingBytes = 0;
-        BYTE check        = (code >> 24) & 0xFF;
-        if (check != 0)
-        {
-            // 3-byte opcode: with the bytes ordered as 0x2211RM33 or
-            // 4-byte opcode: with the bytes ordered as 0x22114433
-            // check for a prefix in the 11 position
-            BYTE sizePrefix = (code >> 16) & 0xFF;
-            if ((sizePrefix != 0) && isPrefix(sizePrefix))
-            {
-                // 'pp' bits in byte2 of VEX prefix allows us to encode SIMD size prefixes as two bits
-                //
-                //   00  - None   (0F    - packed float)
-                //   01  - 66     (66 0F - packed double)
-                //   10  - F3     (F3 0F - scalar float
-                //   11  - F2     (F2 0F - scalar double)
-                switch (sizePrefix)
-                {
-                    case 0x66:
-                        if (IsBMIInstruction(ins))
-                        {
-                            switch (ins)
-                            {
-                                case INS_rorx:
-                                case INS_pdep:
-                                case INS_mulx:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
-                                case INS_shrx:
-#endif
-                                {
-                                    vexPrefix |= 0x03;
-                                    break;
-                                }
-
-                                case INS_pext:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
-                                case INS_sarx:
-#endif
-                                {
-                                    vexPrefix |= 0x02;
-                                    break;
-                                }
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
-                                case INS_shlx:
-                                {
-                                    vexPrefix |= 0x01;
-                                    break;
-                                }
-#endif
-                                default:
-                                {
-                                    vexPrefix |= 0x00;
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            vexPrefix |= 0x01;
-                        }
-                        break;
-                    case 0xF3:
-                        vexPrefix |= 0x02;
-                        break;
-                    case 0xF2:
-                        vexPrefix |= 0x03;
-                        break;
-                    default:
-                        assert(!"unrecognized SIMD size prefix");
-                        unreached();
-                }
-
-                // Now the byte in the 22 position must be an escape byte 0F
-                leadingBytes = check;
-                assert(leadingBytes == 0x0F);
-
-                // Get rid of both sizePrefix and escape byte
-                code &= 0x0000FFFFLL;
-
-                // Check the byte in the 33 position to see if it is 3A or 38.
-                // In such a case escape bytes must be 0x0F3A or 0x0F38
-                check = code & 0xFF;
-                if (check == 0x3A || check == 0x38)
-                {
-                    leadingBytes = (leadingBytes << 8) | check;
-                    code &= 0x0000FF00LL;
-                }
-            }
-        }
-        else
-        {
-            // 2-byte opcode with the bytes ordered as 0x0011RM22
-            // the byte in position 11 must be an escape byte.
-            leadingBytes = (code >> 16) & 0xFF;
-            assert(leadingBytes == 0x0F || leadingBytes == 0x00);
-            code &= 0xFFFF;
-        }
-
-        // If there is an escape byte it must be 0x0F or 0x0F3A or 0x0F38
-        // m-mmmmm bits in byte 1 of VEX prefix allows us to encode these
-        // implied leading bytes. 0x0F is supported by both the 2-byte and
-        // 3-byte encoding. While 0x0F3A and 0x0F38 are only supported by
-        // the 3-byte version.
-
-        switch (leadingBytes)
-        {
-            case 0x00:
-                // there is no leading byte
-                break;
-            case 0x0F:
-                vexPrefix |= 0x0100;
-                break;
-            case 0x0F38:
-                vexPrefix |= 0x0200;
-                break;
-            case 0x0F3A:
-                vexPrefix |= 0x0300;
-                break;
-            default:
-                assert(!"encountered unknown leading bytes");
-                unreached();
-        }
-
-        // At this point
-        //     VEX.2211RM33 got transformed as VEX.0000RM33
-        //     VEX.0011RM22 got transformed as VEX.0000RM22
-        //
-        // Now output VEX prefix leaving the 4-byte opcode
-
-        // The 2-byte VEX encoding, requires that the X and B-bits are set (these
-        // bits are inverted from the REX values so set means off), the W-bit is
-        // not set (this bit is not inverted), and that the m-mmmm bits are 0-0001
-        // (the 2-byte VEX encoding only supports the 0x0F leading byte). When these
-        // conditions are met, we can change byte-0 from 0xC4 to 0xC5 and then
-        // byte-1 is the logical-or of bit 7 from byte-1 and bits 0-6 from byte 2
-        // from the 3-byte VEX encoding.
-        //
-        // Given the above, the check can be reduced to a simple mask and comparison.
-        // * 0xFFFF7F80 is a mask that ignores any bits whose value we don't care about:
-        //   * R can be set or unset              (0x7F ignores bit 7)
-        //   * vvvv can be any value              (0x80 ignores bits 3-6)
-        //   * L can be set or unset              (0x80 ignores bit 2)
-        //   * pp can be any value                (0x80 ignores bits 0-1)
-        // * 0x00C46100 is a value that signifies the requirements listed above were met:
-        //   * We must be a three-byte VEX opcode (0x00C4)
-        //   * X and B must be set                (0x61 validates bits 5-6)
-        //   * m-mmmm must be 0-00001             (0x61 validates bits 0-4)
-        //   * W must be unset                    (0x00 validates bit 7)
-        if ((vexPrefix & 0xFFFF7F80) == 0x00C46100)
-        {
-            // Encoding optimization calculation is not done while estimating the instruction
-            // size and thus over-predict instruction size by 1 byte.
-            // If there are IGs that will be aligned, do not optimize encoding so the
-            // estimated alignment sizes are accurate.
-            if (emitCurIG->igNum > emitLastAlignedIgNum)
-            {
-                emitOutputByte(dst, 0xC5);
-                emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
-                return 2;
-            }
-        }
-
-        emitOutputByte(dst, ((vexPrefix >> 16) & 0xFF));
-        emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0xFF));
-        emitOutputByte(dst + 2, vexPrefix & 0xFF);
-        return 3;
-    }
-
-#ifdef TARGET_AMD64
-    if (code > 0x00FFFFFFFFLL)
-    {
-        BYTE prefix = (code >> 32) & 0xFF;
-        noway_assert(prefix >= 0x40 && prefix <= 0x4F);
-        code &= 0x00000000FFFFFFFFLL;
-
-        // TODO-AMD64-Cleanup: when we remove the prefixes (just the SSE opcodes right now)
-        // we can remove this code as well
-
-        // The REX prefix is required to come after all other prefixes.
-        // Some of our 'opcodes' actually include some prefixes, if that
-        // is the case, shift them over and place the REX prefix after
-        // the other prefixes, and emit any prefix that got moved out.
-        BYTE check = (code >> 24) & 0xFF;
-        if (check == 0)
-        {
-            // 3-byte opcode: with the bytes ordered as 0x00113322
-            // check for a prefix in the 11 position
-            check = (code >> 16) & 0xFF;
-            if (check != 0 && isPrefix(check))
-            {
-                // Swap the rex prefix and whatever this prefix is
-                code = (((DWORD)prefix << 16) | (code & 0x0000FFFFLL));
-                // and then emit the other prefix
-                return emitOutputByte(dst, check);
-            }
-        }
-        else
-        {
-            // 4-byte opcode with the bytes ordered as 0x22114433
-            // first check for a prefix in the 11 position
-            BYTE check2 = (code >> 16) & 0xFF;
-            if (isPrefix(check2))
-            {
-                assert(!isPrefix(check)); // We currently don't use this, so it is untested
-                if (isPrefix(check))
-                {
-                    // 3 prefixes were rex = rr, check = c1, check2 = c2 encoded as 0xrrc1c2XXXX
-                    // Change to c2rrc1XXXX, and emit check2 now
-                    code = (((code_t)prefix << 24) | ((code_t)check << 16) | (code & 0x0000FFFFLL));
-                }
-                else
-                {
-                    // 2 prefixes were rex = rr, check2 = c2 encoded as 0xrrXXc2XXXX, (check is part of the opcode)
-                    // Change to c2XXrrXXXX, and emit check2 now
-                    code = (((code_t)check << 24) | ((code_t)prefix << 16) | (code & 0x0000FFFFLL));
-                }
-                return emitOutputByte(dst, check2);
-            }
-        }
-
-        return emitOutputByte(dst, prefix);
-    }
-#endif // TARGET_AMD64
-
-    return 0;
-}
-
-// Outputs VEX prefix (in case of AVX instructions) and REX.R/X/W/B otherwise.
-unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code)
-{
-    if (hasVexPrefix(code))
     {
         // Only AVX instructions should have a VEX prefix
         assert(UseVEXEncoding() && IsVexEncodedInstruction(ins));
@@ -11339,7 +11099,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         if (id->idIsCallRegPtr())
         {
             code = insEncodeMRreg(ins, reg, EA_PTRSIZE, code);
-            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
             dst += emitOutputWord(dst, code);
             goto DONE;
         }
@@ -11365,7 +11125,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // And emit the REX prefix
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
 #endif // TARGET_AMD64
 
@@ -11527,7 +11287,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         unsigned regcode = insEncodeReg345(ins, reg345, size, &code);
 
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         if (UseSimdEncoding() && (ins != INS_crc32))
         {
@@ -11555,7 +11315,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Output the REX prefix
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest word of the opcode
         // We need to check again as in case of AVX instructions leading opcode bytes are stripped off
@@ -11572,7 +11332,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         assert(ins != INS_bt);
 
         // Output the REX prefix
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest byte of the opcode
         if (code & 0x00FF0000)
@@ -11640,7 +11400,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Output the REX prefix
-    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
     // Get the displacement value
     dsp = emitGetInsAmdAny(id);
@@ -12341,7 +12101,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         unsigned regcode = insEncodeReg345(ins, reg345, size, &code);
 
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         if (UseSimdEncoding() && (ins != INS_crc32))
         {
@@ -12369,7 +12129,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Output the REX prefix
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest word of the opcode
         // We need to check again because in case of AVX instructions the leading
@@ -12386,7 +12146,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         assert(ins != INS_bt);
 
         // Output the REX prefix
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest byte of the opcode.
         // We need to check again because in case of AVX instructions the leading
@@ -12458,7 +12218,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Output the REX prefix
-    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
     // Figure out the variable's frame position
     int varNum = id->idAddr()->iiaLclVar.lvaVarNum();
@@ -12841,7 +12601,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         unsigned regcode = insEncodeReg345(ins, reg345, size, &code);
 
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         if (UseVEXEncoding() && (ins != INS_crc32))
         {
@@ -12871,7 +12631,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
 
         // Output the REX prefix
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         // Output the highest word of the opcode.
         // Check again since AVX instructions encode leading opcode bytes as part of VEX prefix.
@@ -12884,7 +12644,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     else if (code & 0x00FF0000)
     {
         // Output the REX prefix
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         // Check again as VEX prefix would have encoded leading opcode byte
         if (code & 0x00FF0000)
@@ -12941,7 +12701,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Output the REX prefix
-    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
     if (code)
     {
@@ -13228,7 +12988,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 unsigned regcode = insEncodeReg012(ins, reg, size, &code);
 
                 // Output the REX prefix
-                dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+                dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
                 dst += emitOutputWord(dst, code | (regcode << 8));
             }
@@ -13255,7 +13015,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             assert(!TakesRexWPrefix(ins, size));
 
             // Output the REX prefix
-            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
             dst += emitOutputByte(dst, code);
             break;
@@ -13280,7 +13040,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             unsigned regcode = insEncodeReg012(ins, reg, size, &code);
 
             // Output the REX prefix
-            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
             dst += emitOutputWord(dst, code | (regcode << 8));
             break;
@@ -13309,7 +13069,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             code = insEncodeMRreg(ins, reg, EA_1BYTE, insCodeMR(ins));
 
             // Output the REX prefix
-            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
             // We expect this to always be a 'big' opcode
             assert(code & 0x00FF0000);
@@ -13354,7 +13114,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             }
 
             // Output the REX prefix
-            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
             dst += emitOutputWord(dst, code);
             break;
@@ -13590,7 +13350,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
 
     // Output the REX prefix
-    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
     if (code & 0xFF000000)
     {
@@ -13844,7 +13604,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
     code = insEncodeReg3456(ins, src1, size, code);
 
     // Output the REX/VEX/EVEX prefix
-    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
     // Is this a 'big' opcode?
     if (code & 0xFF000000)
@@ -13948,7 +13708,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         unsigned regcode = (insEncodeReg345(ins, regOpcode, size, &code) | insEncodeReg012(ins, reg, size, &code)) << 8;
 
         // Output the REX prefix
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         if (code & 0xFF000000)
         {
@@ -13984,7 +13744,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             code = AddRexWPrefix(ins, code);
         }
 
-        dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
         dst += emitOutputByte(dst, code);
         if (size == EA_4BYTE)
@@ -14113,7 +13873,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     }
 
     // Output the REX prefix
-    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
     // Does the value fit in a sign-extended byte?
     // Important!  Only set the 's' bit when we have a size larger than EA_1BYTE.
@@ -14315,7 +14075,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
                 if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(ins)))
                 {
                     code = AddRexWPrefix(ins, code);
-                    dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+                    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
                 }
 
                 dst += emitOutputByte(dst, code);
@@ -14941,7 +14701,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddRexWPrefix(ins, code);
             }
-            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 #endif
             // Is this a 'big' opcode?
             if (code & 0xFF000000)
@@ -15234,7 +14994,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst += emitOutputByte(dst, 0x66);
             }
 
-            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
             dst += emitOutputWord(dst, code);
             dst += emitOutputByte(dst, emitGetInsSC(id));
             sz = emitSizeOfInsDsc(id);
@@ -15340,7 +15100,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             regcode = (insEncodeReg345(ins, rReg, size, &code) | insEncodeReg012(ins, mReg, size, &code));
 
             // Output the REX prefix
-            dst += emitOutputSimdPrefixIfNeeded(ins, dst, code);
+            dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
             if (code & 0xFF000000)
             {
