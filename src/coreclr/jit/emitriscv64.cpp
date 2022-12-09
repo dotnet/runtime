@@ -78,20 +78,66 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return 0;
+    if (emitIsScnsInsDsc(id))
+        return SMALL_IDSC_SIZE;
+
+    insOpts insOp = id->idInsOpt();
+
+    switch (insOp)
+    {
+        case INS_OPTS_JALR:
+        case INS_OPTS_J_cond:
+        case INS_OPTS_J:
+            return sizeof(instrDescJmp);
+
+        case INS_OPTS_C:
+            if (id->idIsLargeCall())
+            {
+                /* Must be a "fat" call descriptor */
+                return sizeof(instrDescCGCA);
+            }
+            else
+            {
+                assert(!id->idIsLargeDsp());
+                assert(!id->idIsLargeCns());
+                return sizeof(instrDesc);
+            }
+
+        case INS_OPTS_I:
+        case INS_OPTS_RC:
+        case INS_OPTS_RL:
+        case INS_OPTS_RELOC:
+        case INS_OPTS_NONE:
+            return sizeof(instrDesc);
+        default:
+            NO_WAY("unexpected instruction descriptor format");
+            break;
+    }
 }
 
-inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
-{
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return false;
-}
+
 
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return false;
+    if (!id->idIsLclVar())
+        return false;
+
+    instruction ins = id->idIns();
+
+    // This list is related to the list of instructions used to store local vars in emitIns_S_R().
+    // We don't accept writing to float local vars.
+
+    switch (ins)
+    {
+        case INS_sd:
+        case INS_sw:
+        case INS_sb:
+        case INS_sh:
+            return true;
+
+        default:
+            return false;
+    }
 }
 
 #define LD 1
@@ -104,6 +150,12 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
     #include "instrs.h"
 };
 // clang-format on
+
+inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
+{
+    assert(ins != INS_invalid);
+    return (ins <= INS_remuw) && !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) && (CodeGenInterface::instInfo[ins] & ST) == 0 ? true : false; // TODO CHECK
+}
 
 //------------------------------------------------------------------------
 // emitInsLoad: Returns true if the instruction is some kind of load instruction.
