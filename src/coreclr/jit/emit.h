@@ -2181,7 +2181,7 @@ private:
     insGroup* emitSavIG(bool emitAdd = false);
     void emitNxtIG(bool extend = false);
 
-    void emitRemoveLastInstruction();
+    bool emitRemoveLastInstruction();
 
     bool emitCurIGnonEmpty()
     {

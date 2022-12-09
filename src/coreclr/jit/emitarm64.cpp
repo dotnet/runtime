@@ -16219,24 +16219,32 @@ bool emitter::TryReplaceLdrStrWithPairInstr(
         }
 
         // Remove the last instruction written.
-        emitRemoveLastInstruction();
-
-        // We need to scale the immediate value by the operand size.
-        // This is either the "old" immediate (for ascending) or the
-        // "current" immediate (for descending) register order.
-        if (optimizationOrder == eRO_ascending)
+        // This has been temporarily changed to allow the function
+        // to "refuse" to remove an instruction for diagnostic purposes only.
+        if (emitRemoveLastInstruction())
         {
-            // The FIRST register is at the lower offset
-            emitIns_R_R_R_I(optIns, oldReg1Attr, oldReg1, reg1, reg2, oldImm * size, INS_OPTS_NONE, reg1Attr);
-        }
-        else
-        {
-            // The SECOND register is at the lower offset
-            emitIns_R_R_R_I(optIns, reg1Attr, reg1, oldReg1, reg2, imm * size, INS_OPTS_NONE, oldReg1Attr);
-        }
+            // The above function can refuse to remove an emitted
+            // instruction, for diagnostic purposes only.
 
-        // And now return true, to indicate that the second instruction descriptor is no longer to be emitted.
-        return true;
+            // It HAS removed an instruction this time.
+
+            // We need to scale the immediate value by the operand size.
+            // This is either the "old" immediate (for ascending) or the
+            // "current" immediate (for descending) register order.
+            if (optimizationOrder == eRO_ascending)
+            {
+                // The FIRST register is at the lower offset
+                emitIns_R_R_R_I(optIns, oldReg1Attr, oldReg1, reg1, reg2, oldImm * size, INS_OPTS_NONE, reg1Attr);
+            }
+            else
+            {
+                // The SECOND register is at the lower offset
+                emitIns_R_R_R_I(optIns, reg1Attr, reg1, oldReg1, reg2, imm * size, INS_OPTS_NONE, oldReg1Attr);
+            }
+
+            // And now return true, to indicate that the second instruction descriptor is no longer to be emitted.
+            return true;
+        }
     }
 
     return false;
