@@ -734,11 +734,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        if ((parsedAotMode == MonoAotMode.Full ||
-            parsedAotMode == MonoAotMode.FullInterp ||
-            parsedAotMode == MonoAotMode.LLVMOnly ||
-            parsedAotMode == MonoAotMode.LLVMOnlyInterp) &&
-            EnableUnmanagedCallersOnlyMethodsExport)
+        if (EnableUnmanagedCallersOnlyMethodsExport)
         {
             string exportSymbolsFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".exportsymbols"));
             ProxyFile proxyFile = _cache.NewFile(exportSymbolsFile);

@@ -407,7 +407,6 @@ typedef struct MonoAotCompile {
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
-	FILE *export_symbols_outfile;
 	int datafile_offset;
 	int gc_name_offset;
 	// In this mode, we are emitting dedupable methods that we encounter
@@ -5257,11 +5256,7 @@ MONO_RESTORE_WARNING
 				add_method (acfg, wrapper);
 				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
-#ifdef TARGET_APPLE_MOBILE
-					g_string_append_printf (export_symbols, "_%s\n", export_name);
-#else
-					g_string_append_printf (export_symbols, "%s\n", export_name);
-#endif
+					g_string_append_printf (export_symbols, "%s%s\n", acfg->user_symbol_prefix, export_name);
 				}
 			}
 
@@ -5274,18 +5269,17 @@ MONO_RESTORE_WARNING
 		}
 	}
 
-	if (acfg->aot_opts.export_symbols_outfile && export_symbols->len) {
+	if (acfg->aot_opts.export_symbols_outfile) {
 		char *export_symbols_out = g_string_free (export_symbols, FALSE);
-		acfg->export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
-		g_free (acfg->aot_opts.export_symbols_outfile);
-		if (!acfg->export_symbols_outfile) {
+		FILE* export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
+		if (!export_symbols_outfile) {
 			fprintf (stderr, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
 			g_free (export_symbols_out);
 			exit (1);
 		}
-		fprintf (acfg->export_symbols_outfile, "%s", export_symbols_out);
+		fprintf (export_symbols_outfile, "%s", export_symbols_out);
 		g_free (export_symbols_out);
-		fclose (acfg->export_symbols_outfile);
+		fclose (export_symbols_outfile);
 	}
 
 	/* StructureToPtr/PtrToStructure wrappers */
