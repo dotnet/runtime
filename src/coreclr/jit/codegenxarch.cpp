@@ -2869,7 +2869,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
     if (willUseSimdMov)
     {
-        regNumber srcXmmReg = node->GetSingleTempReg(compiler->rbmAllFloat);
+        regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
                                ? YMM_REGSIZE_BYTES
@@ -3137,7 +3137,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (size >= XMM_REGSIZE_BYTES)
     {
-        regNumber tempReg = node->GetSingleTempReg(compiler->rbmAllFloat);
+        regNumber tempReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         instruction simdMov = simdUnalignedMovIns();
 
@@ -3459,7 +3459,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     if (loadSize >= XMM_REGSIZE_BYTES)
 #endif
     {
-        xmmTmpReg = putArgNode->GetSingleTempReg(compiler->rbmAllFloat);
+        xmmTmpReg = putArgNode->GetSingleTempReg(RBM_ALLFLOAT);
     }
     if ((loadSize % XMM_REGSIZE_BYTES) != 0)
     {
@@ -5655,7 +5655,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskTP killMask = compiler->rbmCalleeTrash;
+    regMaskTP killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
@@ -7910,9 +7910,9 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             intTmpReg = putArgStk->GetSingleTempReg(RBM_ALLINT);
             assert(genIsValidIntReg(intTmpReg));
         }
-        if ((rsvdRegs & compiler->rbmAllFloat) != 0)
+        if ((rsvdRegs & RBM_ALLFLOAT) != 0)
         {
-            simdTmpReg = putArgStk->GetSingleTempReg(compiler->rbmAllFloat);
+            simdTmpReg = putArgStk->GetSingleTempReg(RBM_ALLFLOAT);
             assert(genIsValidFloatReg(simdTmpReg));
         }
         assert(genCountBits(rsvdRegs) == (unsigned)((intTmpReg == REG_NA) ? 0 : 1) + ((simdTmpReg == REG_NA) ? 0 : 1));
@@ -9100,7 +9100,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     }
 
     // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
-    if ((compiler->rbmCalleeTrash & genRegMask(initReg)) != 0)
+    if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
     {
         *pInitRegZeroed = false;
     }
@@ -9137,7 +9137,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN, REG_DEFAULT_PROFILER_CALL_TARGET);
 
     // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
-    if ((compiler->rbmCalleeTrash & genRegMask(initReg)) != 0)
+    if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
     {
         *pInitRegZeroed = false;
     }
@@ -9178,7 +9178,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
         regMaskTP thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
-        noway_assert((compiler->rbmProfilerLeaveTrash & thisPtrMask) == 0);
+        noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
     }
 
     // At this point return value is computed and stored in RAX or XMM0.

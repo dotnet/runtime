@@ -7583,23 +7583,6 @@ private:
 
 #endif // TARGET_X86
     }
-    
-    // ANTHONY - Make regalloc changes here
-public:
-    regMaskTP rbmAllFloat;
-    regMaskTP rbmFltCalleeTrash;
-    regMaskTP rbmCalleeTrash;
-    regMaskTP rbmCalleeTrashNoGC;
-    regMaskTP rbmCalleeTrashWriteBarrier;
-    regMaskTP rbmCalleeGCTrashWriteBarrier;
-    regMaskTP rbmCalleeTrashWriteBarrierByref;
-    regMaskTP rbmCalleeGCTrashWriteBarrierByref;
-    regMaskTP rbmStopForGCTrash;
-    regMaskTP rbmProfilerTailcallTrash;
-    regMaskTP rbmInitPInvokeFrameTrash;
-    regMaskTP rbmProfilerEnterTrash;
-    regMaskTP rbmProfilerLeaveTrash;
-    unsigned rbmCountCalleeTrashFloat;
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -11617,6 +11600,32 @@ extern const BYTE genTypeSizes[];
 extern const BYTE genTypeAlignments[];
 extern const BYTE genTypeStSzs[];
 extern const BYTE genActualTypes[];
+
+/*****************************************************************************/
+
+/*****************************************************************************/
+
+#if defined(TARGET_AMD64)
+// The following are for initializing register allocator "constants" defined in targetamd.h
+// that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
+// the number of simd (xmm,ymm, and zmm) registers from 16 to 32.
+// As only 64-bit xarch has the capability to have the additional registers, we limit the changes
+// to TARGET_AMD64 only.
+extern regMaskTP rbmAllFloat;
+extern regMaskTP rbmFltCalleeTrash;
+extern regMaskTP rbmCalleeTrash;
+extern regMaskTP rbmCalleeTrashNoGC;
+extern regMaskTP rbmCalleeTrashWriteBarrier;
+extern regMaskTP rbmCalleeGCTrashWriteBarrier;
+extern regMaskTP rbmCalleeTrashWriteBarrierByref;
+extern regMaskTP rbmCalleeGCTrashWriteBarrierByref;
+extern regMaskTP rbmStopForGCTrash;
+extern regMaskTP rbmProfilerTailcallTrash;
+extern regMaskTP rbmInitPInvokeFrameTrash;
+extern regMaskTP rbmProfilerEnterTrash;
+extern regMaskTP rbmProfilerLeaveTrash;
+extern unsigned  rbmCntCalleeTrashFloat;
+#endif // TARGET_AMD64
 
 /*****************************************************************************/
 

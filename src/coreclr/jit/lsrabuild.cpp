@@ -569,7 +569,6 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
             {
                 mask = RBM_NONE;
             }
-
         }
 #endif
         if (mask == RBM_NONE)
@@ -799,7 +798,7 @@ regMaskTP LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
             // the allocated register for the `data` operand. However, all the (x86) optimized
             // helpers have the same kill set: EDX. And note that currently, only x86 can return
             // `true` for genUseOptimizedWriteBarriers().
-            killMask = compiler->rbmCalleeTrashNoGC;
+            killMask = RBM_CALLEE_TRASH_NOGC;
         }
         else
         {
@@ -886,7 +885,7 @@ regMaskTP LinearScan::getKillSetForModDiv(GenTreeOp* node)
 //
 regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 {
-    regMaskTP killMask = compiler->rbmCalleeTrash;
+    regMaskTP killMask = RBM_CALLEE_TRASH;
 #ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
     {
@@ -909,7 +908,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     // if there is no FP used, we can ignore the FP kills
     if (!compiler->compFloatingPointUsed)
     {
-        killMask &= ~compiler->rbmFltCalleeTrash;
+        killMask &= ~RBM_FLT_CALLEE_TRASH;
     }
 #ifdef TARGET_ARM
     if (call->IsVirtualStub())
@@ -1203,7 +1202,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     continue;
                 }
                 Interval*  interval   = getIntervalForLocalVar(varIndex);
-                const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == compiler->rbmCalleeTrash));
+                const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
 
                 if (isCallKill)
                 {
@@ -1513,7 +1512,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
     {
         // We assume that the kill set includes at least some callee-trash registers, but
         // that it doesn't include any callee-save registers.
-        assert((fpCalleeKillSet & compiler->rbmFltCalleeTrash) != RBM_NONE);
+        assert((fpCalleeKillSet & RBM_FLT_CALLEE_TRASH) != RBM_NONE);
         assert((fpCalleeKillSet & RBM_FLT_CALLEE_SAVED) == RBM_NONE);
 
         // We only need to save the upper half of any large vector vars that are currently live.
@@ -1875,8 +1874,8 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
     JITDUMP("\n");
 }
 
-static const regNumber lsraRegOrder[]      = {REG_VAR_ORDER};
-const unsigned         lsraRegOrderSize    = ArrLen(lsraRegOrder);
+static const regNumber lsraRegOrder[]   = {REG_VAR_ORDER};
+const unsigned         lsraRegOrderSize = ArrLen(lsraRegOrder);
 // TODO-XARCH-AVX512 we might want to move this to be configured with the rbm variables too
 static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
 const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
@@ -2024,7 +2023,7 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 
     if ((argDsc->GetArgReg() != REG_STK) && (argDsc->GetArgReg() != REG_NA))
     {
-        if (genRegMask(argDsc->GetArgReg()) & (compiler->rbmAllFloat))
+        if (genRegMask(argDsc->GetArgReg()) & (RBM_ALLFLOAT))
         {
             assert(genRegMask(argDsc->GetArgReg()) & (RBM_FLTARG_REGS));
             floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
@@ -2038,7 +2037,7 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 
     if ((argDsc->GetOtherArgReg() != REG_STK) && (argDsc->GetOtherArgReg() != REG_NA))
     {
-        if (genRegMask(argDsc->GetOtherArgReg()) & (compiler->rbmAllFloat))
+        if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT))
         {
             assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_FLTARG_REGS));
             floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
@@ -2960,7 +2959,7 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
         // RefPositions in that case.
         // This must be done after the kills, so that we know which large vectors are still live.
         //
-        if ((killMask & compiler->rbmFltCalleeTrash) != RBM_NONE)
+        if ((killMask & RBM_FLT_CALLEE_TRASH) != RBM_NONE)
         {
             buildUpperVectorSaveRefPositions(tree, currentLoc + 1, killMask);
         }

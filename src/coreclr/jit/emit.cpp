@@ -3218,7 +3218,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
-    bool gcRefRegsInScratch = ((gcrefRegs & emitComp->rbmCalleeTrash) != 0);
+    bool gcRefRegsInScratch = ((gcrefRegs & RBM_CALLEE_TRASH) != 0);
 
     // Allocate a larger descriptor if any GC values need to be saved
     // or if we have an absurd number of arguments or a large address
@@ -3308,7 +3308,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
     // call returns a two-register-returned struct and the second
     // register (RDX) is a GCRef or ByRef pointer.
 
-    bool gcRefRegsInScratch = ((gcrefRegs & emitComp->rbmCalleeTrash) != 0);
+    bool gcRefRegsInScratch = ((gcrefRegs & RBM_CALLEE_TRASH) != 0);
 
     if (!VarSetOps::IsEmpty(emitComp, GCvars) || // any frame GCvars live
         gcRefRegsInScratch ||                    // any register gc refs live in scratch regs
@@ -9724,11 +9724,11 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            result = emitComp->rbmCalleeGCTrashWriteBarrier;
+            result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
             break;
 
         case CORINFO_HELP_ASSIGN_BYREF:
-            result = emitComp->rbmCalleeGCTrashWriteBarrierByref;
+            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
 #if !defined(TARGET_LOONGARCH64)
@@ -9741,18 +9741,18 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             // profiler scratch remains gc live
             result = RBM_PROFILER_LEAVE_TRASH & ~RBM_PROFILER_RET_SCRATCH;
 #else
-            result = emitComp->rbmProfilerLeaveTrash;
+            result = RBM_PROFILER_LEAVE_TRASH;
 #endif
             break;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-            result = emitComp->rbmProfilerTailcallTrash;
+            result = RBM_PROFILER_TAILCALL_TRASH;
             break;
 #endif // !defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            result = emitComp->rbmInitPInvokeFrameTrash;
+            result = RBM_INIT_PINVOKE_FRAME_TRASH;
             break;
 #endif // defined(TARGET_X86)
 
@@ -9761,7 +9761,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             break;
 
         default:
-            result = emitComp->rbmCalleeTrashNoGC;
+            result = RBM_CALLEE_TRASH_NOGC;
             break;
     }
 

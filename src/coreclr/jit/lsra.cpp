@@ -395,7 +395,7 @@ regMaskTP LinearScan::internalFloatRegCandidates()
     }
     else
     {
-        return compiler->rbmFltCalleeTrash;
+        return RBM_FLT_CALLEE_TRASH;
     }
 }
 
@@ -472,7 +472,7 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 
             case LSRA_LIMIT_CALLER:
             {
-                mask = getConstrainedRegMask(mask, compiler->rbmCalleeTrash, minRegCount);
+                mask = getConstrainedRegMask(mask, RBM_CALLEE_TRASH, minRegCount);
             }
             break;
 
@@ -11894,7 +11894,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
     else
     {
-        callerCalleePrefs = callerSaveRegs(currentInterval->registerType, linearScan->compiler);
+        callerCalleePrefs = callerSaveRegs(currentInterval->registerType);
     }
 
     // If this has a delayed use (due to being used in a rmw position of a

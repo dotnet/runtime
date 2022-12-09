@@ -7289,7 +7289,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         availRegCount = CNT_CALLEE_SAVED_FLOAT;
         if (!loopContainsCall)
         {
-            availRegCount += rbmCountCalleeTrashFloat - 1;
+            availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
         }
 #ifdef TARGET_ARM
         // For ARM each double takes two FP registers
