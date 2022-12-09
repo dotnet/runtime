@@ -11694,8 +11694,6 @@ GOT_DSP:
             {
                 if (id->idIsDspReloc())
                 {
-                    INT32 addlDelta = 0;
-
                     // The address is of the form "[disp]"
                     // On x86 - disp is relative to zero
                     // On Amd64 - disp is relative to RIP
@@ -11708,20 +11706,17 @@ GOT_DSP:
                         dst += emitOutputWord(dst, code | 0x0500);
                     }
 
+                    INT32 addlDelta = 0;
+#ifdef TARGET_AMD64
                     if (addc)
                     {
-                        // It is of the form "ins [disp], imm" or "ins reg, [disp], imm"
-                        // For emitting relocation, we also need to take into account of the
-                        // additional bytes of code emitted for immed val.
-
+                        // It is of the form "ins [disp], imm" or "ins reg, [disp], imm". Emitting relocation for a
+                        // RIP-relative address means we also need to take into account the additional bytes of code
+                        // generated for the immediate value, since RIP will point at the next instruction.
                         ssize_t cval = addc->cnsVal;
 
-#ifdef TARGET_AMD64
                         // all these opcodes only take a sign-extended 4-byte immediate
                         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else  // TARGET_X86
-                        noway_assert(opsz <= 4);
-#endif // TARGET_X86
 
                         switch (opsz)
                         {
@@ -11742,6 +11737,7 @@ GOT_DSP:
                                 unreached();
                         }
                     }
+#endif // TARGET_AMD64
 
 #ifdef TARGET_AMD64
                     // We emit zero on Amd64, to avoid the assert in emitOutputLong()
@@ -12993,20 +12989,16 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     {
         INT32 addlDelta = 0;
 
+#ifdef TARGET_AMD64
         if (addc)
         {
-            // It is of the form "ins [disp], imm" or "ins reg, [disp], imm"
-            // For emitting relocation, we also need to take into account of the
-            // additional bytes of code emitted for immed val.
-
+            // It is of the form "ins [disp], imm" or "ins reg, [disp], imm". Emitting relocation for a
+            // RIP-relative address means we also need to take into account the additional bytes of code
+            // generated for the immediate value, since RIP will point at the next instruction.
             ssize_t cval = addc->cnsVal;
 
-#ifdef TARGET_AMD64
             // all these opcodes only take a sign-extended 4-byte immediate
             noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else  // TARGET_X86
-            noway_assert(opsz <= 4);
-#endif // TARGET_X86
 
             switch (opsz)
             {
@@ -13027,6 +13019,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                     unreached();
             }
         }
+#endif // TARGET_AMD64
 
 #ifdef TARGET_AMD64
         // All static field and data section constant accesses should be marked as relocatable
