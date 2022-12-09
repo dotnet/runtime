@@ -1678,7 +1678,6 @@ unsigned emitter::emitGetRexPrefixSize(instruction ins)
 
 //------------------------------------------------------------------------
 // emitGetEvexPrefixSize: Gets Size of Evex prefix in bytes
-// TODO-XArch-AVX512: Once evex encoding is supported fully, this will take the place of emitGetAdjustedSize()
 //
 // Arguments:
 //    ins   -- The instruction
@@ -1710,9 +1709,8 @@ unsigned emitter::emitGetVexPrefixSize(instruction ins, emitAttr attr)
 }
 
 //------------------------------------------------------------------------
-// emitGetAdjustedSizeEvexAware: Determines any size adjustment needed for a given instruction based on the current
+// emitGetAdjustedSize: Determines any size adjustment needed for a given instruction based on the current
 // configuration.
-// TODO-XArch-AVX512: Once evex encoding is supported fully, this will take the place of emitGetAdjustedSize()
 //
 // Arguments:
 //    ins   -- The instruction being emitted
@@ -1722,7 +1720,7 @@ unsigned emitter::emitGetVexPrefixSize(instruction ins, emitAttr attr)
 // Returns:
 //    Updated size.
 //
-unsigned emitter::emitGetAdjustedSizeEvexAware(instruction ins, emitAttr attr, code_t code)
+unsigned emitter::emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code)
 {
     unsigned adjustedSize = 0;
 
@@ -1823,88 +1821,6 @@ unsigned emitter::emitGetAdjustedSizeEvexAware(instruction ins, emitAttr attr, c
         }
 
         adjustedSize = simdPrefixAdjustedSize;
-    }
-    else if (Is4ByteSSEInstruction(ins))
-    {
-        // The 4-Byte SSE instructions require one additional byte to hold the ModRM byte
-        adjustedSize++;
-    }
-    else
-    {
-        if (ins == INS_crc32)
-        {
-            // Adjust code size for CRC32 that has 4-byte opcode but does not use SSE38 or EES3A encoding.
-            adjustedSize++;
-        }
-
-        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx))
-        {
-            // Most 16-bit operand instructions will need a 0x66 prefix.
-            adjustedSize++;
-        }
-    }
-
-    return adjustedSize;
-}
-
-//------------------------------------------------------------------------
-// emitGetAdjustedSize: Determines any size adjustment needed for a given instruction based on the current
-// configuration.
-//
-// Arguments:
-//    ins   -- The instruction being emitted
-//    attr  -- The emit attribute
-//    code  -- The current opcode and any known prefixes
-unsigned emitter::emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code)
-{
-    unsigned adjustedSize = 0;
-
-    if (IsVexEncodedInstruction(ins))
-    {
-        // VEX prefix encodes some bytes of the opcode and as a result, overall size of the instruction reduces.
-        // Therefore, to estimate the size adding VEX prefix size and size of instruction opcode bytes will always
-        // overstimate.
-        // Instead this routine will adjust the size of VEX prefix based on the number of bytes of opcode it encodes so
-        // that
-        // instruction size estimate will be accurate.
-        // Basically this  will decrease the vexPrefixSize, so that opcodeSize + vexPrefixAdjustedSize will be the right
-        // size.
-        //
-        // rightOpcodeSize + vexPrefixSize
-        //  = (opcodeSize - ExtrabytesSize) + vexPrefixSize
-        //  = opcodeSize + (vexPrefixSize - ExtrabytesSize)
-        //  = opcodeSize + vexPrefixAdjustedSize
-
-        unsigned vexPrefixAdjustedSize = emitGetVexPrefixSize(ins, attr);
-        assert(vexPrefixAdjustedSize == 3);
-
-        // In this case, opcode will contains escape prefix at least one byte,
-        // vexPrefixAdjustedSize should be minus one.
-        vexPrefixAdjustedSize -= 1;
-
-        // Get the fourth byte in Opcode.
-        // If this byte is non-zero, then we should check whether the opcode contains SIMD prefix or not.
-        BYTE check = (code >> 24) & 0xFF;
-        if (check != 0)
-        {
-            // 3-byte opcode: with the bytes ordered as 0x2211RM33 or
-            // 4-byte opcode: with the bytes ordered as 0x22114433
-            // Simd prefix is at the first byte.
-            BYTE sizePrefix = (code >> 16) & 0xFF;
-            if (sizePrefix != 0 && isPrefix(sizePrefix))
-            {
-                vexPrefixAdjustedSize -= 1;
-            }
-
-            // If the opcode size is 4 bytes, then the second escape prefix is at fourth byte in opcode.
-            // But in this case the opcode has not counted R\M part.
-            // opcodeSize + VexPrefixAdjustedSize - ExtraEscapePrefixSize + ModR\MSize
-            //=opcodeSize + VexPrefixAdjustedSize -1 + 1
-            //=opcodeSize + VexPrefixAdjustedSize
-            // So although we may have second byte escape prefix, we won't decrease vexPrefixAdjustedSize.
-        }
-
-        adjustedSize = vexPrefixAdjustedSize;
     }
     else if (Is4ByteSSEInstruction(ins))
     {
@@ -2842,7 +2758,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code)
     instruction ins  = id->idIns();
     emitAttr    attr = id->idOpSize();
 
-    UNATIVE_OFFSET sz = emitGetAdjustedSizeEvexAware(ins, attr, code);
+    UNATIVE_OFFSET sz = emitGetAdjustedSize(ins, attr, code);
 
     bool includeRexPrefixSize = true;
     // REX prefix
@@ -2910,7 +2826,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     // This would probably be better expressed as a different format or something?
     code_t code = insCodeRM(ins);
 
-    UNATIVE_OFFSET sz = emitGetAdjustedSizeEvexAware(ins, size, insCodeRM(ins));
+    UNATIVE_OFFSET sz = emitGetAdjustedSize(ins, size, insCodeRM(ins));
 
     bool includeRexPrefixSize = true;
     // REX prefix
@@ -3132,7 +3048,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     assert(id->idIns() != INS_invalid);
     instruction    ins      = id->idIns();
     emitAttr       attrSize = id->idOpSize();
-    UNATIVE_OFFSET prefix   = emitGetAdjustedSizeEvexAware(ins, attrSize, code);
+    UNATIVE_OFFSET prefix   = emitGetAdjustedSize(ins, attrSize, code);
 
     // REX prefix
     if (TakesRexWPrefix(ins, attrSize) || IsExtendedReg(id->idReg1(), attrSize) ||
@@ -3150,7 +3066,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     instruction    ins       = id->idIns();
     emitAttr       attrSize  = id->idOpSize();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(attrSize);
-    UNATIVE_OFFSET prefix    = emitGetAdjustedSizeEvexAware(ins, attrSize, code);
+    UNATIVE_OFFSET prefix    = emitGetAdjustedSize(ins, attrSize, code);
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
 #ifdef TARGET_AMD64
@@ -3283,7 +3199,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         size = 2;
     }
 
-    size += emitGetAdjustedSizeEvexAware(ins, attrSize, code);
+    size += emitGetAdjustedSize(ins, attrSize, code);
 
     if (hasRexPrefix(code))
     {
@@ -3501,7 +3417,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
     // can be reached via RIP-relative addressing.
     UNATIVE_OFFSET size = sizeof(INT32);
 
-    size += emitGetAdjustedSizeEvexAware(ins, attrSize, code);
+    size += emitGetAdjustedSize(ins, attrSize, code);
 
     bool includeRexPrefixSize = true;
 
@@ -3743,7 +3659,7 @@ void emitter::emitIns(instruction ins, emitAttr attr)
 
     insFormat fmt = IF_NONE;
 
-    sz += emitGetAdjustedSizeEvexAware(ins, attr, code);
+    sz += emitGetAdjustedSize(ins, attr, code);
     if (TakesRexWPrefix(ins, attr))
     {
         sz += emitGetRexPrefixSize(ins);
@@ -4888,7 +4804,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     id->idReg1(reg);
 
     // Vex bytes
-    sz += emitGetAdjustedSizeEvexAware(ins, attr, insEncodeMRreg(ins, reg, attr, insCodeMR(ins)));
+    sz += emitGetAdjustedSize(ins, attr, insEncodeMRreg(ins, reg, attr, insCodeMR(ins)));
 
     // REX byte
     if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, attr))
@@ -5030,7 +4946,7 @@ void emitter::emitIns_R_I(instruction ins,
             break;
     }
 
-    sz += emitGetAdjustedSizeEvexAware(ins, attr, insCodeMI(ins));
+    sz += emitGetAdjustedSize(ins, attr, insCodeMI(ins));
 
     // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
     // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
