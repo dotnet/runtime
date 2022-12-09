@@ -3939,11 +3939,17 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     // If we're optimizing, see if we can avoid making a copy.
     //
-    // We don't need a copy if this is the last use of an implicit by-ref local.
+    // We don't need a copy if this is the last use of the local.
     //
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
-        GenTreeLclVar* const lcl = argx->IsImplicitByrefParameterValue(this);
+        GenTreeLclVarCommon* implicitByRefLcl = argx->IsImplicitByrefParameterValue(this);
+
+        GenTreeLclVarCommon* lcl = implicitByRefLcl;
+        if ((lcl == nullptr) && argx->OperIsLocal())
+        {
+            lcl = argx->AsLclVarCommon();
+        }
 
         if (lcl != nullptr)
         {
@@ -3970,24 +3976,30 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             //
             bool omitCopy = call->IsTailCall();
 
-            if (!omitCopy)
+            if (!omitCopy && fgDidEarlyLiveness)
             {
-                if (fgDidEarlyLiveness)
-                {
-                    VARSET_TP* deadFields;
-                    omitCopy =
-                        ((lcl->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lcl, &deadFields);
-                }
-                else
-                {
-                    omitCopy = (totalAppearances == 1) && (call->IsNoReturn() || !fgMightHaveLoop());
-                }
+                omitCopy = !varDsc->lvPromoted && (lcl->gtFlags & GTF_VAR_DEATH) != 0;
+            }
+
+            if (!omitCopy && (totalAppearances == 1))
+            {
+                omitCopy = call->IsNoReturn() || !fgMightHaveLoop();
             }
 
             if (omitCopy)
             {
-                arg->SetEarlyNode(lcl);
-                JITDUMP("did not need to make outgoing copy for last use of implicit byref V%2d\n", varNum);
+                if (implicitByRefLcl != nullptr)
+                {
+                    arg->SetEarlyNode(lcl);
+                }
+                else
+                {
+                    lcl->ChangeOper(GT_LCL_VAR_ADDR);
+                    lcl->gtType = TYP_I_IMPL;
+                    lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+                }
+
+                JITDUMP("did not need to make outgoing copy for last use of V%02d\n", varNum);
                 return;
             }
         }
