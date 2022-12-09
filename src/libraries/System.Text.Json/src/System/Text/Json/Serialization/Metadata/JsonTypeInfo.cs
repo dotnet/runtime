@@ -554,7 +554,7 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyInfoForTypeInfo.EnsureChildOf(this);
             PropertyInfoForTypeInfo.EnsureConfigured();
 
-            CanUseSerializeHandler &= Options.SerializerContext?.CanUseSerializationLogic == true;
+            CanUseSerializeHandler &= Options.CanUseFastPathSerializationLogic;
 
             JsonConverter converter = Converter;
             Debug.Assert(PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy == Converter.ConverterStrategy,
