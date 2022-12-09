@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -851,17 +852,8 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            // Check array index valid index into array.
-            if (arrayIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            // Also throw if count less than 0.
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             // Will the array, starting at arrayIndex, be able to hold elements? Note: not
             // checking arrayIndex >= array.Length (consistency with list of allowing

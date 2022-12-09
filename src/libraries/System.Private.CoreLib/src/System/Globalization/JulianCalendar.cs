@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+
 namespace System.Globalization
 {
     /// <summary>
@@ -349,10 +351,7 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
             if (year > MaxYear)
             {
                 throw new ArgumentOutOfRangeException(
