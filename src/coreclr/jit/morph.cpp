@@ -3994,7 +3994,17 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                 }
                 else
                 {
-                    lcl->ChangeOper(GT_LCL_VAR_ADDR);
+                    uint16_t offs = lcl->GetLclOffs();
+                    if (offs == 0)
+                    {
+                        lcl->ChangeOper(GT_LCL_VAR_ADDR);
+                    }
+                    else
+                    {
+                        lcl->ChangeOper(GT_LCL_FLD_ADDR);
+                        lcl->AsLclFld()->SetLclOffs(offs);
+                    }
+
                     lcl->gtType = TYP_I_IMPL;
                     lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
