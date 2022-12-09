@@ -134,30 +134,30 @@ namespace ComWrappersTests
                 Assert.Equal(sourceWrappers.Registration, target.Registration);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static (WeakReference<WeakReferenceableWrapper>, IntPtr) GetWeakReference(TestComWrappers cw)
-        {
-            IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
-            var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
-            var wr = new WeakReference<WeakReferenceableWrapper>(obj);
-            ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
-            GC.KeepAlive(obj);
-            return (wr, objRaw);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static IntPtr SetWeakReferenceTarget(WeakReference<WeakReferenceableWrapper> wr, TestComWrappers cw)
-        {
-            IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
-            var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
-            wr.SetTarget(obj);
-            ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
-            GC.KeepAlive(obj);
-            return objRaw;
-        }
-
         private static void ValidateNativeWeakReference(TestComWrappers cw)
         {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (WeakReference<WeakReferenceableWrapper>, IntPtr) GetWeakReference(TestComWrappers cw)
+            {
+                IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
+                var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
+                var wr = new WeakReference<WeakReferenceableWrapper>(obj);
+                ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
+                GC.KeepAlive(obj);
+                return (wr, objRaw);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IntPtr SetWeakReferenceTarget(WeakReference<WeakReferenceableWrapper> wr, TestComWrappers cw)
+            {
+                IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
+                var obj = (WeakReferenceableWrapper)cw.GetOrCreateObjectForComInstance(objRaw, CreateObjectFlags.None);
+                wr.SetTarget(obj);
+                ValidateWeakReferenceState(wr, expectedIsAlive: true, cw);
+                GC.KeepAlive(obj);
+                return objRaw;
+            }
+
             Console.WriteLine($"  -- Validate weak reference creation");
             var (weakRef, nativeRef) = GetWeakReference(cw);
 
@@ -224,20 +224,20 @@ namespace ComWrappersTests
 
         static void ValidateNonComWrappers()
         {
-            Console.WriteLine($"Running {nameof(ValidateNonComWrappers)}...");
-
-            (WeakReference, IntPtr) GetWeakReference()
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static (WeakReference, IntPtr) GetWeakReference()
             {
                 IntPtr objRaw = WeakReferenceNative.CreateWeakReferencableObject();
                 var obj = Marshal.GetObjectForIUnknown(objRaw);
                 return (new WeakReference(obj), objRaw);
             }
 
-            bool HasTarget(WeakReference wr)
+            static bool HasTarget(WeakReference wr)
             {
                 return wr.Target != null;
             }
 
+            Console.WriteLine($"Running {nameof(ValidateNonComWrappers)}...");
             var (weakRef, nativeRef) = GetWeakReference();
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -258,15 +258,6 @@ namespace ComWrappersTests
 
         static void ValidateAggregatedWeakReference()
         {
-            Console.WriteLine("Validate weak reference with aggregation.");
-            var (handle, weakRef) = GetWeakReference();
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            Assert.Null(handle.Target);
-            Assert.False(weakRef.TryGetTarget(out _));
-
             [MethodImpl(MethodImplOptions.NoInlining)]
             static (GCHandle handle, WeakReference<DerivedObject>) GetWeakReference()
             {
@@ -275,6 +266,15 @@ namespace ComWrappersTests
                 // semantics with the weak reference.
                 return (GCHandle.Alloc(obj, GCHandleType.Weak), new WeakReference<DerivedObject>(obj));
             }
+
+            Console.WriteLine("Validate weak reference with aggregation.");
+            var (handle, weakRef) = GetWeakReference();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            Assert.Null(handle.Target);
+            Assert.False(weakRef.TryGetTarget(out _));
         }
 
         static int Main()
