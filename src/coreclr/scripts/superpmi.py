@@ -2395,9 +2395,12 @@ class SuperPMIReplayThroughputDiff:
 
 
 def determine_coredis_tools(coreclr_args):
-    """ Determine the coredistools location. First, look in Core_Root. It will be there if
-        the setup-stress-dependencies.cmd/sh script has been run, which is typically only
-        if tests have been run. If unable to find coredistools, download it from a cached
+    """ Determine the coredistools location in one of several locations:
+        1. First, look in Core_Root. It will be there if the setup-stress-dependencies.cmd/sh
+        script has been run, which is typically only if tests have been run.
+        2. The build appears to restore it and put it in the R2RDump sub-directory. Look there.
+        Copy it to the Core_Root directory if found.
+        3. If unable to find coredistools, download it from a cached
         copy in the CLRJIT Azure Storage. (Ideally, we would instead download the NuGet
         package and extract it using the same mechanism as setup-stress-dependencies
         instead of having our own copy in Azure Storage).
@@ -2426,16 +2429,22 @@ def determine_coredis_tools(coreclr_args):
     if os.path.isfile(coredistools_location):
         logging.info("Using coredistools found at %s", coredistools_location)
     else:
-        # Often, Core_Root will already exist. However, you can do a product build without
-        # creating a Core_Root, and successfully run replay or asm diffs, if we just create Core_Root
-        # and copy coredistools there. Note that our replays all depend on Core_Root existing, as we
-        # set the current directory to Core_Root before running superpmi.
-        if not os.path.isdir(coreclr_args.core_root):
-            logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
-            os.makedirs(coreclr_args.core_root)
-        coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
-        download_one_url(coredistools_uri, coredistools_location, is_azure_storage=True, display_progress=not skip_progress)
+        coredistools_r2rdump_location = os.path.join(coreclr_args.core_root, "R2RDump", coredistools_dll_name)
+        if os.path.isfile(coredistools_r2rdump_location):
+            logging.info("Using coredistools found at %s (copying to %s)", coredistools_r2rdump_location, coredistools_location)
+            logging.debug("Copying %s -> %s", coredistools_r2rdump_location, coredistools_location)
+            shutil.copy2(coredistools_r2rdump_location, coredistools_location)
+        else:
+            # Often, Core_Root will already exist. However, you can do a product build without
+            # creating a Core_Root, and successfully run replay or asm diffs, if we just create Core_Root
+            # and copy coredistools there. Note that our replays all depend on Core_Root existing, as we
+            # set the current directory to Core_Root before running superpmi.
+            if not os.path.isdir(coreclr_args.core_root):
+                logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
+                os.makedirs(coreclr_args.core_root)
+            coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
+            skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+            download_one_url(coredistools_uri, coredistools_location, is_azure_storage=True, display_progress=not skip_progress)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
