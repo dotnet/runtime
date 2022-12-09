@@ -746,7 +746,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		)
 			return TRACE_CONTINUE;
 		else if (
-			(opcode >= MINT_MOV_SRC_OFF) &&
+			(opcode >= MINT_MOV_I4_I1) &&
 			(opcode <= MINT_MOV_8_4)
 		)
 			return TRACE_CONTINUE;
