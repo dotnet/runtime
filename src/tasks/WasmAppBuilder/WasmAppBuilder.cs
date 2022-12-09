@@ -265,7 +265,6 @@ public class WasmAppBuilder : Task
 
         if (SatelliteAssemblies != null)
         {
-            // FIXME: TODO: run WebcilWriter on satellite assemblies too
             foreach (var assembly in SatelliteAssemblies)
             {
                 string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
@@ -280,7 +279,19 @@ public class WasmAppBuilder : Task
                 string name = Path.GetFileName(fullPath);
                 string directory = Path.Combine(AppDir, config.AssemblyRootFolder, culture);
                 Directory.CreateDirectory(directory);
-                FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
+                if (!DisableWebcil)
+                {
+                    var tmpWebcil = Path.GetTempFileName();
+                    var webcilWriter = new Microsoft.WebAssembly.Build.Tasks.WebcilWriter(inputPath: fullPath, outputPath: tmpWebcil, logger: Log);
+                    webcilWriter.Write();
+                    var finalWebcil = Path.ChangeExtension(name, ".webcil");
+                    FileCopyChecked(tmpWebcil, Path.Combine(directory, finalWebcil), "SatelliteAssemblies");
+                }
+                else
+                {
+                    FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
+                }
+
                 config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
             }
         }
