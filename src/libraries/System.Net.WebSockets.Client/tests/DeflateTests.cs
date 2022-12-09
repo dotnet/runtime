@@ -90,20 +90,29 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalFact(nameof(WebSocketsSupported))]
         public async Task ThrowsWhenContinuationHasDifferentCompressionFlags()
         {
+            var deflateOpt = new WebSocketDeflateOptions
+            {
+                ClientMaxWindowBits = 14,
+                ClientContextTakeover = true,
+                ServerMaxWindowBits = 14,
+                ServerContextTakeover = true
+            };
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using var cws = new ClientWebSocket();
                 using var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                cws.Options.DangerousDeflateOptions = new WebSocketDeflateOptions();
+                cws.Options.DangerousDeflateOptions = deflateOpt;
                 await ConnectAsync(cws, uri, cts.Token);
+
 
                 await cws.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Text, WebSocketMessageFlags.DisableCompression, default);
                 Assert.Throws<ArgumentException>("messageFlags", () =>
                    cws.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Binary, WebSocketMessageFlags.EndOfMessage, default));
             }, server => server.AcceptConnectionAsync(async connection =>
             {
-                await LoopbackHelper.WebSocketHandshakeAsync(connection);
+                var extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
+                await LoopbackHelper.WebSocketHandshakeAsync(connection, extensionsReply);
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
 
@@ -111,22 +120,43 @@ namespace System.Net.WebSockets.Client.Tests
         public async Task SendHelloWithDisableCompression()
         {
             byte[] bytes = "Hello"u8.ToArray();
+            byte[] compressed = new byte[] { 0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00 };
+            var deflateOpt = new WebSocketDeflateOptions
+            {
+                ClientMaxWindowBits = 14,
+                ClientContextTakeover = true,
+                ServerMaxWindowBits = 14,
+                ServerContextTakeover = true
+            };
+
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using var cws = new ClientWebSocket();
                 using var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
-                cws.Options.DangerousDeflateOptions = new WebSocketDeflateOptions();
+                cws.Options.DangerousDeflateOptions = deflateOpt;
                 await ConnectAsync(cws, uri, cts.Token);
+
+                await cws.SendAsync(bytes, WebSocketMessageType.Text, true, cts.Token);
 
                 WebSocketMessageFlags flags = WebSocketMessageFlags.DisableCompression | WebSocketMessageFlags.EndOfMessage;
                 await cws.SendAsync(bytes, WebSocketMessageType.Text, flags, cts.Token);
             }, server => server.AcceptConnectionAsync(async connection =>
             {
                 var buffer = new byte[bytes.Length];
-                await LoopbackHelper.WebSocketHandshakeAsync(connection);
-                using WebSocket websocket = WebSocket.CreateFromStream(connection.Stream, true, null, TimeSpan.FromSeconds(30));
+                var extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
+                await LoopbackHelper.WebSocketHandshakeAsync(connection, extensionsReply);
+                using WebSocket websocket = WebSocket.CreateFromStream(connection.Stream, new WebSocketCreationOptions
+                {
+                    IsServer = true,
+                    DangerousDeflateOptions = deflateOpt
+                });
+
                 Assert.True(websocket.State == WebSocketState.Open || websocket.State == WebSocketState.CloseSent);
+
+                await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                Assert.Equal(bytes, buffer);
+
                 await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 Assert.Equal(bytes, buffer);
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
