@@ -584,6 +584,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
             /* gcpoll; */                                                       \
             INSTALL_MANAGED_EXCEPTION_DISPATCHER;                               \
             __helperframe.Push();                                               \
+            bool __popHelperMethodFrame=true;                                   \
             MAKE_CURRENT_THREAD_AVAILABLE_EX(__helperframe.GetThread()); \
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(&__helperframe);
 
@@ -616,7 +617,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 
 #define HELPER_METHOD_FRAME_END_EX(gcpoll,allowGC)                          \
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;                          \
-            __helperframe.Pop();                                            \
+            if (__popHelperMethodFrame) __helperframe.Pop();                \
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;                         \
         HELPER_METHOD_FRAME_END_EX_BODY(gcpoll,allowGC);
 

@@ -255,7 +255,11 @@ VEH_ACTION CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
 extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo);
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow = FALSE);
-
+VOID RaiseTheExceptionInternalOnlyCore(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow 
+#ifndef TARGET_WINDOWS
+, PAL_SEHException* pPalException = NULL
+#endif
+);
 #if defined(DACCESS_COMPILE)
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER

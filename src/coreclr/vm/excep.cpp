@@ -2658,7 +2658,103 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     return hr;
 }
 
-VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
+struct Param : RaiseExceptionFilterParam
+{
+    OBJECTREF throwable;
+    BOOL fForStackOverflow;
+    ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
+    Thread *pThread;
+    ThreadExceptionState* pExState;
+#ifndef TARGET_WINDOWS
+    PAL_SEHException *pPalException;
+#endif
+
+};
+
+FORCEINLINE void RaiseTheExceptionInternalOnlyTryBody(Param *pParam)
+{
+    //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
+    ULONG_PTR *args = NULL;
+    ULONG argCount = 0;
+    ULONG flags = 0;
+    ULONG code = 0;
+
+    // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
+    // contains stack trace info.
+    //
+    // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
+    // it will set the throwable to something appropriate (like OOM exception) and return the new
+    // exception. Thus, the user's exception object can be replaced here.
+    pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
+
+    if (!pParam->isRethrown ||
+#ifdef FEATURE_INTERPRETER
+        !pParam->pExState->IsExceptionInProgress() ||
+#endif // FEATURE_INTERPRETER
+            pParam->pExState->IsComPlusException() ||
+        (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
+    {
+        ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
+
+        args = pParam->exceptionArgs;
+        argCount = MarkAsThrownByUs(args, hr);
+        flags = EXCEPTION_NONCONTINUABLE;
+        code = EXCEPTION_COMPLUS;
+    }
+    else
+    {
+        // Exception code should be consistent.
+        _ASSERTE((DWORD)(pParam->pExState->GetExceptionRecord()->ExceptionCode) == pParam->pExState->GetExceptionCode());
+
+        args     = pParam->pExState->GetExceptionRecord()->ExceptionInformation;
+        argCount = pParam->pExState->GetExceptionRecord()->NumberParameters;
+        flags    = pParam->pExState->GetExceptionRecord()->ExceptionFlags;
+        code     = pParam->pExState->GetExceptionRecord()->ExceptionCode;
+    }
+
+    if (pParam->pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&pParam->throwable))
+    {
+        pParam->pThread->ResetPreparingAbort();
+
+        if (pParam->pThread->GetFrame() == FRAME_TOP)
+        {
+            // There is no more managed code on stack.
+            pParam->pThread->ResetAbort();
+        }
+    }
+
+    // Can't access the exception object when are in pre-emptive, so find out before
+    // if its an SO.
+    BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &pParam->throwable);
+
+    if (fIsStackOverflow || pParam->fForStackOverflow)
+    {
+        // Don't probe if we're already handling an SO.  Just throw the exception.
+        RaiseException(code, flags, argCount, args);
+    }
+
+    // This needs to be both here and inside the handler below
+    // enable preemptive mode before call into OS
+    GCX_PREEMP_NO_DTOR();
+
+#ifndef TARGET_WINDOWS
+    if (pParam->pPalException != NULL)
+    {
+        RaiseExceptionProducePALExceptionOnly(code, flags, argCount, args, pParam->pPalException);
+    }
+    else
+#endif
+    {
+        // In non-debug, we can just raise the exception once we've probed.
+        RaiseException(code, flags, argCount, args);
+    }
+}
+
+VOID RaiseTheExceptionInternalOnlyCore(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow
+#ifndef TARGET_WINDOWS
+, PAL_SEHException *pPalException
+#endif
+)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2688,18 +2784,14 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     }
 #endif
 
-    struct Param : RaiseExceptionFilterParam
-    {
-        OBJECTREF throwable;
-        BOOL fForStackOverflow;
-        ULONG_PTR exceptionArgs[INSTANCE_TAGGED_SEH_PARAM_ARRAY_SIZE];
-        Thread *pThread;
-        ThreadExceptionState* pExState;
-    } param;
+    Param param;
     param.isRethrown = rethrow ? 1 : 0; // normalize because we use it as a count in RaiseExceptionFilter
     param.throwable = throwable;
     param.fForStackOverflow = fForStackOverflow;
     param.pThread = GetThread();
+#ifndef TARGET_WINDOWS
+    param.pPalException = pPalException;
+#endif
 
     _ASSERTE(param.pThread);
     param.pExState = param.pThread->GetExceptionState();
@@ -2727,80 +2819,37 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #endif
 #endif
 
-    // raise
-    PAL_TRY(Param *, pParam, &param)
+    if (rethrow
+#ifndef TARGET_WINDOWS
+        && (pPalException == NULL)
+#endif
+    )
     {
-        //_ASSERTE(! pParam->isRethrown || pParam->pExState->m_pExceptionRecord);
-        ULONG_PTR *args = NULL;
-        ULONG argCount = 0;
-        ULONG flags = 0;
-        ULONG code = 0;
-
-        // Always save the current object in the handle so on rethrow we can reuse it. This is important as it
-        // contains stack trace info.
-        //
-        // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-        // it will set the throwable to something appropriate (like OOM exception) and return the new
-        // exception. Thus, the user's exception object can be replaced here.
-        pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
-
-        if (!pParam->isRethrown ||
-#ifdef FEATURE_INTERPRETER
-            !pParam->pExState->IsExceptionInProgress() ||
-#endif // FEATURE_INTERPRETER
-             pParam->pExState->IsComPlusException() ||
-            (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
+        // raise
+        PAL_TRY(Param *, pParam, &param)
         {
-            ULONG_PTR hr = GetHRFromThrowable(pParam->throwable);
-
-            args = pParam->exceptionArgs;
-            argCount = MarkAsThrownByUs(args, hr);
-            flags = EXCEPTION_NONCONTINUABLE;
-            code = EXCEPTION_COMPLUS;
+            RaiseTheExceptionInternalOnlyTryBody(pParam);
         }
-        else
+        PAL_EXCEPT_FILTER (RaiseExceptionFilter)
         {
-            // Exception code should be consistent.
-            _ASSERTE((DWORD)(pParam->pExState->GetExceptionRecord()->ExceptionCode) == pParam->pExState->GetExceptionCode());
-
-            args     = pParam->pExState->GetExceptionRecord()->ExceptionInformation;
-            argCount = pParam->pExState->GetExceptionRecord()->NumberParameters;
-            flags    = pParam->pExState->GetExceptionRecord()->ExceptionFlags;
-            code     = pParam->pExState->GetExceptionRecord()->ExceptionCode;
         }
-
-        if (pParam->pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&pParam->throwable))
-        {
-            pParam->pThread->ResetPreparingAbort();
-
-            if (pParam->pThread->GetFrame() == FRAME_TOP)
-            {
-                // There is no more managed code on stack.
-                pParam->pThread->ResetAbort();
-            }
-        }
-
-        // Can't access the exception object when are in pre-emptive, so find out before
-        // if its an SO.
-        BOOL fIsStackOverflow = IsExceptionOfType(kStackOverflowException, &pParam->throwable);
-
-        if (fIsStackOverflow || pParam->fForStackOverflow)
-        {
-            // Don't probe if we're already handling an SO.  Just throw the exception.
-            RaiseException(code, flags, argCount, args);
-        }
-
-        // This needs to be both here and inside the handler below
-        // enable preemptive mode before call into OS
-        GCX_PREEMP_NO_DTOR();
-
-        // In non-debug, we can just raise the exception once we've probed.
-        RaiseException(code, flags, argCount, args);
+        PAL_ENDTRY
     }
-    PAL_EXCEPT_FILTER (RaiseExceptionFilter)
+    else
     {
+        RaiseTheExceptionInternalOnlyTryBody(&param);
+#ifndef TARGET_WINDOWS
+        if (rethrow)
+        {
+            RaiseExceptionFilter(&pPalException->ExceptionPointers, &param);
+        }
+#endif
     }
-    PAL_ENDTRY
+}
+
+VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
+{
+    RaiseTheExceptionInternalOnlyCore(throwable, rethrow, fForStackOverflow);
     _ASSERTE(!"Cannot continue after COM+ exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
@@ -2809,7 +2858,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     UNREACHABLE();
 }
-
 
 // INSTALL_COMPLUS_EXCEPTION_HANDLER has a filter, so must put the call in a separate fcn
 static VOID DECLSPEC_NORETURN RealCOMPlusThrowWorker(OBJECTREF throwable, BOOL rethrow)

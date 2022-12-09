@@ -3235,6 +3235,18 @@ RaiseException(
            IN DWORD nNumberOfArguments,
            IN CONST ULONG_PTR *lpArguments);
 
+struct PAL_SEHException;
+
+PALIMPORT
+VOID
+PALAPI
+RaiseExceptionProducePALExceptionOnly(
+           IN DWORD dwExceptionCode,
+           IN DWORD dwExceptionFlags,
+           IN DWORD nNumberOfArguments,
+           IN CONST ULONG_PTR *lpArguments,
+           PAL_SEHException *pPalException);
+
 PALIMPORT
 VOID
 PALAPI

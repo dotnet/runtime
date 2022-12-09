@@ -4026,7 +4026,14 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         }
     }
 
-    RaiseTheExceptionInternalOnly(oref, FALSE);
+#ifndef TARGET_WINDOWS
+    // See definition of UNINSTALL_MANAGED_EXCEPTION_DISPATCHER for details around where exCopy and hasCaughtException come from
+    RaiseTheExceptionInternalOnlyCore(oref, FALSE, FALSE, &exCopy);
+    hasCaughtException = true;
+    __popHelperMethodFrame = false; // Disable the helper method frame pop
+#else
+    RaiseTheExceptionInternal(oref, FALSE, FALSE);
+#endif
 
     HELPER_METHOD_FRAME_END();
 }
@@ -4045,7 +4052,14 @@ HCIMPL0(void, IL_Rethrow)
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
     {
+#ifndef TARGET_WINDOWS
+        // See definition of UNINSTALL_MANAGED_EXCEPTION_DISPATCHER for details around where exCopy and hasCaughtException come from
+        RaiseTheExceptionInternalOnlyCore(throwable, TRUE, FALSE, &exCopy);
+        hasCaughtException = true;
+        __popHelperMethodFrame = false; // Disable the helper method frame pop
+#else
         RaiseTheExceptionInternalOnly(throwable, TRUE);
+#endif
     }
     else
     {

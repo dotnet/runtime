@@ -951,4 +951,75 @@ RaiseException(IN DWORD dwExceptionCode,
     LOGEXIT("RaiseException returns\n");
 }
 
+/*++
+Function:
+  RaiseException
+
+See MSDN doc.
+--*/
+// no PAL_NORETURN, as callers must assume this can return for continuable exceptions.
+__attribute__((noinline))
+VOID
+PALAPI
+RaiseExceptionProducePALExceptionOnly(IN DWORD dwExceptionCode,
+                                      IN DWORD dwExceptionFlags,
+                                      IN DWORD nNumberOfArguments,
+                                      IN CONST ULONG_PTR *lpArguments,
+                                      PAL_SEHException *pPalException)
+{
+    // PERF_ENTRY_ONLY is used here because RaiseException may or may not
+    // return. We can not get latency data without PERF_EXIT. For this reason,
+    // PERF_ENTRY_ONLY is used to profile frequency only.
+    PERF_ENTRY(RaiseExceptionProducePALExceptionOnly);
+    ENTRY("RaiseExceptionProducePALExceptionOnly(dwCode=%#x, dwFlags=%#x, nArgs=%u, lpArguments=%p)\n",
+          dwExceptionCode, dwExceptionFlags, nNumberOfArguments, lpArguments);
+
+    /* Validate parameters */
+    if (dwExceptionCode & RESERVED_SEH_BIT)
+    {
+        WARN("Exception code %08x has bit 28 set; clearing it.\n", dwExceptionCode);
+        dwExceptionCode ^= RESERVED_SEH_BIT;
+    }
+
+    if (nNumberOfArguments > EXCEPTION_MAXIMUM_PARAMETERS)
+    {
+        WARN("Number of arguments (%d) exceeds the limit "
+            "EXCEPTION_MAXIMUM_PARAMETERS (%d); ignoring extra parameters.\n",
+            nNumberOfArguments, EXCEPTION_MAXIMUM_PARAMETERS);
+        nNumberOfArguments = EXCEPTION_MAXIMUM_PARAMETERS;
+    }
+
+    CONTEXT *contextRecord;
+    EXCEPTION_RECORD *exceptionRecord;
+    AllocateExceptionRecords(&exceptionRecord, &contextRecord);
+
+    ZeroMemory(exceptionRecord, sizeof(EXCEPTION_RECORD));
+
+    exceptionRecord->ExceptionCode = dwExceptionCode;
+    exceptionRecord->ExceptionFlags = dwExceptionFlags;
+    exceptionRecord->ExceptionRecord = NULL;
+    exceptionRecord->ExceptionAddress = NULL; // will be set by RtlpRaiseException
+    exceptionRecord->NumberParameters = nNumberOfArguments;
+    if (nNumberOfArguments)
+    {
+        CopyMemory(exceptionRecord->ExceptionInformation, lpArguments,
+                   nNumberOfArguments * sizeof(ULONG_PTR));
+    }
+
+    // Capture the context of RaiseException.
+    ZeroMemory(contextRecord, sizeof(CONTEXT));
+    contextRecord->ContextFlags = CONTEXT_FULL;
+    CONTEXT_CaptureContext(contextRecord);
+
+    // We have to unwind one level to get the actual context user code could be resumed at.
+    PAL_VirtualUnwind(contextRecord, NULL);
+
+    exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);
+
+    *pPalException = PAL_SEHException(exceptionRecord, contextRecord);
+
+    LOGEXIT("RaiseExceptionProducePALExceptionOnly returns\n");
+    PERF_EXIT(RaiseExceptionProducePALExceptionOnly);
+}
+
 #endif // !HOST_WINDOWS
