@@ -1651,18 +1651,10 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
 
         if ((vexPrefix & 0xFFFF7F80) == 0x00C46100)
         {
-            // Encoding optimization calculation is not done while estimating the instruction
-            // size and thus over-predict instruction size by 1 byte.
-            // If there are IGs that will be aligned, do not optimize encoding so the
-            // estimated alignment sizes are accurate.
+            emitOutputByte(dst, 0xC5);
+            emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
 
-            if (emitCurIG->igNum > emitLastAlignedIgNum)
-            {
-                emitOutputByte(dst, 0xC5);
-                emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
-
-                return 2;
-            }
+            return 2;
         }
 
         emitOutputByte(dst, ((vexPrefix >> 16) & 0xFF));
@@ -1787,22 +1779,6 @@ unsigned emitter::emitGetEvexPrefixSize(instrDesc* id)
     instruction ins = id->idIns();
     assert(IsEvexEncodedInstruction(ins));
     return 4;
-}
-
-//------------------------------------------------------------------------
-// emitGetVexPrefixSize: Gets Size of VEX prefix in bytes
-//
-// Arguments:
-//    id   -- The instruction descriptor
-//
-// Returns:
-//    Prefix size in bytes.
-//
-unsigned emitter::emitGetVexPrefixSize(instrDesc* id)
-{
-    instruction ins = id->idIns();
-    assert(IsVexEncodedInstruction(ins));
-    return 3;
 }
 
 //------------------------------------------------------------------------
@@ -2343,6 +2319,152 @@ inline bool hasCodeMR(instruction ins)
 {
     assert((unsigned)ins < ArrLen(insCodesMR));
     return ((insCodesMR[ins] != BAD_CODE));
+}
+
+//------------------------------------------------------------------------
+// emitGetVexPrefixSize: Gets Size of VEX prefix in bytes
+//
+// Arguments:
+//    id   -- The instruction descriptor
+//
+// Returns:
+//    Prefix size in bytes.
+//
+unsigned emitter::emitGetVexPrefixSize(instrDesc* id)
+{
+    instruction ins  = id->idIns();
+    emitAttr    size = id->idOpSize();
+
+    assert(IsVexEncodedInstruction(ins));
+
+    if (EncodedBySSE38orSSE3A(ins))
+    {
+        // When the prefix is 0x0F38 or 0x0F3A, we must use the 3-byte encoding
+        return 3;
+    }
+
+    switch (ins)
+    {
+        case INS_crc32:
+#if defined(TARGET_AMD64)
+        case INS_sarx:
+        case INS_shrx:
+#endif // TARGET_AMD64
+        {
+            // When the prefix is 0x0F38 or 0x0F3A, we must use the 3-byte encoding
+            // These are special cases where the pp-bit is 0xF2 or 0xF3 and not 0x66
+            return 3;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    if (TakesRexWPrefix(ins, size))
+    {
+        // When the REX.W bit is present, we must use the 3-byte encoding
+        return 3;
+    }
+
+    regNumber regFor012Bits = REG_NA;
+    regNumber regForSibBits = REG_NA;
+
+    switch (id->idInsFmt())
+    {
+        case IF_ARD:
+        case IF_AWR_RRD:
+        case IF_RRD_ARD:
+        case IF_RRW_ARD:
+        case IF_RRW_ARD_CNS:
+        case IF_RWR_ARD:
+        case IF_RWR_ARD_CNS:
+        case IF_RWR_RRD_ARD:
+        case IF_RWR_RRD_ARD_CNS:
+        {
+            regFor012Bits = id->idAddr()->iiaAddrMode.amBaseReg;
+            regForSibBits = id->idAddr()->iiaAddrMode.amIndxReg;
+            break;
+        }
+
+        case IF_MRD:
+        case IF_MWR_RRD:
+        case IF_RRD_MRD:
+        case IF_RRD_SRD:
+        case IF_RRW_MRD:
+        case IF_RRW_MRD_CNS:
+        case IF_RRW_SRD:
+        case IF_RRW_SRD_CNS:
+        case IF_RWR_MRD:
+        case IF_RWR_MRD_CNS:
+        case IF_RWR_RRD_MRD:
+        case IF_RWR_RRD_MRD_CNS:
+        case IF_RWR_RRD_SRD:
+        case IF_RWR_RRD_SRD_CNS:
+        case IF_RWR_SRD:
+        case IF_RWR_SRD_CNS:
+        case IF_SRD:
+        case IF_SWR_RRD:
+        {
+            // Nothing is encoded in a way to prevent the 2-byte encoding
+            break;
+        }
+
+        case IF_RRD_RRD:
+        case IF_RRW_RRD:
+        case IF_RWR_RRD:
+        {
+            regFor012Bits = id->idReg2();
+
+            if ((ins == INS_movd) && isFloatReg(regFor012Bits))
+            {
+                regFor012Bits = id->idReg1();
+            }
+            break;
+        }
+
+        case IF_RRW_RRW_CNS:
+        {
+            if (hasCodeMR(ins))
+            {
+                regFor012Bits = id->idReg1();
+            }
+            else
+            {
+                regFor012Bits = id->idReg2();
+            }
+            break;
+        }
+
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_RRD_CNS:
+        case IF_RWR_RRD_RRD_RRD:
+        {
+            regFor012Bits = id->idReg3();
+            break;
+        }
+
+        default:
+        {
+            assert(!"Unhandled insFmt for emitGetVexPrefixSize");
+            return 3;
+        }
+    }
+
+    if ((regForSibBits != REG_NA) && IsExtendedReg(regForSibBits))
+    {
+        // When the REX.X bit is present, we must use the 3-byte encoding
+        return 3;
+    }
+
+    if ((regFor012Bits != REG_NA) && IsExtendedReg(regFor012Bits))
+    {
+        // When the REX.B bit is present, we must use the 3-byte encoding
+        return 3;
+    }
+
+    return 2;
 }
 
 /*****************************************************************************
