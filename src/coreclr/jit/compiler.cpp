@@ -1968,6 +1968,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // FEATURE_SIMD
 
     compUsesThrowHelper = false;
+
+    m_preferredInitCctor = CORINFO_HELP_UNDEF;
 }
 
 /*****************************************************************************
@@ -5553,9 +5555,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     compFrameInfo = {0};
 #endif
 
-    bool isNativeAot     = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(isNativeAot);
-    m_preferredInitCctor = CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //

@@ -4677,7 +4677,9 @@ public:
     // We use this field to set the desired R2R helper call, which can be the constructor
     // helper, or the same helper we are using the code, so the CSE will eliminate one of both.
     CorInfoHelpFunc m_preferredInitCctor;
-    GenTree*        fgInitThisClass();
+    void            fgSetPreferredInitCctor();
+
+    GenTree* fgInitThisClass();
 
     GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
 

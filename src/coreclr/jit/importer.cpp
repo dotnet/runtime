@@ -4450,13 +4450,11 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 }
 
                 op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
-                if (pResolvedToken->hClass == info.compClassHnd)
+                if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF &&
+                    (pFieldInfo->helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
+                     pFieldInfo->helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE))
                 {
-                    if (pFieldInfo->helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
-                        pFieldInfo->helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE)
-                    {
-                        m_preferredInitCctor = pFieldInfo->helper;
-                    }
+                    m_preferredInitCctor = pFieldInfo->helper;
                 }
                 op1->gtFlags |= callFlags;
 
