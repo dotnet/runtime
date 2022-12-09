@@ -358,7 +358,7 @@ namespace System.Text.Json.Serialization.Converters
             ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
 
             bool success = true;
-            if (!_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0)
             {
                 success = CheckIfValidNamedEnumLiteral(source);
             }
@@ -382,7 +382,7 @@ namespace System.Text.Json.Serialization.Converters
 #else
         private bool TryParseEnumCore(string? enumString, JsonSerializerOptions options, out T value)
         {
-            if (!_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0)
             {
                 if (enumString is null)
                 {
