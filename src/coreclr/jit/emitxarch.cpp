@@ -1777,13 +1777,14 @@ unsigned emitter::emitGetRexPrefixSize(instruction ins)
 // emitGetEvexPrefixSize: Gets Size of EVEX prefix in bytes
 //
 // Arguments:
-//    ins   -- The instruction
+//    ins   -- The instruction descriptor
 //
 // Returns:
 //    Prefix size in bytes.
 //
-unsigned emitter::emitGetEvexPrefixSize(instruction ins)
+unsigned emitter::emitGetEvexPrefixSize(instrDesc* id)
 {
+    instruction ins = id->idIns();
     assert(IsEvexEncodedInstruction(ins));
     return 4;
 }
@@ -1792,13 +1793,14 @@ unsigned emitter::emitGetEvexPrefixSize(instruction ins)
 // emitGetVexPrefixSize: Gets Size of VEX prefix in bytes
 //
 // Arguments:
-//    ins   -- The instruction
+//    id   -- The instruction descriptor
 //
 // Returns:
 //    Prefix size in bytes.
 //
-unsigned emitter::emitGetVexPrefixSize(instruction ins)
+unsigned emitter::emitGetVexPrefixSize(instrDesc* id)
 {
+    instruction ins = id->idIns();
     assert(IsVexEncodedInstruction(ins));
     return 3;
 }
@@ -1808,15 +1810,17 @@ unsigned emitter::emitGetVexPrefixSize(instruction ins)
 // configuration.
 //
 // Arguments:
-//    ins   -- The instruction being emitted
-//    attr  -- The emit attribute
+//    id    -- The instruction descriptor being emitted
 //    code  -- The current opcode and any known prefixes
 //
 // Returns:
 //    Updated size.
 //
-unsigned emitter::emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code)
+unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code)
 {
+    instruction ins  = id->idIns();
+    emitAttr    attr = id->idOpSize();
+
     unsigned adjustedSize = 0;
 
     // TODO-XArch-AVX512: Remove redundant code and possiblly collapse EVEX and VEX into a single pathway
@@ -1839,7 +1843,7 @@ unsigned emitter::emitGetAdjustedSize(instruction ins, emitAttr attr, code_t cod
         //  = opcodeSize + (evexPrefixSize - ExtrabytesSize)
         //  = opcodeSize + evexPrefixAdjustedSize
 
-        unsigned evexPrefixAdjustedSize = emitGetEvexPrefixSize(ins);
+        unsigned evexPrefixAdjustedSize = emitGetEvexPrefixSize(id);
         assert(evexPrefixAdjustedSize == 4);
 
         // In this case, opcode will contains escape prefix at least one byte,
@@ -1886,7 +1890,7 @@ unsigned emitter::emitGetAdjustedSize(instruction ins, emitAttr attr, code_t cod
         //  = opcodeSize + (vexPrefixSize - ExtrabytesSize)
         //  = opcodeSize + vexPrefixAdjustedSize
 
-        unsigned simdPrefixAdjustedSize = emitGetVexPrefixSize(ins);
+        unsigned simdPrefixAdjustedSize = emitGetVexPrefixSize(id);
         assert((simdPrefixAdjustedSize == 2) || (simdPrefixAdjustedSize == 3));
 
         // In this case, opcode will contains escape prefix at least one byte,
@@ -2853,7 +2857,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code)
     instruction ins  = id->idIns();
     emitAttr    attr = id->idOpSize();
 
-    UNATIVE_OFFSET sz = emitGetAdjustedSize(ins, attr, code);
+    UNATIVE_OFFSET sz = emitGetAdjustedSize(id, code);
 
     bool includeRexPrefixSize = true;
     // REX prefix
@@ -2912,8 +2916,22 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code, int val
     return valSize + emitInsSizeRR(id, code);
 }
 
-inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, regNumber reg2, emitAttr attr)
+//------------------------------------------------------------------------
+// emitInsSizeRR: Determines the code size for an instruction encoding that does not have any addressing modes
+//
+// Arguments:
+//    id    -- The instruction descriptor being emitted
+//
+// TODO-Cleanup: This method should really be merged with emitInsSizeRR(instrDesc*, code_t). However, it has
+// existed for a long time and its not trivial to determine why it exists as a separate method.
+//
+inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 {
+    instruction ins  = id->idIns();
+    regNumber   reg1 = id->idReg1();
+    regNumber   reg2 = id->idReg2();
+    emitAttr    attr = id->idOpSize();
+
     emitAttr size = EA_SIZE(attr);
 
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
@@ -2921,7 +2939,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     // This would probably be better expressed as a different format or something?
     code_t code = insCodeRM(ins);
 
-    UNATIVE_OFFSET sz = emitGetAdjustedSize(ins, size, insCodeRM(ins));
+    UNATIVE_OFFSET sz = emitGetAdjustedSize(id, code);
 
     bool includeRexPrefixSize = true;
     // REX prefix
@@ -3143,7 +3161,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     assert(id->idIns() != INS_invalid);
     instruction    ins      = id->idIns();
     emitAttr       attrSize = id->idOpSize();
-    UNATIVE_OFFSET prefix   = emitGetAdjustedSize(ins, attrSize, code);
+    UNATIVE_OFFSET prefix   = emitGetAdjustedSize(id, code);
 
     // REX prefix
     if (TakesRexWPrefix(ins, attrSize) || IsExtendedReg(id->idReg1(), attrSize) ||
@@ -3161,7 +3179,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     instruction    ins       = id->idIns();
     emitAttr       attrSize  = id->idOpSize();
     UNATIVE_OFFSET valSize   = EA_SIZE_IN_BYTES(attrSize);
-    UNATIVE_OFFSET prefix    = emitGetAdjustedSize(ins, attrSize, code);
+    UNATIVE_OFFSET prefix    = emitGetAdjustedSize(id, code);
     bool           valInByte = ((signed char)val == val) && (ins != INS_mov) && (ins != INS_test);
 
 #ifdef TARGET_AMD64
@@ -3294,7 +3312,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         size = 2;
     }
 
-    size += emitGetAdjustedSize(ins, attrSize, code);
+    size += emitGetAdjustedSize(id, code);
 
     if (hasRexPrefix(code))
     {
@@ -3512,7 +3530,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
     // can be reached via RIP-relative addressing.
     UNATIVE_OFFSET size = sizeof(INT32);
 
-    size += emitGetAdjustedSize(ins, attrSize, code);
+    size += emitGetAdjustedSize(id, code);
 
     bool includeRexPrefixSize = true;
 
@@ -3754,14 +3772,15 @@ void emitter::emitIns(instruction ins, emitAttr attr)
 
     insFormat fmt = IF_NONE;
 
-    sz += emitGetAdjustedSize(ins, attr, code);
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    sz += emitGetAdjustedSize(id, code);
     if (TakesRexWPrefix(ins, attr))
     {
         sz += emitGetRexPrefixSize(ins);
     }
 
-    id->idIns(ins);
-    id->idInsFmt(fmt);
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -4899,7 +4918,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     id->idReg1(reg);
 
     // Vex bytes
-    sz += emitGetAdjustedSize(ins, attr, insEncodeMRreg(ins, reg, attr, insCodeMR(ins)));
+    sz += emitGetAdjustedSize(id, insEncodeMRreg(ins, reg, attr, insCodeMR(ins)));
 
     // REX byte
     if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, attr))
@@ -5041,7 +5060,17 @@ void emitter::emitIns_R_I(instruction ins,
             break;
     }
 
-    sz += emitGetAdjustedSize(ins, attr, insCodeMI(ins));
+    id = emitNewInstrSC(attr, val);
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idReg1(reg);
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+#endif
+
+    sz += emitGetAdjustedSize(id, insCodeMI(ins));
 
     // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
     // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
@@ -5051,16 +5080,7 @@ void emitter::emitIns_R_I(instruction ins,
         sz += emitGetRexPrefixSize(ins);
     }
 
-    id = emitNewInstrSC(attr, val);
-    id->idIns(ins);
-    id->idInsFmt(fmt);
-    id->idReg1(reg);
     id->idCodeSize(sz);
-
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idFlags     = gtFlags;
-    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
-#endif
 
     dispIns(id);
     emitCurIGsize += sz;
@@ -5633,13 +5653,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         return;
     }
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(ins, dstReg, srcReg, attr);
-
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(dstReg);
     id->idReg2(srcReg);
+
+    UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -5664,8 +5684,6 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(ins, reg1, reg2, attr);
-
     /* Special case: "XCHG" uses a different format */
     insFormat fmt = (ins == INS_xchg) ? IF_RRW_RRW : emitInsModeFormat(ins, IF_RRD_RRD);
 
@@ -5674,6 +5692,8 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idInsFmt(fmt);
     id->idReg1(reg1);
     id->idReg2(reg2);
+
+    UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
 
     dispIns(id);

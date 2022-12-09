@@ -44,7 +44,7 @@ UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
 UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code, int val);
-UNATIVE_OFFSET emitInsSizeRR(instruction ins, regNumber reg1, regNumber reg2, emitAttr attr);
+UNATIVE_OFFSET emitInsSizeRR(instrDesc* id);
 UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
@@ -67,10 +67,10 @@ BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
-unsigned emitGetVexPrefixSize(instruction ins);
-unsigned emitGetEvexPrefixSize(instruction ins);
+unsigned emitGetVexPrefixSize(instrDesc* id);
+unsigned emitGetEvexPrefixSize(instrDesc* id);
 unsigned emitGetPrefixSize(code_t code, bool includeRexPrefixSize);
-unsigned emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code);
+unsigned emitGetAdjustedSize(instrDesc* id, code_t code);
 
 code_t emitExtractVexPrefix(instruction ins, code_t& code);
 code_t emitExtractEvexPrefix(instruction ins, code_t& code);
