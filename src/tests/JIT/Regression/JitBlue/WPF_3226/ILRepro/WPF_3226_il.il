@@ -13,7 +13,7 @@
 .assembly extern System.Runtime.Extensions {}
 .assembly extern System.Diagnostics.Debug {}
 
-.assembly WPF_3226 {}
+.assembly 'WPF_3226_il' {}
 .assembly extern xunit.core {}
 
 // =============== CLASS MEMBERS DECLARATION ===================

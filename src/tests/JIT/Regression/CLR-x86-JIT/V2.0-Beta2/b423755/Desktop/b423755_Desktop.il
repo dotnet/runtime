@@ -8,7 +8,7 @@
   .ver 4:0:0:0
 }
 
-.assembly 'b423755' {
+.assembly 'b423755_Desktop' {
 }
 
 .method public static int32 Main()

@@ -7,10 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'b40347'
-{
-  
-}
+.assembly 'b40347_M12-Beta2' { }
 .class public C
 {
   .method public static int32 main() 
