@@ -55,6 +55,20 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [InlineData(2090, 12, 31)]
+        [InlineData(2003, 2, 28)]
+        [InlineData(2020, 11, 1)]
+        public static void DeconstructionTest(int year, int month, int day)
+        {
+            var date = new DateOnly(year, month, day);
+            var (obtainedYear, obtainedMonth, obtainedDay) = date;
+
+            Assert.Equal(year, obtainedYear);
+            Assert.Equal(month, obtainedMonth);
+            Assert.Equal(day, obtainedDay);
+        }
+
         [Fact]
         public static void ConstructorsNegativeCasesTest()
         {
