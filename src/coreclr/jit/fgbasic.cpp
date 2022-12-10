@@ -4321,8 +4321,8 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
     if (curr->IsLIR())
     {
-        newBlock->SetFirstSequencedNode(curr->GetFirstSequencedNode());
-        curr->SetFirstSequencedNode(nullptr);
+        newBlock->SetFirstLIRNode(curr->GetFirstLIRNode());
+        curr->SetFirstLIRNode(nullptr);
     }
     else
     {
