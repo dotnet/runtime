@@ -747,7 +747,7 @@ static bool IsDstSrcImmAvxInstruction(instruction ins)
 // Note that this should be true for any of the instructions in instrsXArch.h
 // that use the SSE38 or SSE3A macro but returns false if the VEX encoding is
 // in use, since that encoding does not require an additional byte.
-bool emitter::Is4ByteSSEInstruction(instruction ins)
+bool emitter::Is4ByteSSEInstruction(instruction ins) const
 {
     return !UseVEXEncoding() && EncodedBySSE38orSSE3A(ins);
 }
@@ -1289,7 +1289,7 @@ bool isPrefix(BYTE b)
 // Return Value:
 //    The extracted EVEX prefix.
 //
-emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code)
+emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) const
 {
     assert(IsEvexEncodedInstruction(ins));
 
@@ -1425,7 +1425,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code)
 // Return Value:
 //    The extracted VEX prefix.
 //
-emitter::code_t emitter::emitExtractVexPrefix(instruction ins, code_t& code)
+emitter::code_t emitter::emitExtractVexPrefix(instruction ins, code_t& code) const
 {
     assert(IsVexEncodedInstruction(ins));
 
@@ -1784,7 +1784,7 @@ unsigned emitter::emitGetRexPrefixSize(instruction ins)
 // Returns:
 //    Prefix size in bytes.
 //
-unsigned emitter::emitGetEvexPrefixSize(instrDesc* id)
+unsigned emitter::emitGetEvexPrefixSize(instrDesc* id) const
 {
     instruction ins = id->idIns();
     assert(IsEvexEncodedInstruction(ins));
@@ -1802,7 +1802,7 @@ unsigned emitter::emitGetEvexPrefixSize(instrDesc* id)
 // Returns:
 //    Updated size.
 //
-unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code)
+unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
 {
     instruction ins  = id->idIns();
     emitAttr    attr = id->idOpSize();
@@ -2340,7 +2340,7 @@ inline bool hasCodeMR(instruction ins)
 // Returns:
 //    Prefix size in bytes.
 //
-unsigned emitter::emitGetVexPrefixSize(instrDesc* id)
+unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
 {
     instruction ins  = id->idIns();
     emitAttr    size = id->idOpSize();
@@ -2555,7 +2555,7 @@ inline insTupleType insTupleTypeInfo(instruction ins)
 }
 
 // Return true if the instruction uses the SSE38 or SSE3A macro in instrsXArch.h.
-bool emitter::EncodedBySSE38orSSE3A(instruction ins)
+bool emitter::EncodedBySSE38orSSE3A(instruction ins) const
 {
     const size_t SSE38 = 0x0F660038;
     const size_t SSE3A = 0x0F66003A;

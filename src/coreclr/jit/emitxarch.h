@@ -67,13 +67,13 @@ BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
-unsigned emitGetVexPrefixSize(instrDesc* id);
-unsigned emitGetEvexPrefixSize(instrDesc* id);
+unsigned emitGetVexPrefixSize(instrDesc* id) const;
+unsigned emitGetEvexPrefixSize(instrDesc* id) const;
 unsigned emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
-unsigned emitGetAdjustedSize(instrDesc* id, code_t code);
+unsigned emitGetAdjustedSize(instrDesc* id, code_t code) const;
 
-code_t emitExtractVexPrefix(instruction ins, code_t& code);
-code_t emitExtractEvexPrefix(instruction ins, code_t& code);
+code_t emitExtractVexPrefix(instruction ins, code_t& code) const;
+code_t emitExtractEvexPrefix(instruction ins, code_t& code) const;
 
 unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code);
 unsigned insEncodeReg345(instruction ins, regNumber reg, emitAttr size, code_t* code);
@@ -111,8 +111,8 @@ code_t AddRexXPrefix(instruction ins, code_t code);
 code_t AddRexBPrefix(instruction ins, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
 
-bool EncodedBySSE38orSSE3A(instruction ins);
-bool Is4ByteSSEInstruction(instruction ins);
+bool EncodedBySSE38orSSE3A(instruction ins) const;
+bool Is4ByteSSEInstruction(instruction ins) const;
 static bool IsMovInstruction(instruction ins);
 bool HasSideEffect(instruction ins, emitAttr size);
 bool IsRedundantMov(
