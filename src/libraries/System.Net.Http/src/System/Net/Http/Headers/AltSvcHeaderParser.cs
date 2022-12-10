@@ -226,7 +226,7 @@ namespace System.Net.Http.Headers
                     }
                     break;
                 case 5:
-                    if (span.SequenceEqual("clear"))
+                    if (span is "clear")
                     {
                         result = "clear";
                         return true;

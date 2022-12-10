@@ -15,7 +15,7 @@ typedef struct MonoComponentMarshalILgen {
 	void (*ilgen_init_internal) (void);
 	int (*emit_marshal_ilgen) (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoMarshalSpec *spec, int conv_arg,
-	      MonoType **conv_arg_type, MarshalAction action,  MonoMarshalLightweightCallbacks* lightweigth_cb);
+	      MonoType **conv_arg_type, MarshalAction action,  MonoMarshalLightweightCallbacks* lightweight_cb);
 	void (*install_callbacks_mono) (IlgenCallbacksToMono *callbacks);
 } MonoComponentMarshalILgen;
 

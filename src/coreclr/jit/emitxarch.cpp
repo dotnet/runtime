@@ -4034,8 +4034,16 @@ emitter::insFormat emitter::emitMapFmtForIns(insFormat fmt, instruction ins)
                     unreached();
             }
         }
-
         default:
+            if (IsMovInstruction(ins))
+            {
+                // A `mov` instruction is always "write"
+                // and not "read/write".
+                if (fmt == IF_RRW_ARD)
+                {
+                    return IF_RWR_ARD;
+                }
+            }
             return fmt;
     }
 }
@@ -4492,9 +4500,6 @@ void emitter::emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommo
         assert(!data->isContained());
         emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), 0);
     }
-
-    // Updating variable liveness after instruction was emitted
-    codeGen->genUpdateLife(varNode);
 }
 
 //------------------------------------------------------------------------
@@ -12173,9 +12178,11 @@ DONE:
                 break;
 
             case IF_RRW_ARD:
-                // Mark the destination register as holding a GCT_BYREF
-                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide));
-                emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
+                // Mark the destination register as holding a GC ref
+                assert(((id->idGCref() == GCT_BYREF) &&
+                        (ins == INS_add || ins == INS_sub || ins == INS_sub_hide || insIsCMOV(ins))) ||
+                       ((id->idGCref() == GCT_GCREF) && insIsCMOV(ins)));
+                emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
                 break;
 
             case IF_ARD_RRD:
@@ -12191,7 +12198,14 @@ DONE:
 
             case IF_ARW_RRD:
             case IF_ARW_CNS:
-                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide));
+                if (id->idGCref() == GCT_BYREF)
+                {
+                    assert(ins == INS_add || ins == INS_sub || ins == INS_sub_hide);
+                }
+                else
+                {
+                    assert((id->idGCref() == GCT_GCREF) && (ins == INS_cmpxchg || ins == INS_xchg));
+                }
                 break;
 
             default:
@@ -12965,11 +12979,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         else
         {
-            addr = (BYTE*)emitComp->info.compCompHnd->getFieldAddress(fldh, nullptr);
-            if (addr == nullptr)
-            {
-                NO_WAY("could not obtain address of static field");
-            }
+            assert(jitStaticFldIsGlobAddr(fldh));
+            addr = nullptr;
         }
     }
 
@@ -16414,6 +16425,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_cwde:
         case INS_cmp:
         case INS_test:
+        case INS_cmovo:
+        case INS_cmovno:
+        case INS_cmovb:
+        case INS_cmovae:
+        case INS_cmove:
+        case INS_cmovne:
+        case INS_cmovbe:
+        case INS_cmova:
+        case INS_cmovs:
+        case INS_cmovns:
+        case INS_cmovp:
+        case INS_cmovnp:
+        case INS_cmovl:
+        case INS_cmovge:
+        case INS_cmovle:
+        case INS_cmovg:
             if (memFmt == IF_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_4X;
@@ -16421,7 +16448,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             else if (memAccessKind == PERFSCORE_MEMORY_READ)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                if (ins == INS_cmp || ins == INS_test)
+                if (ins == INS_cmp || ins == INS_test || insIsCMOV(ins))
                 {
                     result.insLatency += PERFSCORE_LATENCY_1C;
                 }

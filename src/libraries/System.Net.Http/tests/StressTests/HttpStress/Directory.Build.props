@@ -8,8 +8,8 @@
         
         <TargetingPacksTargetsLocation Condition="'$(TargetingPacksTargetsLocation)' == ''">$(RepositoryRoot)eng/targetingpacks.targets</TargetingPacksTargetsLocation>
         <ProductVersion>8.0.0</ProductVersion>
-        <NetCoreAppCurrent>net7.0</NetCoreAppCurrent>
-        <NetCoreAppCurrentVersion>7.0</NetCoreAppCurrentVersion>
+        <NetCoreAppCurrent>net8.0</NetCoreAppCurrent>
+        <NetCoreAppCurrentVersion>8.0</NetCoreAppCurrentVersion>
         <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
         <MicrosoftNetCoreAppRefPackDir Condition="'$(MicrosoftNetCoreAppRefPackDir)' == ''" >$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.ref/</MicrosoftNetCoreAppRefPackDir>
         <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.runtime.$(OutputRid)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>

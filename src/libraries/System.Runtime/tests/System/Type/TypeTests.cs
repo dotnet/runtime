@@ -852,7 +852,7 @@ namespace System.Tests
         static string testtype = "System.Collections.Generic.Dictionary`2[[Program, Foo], [Program, Foo]]";
 
         private static Func<AssemblyName, Assembly> assemblyloader = (aName) => aName.Name == "TestLoadAssembly" ?
-                           Assembly.LoadFrom(@".\TestLoadAssembly.dll") :
+                           Assembly.LoadFrom(Path.Join(".", "TestLoadAssembly.dll")) :
                            null;
         private static Func<Assembly, string, bool, Type> typeloader = (assem, name, ignore) => assem == null ?
                              Type.GetType(name, false, ignore) :

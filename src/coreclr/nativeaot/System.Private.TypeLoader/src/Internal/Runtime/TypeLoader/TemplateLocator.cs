@@ -4,11 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-
-using Internal.Runtime;
-using Internal.Runtime.Augments;
 
 using Internal.NativeFormat;
 using Internal.TypeSystem;
@@ -24,140 +19,7 @@ namespace Internal.Runtime.TypeLoader
         //
         public static TypeDesc TryGetTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
         {
-#if GENERICS_FORCE_USG
-            return TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
-#else
-            // First, see if there is a specific canonical template
-            TypeDesc result = TryGetTypeTemplate_Internal(concreteType, CanonicalFormKind.Specific, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
-
-            // If not found, see if there's a universal canonical template
-            result ??= TryGetUniversalTypeTemplate(concreteType, ref nativeLayoutInfo);
-
-            return result;
-#endif
-        }
-
-        public static TypeDesc TryGetUniversalTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
-        {
-            return TryGetTypeTemplate_Internal(concreteType, CanonicalFormKind.Universal, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
-        }
-
-#if GENERICS_FORCE_USG
-        public TypeDesc TryGetNonUniversalTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
-        {
             return TryGetTypeTemplate_Internal(concreteType, CanonicalFormKind.Specific, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
-        }
-#endif
-
-        /// <summary>
-        /// Get the NativeLayout for a type from a ReadyToRun image.
-        /// </summary>
-        public static bool TryGetMetadataNativeLayout(TypeDesc concreteType, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
-        {
-            nativeLayoutInfoModule = null;
-            nativeLayoutInfoToken = 0;
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            var nativeMetadataType = concreteType.GetTypeDefinition() as TypeSystem.NativeFormat.NativeFormatType;
-            if (nativeMetadataType == null)
-                return false;
-
-            var canonForm = concreteType.ConvertToCanonForm(CanonicalFormKind.Specific);
-            var hashCode = canonForm.GetHashCode();
-
-#if SUPPORTS_R2R_LOADING
-            foreach (var moduleInfo in ModuleList.EnumerateModules())
-            {
-                if (moduleInfo.MetadataReader == null)
-                    continue;
-
-                ExternalReferencesTable externalFixupsTable;
-                NativeHashtable typeTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.MetadataBasedTypeTemplateMap, out externalFixupsTable);
-
-                if (typeTemplatesHashtable.IsNull)
-                    continue;
-
-                var enumerator = typeTemplatesHashtable.Lookup(hashCode);
-                var nativeMetadataUnit = nativeMetadataType.Context.ResolveMetadataUnit(moduleInfo);
-
-                NativeParser entryParser;
-                while (!(entryParser = enumerator.GetNext()).IsNull)
-                {
-                    var entryTypeHandle = entryParser.GetUnsigned().AsHandle();
-                    TypeDesc typeDesc = nativeMetadataUnit.GetType(entryTypeHandle);
-                    Debug.Assert(typeDesc != null);
-                    if (typeDesc == canonForm)
-                    {
-                        TypeLoaderLogger.WriteLine("Found metadata template for type " + concreteType.ToString() + ": " + typeDesc.ToString());
-                        nativeLayoutInfoToken = entryParser.GetUnsigned();
-                        if (nativeLayoutInfoToken == BadTokenFixupValue)
-                        {
-                            throw new BadImageFormatException();
-                        }
-
-                        nativeLayoutInfoModule = moduleHandle;
-                        return true;
-                    }
-                }
-            }
-#endif
-#endif
-
-            return false;
-        }
-
-        /// <summary>
-        /// Get the NativeLayout for a method from a ReadyToRun image.
-        /// </summary>
-        public static bool TryGetMetadataNativeLayout(MethodDesc concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
-        {
-            nativeLayoutInfoModule = null;
-            nativeLayoutInfoToken = 0;
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            var nativeMetadataType = concreteMethod.GetTypicalMethodDefinition() as TypeSystem.NativeFormat.NativeFormatMethod;
-            if (nativeMetadataType == null)
-                return false;
-
-            var canonForm = concreteMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            var hashCode = canonForm.GetHashCode();
-
-#if SUPPORTS_R2R_LOADING
-            foreach (var moduleInfo in ModuleList.EnumerateModules())
-            {
-                if (moduleInfo.MetadataReader == null)
-                    continue;
-
-                ExternalReferencesTable externalFixupsTable;
-                NativeHashtable methodTemplatesHashtable = LoadHashtable(moduleInfo.Handle, ReflectionMapBlob.MetadataBasedGenericMethodsTemplateMap, out externalFixupsTable);
-
-                if (methodTemplatesHashtable.IsNull)
-                    continue;
-
-                var enumerator = methodTemplatesHashtable.Lookup(hashCode);
-                var nativeMetadataUnit = nativeMetadataType.Context.ResolveMetadataUnit(moduleInfo);
-
-                NativeParser entryParser;
-                while (!(entryParser = enumerator.GetNext()).IsNull)
-                {
-                    var entryTypeHandle = entryParser.GetUnsigned().AsHandle();
-                    MethodDesc methodDesc = nativeMetadataUnit.GetMethod(entryTypeHandle, null);
-                    Debug.Assert(methodDesc != null);
-                    if (methodDesc == canonForm)
-                    {
-                        TypeLoaderLogger.WriteLine("Found metadata template for method " + concreteMethod.ToString() + ": " + methodDesc.ToString());
-                        nativeLayoutInfoToken = entryParser.GetUnsigned();
-                        if (nativeLayoutInfoToken == BadTokenFixupValue)
-                        {
-                            throw new BadImageFormatException();
-                        }
-
-                        nativeLayoutInfoModule = moduleInfo;
-                        return true;
-                    }
-                }
-            }
-#endif
-#endif
-            return false;
         }
 
         private static TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
@@ -213,13 +75,7 @@ namespace Internal.Runtime.TypeLoader
         //
         public static InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
-            // First, see if there is a specific canonical template
-            InstantiatedMethod result = TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
-
-            // If not found, see if there's a universal canonical template
-            result ??= TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Universal, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
-
-            return result;
+            return TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
         }
         private static InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {

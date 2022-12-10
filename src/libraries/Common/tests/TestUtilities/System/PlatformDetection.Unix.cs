@@ -55,10 +55,6 @@ namespace System
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 
-        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
-
-        public static bool IsUnixAndSuperUser => !IsWindows && IsSuperUser;
-
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();

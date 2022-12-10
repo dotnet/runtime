@@ -56,7 +56,7 @@ namespace System.Buffers
             {
                 IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector128<byte> bitmap, out BitVector256 lookup);
 
-                return Sse3.IsSupported && lookup.Contains(0)
+                return Ssse3.IsSupported && lookup.Contains(0)
                     ? new IndexOfAnyAsciiByteValues<IndexOfAnyAsciiSearcher.Ssse3HandleZeroInNeedle>(bitmap, lookup)
                     : new IndexOfAnyAsciiByteValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
             }
@@ -101,7 +101,7 @@ namespace System.Buffers
             {
                 IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector128<byte> bitmap, out BitVector256 lookup);
 
-                return Sse3.IsSupported && lookup.Contains(0)
+                return Ssse3.IsSupported && lookup.Contains(0)
                     ? new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Ssse3HandleZeroInNeedle>(bitmap, lookup)
                     : new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
             }

@@ -1108,6 +1108,9 @@ public:
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
 
+    ValueNum EvalHWIntrinsicFunUnary(
+        var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
+
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);
 

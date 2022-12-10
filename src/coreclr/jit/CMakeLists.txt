@@ -124,6 +124,7 @@ set( JIT_SOURCES
   hashbv.cpp
   hwintrinsic.cpp
   hostallocator.cpp
+  ifconversion.cpp
   indirectcalltransformer.cpp
   importercalls.cpp
   importer.cpp
