@@ -1331,17 +1331,10 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
     {
         structType = impNormStructType(structHnd);
     }
-    bool                 alreadyNormalized = false;
-    GenTreeLclVarCommon* structLcl         = nullptr;
+    GenTreeLclVarCommon* structLcl = nullptr;
 
-    genTreeOps oper = structVal->OperGet();
-    switch (oper)
+    switch (structVal->OperGet())
     {
-        // GT_MKREFANY is supported directly by args morphing.
-        case GT_MKREFANY:
-            alreadyNormalized = true;
-            break;
-
         case GT_CALL:
         case GT_RET_EXPR:
             makeTemp = true;
@@ -1355,31 +1348,20 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             FALLTHROUGH;
 
         case GT_IND:
-
         case GT_OBJ:
         case GT_BLK:
         case GT_FIELD:
-            // These should already have the appropriate type.
-            assert(structVal->gtType == structType);
-            alreadyNormalized = true;
-            break;
-
         case GT_CNS_VEC:
-            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
-            break;
-
 #ifdef FEATURE_SIMD
         case GT_SIMD:
-            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
-            break;
-#endif // FEATURE_SIMD
+#endif
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            assert(structVal->gtType == structType);
-            assert(varTypeIsSIMD(structVal) ||
-                   HWIntrinsicInfo::IsMultiReg(structVal->AsHWIntrinsic()->GetHWIntrinsicId()));
-            break;
 #endif
+        case GT_MKREFANY:
+            // These should already have the appropriate type.
+            assert(structVal->TypeGet() == structType);
+            break;
 
         case GT_COMMA:
         {
@@ -1400,22 +1382,15 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 } while (blockNode->OperGet() == GT_COMMA);
             }
 
-            if (blockNode->OperGet() == GT_FIELD)
-            {
-                // If we have a GT_FIELD then wrap it in a GT_OBJ.
-                blockNode = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, blockNode));
-            }
-
 #ifdef FEATURE_SIMD
             if (blockNode->OperIsSimdOrHWintrinsic() || blockNode->IsCnsVec())
             {
                 parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel);
-                alreadyNormalized     = true;
             }
             else
 #endif
             {
-                noway_assert(blockNode->OperIsBlk());
+                noway_assert(blockNode->OperIsBlk() || blockNode->OperIs(GT_FIELD));
 
                 // Sink the GT_COMMA below the blockNode addr.
                 // That is GT_COMMA(op1, op2=blockNode) is transformed into
@@ -1433,7 +1408,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 {
                     structVal = blockNode;
                 }
-                alreadyNormalized = true;
             }
         }
         break;
@@ -1442,22 +1416,19 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             noway_assert(!"Unexpected node in impNormStructVal()");
             break;
     }
-    structVal->gtType = structType;
 
-    if (!alreadyNormalized)
+    if (makeTemp)
     {
-        if (makeTemp)
-        {
-            unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
+        unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
-            impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
+        impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
 
-            // The structVal is now the temp itself
+        // The structVal is now the temp itself
 
-            structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
-            structVal = structLcl;
-        }
-        if ((structType == TYP_STRUCT) && !structVal->OperIsBlk())
+        structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
+        structVal = structLcl;
+
+        if (structType == TYP_STRUCT)
         {
             // Wrap it in a GT_OBJ
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
