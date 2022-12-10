@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Remove="Microsoft.NET.ILLink.Analyzers" />
+  </ItemGroup> 
+  <PropertyGroup>
+    <GeneratePackage>true</GeneratePackage>
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <PackageDescription>Analyzer utilities for ILLink attributes and single-file</PackageDescription>
+  </PropertyGroup>
+
+  <Target Name="GetILLinkAnalyzerFiles"
+          BeforeTargets="GetPackageFiles">
+    <Error Condition="(!Exists('$(ArtifactsBinDir)ILLink.RoslynAnalyzer\$(Configuration)\netstandard2.0')) OR (!Exists('$(ArtifactsBinDir)ILLink.CodeFixProvider\$(Configuration)\netstandard2.0'))" Text="The 'tools.illink' subset must be built before building this project." />
+    <ItemGroup>
+      <File Include="build\*" TargetPath="build" />
+      <File Include="$(ArtifactsBinDir)ILLink.RoslynAnalyzer\$(Configuration)\netstandard2.0\ILLink.RoslynAnalyzer.dll" TargetPath="analyzers/dotnet/cs" />
+      <File Include="$(ArtifactsBinDir)ILLink.CodeFixProvider\$(Configuration)\netstandard2.0\ILLink.CodeFixProvider.dll" TargetPath="analyzers/dotnet/cs" />
+    </ItemGroup>
+  </Target>
+
+</Project>

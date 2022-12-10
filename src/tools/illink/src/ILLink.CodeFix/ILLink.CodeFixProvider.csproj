@@ -9,19 +9,6 @@
     <EnableXlfLocalization>false</EnableXlfLocalization>
   </PropertyGroup>
 
-  <!-- Analyzer package properties -->
-  <PropertyGroup>
-    <IsPackable>true</IsPackable>
-    <!-- Runtime uses the Analyzers package to generate diagnostics generating a circular dependency with this name.
-         Removing until we use live bits -->
-    <!--PackageId>Microsoft.NET.ILLink.Analyzers</PackageId-->
-    <Authors>Microsoft</Authors>
-    <Description>Analyzer utilities for ILLink attributes and single-file</Description>
-    <NoPackageAnalysis>true</NoPackageAnalysis>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
   </ItemGroup>
@@ -33,12 +20,5 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources.resx" GenerateSource="true" />
   </ItemGroup>
-
-  <Target Name="IncludeAnalyzerAssembliesInPkg" DependsOnTargets="InitializeStandardNuspecProperties" AfterTargets="AfterBuild">
-    <ItemGroup>
-      <None Include="$(OutputPath)\**\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-      <None Include="$(OutputPath)\**\Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build" />
-    </ItemGroup>
-  </Target>
 
 </Project>

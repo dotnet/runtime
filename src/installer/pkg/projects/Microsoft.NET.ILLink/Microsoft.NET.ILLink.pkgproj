@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Remove="Microsoft.NET.ILLink" />
+  </ItemGroup> 
+  <PropertyGroup>
+    <GeneratePackage>true</GeneratePackage>
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <PackageDescription>IL Linker</PackageDescription>
+  </PropertyGroup>
+
+  <Target Name="GetILLinkFiles"
+          BeforeTargets="GetPackageFiles">
+    <Error Condition="!Exists('$(ArtifactsBinDir)Mono.Linker')" Text="The 'tools.illink' subset must be built before building this project." />
+    <ItemGroup>
+      <File Include="$(ArtifactsBinDir)Mono.Linker\$(Configuration)\$(NetCoreAppToolCurrent)\illink.dll" TargetPath="lib/$(NetCoreAppToolCurrent)" />
+      <File Include="$(ArtifactsBinDir)Mono.Linker\$(Configuration)\$(NetCoreAppToolCurrent)\illink.runtimeconfig.json" TargetPath="lib/$(NetCoreAppToolCurrent)" />
+      <File Include="$(ArtifactsBinDir)Mono.Linker\ref\$(Configuration)\$(NetCoreAppToolCurrent)\illink.dll" TargetPath="ref/$(NetCoreAppToolCurrent)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Remove="Microsoft.NET.ILLink.Tasks" />
+  </ItemGroup> 
+  <PropertyGroup>
+    <GeneratePackage>true</GeneratePackage>
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <PackageDescription>MSBuild tasks for running the IL Linker</PackageDescription>
+  </PropertyGroup>
+
+  <Target Name="GetILLinkTasksFiles"
+          BeforeTargets="GetPackageFiles">
+    <Error Condition="!Exists('$(ArtifactsBinDir)ILLink.Tasks\$(Configuration)\')" Text="The 'tools.illink' subset must be built before building this project." />
+    <ItemGroup>
+      <File Include="build\*" TargetPath="build" />
+      <File Include="$(ArtifactsBinDir)ILLink.Tasks\$(Configuration)\$(NetCoreAppToolCurrent)\*.dll" TargetPath="tools\$(NetCoreAppToolCurrent)" />
+      <File Include="$(ArtifactsBinDir)ILLink.Tasks\$(Configuration)\$(NetCoreAppToolCurrent)\*.json" TargetPath="tools\$(NetCoreAppToolCurrent)" />
+      <File Include="$(ArtifactsBinDir)ILLink.Tasks\$(Configuration)\net472\*.dll" TargetPath="tools\net472" />
+      <File Include="sdk\Sdk.props" TargetPath="Sdk" />
+    </ItemGroup>
+  </Target>
+
+</Project>

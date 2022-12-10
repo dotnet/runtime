@@ -1,0 +1,24 @@
+<Project>
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props" />
+
+  <ItemGroup>
+    <ILLinkProject Include="Microsoft.NET.ILLink\Microsoft.NET.ILLink.pkgproj" />
+    <ProjectReference Include="@(ILLinkProject)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ILLinkTasksProject Include="Microsoft.NET.ILLink.Tasks\Microsoft.NET.ILLink.Tasks.pkgproj" />
+    <ProjectReference Include="@(ILLinkTasksProject)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ILLinkAnalyzersProject Include="Microsoft.NET.ILLink.Analyzers\Microsoft.NET.ILLink.Analyzers.pkgproj" />
+    <ProjectReference Include="@(ILLinkAnalyzersProject)" />
+  </ItemGroup>
+
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />
+
+  <!-- Ordering matters! Overwriting the Pack target which should just invoke Build. -->
+  <Target Name="Pack" DependsOnTargets="Build" />
+</Project>
+
