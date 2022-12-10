@@ -2854,7 +2854,7 @@ PhaseStatus Compiler::fgEarlyLiveness()
 
     struct EarlyLivenessSequencer : GenTreeVisitor<EarlyLivenessSequencer>
     {
-        GenTree* PrevNode;
+        GenTree* PrevNode = nullptr;
 
         enum
         {
