@@ -29,6 +29,7 @@ UINT32: 'uint32';
 UINT64: 'uint64';
 TYPE: 'type';
 OBJECT: 'object';
+MODULE: '.module';
 
 WHITESPACE: [ \r\n] -> skip;
 
@@ -159,9 +160,9 @@ seralizTypeElement:
 
 /*  Module declaration */
 moduleHead:
-	'.module'
-	| '.module' dottedName
-	| '.module' 'extern' dottedName;
+	MODULE
+	| MODULE dottedName
+	| MODULE 'extern' dottedName;
 
 /*  VTable Fixup table declaration  */
 vtfixupDecl: '.vtfixup' '[' int32 ']' vtfixupAttr 'at' id;
@@ -332,17 +333,21 @@ sigArg:
 	| paramAttr type marshalClause id;
 
 /*  Class referencing  */
+THIS: '.this';
+BASE: '.base';
+NESTER: '.nester';
+THIS_MODULE: '*';
+
 className:
 	'[' dottedName ']' slashedName
 	| '[' mdtoken ']' slashedName
-	| '[' '*' ']' slashedName
-	| '[' '.module' dottedName ']' slashedName
+	| '[' THIS_MODULE ']' slashedName
+	| '[' MODULE dottedName ']' slashedName
 	| slashedName
 	| mdtoken
-	| dottedName // typeDef
-	| '.this'
-	| '.base'
-	| '.nester';
+	| THIS
+	| BASE
+	| NESTER;
 
 slashedName: (dottedName '/')* dottedName;
 
@@ -353,7 +358,7 @@ assemblyDecl: (HASH 'algorithm' int32) | secDecl | asmOrRefDecl;
 typeSpec:
 	className
 	| '[' dottedName ']'
-	| '[' '.module' dottedName ']'
+	| '[' MODULE dottedName ']'
 	| type;
 
 /*  Native types for marshaling signatures  */
@@ -473,16 +478,18 @@ variantTypeElement:
 
 /*  Managed types for signatures  */
 type:
-	elementType (
-		'[' ']'
-		| bounds
-		| '&'
-		| '*'
-		| 'pinned'
-		| 'modreq' '(' typeSpec ')'
-		| 'modopt' '(' typeSpec ')'
-		| typeArgs
-	)*;
+	elementType typeModifiers*;
+
+typeModifiers:
+    '[' ']' # SZArrayModifier
+    | bounds # ArrayModifier
+    | '&' # ByRefModifier
+    | '*' #PtrModifier
+    | 'pinned' #PinnedModifier
+    | 'modreq' '(' typeSpec ')' # RequiredModifier
+    | 'modopt' '(' typeSpec ')' # OptionalModifier
+    | typeArgs # GenericArgumentsModifier
+    ;
 
 elementType:
 	'class' className
@@ -611,28 +618,25 @@ memberRef:
 	| mdtoken;
 
 /* Generic type parameters declaration  */
-typeList: /* EMPTY */ | typeListNotEmpty;
-
-typeListNotEmpty: typeSpec | typeListNotEmpty ',' typeSpec;
+typeList: (typeSpec ',')* typeSpec;
 
 typarsClause: /* EMPTY */ | '<' typars '>';
 
 typarAttrib:
-	'+'
-	| '-'
-	| 'class'
-	| 'valuetype'
-	| 'byreflike'
-	| '.ctor'
-	| 'flags' '(' int32 ')';
+	covariant='+'
+	| contravariant='-'
+	| class='class'
+	| valuetype='valuetype'
+	| byrefLike='byreflike'
+	| ctor='.ctor'
+	| 'flags' '(' flags=int32 ')'
+    ;
 
-typarAttribs: /* EMPTY */ | typarAttrib typarAttribs;
+typarAttribs: typarAttrib*;
 
-typars:
-	typarAttribs tyBound dottedName typarsRest
-	| typarAttribs dottedName typarsRest;
+typar: typarAttribs tyBound? dottedName;
 
-typarsRest: /* EMPTY */ | ',' typars;
+typars: (typar ',')* typar;
 
 tyBound: '(' typeList ')';
 

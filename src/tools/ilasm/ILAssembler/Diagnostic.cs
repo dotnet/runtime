@@ -18,9 +18,11 @@ public record Diagnostic(string Id, DiagnosticSeverity Severity, string Message,
 internal static class DiagnosticIds
 {
     public const string LiteralOutOfRange = "ILA0001";
+    public const string UnsealedValueType = "ILA0002";
 }
 
 internal static class DiagnosticMessageTemplates
 {
     public const string LiteralOutOfRange = "The value '{0}' is out of range";
+    public const string UnsealedValueType = "The value type '{0}' is unsealed; implicitly sealed.";
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace ILAssembler
@@ -79,6 +80,18 @@ namespace ILAssembler
             else if (typeof(T) == typeof(string))
             {
                 writer.WriteSerializedString((string?)(object?)value);
+            }
+        }
+
+        public static void WriteTypeEntity(this BlobBuilder builder, EntityRegistry.TypeEntity entity)
+        {
+            if (entity is EntityRegistry.FakeTypeEntity fakeEntity)
+            {
+                builder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(fakeEntity.TypeSignatureHandle));
+            }
+            else
+            {
+                builder.WriteCompressedInteger(CodedIndex.TypeDefOrRefOrSpec(entity.Handle));
             }
         }
     }
