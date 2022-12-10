@@ -2411,6 +2411,14 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id)
             break;
         }
 
+        case IF_RRD_CNS:
+        case IF_RRW_CNS:
+        case IF_RWR_CNS:
+        {
+            regFor012Bits = id->idReg1();
+            break;
+        }
+
         case IF_RRD_RRD:
         case IF_RRW_RRD:
         case IF_RWR_RRD:
