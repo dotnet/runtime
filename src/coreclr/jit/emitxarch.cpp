@@ -1651,10 +1651,20 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
 
         if ((vexPrefix & 0xFFFF7F80) == 0x00C46100)
         {
-            emitOutputByte(dst, 0xC5);
-            emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
+            // Encoding optimization calculation when estimating the instruction size is
+            // only done when optimizations are enabled since its more expensive. So when
+            // optimizations are disabled we'll have over-predicted the instruction size
+            // by one byte. Due to how IG alignment is done, we only want to emit the 2-byte
+            // prefix if optimizations are enabled or we know we won't negatively impact the
+            // estimated alignment sizes.
 
-            return 2;
+            if (emitComp->opts.OptimizationEnabled() || (emitCurIG->igNum > emitLastAlignedIgNum))
+            {
+                emitOutputByte(dst, 0xC5);
+                emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
+
+                return 2;
+            }
         }
 
         emitOutputByte(dst, ((vexPrefix >> 16) & 0xFF));
