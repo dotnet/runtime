@@ -1658,7 +1658,7 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
             // prefix if optimizations are enabled or we know we won't negatively impact the
             // estimated alignment sizes.
 
-            if (emitComp->opts.OptimizationEnabled() || (emitCurIG->igNum > emitLastAlignedIgNum))
+            if (!emitComp->opts.MinOpts() || (emitCurIG->igNum > emitLastAlignedIgNum))
             {
                 emitOutputByte(dst, 0xC5);
                 emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
@@ -2347,7 +2347,7 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id)
 
     assert(IsVexEncodedInstruction(ins));
 
-    if (!emitComp->opts.OptimizationEnabled())
+    if (emitComp->opts.MinOpts())
     {
         // Don't worry about saving code size when optimizations are disabled
         return 3;
