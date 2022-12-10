@@ -495,115 +495,128 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         return false;
     }
 
-    instrDesc* id = emitGetLastIns();
+    bool result = false;
 
-    switch (id->idInsFmt())
-    {
-        case IF_RRD:
-        case IF_RWR:
-        case IF_RRW:
-
-        case IF_RRD_CNS:
-        case IF_RWR_CNS:
-        case IF_RRW_CNS:
-        case IF_RRW_SHF:
-
-        case IF_RRD_RRD:
-        case IF_RWR_RRD:
-        case IF_RRW_RRD:
-        case IF_RRW_RRW:
-        case IF_RRW_RRW_CNS:
-
-        case IF_RWR_RRD_RRD:
-        case IF_RWR_RRD_RRD_CNS:
-
-        case IF_RWR_RRD_RRD_RRD:
-
-        case IF_RRD_MRD:
-        case IF_RWR_MRD:
-        case IF_RRW_MRD:
-        case IF_RRW_MRD_CNS:
-
-        case IF_RWR_RRD_MRD:
-        case IF_RWR_MRD_CNS:
-        case IF_RWR_RRD_MRD_CNS:
-        case IF_RWR_RRD_MRD_RRD:
-        case IF_RWR_MRD_OFF:
-
-        case IF_RRD_SRD:
-        case IF_RWR_SRD:
-        case IF_RRW_SRD:
-        case IF_RRW_SRD_CNS:
-
-        case IF_RWR_RRD_SRD:
-        case IF_RWR_SRD_CNS:
-        case IF_RWR_RRD_SRD_CNS:
-        case IF_RWR_RRD_SRD_RRD:
-
-        case IF_RRD_ARD:
-        case IF_RWR_ARD:
-        case IF_RRW_ARD:
-        case IF_RRW_ARD_CNS:
-
-        case IF_RWR_RRD_ARD:
-        case IF_RWR_ARD_CNS:
-        case IF_RWR_ARD_RRD:
-        case IF_RWR_RRD_ARD_CNS:
-        case IF_RWR_RRD_ARD_RRD:
+    emitPeepholeLastInstrs(
+        [&](instrDesc* id)
         {
+            switch (id->idInsFmt())
+            {
+                case IF_RRD:
+                case IF_RWR:
+                case IF_RRW:
+
+                case IF_RRD_CNS:
+                case IF_RWR_CNS:
+                case IF_RRW_CNS:
+                case IF_RRW_SHF:
+
+                case IF_RRD_RRD:
+                case IF_RWR_RRD:
+                case IF_RRW_RRD:
+                case IF_RRW_RRW:
+                case IF_RRW_RRW_CNS:
+
+                case IF_RWR_RRD_RRD:
+                case IF_RWR_RRD_RRD_CNS:
+
+                case IF_RWR_RRD_RRD_RRD:
+
+                case IF_RRD_MRD:
+                case IF_RWR_MRD:
+                case IF_RRW_MRD:
+                case IF_RRW_MRD_CNS:
+
+                case IF_RWR_RRD_MRD:
+                case IF_RWR_MRD_CNS:
+                case IF_RWR_RRD_MRD_CNS:
+                case IF_RWR_RRD_MRD_RRD:
+                case IF_RWR_MRD_OFF:
+
+                case IF_RRD_SRD:
+                case IF_RWR_SRD:
+                case IF_RRW_SRD:
+                case IF_RRW_SRD_CNS:
+
+                case IF_RWR_RRD_SRD:
+                case IF_RWR_SRD_CNS:
+                case IF_RWR_RRD_SRD_CNS:
+                case IF_RWR_RRD_SRD_RRD:
+
+                case IF_RRD_ARD:
+                case IF_RWR_ARD:
+                case IF_RRW_ARD:
+                case IF_RRW_ARD_CNS:
+
+                case IF_RWR_RRD_ARD:
+                case IF_RWR_ARD_CNS:
+                case IF_RWR_ARD_RRD:
+                case IF_RWR_RRD_ARD_CNS:
+                case IF_RWR_RRD_ARD_RRD:
+                {
 #ifdef TARGET_AMD64
-            assert((id->idReg1() >= REG_RAX) && (id->idReg1() <= REG_XMM15));
+                    assert((id->idReg1() >= REG_RAX) && (id->idReg1() <= REG_XMM15));
 #else
-            assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_XMM7));
+                    assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_XMM7));
 #endif // !TARGET_AMD64
 
-            if (instrHasImplicitRegPairDest(id->idIns()))
-            {
-                return false;
-            }
+                    if (instrHasImplicitRegPairDest(id->idIns()))
+                    {
+                        if ((id->idReg1() == reg) || (id->idReg2() == reg))
+                        {
+                            result = (id->idOpSize() == EA_4BYTE);
+                            return PEEPHOLE_ABORT;
+                        }
+                        return PEEPHOLE_CONTINUE;
+                    }
 
-            if (id->idReg1() != reg)
-            {
-                return false;
-            }
+                    if (id->idReg1() != reg)
+                    {
+                        return PEEPHOLE_CONTINUE;
+                    }
 
-            // movsx always sign extends to 8 bytes.
-            if (id->idIns() == INS_movsx)
-            {
-                return false;
-            }
+                    // movsx always sign extends to 8 bytes.
+                    if (id->idIns() == INS_movsx)
+                    {
+                        return PEEPHOLE_ABORT;
+                    }
 
 #ifdef TARGET_AMD64
-            if (id->idIns() == INS_movsxd)
-            {
-                return false;
-            }
+                    if (id->idIns() == INS_movsxd)
+                    {
+                        return PEEPHOLE_ABORT;
+                    }
 #endif
 
-            // movzx always zeroes the upper 32 bits.
-            if (id->idIns() == INS_movzx)
-            {
-                return true;
+                    // movzx always zeroes the upper 32 bits.
+                    if (id->idIns() == INS_movzx)
+                    {
+                        result = true;
+                        return PEEPHOLE_ABORT;
+                    }
+
+                    // otherwise rely on operation size.
+                    result = (id->idOpSize() == EA_4BYTE);
+                    return PEEPHOLE_ABORT;
+                }
+
+                case IF_LABEL:
+                case IF_RWR_LABEL:
+                case IF_SWR_LABEL:
+                case IF_METHOD:
+                case IF_METHPTR:
+                {
+                    return PEEPHOLE_ABORT;
+                }
+
+                default:
+                {
+                    return PEEPHOLE_CONTINUE;
+                }
             }
+        });
 
-            // otherwise rely on operation size.
-            return (id->idOpSize() == EA_4BYTE);
-        }
-
-        case IF_LABEL:
-        case IF_RWR_LABEL:
-        case IF_SWR_LABEL:
-        case IF_METHOD:
-        case IF_METHPTR:
-        {
-            return false;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
+    return result;
 }
 
 //------------------------------------------------------------------------

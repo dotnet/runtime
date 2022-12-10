@@ -1017,7 +1017,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
-        emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] = (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
+        emitSetLastInsByIndex(emitGetLastInsIndex(emitInsCount),
+                       (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase)));
     }
 
     // Reset the buffer free pointers
@@ -1166,7 +1167,7 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    memset(&emitLastInstrs, 0, ArrLen(emitLastInstrs));
+    emitClearLastInstrs();
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
@@ -1485,9 +1486,18 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         emitNxtIG(true);
     }
 
+    // If the current IG ins count is zero, we have a new IG
+    // and we need to clear the last recorded instructions.
+    // We do this because we do not want to reference an instruction
+    // from a previous IG as to protect from GC holes.
+    if (emitCurIGinsCnt == 0)
+    {
+        emitClearLastInstrs();
+    }
+
     /* Grab the space for the instruction */
 
-    emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    id = emitSetLastInsByIndex(emitGetLastInsIndex(++emitInsCount), (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize));
     emitCurIGfreeNext += fullSize;
 
     assert(sz >= sizeof(void*));

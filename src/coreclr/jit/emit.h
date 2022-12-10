@@ -2173,11 +2173,42 @@ private:
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
-    instrDesc* emitLastInstrs[16];
+#define EMIT_LAST_INS_COUNT 8
+
+    // A recording of the last instructions, used for peephole optimizations.
+    instrDesc* emitLastInstrs[EMIT_LAST_INS_COUNT];
+
+    inline void emitClearLastInstrs()
+    {
+        memset(&emitLastInstrs, 0, (ArrLen(emitLastInstrs) * sizeof(instrDesc*)));
+    }
+
+    inline unsigned emitGetLastInsIndex(unsigned value) const
+    {
+        return value % ArrLen(emitLastInstrs);
+    }
+
+    inline instrDesc* emitGetLastInsByIndex(unsigned index) const
+    {
+        assert(index >= 0 && index < ArrLen(emitLastInstrs));
+        return emitLastInstrs[index];
+    }
+
+    inline instrDesc* emitSetLastInsByIndex(unsigned index, instrDesc* id)
+    {
+        assert(index >= 0 && index < ArrLen(emitLastInstrs));
+        emitLastInstrs[index] = id;
+        return id;
+    }
+
+    inline instrDesc* emitGetLastIns() const
+    {
+        return emitGetLastInsByIndex(emitGetLastInsIndex(emitInsCount));
+    }
 
     inline bool emitHasLastIns() const
     {
-        return (emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] != nullptr);
+        return (emitGetLastIns() != nullptr);
     }
 
     // Check if a peephole optimization involving emitLastIns is safe.
@@ -2194,9 +2225,41 @@ private:
                                                               //    and it's an extension IG
     }
 
-    inline instrDesc* emitGetLastIns() const
+    enum emitVisitPeepholeResult
     {
-        return emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)];
+        PEEPHOLE_CONTINUE,
+        PEEPHOLE_ABORT
+    };
+
+    // Visit the last few instructions.
+    // Must be safe to do - use emitCanPeepholeLastIns for checking.
+    template <typename Action>
+    void emitPeepholeLastInstrs(Action action)
+    {
+        assert(emitCanPeepholeLastIns());
+
+        instrDesc* id;
+
+        for (unsigned i = 0; i < min(emitInsCount, ArrLen(emitLastInstrs)); i++)
+        {
+            id = emitGetLastInsByIndex(emitGetLastInsIndex(emitInsCount - i));
+
+            if (id == nullptr)
+                return;
+
+            emitVisitPeepholeResult result = action(id);
+
+            switch (action(id))
+            {
+                case PEEPHOLE_ABORT:
+                    return;
+                case PEEPHOLE_CONTINUE:
+                    continue;
+
+                default:
+                    unreached();
+            }
+        }
     }
 
 #ifdef TARGET_ARMARCH
