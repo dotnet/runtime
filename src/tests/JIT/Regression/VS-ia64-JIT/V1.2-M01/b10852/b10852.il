@@ -13,7 +13,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly test3
+.assembly 'b10852'
 {
 
 

@@ -13,7 +13,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'cbyte7a'
+.assembly 'b99403'
 {
 
 

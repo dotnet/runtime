@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 
-.assembly 'x86-test-1084346006' {}
+.assembly 'b309555' {}
 .assembly extern xunit.core {}
 .class ILGEN_0x1a02e09e {
 

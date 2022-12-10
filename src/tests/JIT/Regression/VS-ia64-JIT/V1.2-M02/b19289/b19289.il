@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib{}
-.assembly 'test_09'{}
+.assembly 'b19289'{}
 .assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit MyClass

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly test_17{}
+.assembly 'b12425'{}
 .assembly extern xunit.core {}
 
 .class interface public abstract auto ansi ITrees

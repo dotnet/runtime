@@ -9,7 +9,7 @@
 
 
 .assembly extern mscorlib{}
-.assembly repro{}
+.assembly 'b518440'{}
 
 .class public A
 {

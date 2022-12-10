@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly rembug {}
+.assembly 'b147814_il' {}
 
 .method public static unmanagedexp int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl)
  main() cil managed 

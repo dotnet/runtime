@@ -2,7 +2,7 @@
 .assembly extern legacy library mscorlib {}
 .assembly extern localloc_common{}
 .assembly extern legacy library mscorlib {}
-.assembly 'repro'{}
+.assembly 'b14324'{}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit LocallocTest

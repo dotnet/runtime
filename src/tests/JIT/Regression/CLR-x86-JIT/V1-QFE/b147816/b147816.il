@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.assembly loop {}
+.assembly 'b147816' {}
 .assembly extern mscorlib { }
 .assembly extern System.Console
 {

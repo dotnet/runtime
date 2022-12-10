@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'bug2'
+.assembly 'b11131'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------

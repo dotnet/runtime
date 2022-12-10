@@ -7,7 +7,7 @@
 .assembly extern legacy library mscorlib
 {
 }
-.assembly legacy library 'cs_il'
+.assembly legacy library 'b126221'
 {
 
 

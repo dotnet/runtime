@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly 'test_10'{}
+.assembly 'b12022'{}
 .assembly extern xunit.core {}
 
 

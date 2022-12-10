@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly 'test_08'{}
+.assembly 'b12011'{}
 .assembly extern xunit.core {}
 
 .class private auto ansi import beforefieldinit ShellApplication

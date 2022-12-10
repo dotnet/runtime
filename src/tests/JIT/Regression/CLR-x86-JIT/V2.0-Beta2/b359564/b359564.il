@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly '1093488365' {}
+.assembly 'b359564' {}
 .assembly extern xunit.core {}
 
 .assembly extern System.Console

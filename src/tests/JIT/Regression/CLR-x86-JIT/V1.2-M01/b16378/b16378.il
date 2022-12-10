@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 .assembly extern mscorlib {}
 .assembly extern System {}
-.assembly bbHndIndex {}
+.assembly 'b16378' {}
 .class public bbHndIndex
 {
 .method public static int32 f() cil managed

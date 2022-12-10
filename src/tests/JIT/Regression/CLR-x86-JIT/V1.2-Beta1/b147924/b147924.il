@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 
-.assembly BIGDAT {}
+.assembly 'b147924' {}
 .assembly extern mscorlib
 {
 }

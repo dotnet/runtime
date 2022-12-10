@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly Negative001 {}
+.assembly 'b27077' {}
 .assembly extern xunit.core {}
 .class public auto ansi beforefieldinit GenBase<([mscorlib]System.Object) T>
        extends [mscorlib]System.Object

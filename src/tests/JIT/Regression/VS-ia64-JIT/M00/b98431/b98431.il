@@ -13,7 +13,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly ConsoleApplication2
+.assembly 'b98431'
 {
 
 

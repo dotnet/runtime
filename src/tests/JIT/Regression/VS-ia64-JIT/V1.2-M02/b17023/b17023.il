@@ -15,7 +15,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'test1a'
+.assembly 'b17023'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------

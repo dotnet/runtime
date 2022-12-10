@@ -6,7 +6,7 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
-.assembly Benchmark
+.assembly 'b14364'
 {
   .ver 0:0:0:0
 }

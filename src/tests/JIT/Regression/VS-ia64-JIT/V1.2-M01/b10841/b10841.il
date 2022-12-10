@@ -14,7 +14,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'repro_good'
+.assembly 'b10841'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------

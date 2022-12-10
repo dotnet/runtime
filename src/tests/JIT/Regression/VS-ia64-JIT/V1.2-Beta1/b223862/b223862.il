@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly 'bug1' {}
+.assembly 'b223862' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class ILGEN_0xc766623d {

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly 'DevDiv_278523_32' {}
+.assembly 'DevDiv_278523_Target_32Bit' {}
 .assembly extern xunit.core {}
 
 // This test originally triggered an assert when computing the value number for a block assignment. In particular, the

@@ -17,7 +17,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly call01
+.assembly 'b14355'
 {
 
 

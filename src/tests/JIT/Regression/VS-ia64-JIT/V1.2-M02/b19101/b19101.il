@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib{}
-.assembly 'test_01'{}
+.assembly 'b19101'{}
 .assembly extern xunit.core {}
 
   .class public auto ansi beforefieldinit Driver extends [mscorlib]System.Object

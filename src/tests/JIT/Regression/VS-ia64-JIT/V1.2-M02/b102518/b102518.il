@@ -12,7 +12,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly hole {}
+.assembly 'b102518' {}
 .assembly extern xunit.core {}
 // MVID: {972ABF67-C385-44E6-B525-571BCCECC13C}
 .imagebase 0x00400000

@@ -15,7 +15,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'branchoutoftry'
+.assembly 'b106158'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0

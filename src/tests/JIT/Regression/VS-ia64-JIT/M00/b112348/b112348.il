@@ -13,7 +13,7 @@
 
 .assembly extern mscorlib {}
 
-.assembly 'length0'
+.assembly 'b112348'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0

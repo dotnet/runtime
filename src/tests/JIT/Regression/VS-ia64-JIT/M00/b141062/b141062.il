@@ -14,7 +14,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly ericswitch
+.assembly 'b141062'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------

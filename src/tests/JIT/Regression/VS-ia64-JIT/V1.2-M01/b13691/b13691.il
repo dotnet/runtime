@@ -16,7 +16,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly init_byte
+.assembly 'b13691'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------

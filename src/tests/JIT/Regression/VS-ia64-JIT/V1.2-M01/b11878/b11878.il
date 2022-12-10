@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly 'test_07'{}
+.assembly 'b11878'{}
 .assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit Client extends [mscorlib]System.Object
