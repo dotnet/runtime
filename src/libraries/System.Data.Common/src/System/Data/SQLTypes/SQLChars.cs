@@ -294,8 +294,7 @@ namespace System.Data.SqlTypes
                 throw new SqlNullValueException();
 
             // Validate the arguments
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
 
             if (offset > Length || offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -341,8 +340,7 @@ namespace System.Data.SqlTypes
             else
             {
                 // Validate the arguments
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer));
+                ArgumentNullException.ThrowIfNull(buffer);
 
                 if (_rgchBuf == null)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);
@@ -650,8 +648,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > buffer.Length - offset)
@@ -667,8 +664,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > buffer.Length - offset)

@@ -56,7 +56,7 @@
 	IL0057: ret
   } // end of method ILGEN_CLASS::ILGEN_METHOD
 
-  .method private static int32 Main(string[] args) cil managed
+  .method private static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

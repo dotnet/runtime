@@ -3,19 +3,11 @@
 
 
 using System;
-using System.Runtime;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
-using System.Reflection.Runtime.General;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -26,7 +18,7 @@ namespace Internal.Runtime.TypeLoader
         internal struct DynamicGenericsRegistrationData
         {
             public int TypesToRegisterCount;
-            public IEnumerable<TypeEntryToRegister> TypesToRegister;
+            public IEnumerable<GenericTypeEntry> TypesToRegister;
             public int MethodsToRegisterCount;
             public IEnumerable<GenericMethodEntry> MethodsToRegister;
         }
@@ -40,17 +32,16 @@ namespace Internal.Runtime.TypeLoader
             {
                 int registeredTypesCount = 0;
                 int registeredMethodsCount = 0;
-                int nativeFormatTypesRegisteredCount = 0;
-                TypeEntryToRegister[] registeredTypes = null;
+                GenericTypeEntry[] registeredTypes = null;
                 GenericMethodEntry[] registeredMethods = null;
 
                 try
                 {
                     if (registrationData.TypesToRegister != null)
                     {
-                        registeredTypes = new TypeEntryToRegister[registrationData.TypesToRegisterCount];
+                        registeredTypes = new GenericTypeEntry[registrationData.TypesToRegisterCount];
 
-                        foreach (TypeEntryToRegister typeEntry in registrationData.TypesToRegister)
+                        foreach (GenericTypeEntry typeEntry in registrationData.TypesToRegister)
                         {
                             // Keep track of registered type handles so that we can rollback the registration on exception.
                             registeredTypes[registeredTypesCount++] = typeEntry;
@@ -59,69 +50,12 @@ namespace Internal.Runtime.TypeLoader
                             // We can save a bit of memory by avoiding the redundancy where possible. For now, we are keeping it simple.
 
                             // Register type -> components mapping first so that we can use it during rollback below
-                            if (typeEntry.GenericTypeEntry != null)
-                            {
-                                GenericTypeEntry registeredTypeEntry = _dynamicGenericTypes.AddOrGetExisting(typeEntry.GenericTypeEntry);
-                                if (registeredTypeEntry != typeEntry.GenericTypeEntry && registeredTypeEntry._isRegisteredSuccessfully)
-                                    throw new ArgumentException(SR.Argument_AddingDuplicate);
+                            GenericTypeEntry registeredTypeEntry = _dynamicGenericTypes.AddOrGetExisting(typeEntry);
+                            if (registeredTypeEntry != typeEntry && registeredTypeEntry._isRegisteredSuccessfully)
+                                throw new ArgumentException(SR.Argument_AddingDuplicate);
 
-                                registeredTypeEntry._instantiatedTypeHandle = typeEntry.GenericTypeEntry._instantiatedTypeHandle;
-                                registeredTypeEntry._isRegisteredSuccessfully = true;
-                            }
-                            else
-                            {
-                                MetadataType metadataType = typeEntry.MetadataDefinitionType;
-                                IntPtr nonGcStaticFields = IntPtr.Zero;
-                                IntPtr gcStaticFields = IntPtr.Zero;
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-#if SUPPORTS_R2R_LOADING
-                                uint nonGcStaticsRva = 0;
-                                uint gcStaticsRva = 0;
-
-                                // For images where statics are directly embedded in the image, store the information about where
-                                // to find statics info
-                                if (TypeLoaderEnvironment.TryGetStaticsTableEntry(metadataType, out nonGcStaticsRva, out gcStaticsRva))
-                                {
-                                    ModuleInfo moduleInfo = TypeLoaderEnvironment.GetModuleInfoForType(metadataType);
-
-                                    if (nonGcStaticsRva == 0)
-                                        nonGcStaticFields = TypeLoaderEnvironment.NoStaticsData;
-                                    else
-                                        nonGcStaticFields = moduleInfo.Handle + checked((int)nonGcStaticsRva);
-
-                                    if (gcStaticsRva == 0)
-                                        gcStaticFields = TypeLoaderEnvironment.NoStaticsData;
-                                    else
-                                        gcStaticFields = moduleInfo.Handle + checked((int)gcStaticsRva);
-                                }
-#endif
-
-                                TypeSystem.NativeFormat.NativeFormatType nativeFormatType = metadataType as TypeSystem.NativeFormat.NativeFormatType;
-                                if (nativeFormatType != null)
-                                {
-                                    RegisterNewNamedTypeRuntimeTypeHandle(new QTypeDefinition(nativeFormatType.MetadataReader,
-                                                                                nativeFormatType.Handle),
-                                        nativeFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle,
-                                        nonGcStaticFields,
-                                        gcStaticFields);
-                                }
-#if ECMA_METADATA_SUPPORT
-                                TypeSystem.Ecma.EcmaType ecmaFormatType = metadataType as TypeSystem.Ecma.EcmaType;
-                                if (ecmaFormatType != null)
-                                {
-                                    RegisterNewNamedTypeRuntimeTypeHandle(new QTypeDefinition(ecmaFormatType.MetadataReader,
-                                                                                ecmaFormatType.Handle),
-                                        ecmaFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle,
-                                        nonGcStaticFields,
-                                        gcStaticFields);
-                                }
-#endif
-
-                                nativeFormatTypesRegisteredCount++;
-#else
-                                Environment.FailFast("Ready to Run module type?");
-#endif
-                            }
+                            registeredTypeEntry._instantiatedTypeHandle = typeEntry._instantiatedTypeHandle;
+                            registeredTypeEntry._isRegisteredSuccessfully = true;
                         }
                     }
                     Debug.Assert(registeredTypesCount == registrationData.TypesToRegisterCount);
@@ -167,35 +101,9 @@ namespace Internal.Runtime.TypeLoader
                         {
                             var typeEntry = registeredTypes[i];
                             // There is no Remove feature in the LockFreeReaderHashtable...
-                            if (typeEntry.GenericTypeEntry != null)
-                            {
-                                GenericTypeEntry failedEntry = _dynamicGenericTypes.GetValueIfExists(typeEntry.GenericTypeEntry);
-                                if (failedEntry != null)
-                                    failedEntry._isRegisteredSuccessfully = false;
-                            }
-                            else
-                            {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                                TypeSystem.NativeFormat.NativeFormatType nativeFormatType = typeEntry.MetadataDefinitionType as TypeSystem.NativeFormat.NativeFormatType;
-                                if (nativeFormatType != null)
-                                {
-                                    UnregisterNewNamedTypeRuntimeTypeHandle(new QTypeDefinition(nativeFormatType.MetadataReader,
-                                                                                nativeFormatType.Handle),
-                                                                            nativeFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle);
-                                }
-#if ECMA_METADATA_SUPPORT
-                                TypeSystem.Ecma.EcmaType ecmaFormatType = typeEntry.MetadataDefinitionType as TypeSystem.Ecma.EcmaType;
-                                if (ecmaFormatType != null)
-                                {
-                                    UnregisterNewNamedTypeRuntimeTypeHandle(new QTypeDefinition(ecmaFormatType.MetadataReader,
-                                                                                ecmaFormatType.Handle),
-                                                                            ecmaFormatType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle);
-                                }
-#endif
-#else
-                                Environment.FailFast("Ready to Run module type?");
-#endif
-                            }
+                            GenericTypeEntry failedEntry = _dynamicGenericTypes.GetValueIfExists(typeEntry);
+                            if (failedEntry != null)
+                                failedEntry._isRegisteredSuccessfully = false;
                         }
                         for (int i = 0; i < registeredMethodsCount; i++)
                         {
@@ -217,9 +125,6 @@ namespace Internal.Runtime.TypeLoader
 
                     throw;
                 }
-
-                if (nativeFormatTypesRegisteredCount > 0)
-                    FinishAddingNewNamedTypes();
             }
         }
 

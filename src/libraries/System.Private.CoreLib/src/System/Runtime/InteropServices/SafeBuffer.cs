@@ -409,7 +409,9 @@ namespace System.Runtime.InteropServices
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
 
-            return (uint)Unsafe.SizeOf<T>();
+#pragma warning disable 8500 // sizeof of managed types
+            return (uint)sizeof(T);
+#pragma warning restore 8500
         }
     }
 }

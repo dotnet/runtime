@@ -208,8 +208,6 @@ void MakeNestedTypeName(                // throws on out of memory
 #define ASSEMBLY_SEPARATOR_STR ", "
 #define ASSEMBLY_SEPARATOR_WSTR W(", ")
 #define ASSEMBLY_SEPARATOR_LEN 2
-#define BACKSLASH_CHAR '\\'
-#define BACKSLASH_WCHAR W('\\')
 #define NESTED_SEPARATOR_CHAR '+'
 #define NESTED_SEPARATOR_WCHAR W('+')
 #define NESTED_SEPARATOR_STR "+"

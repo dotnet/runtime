@@ -1748,7 +1748,11 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         byrefNode = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
     }
 
-    GenTree* address = gtNewOperNode(GT_ADD, TYP_BYREF, byrefNode, gtNewIconNode(offset, TYP_I_IMPL));
+    GenTree* address = byrefNode;
+    if (offset != 0)
+    {
+        address = gtNewOperNode(GT_ADD, TYP_BYREF, address, gtNewIconNode(offset, TYP_I_IMPL));
+    }
 
     return address;
 }
@@ -2330,10 +2334,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         GenTree* dest = new (this, GT_BLK)
             GenTreeBlk(GT_BLK, simdType, copyBlkDst, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
         dest->gtFlags |= GTF_GLOB_REF;
-        retVal = gtNewBlkOpNode(dest, simdTree,
-                                false, // not volatile
-                                true); // copyBlock
-        retVal->gtFlags |= ((simdTree->gtFlags | copyBlkDst->gtFlags) & GTF_ALL_EFFECT);
+        retVal = gtNewBlkOpNode(dest, simdTree);
     }
 
     return retVal;

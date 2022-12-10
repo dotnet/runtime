@@ -1,0 +1,6 @@
+<linker>
+    <assembly fullname="library, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.Resources.Dependencies.EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1" preserve="all">
+        </type>
+    </assembly>
+</linker>

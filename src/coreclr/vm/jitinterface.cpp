@@ -1480,6 +1480,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     DWORD fieldFlags = 0;
 
     pResult->offset = pField->GetOffset();
+    pResult->fieldLookup.addr = nullptr;
+
     if (pField->IsStatic())
     {
         fieldFlags |= CORINFO_FLG_FIELD_STATIC;
@@ -1502,10 +1504,12 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             else
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_RVA_ADDRESS;
+                pResult->fieldLookup.addr = pField->GetStaticAddressHandle(NULL);
+                pResult->fieldLookup.accessType = IAT_VALUE;
             }
 
             // We are not going through a helper. The constructor has to be triggered explicitly.
-            if (!pFieldMT->IsClassPreInited())
+            if (!pFieldMT->IsClassInited())
                 fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
         }
         else
@@ -1545,9 +1549,43 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_ADDRESS;
 
+                // Allocate space for the local class if necessary, but don't trigger
+                // class construction.
+                DomainLocalModule* pLocalModule = pFieldMT->GetDomainLocalModule();
+                pLocalModule->PopulateClass(pFieldMT);
+
                 // We are not going through a helper. The constructor has to be triggered explicitly.
-                if (!pFieldMT->IsClassPreInited())
+                if (!pFieldMT->IsClassInited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
+
+                GCX_COOP();
+
+                _ASSERT(!pFieldMT->Collectible());
+                // Field address is expected to be pinned so we don't need to protect it from GC here
+                pResult->fieldLookup.addr = pField->GetStaticAddressHandle((void*)pField->GetBase());
+                pResult->fieldLookup.accessType = IAT_VALUE;
+                if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                {
+                    Object* frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
+
+                    if (frozenObj == nullptr)
+                    {
+                        // Boxed static is not yet set, allocate it
+                        pFieldMT->AllocateRegularStaticBox(pField, (Object**)pResult->fieldLookup.addr);
+                        frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
+                    }
+
+                    _ASSERT(frozenObj != nullptr);
+
+                    // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
+                    // for structs containing gc handles
+                    if (!frozenObj->GetMethodTable()->ContainsPointers() &&
+                        GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
+                    {
+                        pResult->fieldLookup.addr = frozenObj->GetData();
+                        fieldFlags &= ~CORINFO_FLG_FIELD_STATIC_IN_HEAP;
+                    }
+                }
             }
         }
 
@@ -1741,10 +1779,6 @@ int CEEInfo::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
     else if (obj->GetMethodTable()->IsString())
     {
         arrLen = ((STRINGREF)obj)->GetStringLength();
-    }
-    else
-    {
-        UNREACHABLE();
     }
 
     EE_TO_JIT_TRANSITION();
@@ -3417,118 +3451,107 @@ NoSpecialCase:
     }
 }
 
-
-
 /*********************************************************************/
-const char* CEEInfo::getClassName (CORINFO_CLASS_HANDLE clsHnd)
+size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
     CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    const char* result = NULL;
+    size_t bytesWritten = 0;
 
     JIT_TO_EE_TRANSITION();
 
-    TypeHandle VMClsHnd(clsHnd);
-    MethodTable* pMT = VMClsHnd.GetMethodTable();
-    if (pMT == NULL)
+    size_t requiredBufferSize = 0;
+
+    TypeHandle th(cls);
+    IMDInternalImport* pImport = th.GetMethodTable()->GetMDImport();
+
+    auto append = [buffer, bufferSize, &bytesWritten, &requiredBufferSize](const char* str)
     {
-        result = "";
+        size_t strLen = strlen(str);
+
+        if ((buffer != nullptr) && (bytesWritten + 1 < bufferSize))
+        {
+            if (bytesWritten + strLen >= bufferSize)
+            {
+                memcpy(buffer + bytesWritten, str, bufferSize - bytesWritten - 1);
+                bytesWritten = bufferSize - 1;
+            }
+            else
+            {
+                memcpy(buffer + bytesWritten, str, strLen);
+                bytesWritten += strLen;
+            }
+        }
+
+        requiredBufferSize += strLen;
+    };
+
+    // Subset of TypeString that does just what we need while staying in UTF8
+    // and avoiding expensive copies. This function is called a lot in checked
+    // builds.
+    // One difference is that we do not handle escaping type names here (see
+    // IsTypeNameReservedChar). The situation is rare and somewhat complicated
+    // to handle since it requires iterating UTF8 encoded codepoints. Given
+    // that this function is only needed for diagnostics the complication seems
+    // unnecessary.
+    mdTypeDef td = th.GetCl();
+    if (IsNilToken(td))
+    {
+        append("(dynamicClass)");
     }
     else
     {
-#ifdef _DEBUG
-        result = pMT->GetDebugClassName();
-#else // !_DEBUG
-        // since this is for diagnostic purposes only,
-        // give up on the namespace, as we don't have a buffer to concat it
-        // also note this won't show array class names.
-        LPCUTF8 nameSpace;
-        result = pMT->GetFullyQualifiedNameInfo(&nameSpace);
-#endif
-    }
+        DWORD attr;
+        IfFailThrow(pImport->GetTypeDefProps(td, &attr, NULL));
 
-    EE_TO_JIT_TRANSITION();
+        StackSArray<mdTypeDef> nestedHierarchy;
+        nestedHierarchy.Append(td);
 
-    return result;
-}
-
-/***********************************************************************/
-const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(ftnNum >= 0 && ftnNum < CORINFO_HELP_COUNT);
-    } CONTRACTL_END;
-
-    const char* result = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-#ifdef _DEBUG
-    result = hlpFuncTable[ftnNum].name;
-#else
-    result = "AnyJITHelper";
-#endif
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
-
-/*********************************************************************/
-int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**   ppBuf,
-                             int*                                               pnBufLen,
-                             CORINFO_CLASS_HANDLE                               clsHnd,
-                             bool                                               fNamespace,
-                             bool                                               fFullInst,
-                             bool                                               fAssembly)
-{
-    CONTRACTL {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    int nLen = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle th(clsHnd);
-    StackSString ss;
-    TypeString::AppendType(ss,th,
-                           (fNamespace ? TypeString::FormatNamespace : 0) |
-                           (fFullInst ? TypeString::FormatFullInst : 0) |
-                           (fAssembly ? TypeString::FormatAssembly : 0));
-    const WCHAR* szString = ss.GetUnicode();
-    nLen = (int)wcslen(szString);
-    if (*pnBufLen > 0)
-    {
-        // Copy as much as will fit.
-        WCHAR* pBuf = (WCHAR*)*ppBuf;
-        int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
-        for (int i = 0; i < nLenToCopy - 1; i++)
+        if (IsTdNested(attr))
         {
-            pBuf[i] = szString[i];
+            while (SUCCEEDED(pImport->GetNestedClassProps(td, &td)))
+                nestedHierarchy.Append(td);
         }
-        pBuf[nLenToCopy - 1] = 0; // null terminate the string if it wasn't already
 
-        // Update the buffer pointer and buffer size pointer based on the amount actually copied.
-        // Don't include the null terminator. `*ppBuf` will point at the added null terminator.
-        (*ppBuf) += nLenToCopy - 1;
-        (*pnBufLen) -= nLenToCopy - 1;
+        for (SCOUNT_T i = nestedHierarchy.GetCount() - 1; i >= 0; i--)
+        {
+            LPCUTF8 name;
+            LPCUTF8 nameSpace;
+            IfFailThrow(pImport->GetNameOfTypeDef(nestedHierarchy[i], &name, &nameSpace));
+
+            if ((nameSpace != NULL) && (*nameSpace != '\0'))
+            {
+                append(nameSpace);
+                append(".");
+            }
+
+            append(name);
+
+            if (i != 0)
+            {
+                append("+");
+            }
+        }
+    }
+
+    if (bufferSize > 0)
+    {
+        _ASSERTE(bytesWritten < bufferSize);
+        buffer[bytesWritten] = '\0';
+    }
+
+    if (pRequiredBufferSize != nullptr)
+    {
+        *pRequiredBufferSize = requiredBufferSize + 1;
     }
 
     EE_TO_JIT_TRANSITION();
 
-    // Return the actual length of the string, not including the null terminator.
-    return nLen;
+    return bytesWritten;
 }
 
 /*********************************************************************/
@@ -4525,6 +4548,57 @@ bool CEEInfo::isMoreSpecificType(
     result = isMoreSpecificTypeHelper(cls1, cls2);
 
     EE_TO_JIT_TRANSITION();
+    return result;
+}
+
+/*********************************************************************/
+// Returns TypeCompareState::Must if cls is known to be an enum.
+// For enums with known exact type returns the underlying
+// type in underlyingType when the provided pointer is
+// non-NULL.
+// Returns TypeCompareState::May when a runtime check is required.
+TypeCompareState CEEInfo::isEnum(
+        CORINFO_CLASS_HANDLE        cls,
+        CORINFO_CLASS_HANDLE*       underlyingType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    TypeCompareState result = TypeCompareState::May;
+
+    if (underlyingType != nullptr)
+    {
+        *underlyingType = nullptr;
+    }
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle th(cls);
+
+    _ASSERTE(!th.IsNull());
+
+    if (!th.IsGenericVariable())
+    {
+        if (!th.IsTypeDesc() && th.AsMethodTable()->IsEnum())
+        {
+            result = TypeCompareState::Must;
+            if (underlyingType != nullptr)
+            {
+                CorElementType elemType = th.AsMethodTable()->GetInternalCorElementType();
+                TypeHandle underlyingHandle(CoreLibBinder::GetElementType(elemType));
+                *underlyingType = CORINFO_CLASS_HANDLE(underlyingHandle.AsPtr());
+            }
+        }
+        else
+        {
+            result = TypeCompareState::MustNot;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION_LEAF();
     return result;
 }
 
@@ -6143,6 +6217,39 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
 }
 
 /***********************************************************************/
+bool CEEInfo::getStringChar(CORINFO_OBJECT_HANDLE obj, int index, uint16_t* value)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(obj != NULL);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    OBJECTREF objRef = getObjectFromJitHandle(obj);
+    MethodTable* type = objRef->GetMethodTable();
+    if (type->IsString())
+    {
+        STRINGREF strRef = (STRINGREF)objRef;
+        if (strRef->GetStringLength() > (DWORD)index)
+        {
+            *value = strRef->GetBuffer()[index];
+            result = true;
+        }
+    }
+    
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/***********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 {
     CONTRACTL{
@@ -6298,83 +6405,37 @@ unsigned CEEInfo::getMethodHash (CORINFO_METHOD_HANDLE ftnHnd)
 }
 
 /***********************************************************************/
-const char* CEEInfo::getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** scopeName)
+size_t CEEInfo::printMethodName(CORINFO_METHOD_HANDLE ftnHnd, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    const char* result = NULL;
+    size_t bytesWritten = 0;
 
     JIT_TO_EE_TRANSITION();
 
-    MethodDesc *ftn;
+    MethodDesc* ftn = GetMethod(ftnHnd);
+    const char* ftnName = ftn->GetName();
 
-    ftn = GetMethod(ftnHnd);
-
-    if (scopeName != 0)
+    size_t len = strlen(ftnName);
+    if (bufferSize > 0)
     {
-        if (ftn->IsLCGMethod())
-        {
-            *scopeName = "DynamicClass";
-        }
-        else if (ftn->IsILStub())
-        {
-            *scopeName = ILStubResolver::GetStubClassName(ftn);
-        }
-        else
-        {
-            MethodTable * pMT = ftn->GetMethodTable();
-#if defined(_DEBUG)
-#ifdef FEATURE_SYMDIFF
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SymDiffDump))
-            {
-                if (pMT->IsArray())
-                {
-                    ssClsNameBuff.Clear();
-                    ssClsNameBuff.SetUTF8(pMT->GetDebugClassName());
-                }
-                else
-                    pMT->_GetFullyQualifiedNameForClassNestedAware(ssClsNameBuff);
-            }
-            else
-            {
-#endif
-                // Calling _GetFullyQualifiedNameForClass in chk build is very expensive
-                // since it construct the class name everytime we call this method. In chk
-                // builds we already have a cheaper way to get the class name -
-                // GetDebugClassName - which doesn't calculate the class name everytime.
-                // This results in huge saving in Ngen time for checked builds.
-                ssClsNameBuff.Clear();
-                ssClsNameBuff.SetUTF8(pMT->GetDebugClassName());
-
-#ifdef FEATURE_SYMDIFF
-            }
-#endif
-            // Append generic instantiation at the end
-            Instantiation inst = pMT->GetInstantiation();
-            if (!inst.IsEmpty())
-                TypeString::AppendInst(ssClsNameBuff, inst);
-
-            ssClsNameBuffUTF8.SetAndConvertToUTF8(ssClsNameBuff.GetUnicode());
-            *scopeName = ssClsNameBuffUTF8.GetUTF8();
-#else // !_DEBUG
-            // since this is for diagnostic purposes only,
-            // give up on the namespace, as we don't have a buffer to concat it
-            // also note this won't show array class names.
-            LPCUTF8 nameSpace;
-            *scopeName= pMT->GetFullyQualifiedNameInfo(&nameSpace);
-#endif // !_DEBUG
-        }
+        bytesWritten = min(len, bufferSize - 1);
+        memcpy(buffer, ftnName, bytesWritten);
+        buffer[bytesWritten] = '\0';
     }
 
-    result = ftn->GetName();
+    if (pRequiredBufferSize != NULL)
+    {
+        *pRequiredBufferSize = len + 1;
+    }
 
     EE_TO_JIT_TRANSITION();
 
-    return result;
+    return bytesWritten;
 }
 
 const char* CEEInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftnHnd, const char** className, const char** namespaceName, const char **enclosingClassName)
@@ -6766,27 +6827,8 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         return true;
     }
-    else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__SIZEOF)->GetMemberDef())
-    {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        mdToken tokGenericArg = FindGenericMethodArgTypeSpec(CoreLibBinder::GetModule()->GetMDImport());
-
-        static const BYTE ilcode[] =
-        {
-            CEE_PREFIX1, (CEE_SIZEOF & 0xFF), (BYTE)(tokGenericArg), (BYTE)(tokGenericArg >> 8), (BYTE)(tokGenericArg >> 16), (BYTE)(tokGenericArg >> 24),
-            CEE_RET
-        };
-
-        setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 1);
-
-        return true;
-    }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef() ||
              tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__OBJECT_AS)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_POINTER)->GetMemberDef() ||
              tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_IN)->GetMemberDef())
     {
         // Return the argument that was passed in.
@@ -8123,15 +8165,15 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         if (dontInline(inlineResult))
         {
             LOG((LF_JIT, LL_INFO100000,
-                 "While compiling '%S', inline of '%S' into '%S' failed because: '%s'.\n",
-                 currentMethodName.GetUnicode(), inlineeMethodName.GetUnicode(),
-                 inlinerMethodName.GetUnicode(), reason));
+                 "While compiling '%s', inline of '%s' into '%s' failed because: '%s'.\n",
+                 currentMethodName.GetUTF8(), inlineeMethodName.GetUTF8(),
+                 inlinerMethodName.GetUTF8(), reason));
         }
         else if(inlineResult == INLINE_PASS)
         {
-            LOG((LF_JIT, LL_INFO100000, "While compiling '%S', inline of '%S' into '%S' succeeded.\n",
-                 currentMethodName.GetUnicode(), inlineeMethodName.GetUnicode(),
-                 inlinerMethodName.GetUnicode()));
+            LOG((LF_JIT, LL_INFO100000, "While compiling '%s', inline of '%s' into '%s' succeeded.\n",
+                 currentMethodName.GetUTF8(), inlineeMethodName.GetUTF8(),
+                 inlinerMethodName.GetUTF8()));
 
         }
     }
@@ -8368,9 +8410,9 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
         if (tailCallResult == TAILCALL_FAIL)
         {
             LOG((LF_JIT, LL_INFO100000,
-                 "While compiling '%S', %Splicit tail call from '%S' to '%S' failed because: '%s'.\n",
-                 currentMethodName.GetUnicode(), fIsTailPrefix ? W("ex") : W("im"),
-                 callerMethodName.GetUnicode(), calleeMethodName.GetUnicode(), reason));
+                 "While compiling '%s', %splicit tail call from '%s' to '%s' failed because: '%s'.\n",
+                 currentMethodName.GetUTF8(), fIsTailPrefix ? "ex" : "im",
+                 callerMethodName.GetUTF8(), calleeMethodName.GetUTF8(), reason));
         }
         else
         {
@@ -8379,9 +8421,9 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
             };
             _ASSERTE(tailCallResult >= 0 && (size_t)tailCallResult < ARRAY_SIZE(tailCallType));
             LOG((LF_JIT, LL_INFO100000,
-                 "While compiling '%S', %Splicit tail call from '%S' to '%S' generated as a %s.\n",
-                 currentMethodName.GetUnicode(), fIsTailPrefix ? W("ex") : W("im"),
-                 callerMethodName.GetUnicode(), calleeMethodName.GetUnicode(), tailCallType[tailCallResult]));
+                 "While compiling '%s', %splicit tail call from '%s' to '%s' generated as a %s.\n",
+                 currentMethodName.GetUTF8(), fIsTailPrefix ? "ex" : "im",
+                 callerMethodName.GetUTF8(), calleeMethodName.GetUTF8(), tailCallType[tailCallResult]));
 
         }
     }
@@ -9247,44 +9289,36 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
 }
 
 /*********************************************************************/
-const char* CEEInfo::getFieldName (CORINFO_FIELD_HANDLE fieldHnd, const char** scopeName)
+size_t CEEInfo::printFieldName(CORINFO_FIELD_HANDLE fieldHnd, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    const char* result = NULL;
-
+    size_t bytesWritten = 0;
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*) fieldHnd;
-    if (scopeName != 0)
+    const char* fieldName = field->GetName();
+
+    size_t len = strlen(fieldName);
+    if (bufferSize > 0)
     {
-        TypeHandle t = TypeHandle(field->GetApproxEnclosingMethodTable());
-        *scopeName = "";
-        if (!t.IsNull())
-        {
-#ifdef _DEBUG
-            t.GetName(ssClsNameBuff);
-            ssClsNameBuffUTF8.SetAndConvertToUTF8(ssClsNameBuff.GetUnicode());
-            *scopeName = ssClsNameBuffUTF8.GetUTF8();
-#else // !_DEBUG
-            // since this is for diagnostic purposes only,
-            // give up on the namespace, as we don't have a buffer to concat it
-            // also note this won't show array class names.
-            LPCUTF8 nameSpace;
-            *scopeName= t.GetMethodTable()->GetFullyQualifiedNameInfo(&nameSpace);
-#endif // !_DEBUG
-        }
+        bytesWritten = min(len, bufferSize - 1);
+        memcpy(buffer, fieldName, len);
+        buffer[bytesWritten] = '\0';
     }
 
-    result = field->GetName();
+    if (pRequiredBufferSize != NULL)
+    {
+        *pRequiredBufferSize = len + 1;
+    }
 
     EE_TO_JIT_TRANSITION();
 
-    return result;
+    return bytesWritten;
 }
 
 /*********************************************************************/
@@ -11912,55 +11946,7 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
-/*********************************************************************/
-void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
-                                  void **ppIndirection)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void *result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    FieldDesc* field = (FieldDesc*) fieldHnd;
-
-    MethodTable* pMT = field->GetEnclosingMethodTable();
-
-    _ASSERTE(!pMT->ContainsGenericVariables());
-
-    void *base = NULL;
-
-    if (!field->IsRVA())
-    {
-        // <REVISIT_TODO>@todo: assert that the current method being compiled is unshared</REVISIT_TODO>
-        // We must not call here for statics of collectible types.
-        _ASSERTE(!pMT->Collectible());
-
-        // Allocate space for the local class if necessary, but don't trigger
-        // class construction.
-        DomainLocalModule *pLocalModule = pMT->GetDomainLocalModule();
-        pLocalModule->PopulateClass(pMT);
-
-        GCX_COOP();
-
-        base = (void *) field->GetBase();
-    }
-
-    result = field->GetStaticAddressHandle(base);
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
         THROWS;
@@ -11971,6 +11957,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     _ASSERT(fieldHnd != NULL);
     _ASSERT(buffer != NULL);
     _ASSERT(bufferSize > 0);
+    _ASSERT(valueOffset >= 0);
 
     bool result = false;
 
@@ -11978,7 +11965,6 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
     _ASSERTE(field->IsStatic());
-    _ASSERTE((unsigned)bufferSize == field->GetSize());
 
     MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
     _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
@@ -11994,6 +11980,10 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         GCX_COOP();
         if (field->IsObjRef())
         {
+            _ASSERT(!field->IsRVA());
+            _ASSERT(valueOffset == 0); // there is no point in returning a chunk of a gc handle
+            _ASSERT((UINT)bufferSize == field->GetSize());
+
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
             if (fieldObj != NULL)
             {
@@ -12024,10 +12014,17 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         }
         else
         {
-            void* fldAddr = field->GetCurrentStaticAddress();
-            _ASSERTE(fldAddr != nullptr);
-            memcpy(buffer, fldAddr, bufferSize);
-            result = true;
+            // Either RVA, primitive or struct (or even part of that struct)
+            size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
+            UINT size = field->GetSize();
+            _ASSERTE(baseAddr > 0);
+            _ASSERTE(size > 0);
+          
+            if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
+            {
+                memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                result = true;
+            }
         }
     }
 
@@ -13047,7 +13044,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (LoggingOn(LF_JIT, LL_INFO10000))
             TypeString::AppendMethodDebug(methodString, ftn);
 
-        LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %S %s\n", ftn, methodString.GetUnicode(), ftn->m_pszDebugMethodSignature));
+        LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %s %s\n", ftn, methodString.GetUTF8(), ftn->m_pszDebugMethodSignature));
     }
 
 #if 0
@@ -13082,7 +13079,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (LoggingOn(LF_VERIFIER, LL_INFO100))
             TypeString::AppendMethodDebug(methodString, ftn);
 
-        LOG((LF_VERIFIER, LL_INFO100, "{ Will verify method (%p) %S %s\n", ftn, methodString.GetUnicode(), ftn->m_pszDebugMethodSignature));
+        LOG((LF_VERIFIER, LL_INFO100, "{ Will verify method (%p) %s %s\n", ftn, methodString.GetUTF8(), ftn->m_pszDebugMethodSignature));
     }
 #endif //_DEBUG
 
@@ -14509,33 +14506,6 @@ InfoAccessType CEEInfo::emptyStringLiteral(void ** ppValue)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
-}
-
-void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
-                                  void **ppIndirection)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void *result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    FieldDesc* field = (FieldDesc*)fieldHnd;
-
-    _ASSERTE(field->IsRVA());
-
-    result = field->GetStaticAddressHandle(NULL);
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,

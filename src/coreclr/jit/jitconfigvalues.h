@@ -297,9 +297,13 @@ CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the Alt
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
-CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1)   // Enable the enregistration of locals that are
-                                                                     // defined or used in a multireg context.
-CONFIG_INTEGER(JitStressEVEXEncoding, W("JitStressEVEXEncoding"), 0) // Enable EVEX encoding for SIMD instructions.
+CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
+                                                                   // defined or used in a multireg context.
+#if defined(DEBUG)
+CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable EVEX encoding for SIMD instructions when
+                                                                     // AVX-512VL is available.
+CONFIG_INTEGER(JitForceEVEXEncoding, W("JitForceEVEXEncoding"), 0)   // Force EVEX encoding for SIMD instructions.
+#endif
 
 // clang-format off
 
@@ -417,9 +421,12 @@ CONFIG_INTEGER(JitDoEarlyProp, W("JitDoEarlyProp"), 1) // Perform Early Value Pr
 CONFIG_INTEGER(JitDoLoopHoisting, W("JitDoLoopHoisting"), 1)   // Perform loop hoisting on loop invariant values
 CONFIG_INTEGER(JitDoLoopInversion, W("JitDoLoopInversion"), 1) // Perform loop inversion on "for/while" loops
 CONFIG_INTEGER(JitDoRangeAnalysis, W("JitDoRangeAnalysis"), 1) // Perform range check analysis
+CONFIG_INTEGER(JitDoVNBasedDeadStoreRemoval, W("JitDoVNBasedDeadStoreRemoval"), 1) // Perform VN-based dead store
+                                                                                   // removal
 CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
 CONFIG_STRING(JitEnableRboRange, W("JitEnableRboRange"))
 CONFIG_STRING(JitEnableTailMergeRange, W("JitEnableTailMergeRange"))
+CONFIG_STRING(JitEnableVNBasedDeadStoreRemovalRange, W("JitEnableVNBasedDeadStoreRemovalRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions

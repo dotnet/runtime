@@ -3011,6 +3011,7 @@ mono_get_field_token (MonoClassField *field)
 	MonoClass *klass = m_field_get_parent (field);
 	int i;
 
+	/* metadata-update: there are no updates during AOT */
 	g_assert (!m_field_is_from_update (field));
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
@@ -8416,6 +8417,7 @@ parse_cpu_features (const gchar *attr)
 	else if (!strcmp (attr + prefix, "dotprod"))
 		feature = MONO_CPU_ARM64_DP;
 #elif defined(TARGET_WASM)
+	// MONO_CPU_WASM_BASE is unconditionally set in mini_get_cpu_features.
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
 #else

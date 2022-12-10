@@ -185,6 +185,7 @@ INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds t
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                                INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FREQUENCY,                 int,    "rough call site frequency",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(HAS_PROFILE_WEIGHTS,       bool,   "profile weights are available",        INFORMATION, CALLSITE)
+INLINE_OBSERVATION(INSIDE_THROW_BLOCK,        bool,   "inside throw block",                   INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IN_LOOP,                   bool,   "call site is in a loop",               INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IN_TRY_REGION,             bool,   "call site is in a try region",         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(IN_NORETURN_REGION,        bool,   "call site is in a no-return region",   INFORMATION, CALLSITE)

@@ -7,8 +7,8 @@
 #include <list>
 
 #include "pal.h"
-#include <external/rapidjson/fwd.h>
 #include "fx_reference.h"
+#include "json_parser.h"
 
 class runtime_config_t
 {

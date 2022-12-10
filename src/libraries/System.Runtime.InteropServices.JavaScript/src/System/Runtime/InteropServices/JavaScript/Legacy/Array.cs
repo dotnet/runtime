@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public Array(params object[] _params)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Array), _params))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         /// <summary>

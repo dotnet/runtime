@@ -14,12 +14,14 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Reflection;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Avx2
 {
     public static partial class Program
     {
-        private static void MaskLoadInt64()
+        [Fact]
+        public static void MaskLoadInt64()
         {
             var test = new SimpleBinaryOpTest__MaskLoadInt64();
 

@@ -486,7 +486,7 @@ namespace System.IO.Pipes
         }
 
         internal static void ConfigureSocket(
-            Socket s, SafePipeHandle pipeHandle,
+            Socket s, SafePipeHandle _,
             PipeDirection direction, int inBufferSize, int outBufferSize, HandleInheritability inheritability)
         {
             if (inBufferSize > 0)

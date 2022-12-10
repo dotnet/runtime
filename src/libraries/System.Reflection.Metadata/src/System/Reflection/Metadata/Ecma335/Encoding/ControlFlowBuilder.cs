@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -13,20 +11,34 @@ namespace System.Reflection.Metadata.Ecma335
         // internal for testing:
         internal readonly struct BranchInfo
         {
-            internal readonly int ILOffset;
+            // The offset to the label operand inside the instruction.
+            internal readonly int OperandOffset;
             internal readonly LabelHandle Label;
-            private readonly byte _opCode;
+            // Label offsets are calculated from the end of the instruction that contains them.
+            // This value contains the displacement from the start of the label operand
+            // to the end of the instruction. It is equal to one on short branches,
+            // four on long branches and bigger on the switch instruction.
+            private readonly int _instructionEndDisplacement;
 
-            internal ILOpCode OpCode => (ILOpCode)_opCode;
+            // The following two fields are used for error reporting and tests.
 
-            internal BranchInfo(int ilOffset, LabelHandle label, ILOpCode opCode)
+            // The offset to the start of the instruction.
+            internal readonly int ILOffset;
+            internal readonly ILOpCode OpCode;
+
+            internal bool IsShortBranch => _instructionEndDisplacement == 1;
+            internal int OperandSize => Math.Min(_instructionEndDisplacement, 4);
+
+            internal BranchInfo(int operandOffset, LabelHandle label, int instructionEndDisplacement, int ilOffset, ILOpCode opCode)
             {
-                ILOffset = ilOffset;
+                OperandOffset = operandOffset;
                 Label = label;
-                _opCode = (byte)opCode;
+                _instructionEndDisplacement = instructionEndDisplacement;
+                ILOffset = ilOffset;
+                OpCode = opCode;
             }
 
-            internal int GetBranchDistance(ImmutableArray<int>.Builder labels, ILOpCode branchOpCode, int branchILOffset, bool isShortBranch)
+            internal int GetBranchDistance(List<int> labels)
             {
                 int labelTargetOffset = labels[Label.Id - 1];
                 if (labelTargetOffset < 0)
@@ -34,16 +46,15 @@ namespace System.Reflection.Metadata.Ecma335
                     Throw.InvalidOperation_LabelNotMarked(Label.Id);
                 }
 
-                int branchInstructionSize = 1 + (isShortBranch ? sizeof(sbyte) : sizeof(int));
-                int distance = labelTargetOffset - (ILOffset + branchInstructionSize);
+                int distance = labelTargetOffset - (OperandOffset + _instructionEndDisplacement);
 
-                if (isShortBranch && unchecked((sbyte)distance) != distance)
+                if (IsShortBranch && unchecked((sbyte)distance) != distance)
                 {
                     // We could potentially implement algorithm that automatically fixes up branch instructions to accommodate for bigger distances (short vs long),
                     // however an optimal algorithm would be rather complex (something like: calculate topological ordering of crossing branch instructions
                     // and then use fixed point to eliminate cycles). If the caller doesn't care about optimal IL size they can use long branches whenever the
                     // distance is unknown upfront. If they do they probably implement more sophisticated algorithm for IL layout optimization already.
-                    throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, branchOpCode, branchILOffset, distance));
+                    throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, OpCode, ILOffset, distance));
                 }
 
                 return distance;
@@ -75,14 +86,14 @@ namespace System.Reflection.Metadata.Ecma335
             }
         }
 
-        private readonly ImmutableArray<BranchInfo>.Builder _branches;
-        private readonly ImmutableArray<int>.Builder _labels;
-        private ImmutableArray<ExceptionHandlerInfo>.Builder? _lazyExceptionHandlers;
+        private readonly List<BranchInfo> _branches;
+        private readonly List<int> _labels;
+        private List<ExceptionHandlerInfo>? _lazyExceptionHandlers;
 
         public ControlFlowBuilder()
         {
-            _branches = ImmutableArray.CreateBuilder<BranchInfo>();
-            _labels = ImmutableArray.CreateBuilder<int>();
+            _branches = new List<BranchInfo>();
+            _labels = new List<int>();
         }
 
         /// <summary>
@@ -93,25 +104,42 @@ namespace System.Reflection.Metadata.Ecma335
             _branches.Clear();
             _labels.Clear();
             _lazyExceptionHandlers?.Clear();
+            RemainingSwitchBranches = 0;
         }
 
         internal LabelHandle AddLabel()
         {
+            ValidateNotInSwitch();
             _labels.Add(-1);
             return new LabelHandle(_labels.Count);
         }
 
-        internal void AddBranch(int ilOffset, LabelHandle label, ILOpCode opCode)
+        internal void AddBranch(int operandOffset, LabelHandle label, int instructionEndDisplacement, int ilOffset, ILOpCode opCode)
         {
-            Debug.Assert(ilOffset >= 0);
-            Debug.Assert(_branches.Count == 0 || ilOffset > _branches.Last().ILOffset);
+            Debug.Assert(operandOffset >= 0);
+            Debug.Assert(_branches.Count == 0 || operandOffset > _branches[_branches.Count - 1].OperandOffset);
             ValidateLabel(label, nameof(label));
-            _branches.Add(new BranchInfo(ilOffset, label, opCode));
+#if DEBUG
+            switch (instructionEndDisplacement)
+            {
+                case 1:
+                    Debug.Assert(opCode.GetBranchOperandSize() == 1);
+                    break;
+                case 4:
+                    Debug.Assert(opCode == ILOpCode.Switch || opCode.GetBranchOperandSize() == 4);
+                    break;
+                default:
+                    Debug.Assert(instructionEndDisplacement > 4 && instructionEndDisplacement % 4 == 0 && opCode == ILOpCode.Switch);
+                    break;
+            }
+#endif
+            _branches.Add(new BranchInfo(operandOffset, label, instructionEndDisplacement, ilOffset, opCode));
         }
 
         internal void MarkLabel(int ilOffset, LabelHandle label)
         {
             Debug.Assert(ilOffset >= 0);
+            ValidateNotInSwitch();
             ValidateLabel(label, nameof(label));
             _labels[label.Id - 1] = ilOffset;
         }
@@ -214,8 +242,9 @@ namespace System.Reflection.Metadata.Ecma335
             ValidateLabel(tryEnd, nameof(tryEnd));
             ValidateLabel(handlerStart, nameof(handlerStart));
             ValidateLabel(handlerEnd, nameof(handlerEnd));
+            ValidateNotInSwitch();
 
-            _lazyExceptionHandlers ??= ImmutableArray.CreateBuilder<ExceptionHandlerInfo>();
+            _lazyExceptionHandlers ??= new List<ExceptionHandlerInfo>();
 
             _lazyExceptionHandlers.Add(new ExceptionHandlerInfo(kind, tryStart, tryEnd, handlerStart, handlerEnd, filterStart, catchType));
         }
@@ -229,6 +258,25 @@ namespace System.Reflection.Metadata.Ecma335
         internal int BranchCount => _branches.Count;
 
         internal int ExceptionHandlerCount => _lazyExceptionHandlers?.Count ?? 0;
+
+        internal int RemainingSwitchBranches { get; set; }
+
+        internal void ValidateNotInSwitch()
+        {
+            if (RemainingSwitchBranches > 0)
+            {
+                Throw.InvalidOperation(SR.SwitchInstructionEncoderTooFewBranches);
+            }
+        }
+
+        internal void SwitchBranchAdded()
+        {
+            if (RemainingSwitchBranches == 0)
+            {
+                Throw.InvalidOperation(SR.SwitchInstructionEncoderTooManyBranches);
+            }
+            RemainingSwitchBranches--;
+        }
 
         /// <exception cref="InvalidOperationException" />
         internal void CopyCodeAndFixupBranches(BlobBuilder srcBuilder, BlobBuilder dstBuilder)
@@ -252,7 +300,7 @@ namespace System.Reflection.Metadata.Ecma335
                 while (true)
                 {
                     // copy bytes preceding the next branch, or till the end of the blob:
-                    int chunkSize = Math.Min(branch.ILOffset - srcOffset, srcBlob.Length - srcBlobOffset);
+                    int chunkSize = Math.Min(branch.OperandOffset - srcOffset, srcBlob.Length - srcBlobOffset);
                     dstBuilder.WriteBytes(srcBlob.Buffer, srcBlobOffset, chunkSize);
                     srcOffset += chunkSize;
                     srcBlobOffset += chunkSize;
@@ -264,22 +312,17 @@ namespace System.Reflection.Metadata.Ecma335
                         break;
                     }
 
-                    Debug.Assert(srcBlob.Buffer[srcBlobOffset] == (byte)branch.OpCode);
-
-                    int operandSize = branch.OpCode.GetBranchOperandSize();
-                    bool isShortInstruction = operandSize == 1;
+                    int operandSize = branch.OperandSize;
+                    bool isShortInstruction = branch.IsShortBranch;
 
                     // Note: the 4B operand is contiguous since we wrote it via BlobBuilder.WriteInt32()
                     Debug.Assert(
-                        srcBlobOffset + 1 == srcBlob.Length ||
+                        srcBlobOffset == srcBlob.Length ||
                         (isShortInstruction ?
-                           srcBlob.Buffer[srcBlobOffset + 1] == 0xff :
-                           BitConverter.ToUInt32(srcBlob.Buffer, srcBlobOffset + 1) == 0xffffffff));
+                           srcBlob.Buffer[srcBlobOffset] == 0xff :
+                           BitConverter.ToUInt32(srcBlob.Buffer, srcBlobOffset) == 0xffffffff));
 
-                    // write branch opcode:
-                    dstBuilder.WriteByte(srcBlob.Buffer[srcBlobOffset]);
-
-                    int branchDistance = branch.GetBranchDistance(_labels, branch.OpCode, srcOffset, isShortInstruction);
+                    int branchDistance = branch.GetBranchDistance(_labels);
 
                     // write branch operand:
                     if (isShortInstruction)
@@ -291,13 +334,16 @@ namespace System.Reflection.Metadata.Ecma335
                         dstBuilder.WriteInt32(branchDistance);
                     }
 
-                    srcOffset += sizeof(byte) + operandSize;
+                    srcOffset += operandSize;
 
                     // next branch:
                     branchIndex++;
                     if (branchIndex == _branches.Count)
                     {
-                        branch = new BranchInfo(int.MaxValue, label: default, opCode: default);
+                        // We have processed all branches. The MaxValue will cause the rest
+                        // of the IL stream to be directly copied to the destination blob.
+                        branch = new BranchInfo(operandOffset: int.MaxValue, label: default,
+                            instructionEndDisplacement: default, ilOffset: default, opCode: default);
                     }
                     else
                     {
@@ -311,8 +357,8 @@ namespace System.Reflection.Metadata.Ecma335
                         break;
                     }
 
-                    // skip fake branch instruction:
-                    srcBlobOffset += sizeof(byte) + operandSize;
+                    // skip fake branch operand:
+                    srcBlobOffset += operandSize;
                 }
             }
         }

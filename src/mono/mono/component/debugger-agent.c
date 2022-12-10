@@ -6175,12 +6175,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 			err = decode_value (sig->params [i], domain, arg_buf [i], p, &p, end, TRUE);
 			if (err != ERR_NONE)
 				break;
-			if (mono_class_is_nullable (arg_class)) {
-				args [i] = mono_nullable_box (arg_buf [i], arg_class, error);
-				mono_error_assert_ok (error);
-			} else {
-				args [i] = arg_buf [i];
-			}
+			args [i] = arg_buf [i];
 		}
 	}
 
@@ -7306,7 +7301,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				g_free (req);
 				return err;
 			}
-#if defined(TARGET_WASM) && !defined(HOST_WASI)
+#if defined(HOST_BROWSER)
 			int isBPOnManagedCode = 0;
 			SingleStepReq *ss_req = req->info;
 			if (ss_req && ss_req->bps) {
@@ -9825,8 +9820,6 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (!found)
 				goto invalid_fieldid;
 get_field_value:
-			/* TODO: metadata-update: implement support for added fields */
-			g_assert (!m_field_is_from_update (f));
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
@@ -9849,7 +9842,17 @@ get_field_value:
 				buffer_add_value (buf, f->type, val, obj->vtable->domain);
 				g_free (val);
 			} else {
-				void *field_value = (guint8*)obj + m_field_get_offset (f);
+				void *field_value = NULL;
+				if (G_UNLIKELY (m_field_is_from_update (f))) {
+					uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (f));
+					field_value = mono_metadata_update_added_field_ldflda (obj, f->type, token, error);
+					if (!is_ok (error)) {
+						mono_error_cleanup (error);
+						goto invalid_object;
+					}
+				} else {
+					field_value = (guint8*)obj + m_field_get_offset (f);
+				}
 
 				buffer_add_value (buf, f->type, field_value, obj->vtable->domain);
 			}
@@ -9874,9 +9877,6 @@ get_field_value:
 			if (!found)
 				goto invalid_fieldid;
 
-			/* TODO: metadata-update: implement support for added fields. */
-			g_assert (!m_field_is_from_update (f));
-
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 				guint8 *val;
 				MonoVTable *vtable;
@@ -9900,7 +9900,18 @@ get_field_value:
 				mono_field_static_set_value_internal (vtable, f, val);
 				g_free (val);
 			} else {
-				err = decode_value (f->type, obj->vtable->domain, (guint8*)obj + m_field_get_offset (f), p, &p, end, TRUE);
+				void *dest = NULL;
+				if (G_UNLIKELY (m_field_is_from_update (f))) {
+					uint32_t token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (f));
+					dest = mono_metadata_update_added_field_ldflda (obj, f->type, token, error);
+					if (!is_ok (error)) {
+						mono_error_cleanup (error);
+						goto invalid_fieldid;
+					}
+				} else {
+					dest = (guint8*)obj + m_field_get_offset (f);
+				}
+				err = decode_value (f->type, obj->vtable->domain, dest, p, &p, end, TRUE);
 				if (err != ERR_NONE)
 					goto exit;
 			}

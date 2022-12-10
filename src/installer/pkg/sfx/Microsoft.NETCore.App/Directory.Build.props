@@ -205,11 +205,18 @@
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-ilgen.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />

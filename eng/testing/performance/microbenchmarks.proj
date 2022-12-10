@@ -34,8 +34,7 @@
     <Python>python3</Python>
     <CoreRun>$(BaseDirectory)/Core_Root/corerun</CoreRun>
     <BaselineCoreRun>$(BaseDirectory)/Baseline_Core_Root/corerun</BaselineCoreRun>
-    <!-- Set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1 as a workaround for https://github.com/dotnet/runtime/issues/74328 -->
-    <HelixPreCommands>$(HelixPreCommands);chmod +x $(PerformanceDirectory)/tools/machine-setup.sh;. $(PerformanceDirectory)/tools/machine-setup.sh;export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1</HelixPreCommands>
+    <HelixPreCommands>$(HelixPreCommands);chmod +x $(PerformanceDirectory)/tools/machine-setup.sh;. $(PerformanceDirectory)/tools/machine-setup.sh</HelixPreCommands>
     <ArtifactsDirectory>$HELIX_WORKITEM_ROOT/artifacts/BenchmarkDotNet.Artifacts</ArtifactsDirectory>
     <BaselineArtifactsDirectory>$HELIX_WORKITEM_ROOT/artifacts/BenchmarkDotNet.Artifacts_Baseline</BaselineArtifactsDirectory>
     <ResultsComparer>$(PerformanceDirectory)/src/tools/ResultsComparer/ResultsComparer.csproj</ResultsComparer>
@@ -49,10 +48,10 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoDotnet)' == 'true' and '$(AGENT_OS)' == 'Windows_NT'">
-    <CoreRunArgument>--corerun %HELIX_CORRELATION_PAYLOAD%\dotnet-mono\shared\Microsoft.NETCore.App\8.0.0\corerun.exe</CoreRunArgument>
+    <CoreRunArgument>--corerun %HELIX_CORRELATION_PAYLOAD%\dotnet-mono\shared\Microsoft.NETCore.App\$(ProductVersion)\corerun.exe</CoreRunArgument>
   </PropertyGroup>
   <PropertyGroup Condition="'$(MonoDotnet)' == 'true' and '$(AGENT_OS)' != 'Windows_NT'">
-    <CoreRunArgument>--corerun $(BaseDirectory)/dotnet-mono/shared/Microsoft.NETCore.App/8.0.0/corerun</CoreRunArgument>
+    <CoreRunArgument>--corerun $(BaseDirectory)/dotnet-mono/shared/Microsoft.NETCore.App/$(ProductVersion)/corerun</CoreRunArgument>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseCoreRun)' == 'true'">
@@ -72,7 +71,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <WorkItemTimeout>2:30</WorkItemTimeout>
+    <WorkItemTimeout>6:00</WorkItemTimeout>
     <WorkItemTimeout Condition="'$(OnlySanityCheck)' == 'true'">1:30</WorkItemTimeout>
   </PropertyGroup>
 
