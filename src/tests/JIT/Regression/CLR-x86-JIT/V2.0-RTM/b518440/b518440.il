@@ -10,7 +10,6 @@
 
 .assembly extern mscorlib{}
 .assembly repro{}
-.module repro.exe
 
 .class public A
 {

@@ -8,7 +8,6 @@
   .ver 4:0:0:0
 }
 .assembly t1 {}
-.module t1.exe
 .method public static int32 foo() cil managed
 {
   .entrypoint

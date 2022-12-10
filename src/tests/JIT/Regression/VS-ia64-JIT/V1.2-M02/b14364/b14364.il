@@ -10,7 +10,6 @@
 {
   .ver 0:0:0:0
 }
-.module life.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512

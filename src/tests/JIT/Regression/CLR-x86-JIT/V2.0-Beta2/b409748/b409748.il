@@ -3,7 +3,6 @@
 
 .assembly extern mscorlib { auto }
 .assembly calldef { }
-.module calldef.exe
 .method public static vararg void Foo(int32)
 {
    ret

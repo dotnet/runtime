@@ -5,7 +5,6 @@
 
 
 // Metadata version: v2.0.50727
-.module extern user32.dll
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -22,7 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module repro.exe
 // MVID: {2F556831-42AA-482A-BFC1-EB0BA22B5FC9}
 .imagebase 0x00400000
 .file alignment 0x00000200

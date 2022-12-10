@@ -14,7 +14,6 @@
   
   
 }
-.module bug222.exe
 // MVID: {0AED659D-8C3D-40C8-B3EE-DFCFBE336622}
 
 

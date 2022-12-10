@@ -11,7 +11,6 @@
 .assembly extern mscorlib
 {
 }
-.module BIGDAT
 .class public 'BIGDAT'
 {
   .class nested private ansi explicit WS_TYPE

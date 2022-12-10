@@ -3,7 +3,6 @@
 
 .assembly extern mscorlib{}
 .assembly H{}
-.module Hennessy.EXE
 .namespace H
 {
   .class public H

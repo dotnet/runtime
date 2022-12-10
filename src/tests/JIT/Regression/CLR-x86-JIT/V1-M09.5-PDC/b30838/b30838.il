@@ -3,7 +3,6 @@
 
 
 
-.module 'b10939'
 // MVID: {5E222DAB-74B5-4FA9-A101-AE45EE636213}
 .assembly extern legacy library mscorlib {}
 .assembly extern System.Console
