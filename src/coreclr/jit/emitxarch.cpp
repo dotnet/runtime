@@ -2337,6 +2337,12 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id)
 
     assert(IsVexEncodedInstruction(ins));
 
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // Don't worry about saving code size when optimizations are disabled
+        return 3;
+    }
+
     if (EncodedBySSE38orSSE3A(ins))
     {
         // When the prefix is 0x0F38 or 0x0F3A, we must use the 3-byte encoding
