@@ -893,21 +893,17 @@ namespace System.Text.RegularExpressions.Generator
                         (true, _) => $"{span}.Slice(i + {primarySet.Distance})",
                     };
 
+                    Debug.Assert(!primarySet.Negated || (primarySet.Chars is null && primarySet.AsciiSet is null));
+
                     string indexOf =
-                        primarySet.Chars is not null ? (primarySet.Negated, primarySet.Chars.Length) switch
+                        primarySet.Chars is not null ? primarySet.Chars.Length switch
                         {
-                            (false, 1) => $"{span}.IndexOf({Literal(primarySet.Chars[0])})",
-                            (false, 2) => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
-                            (false, 3) => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
-                            (false, _) => $"{span}.IndexOfAny({EmitIndexOfAnyValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
-                            (true, 1) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Chars[0])})",
-                            _ => throw new InvalidOperationException("Expected that negated sets will have at most 1 value in Chars."),
+                            1 => $"{span}.IndexOf({Literal(primarySet.Chars[0])})",
+                            2 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
+                            3 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
+                            _ => $"{span}.IndexOfAny({EmitIndexOfAnyValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
                         } :
-                        primarySet.AsciiSet is not null ? primarySet.Negated switch
-                        {
-                            false => $"{span}.IndexOfAny({EmitIndexOfAnyValues(primarySet.AsciiSet, requiredHelpers)})",
-                            _ => throw new InvalidOperationException("Expected AsciiSets not to be negated."),
-                        } :
+                        primarySet.AsciiSet is not null ? $"{span}.IndexOfAny({EmitIndexOfAnyValues(primarySet.AsciiSet, requiredHelpers)})" :
                         (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Negated) switch
                         {
                             (false, false) => $"{span}.IndexOfAnyInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",

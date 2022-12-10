@@ -886,15 +886,16 @@ namespace System.Text.RegularExpressions
                         Ldloc(textSpanLocal);
                     }
 
+                    Debug.Assert(!primarySet.Negated || (primarySet.Chars is null && primarySet.AsciiSet is null));
+
                     if (primarySet.Chars is not null)
                     {
-                        Debug.Assert(!primarySet.Negated || primarySet.Chars.Length == 1);
                         switch (primarySet.Chars.Length)
                         {
                             case 1:
-                                // tmp = ...IndexOf{AnyExcept}(setChars[0]);
+                                // tmp = ...IndexOf(setChars[0]);
                                 Ldc(primarySet.Chars[0]);
-                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
+                                Call(s_spanIndexOfChar);
                                 break;
 
                             case 2:
@@ -1062,7 +1063,7 @@ namespace System.Text.RegularExpressions
                 RegexFindOptimizations.FixedDistanceSet set = _regexTree.FindOptimizations.FixedDistanceSets![0];
                 Debug.Assert(set.Distance == 0);
 
-                if (set.Chars is { Length: 1 } && !set.Negated)
+                if (set.Chars is { Length: 1 })
                 {
                     // pos = inputSpan.Slice(0, pos).LastIndexOf(set.Chars[0]);
                     Ldloca(inputSpan);

@@ -204,19 +204,15 @@ namespace System.Text.RegularExpressions
 
                 int count = RegexCharClass.GetSetChars(result.Set, scratch);
 
-                // We only use IndexOfAnyExcept for primary sets with a single value.
-                // For non-negated sets, we use IndexOfAny for up to 5 values.
-                if (result.Negated ? (count == 1) : (count > 0))
+                if (!result.Negated && count > 0)
                 {
                     result.Chars = scratch.Slice(0, count).ToArray();
                 }
 
-                // 'Count == 1' will always be handeled by Chars above.
-                if (thorough && count != 1)
+                if (thorough)
                 {
                     // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
-                    // Chars may be null for 'Count == 2' if we're dealing with a negated set.
-                    if ((count != 2 || result.Chars is null) && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
+                    if ((result.Chars is null || count > 2) && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
                     {
                         result.Chars = null;
                         result.Range = (lowInclusive, highInclusive);
@@ -454,25 +450,12 @@ namespace System.Text.RegularExpressions
                 int s1RangeLength = s1.Range is not null ? GetRangeLength(s1.Range.Value, s1Negated) : 0;
                 int s2RangeLength = s2.Range is not null ? GetRangeLength(s2.Range.Value, s2Negated) : 0;
 
-                if (s1Negated && s1CharsLength > 0)
-                {
-                    s1CharsLength = char.MaxValue + 1 - s1CharsLength;
-                }
-
-                if (s2Negated && s2CharsLength > 0)
-                {
-                    s2CharsLength = char.MaxValue + 1 - s2CharsLength;
-                }
+                Debug.Assert(!s1Negated || s1Chars is null);
+                Debug.Assert(!s2Negated || s2Chars is null);
 
                 // If both have chars, prioritize the one with the smaller frequency for those chars.
                 if (s1Chars is not null && s2Chars is not null)
                 {
-                    // If one is negated and the other isn't, prefer the non-negated one.
-                    if (s1Negated != s2Negated)
-                    {
-                        return s1Negated ? 1 : -1;
-                    }
-
                     // Prefer sets with less frequent values.  The frequency is only an approximation,
                     // used as a tie-breaker when we'd otherwise effectively be picking randomly.
                     // True frequencies will vary widely based on the actual data being searched, the language of the data, etc.
@@ -481,9 +464,7 @@ namespace System.Text.RegularExpressions
 
                     if (s1Frequency != s2Frequency)
                     {
-                        return s1Negated
-                            ? s2Frequency.CompareTo(s1Frequency)
-                            : s1Frequency.CompareTo(s2Frequency);
+                        return s1Frequency.CompareTo(s2Frequency);
                     }
 
                     if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))

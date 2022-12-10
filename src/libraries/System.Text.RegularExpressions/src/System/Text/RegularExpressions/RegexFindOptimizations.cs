@@ -159,8 +159,7 @@ namespace System.Text.RegularExpressions
                     // the set's characteristics.
                     if (!compiled &&
                         fixedDistanceSets.Count == 1 &&
-                        fixedDistanceSets[0].Chars is { Length: 1 } &&
-                        !fixedDistanceSets[0].Negated)
+                        fixedDistanceSets[0].Chars is { Length: 1 })
                     {
                         FixedDistanceLiteral = (fixedDistanceSets[0].Chars![0], null, fixedDistanceSets[0].Distance);
                         FindMode = FindNextStartingPositionMode.FixedDistanceChar_LeftToRight;
@@ -557,7 +556,7 @@ namespace System.Text.RegularExpressions
                         string set = primarySet.Set;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
-                        if (chars is not null && !primarySet.Negated)
+                        if (chars is not null)
                         {
                             int i = span.IndexOfAny(chars);
                             if (i >= 0)
@@ -624,7 +623,7 @@ namespace System.Text.RegularExpressions
 
                         int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
 
-                        if (primarySet.Chars is not null && !primarySet.Negated)
+                        if (primarySet.Chars is not null)
                         {
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
