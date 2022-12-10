@@ -2225,7 +2225,7 @@ private:
                                                               //    and it's an extension IG
     }
 
-    enum emitVisitPeepholeResult
+    enum emitPeepholeResult
     {
         PEEPHOLE_CONTINUE,
         PEEPHOLE_ABORT
@@ -2246,8 +2246,6 @@ private:
 
             if (id == nullptr)
                 return;
-
-            emitVisitPeepholeResult result = action(id);
 
             switch (action(id))
             {
