@@ -54,7 +54,7 @@ enum CultureAwareStates
 // This structure represents a dispatch member.
 struct DispatchMemberInfo
 {
-    DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString& strName, OBJECTREF MemberInfoObj);
+    DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString& strName);
     ~DispatchMemberInfo();
 
     // Helper method to ensure the entry is initialized.
@@ -148,10 +148,7 @@ struct DispatchMemberInfo
         return m_bRequiresManagedCleanup;
     }
 
-#ifndef DACCESS_COMPILE
     OBJECTREF GetMemberInfoObject();
-    void ClearMemberInfoObject();
-#endif // DACCESS_COMPILE
 
     // Parameter marshaling methods.
     void MarshalParamNativeToManaged(int iParam, VARIANT *pSrcVar, OBJECTREF *pDestObj);

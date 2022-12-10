@@ -1094,8 +1094,8 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
     MethodTable* pMT = obj->GetGCSafeMethodTable();
-    if (pMT == pWeakReferenceMT ||
-        pMT->GetCanonicalMethodTable() == pWeakReferenceOfTCanonMT)
+    if (pMT == g_pWeakReferenceClass ||
+        pMT->HasSameTypeDefAs(g_pWeakReferenceOfTClass))
     {
         FinalizeWeakReference(obj);
         return true;
@@ -1397,7 +1397,7 @@ namespace
             assert(args != nullptr);
 
             ClrFlsSetThreadType(ThreadType_GC);
-            args->Thread->SetGCSpecial(true);
+            args->Thread->SetGCSpecial();
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
             args->HasStarted = !!args->Thread->HasStarted();
 
@@ -1736,4 +1736,9 @@ uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
     ProfilerAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
+}
+
+void GCToEEInterface::LogErrorToHost(const char *message)
+{
+    ::LogErrorToHost("GC: %s", message);
 }

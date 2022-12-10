@@ -214,6 +214,10 @@ if(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
     set(CLR_CMAKE_HOST_BROWSER 1)
 endif(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
 
+if(CLR_CMAKE_TARGET_OS STREQUAL Wasi)
+    set(CLR_CMAKE_HOST_WASI 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Wasi)
+
 #--------------------------------------------
 # This repo builds two set of binaries
 # 1. binaries which execute on target arch machine
@@ -261,6 +265,9 @@ elseif(CLR_CMAKE_HOST_UNIX_POWERPC64)
     set(CLR_CMAKE_HOST_ARCH_POWERPC64 1)
     set(CLR_CMAKE_HOST_ARCH "ppc64le")
 elseif(CLR_CMAKE_HOST_BROWSER)
+    set(CLR_CMAKE_HOST_ARCH_WASM 1)
+    set(CLR_CMAKE_HOST_ARCH "wasm")
+elseif(CLR_CMAKE_HOST_WASI)
     set(CLR_CMAKE_HOST_ARCH_WASM 1)
     set(CLR_CMAKE_HOST_ARCH "wasm")
 elseif(CLR_CMAKE_HOST_UNIX_MIPS64)
@@ -410,6 +417,10 @@ if(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
     set(CLR_CMAKE_TARGET_BROWSER 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL Emscripten)
 
+if(CLR_CMAKE_TARGET_OS STREQUAL Wasi)
+    set(CLR_CMAKE_TARGET_WASI 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Wasi)
+
 if(CLR_CMAKE_TARGET_UNIX)
     if(CLR_CMAKE_TARGET_ARCH STREQUAL x64)
         set(CLR_CMAKE_TARGET_UNIX_AMD64 1)
@@ -443,13 +454,7 @@ else()
 endif(CLR_CMAKE_TARGET_UNIX)
 
 # check if host & target os/arch combination are valid
-if (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_HOST_OS)
-    if(NOT(CLR_CMAKE_TARGET_ARCH STREQUAL CLR_CMAKE_HOST_ARCH))
-        if(NOT((CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM64) OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM) OR (CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM) OR (CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_I386)))
-            message(FATAL_ERROR "Invalid platform and target arch combination TARGET_ARCH=${CLR_CMAKE_TARGET_ARCH} HOST_ARCH=${CLR_CMAKE_HOST_ARCH}")
-        endif()
-    endif()
-else()
+if (NOT (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_HOST_OS))
     if(NOT (CLR_CMAKE_HOST_OS STREQUAL windows))
         message(FATAL_ERROR "Invalid host and target os/arch combination. Host OS: ${CLR_CMAKE_HOST_OS}")
     endif()

@@ -32,7 +32,7 @@ class GitHub_25039
         return ConvertToVector256Int32(pBase + pvbyte * 8);
     }
 
-    static unsafe int Main(string[] args)
+    static unsafe int Main()
     {
         if (System.Runtime.Intrinsics.X86.Avx2.IsSupported)
         {

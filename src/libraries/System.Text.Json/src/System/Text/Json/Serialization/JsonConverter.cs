@@ -14,7 +14,11 @@ namespace System.Text.Json.Serialization
     /// </summary>
     public abstract partial class JsonConverter
     {
-        internal JsonConverter() { }
+        internal JsonConverter()
+        {
+            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
+            ConverterStrategy = GetDefaultConverterStrategy();
+        }
 
         /// <summary>
         /// Determines whether the type can be converted.
@@ -23,7 +27,24 @@ namespace System.Text.Json.Serialization
         /// <returns>True if the type can be converted, false otherwise.</returns>
         public abstract bool CanConvert(Type typeToConvert);
 
-        internal abstract ConverterStrategy ConverterStrategy { get; }
+        internal ConverterStrategy ConverterStrategy
+        {
+            get => _converterStrategy;
+            init
+            {
+                CanUseDirectReadOrWrite = value == ConverterStrategy.Value && IsInternalConverter;
+                RequiresReadAhead = value == ConverterStrategy.Value;
+                _converterStrategy = value;
+            }
+        }
+
+        private ConverterStrategy _converterStrategy;
+
+        /// <summary>
+        /// Invoked by the base contructor to populate the initial value of the <see cref="ConverterStrategy"/> property.
+        /// Used for declaring the default strategy for specific converter hierarchies without explicitly setting in a constructor.
+        /// </summary>
+        private protected abstract ConverterStrategy GetDefaultConverterStrategy();
 
         /// <summary>
         /// Indicates that the converter can consume the <see cref="JsonTypeInfo.CreateObject"/> delegate.
@@ -96,23 +117,17 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Cached value of TypeToConvert.IsValueType, which is an expensive call.
         /// </summary>
-        internal bool IsValueType { get; set; }
+        internal bool IsValueType { get; init; }
 
         /// <summary>
         /// Whether the converter is built-in.
         /// </summary>
-        internal bool IsInternalConverter { get; set; }
+        internal bool IsInternalConverter { get; init; }
 
         /// <summary>
         /// Whether the converter is built-in and handles a number type.
         /// </summary>
-        internal bool IsInternalConverterForNumberType;
-
-        /// <summary>
-        /// Loosely-typed ReadCore() that forwards to strongly-typed ReadCore().
-        /// </summary>
-        internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state);
-
+        internal bool IsInternalConverterForNumberType { get; init; }
 
         internal static bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
         {
@@ -127,11 +142,6 @@ namespace System.Text.Json.Serialization
         internal abstract bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, scoped ref ReadStack state, out object? value);
 
         internal abstract bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
-
-        /// <summary>
-        /// Loosely-typed WriteCore() that forwards to strongly-typed WriteCore().
-        /// </summary>
-        internal abstract bool WriteCoreAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state);
 
         /// <summary>
         /// Loosely-typed WriteToPropertyName() that forwards to strongly-typed WriteToPropertyName().

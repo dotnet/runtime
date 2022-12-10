@@ -373,17 +373,19 @@ namespace System
             Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
                 "But this method only compares the result against the passed in ifaceType." +
                 "So if ifaceType exists, then trimming should have kept it implemented on any type.")]
-        // IL2075 is produced due to the BaseType not returning annotated value and used in effectively this.BaseType.GetInterfaces()
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
-                "But this method only compares the result against the passed in ifaceType." +
-                "So if ifaceType exists, then trimming should have kept it implemented on any type.")]
         internal bool ImplementInterface(Type ifaceType)
         {
             Type? t = this;
             while (t != null)
             {
+                // IL2075 is produced due to the BaseType not returning annotated value and used in effectively this.BaseType.GetInterfaces()
+                // The GetInterfaces technically requires all interfaces to be preserved
+                // But this method only compares the result against the passed in ifaceType.
+                // So if ifaceType exists, then trimming should have kept it implemented on any type.
+                // The warning is currently analyzer only.
+#pragma warning disable IL2075
                 Type[] interfaces = t.GetInterfaces();
+#pragma warning restore IL2075
                 if (interfaces != null)
                 {
                     for (int i = 0; i < interfaces.Length; i++)

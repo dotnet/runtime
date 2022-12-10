@@ -128,9 +128,9 @@ namespace Activator
             }
         }
 
-        static void ValidateAssemblyIsolation(bool builtInComDisabled)
+        static void ValidateAssemblyIsolation(bool builtInComDisabled, bool useIsolatedContext)
         {
-            Console.WriteLine($"Running {nameof(ValidateAssemblyIsolation)}...");
+            Console.WriteLine($"Running {nameof(ValidateAssemblyIsolation)}({nameof(ComActivationContext.IsolatedContext)}={useIsolatedContext})...");
 
             string assemblySubPath = Path.Combine(Environment.CurrentDirectory, "Servers");
             string assemblyAPath = Path.Combine(assemblySubPath, "AssemblyA.dll");
@@ -157,7 +157,8 @@ namespace Activator
                     InterfaceId = typeof(IClassFactory).GUID,
                     AssemblyPath = assemblyAPath,
                     AssemblyName = "AssemblyA",
-                    TypeName = "ClassFromA"
+                    TypeName = "ClassFromA",
+                    IsolatedContext = useIsolatedContext,
                 };
 
                 if (builtInComDisabled)
@@ -188,7 +189,8 @@ namespace Activator
                     InterfaceId = typeof(IClassFactory).GUID,
                     AssemblyPath = assemblyBPath,
                     AssemblyName = "AssemblyB",
-                    TypeName = "ClassFromB"
+                    TypeName = "ClassFromB",
+                    IsolatedContext = useIsolatedContext
                 };
 
                 var factory = GetClassFactoryForType(cxt);
@@ -200,7 +202,14 @@ namespace Activator
                 typeCFromAssemblyB = (Type)svr.GetTypeFromC();
             }
 
-            Assert.NotEqual(typeCFromAssemblyA, typeCFromAssemblyB);
+            if (useIsolatedContext)
+            {
+                Assert.NotEqual(typeCFromAssemblyA, typeCFromAssemblyB);
+            }
+            else
+            {
+                Assert.Equal(typeCFromAssemblyA, typeCFromAssemblyB);
+            }
         }
 
         static void ValidateUserDefinedRegistrationCallbacks()
@@ -319,7 +328,7 @@ namespace Activator
             }
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {
@@ -334,10 +343,11 @@ namespace Activator
                 InvalidInterfaceRequest();
                 ClassNotRegistered(builtInComDisabled);
                 NonrootedAssemblyPath(builtInComDisabled);
-                ValidateAssemblyIsolation(builtInComDisabled);
+                ValidateAssemblyIsolation(builtInComDisabled, useIsolatedContext: true);
                 if (!builtInComDisabled)
                 {
                     // We don't test this scenario with builtInComDisabled since it is covered by ValidateAssemblyIsolation() above
+                    ValidateAssemblyIsolation(builtInComDisabled, useIsolatedContext: false);
                     ValidateUserDefinedRegistrationCallbacks();
                 }
             }

@@ -36,7 +36,7 @@ namespace System.Numerics
         /// <param name="x">The value to round.</param>
         /// <param name="mode">The mode under which <paramref name="x" /> should be rounded.</param>
         /// <returns>The result of rounding <paramref name="x" /> to the nearest integer using <paramref name="mode" />.</returns>
-        static virtual TSelf Round(TSelf x, MidpointRounding mode) => TSelf.Round(x, digits: 0, MidpointRounding.ToEven);
+        static virtual TSelf Round(TSelf x, MidpointRounding mode) => TSelf.Round(x, digits: 0, mode);
 
         /// <summary>Rounds a value to a specified number of fractional-digits using the default rounding mode (<see cref="MidpointRounding.ToEven" />).</summary>
         /// <param name="x">The value to round.</param>

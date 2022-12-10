@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd
 {
     public static partial class Program
     {
-        private static void AddRoundedHighNarrowingUpper_Vector128_Byte()
+        [Fact]
+        public static void AddRoundedHighNarrowingUpper_Vector128_Byte()
         {
             var test = new SimpleTernaryOpTest__AddRoundedHighNarrowingUpper_Vector128_Byte();
 

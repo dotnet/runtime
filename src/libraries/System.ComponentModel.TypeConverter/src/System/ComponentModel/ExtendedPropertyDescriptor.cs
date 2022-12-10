@@ -80,7 +80,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the data type of the property.
         /// </summary>
-        public override Type PropertyType => _extenderInfo.ExtenderGetType(_provider);
+        public override Type PropertyType => _extenderInfo.ExtenderGetType();
 
         /// <summary>
         /// Retrieves the display name of the property. This is the name that will
@@ -99,7 +99,7 @@ namespace System.ComponentModel
                     string? providerName = site?.Name;
                     if (providerName != null && providerName.Length > 0)
                     {
-                        name = string.Format(SR.GetResourceString(nameof(SR.MetaExtenderName), "{0} on {1}"), name, providerName);
+                        name = SR.Format(SR.GetResourceString(nameof(SR.MetaExtenderName), "{0} on {1}"), name, providerName);
                     }
                 }
                 return name;

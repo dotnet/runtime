@@ -272,8 +272,18 @@ namespace LibraryImportGenerator.UnitTests
                 {
                     void Foo([MarshalAs(UnmanagedType.I4)] int i)
                     {
+                        [return:MarshalAs(UnmanagedType.I4)]
+                        [SkipLocalsInit]
+                        static int Local()
+                        {
+                            return 0;
+                        }
                     }
                 }
+
+                [return:MarshalAs(UnmanagedType.I4)]
+                delegate int Y();
+
                 """;
 
             await VerifyCS.VerifyAnalyzerAsync(source);

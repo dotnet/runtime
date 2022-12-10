@@ -134,7 +134,7 @@ internal static partial class Interop
                 }
             }
 
-            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, sslAuthenticationOptions.EncryptionPolicy))
+            if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy))
             {
                 if (!CipherSuitesPolicyPal.WantsTls13(protocols))
                 {
@@ -203,18 +203,20 @@ internal static partial class Interop
                 {
                     if (sslAuthenticationOptions.IsServer)
                     {
-                        Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, null, null);
+                        Span<byte> contextId = stackalloc byte[32];
+                        RandomNumberGenerator.Fill(contextId);
+                        Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, contextId.Length, contextId, null, null);
                     }
                     else
                     {
-                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, &NewSessionCallback, &RemoveSessionCallback);
+                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, 0, null, &NewSessionCallback, &RemoveSessionCallback);
                         Debug.Assert(result == 1);
                         sslCtx.EnableSessionCache();
                     }
                 }
                 else
                 {
-                    Ssl.SslCtxSetCaching(sslCtx, 0, -1, null, null);
+                    Ssl.SslCtxSetCaching(sslCtx, 0, -1, 0, null, null, null);
                 }
 
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
@@ -631,7 +633,7 @@ internal static partial class Interop
             return 0;
         }
 
-        internal static SafeX509Handle GetPeerCertificate(SafeSslHandle context)
+        internal static IntPtr GetPeerCertificate(SafeSslHandle context)
         {
             return Ssl.SslGetPeerCertificate(context);
         }
@@ -660,6 +662,7 @@ internal static partial class Interop
             bindingHandle.SetCertHashLength(certHashLength);
         }
 
+#pragma warning disable IDE0060
         [UnmanagedCallersOnly]
         private static int VerifyClientCertificate(int preverify_ok, IntPtr x509_ctx_ptr)
         {
@@ -670,6 +673,7 @@ internal static partial class Interop
             const int OpenSslSuccess = 1;
             return OpenSslSuccess;
         }
+#pragma warning restore IDE0060
 
         [UnmanagedCallersOnly]
         private static unsafe int AlpnServerSelectCallback(IntPtr ssl, byte** outp, byte* outlen, byte* inp, uint inlen, IntPtr arg)
@@ -772,7 +776,7 @@ internal static partial class Interop
 
             IntPtr name = Ssl.SessionGetHostname(session);
             Debug.Assert(name != IntPtr.Zero);
-            ctxHandle.RemoveSession(name, session);
+            ctxHandle.RemoveSession(name);
         }
 
         private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)

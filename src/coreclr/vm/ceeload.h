@@ -579,7 +579,7 @@ public:
     }
 
     // Resolving
-    OBJECTHANDLE ResolveStringRef(DWORD Token);
+    OBJECTHANDLE ResolveStringRef(DWORD Token, void** ppPinnedString = nullptr);
 private:
     // string helper
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
@@ -842,9 +842,6 @@ public:
 private:
     // Set the given bit on m_dwTransientFlags. Return true if we won the race to set the bit.
     BOOL SetTransientFlagInterlocked(DWORD dwFlag);
-
-    // Invoke fusion hooks into host to fetch PDBs
-    void FetchPdbsFromHost();
 
     // Cannoically-cased hashtable of the available class names for
     // case insensitive lookup.  Contains pointers into

@@ -181,7 +181,7 @@ void    AsmMan::AddFile(_In_ __nullterminated char* szName, DWORD dwAttr, BinStr
         tmp->tkTok = TokenFromRid(m_FileLst.COUNT(),mdtFile);
     }
     pAsm->m_tkCurrentCVOwner = 0;
-    if(tmp) pAsm->m_pCustomDescrList = &(tmp->m_CustomDescrList);
+    pAsm->m_pCustomDescrList = &(tmp->m_CustomDescrList);
 }
 //==============================================================================================================
 
@@ -779,7 +779,7 @@ BOOL    AsmMan::SetComTypeClassTok(mdToken tkClass)
 
 void    AsmMan::StartManifestRes(_In_ __nullterminated char* szName, _In_ __nullterminated char* szAlias, DWORD dwAttr)
 {
-    if((m_pCurManRes = new AsmManRes))
+    if((m_pCurManRes = new (nothrow) AsmManRes()))
     {
         m_pCurManRes->szName = szName;
         m_pCurManRes->szAlias = szAlias;

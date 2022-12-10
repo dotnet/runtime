@@ -6638,6 +6638,7 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
         reinterpret_cast<ULONG64>(s_DebuggerLaunchJitInfoExceptionRecord.ExceptionAddress) :
         reinterpret_cast<ULONG64>(reinterpret_cast<PVOID>(GetIP(pExceptionInfo->ContextRecord)));
 
+#if defined(HOST_WINDOWS)
 #if defined(TARGET_X86)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_INTEL;
 #elif defined(TARGET_AMD64)
@@ -6646,10 +6647,9 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
-#elif defined(TARGET_LOONGARCH64)
-    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
+#endif
 #endif
 }
 
@@ -6792,7 +6792,7 @@ bool Debugger::GetCompleteDebuggerLaunchString(SString * pStrArgsBuf)
     // format because changing HKLM keys requires admin priviledge.  Padding with zeros is not a security mitigation,
     // but rather a forward looking compatibility measure.  If future versions of Windows introduces more parameters for
     // JIT debugger launch, it is preferrable to pass zeros than other random values for those unsupported parameters.
-    pStrArgsBuf->Printf(ssDebuggerString, pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    pStrArgsBuf->Printf(ssDebuggerString.GetUTF8(), pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
     return true;
 #else // !TARGET_UNIX
@@ -8710,25 +8710,22 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
         tid = GetCurrentThreadId();
 
         DWORD flags = 0;
-        UINT resIDMessage = 0;
 
+        CHAR const* msg;
         if (userBreakpoint)
         {
-            resIDMessage = IDS_DEBUG_USER_BREAKPOINT_MSG;
+            msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
             flags |= MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION;
         }
         else
         {
-            resIDMessage = IDS_DEBUG_UNHANDLED_EXCEPTION_MSG;
+            msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
             flags |= MB_OKCANCEL | MB_ICONEXCLAMATION;
         }
 
-        SString text;
-        text.LoadResource(CCompRC::Error, resIDMessage);
-
         // Format message string using optional parameters
         StackSString formattedMessage;
-        formattedMessage.Printf((LPWSTR)text.GetUnicode(), pid, pid, tid, tid);
+        formattedMessage.Printf(msg, pid, pid, tid, tid);
 
         {
             // Another potential hang. This may get run on the helper if we have a stack overflow.
@@ -10442,16 +10439,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         // In V3, Attach is atomic, meaning that there isn't a complex handshake back and forth between LS + RS.
         // the RS sends a single-attaching event and attaches at the first response from the Left-side.
         StartCanaryThread();
-
-        // In V3 after attaching event was handled we iterate throughout all ADs and made shadow copies of PDBs in the BIN directories.
-        // After all AppDomain, DomainAssembly and modules iteration was available in out-of-process model in V4 the code that enables
-        // PDBs to be copied was not called at attach time.
-        // Eliminating PDBs copying side effect is an issue: Dev10 #927143
-        EX_TRY
-        {
-            IterateAppDomainsForPdbs();
-        }
-        EX_CATCH_HRESULT(hr); // ignore failures
 
         if (m_jitAttachInProgress)
         {
@@ -14677,85 +14664,6 @@ ErrExit:
     return hr;
 }
 
-HRESULT Debugger::CopyModulePdb(Module* pRuntimeModule)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-
-        PRECONDITION(ThisIsHelperThread());
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!pRuntimeModule->IsVisibleToDebugger())
-    {
-        return S_OK;
-    }
-
-    HRESULT hr = S_OK;
-
-    return hr;
-}
-
-/******************************************************************************
- * When attaching to a process, this is called to enumerate all of the
- * AppDomains currently in the process and allow modules pdbs to be copied over to the shadow dir maintaining out V2 in-proc behaviour.
- ******************************************************************************/
-HRESULT Debugger::IterateAppDomainsForPdbs()
-{
-    CONTRACTL
-    {
-        THROWS;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-
-        PRECONDITION(ThisIsHelperThread());
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    STRESS_LOG0(LF_CORDB, LL_INFO100, "Entered function IterateAppDomainsForPdbs()\n");
-    HRESULT hr = S_OK;
-
-    // Lock the list
-    if (!m_pAppDomainCB->Lock())
-        return (E_FAIL);
-
-    // Iterate through the app domains
-    AppDomainInfo *pADInfo = m_pAppDomainCB->FindFirst();
-
-    while (pADInfo)
-    {
-        STRESS_LOG2(LF_CORDB, LL_INFO100, "Iterating over domain AD:%#08x %ls\n", pADInfo->m_pAppDomain, pADInfo->m_szAppDomainName);
-
-        AppDomain::AssemblyIterator i;
-        i = pADInfo->m_pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeLoading | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (i.Next(pDomainAssembly.This()))
-        {
-            if (!pDomainAssembly->IsVisibleToDebugger())
-                continue;
-
-            if (pDomainAssembly->ShouldNotifyDebugger())
-            {
-                CopyModulePdb(pDomainAssembly->GetModule());
-            }
-        }
-
-        // Get the next appdomain in the list
-        pADInfo = m_pAppDomainCB->FindNext(pADInfo);
-    }
-
-    // Unlock the list
-    m_pAppDomainCB->Unlock();
-
-    STRESS_LOG0(LF_CORDB, LL_INFO100, "Exiting function IterateAppDomainsForPdbs\n");
-
-    return hr;
-}
-
-
 /******************************************************************************
  *
  ******************************************************************************/
@@ -16386,7 +16294,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
 #endif
 
 #ifdef USE_INTEROPSAFE_CANARY
-// Small header to to prefix interop-heap blocks.
+// Small header to prefix interop-heap blocks.
 // This lets us enforce that we don't delete interopheap data from a non-interop heap.
 struct InteropHeapCanary
 {

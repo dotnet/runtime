@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Reflection.Metadata;
-using System.Threading;
-using Debug = System.Diagnostics.Debug;
-
-using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {

@@ -31,7 +31,7 @@ namespace GitHub_24253
 
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             GetStruct(1);
             return 100;

@@ -7,7 +7,7 @@ namespace strswitch
 {
     internal class Class1
     {
-        private static int Main(string[] args)
+        private static int Main()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };
             for (int i = 0; i < s.Length; i++)

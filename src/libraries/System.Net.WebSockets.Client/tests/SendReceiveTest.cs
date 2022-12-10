@@ -17,28 +17,28 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public InvokerMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpMessageInvoker(new SocketsHttpHandler());
+        protected override bool UseCustomInvoker => true;
     }
 
     public sealed class HttpClientMemorySendReceiveTest : MemorySendReceiveTest
     {
         public HttpClientMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+        protected override bool UseHttpClient => true;
     }
 
     public sealed class InvokerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
     {
         public InvokerArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpMessageInvoker(new SocketsHttpHandler());
+        protected override bool UseCustomInvoker => true;
     }
 
     public sealed class HttpClientArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
     {
         public HttpClientArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
 
-        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
+        protected override bool UseHttpClient => true;
     }
 
     public class MemorySendReceiveTest : SendReceiveTest

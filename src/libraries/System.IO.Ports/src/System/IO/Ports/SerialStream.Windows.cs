@@ -1031,7 +1031,7 @@ namespace System.IO.Ports
             return numBytes;
         }
 
-        internal unsafe int ReadByte(int timeout)
+        internal unsafe int ReadByte(int _/*timeout*/)
         {
             if (_handle == null) InternalResources.FileNotOpen();
 
@@ -1101,12 +1101,7 @@ namespace System.IO.Ports
         }
 
         // use default timeout as argument to WriteByte override with timeout arg
-        public override void WriteByte(byte value)
-        {
-            WriteByte(value, WriteTimeout);
-        }
-
-        internal unsafe void WriteByte(byte value, int timeout)
+        public override unsafe void WriteByte(byte value)
         {
             if (_inBreak)
                 throw new InvalidOperationException(SR.In_Break_State);

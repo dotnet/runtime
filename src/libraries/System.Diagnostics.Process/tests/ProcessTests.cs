@@ -1152,13 +1152,13 @@ namespace System.Diagnostics.Tests
 
             // Get all the processes running on the machine, and check if the current process is one of them.
             var foundCurrentProcess = (from p in Process.GetProcesses()
-                                       where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                       where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName)) && (p.StartTime == currentProcess.StartTime)
                                        select p).Any();
 
             Assert.True(foundCurrentProcess, "TestGetProcesses001 failed");
 
             foundCurrentProcess = (from p in Process.GetProcesses(currentProcess.MachineName)
-                                   where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                   where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName)) && (p.StartTime == currentProcess.StartTime)
                                    select p).Any();
 
             Assert.True(foundCurrentProcess, "TestGetProcesses002 failed");
@@ -2546,7 +2546,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndNotElevated))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
         public void NonElevatedUser_QueryProcessNameOfSystemProcess()
         {
             const string Services = "services";

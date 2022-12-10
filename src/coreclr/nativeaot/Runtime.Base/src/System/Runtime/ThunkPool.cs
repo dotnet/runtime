@@ -40,9 +40,14 @@ namespace System.Runtime
 {
     internal static class Constants
     {
+#if TARGET_ARM64 && TARGET_OSX
+        public const uint PageSize = 0x4000;                   // 16k
+        public const nuint PageSizeMask = 0x3FFF;
+#else
         public const uint PageSize = 0x1000;                   // 4k
-        public const uint AllocationGranularity = 0x10000;     // 64k
         public const nuint PageSizeMask = 0xFFF;
+#endif
+        public const uint AllocationGranularity = 0x10000;     // 64k
         public const nuint AllocationGranularityMask = 0xFFFF;
 
         public static readonly int ThunkDataSize = 2 * IntPtr.Size;

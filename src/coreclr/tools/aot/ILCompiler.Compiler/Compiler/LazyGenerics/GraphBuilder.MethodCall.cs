@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -49,7 +48,7 @@ namespace ILCompiler
                         delegate(EcmaGenericParameter embedded, bool isProperEmbedding)
                         {
                             // If we got here, we found a method with generic arity (either from itself or its declaring type or both)
-                            // that invokes a generic method. The caller is binding one of the target's generic formals to a type expression 
+                            // that invokes a generic method. The caller is binding one of the target's generic formals to a type expression
                             // involving one of the caller's own formals.
                             //
                             // e.g.

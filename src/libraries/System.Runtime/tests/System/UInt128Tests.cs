@@ -122,7 +122,7 @@ namespace System.Tests
             }
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { (UInt128)32, "C100", invariantFormat, "¤32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (UInt128)32, "C100", invariantFormat, "\u00A432.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (UInt128)32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
             yield return new object[] { (UInt128)32, "D100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
             yield return new object[] { (UInt128)32, "E100", invariantFormat, "3.2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
@@ -440,6 +440,16 @@ namespace System.Tests
                 Assert.Equal(expected.Length, charsWritten);
                 Assert.Equal(expected.ToLowerInvariant(), new string(actual));
             }
+        }
+
+        [Fact]
+        public static void Runtime75416()
+        {
+            UInt128 a = (UInt128Tests_GenericMath.Int128MaxValue - 10u) * +100u;
+            Assert.Equal(a, (UInt128)(Int128)(-1100));
+
+            UInt128 b = (UInt128Tests_GenericMath.Int128MaxValue - 10u) * (UInt128)(Int128)(-100);
+            Assert.Equal(b, 1100u);
         }
     }
 }

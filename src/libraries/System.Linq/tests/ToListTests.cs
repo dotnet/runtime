@@ -158,19 +158,16 @@ namespace System.Linq.Tests
             var sourceList = new ReadOnlyCollection<int>(sourceIntegers);
             var convertedList = new ReadOnlyCollection<string>(convertedStrings);
 
-            var emptyIntegersList = new ReadOnlyCollection<int>(Array.Empty<int>());
-            var emptyStringsList = new ReadOnlyCollection<string>(Array.Empty<string>());
-
             Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).ToList());
 
             Assert.Equal(sourceList, sourceList.Where(i => true).ToList());
-            Assert.Equal(emptyIntegersList, sourceList.Where(i => false).ToList());
+            Assert.Equal(ReadOnlyCollection<int>.Empty, sourceList.Where(i => false).ToList());
 
             Assert.Equal(convertedList, sourceList.Where(i => true).Select(i => i.ToString()).ToList());
-            Assert.Equal(emptyStringsList, sourceList.Where(i => false).Select(i => i.ToString()).ToList());
+            Assert.Equal(ReadOnlyCollection<string>.Empty, sourceList.Where(i => false).Select(i => i.ToString()).ToList());
 
             Assert.Equal(convertedList, sourceList.Select(i => i.ToString()).Where(s => s != null).ToList());
-            Assert.Equal(emptyStringsList, sourceList.Select(i => i.ToString()).Where(s => s == null).ToList());
+            Assert.Equal(ReadOnlyCollection<string>.Empty, sourceList.Select(i => i.ToString()).Where(s => s == null).ToList());
         }
 
         [Fact]

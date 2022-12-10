@@ -245,6 +245,48 @@ bool DetectCPUFeatures()
                                             {
                                                 g_cpuFeatures |= XArchIntrinsicConstants_AvxVnni;
                                             }
+
+                                            if (PalIsAvx512Enabled() && (avx512StateSupport() == 1))       // XGETBV XRC0[7:5] == 111
+                                            {
+                                                if ((cpuidInfo[EBX] & (1 << 16)) != 0)                     // AVX512F
+                                                {
+                                                    g_cpuFeatures |= XArchIntrinsicConstants_Avx512f;
+
+                                                    bool isAVX512_VLSupported = false;
+                                                    if ((cpuidInfo[EBX] & (1 << 31)) != 0)                 // AVX512VL
+                                                    {
+                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512f_vl;
+                                                        isAVX512_VLSupported = true;
+                                                    }
+
+                                                    if ((cpuidInfo[EBX] & (1 << 30)) != 0)                 // AVX512BW
+                                                    {
+                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512bw;
+                                                        if (isAVX512_VLSupported)
+                                                        {
+                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512bw_vl;
+                                                        }
+                                                    }
+
+                                                    if ((cpuidInfo[EBX] & (1 << 28)) != 0)                 // AVX512CD
+                                                    {
+                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512cd;
+                                                        if (isAVX512_VLSupported)
+                                                        {
+                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512cd_vl;
+                                                        }
+                                                    }
+
+                                                    if ((cpuidInfo[EBX] & (1 << 17)) != 0)                 // AVX512DQ
+                                                    {
+                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq;
+                                                        if (isAVX512_VLSupported)
+                                                        {
+                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq_vl;
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -464,11 +506,6 @@ extern "C" bool RhInitialize()
     PopulateDebugHeaders();
 
     return true;
-}
-
-COOP_PINVOKE_HELPER(void, RhpEnableConservativeStackReporting, ())
-{
-    GetRuntimeInstance()->EnableConservativeStackReporting();
 }
 
 //

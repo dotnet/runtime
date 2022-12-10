@@ -154,7 +154,7 @@ namespace Internal.Runtime
             where T : struct, ITargetBinaryWriter
         {
             // Construct the gc info as if this array contains exactly one pointer
-            // - the encoding trick where the size of the series is measured as a difference from 
+            // - the encoding trick where the size of the series is measured as a difference from
             // total object size will make this work for arbitrary array lengths
 
             // Series size

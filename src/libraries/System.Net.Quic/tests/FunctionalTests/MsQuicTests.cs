@@ -244,7 +244,7 @@ namespace System.Net.Quic.Tests
 
             var listenerOptions = new QuicListenerOptions()
             {
-                ListenEndPoint = new IPEndPoint(Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
+                ListenEndPoint = new IPEndPoint(IsIPv6Available ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
                 ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
             };
@@ -289,7 +289,7 @@ namespace System.Net.Quic.Tests
 
             var listenerOptions = new QuicListenerOptions()
             {
-                ListenEndPoint = new IPEndPoint(Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
+                ListenEndPoint = new IPEndPoint(IsIPv6Available ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0),
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
@@ -438,6 +438,10 @@ namespace System.Net.Quic.Tests
         public async Task ConnectWithCertificateForLoopbackIP_IndicatesExpectedError(string ipString, bool expectsError)
         {
             var ipAddress = IPAddress.Parse(ipString);
+            if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6 && !IsIPv6Available)
+            {
+                throw new SkipTestException("IPv6 is not available on this platform");
+            }
 
             (X509Certificate2 certificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(expectsError ? "badhost" : "localhost");
             try

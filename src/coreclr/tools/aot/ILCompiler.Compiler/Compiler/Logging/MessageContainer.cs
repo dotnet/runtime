@@ -131,7 +131,7 @@ namespace ILCompiler.Logging
             if (TryLogSingleWarning(context, code, origin, subcategory))
                 return null;
 
-            if (context.IsWarningAsError(code))
+            if (Logger.IsWarningAsError(code))
                 return new MessageContainer(MessageCategory.WarningAsError, text, code, subcategory, origin);
 
             return new MessageContainer(MessageCategory.Warning, text, code, subcategory, origin);
@@ -148,7 +148,7 @@ namespace ILCompiler.Logging
             if (TryLogSingleWarning(context, (int)id, origin, subcategory))
                 return null;
 
-            if (context.IsWarningAsError((int)id))
+            if (Logger.IsWarningAsError((int)id))
                 return new MessageContainer(MessageCategory.WarningAsError, id, subcategory, origin, args);
 
             return new MessageContainer(MessageCategory.Warning, id, subcategory, origin, args);
@@ -265,10 +265,10 @@ namespace ILCompiler.Logging
             string origin = Origin?.ToString() ?? originApp;
 
             StringBuilder sb = new StringBuilder();
-            sb.Append(origin).Append(":");
+            sb.Append(origin).Append(':');
 
             if (!string.IsNullOrEmpty(SubCategory))
-                sb.Append(" ").Append(SubCategory);
+                sb.Append(' ').Append(SubCategory);
 
             string cat;
             switch (Category)
@@ -287,7 +287,7 @@ namespace ILCompiler.Logging
 
             if (!string.IsNullOrEmpty(cat))
             {
-                sb.Append(" ")
+                sb.Append(' ')
                     .Append(cat)
                     .Append(" IL")
                     .Append(Code.Value.ToString("D4"))
@@ -295,7 +295,7 @@ namespace ILCompiler.Logging
             }
             else
             {
-                sb.Append(" ");
+                sb.Append(' ');
             }
 
             if (Origin?.MemberDefinition != null)

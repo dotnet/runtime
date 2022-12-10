@@ -1978,12 +1978,12 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(RequestCacheLevel.NoCacheNoStore, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
-        [InlineData(RequestCacheLevel.Reload, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
+        [InlineData(RequestCacheLevel.NoCacheNoStore, "Cache-Control: no-store, no-cache")]
+        [InlineData(RequestCacheLevel.Reload, "Cache-Control: no-cache")]
         public void SendHttpGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
-            RequestCacheLevel requestCacheLevel, string[] expectedHeaders)
+            RequestCacheLevel requestCacheLevel, string expectedHeader)
         {
-            RemoteExecutor.Invoke(async (async, reqCacheLevel, eh0, eh1) =>
+            RemoteExecutor.Invoke(async (async, reqCacheLevel, eh) =>
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
@@ -1994,8 +1994,8 @@ namespace System.Net.Tests
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                        Assert.Contains(eh0, headers);
-                        Assert.Contains(eh1, headers);
+                        Assert.Contains("Pragma: no-cache", headers);
+                        Assert.Contains(eh, headers);
                     });
 
                     using (var response = (HttpWebResponse)await getResponse)
@@ -2003,7 +2003,7 @@ namespace System.Net.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
                 });
-            }, (this is HttpWebRequestTest_Async).ToString(), requestCacheLevel.ToString(), expectedHeaders[0], expectedHeaders[1]).Dispose();
+            }, (this is HttpWebRequestTest_Async).ToString(), requestCacheLevel.ToString(), expectedHeader).Dispose();
         }
 
         [Theory]

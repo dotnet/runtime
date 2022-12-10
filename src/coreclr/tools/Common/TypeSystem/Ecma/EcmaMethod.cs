@@ -362,7 +362,7 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 MethodAttributes attributes = Attributes;
-                return attributes.IsRuntimeSpecialName() 
+                return attributes.IsRuntimeSpecialName()
                     && attributes.IsPublic()
                     && Signature.Length == 0
                     && Name == ".ctor"
@@ -546,7 +546,7 @@ namespace Internal.TypeSystem.Ecma
         public override ParameterMetadata[] GetParameterMetadata()
         {
             MetadataReader metadataReader = MetadataReader;
-            
+
             // Spot check the enums match
             Debug.Assert((int)ParameterAttributes.In == (int)ParameterMetadataAttributes.In);
             Debug.Assert((int)ParameterAttributes.Out == (int)ParameterMetadataAttributes.Out);

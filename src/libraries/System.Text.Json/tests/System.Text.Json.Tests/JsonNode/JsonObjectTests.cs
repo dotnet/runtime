@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -955,6 +956,18 @@ namespace System.Text.Json.Nodes.Tests
                 Assert.Equal("World", (string)jObject["Hello"]);
                 Assert.Equal("World", (string)jObject["hello"]); // Test case insensitivity
             }
+        }
+
+        [Fact]
+        public static void LazyInitializationIsThreadSafe()
+        {
+            string arrayText = "{\"prop0\":0,\"prop1\":1}";
+            JsonObject jObj = Assert.IsType<JsonObject>(JsonNode.Parse(arrayText));
+            Parallel.For(0, 128, i =>
+            {
+                Assert.Equal(0, (int)jObj["prop0"]);
+                Assert.Equal(1, (int)jObj["prop1"]);
+            });
         }
     }
 }

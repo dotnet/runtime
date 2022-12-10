@@ -5,12 +5,17 @@
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <!-- Code included from System.Runtime.InteropServices -->
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\MarshalMode.cs" Link="Production\MarshalMode.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../tests/Common/MarshalDirection.cs" />
   </ItemGroup>
 
   <ItemGroup>

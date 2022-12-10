@@ -156,7 +156,7 @@ export function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any
     const elemAddress = elemRoot.address;
 
     try {
-        const len = cwraps.mono_wasm_array_length(arrayRoot.value);
+        const len = cwraps.mono_wasm_array_length_ref(arrayAddress);
         const res = new Array(len);
         for (let i = 0; i < len; ++i) {
             // TODO: pass arrayRoot.address and elemRoot.address into new API that copies

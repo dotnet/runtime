@@ -183,7 +183,9 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(arr);
 
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)Unsafe.SizeOf<T>());
+#pragma warning disable 8500 // sizeof of managed types
+            return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
+#pragma warning restore 8500
         }
 
         public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
@@ -363,18 +365,18 @@ namespace System.Runtime.InteropServices
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
@@ -482,7 +484,9 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 
@@ -494,7 +498,9 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 

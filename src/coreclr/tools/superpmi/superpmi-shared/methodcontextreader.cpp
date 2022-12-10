@@ -308,7 +308,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
         // one-by-one till we find a matching hash
         for (; curTOCIndex < (int)this->tocFile.GetTocCount(); curTOCIndex++)
         {
-            if (_strnicmp(this->Hash, this->tocFile.GetElementPtr(curTOCIndex)->Hash, MD5_HASH_BUFFER_SIZE) == 0)
+            if (_strnicmp(this->Hash, this->tocFile.GetElementPtr(curTOCIndex)->Hash, MM3_HASH_BUFFER_SIZE) == 0)
             {
                 // We found a match, return this specific method
                 return this->GetSpecificMethodContext(this->tocFile.GetElementPtr(curTOCIndex++)->Number);
@@ -330,7 +330,7 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
             if (mcb.allDone() || mcb.Error())
                 return mcb;
 
-            char mcHash[MD5_HASH_BUFFER_SIZE];
+            char mcHash[MM3_HASH_BUFFER_SIZE];
 
             // Create a temporary copy of mcb.buff plus ending 2-byte canary
             // this will get freed up by MethodContext constructor
@@ -342,10 +342,10 @@ MethodContextBuffer MethodContextReader::GetNextMethodContextFromHash()
             if (!MethodContext::Initialize(-1, buff, mcb.size, &mc))
                 return MethodContextBuffer(-1);
 
-            mc->dumpMethodMD5HashToBuffer(mcHash, MD5_HASH_BUFFER_SIZE);
+            mc->dumpMethodHashToBuffer(mcHash, MM3_HASH_BUFFER_SIZE);
             delete mc;
 
-            if (_strnicmp(this->Hash, mcHash, MD5_HASH_BUFFER_SIZE) == 0)
+            if (_strnicmp(this->Hash, mcHash, MM3_HASH_BUFFER_SIZE) == 0)
             {
                 // We found a match, return this specific method
                 return mcb;
@@ -532,7 +532,7 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
                 curr++;
             }
 
-            if (hash.length() == MD5_HASH_BUFFER_SIZE - 1)
+            if (hash.length() == MM3_HASH_BUFFER_SIZE - 1)
             {
                 StringList* node    = new StringList();
                 node->hash          = hash;
@@ -566,8 +566,8 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 {
     if (excludedMethodsList != nullptr)
     {
-        char md5HashBuf[MD5_HASH_BUFFER_SIZE] = {0};
-        mc->dumpMethodMD5HashToBuffer(md5HashBuf, MD5_HASH_BUFFER_SIZE);
+        char md5HashBuf[MM3_HASH_BUFFER_SIZE] = {0};
+        mc->dumpMethodHashToBuffer(md5HashBuf, MM3_HASH_BUFFER_SIZE);
         for (StringList* node = excludedMethodsList; node != nullptr; node = node->next)
         {
             if (strcmp(node->hash.c_str(), md5HashBuf) == 0)

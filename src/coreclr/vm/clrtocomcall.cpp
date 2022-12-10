@@ -168,7 +168,7 @@ PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(pMD->IsComPlusCall() || pMD->IsGenericComPlusCall());
+    _ASSERTE(pMD->IsComPlusCall());
     _ASSERTE(*ppStubMD == NULL);
 
     DWORD dwStubFlags;

@@ -13,12 +13,14 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector64_1
 {
     public static partial class Program
     {
-        private unsafe static void ToStringSingle()
+        [Fact]
+        public unsafe static void ToStringSingle()
         {
             int size = Unsafe.SizeOf<Vector64<Single>>() / sizeof(Single);
             Single[] values = new Single[size];

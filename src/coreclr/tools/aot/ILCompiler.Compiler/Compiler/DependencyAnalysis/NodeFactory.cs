@@ -50,7 +50,6 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager = metadataManager;
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
-            InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode(this);
             PreinitializationManager = preinitializationManager;
         }
 
@@ -204,13 +203,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return _importedNodeProvider.ImportedGCStaticNode(this, type);
                 }
-            });
-
-            _GCStaticsPreInitDataNodes = new NodeCache<MetadataType, GCStaticsPreInitDataNode>((MetadataType type) =>
-            {
-                ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
-                Debug.Assert(gcStaticsNode is GCStaticsNode);               
-                return ((GCStaticsNode)gcStaticsNode).NewPreInitDataNode();
             });
 
             _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
@@ -627,13 +619,6 @@ namespace ILCompiler.DependencyAnalysis
             return _GCStatics.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, GCStaticsPreInitDataNode> _GCStaticsPreInitDataNodes;
-
-        public GCStaticsPreInitDataNode GCStaticsPreInitDataNode(MetadataType type)
-        {
-            return _GCStaticsPreInitDataNodes.GetOrAdd(type);
-        }
-
         private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;
 
         public EmbeddedObjectNode GCStaticIndirection(MetadataType type)
@@ -907,8 +892,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode HelperEntrypoint(HelperEntrypoint entrypoint)
         {
-            if (_helperEntrypointSymbols == null)
-                _helperEntrypointSymbols = new ISymbolNode[s_helperEntrypointNames.Length];
+            _helperEntrypointSymbols ??= new ISymbolNode[s_helperEntrypointNames.Length];
 
             int index = (int)entrypoint;
 
@@ -932,10 +916,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_systemArrayOfTClass == null)
-                {
-                    _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
-                }
+                _systemArrayOfTClass ??= _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
                 return _systemArrayOfTClass;
             }
         }
@@ -945,10 +926,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_systemArrayOfTEnumeratorType == null)
-                {
-                    _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
-                }
+                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
                 return _systemArrayOfTEnumeratorType;
             }
         }
@@ -958,12 +936,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_instanceMethodRemovedHelper == null)
-                {
-                    // This helper is optional, but it's fine for this cache to be ineffective if that happens.
-                    // Those scenarios are rare and typically deal with small compilations.
-                    _instanceMethodRemovedHelper = TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
-                }
+                // This helper is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
 
                 return _instanceMethodRemovedHelper;
             }
@@ -985,21 +960,21 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<ReadyToRunHelperKey, ISymbolNode> _readyToRunHelpers;
 
-        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, object target)
         {
             return _readyToRunHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
 
-        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromDict.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromType;
 
-        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, object target, TypeSystemEntity dictionaryOwner)
         {
             return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
         }
@@ -1113,7 +1088,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
-            "__GCStaticRegionStart", 
+            "__GCStaticRegionStart",
             "__GCStaticRegionEnd",
             new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
 
@@ -1132,14 +1107,11 @@ namespace ILCompiler.DependencyAnalysis
             "__DispatchMapTableEnd",
             new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
 
-        public ArrayOfEmbeddedDataNode<EmbeddedObjectNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<EmbeddedObjectNode>(
-            "__FrozenSegmentRegionStart",
-            "__FrozenSegmentRegionEnd",
-            new SortableDependencyNode.EmbeddedObjectNodeComparer(CompilerComparer.Instance));
+        public ArrayOfFrozenObjectsNode FrozenSegmentRegion = new ArrayOfFrozenObjectsNode();
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 
-        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection { get; }
+        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode();
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
@@ -1149,10 +1121,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
+            ReadyToRunHeader = new ReadyToRunHeaderNode();
 
             graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
-            graph.AddRoot(new ModulesSectionNode(Target), "ModulesSection is always generated");
+            graph.AddRoot(new ModulesSectionNode(), "ModulesSection is always generated");
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
@@ -1168,7 +1140,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion, FrozenSegmentRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleInitializerList, ModuleInitializerList, ModuleInitializerList, ModuleInitializerList.EndSymbol);
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);

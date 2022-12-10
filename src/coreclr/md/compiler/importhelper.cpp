@@ -2516,7 +2516,7 @@ ImportHelper::ImportTypeDef(
                 // It's ok that we ignore the hr here. It's not needed, but I
                 // don't want to remove it in case a code analysis tool will complain
                 // about not capturing return codes.
-                hr = IIDFromString(wzBlob, &GuidImport);
+                hr = LPCWSTRToGuid(wzBlob, &GuidImport) ? S_OK : E_FAIL;
             }
         }
         bBCL = (GuidImport == LIBID_ComPlusRuntime);

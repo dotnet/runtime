@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_Sse1_ro</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Add.Single.cs" />
+    <Compile Include="AddScalar.Single.cs" />
+    <Compile Include="And.Single.cs" />
+    <Compile Include="AndNot.Single.cs" />
+    <Compile Include="CompareEqual.Single.cs" />
+    <Compile Include="CompareScalarEqual.Single.cs" />
+    <Compile Include="CompareScalarOrderedEqual.Boolean.cs" />
+    <Compile Include="CompareScalarUnorderedEqual.Boolean.cs" />
+    <Compile Include="CompareGreaterThan.Single.cs" />
+    <Compile Include="CompareScalarGreaterThan.Single.cs" />
+    <Compile Include="CompareScalarOrderedGreaterThan.Boolean.cs" />
+    <Compile Include="CompareScalarUnorderedGreaterThan.Boolean.cs" />
+    <Compile Include="CompareGreaterThanOrEqual.Single.cs" />
+    <Compile Include="CompareScalarGreaterThanOrEqual.Single.cs" />
+    <Compile Include="CompareScalarOrderedGreaterThanOrEqual.Boolean.cs" />
+    <Compile Include="CompareScalarUnorderedGreaterThanOrEqual.Boolean.cs" />
+    <Compile Include="CompareLessThan.Single.cs" />
+    <Compile Include="CompareScalarLessThan.Single.cs" />
+    <Compile Include="CompareScalarOrderedLessThan.Boolean.cs" />
+    <Compile Include="CompareScalarUnorderedLessThan.Boolean.cs" />
+    <Compile Include="CompareLessThanOrEqual.Single.cs" />
+    <Compile Include="CompareScalarLessThanOrEqual.Single.cs" />
+    <Compile Include="CompareScalarOrderedLessThanOrEqual.Boolean.cs" />
+    <Compile Include="CompareScalarUnorderedLessThanOrEqual.Boolean.cs" />
+    <Compile Include="CompareNotEqual.Single.cs" />
+    <Compile Include="CompareScalarNotEqual.Single.cs" />
+    <Compile Include="CompareScalarOrderedNotEqual.Boolean.cs" />
+    <Compile Include="CompareScalarUnorderedNotEqual.Boolean.cs" />
+    <Compile Include="CompareNotGreaterThan.Single.cs" />
+    <Compile Include="CompareScalarNotGreaterThan.Single.cs" />
+    <Compile Include="CompareNotGreaterThanOrEqual.Single.cs" />
+    <Compile Include="CompareScalarNotGreaterThanOrEqual.Single.cs" />
+    <Compile Include="CompareNotLessThan.Single.cs" />
+    <Compile Include="CompareScalarNotLessThan.Single.cs" />
+    <Compile Include="CompareNotLessThanOrEqual.Single.cs" />
+    <Compile Include="CompareScalarNotLessThanOrEqual.Single.cs" />
+    <Compile Include="CompareOrdered.Single.cs" />
+    <Compile Include="CompareScalarOrdered.Single.cs" />
+    <Compile Include="CompareUnordered.Single.cs" />
+    <Compile Include="CompareScalarUnordered.Single.cs" />
+    <Compile Include="ConvertScalarToVector128Single.Single.cs" />
+    <Compile Include="Divide.Single.cs" />
+    <Compile Include="DivideScalar.Single.cs" />
+    <Compile Include="LoadVector128.Single.cs" />
+    <Compile Include="LoadScalarVector128.Single.cs" />
+    <Compile Include="Max.Single.cs" />
+    <Compile Include="MaxScalar.Single.cs" />
+    <Compile Include="Min.Single.cs" />
+    <Compile Include="MinScalar.Single.cs" />
+    <Compile Include="Multiply.Single.cs" />
+    <Compile Include="MultiplyScalar.Single.cs" />
+    <Compile Include="Or.Single.cs" />
+    <Compile Include="Subtract.Single.cs" />
+    <Compile Include="SubtractScalar.Single.cs" />
+    <Compile Include="Xor.Single.cs" />
+    <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="Program.Sse1.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

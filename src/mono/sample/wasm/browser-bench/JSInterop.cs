@@ -39,7 +39,7 @@ namespace Sample
 
         public class LegacyExportIntMeasurement : BenchTask.Measurement
         {
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 3;
             public override string Name => "LegacyExportInt";
             public override void RunStep()
             {
@@ -59,7 +59,7 @@ namespace Sample
 
         public class LegacyExportStringMeasurement : BenchTask.Measurement
         {
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 3;
             public override string Name => "LegacyExportString";
             public override void RunStep()
             {
@@ -69,7 +69,7 @@ namespace Sample
 
         public class JSExportStringMeasurement : BenchTask.Measurement
         {
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 3;
             public override string Name => "JSExportString";
             public override void RunStep()
             {
@@ -92,7 +92,7 @@ namespace Sample
 
         public class JSImportStringMeasurement : BenchTask.Measurement
         {
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 3;
             public override string Name => "JSImportString";
             public override void RunStep()
             {
@@ -106,7 +106,7 @@ namespace Sample
         public class JSImportManyArgsMeasurement : BenchTask.Measurement
         {
             private DateTime start = DateTime.Now;
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 3;
             public override string Name => "JSImportManyArgs";
             public override void RunStep()
             {
@@ -120,7 +120,7 @@ namespace Sample
         public class JSImportTaskMeasurement : BenchTask.Measurement
         {
             public override bool HasRunStepAsync => true;
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 1;
             public override string Name => "JSImportTask";
             public override async Task RunStepAsync()
             {
@@ -137,7 +137,7 @@ namespace Sample
         public class JSImportTaskFailMeasurement : BenchTask.Measurement
         {
             public override bool HasRunStepAsync => true;
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 1;
             public override string Name => "JSImportTaskFail";
             public override async Task RunStepAsync()
             {
@@ -160,7 +160,7 @@ namespace Sample
 
         public class JSImportFailMeasurement : BenchTask.Measurement
         {
-            public override int InitialSamples => 10;
+            public override int InitialSamples => 1;
             public override string Name => "JSImportFail";
             public override void RunStep()
             {

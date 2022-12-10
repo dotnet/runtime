@@ -10,7 +10,6 @@ parameters:
   platform: ''
   pool: ''
   runtimeVariant: ''
-  stagedBuild: false
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
@@ -27,7 +26,6 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
@@ -38,12 +36,10 @@ jobs:
     - name: officialBuildIdArg
       value: ''
     - name: crossDacArgs
-      value: ''
+      value: '/p:CrossDacArtifactsDir=$(crossDacArtifactPath)/$(buildCrossDacArtifactName)'
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
-      - name: crossDacArgs
-        value: '/p:CrossDacArtifactsDir=$(crossDacArtifactPath)/$(buildCrossDacArtifactName)'
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
     - ${{ parameters.variables }}

@@ -596,7 +596,6 @@ void FASTCALL decodeCallPattern(int         pattern,
 
 // Stack offsets must be 8-byte aligned, so we use this unaligned
 //  offset to represent that the method doesn't have a security object
-#define NO_SECURITY_OBJECT        (-1)
 #define NO_GS_COOKIE              (-1)
 #define NO_STACK_BASE_REGISTER    (0xffffffff)
 #define NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA (0xffffffff)
