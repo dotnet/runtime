@@ -3664,8 +3664,8 @@ void Compiler::lvaSortByRefCount(RefCountState rcs)
         lvaTrackedToVarNum     = new (getAllocator(CMK_LvaTable)) unsigned[lvaTrackedToVarNumSize];
     }
 
-    unsigned  trackedCount = 0;
-    unsigned* tracked      = lvaTrackedToVarNum;
+    unsigned  trackedCandidateCount = 0;
+    unsigned* trackedCandidates     = lvaTrackedToVarNum;
 
     // Fill in the table used for sorting
 
@@ -3808,32 +3808,43 @@ void Compiler::lvaSortByRefCount(RefCountState rcs)
 
         if (varDsc->lvTracked)
         {
-            tracked[trackedCount++] = lclNum;
+            trackedCandidates[trackedCandidateCount++] = lclNum;
         }
     }
 
-    // Now sort the tracked variable table by ref-count
-    if (compCodeOpt() == SMALL_CODE)
-    {
-        jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_SmallCode_Less(lvaTable, rcs DEBUGARG(lvaCount)));
-    }
-    else
-    {
-        jitstd::sort(tracked, tracked + trackedCount, LclVarDsc_BlendedCode_Less(lvaTable, rcs DEBUGARG(lvaCount)));
-    }
+    lvaTrackedCount = min(trackedCandidateCount, (unsigned)JitConfig.JitMaxLocalsToTrack());
 
-    lvaTrackedCount = min((unsigned)JitConfig.JitMaxLocalsToTrack(), trackedCount);
+    // Sort the candidates. In the late liveness passes we want lower tracked
+    // indices to be more important variables, so we always do this. In early
+    // liveness it does not matter, so we can skip it when we are going to
+    // track everything.
+    // TODO-TP: For early liveness we could do a partial sort for the large
+    // case.
+    if (!fgIsDoingEarlyLiveness || (lvaTrackedCount < trackedCandidateCount))
+    {
+        // Now sort the tracked variable table by ref-count
+        if (compCodeOpt() == SMALL_CODE)
+        {
+            jitstd::sort(trackedCandidates, trackedCandidates + trackedCandidateCount,
+                         LclVarDsc_SmallCode_Less(lvaTable, rcs DEBUGARG(lvaCount)));
+        }
+        else
+        {
+            jitstd::sort(trackedCandidates, trackedCandidates + trackedCandidateCount,
+                         LclVarDsc_BlendedCode_Less(lvaTable, rcs DEBUGARG(lvaCount)));
+        }
+    }
 
     JITDUMP("Tracked variable (%u out of %u) table:\n", lvaTrackedCount, lvaCount);
 
     // Assign indices to all the variables we've decided to track
     for (unsigned varIndex = 0; varIndex < lvaTrackedCount; varIndex++)
     {
-        LclVarDsc* varDsc = lvaGetDesc(tracked[varIndex]);
+        LclVarDsc* varDsc = lvaGetDesc(trackedCandidates[varIndex]);
         assert(varDsc->lvTracked);
         varDsc->lvVarIndex = static_cast<unsigned short>(varIndex);
 
-        INDEBUG(if (verbose) { gtDispLclVar(tracked[varIndex]); })
+        INDEBUG(if (verbose) { gtDispLclVar(trackedCandidates[varIndex]); })
         JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()), varDsc->lvRefCnt(rcs),
                 refCntWtd2str(varDsc->lvRefCntWtd(rcs)));
     }
@@ -3841,9 +3852,9 @@ void Compiler::lvaSortByRefCount(RefCountState rcs)
     JITDUMP("\n");
 
     // Mark all variables past the first 'lclMAX_TRACKED' as untracked
-    for (unsigned varIndex = lvaTrackedCount; varIndex < trackedCount; varIndex++)
+    for (unsigned varIndex = lvaTrackedCount; varIndex < trackedCandidateCount; varIndex++)
     {
-        LclVarDsc* varDsc = lvaGetDesc(tracked[varIndex]);
+        LclVarDsc* varDsc = lvaGetDesc(trackedCandidates[varIndex]);
         assert(varDsc->lvTracked);
         varDsc->lvTracked = 0;
     }
