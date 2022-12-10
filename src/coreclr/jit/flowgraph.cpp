@@ -916,9 +916,7 @@ void Compiler::fgSetPreferredInitCctor()
 {
     if (m_preferredInitCctor == CORINFO_HELP_UNDEF)
     {
-        // The class constructor needs to be call either directly or indirectly
-        // trigerred by another helper call. This is the cheapest helper that
-        // triggers it.
+        // This is the cheapest helper that triggers the constructor.
         m_preferredInitCctor = CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
     }
 }
