@@ -497,10 +497,13 @@ void Compiler::fgPerBlockLocalVarLiveness()
         {
             assert(fgIsDoingEarlyLiveness);
 
-            for (GenTree* cur = block->GetFirstSequencedNode(); cur != nullptr; cur = cur->gtNext)
+            for (Statement* stmt : block->Statements())
             {
-                assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
-                fgMarkUseDef(cur->AsLclVarCommon());
+                for (GenTree* cur = stmt->GetRootNode()->gtNext; cur != nullptr; cur = cur->gtNext)
+                {
+                    assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+                    fgMarkUseDef(cur->AsLclVarCommon());
+                }
             }
         }
 
@@ -2735,10 +2738,29 @@ void Compiler::fgInterBlockLocalVarLiveness()
             compCurStmt = nullptr;
             VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
 
-            for (GenTree* cur = block->GetLastSequencedNode(); cur != nullptr; cur = cur->gtPrev)
+            Statement* firstStmt = block->firstStmt();
+
+            if (firstStmt == nullptr)
             {
-                assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
-                fgComputeLifeLocal(life, keepAliveVars, cur);
+                continue;
+            }
+
+            Statement* stmt = block->lastStmt();
+
+            while (true)
+            {
+                for (GenTree* cur = stmt->GetRootNode()->gtPrev; cur != nullptr; cur = cur->gtPrev)
+                {
+                    assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+                    fgComputeLifeLocal(life, keepAliveVars, cur);
+                }
+
+                if (stmt == firstStmt)
+                {
+                    break;
+                }
+
+                stmt = stmt->GetPrevStmt();
             }
         }
 
@@ -2855,106 +2877,6 @@ PhaseStatus Compiler::fgEarlyLiveness()
 
     // Initialize the per-block var sets.
     fgInitBlockVarSets();
-
-    struct EarlyLivenessSequencer : GenTreeVisitor<EarlyLivenessSequencer>
-    {
-        GenTree* PrevNode = nullptr;
-
-        enum
-        {
-            DoPostOrder       = true,
-            UseExecutionOrder = true,
-        };
-
-        EarlyLivenessSequencer(Compiler* comp) : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-            if (node->OperIsLocal() || node->OperIsLocalAddr())
-            {
-                LclVarDsc* dsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
-                if (dsc->lvTracked || dsc->lvPromoted)
-                {
-                    node->gtPrev     = PrevNode;
-                    PrevNode->gtNext = node;
-                    PrevNode         = node;
-                }
-            }
-
-            if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
-            {
-                GenTree* lcl = node->gtGetOp1();
-                if (lcl->gtNext != nullptr)
-                {
-                    assert(PrevNode != lcl);
-
-                    GenTree* prev = lcl->gtPrev;
-                    GenTree* next = lcl->gtNext;
-                    // Fix the def of the local to appear after uses on the RHS.
-                    if (prev != nullptr)
-                        prev->gtNext = next;
-
-                    next->gtPrev = prev;
-
-                    PrevNode->gtNext = lcl;
-                    lcl->gtPrev      = PrevNode;
-                    lcl->gtNext      = nullptr;
-                    PrevNode         = lcl;
-                }
-            }
-
-            return fgWalkResult::WALK_CONTINUE;
-        }
-    };
-
-    GenTree*               sentinelNode = gtNewNothingNode();
-    EarlyLivenessSequencer sequencer(this);
-
-    for (BasicBlock* bb : Blocks())
-    {
-        sequencer.PrevNode   = sentinelNode;
-        sentinelNode->gtNext = nullptr;
-
-        for (Statement* stmt : bb->Statements())
-        {
-            // TODO-TP: This could be done in local morph to save TP, but it
-            // would create a quite inelegant dependency.
-            sequencer.WalkTree(stmt->GetRootNodePointer(), nullptr);
-        }
-
-        if (sentinelNode->gtNext != nullptr)
-        {
-            sentinelNode->gtNext->gtPrev = nullptr;
-            bb->SetFirstSequencedNode(sentinelNode->gtNext);
-            bb->SetLastSequencedNode(sequencer.PrevNode);
-        }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf(FMT_BB " locals: ", bb->bbNum);
-            bool first = true;
-            for (GenTree* cur = bb->GetFirstSequencedNode(); cur != nullptr; cur = cur->gtNext)
-            {
-                if (!first)
-                {
-                    printf(" -> [%06u]", dspTreeID(cur));
-                }
-                else
-                {
-                    printf(" [%06u]", dspTreeID(cur));
-                }
-
-                first = false;
-            }
-
-            printf("\n");
-        }
-#endif
-    }
 
     fgLocalVarLivenessChanged = false;
     do

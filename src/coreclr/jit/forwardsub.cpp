@@ -541,6 +541,51 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     Statement* const nextStmt = stmt->GetNextStmt();
 
+    if (livenessBased)
+    {
+        // If we have early liveness then we have a linked list of locals
+        // available for each statement, so do a quick scan through that to see
+        // if there is a last use.
+        unsigned parentLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : BAD_VAR_NUM;
+
+        bool found = false;
+        for (GenTree* cur = nextStmt->GetRootNode()->gtNext; cur != nullptr; cur = cur->gtNext)
+        {
+            assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+            GenTreeLclVarCommon* lcl = cur->AsLclVarCommon();
+            if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
+            {
+                if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+                {
+                    VARSET_TP* deadFields;
+                    if (!varDsc->lvPromoted || !LookupPromotedStructDeathVars(lcl, &deadFields))
+                    {
+                        // This is a last use; skip it
+                        found = true;
+                        continue;
+                    }
+
+                    // Not last use; fall through to bail out early.
+                }
+            }
+
+            LclVarDsc* dsc        = lvaGetDesc(lcl);
+            unsigned   thisLclNum = lcl->GetLclNum();
+            if ((thisLclNum == lclNum) || (thisLclNum == parentLclNum) ||
+                (dsc->lvIsStructField && (dsc->lvParentLcl == lclNum)))
+            {
+                JITDUMP(" next stmt has non-last use as well\n");
+                return false;
+            }
+        }
+
+        if (!found)
+        {
+            JITDUMP(" no next stmt use\n");
+            return false;
+        }
+    }
+
     // We often see stale flags, eg call flags after inlining.
     // Try and clean these up.
     //
@@ -810,10 +855,75 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         fwdSubNode = gtNewCastNode(TYP_INT, fwdSubNode, false, varDsc->TypeGet());
     }
 
+    JITDUMP("Forward sub from:\n");
+    DISPSTMT(stmt);
+    JITDUMP("\nLocals:");
+    const char* sep = " ";
+    for (GenTree* cur = stmt->GetRootNode()->gtNext; cur != nullptr; cur = cur->gtNext)
+    {
+        JITDUMP("%s[%06u]", sep, dspTreeID(cur));
+        sep = " -> ";
+    }
+
+    JITDUMP("\nTo:\n");
+    DISPSTMT(nextStmt);
+    JITDUMP("\nLocals: ");
+    sep = " ";
+    for (GenTree* cur = nextStmt->GetRootNode()->gtNext; cur != nullptr; cur = cur->gtNext)
+    {
+        JITDUMP("%s[%06u]", sep, dspTreeID(cur));
+        sep = " -> ";
+    }
+    JITDUMP("\n");
+
     // Looks good, forward sub!
     //
-    GenTree** use = fsv.GetUse();
-    *use          = fwdSubNode;
+    GenTree** use    = fsv.GetUse();
+    GenTree*  useLcl = *use;
+    *use             = fwdSubNode;
+
+    // TODO: Abstract this nicely.
+    GenTree** forwardEdge;
+    GenTree** backwardEdge;
+    if (useLcl->gtPrev == nullptr)
+    {
+        assert(nextStmt->GetRootNode()->gtNext == useLcl);
+        forwardEdge = &nextStmt->GetRootNode()->gtNext;
+    }
+    else
+    {
+        forwardEdge = &useLcl->gtPrev->gtNext;
+    }
+
+    if (useLcl->gtNext == nullptr)
+    {
+        assert(nextStmt->GetRootNode()->gtPrev == useLcl);
+        backwardEdge = &nextStmt->GetRootNode()->gtPrev;
+    }
+    else
+    {
+        backwardEdge = &useLcl->gtNext->gtPrev;
+    }
+
+    assert(rootNode->gtPrev == rootNode->gtGetOp1());
+    if (rootNode->gtNext == rootNode->gtGetOp1())
+    {
+        // RHS of forward subbed statement has no locals so we just need to remove useLcl from the list.
+        *forwardEdge  = useLcl->gtNext;
+        *backwardEdge = useLcl->gtPrev;
+    }
+    else
+    {
+        assert(rootNode->gtPrev->gtPrev != nullptr);
+        GenTree* firstNode = rootNode->gtNext;
+        GenTree* lastNode  = rootNode->gtPrev->gtPrev;
+        // RHS of forward subbed statement has locals. Link them in place of useLcl.
+        *forwardEdge  = firstNode;
+        *backwardEdge = lastNode;
+
+        firstNode->gtPrev = useLcl->gtPrev;
+        lastNode->gtNext  = useLcl->gtNext;
+    }
 
     if (!fwdSubNodeInvariant)
     {

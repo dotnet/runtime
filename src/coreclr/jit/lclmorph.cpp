@@ -3,6 +3,119 @@
 
 #include "jitpch.h"
 
+class LocalSequencer final : public GenTreeVisitor<LocalSequencer>
+{
+    GenTree* m_rootNode;
+    GenTree* m_prevNode;
+
+public:
+    enum
+    {
+        DoPostOrder       = true,
+        UseExecutionOrder = true,
+    };
+
+    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_rootNode(nullptr), m_prevNode(nullptr)
+    {
+    }
+
+    void Start(Statement* stmt)
+    {
+        // We use the root node as a 'sentinel' node that will keep the head
+        // and tail of the sequenced list.
+        m_rootNode = stmt->GetRootNode();
+        assert(!m_rootNode->OperIsLocal() && !m_rootNode->OperIsLocalAddr());
+
+        m_rootNode->gtPrev = nullptr;
+        m_rootNode->gtNext = nullptr;
+        m_prevNode         = m_rootNode;
+    }
+
+    void Finish(Statement* stmt)
+    {
+        assert(stmt->GetRootNode() == m_rootNode);
+
+        GenTree* firstNode = m_rootNode->gtNext;
+        if (firstNode == nullptr)
+        {
+            assert(m_rootNode->gtPrev == nullptr);
+        }
+        else
+        {
+            GenTree* lastNode = m_prevNode;
+
+            // We only sequence leaf nodes that we shouldn't see as standalone
+            // statements here.
+            assert(m_rootNode != firstNode);
+            assert((m_rootNode->gtPrev == nullptr) && (lastNode->gtNext == nullptr));
+
+            assert(lastNode->OperIsLocal() || lastNode->OperIsLocalAddr());
+            firstNode->gtPrev  = nullptr;
+            m_rootNode->gtPrev = lastNode;
+        }
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* node = *use;
+        if (node->OperIsLocal() || node->OperIsLocalAddr())
+        {
+            SequenceLocal(node->AsLclVarCommon());
+        }
+
+        if (node->OperIs(GT_ASG))
+        {
+            SequenceAssignment(node->AsOp());
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    void SequenceLocal(GenTreeLclVarCommon* lcl)
+    {
+        lcl->gtPrev        = m_prevNode;
+        lcl->gtNext        = nullptr;
+        m_prevNode->gtNext = lcl;
+        m_prevNode         = lcl;
+    }
+
+    void SequenceAssignment(GenTreeOp* asg)
+    {
+        if (!asg->gtGetOp1()->OperIsLocal())
+        {
+            return;
+        }
+
+        GenTreeLclVarCommon* lcl = asg->gtGetOp1()->AsLclVarCommon();
+        if (lcl->gtNext == nullptr)
+        {
+            // Already in correct spot
+            return;
+        }
+
+        assert(m_prevNode != lcl);
+
+        GenTree* prev = lcl->gtPrev;
+        GenTree* next = lcl->gtNext;
+        // Fix the def of the local to appear after uses on the RHS.
+        assert(prev != nullptr); // Should have 'sentinel'
+        prev->gtNext = next;
+        next->gtPrev = prev;
+
+        m_prevNode->gtNext = lcl;
+        lcl->gtPrev        = m_prevNode;
+        lcl->gtNext        = nullptr;
+        m_prevNode         = lcl;
+    }
+
+    void Sequence(Statement* stmt)
+    {
+        Start(stmt);
+        WalkTree(stmt->GetRootNodePointer(), nullptr);
+        Finish(stmt);
+    }
+};
+
 class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 {
     // During tree traversal every GenTree node produces a "value" that represents:
@@ -306,6 +419,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     ArrayStack<Value> m_valueStack;
     bool              m_stmtModified;
     bool              m_madeChanges;
+    LocalSequencer*   m_sequencer;
 
 public:
     enum
@@ -314,14 +428,15 @@ public:
         DoPostOrder       = true,
         ComputeStack      = true,
         DoLclVarsOnly     = false,
-        UseExecutionOrder = false,
+        UseExecutionOrder = true,
     };
 
-    LocalAddressVisitor(Compiler* comp)
+    LocalAddressVisitor(Compiler* comp, LocalSequencer* sequencer)
         : GenTreeVisitor<LocalAddressVisitor>(comp)
         , m_valueStack(comp->getAllocator(CMK_LocalAddressVisitor))
         , m_stmtModified(false)
         , m_madeChanges(false)
+        , m_sequencer(sequencer)
     {
     }
 
@@ -341,6 +456,12 @@ public:
 #endif // DEBUG
 
         m_stmtModified = false;
+
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->Start(stmt);
+        }
+
         WalkTree(stmt->GetRootNodePointer(), nullptr);
 
         // We could have something a statement like IND(ADDR(LCL_VAR)) so we need to escape
@@ -361,6 +482,18 @@ public:
         PopValue();
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
+
+        if (m_sequencer != nullptr)
+        {
+            if (m_stmtModified)
+            {
+                m_sequencer->Sequence(stmt);
+            }
+            else
+            {
+                m_sequencer->Finish(stmt);
+            }
+        }
 
 #ifdef DEBUG
         if (m_compiler->verbose)
@@ -441,24 +574,28 @@ public:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Location(node->AsLclVar());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_VAR_ADDR:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclVar());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_FLD:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Location(node->AsLclFld());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_FLD_ADDR:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclFld());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_ADDR:
@@ -591,6 +728,15 @@ public:
                 }
                 break;
 
+            case GT_ASG:
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                assert(TopValue(0).Node() == node);
+
+                SequenceAssignment(node->AsOp());
+                break;
             default:
                 while (TopValue(0).Node() != node)
                 {
@@ -601,6 +747,7 @@ public:
         }
 
         assert(TopValue(0).Node() == node);
+
         return Compiler::WALK_CONTINUE;
     }
 
@@ -658,7 +805,7 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        GenTreeFlags defFlag = GTF_EMPTY;
+        GenTreeFlags defFlag            = GTF_EMPTY;
         GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
         bool         hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
@@ -1426,6 +1573,22 @@ private:
 
         return node->AsLclVar();
     }
+
+    void SequenceLocal(GenTreeLclVarCommon* lcl)
+    {
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->SequenceLocal(lcl);
+        }
+    }
+
+    void SequenceAssignment(GenTreeOp* asg)
+    {
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->SequenceAssignment(asg);
+        }
+    }
 };
 
 //------------------------------------------------------------------------
@@ -1443,7 +1606,8 @@ private:
 PhaseStatus Compiler::fgMarkAddressExposedLocals()
 {
     bool                madeChanges = false;
-    LocalAddressVisitor visitor(this);
+    LocalSequencer      sequencer(this);
+    LocalAddressVisitor visitor(this, opts.OptimizationEnabled() ? &sequencer : nullptr);
 
     for (BasicBlock* const block : Blocks())
     {

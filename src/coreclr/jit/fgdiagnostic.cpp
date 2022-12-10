@@ -2800,6 +2800,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         block->bbTraversalStamp = curTraversalStamp;
     }
 
+    bool sequenced = fgStmtListThreaded || compRationalIRForm;
+
     for (BasicBlock* const block : Blocks())
     {
         if (checkBBNum)
@@ -2814,11 +2816,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         if (block->bbJumpKind == BBJ_COND)
         {
-            assert(block->lastNode()->gtNext == nullptr && block->lastNode()->OperIsConditionalJump());
+            assert((!sequenced || (block->lastNode()->gtNext == nullptr)) &&
+                   block->lastNode()->OperIsConditionalJump());
         }
         else if (block->bbJumpKind == BBJ_SWITCH)
         {
-            assert(block->lastNode()->gtNext == nullptr &&
+            assert((!sequenced || (block->lastNode()->gtNext == nullptr)) &&
                    (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
         }
 
