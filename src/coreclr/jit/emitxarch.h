@@ -705,15 +705,19 @@ void emitAdjustStackDepth(instruction ins, ssize_t val);
 inline emitter::opSize emitEncodeScale(size_t scale)
 {
     assert(scale == 1 || scale == 2 || scale == 4 || scale == 8);
+    emitter::opSize result = static_cast<emitter::opSize>(genLog2(static_cast<uint32_t>(scale)));
 
-    return emitSizeEncode[scale - 1];
+    assert(result == emitSizeEncode[scale - 1]);
+    return result;
 }
 
 inline emitAttr emitDecodeScale(unsigned ensz)
 {
     assert(ensz < 4);
+    emitAttr result = static_cast<emitAttr>(1 << ensz);
 
-    return emitter::emitSizeDecode[ensz];
+    assert(result == emitter::emitSizeDecode[ensz]);
+    return result;
 }
 
 /************************************************************************/

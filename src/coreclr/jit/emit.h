@@ -488,8 +488,10 @@ protected:
 
 #define OPSIZE_INVALID ((opSize)0xffff)
 
+#if DEBUG
     static const emitter::opSize emitSizeEncode[];
     static const emitAttr        emitSizeDecode[];
+#endif
 
     static emitter::opSize emitEncodeSize(emitAttr size);
     static emitAttr emitDecodeSize(emitter::opSize ensz);
@@ -1047,7 +1049,7 @@ protected:
         }
 #endif // TARGET_LOONGARCH64
 
-        emitAttr idOpSize()
+        emitAttr idOpSize() const
         {
             return emitDecodeSize(_idOpSize);
         }
@@ -2856,15 +2858,19 @@ inline emitAttr emitActualTypeSize(T type)
 {
     assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE ||
            size == EA_32BYTE);
+    emitter::opSize result = static_cast<emitter::opSize>(genLog2(static_cast<uint32_t>(size)));
 
-    return emitSizeEncode[((int)size) - 1];
+    assert(result == emitSizeEncode[static_cast<uint32_t>(size) - 1]);
+    return result;
 }
 
 /* static */ inline emitAttr emitter::emitDecodeSize(emitter::opSize ensz)
 {
-    assert(((unsigned)ensz) < OPSZ_COUNT);
+    assert(static_cast<uint32_t>(ensz) < OPSZ_COUNT);
+    emitAttr result = static_cast<emitAttr>(1 << static_cast<uint32_t>(ensz));
 
-    return emitSizeDecode[ensz];
+    assert(result == emitSizeDecode[ensz]);
+    return result;
 }
 
 /*****************************************************************************

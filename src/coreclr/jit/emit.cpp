@@ -2388,6 +2388,7 @@ void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi)
  *  small encoding (0 through 3), and vice versa.
  */
 
+#if DEBUG
 const emitter::opSize emitter::emitSizeEncode[] = {
     emitter::OPSZ1, emitter::OPSZ2,  OPSIZE_INVALID, emitter::OPSZ4,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
     emitter::OPSZ8, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
@@ -2398,6 +2399,7 @@ const emitter::opSize emitter::emitSizeEncode[] = {
 
 const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {EA_1BYTE, EA_2BYTE,  EA_4BYTE,
                                                                EA_8BYTE, EA_16BYTE, EA_32BYTE};
+#endif
 
 /*****************************************************************************
  *
