@@ -9,7 +9,7 @@ mono_interp_tiering_init (void)
 {
 	mono_os_mutex_init_recursive (&tiering_mutex);
 	patch_sites_table = g_hash_table_new (NULL, NULL);
-	enable_tiering = FALSE;
+	enable_tiering = TRUE;
 }
 
 gboolean
