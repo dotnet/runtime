@@ -3910,7 +3910,7 @@ _SetMinOpts:
         }
         else
         {
-            codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
+            codeGen->SetAlignLoops(opts.OptimizationEnabled() && (JitConfig.JitAlignLoops() == 1));
         }
     }
 
