@@ -658,6 +658,7 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
+        GenTreeFlags defFlag = GTF_EMPTY;
         GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
         bool         hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
@@ -682,6 +683,7 @@ private:
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                 hasHiddenStructArg = true;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                defFlag = GTF_VAR_DEF;
             }
         }
 
@@ -706,6 +708,7 @@ private:
 #endif // TARGET_64BIT
 
         MorphLocalAddress(val.Node(), lclNum, val.Offset());
+        val.Node()->gtFlags |= defFlag;
 
         INDEBUG(val.Consume();)
     }
