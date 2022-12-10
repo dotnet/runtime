@@ -1792,7 +1792,8 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
  */
 
 void Compiler::fgComputeLife(VARSET_TP&       life,
-                             GenTree*         node,
+                             GenTree*         startNode,
+                             GenTree*         endNode,
                              VARSET_VALARG_TP volatileVars,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
@@ -1800,14 +1801,16 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
     VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
 
     noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
+    noway_assert(endNode || (startNode == compCurStmt->GetRootNode()));
 
     assert(!fgIsDoingEarlyLiveness);
     // NOTE: Live variable analysis will not work if you try
     // to use the result of an assignment node directly!
-    for (GenTree* tree = node; tree != nullptr; tree = tree->gtPrev)
+    for (GenTree* tree = startNode; tree != endNode; tree = tree->gtPrev)
     {
     AGAIN:
         assert(tree->OperGet() != GT_QMARK);
+
         if (tree->gtOper == GT_CALL)
         {
             fgComputeLifeCall(life, tree->AsCall());
@@ -2706,7 +2709,8 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 /* Compute the liveness for each tree node in the statement */
                 bool stmtInfoDirty = false;
 
-                fgComputeLife(life, compCurStmt->GetRootNode(), volatileVars, &stmtInfoDirty DEBUGARG(&treeModf));
+                fgComputeLife(life, compCurStmt->GetRootNode(), nullptr, volatileVars,
+                              &stmtInfoDirty DEBUGARG(&treeModf));
 
                 if (stmtInfoDirty)
                 {
@@ -2845,7 +2849,7 @@ PhaseStatus Compiler::fgEarlyLiveness()
 #endif
 
     fgIsDoingEarlyLiveness = true;
-    lvaSortByRefCount(RCS_EARLY);
+    lvaSortByRefCount();
 
     ClearPromotedStructDeathVars();
 

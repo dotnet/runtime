@@ -3642,7 +3642,7 @@ public:
  *  Sort the local variable table by refcount and assign tracking indices.
  */
 
-void Compiler::lvaSortByRefCount(RefCountState rcs)
+void Compiler::lvaSortByRefCount()
 {
     lvaTrackedCount             = 0;
     lvaTrackedCountInSizeTUnits = 0;
@@ -3676,11 +3676,11 @@ void Compiler::lvaSortByRefCount(RefCountState rcs)
         // Start by assuming that the variable will be tracked.
         varDsc->lvTracked = 1;
 
-        if (varDsc->lvRefCnt(rcs) == 0)
+        if (varDsc->lvRefCnt(lvaRefCountState) == 0)
         {
             // Zero ref count, make this untracked.
             varDsc->lvTracked = 0;
-            varDsc->setLvRefCntWtd(0, rcs);
+            varDsc->setLvRefCntWtd(0, lvaRefCountState);
         }
 
 #if !defined(TARGET_64BIT)
@@ -3826,12 +3826,12 @@ void Compiler::lvaSortByRefCount(RefCountState rcs)
         if (compCodeOpt() == SMALL_CODE)
         {
             jitstd::sort(trackedCandidates, trackedCandidates + trackedCandidateCount,
-                         LclVarDsc_SmallCode_Less(lvaTable, rcs DEBUGARG(lvaCount)));
+                         LclVarDsc_SmallCode_Less(lvaTable, lvaRefCountState DEBUGARG(lvaCount)));
         }
         else
         {
             jitstd::sort(trackedCandidates, trackedCandidates + trackedCandidateCount,
-                         LclVarDsc_BlendedCode_Less(lvaTable, rcs DEBUGARG(lvaCount)));
+                         LclVarDsc_BlendedCode_Less(lvaTable, lvaRefCountState DEBUGARG(lvaCount)));
         }
     }
 
@@ -3845,8 +3845,8 @@ void Compiler::lvaSortByRefCount(RefCountState rcs)
         varDsc->lvVarIndex = static_cast<unsigned short>(varIndex);
 
         INDEBUG(if (verbose) { gtDispLclVar(trackedCandidates[varIndex]); })
-        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()), varDsc->lvRefCnt(rcs),
-                refCntWtd2str(varDsc->lvRefCntWtd(rcs)));
+        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()),
+                varDsc->lvRefCnt(lvaRefCountState), refCntWtd2str(varDsc->lvRefCntWtd(lvaRefCountState)));
     }
 
     JITDUMP("\n");

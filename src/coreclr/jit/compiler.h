@@ -3297,7 +3297,7 @@ public:
     unsigned lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason));
     unsigned lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG(const char* reason));
 
-    void lvaSortByRefCount(RefCountState rcs = RCS_NORMAL);
+    void lvaSortByRefCount();
 
     PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
@@ -4697,7 +4697,8 @@ public:
     bool fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode);
 
     void fgComputeLife(VARSET_TP&       life,
-                       GenTree*         node,
+                       GenTree*         startNode,
+                       GenTree*         endNode,
                        VARSET_VALARG_TP volatileVars,
                        bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
