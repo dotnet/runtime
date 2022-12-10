@@ -195,7 +195,7 @@ public:
         , m_node(nullptr)
         , m_parentNode(nullptr)
         , m_lclNum(lclNum)
-        , m_useLclNum(lclNum)
+        , m_parentLclNum(BAD_VAR_NUM)
         , m_useCount(0)
         , m_useFlags(GTF_EMPTY)
         , m_accumulatedFlags(GTF_EMPTY)
@@ -205,7 +205,7 @@ public:
         LclVarDsc* dsc = compiler->lvaGetDesc(m_lclNum);
         if (dsc->lvIsStructField)
         {
-            m_useLclNum = dsc->lvParentLcl;
+            m_parentLclNum = dsc->lvParentLcl;
         }
     }
 
@@ -274,15 +274,18 @@ public:
         LclVarDsc* lclDsc = nullptr;
         if (node->OperIsLocal())
         {
-            unsigned   lclNum    = node->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* dsc       = m_compiler->lvaGetDesc(lclNum);
-            unsigned   useLclNum = lclNum;
-            if (dsc->lvIsStructField)
-            {
-                useLclNum = dsc->lvParentLcl;
-            }
+            unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* dsc    = m_compiler->lvaGetDesc(lclNum);
 
-            if (useLclNum == m_useLclNum)
+            // If we are forward subbing a promoted struct field then
+            // occurrences of the particular struct field, or the parent, are
+            // uses.
+            //
+            // If we are forward subbing a promoted struct then occurrences of
+            // _any_ of its fields are also uses.
+            //
+            if ((lclNum == m_lclNum) || (lclNum == m_parentLclNum) ||
+                (dsc->lvIsStructField && (dsc->lvParentLcl == m_lclNum)))
             {
                 // TODO-TP: Abort the walk early above and here.
                 m_useCount++;
@@ -344,13 +347,11 @@ public:
     }
 
 private:
-    GenTree** m_use;
-    GenTree*  m_node;
-    GenTree*  m_parentNode;
-    unsigned  m_lclNum;
-    // The local num to consider when counting uses (parent local if this
-    // m_lclNum is a struct field, otherwise the same as m_lclNum).
-    unsigned     m_useLclNum;
+    GenTree**    m_use;
+    GenTree*     m_node;
+    GenTree*     m_parentNode;
+    unsigned     m_lclNum;
+    unsigned     m_parentLclNum;
     unsigned     m_useCount;
     GenTreeFlags m_useFlags;
     GenTreeFlags m_accumulatedFlags;
