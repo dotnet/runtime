@@ -248,7 +248,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         // Arguments:
         //    val       - the input value
         //    addOffset - the offset to add
-        //    field     - the FIELD node that uses the input address value
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
@@ -470,6 +469,29 @@ public:
                 PopValue();
                 break;
 
+            case GT_ADD:
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->gtGetOp1());
+                assert(TopValue(0).Node() == node->gtGetOp2());
+
+                if (node->gtGetOp2()->IsCnsIntOrI())
+                {
+                    ssize_t offset = node->gtGetOp2()->AsIntCon()->IconValue();
+                    if (FitsIn<unsigned>(offset) && TopValue(2).AddOffset(TopValue(1), static_cast<unsigned>(offset)))
+                    {
+                        INDEBUG(TopValue(0).Consume());
+                        PopValue();
+                        PopValue();
+                        break;
+                    }
+                }
+
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                break;
+
             case GT_FIELD_ADDR:
                 if (node->AsField()->IsInstance())
                 {
@@ -636,8 +658,10 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        bool hasHiddenStructArg = false;
-        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer)
+        GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
+        bool         hasHiddenStructArg = false;
+        if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
+            IsValidLclAddr(lclNum, val.Offset()))
         {
             // We will only attempt this optimization for locals that are:
             // a) Not susceptible to liveness bugs (see "lvaSetHiddenBufferStructArg").
@@ -652,14 +676,12 @@ private:
             }
 #endif // TARGET_X86
 
-            GenTreeCall* callTree = user->IsCall() ? user->AsCall() : nullptr;
-
-            if (isSuitableLocal && (callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
-                (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
+            if (isSuitableLocal && callUser->gtArgs.HasRetBuffer() &&
+                (val.Node() == callUser->gtArgs.GetRetBufferArg()->GetNode()))
             {
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                 hasHiddenStructArg = true;
-                callTree->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
             }
         }
 
@@ -668,32 +690,22 @@ private:
             m_compiler->lvaSetVarAddrExposed(
                 varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         }
+
 #ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
         // is 32 bits we will quirk the size to 64 bits. Some PInvoke signatures incorrectly specify
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
         // overwriting these extra 4 bytes corrupts some data (such as a saved register) that leads
         // to A/V. Whereas previously the JIT64 codegen did not lead to an A/V.
-        if (!varDsc->lvIsParam && !varDsc->lvIsStructField && (genActualType(varDsc->TypeGet()) == TYP_INT))
+        if ((callUser != nullptr) && !varDsc->lvIsParam && !varDsc->lvIsStructField && genActualTypeIsInt(varDsc))
         {
-            // TODO-Cleanup: This should simply check if the user is a call node, not if a call ancestor exists.
-            if (Compiler::gtHasCallOnStack(&m_ancestors))
-            {
-                varDsc->lvQuirkToLong = true;
-                JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
-                        varTypeName(varDsc->TypeGet()));
-            }
+            varDsc->lvQuirkToLong = true;
+            JITDUMP("Adding a quirk for the storage size of V%02u of type %s\n", val.LclNum(),
+                    varTypeName(varDsc->TypeGet()));
         }
 #endif // TARGET_64BIT
 
-        // TODO-ADDR: For now use LCL_VAR_ADDR and LCL_FLD_ADDR only as call arguments and assignment sources.
-        // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
-        // could be changed to OBJ(LCL_FLD_ADDR) but historically DefinesLocalAddr did not recognize
-        // LCL_FLD_ADDR (and there may be other things now as well).
-        if (user->OperIs(GT_CALL, GT_ASG) && !hasHiddenStructArg)
-        {
-            MorphLocalAddress(val);
-        }
+        MorphLocalAddress(val.Node(), lclNum, val.Offset());
 
         INDEBUG(val.Consume();)
     }
@@ -738,7 +750,7 @@ private:
             // say, 2 consecutive Int32 struct fields as Int64 has more practical value.
 
             LclVarDsc* varDsc    = m_compiler->lvaGetDesc(val.LclNum());
-            unsigned   indirSize = GetIndirSize(node, user);
+            unsigned   indirSize = GetIndirSize(node);
             bool       isWide;
 
             if ((indirSize == 0) || ((val.Offset() + indirSize) > UINT16_MAX))
@@ -782,6 +794,7 @@ private:
                 m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField
                                                      ? varDsc->lvParentLcl
                                                      : val.LclNum() DEBUGARG(AddressExposedReason::WIDE_INDIR));
+                MorphWideLocalIndir(val);
             }
             else
             {
@@ -800,57 +813,25 @@ private:
     //    user - the node that uses the indirection
     //
     // Notes:
-    //    This returns 0 for indirection of unknown size. GT_IND nodes that have type
-    //    TYP_STRUCT are expected to only appears on the RHS of an assignment, in which
-    //    case the LHS size will be used instead. Otherwise 0 is returned as well.
+    //    This returns 0 for indirection of unknown size, i. e. IND<struct>
+    //    nodes that are used as sources of STORE_DYN_BLKs.
     //
-    unsigned GetIndirSize(GenTree* indir, GenTree* user)
+    unsigned GetIndirSize(GenTree* indir)
     {
         assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
 
         if (indir->TypeGet() != TYP_STRUCT)
         {
-            return genTypeSize(indir->TypeGet());
+            return genTypeSize(indir);
         }
 
-        // A struct indir that is the RHS of an assignment needs special casing:
-        // - It can be a GT_IND of type TYP_STRUCT, in which case the size is given by the LHS.
-        // - It can be a GT_OBJ that has a correct size, but different than the size of the LHS.
-        //   The LHS size takes precedence.
-        // Just take the LHS size in all cases.
-        if (user != nullptr && user->OperIs(GT_ASG) && (indir == user->gtGetOp2()))
+        if (indir->OperIs(GT_IND))
         {
-            indir = user->gtGetOp1();
-
-            if (indir->TypeGet() != TYP_STRUCT)
-            {
-                return genTypeSize(indir->TypeGet());
-            }
-
-            // The LHS may be a LCL_VAR/LCL_FLD, these are not indirections so we need to handle them here.
-            switch (indir->OperGet())
-            {
-                case GT_LCL_VAR:
-                    return m_compiler->lvaGetDesc(indir->AsLclVar())->lvExactSize;
-                case GT_LCL_FLD:
-                    return indir->AsLclFld()->GetSize();
-                default:
-                    break;
-            }
+            // TODO-1stClassStructs: remove once "IND<struct>" nodes are no more.
+            return 0;
         }
 
-        switch (indir->OperGet())
-        {
-            case GT_FIELD:
-                return m_compiler->info.compCompHnd->getClassSize(
-                    m_compiler->info.compCompHnd->getFieldClass(indir->AsField()->gtFldHnd));
-            case GT_BLK:
-            case GT_OBJ:
-                return indir->AsBlk()->GetLayout()->GetSize();
-            default:
-                assert(indir->OperIs(GT_IND));
-                return 0;
-        }
+        return indir->GetLayout(m_compiler)->GetSize();
     }
 
     //------------------------------------------------------------------------
@@ -858,44 +839,33 @@ private:
     //    to a single LCL_VAR_ADDR or LCL_FLD_ADDR node.
     //
     // Arguments:
-    //    val - a value that represents the local address
+    //    addr   - The address tree
+    //    lclNum - Local number of the variable in question
+    //    offset - Offset for the address
     //
-    void MorphLocalAddress(const Value& val)
+    void MorphLocalAddress(GenTree* addr, unsigned lclNum, unsigned offset)
     {
-        assert(val.IsAddress());
-        assert(val.Node()->TypeIs(TYP_BYREF, TYP_I_IMPL));
-        assert(m_compiler->lvaVarAddrExposed(val.LclNum()));
+        assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
+        assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
 
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
-
-        if (varDsc->lvPromoted || varDsc->lvIsStructField)
+        if (offset == 0)
         {
-            // TODO-ADDR: For now we ignore promoted variables, they require
-            // additional changes in subsequent phases.
-            return;
+            addr->ChangeOper(GT_LCL_VAR_ADDR);
+            addr->AsLclVar()->SetLclNum(lclNum);
         }
-
-        GenTree* addr = val.Node();
-
-        if (val.Offset() > UINT16_MAX)
-        {
-            // The offset is too large to store in a LCL_FLD_ADDR node,
-            // use ADD(LCL_VAR_ADDR, offset) instead.
-            addr->ChangeOper(GT_ADD);
-            addr->AsOp()->gtOp1 = m_compiler->gtNewLclVarAddrNode(val.LclNum());
-            addr->AsOp()->gtOp2 = m_compiler->gtNewIconNode(val.Offset(), TYP_I_IMPL);
-        }
-        else if (val.Offset() != 0)
+        else if (IsValidLclAddr(lclNum, offset))
         {
             addr->ChangeOper(GT_LCL_FLD_ADDR);
-            addr->AsLclFld()->SetLclNum(val.LclNum());
-            addr->AsLclFld()->SetLclOffs(val.Offset());
+            addr->AsLclFld()->SetLclNum(lclNum);
+            addr->AsLclFld()->SetLclOffs(offset);
             addr->AsLclFld()->SetLayout(nullptr);
         }
         else
         {
-            addr->ChangeOper(GT_LCL_VAR_ADDR);
-            addr->AsLclVar()->SetLclNum(val.LclNum());
+            // The offset was too large to store in a LCL_FLD_ADDR node, use ADD(LCL_VAR_ADDR, offset) instead.
+            addr->ChangeOper(GT_ADD);
+            addr->AsOp()->gtOp1 = m_compiler->gtNewLclVarAddrNode(lclNum);
+            addr->AsOp()->gtOp2 = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
         }
 
         // Local address nodes never have side effects (nor any other flags, at least at this point).
@@ -904,8 +874,50 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // MorphLocalIndir: Change a tree that represents an indirect access to a struct
-    //    variable to a canonical shape (one of "IndirTransform"s).
+    // MorphLocalIndir: Change a tree that represents indirect access to a
+    //    local variable to OBJ/BLK/IND(LCL_ADDR).
+    //
+    // Arguments:
+    //    val  - a value that represents the local indirection
+    //
+    // Notes:
+    //    This morphing is performed when the access cannot be turned into a
+    //    a local node, e. g. it is volatile or "wide".
+    //
+    void MorphWideLocalIndir(const Value& val)
+    {
+        assert(val.Node()->OperIsIndir() || val.Node()->OperIs(GT_FIELD));
+
+        GenTree* node = val.Node();
+        GenTree* addr = node->gtGetOp1();
+
+        MorphLocalAddress(addr, val.LclNum(), val.Offset());
+
+        if (node->OperIs(GT_FIELD))
+        {
+            if (node->TypeIs(TYP_STRUCT))
+            {
+                ClassLayout* layout = node->GetLayout(m_compiler);
+                node->SetOper(GT_OBJ);
+                node->AsBlk()->SetLayout(layout);
+                node->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
+#ifndef JIT32_GCENCODER
+                node->AsBlk()->gtBlkOpGcUnsafe = false;
+#endif // !JIT32_GCENCODER
+            }
+            else
+            {
+                node->SetOper(GT_IND);
+            }
+        }
+
+        // GLOB_REF may not be set already in the "large offset" case. Add it.
+        node->gtFlags |= GTF_GLOB_REF;
+    }
+
+    //------------------------------------------------------------------------
+    // MorphLocalIndir: Change a tree that represents indirect access to a
+    //    local variable to a canonical shape (one of "IndirTransform"s).
     //
     // Arguments:
     //    val - a value that represents the local indirection
@@ -1355,6 +1367,24 @@ private:
                     varDsc->lvRefCntWtd(RCS_EARLY), varDsc->lvRefCntWtd(RCS_EARLY) + 1, lclNum);
             varDsc->incLvRefCntWtd(1, RCS_EARLY);
         }
+    }
+
+    //------------------------------------------------------------------------
+    // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
+    //
+    // Local address nodes cannot point beyond the local and can only store
+    // 16 bits worth of offset.
+    //
+    // Arguments:
+    //    lclNum - The local's number
+    //    offset - The address' offset
+    //
+    // Return Value:
+    //    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
+    //
+    bool IsValidLclAddr(unsigned lclNum, unsigned offset) const
+    {
+        return (offset < UINT16_MAX) && (offset < m_compiler->lvaLclExactSize(lclNum));
     }
 
     //------------------------------------------------------------------------
