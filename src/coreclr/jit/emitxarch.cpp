@@ -1658,7 +1658,7 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
             // prefix if optimizations are enabled or we know we won't negatively impact the
             // estimated alignment sizes.
 
-            if (!emitComp->opts.MinOpts() || (emitCurIG->igNum > emitLastAlignedIgNum))
+            if (emitComp->opts.OptimizationEnabled() || (emitCurIG->igNum > emitLastAlignedIgNum))
             {
                 emitOutputByte(dst, 0xC5);
                 emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
@@ -2342,16 +2342,15 @@ inline bool hasCodeMR(instruction ins)
 //
 unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
 {
-    instruction ins  = id->idIns();
-    emitAttr    size = id->idOpSize();
+    assert(IsVexEncodedInstruction(id->idIns()));
 
-    assert(IsVexEncodedInstruction(ins));
-
-    if (emitComp->opts.MinOpts())
+    if (emitComp->opts.OptimizationDisabled())
     {
         // Don't worry about saving code size when optimizations are disabled
         return 3;
     }
+
+    instruction ins = id->idIns();
 
     if (EncodedBySSE38orSSE3A(ins))
     {
@@ -2377,6 +2376,8 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
             break;
         }
     }
+
+    emitAttr size = id->idOpSize();
 
     if (TakesRexWPrefix(ins, size))
     {
