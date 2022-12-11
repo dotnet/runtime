@@ -1207,9 +1207,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     {
                         assert(comp->compLocallocUsed);
 
-                        // Returns WALK_ABORT if a GT_LCLHEAP node is encountered in the argx tree
-                        //
-                        if (comp->fgWalkTreePre(&argx, Compiler::fgChkLocAllocCB) == Compiler::WALK_ABORT)
+                        if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
                         {
                             SetNeedsTemp(&arg);
                             continue;
@@ -1219,9 +1217,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
                 if (hasStructRegArgWeCareAbout)
                 {
-                    // Returns true if a GT_QMARK node is encountered in the argx tree
-                    //
-                    if (comp->fgWalkTreePre(&argx, Compiler::fgChkQmarkCB) == Compiler::WALK_ABORT)
+                    if (comp->gtTreeContainsOper(argx, GT_QMARK))
                     {
                         SetNeedsTemp(&arg);
                         continue;

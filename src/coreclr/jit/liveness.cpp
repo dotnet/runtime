@@ -2767,6 +2767,14 @@ void Compiler::fgInterBlockLocalVarLiveness()
                         continue;
                     }
 
+                    JITDUMP("Store [%06u] is dead", dspTreeID(stmt->GetRootNode()));
+                    // Currently side effect extraction cannot handle qmarks.
+                    if (gtTreeContainsOper(stmt->GetRootNode()->gtGetOp2(), GT_QMARK))
+                    {
+                        JITDUMP(" but contains a QMARK, so leaving in place\n");
+                        continue;
+                    }
+
                     // The def ought to be the last thing.
                     assert(stmt->GetRootNode()->gtPrev == cur);
 
@@ -2775,15 +2783,19 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
                     if (sideEffects == nullptr)
                     {
+                        JITDUMP(" and has no side effects, removing statement\n");
                         fgRemoveStmt(block, stmt DEBUGARG(false));
                         break;
                     }
                     else
                     {
+                        JITDUMP(" but has side effects. Replacing with:\n\n");
                         stmt->SetRootNode(sideEffects);
                         fgSequenceLocals(stmt);
                         // continue at tail of the side effects
                         cur = stmt->GetRootNode();
+                        DISPTREE(cur);
+                        JITDUMP("\n");
                     }
                 }
 
