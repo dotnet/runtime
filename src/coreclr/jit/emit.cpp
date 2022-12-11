@@ -666,13 +666,13 @@ void emitter::emitGenIG(insGroup* ig)
     emitCurIGinsCnt = 0;
     emitCurIGsize   = 0;
 
-    if (emitHasLastIns())
+    instrDesc* lastId = emitGetLastIns();
+    if (lastId != nullptr)
     {
         // We have a new IG and we need to clear the last recorded instructions,
         // except for the latest one.
         // We do this because we do not want to reference an instruction
         // from a previous IG as to protect from GC holes.
-        instrDesc* lastId = emitGetLastIns();
         emitClearLastInstrs();
         emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] = lastId;
     }
@@ -1430,8 +1430,6 @@ size_t emitter::emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp)
 
 void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
-    instrDesc* id;
-
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
     // We can't do this for a prolog, epilog, funclet prolog, or funclet epilog,
@@ -1499,7 +1497,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     /* Grab the space for the instruction */
 
-    emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    instrDesc* const id = emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitCurIGfreeNext += fullSize;
 
     assert(sz >= sizeof(void*));
@@ -1524,14 +1522,18 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     if (m_debugInfoSize > 0)
     {
         instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
-        info->idNum              = emitInsCount;
-        info->idSize             = sz;
-        info->idVarRefOffs       = 0;
-        info->idMemCookie        = 0;
-        info->idFlags            = GTF_EMPTY;
-        info->idFinallyCall      = false;
-        info->idCatchRet         = false;
-        info->idCallSig          = nullptr;
+        memset(info, 0, sizeof(instrDescDebugInfo));
+
+        // These fields should have been zero-ed by the above
+        assert(info->idVarRefOffs == 0);
+        assert(info->idMemCookie == 0);
+        assert(info->idFlags == GTF_EMPTY);
+        assert(info->idFinallyCall == false);
+        assert(info->idCatchRet == false);
+        assert(info->idCallSig == nullptr);
+
+        info->idNum  = emitInsCount;
+        info->idSize = sz;
         id->idDebugOnlyInfo(info);
     }
 
