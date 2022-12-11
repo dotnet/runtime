@@ -501,7 +501,6 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         /// <summary>
         /// This test has multiple threads simultaneously loop over the keys of a moderately-sized resx using
         /// <see cref="ResourceManager"/> and call <see cref="ResourceManager.GetString(string)"/> for each key.
@@ -515,6 +514,7 @@ namespace System.Resources.Extensions.Tests
         /// Whether to use <see cref="IDictionaryEnumerator.Entry"/> vs. <see cref="IDictionaryEnumerator.Key"/> when enumerating;
         /// these follow fairly different code paths.
         /// </param>]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void TestResourceManagerIsSafeForConcurrentAccessAndEnumeration(bool useEnumeratorEntry)

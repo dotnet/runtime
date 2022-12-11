@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace System.Resources
 #if RESOURCES_EXTENSIONS
@@ -285,6 +286,7 @@ namespace System.Resources
 
             // Lock the cache first, then the reader (reader locks implicitly through its methods).
             // Lock order MUST match ResourceReader.ResourceEnumerator.Entry to avoid deadlock.
+            Debug.Assert(!Monitor.IsEntered(reader));
             lock (cache)
             {
                 // Find the offset within the data section
