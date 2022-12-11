@@ -116,18 +116,7 @@ public:
     }
 };
 
-struct NullSequencer
-{
-    NullSequencer(Compiler* comp) {}
-    void Start(Statement* stmt) {}
-    void Finish(Statement* stmt) {}
-    void SequenceLocal(GenTreeLclVarCommon* lcl) {}
-    void SequenceAssignment(GenTreeOp* asg) {}
-    void Sequence(Statement* stmt) {}
-};
-
-template<typename TSequencer>
-class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor<TSequencer>>
+class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 {
     // During tree traversal every GenTree node produces a "value" that represents:
     //   - the memory location associated with a local variable, including an offset
@@ -427,17 +416,10 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor<TSeq
         LclFld
     };
 
-    using GenTreeVisitor<LocalAddressVisitor<TSequencer>>::m_compiler;
-    using GenTreeVisitor<LocalAddressVisitor<TSequencer>>::m_ancestors;
-    using GenTreeVisitor<LocalAddressVisitor<TSequencer>>::PreOrderVisit;
-    using GenTreeVisitor<LocalAddressVisitor<TSequencer>>::PostOrderVisit;
-    using GenTreeVisitor<LocalAddressVisitor<TSequencer>>::WalkTree;
-    using GenTreeVisitor<LocalAddressVisitor<TSequencer>>::fgWalkResult;
-
     ArrayStack<Value> m_valueStack;
     bool              m_stmtModified;
     bool              m_madeChanges;
-    TSequencer        m_sequencer;
+    LocalSequencer*   m_sequencer;
 
 public:
     enum
@@ -446,15 +428,15 @@ public:
         DoPostOrder       = true,
         ComputeStack      = true,
         DoLclVarsOnly     = false,
-        UseExecutionOrder = !std::is_same<TSequencer, NullSequencer>::value,
+        UseExecutionOrder = true,
     };
 
-    LocalAddressVisitor(Compiler* comp)
-        : GenTreeVisitor<LocalAddressVisitor<TSequencer>>(comp)
+    LocalAddressVisitor(Compiler* comp, LocalSequencer* sequencer)
+        : GenTreeVisitor<LocalAddressVisitor>(comp)
         , m_valueStack(comp->getAllocator(CMK_LocalAddressVisitor))
         , m_stmtModified(false)
         , m_madeChanges(false)
-        , m_sequencer(comp)
+        , m_sequencer(sequencer)
     {
     }
 
@@ -475,7 +457,10 @@ public:
 
         m_stmtModified = false;
 
-        m_sequencer.Start(stmt);
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->Start(stmt);
+        }
 
         WalkTree(stmt->GetRootNodePointer(), nullptr);
 
@@ -498,13 +483,16 @@ public:
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
 
-        if (m_stmtModified)
+        if (m_sequencer != nullptr)
         {
-            m_sequencer.Sequence(stmt);
-        }
-        else
-        {
-            m_sequencer.Finish(stmt);
+            if (m_stmtModified)
+            {
+                m_sequencer->Sequence(stmt);
+            }
+            else
+            {
+                m_sequencer->Finish(stmt);
+            }
         }
 
 #ifdef DEBUG
@@ -586,28 +574,28 @@ public:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Location(node->AsLclVar());
-                m_sequencer.SequenceLocal(node->AsLclVarCommon());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_VAR_ADDR:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclVar());
-                m_sequencer.SequenceLocal(node->AsLclVarCommon());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_FLD:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Location(node->AsLclFld());
-                m_sequencer.SequenceLocal(node->AsLclVarCommon());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_FLD_ADDR:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclFld());
-                m_sequencer.SequenceLocal(node->AsLclVarCommon());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_ADDR:
@@ -747,7 +735,7 @@ public:
                 PopValue();
                 assert(TopValue(0).Node() == node);
 
-                m_sequencer.SequenceAssignment(node->AsOp());
+                SequenceAssignment(node->AsOp());
                 break;
             default:
                 while (TopValue(0).Node() != node)
@@ -1585,13 +1573,41 @@ private:
 
         return node->AsLclVar();
     }
+
+    void SequenceLocal(GenTreeLclVarCommon* lcl)
+    {
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->SequenceLocal(lcl);
+        }
+    }
+
+    void SequenceAssignment(GenTreeOp* asg)
+    {
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->SequenceAssignment(asg);
+        }
+    }
 };
 
-template<typename TSequencer>
-PhaseStatus Compiler::fgRunLocalMorph()
+//------------------------------------------------------------------------
+// fgMarkAddressExposedLocals: Traverses the entire method and marks address
+//    exposed locals.
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//    Trees such as IND(ADDR(LCL_VAR)), that morph is expected to fold
+//    to just LCL_VAR, do not result in the involved local being marked
+//    address exposed.
+//
+PhaseStatus Compiler::fgMarkAddressExposedLocals()
 {
-    bool madeChanges = false;
-    LocalAddressVisitor<TSequencer> visitor(this);
+    bool                madeChanges = false;
+    LocalSequencer      sequencer(this);
+    LocalAddressVisitor visitor(this, opts.OptimizationEnabled() ? &sequencer : nullptr);
 
     for (BasicBlock* const block : Blocks())
     {
@@ -1613,31 +1629,8 @@ PhaseStatus Compiler::fgRunLocalMorph()
     }
 
     madeChanges |= visitor.MadeChanges();
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
-}
 
-//------------------------------------------------------------------------
-// fgMarkAddressExposedLocals: Traverses the entire method and marks address
-//    exposed locals.
-//
-// Returns:
-//    Suitable phase status
-//
-// Notes:
-//    Trees such as IND(ADDR(LCL_VAR)), that morph is expected to fold
-//    to just LCL_VAR, do not result in the involved local being marked
-//    address exposed.
-//
-PhaseStatus Compiler::fgMarkAddressExposedLocals()
-{
-    if (opts.OptimizationEnabled())
-    {
-        return fgRunLocalMorph<LocalSequencer>();
-    }
-    else
-    {
-        return fgRunLocalMorph<NullSequencer>();
-    }
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef FEATURE_SIMD

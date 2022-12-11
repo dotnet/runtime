@@ -1873,7 +1873,6 @@ class Compiler
     friend class TempDsc;
     friend class LIR;
     friend class ObjectAllocator;
-    template<typename TSequencer>
     friend class LocalAddressVisitor;
     friend struct GenTree;
     friend class MorphInitBlockHelper;
@@ -5910,8 +5909,7 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     PhaseStatus fgMarkAddressExposedLocals();
-    template<typename TSequencer>
-    PhaseStatus fgRunLocalMorph();
+    void fgMarkAddressExposedLocals(Statement* stmt);
 
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
