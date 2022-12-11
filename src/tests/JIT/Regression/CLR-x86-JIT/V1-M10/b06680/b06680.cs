@@ -12,7 +12,7 @@ namespace DefaultNamespace
     {
         private static int n = 0;
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             n = 1;
             Console.WriteLine("n = " + n);

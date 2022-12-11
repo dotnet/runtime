@@ -23,7 +23,7 @@
 	ret
 }
 
-.method static	int32 main(string[]) {
+.method static	int32 main() {
 .locals		(class [mscorlib]System.IO.TextWriter,int32*,int32,class [mscorlib]System.Text.StringBuilder,int32,string)
 .entrypoint
 	call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()

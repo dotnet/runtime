@@ -8,6 +8,7 @@
     <DefineConstants>$(DefineConstants);INCLUDE_EXPECTATIONS</DefineConstants>
     <WarningLevel>0</WarningLevel>
     <AnalysisLevel>0</AnalysisLevel>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

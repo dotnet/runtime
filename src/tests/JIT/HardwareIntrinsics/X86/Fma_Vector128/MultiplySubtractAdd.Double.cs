@@ -600,13 +600,13 @@ namespace JIT.HardwareIntrinsics.X86._Fma_Vector128
 
             for (var i = 0; i < RetElementCount; i += 2)
             {
-                if (BitConverter.DoubleToInt64Bits(Math.Round((firstOp[i] * secondOp[i]) + thirdOp[i], 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i], 9)))
+                if (BitConverter.DoubleToInt64Bits(Math.Round(double.FusedMultiplyAdd(firstOp[i], secondOp[i], thirdOp[i]), 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i], 9)))
                 {
                     succeeded = false;
                     break;
                 }
 
-                if (BitConverter.DoubleToInt64Bits(Math.Round((firstOp[i + 1] * secondOp[i + 1]) - thirdOp[i + 1], 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i + 1], 9)))
+                if (BitConverter.DoubleToInt64Bits(Math.Round(double.FusedMultiplyAdd(firstOp[i + 1], secondOp[i + 1], -thirdOp[i + 1]), 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i + 1], 9)))
                 {
                     succeeded = false;
                     break;

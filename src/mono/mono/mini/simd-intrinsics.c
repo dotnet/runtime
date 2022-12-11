@@ -309,8 +309,9 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
 						ins->inst_c0 = OP_FDIV;
 						return ins;
-					} else
+					} else {
 						return NULL;
+					}
 				}
 				instc0 = OP_FDIV;
 				break;
@@ -335,8 +336,9 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
 						ins->inst_c0 = OP_FMUL;
 						return ins;
-					} else
+					} else {
 						return NULL;
+					}
 				}
 				instc0 = OP_FMUL;
 				break;
@@ -1480,10 +1482,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 	}
 	case SN_Narrow: {
-#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
+#ifdef TARGET_ARM64
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
 
@@ -1574,6 +1576,33 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return NULL;
 			}
 		}
+#elif defined(TARGET_WASM)
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+
+		if (size != 16)
+			return NULL;
+
+		int intrins = -1;
+		switch (arg0_type) {
+		case MONO_TYPE_I2:
+			intrins = INTRINS_WASM_NARROW_SIGNED_V16;
+			break;
+		case MONO_TYPE_I4:
+			intrins = INTRINS_WASM_NARROW_SIGNED_V8;
+			break;
+		case MONO_TYPE_U2:
+			intrins = INTRINS_WASM_NARROW_UNSIGNED_V16;
+			break;
+		case MONO_TYPE_U4:
+			intrins = INTRINS_WASM_NARROW_UNSIGNED_V8;
+			break;
+		}
+
+		if (intrins != -1)
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
+
+		return NULL;
 #else
 		return NULL;
 #endif
@@ -4277,6 +4306,11 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	return extract_first_element (cfg, vector_class, element_type, vsum->dreg);
 }
 
+static guint16 bitoperations_methods [] = {
+	SN_LeadingZeroCount,
+	SN_TrailingZeroCount,
+};
+
 static SimdIntrinsic wasmbase_methods [] = {
 	{SN_LeadingZeroCount},
 	{SN_TrailingZeroCount},
@@ -4310,6 +4344,39 @@ static const IntrinGroup supported_wasm_common_intrinsics [] = {
 };
 
 static MonoInst*
+emit_wasm_zero_count (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args,
+	MonoClass *klass, int id, MonoTypeEnum arg0_type)
+{
+	gboolean arg0_i32 = (arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4);
+#if TARGET_SIZEOF_VOID_P == 4
+	arg0_i32 = arg0_i32 || (arg0_type == MONO_TYPE_I) || (arg0_type == MONO_TYPE_U);
+#endif
+	int opcode = id == SN_LeadingZeroCount ? (arg0_i32 ? OP_LZCNT32 : OP_LZCNT64) : (arg0_i32 ? OP_CTTZ32 : OP_CTTZ64);
+
+	return emit_simd_ins_for_sig (cfg, klass, opcode, 0, arg0_type, fsig, args);
+}
+
+static MonoInst*
+emit_wasm_bitoperations_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	int id = lookup_intrins (bitoperations_methods, sizeof (bitoperations_methods), cmethod);
+	if (id == -1) {
+		return NULL;
+	}
+
+	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
+
+	switch (id) {
+		case SN_LeadingZeroCount:
+		case SN_TrailingZeroCount: {
+			return emit_wasm_zero_count(cfg, fsig, args, cmethod->klass, id, arg0_type);
+		}
+	}
+
+	return NULL;
+}
+
+static MonoInst*
 emit_wasm_supported_intrinsics (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args,
 	MonoClass *klass, const IntrinGroup *intrin_group,
@@ -4322,13 +4389,7 @@ emit_wasm_supported_intrinsics (
 		switch (id) {
 			case SN_LeadingZeroCount:
 			case SN_TrailingZeroCount: {
-				gboolean arg0_i32 = (arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4);
-#if TARGET_SIZEOF_VOID_P == 4
-				arg0_i32 = arg0_i32 || (arg0_type == MONO_TYPE_I) || (arg0_type == MONO_TYPE_U);
-#endif
-				int opcode = id == SN_LeadingZeroCount ? (arg0_i32 ? OP_LZCNT32 : OP_LZCNT64) : (arg0_i32 ? OP_CTTZ32 : OP_CTTZ64);
-
-				return emit_simd_ins_for_sig (cfg, klass, opcode, 0, arg0_type, fsig, args);
+				return emit_wasm_zero_count(cfg, fsig, args, klass, id, arg0_type);
 			}
 		}
 	}
@@ -4488,6 +4549,10 @@ arch_emit_common_intrinsics (const char *class_ns, const char *class_name, MonoC
 		return emit_hardware_intrinsics (cfg, cmethod, fsig, args,
 			supported_wasm_common_intrinsics, sizeof (supported_wasm_common_intrinsics),
 			emit_wasm_supported_intrinsics);
+	}
+
+	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "BitOperations")) {
+		return emit_wasm_bitoperations_intrinsics (cfg, cmethod, fsig, args);
 	}
 
 	return NULL;

@@ -13,7 +13,7 @@ class LPTStrTest
 {
     private static readonly string InitialString = "Hello World";
     private static readonly string LongString = "0123456789abcdefghi";
-    private static readonly string LongUnicodeString = "👨‍👨‍👧‍👧🐱‍👤";
+    private static readonly string LongUnicodeString = "\uD83D\uDC68\u200D\uD83D\uDC68\u200D\uD83D\uDC67\u200D\uD83D\uDC67\uD83D\uDC31\u200D\uD83D\uDC64";
 
     public static int Main()
     {

@@ -907,8 +907,7 @@ namespace System.Reflection.Emit
         [CLSCompliant(false)]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
-            if (codeSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(codeSize), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfNegative(codeSize);
             if (codeSize > 0)
                 ArgumentNullException.ThrowIfNull(code);
 
@@ -924,8 +923,7 @@ namespace System.Reflection.Emit
         [CLSCompliant(false)]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
         {
-            if (exceptionsSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(exceptionsSize), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfNegative(exceptionsSize);
 
             if (exceptionsSize > 0)
                 ArgumentNullException.ThrowIfNull(exceptions);
@@ -941,9 +939,7 @@ namespace System.Reflection.Emit
         [CLSCompliant(false)]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
         {
-            if (signatureSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(signatureSize), SR.ArgumentOutOfRange_GenericPositive);
-
+            ArgumentOutOfRangeException.ThrowIfNegative(signatureSize);
             if (signatureSize > 0)
                 ArgumentNullException.ThrowIfNull(localSignature);
 
@@ -1036,7 +1032,7 @@ namespace System.Reflection.Emit
                 if (!RuntimeMethodHandle.IsDynamicMethod(rmhi))
                 {
                     RuntimeType type = RuntimeMethodHandle.GetDeclaringType(rmhi);
-                    if ((type != null) && RuntimeTypeHandle.HasInstantiation(type))
+                    if (type.IsGenericType)
                     {
                         // Do we really need to retrieve this much info just to throw an exception?
                         MethodBase m = RuntimeType.GetMethodBase(methodReal)!;

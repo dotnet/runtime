@@ -11,13 +11,13 @@ namespace System.Runtime.InteropServices.JavaScript
         public Uint8Array(int length)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { length }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         public Uint8Array(ArrayBuffer buffer)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { buffer }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         internal Uint8Array(IntPtr jsHandle) : base(jsHandle)

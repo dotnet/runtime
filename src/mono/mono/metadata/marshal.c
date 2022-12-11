@@ -44,7 +44,6 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
-#include "mono/metadata/marshal-noilgen.h"
 #include "mono/metadata/monitor.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
@@ -6101,45 +6100,6 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
 	mono_mb_free (mb);
 
 	return res;
-}
-
-/*
- * The mono_win32_compat_* functions are implementations of inline
- * Windows kernel32 APIs, which are DllImport-able under MS.NET,
- * although not exported by kernel32.
- *
- * We map the appropriate kernel32 entries to these functions using
- * dllmaps declared in the global etc/mono/config.
- */
-
-void
-mono_win32_compat_CopyMemory (gpointer dest, gconstpointer source, gsize length)
-{
-	if (!dest || !source)
-		return;
-
-	memcpy (dest, source, length);
-}
-
-void
-mono_win32_compat_FillMemory (gpointer dest, gsize length, guchar fill)
-{
-	memset (dest, fill, length);
-}
-
-void
-mono_win32_compat_MoveMemory (gpointer dest, gconstpointer source, gsize length)
-{
-	if (!dest || !source)
-		return;
-
-	memmove (dest, source, length);
-}
-
-void
-mono_win32_compat_ZeroMemory (gpointer dest, gsize length)
-{
-	memset (dest, 0, length);
 }
 
 void

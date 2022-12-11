@@ -319,7 +319,7 @@ namespace mdarray
             }
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             const int n = 10;
             int[,] a = new int[n,n];

@@ -180,6 +180,7 @@ namespace pal
         return buffer;
     }
 
+    size_t pal_utf8string(const string_t& str, char* out_buffer, size_t len);
     bool pal_utf8string(const string_t& str, std::vector<char>* out);
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, string_t* out);
@@ -236,6 +237,16 @@ namespace pal
 
     inline const string_t strerror(int errnum) { return ::strerror(errnum); }
 
+    inline size_t pal_utf8string(const string_t& str, char* out_buffer, size_t buffer_len)
+    {
+        size_t len = str.size() + 1;
+        if (buffer_len < len)
+            return len;
+
+        ::strncpy(out_buffer, str.c_str(), str.size());
+        out_buffer[len - 1] = '\0';
+        return len;
+    }
     inline bool pal_utf8string(const string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
     inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
     inline bool clr_palstring(const char* cstr, string_t* out) { out->assign(cstr); return true; }
