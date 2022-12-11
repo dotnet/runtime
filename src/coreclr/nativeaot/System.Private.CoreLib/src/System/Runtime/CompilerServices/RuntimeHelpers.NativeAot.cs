@@ -104,7 +104,7 @@ namespace System.Runtime.CompilerServices
             // where two threads consistently give out the same hash codes.
             // Choice of multiplier guarantees period of 2**32 - see Knuth Vol 2 p16 (3.2.1.2 Theorem A).
             t_hashSeed = t_hashSeed * multiplier + 1;
-            return t_hashSeed;
+            return t_hashSeed + Environment.TickCount;
         }
 
         public static unsafe int GetHashCode(object o)
