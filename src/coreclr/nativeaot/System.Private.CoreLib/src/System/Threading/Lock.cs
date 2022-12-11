@@ -11,18 +11,36 @@ namespace System.Threading
     [ReflectionBlocked]
     public sealed class Lock : IDisposable
     {
-        // The following constants define characteristics of spinning logic in the Lock class
+        //
+        // This lock is a hybrid spinning/blocking lock with dynamically adjusted spinning.
+        // On a multiprocessor machine an acquiring thread will try to acquire multiple times
+        // before going to sleep. The amount of spinning is dynamically adjusted based on past
+        // history of the lock and will stay in the following range.
+        //
         private const uint MaxSpinLimit = 200;
         private const uint MinSpinLimit = 10;
         private const uint SpinningNotInitialized = MaxSpinLimit + 1;
         private const uint SpinningDisabled = 0;
 
-        // We will use exponential backoff in cases when we need to change state atomically and cannot
-        // make progress due to contention.
-        // While we cannot know how much wait we need until a successfull attempt, exponential backoff
-        // should generally be not more than 2X of that and will do a lot less tries than an eager retry.
-        // To protect against degenerate cases we will cap the iteration wait up to 1024 spinwaits.
+        //
+        // We will use exponential backoff in rare cases when we need to change state atomically and cannot
+        // make progress due to concurrent state changes by other threads.
+        // While we cannot know the ideal amount of wait needed before making a successfull attempt,
+        // the exponential backoff will generally be not more than 2X worse than the perfect guess and
+        // will do a lot less attempts than an simple retry. On multiprocessor machine fruitless attempts
+        // will cause unnecessary sharing of the contended state which may make modifying the state more expensive.
+        // To protect against degenerate cases we will cap the per-iteration wait to 1024 spinwaits.
+        //
         private const uint MaxExponentialBackoffBits = 10;
+
+        //
+        // This lock is unfair and permits acquiring a contended lock by a nonwaiter in the presence of waiters.
+        // It is possible for one thread to keep holding the lock long enough that waiters go to sleep and
+        // then release and reacquire fast enough that waiters have no chance to get the lock.
+        // In extreme cases one thread could keep retaking the lock starving everybody else.
+        // If we see woken waiters not able to take the lock for too long we will ask nonwaiters to wait.
+        //
+        private const uint WaiterWatchdogTicks = 100;
 
         //
         // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
@@ -39,12 +57,15 @@ namespace System.Threading
         // bit 1: True if we've set the event to wake a waiting thread.  The waiter resets this to false when it
         //        wakes up.  This avoids the overhead of setting the event multiple times.
         //
+        // bit 2: True if nonwaiters must not get ahead of waiters when acquiring a contended lock.
+        //
         // everything else: A count of the number of threads waiting on the event.
         //
+        private const int Uncontended = 0;
         private const int Locked = 1;
         private const int WaiterWoken = 2;
-        private const int WaiterCountIncrement = 4;
-        private const int Uncontended = 0;
+        private const int YieldToWaiters = 4;
+        private const int WaiterCountIncrement = 8;
 
         // state of the lock
         private AutoResetEvent? _lazyEvent;
@@ -52,6 +73,7 @@ namespace System.Threading
         private uint _recursionCount;
         private int _state;
         private uint _spinLimit;
+        private int _wakeWatchDog;
 
         // used to transfer the state when inflating thin locks
         internal void InitializeLocked(int threadId, int recursionCount)
@@ -68,10 +90,6 @@ namespace System.Threading
         {
             get
             {
-                //
-                // Can't use LazyInitializer.EnsureInitialized because Lock needs to stay low level enough
-                // for the purposes of lazy generic lookups. LazyInitializer uses a generic delegate.
-                //
                 if (_lazyEvent == null)
                     Interlocked.CompareExchange(ref _lazyEvent, new AutoResetEvent(false), null);
 
@@ -86,9 +104,6 @@ namespace System.Threading
 
         private static int CurrentThreadId => Environment.CurrentManagedThreadId;
 
-        // the inlined version of Lock.Acquire would not inline ManagedThreadId.Current,
-        // while the non-inlined version has it inlined.
-        // So it saves code to keep this function not inlined while having the same runtime cost.
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Acquire()
         {
@@ -200,21 +215,34 @@ namespace System.Threading
                     //
                     // Try to grab the lock.  We may take the lock here even if there are existing waiters.  This creates the possibility
                     // of starvation of waiters, but it also prevents lock convoys and preempted waiters from destroying perf.
+                    // However, if we do not see _wakeWatchDog cleared for long enough, we go into YieldToWaiters mode to ensure some
+                    // waiter progress.
                     //
                     int oldState = _state;
-                    if ((oldState & Locked) == 0)
+                    if (hasWaited || (oldState & YieldToWaiters) == 0)
                     {
-                        int newState = oldState | Locked;
-                        if (hasWaited)
-                            newState = (newState - WaiterCountIncrement) & ~WaiterWoken;
-
-                        if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
+                        if ((oldState & Locked) == 0)
                         {
-                            // spinning was successful, update spin count
-                            if (iteration < localSpinLimit && localSpinLimit < MaxSpinLimit)
-                                _spinLimit = localSpinLimit + 1;
+                            int newState = oldState | Locked;
+                            if (hasWaited)
+                                newState = (newState - WaiterCountIncrement) & ~WaiterWoken & ~YieldToWaiters;
 
-                            goto GotTheLock;
+                            if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
+                            {
+                                if (hasWaited)
+                                    _wakeWatchDog = 0;
+
+                                // if spinning was successful, update spin count
+                                if (iteration < localSpinLimit && localSpinLimit < MaxSpinLimit)
+                                    _spinLimit = localSpinLimit + 1;
+
+                                // GOT THE LOCK!!
+                                Debug.Assert((_state | Locked) != 0);
+                                Debug.Assert(_owningThreadId == 0);
+                                Debug.Assert(_recursionCount == 0);
+                                _owningThreadId = currentThreadId;
+                                return true;
+                            }
                         }
                     }
 
@@ -270,8 +298,6 @@ namespace System.Threading
             }
 
             // We timed out.  We're not going to wait again.
-            // We could not have observed a wake, or the wait would've succeeded
-            // so we do not bother about WaiterWoken
             {
                 uint iteration = 0;
                 while (true)
@@ -281,19 +307,18 @@ namespace System.Threading
 
                     int newState = oldState - WaiterCountIncrement;
 
+                    // We could not have consumed a wake, or the wait would've succeeded.
+                    // If we are the last waiter though, we will clear WaiterWoken and YieldToWaiters
+                    // just so that lock would not look like contended.
+                    if (newState < WaiterCountIncrement)
+                        newState = newState & ~WaiterWoken & ~YieldToWaiters;
+
                     if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
                         return false;
 
                     ExponentialBackoff(iteration++);
                 }
             }
-
-        GotTheLock:
-            Debug.Assert((_state | Locked) != 0);
-            Debug.Assert(_owningThreadId == 0);
-            Debug.Assert(_recursionCount == 0);
-            _owningThreadId = currentThreadId;
-            return true;
         }
 
         public bool IsAcquired
@@ -398,8 +423,21 @@ namespace System.Threading
                 {
                     // there are waiters, and nobody has woken one.
                     newState |= WaiterWoken;
+
+                    int lastWakeTicks = _wakeWatchDog;
+                    if (lastWakeTicks != 0 && Environment.TickCount - lastWakeTicks > 100)
+                    {
+                        newState |= YieldToWaiters;
+                    }
+
                     if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
                     {
+                        if (lastWakeTicks == 0)
+                        {
+                            // nonzero timestamp of the last wake
+                            _wakeWatchDog = Environment.TickCount | 1;
+                        }
+
                         Event.Set();
                         return;
                     }

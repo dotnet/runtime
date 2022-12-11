@@ -51,7 +51,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhSpinWait(int32_t iterations)
     ASSERT(iterations > 0);
 
     // limit the spin count in coop mode.
-    ASSERT_MSG(iterations <= 1000 || !ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
+    ASSERT_MSG(iterations <= 1024 || !ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
         "This is too long wait for coop mode. You must p/invoke with GC transition.");
 
     YieldProcessorNormalizationInfo normalizationInfo;
