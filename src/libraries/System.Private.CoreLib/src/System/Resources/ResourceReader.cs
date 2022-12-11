@@ -1092,6 +1092,7 @@ namespace System.Resources
                     object? value = null;
                     // Lock the cache first, then the reader (in this case, we don't actually need to lock the reader and cache at the same time).
                     // Lock order MUST match RuntimeResourceSet.GetObject to avoid deadlock.
+                    Debug.Assert(!Monitor.IsEntered(_reader));
                     lock (_reader._resCache)
                     {
                         if (_reader._resCache.TryGetValue(key, out ResourceLocator locator))
