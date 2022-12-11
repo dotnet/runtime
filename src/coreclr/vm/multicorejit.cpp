@@ -187,7 +187,7 @@ HRESULT WriteData(IStream * pStream, const void * pData, unsigned len)
     return hr;
 }
 
-// Write string, round to to DWORD alignment
+// Write string, round to DWORD alignment
 HRESULT WriteString(const void * pString, unsigned len, IStream * pStream)
 {
     CONTRACTL

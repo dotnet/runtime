@@ -5577,8 +5577,9 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
     GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
 
-    unsigned offs   = lclVar->GetLclOffs();
-    unsigned varNum = lclVar->GetLclNum();
+    unsigned   offs   = lclVar->GetLclOffs();
+    unsigned   varNum = lclVar->GetLclNum();
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
     assert(varNum < compiler->lvaCount);
 
     GenTree* op1 = lclVar->gtGetOp1();
@@ -5593,6 +5594,10 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
         // Store upper 4 bytes
         GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, REG_ZR, varNum, offs + 8);
+
+        // Update life after instruction emitted
+        genUpdateLife(treeNode);
+        varDsc->SetRegNum(REG_STK);
 
         return;
     }
@@ -5613,6 +5618,10 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
         // Need an additional integer register to extract upper 4 bytes from data.
         regNumber tmpReg = lclVar->GetSingleTempReg();
         GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
+
+        // Update life after instruction emitted
+        genUpdateLife(treeNode);
+        varDsc->SetRegNum(REG_STK);
     }
 }
 

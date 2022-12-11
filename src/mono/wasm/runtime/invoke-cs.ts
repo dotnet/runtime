@@ -8,9 +8,9 @@ import {
     get_arg, get_sig, get_signature_argument_count, is_args_exception,
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
-import { mono_wasm_new_external_root } from "./roots";
+import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
 import { conv_string, conv_string_root } from "./strings";
-import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs } from "./types";
+import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
@@ -278,7 +278,30 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
         const asm = assembly_load(assembly);
         if (!asm)
             throw new Error("Could not find assembly: " + assembly);
-        cwraps.mono_wasm_runtime_run_module_cctor(asm);
+
+        const klass = cwraps.mono_wasm_assembly_find_class(asm, runtimeHelpers.runtime_interop_namespace, "__GeneratedInitializer");
+        if (klass) {
+            const method = cwraps.mono_wasm_assembly_find_method(klass, "__Register_", -1);
+            if (method) {
+                const outException = mono_wasm_new_root();
+                const outResult = mono_wasm_new_root<MonoString>();
+                try {
+                    cwraps.mono_wasm_invoke_method_ref(method, MonoObjectRefNull, VoidPtrNull, outException.address, outResult.address);
+                    if (outException.value !== MonoObjectNull) {
+                        const msg = conv_string_root(outResult)!;
+                        throw new Error(msg);
+                    }
+                }
+                finally {
+                    outException.release();
+                    outResult.release();
+                }
+            }
+        } else {
+            // this needs to stay here for compatibility with assemblies generated in Net7
+            // it doesn't have the __GeneratedInitializer class
+            cwraps.mono_wasm_runtime_run_module_cctor(asm);
+        }
         endMeasure(mark, MeasuredBlock.getAssemblyExports, assembly);
     }
 

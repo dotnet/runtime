@@ -75,7 +75,7 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
 // MachO module 
 //--------------------------------------------------------------------
 
-MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, mach_header_64* header, std::string* name) :
+MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, std::string* name) :
     m_reader(reader),
     m_baseAddress(baseAddress),
     m_loadBias(0),
@@ -84,9 +84,6 @@ MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, mac
     m_nlists(nullptr),
     m_strtabAddress(0)
 {
-    if (header != nullptr) {
-        m_header = *header;
-    }
     if (name != nullptr) {
         m_name = *name;
     }
@@ -363,43 +360,25 @@ MachOReader::MachOReader()
 }
 
 bool
-MachOReader::EnumerateModules(mach_vm_address_t address, mach_header_64* header)
+MachOReader::EnumerateModules(mach_vm_address_t dyldInfoAddress)
 {
-    _ASSERTE(header->magic == MH_MAGIC_64);
-    _ASSERTE(header->filetype == MH_DYLINKER);
-
-    MachOModule dylinker(*this, address, header);
-
-    // Search for symbol for the dyld image info cache
-    uint64_t dyldInfoAddress = 0;
-    if (!dylinker.TryLookupSymbol("dyld_all_image_infos", &dyldInfoAddress))
-    {
-        Trace("ERROR: Can not find the _dyld_all_image_infos symbol\n");
-        return false;
-    }
-
     // Read the all image info from the dylinker image
     dyld_all_image_infos dyldInfo;
-
     if (!ReadMemory((void*)dyldInfoAddress, &dyldInfo, sizeof(dyld_all_image_infos)))
     {
         Trace("ERROR: Failed to read dyld_all_image_infos at %p\n", (void*)dyldInfoAddress);
         return false;
     }
-    std::string dylinkerPath;
-    if (!ReadString(dyldInfo.dyldPath, dylinkerPath))
-    {
-        Trace("ERROR: Failed to read name at %p\n", dyldInfo.dyldPath);
-        return false;
-    }
-    dylinker.SetName(dylinkerPath);
-    Trace("MOD: %016llx %08x %s\n", dylinker.BaseAddress(), dylinker.Header().flags, dylinker.Name().c_str());
-    VisitModule(dylinker);
-
-    void* imageInfosAddress = (void*)dyldInfo.infoArray;
-    size_t imageInfosSize = dyldInfo.infoArrayCount * sizeof(dyld_image_info);
     Trace("MOD: infoArray %p infoArrayCount %d\n", dyldInfo.infoArray, dyldInfo.infoArrayCount);
 
+    // Create the dyld module info
+    if (!CreateModule(dyldInfo.dyldImageLoadAddress, dyldInfo.dyldPath))
+    {
+        Trace("ERROR: Failed to read dyld header at %p\n", dyldInfo.dyldImageLoadAddress);
+        return false;
+    }
+    void* imageInfosAddress = (void*)dyldInfo.infoArray;
+    size_t imageInfosSize = dyldInfo.infoArrayCount * sizeof(dyld_image_info);
     ArrayHolder<dyld_image_info> imageInfos = new (std::nothrow) dyld_image_info[dyldInfo.infoArrayCount];
     if (imageInfos == nullptr)
     {
@@ -413,23 +392,27 @@ MachOReader::EnumerateModules(mach_vm_address_t address, mach_header_64* header)
     }
     for (int i = 0; i < dyldInfo.infoArrayCount; i++)
     {
-        mach_vm_address_t imageAddress = (mach_vm_address_t)imageInfos[i].imageLoadAddress;
-        const char* imageFilePathAddress = imageInfos[i].imageFilePath;
-
-        std::string imagePath;
-        if (!ReadString(imageFilePathAddress, imagePath))
-        {
-            Trace("ERROR: Failed to read image name at %p\n", imageFilePathAddress);
-            continue;
-        }
-        MachOModule module(*this, imageAddress, nullptr, &imagePath);
-        if (!module.ReadHeader())
-        {
-            continue;
-        }
-        Trace("MOD: %016llx %08x %s\n", imageAddress, module.Header().flags, imagePath.c_str());
-        VisitModule(module);
+        // Ignore any errors and continue to next module
+        CreateModule(imageInfos[i].imageLoadAddress, imageInfos[i].imageFilePath);
     }
+    return true;
+}
+
+bool
+MachOReader::CreateModule(const struct mach_header*	imageAddress, const char* imageFilePathAddress)
+{
+    std::string imagePath;
+    if (!ReadString(imageFilePathAddress, imagePath))
+    {
+        return false;
+    }
+    MachOModule module(*this, (mach_vm_address_t)imageAddress, &imagePath);
+    if (!module.ReadHeader())
+    {
+        return false;
+    }
+    Trace("MOD: %016llx %08x %s\n", imageAddress, module.Header().flags, imagePath.c_str());
+    VisitModule(module);
     return true;
 }
 
