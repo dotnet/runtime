@@ -666,6 +666,17 @@ void emitter::emitGenIG(insGroup* ig)
     emitCurIGinsCnt = 0;
     emitCurIGsize   = 0;
 
+    if (emitHasLastIns())
+    {
+        // We have a new IG and we need to clear the last recorded instructions,
+        // except for the latest one.
+        // We do this because we do not want to reference an instruction
+        // from a previous IG as to protect from GC holes.
+        instrDesc* lastId = emitGetLastIns();
+        emitClearLastInstrs();
+        emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] = lastId;
+    }
+
     assert(emitCurIGjmpList == nullptr);
 
 #if FEATURE_LOOP_ALIGN
@@ -1017,8 +1028,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
-        emitSetLastInsByIndex(emitGetLastInsIndex(emitInsCount),
-                       (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase)));
+        emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] =
+            (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
     }
 
     // Reset the buffer free pointers
@@ -1486,18 +1497,9 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         emitNxtIG(true);
     }
 
-    // If the current IG ins count is zero, we have a new IG
-    // and we need to clear the last recorded instructions.
-    // We do this because we do not want to reference an instruction
-    // from a previous IG as to protect from GC holes.
-    if (emitCurIGinsCnt == 0)
-    {
-        emitClearLastInstrs();
-    }
-
     /* Grab the space for the instruction */
 
-    id = emitSetLastInsByIndex(emitGetLastInsIndex(++emitInsCount), (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize));
+    emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitCurIGfreeNext += fullSize;
 
     assert(sz >= sizeof(void*));

@@ -2183,27 +2183,9 @@ private:
         memset(&emitLastInstrs, 0, (ArrLen(emitLastInstrs) * sizeof(instrDesc*)));
     }
 
-    inline unsigned emitGetLastInsIndex(unsigned value) const
-    {
-        return value % ArrLen(emitLastInstrs);
-    }
-
-    inline instrDesc* emitGetLastInsByIndex(unsigned index) const
-    {
-        assert(index >= 0 && index < ArrLen(emitLastInstrs));
-        return emitLastInstrs[index];
-    }
-
-    inline instrDesc* emitSetLastInsByIndex(unsigned index, instrDesc* id)
-    {
-        assert(index >= 0 && index < ArrLen(emitLastInstrs));
-        emitLastInstrs[index] = id;
-        return id;
-    }
-
     inline instrDesc* emitGetLastIns() const
     {
-        return emitGetLastInsByIndex(emitGetLastInsIndex(emitInsCount));
+        return emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)];
     }
 
     inline bool emitHasLastIns() const
@@ -2242,7 +2224,7 @@ private:
 
         for (unsigned i = 0; i < min(emitInsCount, ArrLen(emitLastInstrs)); i++)
         {
-            id = emitGetLastInsByIndex(emitGetLastInsIndex(emitInsCount - i));
+            id = emitLastInstrs[(emitInsCount - 1) % ArrLen(emitLastInstrs)];
 
             if (id == nullptr)
                 return;
