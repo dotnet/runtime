@@ -3986,6 +3986,11 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         return true;
     }
 
+    if (varDsc->lvHasExplicitInit)
+    {
+        return true;
+    }
+
     if (fgVarIsNeverZeroInitializedInProlog(varNum))
     {
         return true;
