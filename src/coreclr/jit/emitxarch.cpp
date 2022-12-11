@@ -572,6 +572,24 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
                     if (id->idReg1() != reg)
                     {
+                        switch (id->idInsFmt())
+                        {
+                            // Handles instructions who write to two registers.
+                            case IF_RRW_RRW:
+                            case IF_RRW_RRW_CNS:
+                            {
+                                if (id->idReg2() == reg)
+                                {
+                                    result = (id->idOpSize() == EA_4BYTE);
+                                    return PEEPHOLE_ABORT;
+                                }
+                                break;
+                            }
+
+                            default:
+                                break;
+                        }
+
                         return PEEPHOLE_CONTINUE;
                     }
 
