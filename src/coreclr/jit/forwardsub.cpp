@@ -541,7 +541,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     Statement* const nextStmt = stmt->GetNextStmt();
 
-    if (livenessBased)
+    if (fgDidEarlyLiveness)
     {
         // If we have early liveness then we have a linked list of locals
         // available for each statement, so do a quick scan through that to see
@@ -555,17 +555,29 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
             GenTreeLclVarCommon* lcl = cur->AsLclVarCommon();
             if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
             {
-                if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+                // TODO: Unify this with forward sub visitor.
+                if (livenessBased)
                 {
-                    VARSET_TP* deadFields;
-                    if (!varDsc->lvPromoted || !LookupPromotedStructDeathVars(lcl, &deadFields))
+                    if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
                     {
-                        // This is a last use; skip it
-                        found = true;
-                        continue;
-                    }
+                        VARSET_TP* deadFields;
+                        if (!varDsc->lvPromoted || !LookupPromotedStructDeathVars(lcl, &deadFields))
+                        {
+                            found = true;
+                            // TODO-TP: The forward sub visitor should also break
+                            // early when it finds the last use.
+                            break;
+                        }
 
-                    // Not last use; fall through to bail out early.
+                        // Not last use; fall through to bail out early.
+                    }
+                }
+                else
+                {
+                    // If we are basing the forward sub on ref counts then we
+                    // know this is the single last use if we find it.
+                    found = true;
+                    break;
                 }
             }
 
@@ -574,7 +586,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
             if ((thisLclNum == lclNum) || (thisLclNum == parentLclNum) ||
                 (dsc->lvIsStructField && (dsc->lvParentLcl == lclNum)))
             {
-                JITDUMP(" next stmt has non-last use as well\n");
+                JITDUMP(" next stmt has non-last use\n");
                 return false;
             }
         }
