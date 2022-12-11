@@ -17,6 +17,11 @@
     } \
 }
 
+mdhandle_t MetadataImportRO::MetaData() const
+{
+    return _md_ptr.get();
+}
+
 void STDMETHODCALLTYPE MetadataImportRO::CloseEnum(HCORENUM hEnum)
 {
     HCORENUMImpl* impl = ToHCORENUMImpl(hEnum);
@@ -197,7 +202,8 @@ namespace
         char* pos = ::strrchr(typeName, '.');
         if (pos == nullptr)
         {
-            *nspace = nullptr;
+            // No namespace is indicated by an empty string.
+            *nspace = "";
             *name = typeName;
         }
         else
@@ -344,12 +350,143 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumTypeRefs(
     return enumImpl->ReadTokens(rTypeRefs, cMax, pcTypeRefs);
 }
 
+namespace
+{
+    HRESULT FindTypeDefByName(
+        MetadataImportRO* importer,
+        char const* nspace,
+        char const* name,
+        mdToken tkEnclosingClass,
+        mdTypeDef* ptd)
+    {
+        assert(importer != nullptr && nspace != nullptr && name != nullptr && ptd != nullptr);
+        *ptd = mdTypeDefNil;
+
+        HRESULT hr;
+
+        // If the caller supplied a TypeRef scope, we need to walk until we find
+        // a TypeDef scope we can use to look up the inner definition.
+        if (TypeFromToken(tkEnclosingClass) == mdtTypeRef)
+        {
+            mdcursor_t typeRefCursor;
+            if (!md_token_to_cursor(importer->MetaData(), tkEnclosingClass, &typeRefCursor))
+                return CLDB_E_RECORD_NOTFOUND;
+
+            uint32_t typeRefScope;
+            char const* typeRefNspace;
+            char const* typeRefName;
+            if (1 != md_get_column_value_as_token(typeRefCursor, mdtTypeRef_ResolutionScope, 1, &typeRefScope)
+                || 1 != md_get_column_value_as_utf8(typeRefCursor, mdtTypeRef_TypeNamespace, 1, &typeRefNspace)
+                || 1 != md_get_column_value_as_utf8(typeRefCursor, mdtTypeRef_TypeName, 1, &typeRefName))
+            {
+                return CLDB_E_FILE_CORRUPT;
+            }
+
+            if (tkEnclosingClass == typeRefScope
+                && 0 == ::strcmp(name, typeRefName)
+                && 0 == ::strcmp(nspace, typeRefNspace))
+            {
+                // This defensive workaround works around a feature of DotFuscator that adds a bad TypeRef
+                // which causes tools like ILDASM to crash. The TypeRef's parent is set to itself
+                // which causes this function to recurse infinitely.
+                return CLDB_E_FILE_CORRUPT;
+            }
+
+            // Update tkEnclosingClass to TypeDef
+            RETURN_IF_FAILED(FindTypeDefByName(
+                importer,
+                typeRefNspace,
+                typeRefName,
+                (TypeFromToken(typeRefScope) == mdtTypeRef) ? typeRefScope : mdTokenNil,
+                &tkEnclosingClass));
+            assert(TypeFromToken(tkEnclosingClass) == mdtTypeDef);
+        }
+
+        mdcursor_t cursor;
+        uint32_t count;
+        if (!md_create_cursor(importer->MetaData(), mdtid_TypeDef, &cursor, &count))
+            return CLDB_E_RECORD_NOTFOUND;
+
+        uint32_t flags;
+        char const* str;
+        mdToken tk;
+        mdToken tmpTk;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            if (1 != md_get_column_value_as_constant(cursor, mdtTypeDef_Flags, 1, &flags))
+                return CLDB_E_FILE_CORRUPT;
+
+            // Use XOR to handle the following in a single expression:
+            //  - The class is Nested and EnclosingClass passed is nil
+            //      or
+            //  - The class is not Nested and EnclosingClass passed in is not nil
+            if (!(IsTdNested(flags) ^ IsNilToken(tkEnclosingClass)))
+                goto Next;
+
+            // Filter to enclosing class
+            if (!IsNilToken(tkEnclosingClass))
+            {
+                assert(TypeFromToken(tkEnclosingClass) == mdtTypeDef);
+                (void)md_cursor_to_token(cursor, &tk);
+                hr = importer->GetNestedClassProps(tk, &tmpTk);
+
+                // Skip this type if it doesn't have an enclosing class
+                // or its enclosing doesn't match the filter.
+                if (FAILED(hr) || tmpTk != tkEnclosingClass)
+                    goto Next;
+            }
+
+            if (1 != md_get_column_value_as_utf8(cursor, mdtTypeDef_TypeNamespace, 1, &str))
+                return CLDB_E_FILE_CORRUPT;
+
+            if (0 != ::strcmp(nspace, str))
+                goto Next;
+
+            if (1 != md_get_column_value_as_utf8(cursor, mdtTypeDef_TypeName, 1, &str))
+                return CLDB_E_FILE_CORRUPT;
+
+            if (0 == ::strcmp(name, str))
+            {
+                (void)md_cursor_to_token(cursor, ptd);
+                return S_OK;
+            }
+        Next:
+            (void)md_cursor_next(&cursor);
+        }
+        return CLDB_E_RECORD_NOTFOUND;
+    }
+}
+
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindTypeDefByName(
     LPCWSTR     szTypeDef,
     mdToken     tkEnclosingClass,
     mdTypeDef* ptd)
 {
-    return E_NOTIMPL;
+    if (szTypeDef == nullptr || ptd == nullptr)
+        return E_INVALIDARG;
+
+    // Check the enclosing token is either valid or nil.
+    if (TypeFromToken(tkEnclosingClass) != mdtTypeDef
+        && TypeFromToken(tkEnclosingClass) != mdtTypeRef
+        && TypeFromToken(tkEnclosingClass) != mdtModule
+        && !IsNilToken(tkEnclosingClass))
+    {
+        return E_INVALIDARG;
+    }
+    else if (tkEnclosingClass == MD_MODULE_TOKEN)
+    {
+        // Module scope is the same as no scope
+        tkEnclosingClass = mdTokenNil;
+    }
+
+    pal::StringConvert<WCHAR, char> cvt{ szTypeDef };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+
+    char const* nspace;
+    char const* name;
+    SplitTypeName(cvt, &nspace, &name);
+    return ::FindTypeDefByName(this, nspace, name, tkEnclosingClass, ptd);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetScopeProps(
@@ -1898,10 +2035,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindTypeRef(
     char const* name;
     SplitTypeName(cvt, &nspace, &name);
 
-    // A null namespace means empty string.
-    if (nspace == nullptr)
-        nspace = "";
-
     bool scopeIsSet = !IsNilToken(tkResolutionScope);
     mdToken resMaybe;
     char const* str;
@@ -2518,11 +2651,11 @@ namespace
     // Handles processing the following metadata signature rules.
     //
     // S := MethodDefSig | MethodRefSig | StandAloneMethodSig
-    // II.23.2.1  MethodDefSig : = (DEFAULT | VARARG | (GENERIC GenParamCount)) ParamCount RetType Param *
-    // II.23.2.2  MethodRefSig : = (DEFAULT | (GENERIC GenParamCount)) ParamCount RetType Param *
-    //  | VARARG ParamCount RetType Param * (SENTINEL Param + ) ?
-    // II.23.2.3  StandAloneMethodSig : = (DEFAULT | STDCALL | THISCALL | FASTCALL) ParamCount RetType Param *
-    //  | (VARARG | C) ParamCount RetType Param * (SENTINEL Param + ) ?
+    // II.23.2.1  MethodDefSig : = (DEFAULT | VARARG | (GENERIC GenParamCount)) ParamCount RetType Param*
+    // II.23.2.2  MethodRefSig : = (DEFAULT | (GENERIC GenParamCount)) ParamCount RetType Param*
+    //  | VARARG ParamCount RetType Param* (SENTINEL Param+)?
+    // II.23.2.3  StandAloneMethodSig : = (DEFAULT | STDCALL | THISCALL | FASTCALL) ParamCount RetType Param*
+    //  | (VARARG | C) ParamCount RetType Param* (SENTINEL Param+)?
     //
     // II.23.2.11 RetType := CustomMod* (BYREF? Type | TYPEDBYREF | VOID)
     // II.23.2.10 Param := CustomMod* (BYREF? Type | TYPEDBYREF)
@@ -2586,7 +2719,7 @@ namespace
         case ELEMENT_TYPE_MVAR:
             RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // Number
             break;
-        case ELEMENT_TYPE_GENERICINST: 
+        case ELEMENT_TYPE_GENERICINST:
             RETURN_IF_NOT_ADVANCE(ReadCorType_CallConv(sigCurr, sigEnd, cxt)); // (CLASS | VALUETYPE) TypeDefOrRefOrSpecEncoded
             RETURN_IF_NOT_ADVANCE(CorSigUncompressData(sigCurr, &data)); // GenArgCount
             for (uint32_t i = 0; i < data; ++i)

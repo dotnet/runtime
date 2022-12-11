@@ -281,6 +281,56 @@ namespace Regression.UnitTests
             }
         }
 
+        [Fact]
+        public void FindAPIs()
+        {
+            var dir = Path.GetDirectoryName(typeof(ImportTests).Assembly.Location)!;
+            var tgtAssembly = Path.Combine(dir, "Regression.TargetAssembly.dll");
+            using PEReader managedLibrary = new(File.OpenRead(tgtAssembly));
+            PEMemoryBlock block = managedLibrary.GetMetadata();
+
+            // Load metadata
+            IMetaDataImport baselineImport = GetIMetaDataImport(Dispensers.Baseline, ref block);
+            IMetaDataImport currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
+
+            var tgt = "C";
+
+            var baseTypeDef = "B1";
+            var tkB1 = AssertAndReturn(FindTokenByName(baselineImport, baseTypeDef), FindTokenByName(currentImport, baseTypeDef));
+            var tkB1Base = AssertAndReturn(GetTypeDefBaseToken(baselineImport, tkB1), GetTypeDefBaseToken(currentImport, tkB1));
+            Assert.Equal(FindTypeDefByName(baselineImport, tgt, tkB1Base), FindTypeDefByName(currentImport, tgt, tkB1Base));
+
+            var baseTypeRef = "B2";
+            var tkB2 = AssertAndReturn(FindTokenByName(baselineImport, baseTypeRef), FindTokenByName(currentImport, baseTypeRef));
+            var tkB2Base = AssertAndReturn(GetTypeDefBaseToken(baselineImport, tkB2), GetTypeDefBaseToken(currentImport, tkB2));
+            Assert.Equal(FindTypeDefByName(baselineImport, tgt, tkB2Base), FindTypeDefByName(currentImport, tgt, tkB2Base));
+
+            static uint FindTokenByName(IMetaDataImport import, string name)
+            {
+                int hr = import.FindTypeDefByName(name, 0, out uint ptd);
+                Assert.Equal(0, hr);
+                return ptd;
+            }
+            static uint GetTypeDefBaseToken(IMetaDataImport import, uint tk)
+            {
+                var name = new char[CharBuffer];
+                int hr = import.GetTypeDefProps(tk,
+                    name,
+                    name.Length,
+                    out int pchTypeDef,
+                    out uint pdwTypeDefFlags,
+                    out uint ptkExtends);
+                Assert.Equal(0, hr);
+                return ptkExtends;
+            }
+        }
+
+        private static T AssertAndReturn<T>(T baseline, T current)
+        {
+            Assert.Equal(baseline, current);
+            return baseline;
+        }
+
         private static IEnumerable<T> AssertAndReturn<T>(IEnumerable<T> baseline, IEnumerable<T> current)
         {
             Assert.Equal(baseline, current);
@@ -850,6 +900,20 @@ namespace Regression.UnitTests
                 values.Add((uint)pchTypeDef);
                 values.Add(pdwTypeDefFlags);
                 values.Add(ptkExtends);
+            }
+            return values;
+        }
+
+        private static List<uint> FindTypeDefByName(IMetaDataImport import, string name, uint scope)
+        {
+            List<uint> values = new();
+
+            int hr = import.FindTypeDefByName(name, scope, out uint ptd);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(ptd);
             }
             return values;
         }

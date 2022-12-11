@@ -26,6 +26,8 @@ public:
 
     virtual ~MetadataImportRO() = default;
 
+    mdhandle_t MetaData() const;
+
 public: // IMetaDataImport
     STDMETHOD_(void, CloseEnum)(HCORENUM hEnum) override;
     STDMETHOD(CountEnum)(HCORENUM hEnum, ULONG *pulCount) override;
