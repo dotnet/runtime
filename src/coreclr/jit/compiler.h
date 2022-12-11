@@ -5909,7 +5909,7 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     PhaseStatus fgMarkAddressExposedLocals();
-    void fgMarkAddressExposedLocals(Statement* stmt);
+    void fgSequenceLocals(Statement* stmt);
 
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);

@@ -2749,10 +2749,42 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
             while (true)
             {
+                Statement* prevStmt = stmt->GetPrevStmt();
+
                 for (GenTree* cur = stmt->GetRootNode()->gtPrev; cur != nullptr; cur = cur->gtPrev)
                 {
                     assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
-                    fgComputeLifeLocal(life, keepAliveVars, cur);
+                    if (!fgComputeLifeLocal(life, keepAliveVars, cur))
+                    {
+                        continue;
+                    }
+
+                    // Dead store. We only handle the simple top level case
+                    // (dead embedded stores are extremely rare in early
+                    // liveness -- not worth the complexity).
+                    if (!stmt->GetRootNode()->OperIs(GT_ASG) || (stmt->GetRootNode()->gtGetOp1() != cur))
+                    {
+                        continue;
+                    }
+
+                    // The def ought to be the last thing.
+                    assert(stmt->GetRootNode()->gtPrev == cur);
+
+                    GenTree* sideEffects = nullptr;
+                    gtExtractSideEffList(stmt->GetRootNode()->gtGetOp2(), &sideEffects);
+
+                    if (sideEffects == nullptr)
+                    {
+                        fgRemoveStmt(block, stmt DEBUGARG(false));
+                        break;
+                    }
+                    else
+                    {
+                        stmt->SetRootNode(sideEffects);
+                        fgSequenceLocals(stmt);
+                        // continue at tail of the side effects
+                        cur = stmt->GetRootNode();
+                    }
                 }
 
                 if (stmt == firstStmt)
@@ -2760,7 +2792,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                     break;
                 }
 
-                stmt = stmt->GetPrevStmt();
+                stmt = prevStmt;
             }
         }
 

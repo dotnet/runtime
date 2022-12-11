@@ -116,6 +116,12 @@ public:
     }
 };
 
+void Compiler::fgSequenceLocals(Statement* stmt)
+{
+    LocalSequencer seq(this);
+    seq.Sequence(stmt);
+}
+
 class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 {
     // During tree traversal every GenTree node produces a "value" that represents:
