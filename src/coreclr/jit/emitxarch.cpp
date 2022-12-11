@@ -560,16 +560,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                     assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_XMM7));
 #endif // !TARGET_AMD64
 
-                    if (instrHasImplicitRegPairDest(id->idIns()))
-                    {
-                        if ((id->idReg1() == reg) || (id->idReg2() == reg))
-                        {
-                            result = (id->idOpSize() == EA_4BYTE);
-                            return PEEPHOLE_ABORT;
-                        }
-                        return PEEPHOLE_CONTINUE;
-                    }
-
                     if (id->idReg1() != reg)
                     {
                         switch (id->idInsFmt())
@@ -588,6 +578,15 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
                             default:
                                 break;
+                        }
+
+                        if (instrHasImplicitRegPairDest(id->idIns()))
+                        {
+                            if (id->idReg2() == reg)
+                            {
+                                result = (id->idOpSize() == EA_4BYTE);
+                                return PEEPHOLE_ABORT;
+                            }
                         }
 
                         return PEEPHOLE_CONTINUE;
