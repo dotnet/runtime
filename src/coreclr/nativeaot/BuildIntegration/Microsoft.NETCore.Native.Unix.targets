@@ -20,7 +20,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <DsymUtilOptions Condition="'$(TargetOS)' == 'OSX'">--flat</DsymUtilOptions>
-    <StaticExecutable Condition="'$(StaticExecutable)' == '' and '@(LinkerArg->Contains('-static'))' == 'true'">true</StaticExecutable>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
