@@ -72,8 +72,9 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup Condition="'$(StaticICULinking)' == 'true'">
       <NativeLibrary Include="$(IntermediateOutputPath)/libs/System.Globalization.Native/build/libSystem.Globalization.Native.a"/>
       <DirectPInvoke Include="libSystem.Globalization.Native" />
-      <StaticICULibs Include="-Wl,-Bstatic -licuio -licutu -licui18n -licuuc -licudata -lstdc++" />
-      <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(NativeLib)' != 'Static' and !@(LinkerArg->Contains('-static'))" />
+      <StaticICULibs Include="-Wl,-Bstatic" Condition="'$(NativeLib)' != 'Static' and '@(LinkerArg->Contains('-static'))' != 'true'" />
+      <StaticICULibs Include="-licuio -licutu -licui18n -licuuc -licudata -lstdc++" />
+      <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(NativeLib)' != 'Static' and '@(LinkerArg->Contains('-static'))' != 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
