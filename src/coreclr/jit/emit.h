@@ -2224,7 +2224,7 @@ private:
 
         for (unsigned i = 0; i < min(emitInsCount, ArrLen(emitLastInstrs)); i++)
         {
-            id = emitLastInstrs[(emitInsCount - 1) % ArrLen(emitLastInstrs)];
+            id = emitLastInstrs[(emitInsCount - i) % ArrLen(emitLastInstrs)];
 
             if (id == nullptr)
                 return;
