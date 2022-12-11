@@ -427,6 +427,85 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++actual_instantiated_assets_count;
 }
+type ManifestRow = [name: string, length: number]
+function mount_archive_VFS(prefix: string, manifest: ManifestRow[], data: Uint8Array) {
+    const anyModule = Module as any;
+    const FS = anyModule.FS;
+    const read_only_mode = 0o0444; //-r--r--r--
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    const noop = () => { };
+    const dummyTime = () => 0;
+    const ARCHIVEFS = {
+        mount: function () {
+            const root = ARCHIVEFS.createNode(null, "/", read_only_mode);
+            root.children = {};
+            return root;
+        },
+        createNode: (parent: any, name: string, mode: number) => {
+            const node = FS.createNode(parent, name, mode);
+            node.node_ops = ARCHIVEFS.node_ops;
+            node.stream_ops = ARCHIVEFS.stream_ops;
+            if (parent && parent.children) parent.children[name] = node;
+            return node;
+        },
+        node_ops: {
+            getattr: (node: any) => {
+                return {
+                    mode: read_only_mode,
+                    dev: 0,
+                    ino: 0,
+                    nlink: 0,
+                    uid: 0,
+                    gid: 0,
+                    rdev: 0,
+                    size: node.length,
+                    atime: { getTime: dummyTime },
+                    mtime: { getTime: dummyTime },
+                    ctime: { getTime: dummyTime },
+                    blksize: 0,
+                    blocks: 0
+                };
+            },
+            lookup: (parent: any, name: string) => {
+                if (!parent || !parent.children) return null;
+                return parent.children[name];
+            },
+        },
+        stream_ops: {
+            read: function (stream: any, buffer: Int8Array, offset: number, length: number, position: number) {
+                const toRead = Math.min(stream.node.length - position, length);
+                const source = data.subarray(stream.node.offset + position, stream.node.offset + position + toRead);
+                Module.HEAPU8.set(source, offset);
+                return toRead;
+            },
+            open: noop,
+            close: noop,
+            llseek: noop
+        }
+    };
+    FS.mkdirTree(prefix);
+    const root = FS.mount(ARCHIVEFS, { root: "." }, prefix);
+
+    let offset = 0;
+    for (const row of manifest) {
+        const name = row[0];
+        const length = row[1];
+        const parts = name.split("/");
+        let parent = root;
+        while (parts.length > 1) {
+            const part = parts.shift()!;
+            if (!parent[part]) {
+                parent[part] = ARCHIVEFS.createNode(parent, part, read_only_mode);
+                parent[part].children = {};
+            }
+            parent = parent[part];
+        }
+        const node = ARCHIVEFS.createNode(parent, parts[0], read_only_mode);
+        node.length = length;
+        node.offset = offset;
+        offset += length;
+    }
+}
 
 export async function instantiate_wasm_asset(
     pendingAsset: AssetEntryInternal,
@@ -482,31 +561,7 @@ export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): b
     }
 
     data = data.slice(manifestSize + 8);
-
-    // Create the folder structure
-    // /usr/share/zoneinfo
-    // /usr/share/zoneinfo/Africa
-    // /usr/share/zoneinfo/Asia
-    // ..
-
-    const folders = new Set<string>();
-    manifest.filter(m => {
-        const file = m[0];
-        const last = file.lastIndexOf("/");
-        const directory = file.slice(0, last + 1);
-        folders.add(directory);
-    });
-    folders.forEach(folder => {
-        Module["FS_createPath"](prefix, folder, true, true);
-    });
-
-    for (const row of manifest) {
-        const name = row[0];
-        const length = row[1];
-        const bytes = data.slice(0, length);
-        Module["FS_createDataFile"](prefix, name, bytes, true, true);
-        data = data.slice(length);
-    }
+    mount_archive_VFS(prefix, manifest, data);
     return true;
 }
 

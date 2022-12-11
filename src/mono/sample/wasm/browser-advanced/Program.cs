@@ -13,6 +13,10 @@ namespace Sample
         public static int Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
+
+            TimeZoneInfo prg = TimeZoneInfo.FindSystemTimeZoneById("Europe/Prague");
+            DateTime prgTime = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.Local, prg);
+            Console.WriteLine ("Current time in Prague is {0}", prgTime);
             return 0;
         }
 
