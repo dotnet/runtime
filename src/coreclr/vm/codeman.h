@@ -749,6 +749,9 @@ enum class RangeSectionLockState
 class RangeSectionMap
 {
     class RangeSectionFragment;
+    class RangeSectionFragmentPointer;
+    typedef DPTR(RangeSectionFragment) PTR_RangeSectionFragment;
+    typedef DPTR(RangeSectionFragmentPointer) PTR_RangeSectionFragmentPointer;
 
     // Helper structure which forces all access to the various pointers to be handled via volatile/interlocked operations
     // The copy/move constructors are all deleted to forbid accidental reads into temporaries, etc.
@@ -788,9 +791,9 @@ class RangeSectionMap
             return _ptr == 0;
         }
 
-        RangeSectionFragment* VolatileLoadWithoutBarrier(RangeSectionLockState *pLockState)
+        PTR_RangeSectionFragment VolatileLoadWithoutBarrier(RangeSectionLockState *pLockState)
         {
-            uintptr_t ptr = ::VolatileLoadWithoutBarrier(&_ptr);
+            TADDR ptr = ::VolatileLoadWithoutBarrier(&_ptr);
             if ((ptr & 1) == 1)
             {
                 if ((*pLockState == RangeSectionLockState::None) || (*pLockState == RangeSectionLockState::NeedsLock))
@@ -798,14 +801,15 @@ class RangeSectionMap
                     *pLockState = RangeSectionLockState::NeedsLock;
                     return NULL;
                 }
-                return (RangeSectionFragment*)(ptr - 1);
+                return dac_cast<PTR_RangeSectionFragment>(ptr - 1);
             }
             else
             {
-                return (RangeSectionFragment*)(ptr);
+                return dac_cast<PTR_RangeSectionFragment>(ptr);
             }
         }
 
+#ifndef DACCESS_COMPILE
         void VolatileStore(RangeSectionFragment* fragment)
         {
             ::VolatileStore(&_ptr, FragmentToPtr(fragment));
@@ -818,6 +822,7 @@ class RangeSectionMap
 
             return oldPtr == InterlockedCompareExchangeT(&_ptr, newPtr, oldPtr);
         }
+#endif // DACCESS_COMPILE
     };
 
     // Unlike a RangeSection, a RangeSectionFragment cannot span multiple elements of the last level of the RangeSectionMap
@@ -841,9 +846,9 @@ class RangeSectionMap
 
     typedef RangeSectionFragmentPointer RangeSectionList;
     typedef RangeSectionList RangeSectionL1[entriesPerMapLevel];
-    typedef RangeSectionL1* RangeSectionL2[entriesPerMapLevel];
-    typedef RangeSectionL2* RangeSectionL3[entriesPerMapLevel];
-    typedef RangeSectionL3* RangeSectionL4[entriesPerMapLevel];
+    typedef DPTR(RangeSectionL1) RangeSectionL2[entriesPerMapLevel];
+    typedef DPTR(RangeSectionL2) RangeSectionL3[entriesPerMapLevel];
+    typedef DPTR(RangeSectionL3) RangeSectionL4[entriesPerMapLevel];
 
 #ifdef TARGET_64BIT
     typedef RangeSectionL4 RangeSectionTopLevel;
@@ -857,7 +862,7 @@ class RangeSectionMap
     static const uintptr_t bitsPerLevel = 8;
 #endif
 
-    RangeSectionTopLevel *_topLevel = nullptr;
+    DPTR(RangeSectionTopLevel) _topLevel = 0;
 
     RangeSection* _pCleanupList;
 
@@ -883,6 +888,7 @@ class RangeSectionMap
         return addressBitsUsedInLevel;
     }
 
+#ifndef DACCESS_COMPILE
     template<class T>
     auto EnsureLevel(TADDR address, T* outerLevel, uintptr_t level) -> decltype(&((**outerLevel)[0]))
     {
@@ -935,8 +941,9 @@ class RangeSectionMap
 
         return result;
     }
+#endif // DACCESS_COMPILE
 
-    RangeSectionFragment* GetRangeSectionForAddress(TADDR address, RangeSectionLockState *pLockState)
+    PTR_RangeSectionFragment GetRangeSectionForAddress(TADDR address, RangeSectionLockState *pLockState)
     {
 #ifdef TARGET_64BIT
         auto _RangeSectionL4 = VolatileLoad(&_topLevel);
@@ -976,6 +983,7 @@ class RangeSectionMap
         return input + bytesAtLastLevel;
     }
 
+#ifndef DACCESS_COMPILE
     bool AttachRangeSectionToMap(PTR_RangeSection pRangeSection, RangeSectionLockState *pLockState)
     {
         assert(*pLockState == RangeSectionLockState::ReaderLocked); // Must be locked so that the cannot fail case, can't fail. NOTE: This only needs the reader lock, as the attach process can happen in parallel to reads.
@@ -1060,9 +1068,11 @@ class RangeSectionMap
 
         return true;
     }
+#endif // DACCESS_COMPILE
+
 
 public:
-    RangeSectionMap() : _topLevel{0}, _pCleanupList(EndOfCleanupListMarker())
+    RangeSectionMap() : _pCleanupList(EndOfCleanupListMarker())
     {
     }
 
@@ -1070,6 +1080,8 @@ public:
     {
         return true;
     }
+
+#ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_READYTORUN
     RangeSection *AllocateRange(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule, RangeSectionLockState* pLockState)
@@ -1114,10 +1126,11 @@ public:
         }
         return pSection;
     }
+#endif // DACCESS_COMPILE
 
     PTR_RangeSection LookupRangeSection(TADDR address, RangeSectionLockState *pLockState)
     {
-        RangeSectionFragment* fragment = GetRangeSectionForAddress(address, pLockState);
+        PTR_RangeSectionFragment fragment = GetRangeSectionForAddress(address, pLockState);
         if (fragment == NULL)
             return NULL;
 
@@ -1136,6 +1149,7 @@ public:
         return NULL;
     }
 
+#ifndef DACCESS_COMPILE
     void RemoveRangeSection(RangeSection* pRangeSection)
     {
         assert(pRangeSection->_pRangeSectionNextForDelete == nullptr);
@@ -1203,16 +1217,65 @@ public:
             free(pRangeSectionFragmentToFree);
         }
     }
+#endif // DACCESS_COMPILE
 
-    #ifdef DACCESS_COMPILE
+#ifdef DACCESS_COMPILE
+    void EnumMemoryRangeSectionMapLevel(CLRDataEnumMemoryFlags flags, RangeSectionFragmentPointer& fragmentPointer, RangeSectionLockState* pLockState)
+    {
+        PTR_RangeSectionFragment fragment = fragmentPointer.VolatileLoadWithoutBarrier(pLockState);
+        while (fragment != NULL)
+        {
+            if (!DacEnumMemoryRegion(dac_cast<TADDR>(fragment), sizeof(RangeSectionFragment)))
+                return;
+
+            fragment->pRangeSection->EnumMemoryRegions(flags);
+
+            fragment = fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState);
+        }
+    }
+
+    void EnumMemoryRangeSectionMapLevel(CLRDataEnumMemoryFlags flags, RangeSectionL1& level, RangeSectionLockState* pLockState)
+    {
+        if (!DacEnumMemoryRegion(dac_cast<TADDR>(&level), sizeof(level)))
+            return;
+
+        for (int i = 0; i < entriesPerMapLevel; i++)
+        {
+            if (!level[i].IsNull())
+            {
+                EnumMemoryRangeSectionMapLevel(flags, level[i], pLockState);
+            }
+        }
+    }
+
+    template<class T>
+    void EnumMemoryRangeSectionMapLevel(CLRDataEnumMemoryFlags flags, T& level, RangeSectionLockState* pLockState)
+    {
+        if (!DacEnumMemoryRegion(dac_cast<TADDR>(&level), sizeof(level)))
+            return;
+
+        for (int i = 0; i < entriesPerMapLevel; i++)
+        {
+            if (level[i] != NULL)
+            {
+                EnumMemoryRangeSectionMapLevel(flags, *level[i], pLockState);
+            }
+        }
+    }
+
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         if (!DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(*this)))
             return;
 
-        _ASSERTE(FALSE); // Add an implementation here.
+        if (_topLevel != NULL)
+        {
+            // Always assume we are locked when enumerating
+            RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
+            EnumMemoryRangeSectionMapLevel(flags, *_topLevel, &lockState);
+        }
     }
-    #endif// DACCESS_COMPILE
+#endif// DACCESS_COMPILE
 
 };
 
