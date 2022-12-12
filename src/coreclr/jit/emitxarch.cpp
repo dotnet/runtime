@@ -548,8 +548,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             case IF_RWR_RRD_ARD_CNS:
             case IF_RWR_RRD_ARD_RRD:
             {
-                assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_FP_LAST));
-
                 if (id->idReg1() != reg)
                 {
                     switch (id->idInsFmt())
@@ -558,8 +556,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                         case IF_RRW_RRW:
                         case IF_RRW_RRW_CNS:
                         {
-                            assert((id->idReg2() >= REG_EAX) && (id->idReg2() <= REG_FP_LAST));
-
                             if (id->idReg2() == reg)
                             {
                                 result = (id->idOpSize() == EA_4BYTE);
@@ -574,8 +570,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
                     if (instrHasImplicitRegPairDest(id->idIns()))
                     {
-                        assert((id->idReg2() >= REG_EAX) && (id->idReg2() <= REG_FP_LAST));
-
                         if (id->idReg2() == reg)
                         {
                             result = (id->idOpSize() == EA_4BYTE);
