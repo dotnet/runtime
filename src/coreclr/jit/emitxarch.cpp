@@ -558,6 +558,8 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                         case IF_RRW_RRW:
                         case IF_RRW_RRW_CNS:
                         {
+                            assert((id->idReg2() >= REG_EAX) && (id->idReg2() <= REG_FP_LAST));
+
                             if (id->idReg2() == reg)
                             {
                                 result = (id->idOpSize() == EA_4BYTE);
@@ -572,6 +574,8 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
                     if (instrHasImplicitRegPairDest(id->idIns()))
                     {
+                        assert((id->idReg2() >= REG_EAX) && (id->idReg2() <= REG_FP_LAST));
+
                         if (id->idReg2() == reg)
                         {
                             result = (id->idOpSize() == EA_4BYTE);
