@@ -119,7 +119,13 @@ namespace System.Net.WebSockets.Client.Tests
         public async Task SendHelloWithDisableCompression()
         {
             byte[] bytes = "Hello"u8.ToArray();
-            byte[] compressed = new byte[] { 0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00 };
+
+            int prefixLength = 2;
+            byte[] rawPrefix = new byte[] { 0x81, 0x85 }; // fin=1, rsv=0, opcode=text; mask=1, len=5
+            int rawRemainingBytes = 9; // mask bytes (4) + payload bytes (5)
+            byte[] compressedPrefix = new byte[] { 0xc1, 0x87 }; // fin=1, rsv=compressed, opcode=text; mask=1, len=7
+            int compressedRemainingBytes = 11; // mask bytes (4) + payload bytes (7)
+
             var deflateOpt = new WebSocketDeflateOptions
             {
                 ClientMaxWindowBits = 14,
@@ -142,22 +148,26 @@ namespace System.Net.WebSockets.Client.Tests
                 await cws.SendAsync(bytes, WebSocketMessageType.Text, flags, cts.Token);
             }, server => server.AcceptConnectionAsync(async connection =>
             {
-                var buffer = new byte[bytes.Length];
+                var buffer = new byte[compressedRemainingBytes];
                 var extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
                 await LoopbackHelper.WebSocketHandshakeAsync(connection, extensionsReply);
-                using WebSocket websocket = WebSocket.CreateFromStream(connection.Stream, new WebSocketCreationOptions
+
+                // first message is compressed
+                await ReadExactAsync(buffer, prefixLength);
+                Assert.Equal(compressedPrefix, buffer[..prefixLength]);
+                // read rest of the frame
+                await ReadExactAsync(buffer, compressedRemainingBytes);
+
+                // second message is not compressed
+                await ReadExactAsync(buffer, prefixLength);
+                Assert.Equal(rawPrefix, buffer[..prefixLength]);
+                // read rest of the frame
+                await ReadExactAsync(buffer, rawRemainingBytes);
+
+                async Task ReadExactAsync(byte[] buf, int n)
                 {
-                    IsServer = true,
-                    DangerousDeflateOptions = deflateOpt
-                });
-
-                Assert.True(websocket.State == WebSocketState.Open || websocket.State == WebSocketState.CloseSent);
-
-                await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                Assert.Equal(bytes, buffer);
-
-                await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                Assert.Equal(bytes, buffer);
+                    await connection.Stream.ReadAtLeastAsync(buf.AsMemory(0, n), n);
+                }
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
 
