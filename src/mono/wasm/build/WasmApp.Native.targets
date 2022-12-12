@@ -560,11 +560,4 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies)" />
     </ItemGroup>
   </Target>
-
-  <UsingTask TaskName="ReadEmccProps" AssemblyFile="$(JsonToItemsTaskFactoryTasksAssemblyPath)"
-             TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
-    <ParameterGroup>
-      <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-    </ParameterGroup>
-  </UsingTask>
 </Project>
