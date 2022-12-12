@@ -174,9 +174,6 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyBuilder
     {
-        private UIntPtr dynamic_assembly; /* GC-tracked */
-        private Module[]? loaded_modules;
-
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -204,15 +201,19 @@ namespace System.Reflection.Emit
         //
         // AssemblyBuilder inherits from Assembly, but the runtime thinks its layout inherits from RuntimeAssembly
         //
-    #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
+#region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
 
+#pragma warning disable CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.dynamic_assembly' is never used
+        private UIntPtr dynamic_assembly; /* GC-tracked */
         private RuntimeModuleBuilder[] modules;
         private string? name;
         private CustomAttributeBuilder[]? cattrs;
         private string? version;
         private string? culture;
         private byte[]? public_key_token;
+        private Module[]? loaded_modules;
+#pragma warning restore CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.loaded_modules' is never used
         private uint access;
 #endregion
 
@@ -222,10 +223,10 @@ namespace System.Reflection.Emit
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [DynamicDependency("RuntimeResolve", typeof(RuntimeModuleBuilder))]
-        private static extern void basic_init(AssemblyBuilder ab);
+        private static extern void basic_init(RuntimeAssemblyBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void UpdateNativeCustomAttributes(AssemblyBuilder ab);
+        private static extern void UpdateNativeCustomAttributes(RuntimeAssemblyBuilder ab);
 
         [DynamicDependency(nameof(access))] // Automatically keeps all previous fields too due to StructLayout
         internal RuntimeAssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access)

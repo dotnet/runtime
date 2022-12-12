@@ -39,7 +39,7 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public override TypeInfo? CreateTypeInfo()
+        public override TypeInfo CreateTypeInfo()
         {
             return m_typeBuilder.CreateTypeInfo();
         }

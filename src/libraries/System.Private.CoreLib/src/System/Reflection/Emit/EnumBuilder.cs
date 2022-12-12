@@ -15,11 +15,11 @@ namespace System.Reflection.Emit
             => UnderlyingField;
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
             => CreateTypeInfo();
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public virtual TypeInfo? CreateTypeInfo()
+        public virtual TypeInfo CreateTypeInfo()
             => CreateTypeInfo();
 
         public virtual FieldBuilder DefineLiteral(string literalName, object literalValue)

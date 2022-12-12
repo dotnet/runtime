@@ -1678,8 +1678,8 @@ namespace System.Reflection.Emit
         public override TypeInfo CreateTypeInfo()
         {
             TypeInfo? typeInfo = CreateTypeInfoImpl();
-            Debug.Assert(typeInfo != null);
-            return typeInfo;
+            Debug.Assert(m_isHiddenGlobalType || typeInfo != null);
+            return typeInfo!;
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
