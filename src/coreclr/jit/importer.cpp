@@ -8387,8 +8387,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         clone = true;
                     }
-                    else if (op1->TypeIs(TYP_BYREF, TYP_I_IMPL) && impIsAddressInLocal(op1) &&
-                             (OPCODE)impGetNonPrefixOpcode(codeAddr + sz, codeEndp) != CEE_INITOBJ)
+                    else if (op1->TypeIs(TYP_BYREF, TYP_I_IMPL) && impIsAddressInLocal(op1))
                     {
                         // We mark implicit byrefs with GTF_GLOB_REF (see gtNewFieldRef for why).
                         // Avoid cloning for these.

@@ -3975,7 +3975,12 @@ main_loop:
 					} else if ((m_method_is_virtual (del_imethod->method) && !m_method_is_static (del_imethod->method)) && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
 						// 'this' is passed dynamically, we need to recompute the target method
 						// with each call
-						del_imethod = get_virtual_method (del_imethod, LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*)->vtable);
+						MonoObject *obj = LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*);
+						del_imethod = get_virtual_method (del_imethod, obj->vtable);
+						if (m_class_is_valuetype (del_imethod->method->klass)) {
+							// We are calling into a value type method, `this` needs to be unboxed
+							LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, gpointer) = mono_object_unbox_internal (obj);
+						}
 					} else {
 						del->interp_invoke_impl = del_imethod;
 					}
@@ -3998,7 +4003,7 @@ main_loop:
 					MonoObject *this_arg = del->target;
 
 					// replace the MonoDelegate* on the stack with 'this' pointer
-					if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
+					if (m_class_is_valuetype (cmethod->method->klass)) {
 						gpointer unboxed = mono_object_unbox_internal (this_arg);
 						LOCAL_VAR (call_args_offset, gpointer) = unboxed;
 					} else {
@@ -4098,7 +4103,7 @@ main_loop:
 			ip += 5;
 			// FIXME push/pop LMF
 			cmethod = get_virtual_method_fast (cmethod, this_arg->vtable, slot);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
+			if (m_class_is_valuetype (cmethod->method->klass)) {
 				/* unbox */
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
@@ -4148,29 +4153,6 @@ main_loop:
 			goto call;
 		}
 
-		MINT_IN_CASE(MINT_CALLVIRT) {
-			// FIXME CALLVIRT opcodes are not used on netcore. We should kill them.
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
-			return_offset = ip [1];
-			call_args_offset = ip [2];
-
-			MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*);
-
-			// FIXME push/pop LMF
-			cmethod = get_virtual_method (cmethod, this_arg->vtable);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
-				/* unbox */
-				gpointer unboxed = mono_object_unbox_internal (this_arg);
-				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
-			}
-
-#ifdef ENABLE_EXPERIMENT_TIERED
-			ip += 5;
-#else
-			ip += 4;
-#endif
-			goto call;
-		}
 		MINT_IN_CASE(MINT_CALL) {
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			return_offset = ip [1];
@@ -4262,11 +4244,6 @@ call:
 #endif
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALLRUN) {
-			g_assert_not_reached ();
-
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_RET)
 			frame->retval [0] = LOCAL_VAR (ip [1], stackval);
 			goto exit_frame;
@@ -4351,23 +4328,11 @@ call:
 		MINT_IN_CASE(MINT_BRFALSE_I8_S)
 			ZEROP_S(gint64, ==);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_R4_S)
-			ZEROP_S(float, ==);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_R8_S)
-			ZEROP_S(double, ==);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRFALSE_I4)
 			ZEROP(gint32, ==);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRFALSE_I8)
 			ZEROP(gint64, ==);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_R4)
-			ZEROP_S(float, ==);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_R8)
-			ZEROP_S(double, ==);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRTRUE_I4_S)
 			ZEROP_S(gint32, !=);
@@ -4375,24 +4340,12 @@ call:
 		MINT_IN_CASE(MINT_BRTRUE_I8_S)
 			ZEROP_S(gint64, !=);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_R4_S)
-			ZEROP_S(float, !=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_R8_S)
-			ZEROP_S(double, !=);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRTRUE_I4)
 			ZEROP(gint32, !=);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRTRUE_I8)
 			ZEROP(gint64, !=);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_R4)
-			ZEROP(float, !=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_R8)
-			ZEROP(double, !=);
-		MINT_IN_BREAK;
 #define CONDBR_S(cond) \
 	if (cond) { \
 		gint16 br_offset = (gint16) ip [3]; \
@@ -5093,10 +5046,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			STIND_OFFSET_IMM(gint64, FALSE);
 #endif
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_ATOMIC_STORE_I4)
-			mono_atomic_store_i32 (LOCAL_VAR (ip [1], gint32*), LOCAL_VAR (ip [2], gint32));
-			ip += 3;
-			MINT_IN_BREAK;
 #define BINOP(datatype, op) \
 	LOCAL_VAR (ip [1], datatype) = LOCAL_VAR (ip [2], datatype) op LOCAL_VAR (ip [3], datatype); \
 	ip += 4;
@@ -5511,6 +5460,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CPOBJ_VT) {
 			MonoClass* const c = (MonoClass*)frame->imethod->data_items[ip [3]];
 			mono_value_copy_internal (LOCAL_VAR (ip [1], gpointer), LOCAL_VAR (ip [2], gpointer), c);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CPOBJ_VT_NOREF) {
+			gpointer src_addr = LOCAL_VAR (ip [2], gpointer);
+			NULL_CHECK (src_addr);
+			memcpy (LOCAL_VAR (ip [1], gpointer), src_addr, ip [3]);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -6211,6 +6167,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_NEWSTR) {
+			LOCAL_VAR (ip [1], MonoString*) = mono_string_new_size_checked (LOCAL_VAR (ip [2], gint32), error);
+			if (!is_ok (error)) {
+				THROW_EX (interp_error_convert_to_exception (frame, error, ip), ip);
+			}
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDLEN) {
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			NULL_CHECK (o);
@@ -6280,13 +6244,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_ARRAY_IS_PRIMITIVE) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			LOCAL_VAR (ip [1], gint32) = m_class_is_primitive (m_class_get_element_class (mono_object_class (o)));
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_LDELEMA1) {
 			/* No bounds, one direction */
 			MonoArray *ao = LOCAL_VAR (ip [2], MonoArray*);
@@ -6353,7 +6310,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_I4) LDELEM(gint32, gint32); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_U4) LDELEM(gint32, guint32); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_I8) LDELEM(gint64, guint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDELEM_I)  LDELEM(mono_u, mono_i); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_R4) LDELEM(float, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_R8) LDELEM(double, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_REF) LDELEM(gpointer, gpointer); MINT_IN_BREAK;
@@ -6392,7 +6348,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_U2) STELEM(gint32, guint16); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_I4) STELEM(gint32, gint32); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_I8) STELEM(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STELEM_I)  STELEM(mono_u, mono_i); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R4) STELEM(float, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R8) STELEM(double, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_REF) {
@@ -6915,10 +6870,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			     mono_method_signature_internal (frame->imethod->method)->pinvoke && !mono_method_signature_internal (frame->imethod->method)->marshalling_disabled);
 			frame_data_allocator_pop (&context->data_stack, frame);
 			goto exit_frame;
-		MINT_IN_CASE(MINT_MONO_SGEN_THREAD_INFO)
-			LOCAL_VAR (ip [1], gpointer) = mono_tls_get_sgen_thread_info ();
-			ip += 2;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_MEMORY_BARRIER) {
 			++ip;
 			mono_memory_barrier ();

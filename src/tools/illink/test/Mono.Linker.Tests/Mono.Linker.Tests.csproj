@@ -46,7 +46,7 @@
          properties, to force MSBuild to re-evaluate using new props
          and targets from the restored package. -->
     <PropertyGroup>
-      <IlasmProject>$(MSBuildThisFileDirectory)../../eng/ilasm.ilproj</IlasmProject>
+      <IlasmProject>$(MSBuildThisFileDirectory)../../ilasm.ilproj</IlasmProject>
     </PropertyGroup>
 
     <MSBuild Projects="$(IlasmProject)" Targets="Restore" />

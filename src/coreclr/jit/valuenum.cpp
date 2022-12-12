@@ -8818,9 +8818,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD_ADDR:
-                assert(lvaVarAddrExposed(tree->AsLclVarCommon()->GetLclNum()));
-                tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                break;
+            {
+                unsigned lclNum  = tree->AsLclVarCommon()->GetLclNum();
+                unsigned lclOffs = tree->AsLclVarCommon()->GetLclOffs();
+                tree->gtVNPair.SetBoth(vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
+                                                          vnStore->VNForIntPtrCon(lclOffs)));
+                assert(lvaGetDesc(lclNum)->IsAddressExposed() || lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
+            }
+            break;
 
             case GT_LCL_VAR:
             {

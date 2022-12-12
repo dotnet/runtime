@@ -44,6 +44,9 @@ namespace System.Runtime
         OnUnhandledException = 7,
         IDynamicCastableIsInterfaceImplemented = 8,
         IDynamicCastableGetInterfaceImplementation = 9,
+        ObjectiveCMarshalTryGetTaggedMemory = 10,
+        ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
+        ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
     }
 
     internal static class InternalCalls

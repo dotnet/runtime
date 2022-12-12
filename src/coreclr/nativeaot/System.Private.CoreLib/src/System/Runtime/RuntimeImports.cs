@@ -242,6 +242,12 @@ namespace System.Runtime
             return h;
         }
 
+        internal static IntPtr RhHandleAllocRefCounted(object value)
+        {
+            const int HNDTYPE_REFCOUNTED = 5;
+            return RhHandleAlloc(value, (GCHandleType)HNDTYPE_REFCOUNTED);
+        }
+
         // Allocate handle for dependent handle case where a secondary can be set at the same time.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAllocDependent")]
@@ -506,6 +512,12 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhUnregisterRefCountedHandleCallback")]
         internal static extern void RhUnregisterRefCountedHandleCallback(IntPtr pCalloutMethod, EETypePtr pTypeFilter);
+
+#if FEATURE_OBJCMARSHAL
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhRegisterObjectiveCMarshalBeginEndCallback")]
+        internal static extern bool RhRegisterObjectiveCMarshalBeginEndCallback(IntPtr pCalloutMethod);
+#endif
 
         //
         // Blob support

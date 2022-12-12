@@ -88,20 +88,6 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        internal static bool RetrieveExactFunctionPointerIfPossible(MethodDesc method, out IntPtr result)
-        {
-            result = IntPtr.Zero;
-
-            if (!method.IsNonSharableMethod || !CheckAllHandlesValidForMethod(method))
-                return false;
-
-            RuntimeTypeHandle[] genMethodArgs = method.Instantiation.Length > 0 ? new RuntimeTypeHandle[method.Instantiation.Length] : Empty<RuntimeTypeHandle>.Array;
-            for (int i = 0; i < method.Instantiation.Length; i++)
-                genMethodArgs[i] = method.Instantiation[i].RuntimeTypeHandle;
-
-            return TypeLoaderEnvironment.Instance.TryLookupExactMethodPointerForComponents(method.OwningType.RuntimeTypeHandle, method.NameAndSignature, genMethodArgs, out result);
-        }
-
         internal static bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
         {
             if (method.RuntimeMethodDictionary != IntPtr.Zero)
@@ -250,10 +236,6 @@ namespace Internal.Runtime.TypeLoader
                         foreach (var instArg in typeAsDefType.Instantiation)
                             RegisterForPreparation(instArg);
 
-                        // We need the type definition to register a generic type
-                        if (type.GetTypeDefinition() is MetadataType)
-                            RegisterForPreparation(type.GetTypeDefinition());
-
                         ParseNativeLayoutInfo(state, type);
                     }
                 }
@@ -278,9 +260,6 @@ namespace Internal.Runtime.TypeLoader
                     {
                         Debug.Assert(typeAsArrayType.IsMdArray || typeAsArrayType.ElementType.IsPointer);
                     }
-
-                    // Assert that non-valuetypes are considered to have pointer size
-                    Debug.Assert(typeAsArrayType.ParameterType.IsValueType || state.ComponentSize == IntPtr.Size);
                 }
             }
             else
@@ -294,11 +273,7 @@ namespace Internal.Runtime.TypeLoader
                 PrepareBaseTypeAndDictionaries(type);
                 PrepareRuntimeInterfaces(type);
 
-                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete." +
-                    " IsHFA = " + (state.IsHFA ? "true" : "false") +
-                    " Type size = " + (state.TypeSize.HasValue ? state.TypeSize.Value.LowLevelToString() : "UNDEF") +
-                    " Fields size = " + (state.UnalignedTypeSize.HasValue ? state.UnalignedTypeSize.Value.LowLevelToString() : "UNDEF") +
-                    " Type alignment = " + (state.FieldAlignment.HasValue ? state.FieldAlignment.Value.LowLevelToString() : "UNDEF"));
+                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete.");
             }
         }
 
@@ -418,13 +393,6 @@ namespace Internal.Runtime.TypeLoader
 
             NativeParser baseTypeParser = new NativeParser();
 
-            int nonGcDataSize = 0;
-            int gcDataSize = 0;
-            int threadDataSize = 0;
-            bool staticSizesMeaningful = (type is DefType) // Is type permitted to have static fields
-                                    && !isTemplateUniversalCanon; // Non-universal templates always specify their statics sizes
-                                                                  // if the size can be greater than 0
-
             BagElementKind kind;
             while ((kind = typeInfoParser.GetBagElementKind()) != BagElementKind.End)
             {
@@ -450,22 +418,19 @@ namespace Internal.Runtime.TypeLoader
                     case BagElementKind.NonGcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.NonGcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        nonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.NonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.GcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.GcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        gcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.GcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.ThreadStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.ThreadStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        threadDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.ThreadDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.GcStaticDesc:
@@ -491,11 +456,6 @@ namespace Internal.Runtime.TypeLoader
                         typeInfoParser.SkipInteger(); // Handled in type layout algorithm
                         break;
 
-                    case BagElementKind.SealedVTableEntries:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.SealedVTableEntries");
-                        state.NumSealedVTableEntries = typeInfoParser.GetUnsigned();
-                        break;
-
                     case BagElementKind.DictionaryLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
                         Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
@@ -514,13 +474,6 @@ namespace Internal.Runtime.TypeLoader
                         typeInfoParser.SkipInteger();
                         break;
                 }
-            }
-
-            if (staticSizesMeaningful)
-            {
-                Debug.Assert((state.NonGcDataSize + (state.HasStaticConstructor ? TypeBuilder.ClassConstructorOffset : 0)) == nonGcDataSize);
-                Debug.Assert(state.GcDataSize == gcDataSize);
-                Debug.Assert(state.ThreadDataSize == threadDataSize);
             }
 
             type.ParseBaseType(context, baseTypeParser);
@@ -870,9 +823,16 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (type is ArrayType typeAsSzArrayType)
                 {
-                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(typeAsSzArrayType.ElementType));
+                    RuntimeTypeHandle elementTypeHandle = GetRuntimeTypeHandle(typeAsSzArrayType.ElementType);
+                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(elementTypeHandle);
 
-                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(state.ComponentSize.Value);
+                    ushort componentSize = (ushort)IntPtr.Size;
+                    unsafe
+                    {
+                        if (typeAsSzArrayType.ElementType.IsValueType)
+                            componentSize = checked((ushort)elementTypeHandle.ToEETypePtr()->ValueTypeSize);
+                    }
+                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(componentSize);
 
                     FinishInterfaces(state);
                 }
@@ -1152,13 +1112,6 @@ namespace Internal.Runtime.TypeLoader
             nlilContext._module = moduleInfo;
             nlilContext._typeSystemContext = typeSystemContext;
 
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            NativeFormatMetadataUnit metadataUnit = null;
-
-            if (moduleInfo.ModuleType == ModuleType.ReadyToRun)
-                metadataUnit = typeSystemContext.ResolveMetadataUnit(moduleInfo);
-#endif
-
             if ((contextKind & GenericContextKind.FromMethodHiddenArg) != 0)
             {
                 RuntimeTypeHandle declaringTypeHandle;
@@ -1195,25 +1148,7 @@ namespace Internal.Runtime.TypeLoader
                 if ((contextKind & GenericContextKind.HasDeclaringType) != 0)
                 {
                     // No need to deal with arrays - arrays can't have declaring type
-
-                    TypeDesc declaringType;
-
-                    if (moduleInfo.ModuleType == ModuleType.Eager)
-                    {
-                        declaringType = nlilContext.GetType(ref parser);
-                    }
-                    else
-                    {
-                        Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                        uint typeToken = parser.GetUnsigned();
-                        declaringType = metadataUnit.GetType(((int)typeToken).AsHandle());
-#else
-                        Environment.FailFast("Ready to Run module type?");
-                        declaringType = null;
-#endif
-                    }
-
+                    TypeDesc declaringType = nlilContext.GetType(ref parser);
                     DefType actualContext = GetExactDeclaringType((DefType)typeContext, (DefType)declaringType);
 
                     nlilContext._typeArgumentHandles = actualContext.Instantiation;
@@ -1232,23 +1167,7 @@ namespace Internal.Runtime.TypeLoader
                     return genericDictionary;
                 }
 
-                GenericTypeDictionary ucgDict;
-
-                if (moduleInfo.ModuleType == ModuleType.Eager)
-                {
-                    ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionary(this, nlilContext, parser));
-                }
-                else
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-                    FixupCellMetadataResolver metadataResolver = new FixupCellMetadataResolver(metadataUnit, nlilContext);
-                    ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionaryFromMetadataTokensAndContext(this, parser, metadataUnit, metadataResolver));
-#else
-                    Environment.FailFast("Ready to Run module type?");
-                    ucgDict = null;
-#endif
-                }
+                GenericTypeDictionary ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionary(this, nlilContext, parser));
                 genericDictionary = ucgDict.Allocate();
 
                 // Process the pending types
@@ -1263,39 +1182,7 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                GenericDictionaryCell cell;
-
-                if (moduleInfo.ModuleType == ModuleType.Eager)
-                {
-                    cell = GenericDictionaryCell.ParseAndCreateCell(
-                        nlilContext,
-                        ref parser);
-                }
-                else
-                {
-                    Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    MetadataFixupKind fixupKind = (MetadataFixupKind)parser.GetUInt8();
-                    Internal.Metadata.NativeFormat.Handle token = parser.GetUnsigned().AsHandle();
-                    Internal.Metadata.NativeFormat.Handle token2 = default(Internal.Metadata.NativeFormat.Handle);
-
-                    switch (fixupKind)
-                    {
-                        case MetadataFixupKind.GenericConstrainedMethod:
-                        case MetadataFixupKind.NonGenericConstrainedMethod:
-                        case MetadataFixupKind.NonGenericDirectConstrainedMethod:
-                            token2 = parser.GetUnsigned().AsHandle();
-                            break;
-                    }
-
-                    FixupCellMetadataResolver resolver = new FixupCellMetadataResolver(metadataUnit, nlilContext);
-                    cell = GenericDictionaryCell.CreateCellFromFixupKindAndToken(fixupKind, resolver, token, token2);
-#else
-                    Environment.FailFast("Ready to Run module type?");
-                    cell = null;
-#endif
-                }
-
+                GenericDictionaryCell cell = GenericDictionaryCell.ParseAndCreateCell(nlilContext, ref parser);
                 cell.Prepare(this);
 
                 // Process the pending types
