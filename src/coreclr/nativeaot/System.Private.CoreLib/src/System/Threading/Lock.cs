@@ -231,10 +231,10 @@ namespace System.Threading
                         {
                             if (hasWaited)
                                 _wakeWatchDog = 0;
-
-                            // if spinning was successful, update spin count
-                            if (iteration < localSpinLimit && localSpinLimit < MaxSpinLimit)
-                                _spinLimit = localSpinLimit + 1;
+                            else
+                                // if spinning was successful, update spin count
+                                if (iteration < localSpinLimit && localSpinLimit < MaxSpinLimit)
+                                    _spinLimit = localSpinLimit + 1;
 
                             // GOT THE LOCK!!
                             Debug.Assert((_state | Locked) != 0);
