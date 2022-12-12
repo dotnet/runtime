@@ -373,7 +373,6 @@ extends:
         parameters:
           platforms:
             - Browser_wasm
-          buildAndRunWasi: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - normal
@@ -456,13 +455,9 @@ extends:
           extraBuildArgs: /p:WasmEnablePerfTracing=true
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - WASI/Wasm
-      #- template: /eng/pipelines/common/templates/wasi-build-only.yml
-        #parameters:
-          #platforms:
-            #- wasi_wasm
-          #alwaysRun: ${{ variables.isRollingBuild }}
-
+      #
+      # WASI
+      #
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
