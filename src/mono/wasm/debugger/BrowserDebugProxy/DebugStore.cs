@@ -24,6 +24,7 @@ using System.Text;
 using Microsoft.SymbolStore;
 using Microsoft.SymbolStore.SymbolStores;
 using Microsoft.FileFormats.PE;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -1055,7 +1056,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (_documentIdToSourceFileTable.TryGetValue(documentName.GetHashCode(), out SourceFile source))
                 return source;
 
-            var src = new SourceFile(this, _documentIdToSourceFileTable.Count, doc, GetSourceLinkUrl(documentName), documentName);
+            var src = new SourceFile(this, _documentIdToSourceFileTable.Count, doc, documentName, sourceLinkMappings);
             _documentIdToSourceFileTable[documentName.GetHashCode()] = src;
             return src;
         }
@@ -1117,32 +1118,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     sourceLinkMappings = JsonConvert.DeserializeObject<Dictionary<string, string>>(jObject.ToString());
                 }
             }
-        }
-
-        private Uri GetSourceLinkUrl(string document)
-        {
-            if (sourceLinkMappings.TryGetValue(document, out string url))
-                return new Uri(url);
-
-            foreach (KeyValuePair<string, string> sourceLinkDocument in sourceLinkMappings)
-            {
-                string key = sourceLinkDocument.Key;
-
-                if (!key.EndsWith("*"))
-                {
-                    continue;
-                }
-
-                string keyTrim = key.TrimEnd('*');
-
-                if (document.StartsWith(keyTrim, StringComparison.OrdinalIgnoreCase))
-                {
-                    string docUrlPart = document.Replace(keyTrim, "");
-                    return new Uri(sourceLinkDocument.Value.TrimEnd('*') + docUrlPart);
-                }
-            }
-
-            return null;
         }
 
         public TypeInfo CreateTypeInfo(TypeDefinitionHandle typeHandle, TypeDefinition type)
@@ -1229,17 +1204,19 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string DotNetUrlEscaped { get; init; }
 
         public Uri Url { get; init; }
-        public Uri SourceLinkUri { get; init; }
+        public Uri SourceLinkUri { get; set; }
 
         public int Id { get; }
         public string AssemblyName => assembly.Name;
         public SourceId SourceId => new SourceId(assembly.Id, this.Id);
         public IEnumerable<MethodInfo> Methods => this.methods.Values;
+        private static SHA256 sha256 = System.Security.Cryptography.SHA256.Create();
+        private string relativePath;
 
-        internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, Uri sourceLinkUri, string documentName)
+        internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, string documentName, Dictionary<string, string> sourceLinkMappings)
         {
             this.methods = new Dictionary<int, MethodInfo>();
-            this.SourceLinkUri = sourceLinkUri;
+            GetSourceLinkUrl(documentName, sourceLinkMappings);
             this.assembly = assembly;
             this.Id = id;
             this.doc = assembly.pdbMetadataReader.GetDocument(docHandle);
@@ -1251,7 +1228,66 @@ namespace Microsoft.WebAssembly.Diagnostics
             string escapedDocumentName = EscapePathForUri(documentName.Replace("\\", "/"));
             this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
             this.DotNetUrlEscaped = $"dotnet://{assembly.Name}/{escapedDocumentName}";
-            this.Url = new Uri(File.Exists(documentName) ? FileUriEscaped : DotNetUrlEscaped, UriKind.Absolute);
+            if (!File.Exists(documentName) && SourceLinkUri != null)
+            {
+                string sourceLinkCachedPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SourceServer", GetHashOfString(SourceLinkUri.AbsoluteUri), relativePath);
+                if (File.Exists(sourceLinkCachedPath)) //first try to find on cache using relativePath as it's done by VS while debugging
+                {
+                    this.FilePath = sourceLinkCachedPath;
+                    escapedDocumentName = EscapePathForUri(this.FilePath.Replace("\\", "/"));
+                    this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
+                }
+                else
+                {
+                    sourceLinkCachedPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SourceServer", GetHashOfString(SourceLinkUri.AbsoluteUri), Path.GetFileName(relativePath));
+                    if (File.Exists(sourceLinkCachedPath)) //second try to find on cache without relativePath as it's done by VS when using "Go To Definition (F12)"
+                    {
+                        this.FilePath = sourceLinkCachedPath;
+                        escapedDocumentName = EscapePathForUri(this.FilePath.Replace("\\", "/"));
+                        this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
+                    }
+                }
+            }
+            this.Url = new Uri(File.Exists(this.FilePath) ? FileUriEscaped : DotNetUrlEscaped, UriKind.Absolute);
+        }
+
+        private void GetSourceLinkUrl(string document, Dictionary<string, string> sourceLinkMappings)
+        {
+            if (sourceLinkMappings.TryGetValue(document, out string url))
+            {
+                SourceLinkUri = new Uri(url);
+                return;
+            }
+
+            foreach (KeyValuePair<string, string> sourceLinkDocument in sourceLinkMappings)
+            {
+                string key = sourceLinkDocument.Key;
+
+                if (!key.EndsWith("*"))
+                {
+                    continue;
+                }
+
+                string keyTrim = key.TrimEnd('*');
+
+                if (document.StartsWith(keyTrim, StringComparison.OrdinalIgnoreCase))
+                {
+                    relativePath = document.Replace(keyTrim, "");
+                    SourceLinkUri = new Uri(sourceLinkDocument.Value.TrimEnd('*') + relativePath);
+                    return;
+                }
+            }
+        }
+
+        private static string GetHashOfString(string str)
+        {
+            byte[] bytes = sha256.ComputeHash(System.Text.UnicodeEncoding.Unicode.GetBytes(str));
+            System.Text.StringBuilder builder = new System.Text.StringBuilder();
+            foreach (byte b in bytes)
+            {
+                builder.Append(b.ToString("x2"));
+            }
+            return builder.ToString();
         }
 
         private static string EscapePathForUri(string path)
