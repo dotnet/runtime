@@ -12958,8 +12958,6 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
 }
 #endif //MULTIPLE_HEAPS
 
-#endif //USE_REGIONS
-
 void gc_heap::remove_old_or_small_regions (int hn,
                                            region_free_list& from_list,
 #ifdef MULTIPLE_HEAPS
@@ -12995,6 +12993,7 @@ void gc_heap::remove_old_or_small_regions (int hn,
 #endif //MULTIPLE_HEAPS
     }
 }
+#endif //USE_REGIONS
 
 void gc_heap::distribute_free_regions()
 {

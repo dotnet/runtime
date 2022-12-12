@@ -52,7 +52,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined(__APPLE__)
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -2102,7 +2102,8 @@ protected:
     PER_HEAP_ISOLATED
     void distribute_committed_in_free_regions(free_region_kind kind, size_t region_size,
                                               size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][2]);
-#endif //MULTIPLE_HEAPS && REGIONS
+#endif //MULTIPLE_HEAPS && USE_REGIONS
+#ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     void remove_old_or_small_regions (int hn,
                                       region_free_list& from_list,
@@ -2110,6 +2111,7 @@ protected:
                                       region_free_list global_free_list[count_free_region_kinds],
 #endif //MULTIPLE_HEAPS
                                       BOOL last_gc_before_oom);
+#endif //USE_REGIONS
     PER_HEAP_ISOLATED
     void distribute_free_regions();
 #ifdef BACKGROUND_GC
