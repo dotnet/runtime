@@ -837,6 +837,12 @@ private:
                 hasHiddenStructArg = true;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
                 defFlag = GTF_VAR_DEF;
+
+                if ((val.Offset() != 0) ||
+                    (varDsc->lvExactSize != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+                {
+                    defFlag |= GTF_VAR_USEASG;
+                }
             }
         }
 
