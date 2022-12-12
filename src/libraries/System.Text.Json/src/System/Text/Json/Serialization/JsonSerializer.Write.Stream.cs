@@ -168,10 +168,6 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         public static Task SerializeAsync<TValue>(
             Stream utf8Json,
             TValue value,
@@ -201,10 +197,6 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         public static void Serialize<TValue>(
             Stream utf8Json,
             TValue value,
@@ -221,6 +213,69 @@ namespace System.Text.Json
 
             jsonTypeInfo.EnsureConfigured();
             jsonTypeInfo.Serialize(utf8Json, value);
+        }
+
+        /// <summary>
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
+        /// <param name="value">The value to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the write operation.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="utf8Json"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidCastException">
+        /// <paramref name="value"/> does not match the type of <paramref name="jsonTypeInfo"/>.
+        /// </exception>
+        public static Task SerializeAsync(
+            Stream utf8Json,
+            object? value,
+            JsonTypeInfo jsonTypeInfo,
+            CancellationToken cancellationToken = default)
+        {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
+        }
+
+        /// <summary>
+        /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
+        /// </summary>
+        /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
+        /// <param name="value">The value to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="utf8Json"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidCastException">
+        /// <paramref name="value"/> does not match the type of <paramref name="jsonTypeInfo"/>.
+        /// </exception>
+        public static void Serialize(
+            Stream utf8Json,
+            object? value,
+            JsonTypeInfo jsonTypeInfo)
+        {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            jsonTypeInfo.SerializeAsObject(utf8Json, value);
         }
 
         /// <summary>
