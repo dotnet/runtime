@@ -353,7 +353,7 @@ namespace System.Threading
             /// </summary>
             public DependentHandle Owner;
 
-            // unusd field to make the entry even number of words.
+            // Unused field to make the entry even number of words.
             // we will likely put something in here eventually.
             internal nint _unusedPadding;
 

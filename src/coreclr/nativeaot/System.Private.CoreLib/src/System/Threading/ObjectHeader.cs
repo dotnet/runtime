@@ -231,7 +231,7 @@ namespace System.Threading
         // It can take much longer only if nop/pause takes much longer, which it should not, as that would be getting
         // close to the RAM latency.
         //
-        // Considering that taking and releaseing the lock takes 2 CAS instructions + some overhead, we can estimate shortest
+        // Considering that taking and releasing the lock takes 2 CAS instructions + some overhead, we can estimate shortest
         // time the lock can be held to be in hundreds of nanoseconds. Thus it is unlikely to see more than
         // 8-10 threads contending for the lock without inflating it. Therefore we can expect to acquire a thin lock in
         // under 16 tries.
@@ -265,8 +265,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int TryAcquire(object obj, bool oneShot = true)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             Debug.Assert(!(obj is Lock),
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
@@ -402,8 +401,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Release(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             Debug.Assert(!(obj is Lock),
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");

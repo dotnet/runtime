@@ -324,7 +324,7 @@ namespace System.Threading
 
         // Max iterations to be done in RhSpinWait.
         // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
-        private const int spinWaitCoopThreshold = 1024;
+        private const int SpinWaitCoopThreshold = 1024;
 
         internal static void SpinWaitInternal(int iterations)
         {
