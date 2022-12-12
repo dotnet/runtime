@@ -378,11 +378,6 @@ check_symbol_exists(
     HAVE_STATFS)
 
 check_symbol_exists(
-    "getrusage"
-    "sys/resource.h"
-    HAVE_GETRUSAGE)
-
-check_symbol_exists(
     "getrlimit"
     "sys/resource.h"
     HAVE_GETRLIMIT)

@@ -31,7 +31,7 @@ set(NATIVE_SOURCES
 )
 
 if (NOT CLR_CMAKE_TARGET_WASI)
-    list (APPEND NATIVE_SOURCES 
+    list (APPEND NATIVE_SOURCES
         pal_dynamicload.c
         pal_mount.c
         pal_networking.c
@@ -41,7 +41,7 @@ if (NOT CLR_CMAKE_TARGET_WASI)
         pal_uid.c
     )
 else()
-    list (APPEND NATIVE_SOURCES 
+    list (APPEND NATIVE_SOURCES
         pal_dynamicload_wasi.c
         pal_mount_wasi.c
         pal_networking_wasi.c
