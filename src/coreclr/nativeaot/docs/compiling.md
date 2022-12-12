@@ -52,7 +52,7 @@ For using daily builds according to the instructions above, in addition to the `
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="8.0.0-alpha.1.23456.7" />
 ```
 
-Replace `8.0.0-alpha.1.23456.7` with the latest version from the [dotnet8](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet8/NuGet/Microsoft.DotNet.ILCompiler/) feed. 
+Replace `8.0.0-alpha.1.23456.7` with the latest version from the [dotnet8](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet8/NuGet/Microsoft.DotNet.ILCompiler/) feed.
 Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues. After adding the package reference, you may publish for win-arm64 as usual:
 ```bash
 > dotnet publish -r win-arm64 -c Release
