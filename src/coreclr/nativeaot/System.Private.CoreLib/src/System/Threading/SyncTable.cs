@@ -85,7 +85,7 @@ namespace System.Threading
         private static int s_unusedEntryIndex = 2;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref Entry EntryRef(int i)
+        private static ref Entry UnsafeEntryRef(int i)
         {
 #if DEBUG
             return ref s_entries[i];
@@ -119,7 +119,7 @@ namespace System.Threading
                         // Grab a free entry from the list
                         syncIndex = s_freeEntryList;
 
-                        ref Entry freeEntry = ref EntryRef(syncIndex);
+                        ref Entry freeEntry = ref s_entries[syncIndex];
                         s_freeEntryList = freeEntry.Next;
                         freeEntry.Next = 0;
                     }
@@ -136,7 +136,7 @@ namespace System.Threading
                         syncIndex = s_unusedEntryIndex++;
                     }
 
-                    ref Entry entry = ref EntryRef(syncIndex);
+                    ref Entry entry = ref s_entries[syncIndex];
 
                     // Found a free entry to assign
                     Debug.Assert(!entry.Owner.IsAllocated);
@@ -229,7 +229,7 @@ namespace System.Threading
             // This thread may be looking at an old version of s_entries.  If the old version had
             // no hash code stored, GetHashCode returns zero and the subsequent SetHashCode call
             // will resolve the potential race.
-            return EntryRef(syncIndex).HashCode;
+            return s_entries[syncIndex].HashCode;
         }
 
         /// <summary>
@@ -244,12 +244,12 @@ namespace System.Threading
             // the same object accessed by a reference.
             using (LockHolder.Hold(s_lock))
             {
-                int currentHash = EntryRef(syncIndex).HashCode;
+                int currentHash = s_entries[syncIndex].HashCode;
                 if (currentHash != 0)
                 {
                     return currentHash;
                 }
-                EntryRef(syncIndex).HashCode = hashCode;
+                s_entries[syncIndex].HashCode = hashCode;
                 return hashCode;
             }
         }
@@ -262,7 +262,7 @@ namespace System.Threading
         {
             Debug.Assert(s_lock.IsAcquired);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
-            EntryRef(syncIndex).HashCode = hashCode;
+            s_entries[syncIndex].HashCode = hashCode;
         }
 
         /// <summary>
@@ -274,7 +274,7 @@ namespace System.Threading
             Debug.Assert(s_lock.IsAcquired);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
 
-            EntryRef(syncIndex).Lock.InitializeLocked(threadId, recursionLevel);
+            s_entries[syncIndex].Lock.InitializeLocked(threadId, recursionLevel);
         }
 
         /// <summary>
@@ -284,7 +284,7 @@ namespace System.Threading
         {
             // Note that we do not take a lock here.  When we replace s_entries, we preserve all
             // indices and Lock references.
-            return EntryRef(syncIndex).Lock;
+            return UnsafeEntryRef(syncIndex).Lock;
         }
 
         private sealed class DeadEntryCollector
@@ -307,7 +307,7 @@ namespace System.Threading
 
                 using (LockHolder.Hold(s_lock))
                 {
-                    ref Entry entry = ref EntryRef(_index);
+                    ref Entry entry = ref s_entries[_index];
 
                     if (entry.Owner.Target != null)
                     {
