@@ -548,11 +548,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             case IF_RWR_RRD_ARD_CNS:
             case IF_RWR_RRD_ARD_RRD:
             {
-#ifdef TARGET_AMD64
-                assert((id->idReg1() >= REG_RAX) && (id->idReg1() <= REG_XMM15));
-#else
-                assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_XMM7));
-#endif // !TARGET_AMD64
+                assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_FP_LAST));
 
                 if (id->idReg1() != reg)
                 {
