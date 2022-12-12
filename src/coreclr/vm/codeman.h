@@ -735,10 +735,11 @@ enum class RangeSectionLockState
 // For 64bit, we work with 8KB chunks of memory holding pointers to the next level. This provides 10 bits of address resolution per level.
 // For *reasons* the X64 hardware is limited to 57bits of addressable address space, and the minimum granularity that makes sense for range lists is 64KB (or every 2^16 bits)
 // Similarly the Arm64 specification requires addresses to use at most 52 bits. Thus we use the maximum addressable range of X64 to provide the real max range
-// So the first level is bits [56:47] -> L4
-// Then                       [46:37] -> L3
-//                            [36:27] -> L2
-//                            [26:17] -> L1
+// So the first level is bits [56:49] -> L5
+// Then                       [48:41] -> L4
+//                            [40:33] -> L3
+//                            [32:25] -> L2
+//                            [24:17] -> L1
 // This leaves 17 bits of the address to be handled by the RangeSection linked list
 //
 // For 32bit VA processes, use 1KB chunks holding pointers to the next level. This provides 8 bites of address resolution per level.    [31:24] and [23:16].
@@ -839,7 +840,7 @@ class RangeSectionMap
     };
 
 #ifdef TARGET_64BIT
-    static const uintptr_t entriesPerMapLevel = 1024;
+    static const uintptr_t entriesPerMapLevel = 256;
 #else
     static const uintptr_t entriesPerMapLevel = 256;
 #endif
@@ -849,12 +850,13 @@ class RangeSectionMap
     typedef DPTR(RangeSectionL1) RangeSectionL2[entriesPerMapLevel];
     typedef DPTR(RangeSectionL2) RangeSectionL3[entriesPerMapLevel];
     typedef DPTR(RangeSectionL3) RangeSectionL4[entriesPerMapLevel];
+    typedef DPTR(RangeSectionL4) RangeSectionL5[entriesPerMapLevel];
 
 #ifdef TARGET_64BIT
-    typedef RangeSectionL4 RangeSectionTopLevel;
-    static const uintptr_t mapLevels = 4;
+    typedef RangeSectionL5 RangeSectionTopLevel;
+    static const uintptr_t mapLevels = 5;
     static const uintptr_t maxSetBit = 56; // This is 0 indexed
-    static const uintptr_t bitsPerLevel = 10;
+    static const uintptr_t bitsPerLevel = 8;
 #else
     typedef RangeSectionL2 RangeSectionTopLevel;
     static const uintptr_t mapLevels = 2;
@@ -922,7 +924,10 @@ class RangeSectionMap
     {
         uintptr_t level = mapLevels + 1;
 #ifdef TARGET_64BIT
-        auto _RangeSectionL3 = EnsureLevel(address, &_topLevel, --level);
+        auto _RangeSectionL4 = EnsureLevel(address, &_topLevel, --level);
+        if (_RangeSectionL4 == NULL)
+            return NULL; // Failure case
+        auto _RangeSectionL3 = EnsureLevel(address, _RangeSectionL4, --level);
         if (_RangeSectionL3 == NULL)
             return NULL; // Failure case
         auto _RangeSectionL2 = EnsureLevel(address, _RangeSectionL3, --level);
@@ -946,7 +951,10 @@ class RangeSectionMap
     PTR_RangeSectionFragment GetRangeSectionForAddress(TADDR address, RangeSectionLockState *pLockState)
     {
 #ifdef TARGET_64BIT
-        auto _RangeSectionL4 = VolatileLoad(&_topLevel);
+        auto _RangeSectionL5 = VolatileLoad(&_topLevel);
+        if (_RangeSectionL5 == NULL)
+            return NULL;
+        auto _RangeSectionL4 = (*_RangeSectionL5)[EffectiveBitsForLevel(address, 4)];
         if (_RangeSectionL4 == NULL)
             return NULL;
         auto _RangeSectionL3 = (*_RangeSectionL4)[EffectiveBitsForLevel(address, 4)];
