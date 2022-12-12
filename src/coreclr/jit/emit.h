@@ -2173,10 +2173,10 @@ private:
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
-#define EMIT_LAST_INS_COUNT 8
+#define EMIT_MAX_IG_INS_COUNT 256
 
     // A recording of the last instructions, used for peephole optimizations.
-    instrDesc* emitLastInstrs[EMIT_LAST_INS_COUNT];
+    instrDesc* emitLastInstrs[EMIT_MAX_IG_INS_COUNT];
 
     inline void emitClearLastInstrs()
     {

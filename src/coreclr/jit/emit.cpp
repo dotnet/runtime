@@ -1475,11 +1475,10 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     assert(IsCodeAligned(emitCurIGsize));
 
     // Make sure we have enough space for the new instruction.
-    // `igInsCnt` is currently a byte, so we can't have more than 255 instructions in a single insGroup.
 
     size_t fullSize = sz + m_debugInfoSize;
 
-    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
+    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
     {
         emitNxtIG(true);
     }
