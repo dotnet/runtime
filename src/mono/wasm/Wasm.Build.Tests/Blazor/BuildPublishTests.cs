@@ -84,7 +84,7 @@ public class BuildPublishTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public async Task WithDllImportInMainAssembly(string config)
+    public void WithDllImportInMainAssembly(string config)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
         string id = $"blz_dllimp_{config}";

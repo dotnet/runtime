@@ -70,6 +70,7 @@ namespace Wasm.Build.Tests
                 s_runtimePackVersions[$"net{verStr}.0"] = versionValue;
             }
 
+            DefaultBuildArgs = string.Empty;
             WorkloadPacksDir = Path.Combine(sdkForWorkloadPath, "packs");
             EnvVars = new Dictionary<string, string>();
             bool workloadInstalled = EnvironmentVariables.SdkHasWorkloadInstalled != null && EnvironmentVariables.SdkHasWorkloadInstalled == "true";
