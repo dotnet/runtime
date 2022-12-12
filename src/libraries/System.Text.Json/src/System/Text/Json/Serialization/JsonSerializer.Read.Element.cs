@@ -93,6 +93,27 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Converts the <see cref="JsonElement"/> representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="element">The <see cref="JsonElement"/> to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        public static object? Deserialize(this JsonElement element, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
+        }
+
+        /// <summary>
         /// Converts the <see cref="JsonElement"/> representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>

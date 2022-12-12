@@ -289,13 +289,33 @@ interp_prev_ins (InterpInst *ins)
 	return ins;
 }
 
+static gboolean
+check_stack_helper (TransformData *td, int n)
+{
+	int stack_size = GPTRDIFF_TO_INT (td->sp - td->stack);
+	if (stack_size < n) {
+		td->has_invalid_code = TRUE;
+		return FALSE;
+	}
+	return TRUE;
+}
+
 #define CHECK_STACK(td, n) \
 	do { \
-		guint stack_size = GPTRDIFF_TO_UINT ((td)->sp - (td)->stack); \
-		if (stack_size < (n)) \
-			g_warning ("%s.%s: not enough values (%d < %d) on stack at %04x", \
-				m_class_get_name ((td)->method->klass), (td)->method->name, \
-				stack_size, n, (td)->ip - (td)->il_code); \
+		if (!check_stack_helper (td, n)) \
+			goto exit; \
+	} while (0)
+
+#define CHECK_STACK_RET_VOID(td, n) \
+	do { \
+		if (!check_stack_helper (td, n)) \
+			return; \
+	} while (0)
+
+#define CHECK_STACK_RET(td, n, ret) \
+	do { \
+		if (!check_stack_helper (td, n)) \
+			return ret; \
 	} while (0)
 
 #define ENSURE_STACK_SIZE(td, size) \
@@ -876,9 +896,9 @@ handle_branch (TransformData *td, int long_op, int offset)
 static void
 one_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 {
+	CHECK_STACK_RET_VOID(td, 1);
 	int type = td->sp [-1].type == STACK_TYPE_O || td->sp [-1].type == STACK_TYPE_MP ? STACK_TYPE_I : td->sp [-1].type;
 	int long_op = mint_op + type - STACK_TYPE_I4;
-	CHECK_STACK(td, 1);
 	--td->sp;
 	if (offset) {
 		handle_branch (td, long_op, offset + inst_size);
@@ -905,9 +925,9 @@ interp_add_conv (TransformData *td, StackInfo *sp, InterpInst *prev_ins, int typ
 static void
 two_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 {
+	CHECK_STACK_RET_VOID(td, 2);
 	int type1 = td->sp [-1].type == STACK_TYPE_O || td->sp [-1].type == STACK_TYPE_MP ? STACK_TYPE_I : td->sp [-1].type;
 	int type2 = td->sp [-2].type == STACK_TYPE_O || td->sp [-2].type == STACK_TYPE_MP ? STACK_TYPE_I : td->sp [-2].type;
-	CHECK_STACK(td, 2);
 
 	if (type1 == STACK_TYPE_I4 && type2 == STACK_TYPE_I8) {
 		// The il instruction starts with the actual branch, and not with the conversion opcodes
@@ -939,8 +959,8 @@ two_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 static void
 unary_arith_op(TransformData *td, int mint_op)
 {
+	CHECK_STACK_RET_VOID(td, 1);
 	int op = mint_op + td->sp [-1].type - STACK_TYPE_I4;
-	CHECK_STACK(td, 1);
 	td->sp--;
 	interp_add_ins (td, op);
 	interp_ins_set_sreg (td->last_ins, td->sp [0].local);
@@ -951,6 +971,7 @@ unary_arith_op(TransformData *td, int mint_op)
 static void
 binary_arith_op(TransformData *td, int mint_op)
 {
+	CHECK_STACK_RET_VOID(td, 2);
 	int type1 = td->sp [-2].type;
 	int type2 = td->sp [-1].type;
 	int op;
@@ -982,7 +1003,6 @@ binary_arith_op(TransformData *td, int mint_op)
 			td->ip - td->il_code, mono_interp_opname (mint_op), type1, type2);
 	}
 	op = mint_op + type1 - STACK_TYPE_I4;
-	CHECK_STACK(td, 2);
 	td->sp -= 2;
 	interp_add_ins (td, op);
 	interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
@@ -993,8 +1013,8 @@ binary_arith_op(TransformData *td, int mint_op)
 static void
 shift_op(TransformData *td, int mint_op)
 {
+	CHECK_STACK_RET_VOID(td, 2);
 	int op = mint_op + td->sp [-2].type - STACK_TYPE_I4;
-	CHECK_STACK(td, 2);
 	if (td->sp [-1].type != STACK_TYPE_I4) {
 		g_warning("%s.%s: shift type mismatch %d",
 			m_class_get_name (td->method->klass), td->method->name,
@@ -1083,7 +1103,7 @@ store_arg(TransformData *td, int n)
 {
 	gint32 size = 0;
 	int mt;
-	CHECK_STACK (td, 1);
+	CHECK_STACK_RET_VOID (td, 1);
 	MonoType *type;
 
 	type = get_arg_type_exact (td, n, &mt);
@@ -1131,7 +1151,7 @@ static void
 store_local (TransformData *td, int local)
 {
 	int mt = td->locals [local].mt;
-	CHECK_STACK (td, 1);
+	CHECK_STACK_RET_VOID (td, 1);
 #if SIZEOF_VOID_P == 8
 	// nint and int32 can be used interchangeably. Add implicit conversions.
 	if (td->sp [-1].type == STACK_TYPE_I4 && stack_type [mt] == STACK_TYPE_I8)
@@ -3121,7 +3141,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	if (target_method == NULL) {
 		if (calli) {
-			CHECK_STACK(td, 1);
+			CHECK_STACK_RET(td, 1, FALSE);
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
 				csignature = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
 			else {
@@ -3289,7 +3309,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		need_null_check = TRUE;
 	}
 
-	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
+	CHECK_STACK_RET (td, csignature->param_count + csignature->hasthis, FALSE);
 	if (tailcall && !td->gen_sdb_seq_points && !calli && op == -1 &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
@@ -3521,8 +3541,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			} else if (is_virtual) {
 				interp_add_ins (td, MINT_CALLVIRT_FAST);
 				td->last_ins->data [1] = get_virt_method_slot (target_method);
-			} else if (is_virtual) {
-				interp_add_ins (td, MINT_CALLVIRT);
 			} else {
 				interp_add_ins (td, MINT_CALL);
 			}
@@ -4312,7 +4330,7 @@ initialize_clause_bblocks (TransformData *td)
 static void
 handle_ldind (TransformData *td, int op, int type, gboolean *volatile_)
 {
-	CHECK_STACK (td, 1);
+	CHECK_STACK_RET_VOID (td, 1);
 	interp_add_ins (td, op);
 	td->sp--;
 	interp_ins_set_sreg (td->last_ins, td->sp [0].local);
@@ -4329,7 +4347,7 @@ handle_ldind (TransformData *td, int op, int type, gboolean *volatile_)
 static void
 handle_stind (TransformData *td, int op, gboolean *volatile_)
 {
-	CHECK_STACK (td, 2);
+	CHECK_STACK_RET_VOID (td, 2);
 	if (*volatile_) {
 		interp_emit_memory_barrier (td, MONO_MEMORY_BARRIER_REL);
 		*volatile_ = FALSE;
@@ -4344,7 +4362,7 @@ handle_stind (TransformData *td, int op, gboolean *volatile_)
 static void
 handle_ldelem (TransformData *td, int op, int type)
 {
-	CHECK_STACK (td, 2);
+	CHECK_STACK_RET_VOID (td, 2);
 	ENSURE_I4 (td, 1);
 	interp_add_ins (td, op);
 	td->sp -= 2;
@@ -4357,7 +4375,7 @@ handle_ldelem (TransformData *td, int op, int type)
 static void
 handle_stelem (TransformData *td, int op)
 {
-	CHECK_STACK (td, 3);
+	CHECK_STACK_RET_VOID (td, 3);
 	ENSURE_I4 (td, 2);
 	interp_add_ins (td, op);
 	td->sp -= 3;
@@ -4578,7 +4596,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 	td->dont_inline = g_list_prepend (td->dont_inline, method);
 	while (td->ip < end) {
-		g_assert (td->sp >= td->stack);
+		// Check here for every opcode to avoid code bloat
+		if (td->has_invalid_code)
+			goto exit;
 		in_offset = GPTRDIFF_TO_INT (td->ip - header->code);
 		if (!inlining)
 			td->current_il_offset = in_offset;
@@ -7750,6 +7770,8 @@ exit_ret:
 	return ret;
 exit:
 	ret = FALSE;
+	if (td->has_invalid_code)
+		mono_error_set_generic_error (error, "System", "InvalidProgramException", "");
 	goto exit_ret;
 }
 
