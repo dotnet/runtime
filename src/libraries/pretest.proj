@@ -144,6 +144,7 @@
     <CreateFrameworkListFile Files="@(RuntimePackLibFile);@(RuntimePackNativeFile)"
                              TargetFile="$(MicrosoftNetCoreAppRuntimePackDir)data\RuntimeList.xml"
                              TargetFilePrefixes="ref/;runtimes/"
+                             SingleFileHostIncludeFilenames="@(SingleFileHostIncludeFilename)"
                              RootAttributes="@(FrameworkListRootAttribute)" />
   </Target>
 

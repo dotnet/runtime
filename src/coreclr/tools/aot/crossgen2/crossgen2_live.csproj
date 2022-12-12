@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputPath>$(RuntimeBinDir)crossgen2_live</OutputPath>
+    <PublishOnBuild>true</PublishOnBuild>
+    <LivePublish>true</LivePublish>
+    <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
+    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
+    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <StripSymbols>true</StripSymbols>
+  </PropertyGroup>
+
+  <!-- If we can't publish AOT, publish trimmed single-file -->
+  <PropertyGroup Condition="'$(PublishAot)' != 'true'">
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishSingleFile>true</PublishSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)crossgen2.props" />
+</Project>

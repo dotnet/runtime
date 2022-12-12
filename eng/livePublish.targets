@@ -1,0 +1,43 @@
+<Project>
+
+  <PropertyGroup>
+    <SingleFileHostSourcePath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', 'corehost', 'singlefilehost$(ExeSuffix)'))</SingleFileHostSourcePath>
+    <StripSymbols>true</StripSymbols>
+  </PropertyGroup>
+
+  <!-- Native AOT live hosting configuration-->
+  <PropertyGroup>
+    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">clang-15</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' != 'linux-musl-arm64'">clang-9</CppCompilerAndLinker>
+    <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
+    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
+    <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.props"
+          Condition="'$(PublishAot)' == 'true' or Exists('$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.props')" />
+
+  <Target Name="PublishOnBuild"
+          Condition="'$(PublishOnBuild)' == 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish" />
+
+  <Target Name="RewriteRuntimePackDir"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          BeforeTargets="ResolveRuntimePackAssets">
+      <ItemGroup>
+        <!-- Remove AspNetCore runtime pack since we don't build it locally -->
+        <ResolvedRuntimePack Remove="Microsoft.AspNetCore.App.Runtime.$(RuntimeIdentifier)" />
+
+        <ResolvedRuntimePack Update="Microsoft.NETCore.App.Runtime.$(RuntimeIdentifier)">
+          <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</PackageDirectory>
+        </ResolvedRuntimePack>
+      </ItemGroup>
+  </Target>
+</Project>

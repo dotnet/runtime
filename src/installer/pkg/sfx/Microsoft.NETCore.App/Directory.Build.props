@@ -12,23 +12,6 @@
   </ItemGroup>
 
   <!--
-  Native files that are always included in the singlefile bundle can be listed here.
-
-  Example:
-    <SingleFileHostIncludeFilename Include="somefile.dll" />
-  -->
-  <ItemGroup>
-    <!-- include at least one item. Otherwise there will be no opt-in list and everything will be included -->
-    <SingleFileHostIncludeFilename Include="NONE" />
-
-    <!-- LINUX -->
-
-    <!-- OSX -->
-
-    <!-- Windows -->
-  </ItemGroup>
-
-  <!--
     Platform manifest needs to include all native shims from previous releases.
     This itemgroup adds them explicitly.
   -->

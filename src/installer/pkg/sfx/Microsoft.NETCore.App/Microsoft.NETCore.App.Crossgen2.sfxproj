@@ -23,26 +23,21 @@
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
 
-    <!-- Copy System.Private.CoreLib from the coreclr bin directory to the runtime pack directory,
-         as we always need the copy of System.Private.CoreLib that matches exactly with the runtime. -->
-    <Copy SourceFiles="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
+    <!-- Copy System.Private.CoreLib from the coreclr bin directory to the runtime pack directory
+         if we're not using Native AOT, as we always need the copy of System.Private.CoreLib that
+         matches exactly with the runtime. -->
+    <Copy Condition="'$(NativeAotSupported)' != 'true'"
+          SourceFiles="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-<MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
-             Targets="Restore"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
-              ;_IsPublishing=true
-              ;RuntimeIdentifier=$(PackageRID)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets" />
+    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_live.csproj"
+                Targets="Restore"
+                Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
 
-    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
+    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_live.csproj"
              Targets="Publish;PublishItemsOutputGroup"
-             Properties="_IsPublishing=true
-              ;RuntimeIdentifier=$(PackageRID)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
+             Properties="PublishOnBuild=false">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
     </MSBuild>
@@ -59,14 +54,14 @@
     <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
       <!-- Treat all native aot assets as native runtime assets -->
       <FilesToPackage Include="@(_CrossgenPublishFiles->Distinct())"
-                          Condition="'%(Extension)' != '.pdb'"
-                          TargetPath="tools/" />
+                      Condition="'%(Extension)' != '.pdb'"
+                      TargetPath="tools/" />
     </ItemGroup>
   </Target>
 
   <Target Name="RunPublishedCrossgen" AfterTargets="PublishCrossgen"
           Condition="'$(TargetOS)' == '$(HostOS)' and '$(TargetArchitecture)' == '$(BuildArchitecture)'">
-    <!-- Run the published crossgen if we're not cross-compiling -->
+    <!-- Run the published crossgen if we're not cross-compiling to check that it works. -->
     <Exec Command="@(FilesToPackage) $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll --out $(IntermediateOutputPath)S.P.C.tmp" Condition="'%(FileName)%(Extension)' == 'crossgen2$(ExeSuffix)'">
       <Output TaskParameter="ExitCode" PropertyName="CrossgenExitCode" />
     </Exec>
