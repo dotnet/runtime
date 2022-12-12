@@ -321,6 +321,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			new InterfaceImplementationTypeWithInstantiationOverSelfOnBase ();
 			new InterfaceImplementationTypeWithOpenGenericOnBase<TestType> ();
 			new InterfaceImplementationTypeWithOpenGenericOnBaseWithRequirements<TestType> ();
+
+			RecursiveGenericWithInterfacesRequirement.Test ();
 		}
 
 		interface IGenericInterfaceTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
@@ -346,6 +348,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class InterfaceImplementationTypeWithOpenGenericOnBaseWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 			: IGenericInterfaceTypeWithRequirements<T>
 		{
+		}
+
+		class RecursiveGenericWithInterfacesRequirement
+		{
+			interface IFace<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] T>
+			{
+			}
+
+			class TestType : IFace<TestType>
+			{
+			}
+
+			public static void Test ()
+			{
+				var a = typeof (IFace<string>);
+				var t = new TestType ();
+			}
 		}
 
 		static void TestTypeGenericRequirementsOnMembers ()
