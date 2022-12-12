@@ -49,7 +49,7 @@ SPTR_IMPL(EEJitManager, ExecutionManager, m_pEEJitManager);
 SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 #endif
 
-SPTR_IMPL(RangeSectionMap, ExecutionManager, g_pCodeRangeMap);
+SVAL_IMPL(RangeSectionMapData, ExecutionManager, g_codeRangeMap);
 VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwReaderCount, 0);
 VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 
@@ -4670,7 +4670,7 @@ void ExecutionManager::Init()
 
     m_JumpStubCrst.Init(CrstJumpStubCache, CrstFlags(CRST_UNSAFE_ANYMODE|CRST_DEBUGGER_THREAD));
 
-    g_pCodeRangeMap = new RangeSectionMap();
+    new(&g_codeRangeMap) RangeSectionMap();
 
     m_pDefaultCodeMan = new EECodeManager();
 
@@ -4941,7 +4941,7 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr, RangeSectionLockStat
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    return g_pCodeRangeMap->LookupRangeSection(addr, pLockState);
+    return GetCodeRangeMap()->LookupRangeSection(addr, pLockState);
 }
 
 /* static */
@@ -5025,7 +5025,7 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     ReaderLockHolder rlh;
     RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
 
-    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pModule, &lockState);
+    PTR_RangeSection pRange = GetCodeRangeMap()->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pModule, &lockState);
     if (pRange == NULL)
         ThrowOutOfMemory();
 }
@@ -5049,7 +5049,7 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     ReaderLockHolder rlh;
     RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
 
-    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pHp, &lockState);
+    PTR_RangeSection pRange = GetCodeRangeMap()->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pHp, &lockState);
 
     if (pRange == NULL)
         ThrowOutOfMemory();
@@ -5074,7 +5074,7 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     ReaderLockHolder rlh;
     RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
 
-    PTR_RangeSection pRange = g_pCodeRangeMap->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pRangeList, &lockState);
+    PTR_RangeSection pRange = GetCodeRangeMap()->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pRangeList, &lockState);
 
     if (pRange == NULL)
         ThrowOutOfMemory();
@@ -5089,7 +5089,7 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
     } CONTRACTL_END;
 
     RangeSection *pCurr = FindCodeRangeWithLock(pStartRange);
-    g_pCodeRangeMap->RemoveRangeSection(pCurr);
+    GetCodeRangeMap()->RemoveRangeSection(pCurr);
 
 
 #if defined(TARGET_AMD64)
@@ -5105,7 +5105,7 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
 
         RangeSectionLockState lockState = RangeSectionLockState::WriteLocked;
         
-        g_pCodeRangeMap->CleanupRangeSections(&lockState);
+        GetCodeRangeMap()->CleanupRangeSections(&lockState);
         // Unlike the previous implementation, we no longer attempt to avoid freeing
         // the memory behind the RangeSection here, as we do not support the hosting
         // api taking over memory allocation.
@@ -5156,17 +5156,13 @@ void ExecutionManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // Report the global data portions.
     //
 
-    g_pCodeRangeMap.EnumMem();
+    GetCodeRangeMap().EnumMem();
     m_pDefaultCodeMan.EnumMem();
 
     //
     // Walk structures and report.
     //
-
-    if (g_pCodeRangeMap.IsValid())
-    {
-        g_pCodeRangeMap->EnumMemoryRegions(flags);
-    }
+    GetCodeRangeMap()->EnumMemoryRegions(flags);
 }
 #endif // #ifdef DACCESS_COMPILE
 

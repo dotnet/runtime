@@ -864,7 +864,11 @@ class RangeSectionMap
     static const uintptr_t bitsPerLevel = 8;
 #endif
 
-    DPTR(RangeSectionTopLevel) _topLevel = 0;
+    BYTE _topLevelData[sizeof(RangeSectionTopLevel)];
+    RangeSectionTopLevel &GetTopLevel()
+    {
+        return *(RangeSectionTopLevel*)&_topLevelData;
+    }
 
     RangeSection* _pCleanupList;
 
@@ -923,23 +927,22 @@ class RangeSectionMap
     RangeSectionFragmentPointer* EnsureMapsForAddress(TADDR address)
     {
         uintptr_t level = mapLevels + 1;
+        uintptr_t topLevelIndex = EffectiveBitsForLevel(address, --level);
+        auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
 #ifdef TARGET_64BIT
-        auto _RangeSectionL4 = EnsureLevel(address, &_topLevel, --level);
-        if (_RangeSectionL4 == NULL)
-            return NULL; // Failure case
+        auto _RangeSectionL4 = nextLevelAddress;
         auto _RangeSectionL3 = EnsureLevel(address, _RangeSectionL4, --level);
         if (_RangeSectionL3 == NULL)
             return NULL; // Failure case
         auto _RangeSectionL2 = EnsureLevel(address, _RangeSectionL3, --level);
         if (_RangeSectionL2 == NULL)
             return NULL; // Failure case
-#else
-        auto _RangeSectionL2 = &_topLevel;
-#endif
         auto _RangeSectionL1 = EnsureLevel(address, _RangeSectionL2, --level);
         if (_RangeSectionL1 == NULL)
             return NULL; // Failure case
-
+#else
+        auto _RangeSectionL1 = nextLevelAddress;
+#endif
         auto result = EnsureLevel(address, _RangeSectionL1, --level);
         if (result == NULL)
             return NULL; // Failure case
@@ -950,23 +953,22 @@ class RangeSectionMap
 
     PTR_RangeSectionFragment GetRangeSectionForAddress(TADDR address, RangeSectionLockState *pLockState)
     {
+        uintptr_t topLevelIndex = EffectiveBitsForLevel(address, mapLevels);
+        auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
 #ifdef TARGET_64BIT
-        auto _RangeSectionL5 = VolatileLoad(&_topLevel);
-        if (_RangeSectionL5 == NULL)
-            return NULL;
-        auto _RangeSectionL4 = (*_RangeSectionL5)[EffectiveBitsForLevel(address, 4)];
+        auto _RangeSectionL4 = VolatileLoad(nextLevelAddress);
         if (_RangeSectionL4 == NULL)
             return NULL;
         auto _RangeSectionL3 = (*_RangeSectionL4)[EffectiveBitsForLevel(address, 4)];
         if (_RangeSectionL3 == NULL)
             return NULL;
         auto _RangeSectionL2 = (*_RangeSectionL3)[EffectiveBitsForLevel(address, 3)];
-#else
-        auto _RangeSectionL2 = VolatileLoad(&_topLevel);
-#endif
         if (_RangeSectionL2 == NULL)
             return NULL;
         auto _RangeSectionL1 = (*_RangeSectionL2)[EffectiveBitsForLevel(address, 2)];
+#else
+        auto _RangeSectionL1 = VolatileLoad(nextLevelAddress);
+#endif
         if (_RangeSectionL1 == NULL)
             return NULL;
 
@@ -1082,6 +1084,7 @@ class RangeSectionMap
 public:
     RangeSectionMap() : _pCleanupList(EndOfCleanupListMarker())
     {
+        memset(&_topLevelData, 0, sizeof(_topLevelData));
     }
 
     bool Init()
@@ -1276,15 +1279,17 @@ public:
         if (!DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(*this)))
             return;
 
-        if (_topLevel != NULL)
-        {
-            // Always assume we are locked when enumerating
-            RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
-            EnumMemoryRangeSectionMapLevel(flags, *_topLevel, &lockState);
-        }
+        // Always assume we are locked when enumerating
+        RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
+        EnumMemoryRangeSectionMapLevel(flags, GetTopLevel(), &lockState);
     }
 #endif// DACCESS_COMPILE
 
+};
+
+struct RangeSectionMapData
+{
+    BYTE Data[sizeof(RangeSectionMap)];
 };
 
 /*****************************************************************************/
@@ -1981,9 +1986,18 @@ private:
     static CrstStatic       m_JumpStubCrst;
     static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
 
+    // Make the CodeRangeMap a global, initialized as the process starts up.
+    // The odd formulation of a BYTE array is used to avoid an extra memory indirection
+    // that would be needed if the memory for the CodeRangeMap was dynamically allocated.
+    SVAL_DECL(RangeSectionMapData,  g_codeRangeMap);
+    static PTR_RangeSectionMap GetCodeRangeMap()
+    {
+        TADDR codeRangeMapAddress = dac_cast<TADDR>(&(g_codeRangeMap));
+        return dac_cast<PTR_RangeSectionMap>(codeRangeMapAddress);
+    }
+
     // infrastructure to manage readers so we can lock them out and delete domain data
     // make ReaderCount volatile because we have order dependency in READER_INCREMENT
-    SPTR_DECL(RangeSectionMap,  g_pCodeRangeMap);
     VOLATILE_SVAL_DECL(LONG, m_dwReaderCount);
     VOLATILE_SVAL_DECL(LONG, m_dwWriterLock);
 
