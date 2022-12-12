@@ -77,21 +77,10 @@ namespace Wasm.Build.Tests
             {
                 DirectoryBuildPropsContents = s_directoryBuildPropsForWorkloads;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForWorkloads;
-
-                var appRefDir = EnvironmentVariables.AppRefDir;
-                if (string.IsNullOrEmpty(appRefDir))
-                    throw new Exception($"Cannot test with workloads without AppRefDir environment variable being set");
-
-                DefaultBuildArgs = $" /p:AppRefDir={appRefDir}";
                 IsWorkload = true;
             }
             else
             {
-                var appRefDir = EnvironmentVariables.AppRefDir;
-                if (string.IsNullOrEmpty(appRefDir))
-                    throw new Exception($"Cannot test with workloads without AppRefDir environment variable being set");
-
-                DefaultBuildArgs = $" /p:AppRefDir={appRefDir}";
                 DirectoryBuildPropsContents = s_directoryBuildPropsForLocal;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
