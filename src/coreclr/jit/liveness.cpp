@@ -1251,6 +1251,20 @@ class LiveVarAnalysis
             }
         }
 
+        if (m_compiler->fgIsDoingEarlyLiveness && m_compiler->opts.IsOSR() &&
+            ((block->bbFlags & BBF_RECURSIVE_TAILCALL) != 0))
+        {
+            // Early liveness happens between import and morph where we may
+            // have identified a tailcall-to-loop candidate but not yet
+            // expanded it. In OSR compilations we need to model the potential
+            // backedge that does not go to the entry.
+            VarSetOps::UnionD(m_compiler, m_liveOut, m_compiler->fgEntryBB->bbLiveIn);
+            if (m_compiler->fgEntryBB->bbNum <= block->bbNum)
+            {
+                m_hasPossibleBackEdge = true;
+            }
+        }
+
         // Additionally, union in all the live-in tracked vars of successors.
         for (BasicBlock* succ : block->GetAllSuccs(m_compiler))
         {
