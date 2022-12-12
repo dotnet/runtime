@@ -8,16 +8,19 @@ using System.Linq;
 
 // DIRECTIONS:
 //    This file isn't very robust and makes several assumptions
-//    You can execute it by calling "csi .\GenerateTests.csx"
-//
-//    csi can be found under the <repo-root>\tools\net46\roslyn directory
-//    It must be run such from the directory that contains the csx script
+//    It executes automatically when building the relevant hwintrinsic test projects
 //
 //    New tests can be generated from the template by adding an entry to the
 //    appropriate Inputs array below.
 //
 //    You can support a new Isa by creating a new array and adding a new
 //    "ProcessInputs" call at the bottom of the script.
+//
+//    There are currently four inputs expected in the following order
+//    * projectName       - This should be '$(MSBuildProjectName)' and is used to filter which tests are being generated
+//    * templateDirectory - This should be '$(MSBuildThisFileDirectory)Shared' and is used to locate the test templates
+//    * outputDirectory   - This should be somewhere under the obj folder for the project and is where generated tests are written
+//    * testListFileName  - This should likewise be somewhere under the obj folder and is where the list of generated tests is written
 
 const string SimpleOpTest_ValidationLogic = @"if ({ValidateFirstResult})
             {

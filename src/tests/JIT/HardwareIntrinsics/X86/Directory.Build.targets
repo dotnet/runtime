@@ -3,18 +3,27 @@
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_X86.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <PropertyGroup>
     <GeneratedHWIntrinsicTestDirectory Condition="'$(GeneratedHWIntrinsicTestDirectory)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName)/gen/</GeneratedHWIntrinsicTestDirectory>
     <GeneratedHWIntrinsicTestListFile Condition="'$(GeneratedHWIntrinsicTestListFile)' == ''">$(GeneratedHWIntrinsicTestDirectory)GeneratedHWIntrinsicTestList.txt</GeneratedHWIntrinsicTestListFile>
   </PropertyGroup>
 
   <Target Name="ExecuteGenerateTestsScript"
-          BeforeTargets="BeforeCompile;CoreCompile"
-          DependsOnTargets="PrepareForBuild"
-          Condition="('$(Language)' == 'C#') AND ('$(MSBuildProjectName)' != 'GenerateTests')"
-          Inputs="$(MSBuildAllProjects)"
-          Outputs="$(GeneratedHWIntrinsicTestListFile)">
+          Inputs="$(MSBuildAllProjects);$(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_X86.cs"
+          Outputs="$(GeneratedHWIntrinsicTestListFile)"
+          Condition="'$(Language)' == 'C#'">
     <Exec Command="$(DotNetCli) run --project $(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_X86.csproj -c $(Configuration) -- $(MSBuildProjectName) $(MSBuildThisFileDirectory)Shared $(GeneratedHWIntrinsicTestDirectory) $(GeneratedHWIntrinsicTestListFile)" />
+  </Target>
+
+  <Target Name="ReadGeneratedHWIntrinsicTestListFile"
+          BeforeTargets="BeforeCompile;CoreCompile"
+          DependsOnTargets="ExecuteGenerateTestsScript"
+          Returns="$(GeneratedHWIntrinsicTestList)"
+          Condition="'$(Language)' == 'C#'">
     <ReadLinesFromFile File="$(GeneratedHWIntrinsicTestListFile)">
       <Output TaskParameter="Lines" ItemName="GeneratedHWIntrinsicTestList" />
     </ReadLinesFromFile>
