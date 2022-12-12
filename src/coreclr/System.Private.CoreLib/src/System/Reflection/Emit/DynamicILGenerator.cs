@@ -850,10 +850,7 @@ namespace System.Reflection.Emit
             return m_scope.ResolveSignature(token, fromMethod);
         }
 
-        internal override MethodInfo GetDynamicMethod()
-        {
-            return m_method.GetMethodInfo();
-        }
+        internal override MethodInfo GetDynamicMethod() => m_method;
         #endregion
     }
 
