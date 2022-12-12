@@ -8,6 +8,28 @@ class LocalSequencer final : public GenTreeVisitor<LocalSequencer>
     GenTree* m_rootNode;
     GenTree* m_prevNode;
 
+    void MoveNodeToEnd(GenTree* node)
+    {
+        if (node->gtNext == nullptr)
+        {
+            return;
+        }
+
+        assert(m_prevNode != node);
+
+        GenTree* prev = node->gtPrev;
+        GenTree* next = node->gtNext;
+        // Fix the def of the local to appear after uses on the RHS.
+        assert(prev != nullptr); // Should have 'sentinel'
+        prev->gtNext = next;
+        next->gtPrev = prev;
+
+        m_prevNode->gtNext = node;
+        node->gtPrev       = m_prevNode;
+        node->gtNext       = nullptr;
+        m_prevNode         = node;
+    }
+
 public:
     enum
     {
@@ -68,6 +90,11 @@ public:
             SequenceAssignment(node->AsOp());
         }
 
+        if (node->IsCall())
+        {
+            SequenceCall(node->AsCall());
+        }
+
         return fgWalkResult::WALK_CONTINUE;
     }
 
@@ -86,26 +113,17 @@ public:
             return;
         }
 
-        GenTreeLclVarCommon* lcl = asg->gtGetOp1()->AsLclVarCommon();
-        if (lcl->gtNext == nullptr)
+        MoveNodeToEnd(asg->gtGetOp1());
+    }
+
+    void SequenceCall(GenTreeCall* call)
+    {
+        if (!call->IsOptimizingRetBufAsLocal())
         {
-            // Already in correct spot
             return;
         }
 
-        assert(m_prevNode != lcl);
-
-        GenTree* prev = lcl->gtPrev;
-        GenTree* next = lcl->gtNext;
-        // Fix the def of the local to appear after uses on the RHS.
-        assert(prev != nullptr); // Should have 'sentinel'
-        prev->gtNext = next;
-        next->gtPrev = prev;
-
-        m_prevNode->gtNext = lcl;
-        lcl->gtPrev        = m_prevNode;
-        lcl->gtNext        = nullptr;
-        m_prevNode         = lcl;
+        MoveNodeToEnd(m_compiler->gtCallGetDefinedRetBufLclAddr(call));
     }
 
     void Sequence(Statement* stmt)
@@ -743,6 +761,17 @@ public:
 
                 SequenceAssignment(node->AsOp());
                 break;
+
+            case GT_CALL:
+                while (TopValue(0).Node() != node)
+                {
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                }
+
+                SequenceCall(node->AsCall());
+                break;
+
             default:
                 while (TopValue(0).Node() != node)
                 {
@@ -1599,6 +1628,14 @@ private:
         if (m_sequencer != nullptr)
         {
             m_sequencer->SequenceAssignment(asg);
+        }
+    }
+
+    void SequenceCall(GenTreeCall* call)
+    {
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->SequenceCall(call);
         }
     }
 };
