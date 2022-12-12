@@ -190,7 +190,7 @@ jobs:
       # - Windows.11.Arm64.Open
 
     # Browser WebAssembly
-    - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
+    - ${{ if in(parameters.platform, 'Browser_wasm', 'wasi_wasm') }}:
       - Ubuntu.1804.Amd64.Open
 
     # Browser WebAssembly Firefox

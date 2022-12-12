@@ -461,7 +461,6 @@ extends:
         parameters:
           platforms:
             - wasi_wasm
-          extraBuildArgs: /p:WasmEnableThreads=true
           alwaysRun: ${{ variables.isRollingBuild }}
 
       #
