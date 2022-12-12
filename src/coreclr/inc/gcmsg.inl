@@ -130,3 +130,9 @@
         STATIC_CONTRACT_LEAF;
         return "Relocating reference *(%p) from %p to %p";
     }
+
+    static const char* gcLoggingIsOffMsg()
+    {
+        STATIC_CONTRACT_LEAF;
+        return "TraceGC is not turned on";
+    }

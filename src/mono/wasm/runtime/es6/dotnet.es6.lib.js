@@ -97,7 +97,6 @@ const linked_functions = [
     "mono_wasm_release_cs_owned_object",
     "mono_wasm_typed_array_to_array_ref",
     "mono_wasm_typed_array_from_ref",
-    "mono_wasm_compile_function_ref",
     "mono_wasm_bind_js_function",
     "mono_wasm_invoke_bound_function",
     "mono_wasm_invoke_import",
@@ -121,8 +120,7 @@ const linked_functions = [
 // -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple proxy for each exported function so that emcc will include them in the final output
 for (let linked_function of linked_functions) {
-    const fn_template = `return __dotnet_runtime.__linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
-    DotnetSupportLib[linked_function] = new Function(fn_template);
+    DotnetSupportLib[linked_function] = new Function("");
 }
 
 autoAddDeps(DotnetSupportLib, "$DOTNET");
