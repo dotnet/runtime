@@ -72,7 +72,7 @@ namespace System.Threading
         private int _owningThreadId;
         private uint _recursionCount;
         private int _state;
-        private uint _spinLimit;
+        private uint _spinLimit = SpinningNotInitialized;
         private int _wakeWatchDog;
 
         // used to transfer the state when inflating thin locks
@@ -83,7 +83,6 @@ namespace System.Threading
             _state = threadId == 0 ? Uncontended : Locked;
             _owningThreadId = threadId;
             _recursionCount = (uint)recursionCount;
-            _spinLimit = SpinningNotInitialized;
         }
 
         private AutoResetEvent Event
@@ -219,30 +218,30 @@ namespace System.Threading
                     // waiter progress.
                     //
                     int oldState = _state;
-                    if (hasWaited || (oldState & YieldToWaiters) == 0)
+                    bool canAcquire = ((oldState & Locked) == 0) &&
+                        (hasWaited || ((oldState & YieldToWaiters) == 0));
+
+                    if (canAcquire)
                     {
-                        if ((oldState & Locked) == 0)
+                        int newState = oldState | Locked;
+                        if (hasWaited)
+                            newState = (newState - WaiterCountIncrement) & ~WaiterWoken & ~YieldToWaiters;
+
+                        if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
                         {
-                            int newState = oldState | Locked;
                             if (hasWaited)
-                                newState = (newState - WaiterCountIncrement) & ~WaiterWoken & ~YieldToWaiters;
+                                _wakeWatchDog = 0;
 
-                            if (Interlocked.CompareExchange(ref _state, newState, oldState) == oldState)
-                            {
-                                if (hasWaited)
-                                    _wakeWatchDog = 0;
+                            // if spinning was successful, update spin count
+                            if (iteration < localSpinLimit && localSpinLimit < MaxSpinLimit)
+                                _spinLimit = localSpinLimit + 1;
 
-                                // if spinning was successful, update spin count
-                                if (iteration < localSpinLimit && localSpinLimit < MaxSpinLimit)
-                                    _spinLimit = localSpinLimit + 1;
-
-                                // GOT THE LOCK!!
-                                Debug.Assert((_state | Locked) != 0);
-                                Debug.Assert(_owningThreadId == 0);
-                                Debug.Assert(_recursionCount == 0);
-                                _owningThreadId = currentThreadId;
-                                return true;
-                            }
+                            // GOT THE LOCK!!
+                            Debug.Assert((_state | Locked) != 0);
+                            Debug.Assert(_owningThreadId == 0);
+                            Debug.Assert(_recursionCount == 0);
+                            _owningThreadId = currentThreadId;
+                            return true;
                         }
                     }
 
@@ -255,7 +254,7 @@ namespace System.Threading
                         Thread.SpinWaitInternal(1);
                         continue;
                     }
-                    else if ((oldState & Locked) != 0)
+                    else if (!canAcquire)
                     {
                         //
                         // We reached our spin limit, and need to wait.  Increment the waiter count.
