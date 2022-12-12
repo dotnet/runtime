@@ -939,31 +939,48 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     assert((treeNode->OperGet() == GT_STORE_LCL_FLD) || (treeNode->OperGet() == GT_STORE_LCL_VAR));
 
     const GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
-
-    unsigned offs   = lclVar->GetLclOffs();
-    unsigned varNum = lclVar->GetLclNum();
+    unsigned                   offs   = lclVar->GetLclOffs();
+    unsigned                   varNum = lclVar->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     GenTree* op1 = lclVar->gtOp1;
 
     assert(!op1->isContained());
+    regNumber targetReg  = treeNode->GetRegNum();
     regNumber operandReg = genConsumeReg(op1);
 
-    // store lower 8 bytes
-    GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, varNum, offs);
-
-    if (!op1->IsVectorZero())
+    if (targetReg != REG_NA)
     {
-        regNumber tmpReg = treeNode->GetSingleTempReg();
+        assert(!GetEmitter()->isGeneralRegister(targetReg));
 
-        // Extract upper 4-bytes from operandReg
-        GetEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(TYP_SIMD16), tmpReg, operandReg, 0x02);
+        inst_Mov(treeNode->TypeGet(), targetReg, operandReg, /* canSkip */ true);
 
-        operandReg = tmpReg;
+        genProduceReg(treeNode);
     }
+    else
+    {
+        // store lower 8 bytes
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, operandReg, varNum, offs);
 
-    // Store upper 4 bytes
-    GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, operandReg, varNum, offs + 8);
+        if (!op1->IsVectorZero())
+        {
+            regNumber tmpReg = treeNode->GetSingleTempReg();
+
+            // Extract upper 4-bytes from operandReg
+            GetEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(TYP_SIMD16), tmpReg, operandReg, 0x02);
+
+            operandReg = tmpReg;
+        }
+
+        // Store upper 4 bytes
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, operandReg, varNum, offs + 8);
+
+        // Update the life of treeNode
+        genUpdateLife(treeNode);
+
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        varDsc->SetRegNum(REG_STK);
+    }
 }
 
 //-----------------------------------------------------------------------------
