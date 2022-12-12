@@ -480,13 +480,9 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 //
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
-#ifdef TARGET_AMD64
-    if (!((reg >= REG_RAX) && (reg <= REG_XMM15)))
+    // If not a valid register, then return false.
+    if (!((reg >= REG_EAX) && (reg <= REG_FP_LAST)))
         return false;
-#else
-    if (!((reg >= REG_EAX) && (reg <= REG_XMM7)))
-        return false;
-#endif // !TARGET_AMD64
 
     // Only consider if safe
     //
