@@ -55,7 +55,7 @@ Packages can include a Markdown Readme file with a short usage documentation. To
 The package Readme is displayed on the package details page on [NuGet gallery](https://nuget.org/). You can include the following content in it:
 
 - A description of the package purpose.
-- Information when package should be used. For example, if the library is included in the shared framework in .NET, but needs to be isntalled via NuGet in .NET Framework, it should be mentioned.
+- Information when package should be used. For example, if the library is included in the shared framework in .NET, but needs to be installed via NuGet on .NET Framework, it should be mentioned.
 - Information on how to get started with the package.
 - Links to related documentation.
 - A list of common entry-point types for the package, with links to their API docs under [.NET API Browser](https://learn.microsoft.com/dotnet/api/).
