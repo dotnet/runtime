@@ -1,0 +1,39 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
+<Project>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">
+    <!--<WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true' and '$(WasmNativeWorkload7)' == 'true' and '$(WasmNativeWorkload)' != 'false'">true</WasmNativeWorkloadAvailable>-->
+    <!--<WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true' and '$(WasmNativeWorkload8)' == 'true' and '$(WasmNativeWorkload)' != 'false'">true</WasmNativeWorkloadAvailable>-->
+    <!--<WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true' and '$(WasmNativeWorkload)' == 'true'">true</WasmNativeWorkloadAvailable>-->
+    <WasiNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true' and '$(WasiNativeWorkload)' == 'net8.0'">true</WasiNativeWorkloadAvailable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'wasi-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
+    <!-- FIXME: is the blazor condition here correct? -->
+    <!--<_WasmNativeWorkloadNeeded Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmEnableSIMD)' == 'true' or '$(WasmBuildNative)' == 'true' or-->
+      <!--'$(WasmGenerateAppBundle)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</_WasmNativeWorkloadNeeded>-->
+
+    <!--<UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>-->
+    <!--<UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>-->
+    <UsingWasiRuntimeWorkload Condition="'$(UsingWasiRuntimeWorkload)' == ''">$(WasiNativeWorkloadAvailable)</UsingWasiRuntimeWorkload>
+  </PropertyGroup>
+
+  <!--<Import Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />-->
+
+  <!--<ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'">-->
+    <!--<Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />-->
+    <!--<Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />-->
+    <!--<Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />-->
+    <!--<Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm" />-->
+    <!--<Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />-->
+  <!--</ImportGroup>-->
+
+  <!--<ItemGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">-->
+    <!--<KnownRuntimePack Update="@(KnownRuntimePack)">-->
+      <!--<LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetCoreAppCurrent}' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>-->
+      <!--[> Overrides for wasm threading support <]-->
+      <!--<RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>-->
+      <!--<RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>-->
+    <!--</KnownRuntimePack>-->
+  <!--</ItemGroup>-->
+</Project>

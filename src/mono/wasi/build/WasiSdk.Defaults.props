@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <WasiSdkRoot Condition="'$(WasiSdkRoot)' == ''">$(WASI_SDK_PATH)</WasiSdkRoot>
+    <WasiClang>$(WasiSdkRoot)\bin\clang</WasiClang>
+    <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
+   </PropertyGroup>
+</Project>

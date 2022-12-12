@@ -13,6 +13,10 @@
 
 #include <glib.h>
 
+#ifdef HOST_WASI
+extern size_t __heap_base;
+#endif
+
 #ifdef HOST_BROWSER
 
 #include <mono/utils/mono-threads-wasm.h>
@@ -44,21 +48,16 @@ wasm_get_stack_size (void)
 #else /* WASI */
 
 static int
-wasm_get_stack_base (void)
-{
-	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
-	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
-	// value that aligns to 32 bits.
-	return 4;
-}
-
-static int
 wasm_get_stack_size (void)
 {
 	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
-	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
-	// value that aligns to 32 bits.
-	return 4;
+	return 65536;
+}
+
+static int
+wasm_get_stack_base (void)
+{
+    return ((uintptr_t)&__heap_base) - wasm_get_stack_size();
 }
 
 #endif
@@ -180,9 +179,7 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-#ifndef HOST_WASI
 	int tmp;
-#endif	
 #ifdef __EMSCRIPTEN_PTHREADS__
 	pthread_attr_t attr;
 	gint res;
@@ -215,13 +212,8 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*stsize = wasm_get_stack_size ();
 #endif
 
-#ifdef HOST_WASI
-	// TODO: For WASI, we need to ensure the stack is positioned correctly and reintroduce these assertions.
-	// Currently it works anyway in prototypes (except these checks would fail)
-#else
 	g_assert ((guint8*)&tmp > *staddr);
 	g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
-#endif
 }
 
 gboolean

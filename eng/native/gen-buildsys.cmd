@@ -63,12 +63,12 @@ if /i "%__Arch%" == "wasm" (
     )
     if /i "%__Os%" == "wasi" (
         if "%WASI_SDK_PATH%" == "" (
-            if not exist "%__repoRoot%\src\mono\wasi\wasi-sdk" (
+            if not exist "%__repoRoot%\artifacts\bin\wasi-sdk" (
                 echo Error: Should set WASI_SDK_PATH environment variable pointing to emsdk root.
                 exit /B 1
             )
 
-            set WASI_SDK_PATH=%__repoRoot%src\mono\wasi\wasi-sdk
+            set WASI_SDK_PATH=%__repoRoot%\artifacts\bin\wasi-sdk
         )
         set "WASI_SDK_PATH=!WASI_SDK_PATH:\=/!"
         if not "!WASI_SDK_PATH:~-1!" == "/" set "WASI_SDK_PATH=!WASI_SDK_PATH!/"

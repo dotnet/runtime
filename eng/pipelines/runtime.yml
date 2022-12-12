@@ -457,11 +457,21 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
 
       # BUILD ONLY - WASI/Wasm
-      - template: /eng/pipelines/common/templates/wasi-build-only.yml
+      #- template: /eng/pipelines/common/templates/wasi-build-only.yml
+        #parameters:
+          #platforms:
+            #- wasi_wasm
+          #alwaysRun: ${{ variables.isRollingBuild }}
+
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - wasi_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
+          nameSuffix: _wasi_
+          alwaysRun: true
+          #shouldRunSmokeOnly: true
+          scenarios:
+            - normal
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size

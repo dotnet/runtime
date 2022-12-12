@@ -17,8 +17,9 @@
     <EnableDefaultBuildHelixWorkItems>true</EnableDefaultBuildHelixWorkItems>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" Condition="'$(TargetOS)' == 'Browser'" />
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'Browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'wasi'" />
 
   <PropertyGroup Condition="'$(_workItemTimeout)' == ''">
     <!-- Normal jobs have a 30 minute timeout for arm/arm64, and 15 minute timeout otherwise.
@@ -93,12 +94,14 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <UseTestEnvFile Condition="'$(UseTestEnvFile)' == ''">true</UseTestEnvFile>
+
     <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
          (which is when this project is invoked to call the "CreateTestEnvFile" target).
     -->
     <TestEnvFileName></TestEnvFileName>
-    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' == 'windows'">SetStressModes_$(Scenario).cmd</TestEnvFileName>
-    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'Browser'">SetStressModes_$(Scenario).sh</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(UseTestEnvFile)' == 'true' and '$(Scenario)' != '' and '$(TargetOS)' == 'windows'">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(UseTestEnvFile)' == 'true' and '$(Scenario)' != '' and '$(TargetOS)' != 'windows'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
