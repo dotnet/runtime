@@ -666,17 +666,6 @@ void emitter::emitGenIG(insGroup* ig)
     emitCurIGinsCnt = 0;
     emitCurIGsize   = 0;
 
-    instrDesc* lastId = emitGetLastIns();
-    if (lastId != nullptr)
-    {
-        // We have a new IG and we need to clear the last recorded instructions,
-        // except for the latest one.
-        // We do this because we do not want to reference an instruction
-        // from a previous IG as to protect from GC holes.
-        emitClearLastInstrs();
-        emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] = lastId;
-    }
-
     assert(emitCurIGjmpList == nullptr);
 
 #if FEATURE_LOOP_ALIGN

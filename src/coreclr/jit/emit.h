@@ -2222,7 +2222,9 @@ private:
 
         instrDesc* id;
 
-        for (unsigned i = 0; i < min(emitInsCount, ArrLen(emitLastInstrs)); i++)
+        // We use 'emitCurIGinsCnt' because we do not want to reference an instruction
+        // from a previous IG as to protect from GC holes.
+        for (unsigned i = 0; i < min(emitCurIGinsCnt, ArrLen(emitLastInstrs)); i++)
         {
             id = emitLastInstrs[(emitInsCount - i) % ArrLen(emitLastInstrs)];
 
