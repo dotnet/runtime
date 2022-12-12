@@ -8,6 +8,11 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <!-- Ignore the warning we'd otherwise get about GenerateHWIntrinsicsTests_General since we don't actually reference it -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <GeneratedHWIntrinsicTestDirectory Condition="'$(GeneratedHWIntrinsicTestDirectory)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName)/gen/</GeneratedHWIntrinsicTestDirectory>
     <GeneratedHWIntrinsicTestListFile Condition="'$(GeneratedHWIntrinsicTestListFile)' == ''">$(GeneratedHWIntrinsicTestDirectory)GeneratedHWIntrinsicTestList.txt</GeneratedHWIntrinsicTestListFile>
   </PropertyGroup>
