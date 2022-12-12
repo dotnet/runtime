@@ -54,6 +54,7 @@
   </Target>
 
   <Target Name="PrepareSingleFileHostWithEmbeddedDac"
+          Condition="Exists('$(SingleFileHostPath)')"
           DependsOnTargets="PrepareSingleFileHostWithEmbeddedDacPrereqs;PrepareSingleFileHostWithEmbeddedDacCore"
           AfterTargets="Build"/>
 
