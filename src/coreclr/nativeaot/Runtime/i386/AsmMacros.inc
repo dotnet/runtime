@@ -52,20 +52,18 @@ Name    dd      offset AddressToExport
 
 __tls_array     equ 2Ch     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
-tls_CurrentThread  TEXTEQU <?tls_CurrentThread@@3UThreadBuffer@@A>
-
 ;;
 ;; __declspec(thread) version
 ;;
 INLINE_GETTHREAD macro destReg, trashReg
     ASSUME fs : NOTHING
     EXTERN __tls_index : DWORD
-    EXTERN tls_CurrentThread : DWORD
+    EXTERN _tls_CurrentThread : DWORD
 
     mov         destReg, [__tls_index]
     mov         trashReg, fs:[__tls_array]
     mov         destReg, [trashReg + destReg * 4]
-    add         destReg, SECTIONREL tls_CurrentThread
+    add         destReg, SECTIONREL _tls_CurrentThread
 endm
 
 
