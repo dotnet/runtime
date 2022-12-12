@@ -170,6 +170,12 @@ else()
   set(ASM_SUFFIX S)
 endif()
 
+if (CLR_CMAKE_TARGET_OSX)
+  list(APPEND COMMON_RUNTIME_SOURCES
+    interoplibinterface_objc.cpp
+  )
+endif (CLR_CMAKE_TARGET_OSX)
+
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
   list(APPEND COMMON_RUNTIME_SOURCES
     ${GC_DIR}/vxsort/isa_detection.cpp

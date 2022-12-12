@@ -244,6 +244,7 @@ typedef struct
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
 	int aggressive_inlining : 1;
 	int optimized : 1;
+	int has_invalid_code : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

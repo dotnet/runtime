@@ -56,11 +56,22 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_templateComputed)
                 {
-                    // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and are special cases. They use
+                    // Multidimensional arrays don't implement generic interfaces and are special cases. They use
                     // typeof(object[,]) as their template.
-                    if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
+                    if (TypeBeingBuilt.IsMdArray)
                     {
                         _templateType = TypeBeingBuilt.Context.ResolveRuntimeTypeHandle(typeof(object[,]).TypeHandle);
+                        _templateTypeLoaderNativeLayout = false;
+                        _nativeLayoutComputed = _nativeLayoutTokenComputed = _templateComputed = true;
+
+                        return _templateType;
+                    }
+
+                    // Arrays of pointers don't implement generic interfaces and are special cases. They use
+                    // typeof(char*[]) as their template.
+                    if (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer)
+                    {
+                        _templateType = TypeBeingBuilt.Context.ResolveRuntimeTypeHandle(typeof(char*[]).TypeHandle);
                         _templateTypeLoaderNativeLayout = false;
                         _nativeLayoutComputed = _nativeLayoutTokenComputed = _templateComputed = true;
 

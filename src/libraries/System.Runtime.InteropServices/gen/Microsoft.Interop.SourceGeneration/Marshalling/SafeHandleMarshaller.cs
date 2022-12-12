@@ -130,7 +130,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.RefKind != RefKind.Out)
+                    if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
                         // <managedIdentifier>.DangerousAddRef(ref <addRefdIdentifier>);
                         yield return ExpressionStatement(

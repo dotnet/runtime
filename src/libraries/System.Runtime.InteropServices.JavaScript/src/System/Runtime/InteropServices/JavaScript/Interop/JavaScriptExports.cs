@@ -8,10 +8,9 @@ using System.Threading.Tasks;
 namespace System.Runtime.InteropServices.JavaScript
 {
     // this maps to src\mono\wasm\runtime\corebindings.ts
-    // the methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
+    // the public methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
     internal static unsafe partial class JavaScriptExports
     {
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         // the marshaled signature is:
         // Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
         public static void CallEntrypoint(JSMarshalerArgument* arguments_buffer)
@@ -95,7 +94,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         // the marshaled signature is:
         // void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
         public static void ReleaseJSOwnedObjectByGCHandle(JSMarshalerArgument* arguments_buffer)
@@ -118,7 +116,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         // the marshaled signature is:
         // GCHandle CreateTaskCallback()
         public static void CreateTaskCallback(JSMarshalerArgument* arguments_buffer)
@@ -137,7 +134,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         // the marshaled signature is:
         // TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
         public static void CallDelegate(JSMarshalerArgument* arguments_buffer)
@@ -167,7 +163,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         // the marshaled signature is:
         // void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
         public static void CompleteTask(JSMarshalerArgument* arguments_buffer)
@@ -195,7 +190,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         // the marshaled signature is:
         // string GetManagedStackTrace(GCHandle exception)
         public static void GetManagedStackTrace(JSMarshalerArgument* arguments_buffer)
@@ -223,7 +217,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if FEATURE_WASM_THREADS
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         // the marshaled signature is:
         // void InstallSynchronizationContext()
         public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
@@ -240,13 +233,13 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #endif
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        [MethodImpl(MethodImplOptions.NoInlining)] // profiler needs to find it executed under this name
         public static void StopProfile()
         {
         }
 
         // Called by the AOT profiler to save profile data into INTERNAL.aotProfileData
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        [MethodImpl(MethodImplOptions.NoInlining)] // profiler needs to find it executed under this name
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
             if (len == 0)

@@ -201,7 +201,13 @@ namespace Microsoft.Extensions.Hosting
                           .UseServiceProviderFactory(context => new DefaultServiceProviderFactory(CreateDefaultServiceProviderOptions(context)));
         }
 
-        internal static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
+        private static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
+        {
+            SetDefaultContentRoot(hostConfigBuilder);
+            AddDefaultHostConfigurationSources(hostConfigBuilder, args);
+        }
+
+        internal static void SetDefaultContentRoot(IConfigurationBuilder hostConfigBuilder)
         {
             // If we're running anywhere other than C:\Windows\system32, we default to using the CWD for the ContentRoot.
             // However, since many things like Windows services and MSIX installers have C:\Windows\system32 as there CWD which is not likely
@@ -219,7 +225,10 @@ namespace Microsoft.Extensions.Hosting
                     new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, cwd),
                 });
             }
+        }
 
+        internal static void AddDefaultHostConfigurationSources(IConfigurationBuilder hostConfigBuilder, string[]? args)
+        {
             hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
             if (args is { Length: > 0 })
             {

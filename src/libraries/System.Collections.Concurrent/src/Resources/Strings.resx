@@ -87,9 +87,6 @@
   <data name="Collection_CopyTo_TooManyElems" xml:space="preserve">
     <value>The number of elements in the collection is greater than the available space from index to the end of the destination array.</value>
   </data>
-  <data name="BlockingCollection_ctor_BoundedCapacityRange" xml:space="preserve">
-    <value>The boundedCapacity argument must be positive.</value>
-  </data>
   <data name="BlockingCollection_ctor_CountMoreThanCapacity" xml:space="preserve">
     <value>The collection argument contains more items than are allowed by the boundedCapacity.</value>
   </data>

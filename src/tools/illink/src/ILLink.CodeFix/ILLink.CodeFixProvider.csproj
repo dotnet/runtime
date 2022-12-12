@@ -12,7 +12,9 @@
   <!-- Analyzer package properties -->
   <PropertyGroup>
     <IsPackable>true</IsPackable>
-    <PackageId>Microsoft.NET.ILLink.Analyzers</PackageId>
+    <!-- Runtime uses the Analyzers package to generate diagnostics generating a circular dependency with this name.
+         Removing until we use live bits -->
+    <!--PackageId>Microsoft.NET.ILLink.Analyzers</PackageId-->
     <Authors>Microsoft</Authors>
     <Description>Analyzer utilities for ILLink attributes and single-file</Description>
     <NoPackageAnalysis>true</NoPackageAnalysis>
