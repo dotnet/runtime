@@ -328,7 +328,7 @@ namespace System.Threading
 
         internal static void SpinWaitInternal(int iterations)
         {
-            Debug.Assert(iterations <= spinWaitCoopThreshold);
+            Debug.Assert(iterations <= SpinWaitCoopThreshold);
             if (iterations > 0)
             {
                 RuntimeImports.RhSpinWait(iterations);
@@ -343,7 +343,7 @@ namespace System.Threading
 
         public static void SpinWait(int iterations)
         {
-            if (iterations > spinWaitCoopThreshold)
+            if (iterations > SpinWaitCoopThreshold)
             {
                 LongSpinWait(iterations);
             }
