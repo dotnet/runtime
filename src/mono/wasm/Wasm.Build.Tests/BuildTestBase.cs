@@ -835,7 +835,7 @@ namespace Wasm.Build.Tests
                                         .WithWorkingDirectory(_projectDir!);
 
             await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run -c {config} {extraArgs}");
+            var page = await runner.RunAsync(runCommand, $"run -c {config} {extraArgs}", onConsoleMessage: OnConsoleMessage);
 
             await page.Locator("text=Counter").ClickAsync();
             var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
@@ -847,6 +847,13 @@ namespace Wasm.Build.Tests
 
             if (test is not null)
                 await test(page);
+
+            void OnConsoleMessage(IConsoleMessage msg)
+            {
+                if (EnvironmentVariables.ShowBuildOutput)
+                    Console.WriteLine($"[{msg.Type}] {msg.Text}");
+                _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+            }
         }
 
         public static (int exitCode, string buildOutput) RunProcess(string path,
