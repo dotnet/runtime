@@ -232,7 +232,7 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
     ;; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
     ;; to improve density, or to reduce distance between the constant pool and its use.
 
-    SETALIAS $tls_CurrentThread, ?tls_CurrentThread@@3UThreadBuffer@@A
+    SETALIAS tls_CurrentThread, ?tls_CurrentThread@@3UThreadBuffer@@A
 
     MACRO
         INLINE_GETTHREAD_CONSTANT_POOL
