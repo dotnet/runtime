@@ -84,6 +84,7 @@ public class BuildPublishTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/79514")]
     public async Task WithDllImportInMainAssembly(string config)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
