@@ -15986,7 +15986,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-    if (canOptimize &&                       // Don't optimize if unsafe.
+    if (canOptimize &&                            // Don't optimize if unsafe.
         (emitGetLastIns()->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
         (emitGetLastIns()->idOpSize() == size))   // Don't optimize if operand size is different than previous
                                                   // instruction.
@@ -16074,8 +16074,8 @@ bool emitter::IsRedundantLdStr(
     regNumber prevReg2   = emitGetLastIns()->idReg2();
     insFormat lastInsfmt = emitGetLastIns()->idInsFmt();
     emitAttr  prevSize   = emitGetLastIns()->idOpSize();
-    ssize_t   prevImm = emitGetLastIns()->idIsLargeCns() ? ((instrDescCns*)emitGetLastIns())->idcCnsVal
-                                                            : emitGetLastIns()->idSmallCns();
+    ssize_t   prevImm    = emitGetLastIns()->idIsLargeCns() ? ((instrDescCns*)emitGetLastIns())->idcCnsVal
+                                                       : emitGetLastIns()->idSmallCns();
 
     // Only optimize if:
     // 1. "base" or "base plus immediate offset" addressing modes.

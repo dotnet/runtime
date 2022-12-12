@@ -1478,14 +1478,16 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     size_t fullSize = sz + m_debugInfoSize;
 
-    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
+    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG ||
+        (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
     {
         emitNxtIG(true);
     }
 
     /* Grab the space for the instruction */
 
-    instrDesc* const id = emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    instrDesc* const id = emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] =
+        (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitCurIGfreeNext += fullSize;
 
     assert(sz >= sizeof(void*));

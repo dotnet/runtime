@@ -497,141 +497,139 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
     bool result = false;
 
-    emitPeepholeLastInstrs(
-        [&](instrDesc* id)
+    emitPeepholeLastInstrs([&](instrDesc* id) {
+        switch (id->idInsFmt())
         {
-            switch (id->idInsFmt())
+            case IF_RRD:
+            case IF_RWR:
+            case IF_RRW:
+
+            case IF_RRD_CNS:
+            case IF_RWR_CNS:
+            case IF_RRW_CNS:
+            case IF_RRW_SHF:
+
+            case IF_RRD_RRD:
+            case IF_RWR_RRD:
+            case IF_RRW_RRD:
+            case IF_RRW_RRW:
+            case IF_RRW_RRW_CNS:
+
+            case IF_RWR_RRD_RRD:
+            case IF_RWR_RRD_RRD_CNS:
+
+            case IF_RWR_RRD_RRD_RRD:
+
+            case IF_RRD_MRD:
+            case IF_RWR_MRD:
+            case IF_RRW_MRD:
+            case IF_RRW_MRD_CNS:
+
+            case IF_RWR_RRD_MRD:
+            case IF_RWR_MRD_CNS:
+            case IF_RWR_RRD_MRD_CNS:
+            case IF_RWR_RRD_MRD_RRD:
+            case IF_RWR_MRD_OFF:
+
+            case IF_RRD_SRD:
+            case IF_RWR_SRD:
+            case IF_RRW_SRD:
+            case IF_RRW_SRD_CNS:
+
+            case IF_RWR_RRD_SRD:
+            case IF_RWR_SRD_CNS:
+            case IF_RWR_RRD_SRD_CNS:
+            case IF_RWR_RRD_SRD_RRD:
+
+            case IF_RRD_ARD:
+            case IF_RWR_ARD:
+            case IF_RRW_ARD:
+            case IF_RRW_ARD_CNS:
+
+            case IF_RWR_RRD_ARD:
+            case IF_RWR_ARD_CNS:
+            case IF_RWR_ARD_RRD:
+            case IF_RWR_RRD_ARD_CNS:
+            case IF_RWR_RRD_ARD_RRD:
             {
-                case IF_RRD:
-                case IF_RWR:
-                case IF_RRW:
-
-                case IF_RRD_CNS:
-                case IF_RWR_CNS:
-                case IF_RRW_CNS:
-                case IF_RRW_SHF:
-
-                case IF_RRD_RRD:
-                case IF_RWR_RRD:
-                case IF_RRW_RRD:
-                case IF_RRW_RRW:
-                case IF_RRW_RRW_CNS:
-
-                case IF_RWR_RRD_RRD:
-                case IF_RWR_RRD_RRD_CNS:
-
-                case IF_RWR_RRD_RRD_RRD:
-
-                case IF_RRD_MRD:
-                case IF_RWR_MRD:
-                case IF_RRW_MRD:
-                case IF_RRW_MRD_CNS:
-
-                case IF_RWR_RRD_MRD:
-                case IF_RWR_MRD_CNS:
-                case IF_RWR_RRD_MRD_CNS:
-                case IF_RWR_RRD_MRD_RRD:
-                case IF_RWR_MRD_OFF:
-
-                case IF_RRD_SRD:
-                case IF_RWR_SRD:
-                case IF_RRW_SRD:
-                case IF_RRW_SRD_CNS:
-
-                case IF_RWR_RRD_SRD:
-                case IF_RWR_SRD_CNS:
-                case IF_RWR_RRD_SRD_CNS:
-                case IF_RWR_RRD_SRD_RRD:
-
-                case IF_RRD_ARD:
-                case IF_RWR_ARD:
-                case IF_RRW_ARD:
-                case IF_RRW_ARD_CNS:
-
-                case IF_RWR_RRD_ARD:
-                case IF_RWR_ARD_CNS:
-                case IF_RWR_ARD_RRD:
-                case IF_RWR_RRD_ARD_CNS:
-                case IF_RWR_RRD_ARD_RRD:
-                {
 #ifdef TARGET_AMD64
-                    assert((id->idReg1() >= REG_RAX) && (id->idReg1() <= REG_XMM15));
+                assert((id->idReg1() >= REG_RAX) && (id->idReg1() <= REG_XMM15));
 #else
-                    assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_XMM7));
+                assert((id->idReg1() >= REG_EAX) && (id->idReg1() <= REG_XMM7));
 #endif // !TARGET_AMD64
 
-                    if (id->idReg1() != reg)
+                if (id->idReg1() != reg)
+                {
+                    switch (id->idInsFmt())
                     {
-                        switch (id->idInsFmt())
-                        {
-                            // Handles instructions who write to two registers.
-                            case IF_RRW_RRW:
-                            case IF_RRW_RRW_CNS:
-                            {
-                                if (id->idReg2() == reg)
-                                {
-                                    result = (id->idOpSize() == EA_4BYTE);
-                                    return PEEPHOLE_ABORT;
-                                }
-                                break;
-                            }
-
-                            default:
-                                break;
-                        }
-
-                        if (instrHasImplicitRegPairDest(id->idIns()))
+                        // Handles instructions who write to two registers.
+                        case IF_RRW_RRW:
+                        case IF_RRW_RRW_CNS:
                         {
                             if (id->idReg2() == reg)
                             {
                                 result = (id->idOpSize() == EA_4BYTE);
                                 return PEEPHOLE_ABORT;
                             }
+                            break;
                         }
 
-                        return PEEPHOLE_CONTINUE;
+                        default:
+                            break;
                     }
 
-                    // movsx always sign extends to 8 bytes.
-                    if (id->idIns() == INS_movsx)
+                    if (instrHasImplicitRegPairDest(id->idIns()))
                     {
-                        return PEEPHOLE_ABORT;
+                        if (id->idReg2() == reg)
+                        {
+                            result = (id->idOpSize() == EA_4BYTE);
+                            return PEEPHOLE_ABORT;
+                        }
                     }
 
-#ifdef TARGET_AMD64
-                    if (id->idIns() == INS_movsxd)
-                    {
-                        return PEEPHOLE_ABORT;
-                    }
-#endif
-
-                    // movzx always zeroes the upper 32 bits.
-                    if (id->idIns() == INS_movzx)
-                    {
-                        result = true;
-                        return PEEPHOLE_ABORT;
-                    }
-
-                    // otherwise rely on operation size.
-                    result = (id->idOpSize() == EA_4BYTE);
-                    return PEEPHOLE_ABORT;
-                }
-
-                case IF_LABEL:
-                case IF_RWR_LABEL:
-                case IF_SWR_LABEL:
-                case IF_METHOD:
-                case IF_METHPTR:
-                {
-                    return PEEPHOLE_ABORT;
-                }
-
-                default:
-                {
                     return PEEPHOLE_CONTINUE;
                 }
+
+                // movsx always sign extends to 8 bytes.
+                if (id->idIns() == INS_movsx)
+                {
+                    return PEEPHOLE_ABORT;
+                }
+
+#ifdef TARGET_AMD64
+                if (id->idIns() == INS_movsxd)
+                {
+                    return PEEPHOLE_ABORT;
+                }
+#endif
+
+                // movzx always zeroes the upper 32 bits.
+                if (id->idIns() == INS_movzx)
+                {
+                    result = true;
+                    return PEEPHOLE_ABORT;
+                }
+
+                // otherwise rely on operation size.
+                result = (id->idOpSize() == EA_4BYTE);
+                return PEEPHOLE_ABORT;
             }
-        });
+
+            case IF_LABEL:
+            case IF_RWR_LABEL:
+            case IF_SWR_LABEL:
+            case IF_METHOD:
+            case IF_METHPTR:
+            {
+                return PEEPHOLE_ABORT;
+            }
+
+            default:
+            {
+                return PEEPHOLE_CONTINUE;
+            }
+        }
+    });
 
     return result;
 }
@@ -5803,8 +5801,8 @@ bool emitter::IsRedundantMov(
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (!emitCanPeepholeLastIns() ||         // Don't optimize if unsafe
-        (emitGetLastIns()->idIns() != ins) || // or if the instruction is different from the last instruction
+    if (!emitCanPeepholeLastIns() ||              // Don't optimize if unsafe
+        (emitGetLastIns()->idIns() != ins) ||     // or if the instruction is different from the last instruction
         (emitGetLastIns()->idOpSize() != size) || // or if the operand size is different from the last instruction
         (emitGetLastIns()->idInsFmt() != fmt))    // or if the format is different from the last instruction
     {
@@ -8493,8 +8491,8 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (!emitCanPeepholeLastIns() ||       // Don't optimize if unsafe
-        (emitGetLastIns()->idIns() != ins) || // or if the instruction is different from the last instruction
+    if (!emitCanPeepholeLastIns() ||            // Don't optimize if unsafe
+        (emitGetLastIns()->idIns() != ins) ||   // or if the instruction is different from the last instruction
         (emitGetLastIns()->idOpSize() != size)) // or if the operand size is different from the last instruction
     {
         return false;

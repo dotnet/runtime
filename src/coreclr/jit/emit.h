@@ -2200,11 +2200,10 @@ private:
     // The final check prevents looking across an IG boundary unless we're in an extension IG.
     bool emitCanPeepholeLastIns() const
     {
-        return emitHasLastIns() &&
-               !emitForceNewIG &&                             // and we're not about to start a new IG
-               ((emitCurIGinsCnt > 0) ||                      // and we're not at the start of a new IG
-                ((emitCurIG->igFlags & IGF_EXTEND) != 0));    //    or we are at the start of a new IG,
-                                                              //    and it's an extension IG
+        return emitHasLastIns() && !emitForceNewIG &&      // and we're not about to start a new IG
+               ((emitCurIGinsCnt > 0) ||                   // and we're not at the start of a new IG
+                ((emitCurIG->igFlags & IGF_EXTEND) != 0)); //    or we are at the start of a new IG,
+                                                           //    and it's an extension IG
     }
 
     enum emitPeepholeResult
