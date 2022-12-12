@@ -2038,12 +2038,9 @@ namespace System.Net.Http
                 {
                     Debug.Assert(origReadBuffer.Length > 0);
 
-                    // _readOffset and _readLength may not be within range of the original
-                    // buffer, and even if they are, they won't refer to read data at this
-                    // point.  But we don't care what remaining data there was, other than
-                    // that there may have been some, as subsequent code is going to check
-                    // whether these are the same and then force the connection closed if
-                    // they're not.
+                    // We don't care how much remaining data there was, just if there was any.
+                    // Subsequent code is going to check whether the receive buffer is empty
+                    // and then force the connection closed if it's not.
                     bool anyDataAvailable = _readBuffer.ActiveLength > 0;
 
                     byte[] pooledBuffer = _readBuffer.DangerousGetUnderlyingBuffer();
