@@ -1,4 +1,3 @@
-let ENVIRONMENT_IS_GLOBAL = false;
 var require = require || undefined;
 var __dirname = __dirname || '';
 var __callbackAPI = { MONO, BINDING, INTERNAL, IMPORTS };

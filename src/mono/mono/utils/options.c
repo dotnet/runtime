@@ -90,7 +90,7 @@ mono_options_print_usage (void)
 static GHashTable *_option_hash = NULL;
 
 static GHashTable *
-get_option_hash ()
+get_option_hash (void)
 {
 	GHashTable *result;
 

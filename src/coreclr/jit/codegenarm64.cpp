@@ -4705,16 +4705,18 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenC
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForSelect(GenTreeConditional* tree)
+void CodeGen::genCodeForSelect(GenTreeOp* tree)
 {
-    emitter* emit = GetEmitter();
+    assert(tree->OperIs(GT_SELECT));
+    GenTreeConditional* select = tree->AsConditional();
+    emitter*            emit   = GetEmitter();
 
-    GenTree*  opcond  = tree->gtCond;
-    GenTree*  op1     = tree->gtOp1;
-    GenTree*  op2     = tree->gtOp2;
+    GenTree*  opcond  = select->gtCond;
+    GenTree*  op1     = select->gtOp1;
+    GenTree*  op2     = select->gtOp2;
     var_types op1Type = genActualType(op1->TypeGet());
     var_types op2Type = genActualType(op2->TypeGet());
-    emitAttr  attr    = emitActualTypeSize(tree->TypeGet());
+    emitAttr  attr    = emitActualTypeSize(select->TypeGet());
 
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
@@ -5575,8 +5577,9 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
     GenTreeLclVarCommon* lclVar = treeNode->AsLclVarCommon();
 
-    unsigned offs   = lclVar->GetLclOffs();
-    unsigned varNum = lclVar->GetLclNum();
+    unsigned   offs   = lclVar->GetLclOffs();
+    unsigned   varNum = lclVar->GetLclNum();
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
     assert(varNum < compiler->lvaCount);
 
     GenTree* op1 = lclVar->gtGetOp1();
@@ -5591,6 +5594,10 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
         // Store upper 4 bytes
         GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, REG_ZR, varNum, offs + 8);
+
+        // Update life after instruction emitted
+        genUpdateLife(treeNode);
+        varDsc->SetRegNum(REG_STK);
 
         return;
     }
@@ -5611,6 +5618,10 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
         // Need an additional integer register to extract upper 4 bytes from data.
         regNumber tmpReg = lclVar->GetSingleTempReg();
         GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
+
+        // Update life after instruction emitted
+        genUpdateLife(treeNode);
+        varDsc->SetRegNum(REG_STK);
     }
 }
 

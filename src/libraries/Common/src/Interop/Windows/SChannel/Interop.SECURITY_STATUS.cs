@@ -33,6 +33,7 @@ internal static partial class Interop
         MessageAltered = unchecked((int)0x8009030F),
         OutOfSequence = unchecked((int)0x80090310),
         NoAuthenticatingAuthority = unchecked((int)0x80090311),
+        ContextExpiredError = unchecked((int)0x80090317),
         IncompleteMessage = unchecked((int)0x80090318),
         IncompleteCredentials = unchecked((int)0x80090320),
         BufferNotEnough = unchecked((int)0x80090321),

@@ -10,29 +10,15 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegistryConstants.cs"
-             Link="Common\Interop\Windows\Advapi32\Interop.RegistryConstants.cs" />
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs"
-             Link="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
-    <Compile Include="Microsoft\Win32\Registry.cs" />
-    <Compile Include="Microsoft\Win32\RegistryHive.cs" />
-    <Compile Include="Microsoft\Win32\RegistryValueKind.cs" />
-    <Compile Include="Microsoft\Win32\RegistryKey.cs" />
-    <Compile Include="Microsoft\Win32\RegistryKeyPermissionCheck.cs" />
-    <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
-    <Compile Include="Microsoft\Win32\RegistryValueOptions.cs" />
-    <Compile Include="Microsoft\Win32\RegistryView.cs" />
-    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
-    <Compile Include="System\Security\AccessControl\RegistrySecurity.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
              Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegCloseKey.cs"
              Link="Common\Interop\Windows\Interop.RegCloseKey.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegConnectRegistry.cs"
@@ -57,14 +43,24 @@
              Link="Common\Interop\Windows\Interop.RegQueryValueEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs"
              Link="Common\Interop\Windows\Interop.RegSetValueEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegistryConstants.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.RegistryConstants.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
              Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
-    <Compile Include="Microsoft\Win32\RegistryKey.Windows.cs" />
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs"
-             Link="Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
-    <Compile Include="System\Security\AccessControl\RegistrySecurity.Windows.cs" />
+    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
+    <Compile Include="Microsoft\Win32\Registry.cs" />
+    <Compile Include="Microsoft\Win32\RegistryHive.cs" />
+    <Compile Include="Microsoft\Win32\RegistryValueKind.cs" />
+    <Compile Include="Microsoft\Win32\RegistryKey.cs" />
+    <Compile Include="Microsoft\Win32\RegistryKeyPermissionCheck.cs" />
+    <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
+    <Compile Include="Microsoft\Win32\RegistryValueOptions.cs" />
+    <Compile Include="Microsoft\Win32\RegistryView.cs" />
+    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
+    <Compile Include="System\Security\AccessControl\RegistrySecurity.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
