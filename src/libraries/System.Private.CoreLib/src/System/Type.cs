@@ -327,9 +327,7 @@ namespace System
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             ArgumentNullException.ThrowIfNull(name);
-
-            if (genericParameterCount < 0)
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(genericParameterCount));
+            ArgumentOutOfRangeException.ThrowIfNegative(genericParameterCount);
             ArgumentNullException.ThrowIfNull(types);
             for (int i = 0; i < types.Length; i++)
             {
@@ -602,8 +600,7 @@ namespace System
 
         public static Type MakeGenericMethodParameter(int position)
         {
-            if (position < 0)
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(position));
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             return new SignatureGenericMethodParameterType(position);
         }
 

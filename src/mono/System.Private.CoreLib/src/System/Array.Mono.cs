@@ -116,8 +116,7 @@ namespace System
             ArgumentNullException.ThrowIfNull(sourceArray);
             ArgumentNullException.ThrowIfNull(destinationArray);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             if (sourceArray.Rank != destinationArray.Rank)
                 throw new RankException(SR.Rank_MultiDimNotSupported);

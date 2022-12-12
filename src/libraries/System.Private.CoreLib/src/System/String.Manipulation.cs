@@ -1845,13 +1845,16 @@ namespace System
         [DoesNotReturn]
         private void ThrowSubstringArgumentOutOfRange(int startIndex, int length)
         {
-            (string paramName, string message) =
-                startIndex < 0 ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndex) :
-                startIndex > Length ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength) :
-                length < 0 ? (nameof(length), SR.ArgumentOutOfRange_NegativeLength) :
-                (nameof(length), SR.ArgumentOutOfRange_IndexLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
-            throw new ArgumentOutOfRangeException(paramName, message);
+            if (startIndex > Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
         }
 
         private string InternalSubString(int startIndex, int length)
