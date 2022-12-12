@@ -427,17 +427,18 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++actual_instantiated_assets_count;
 }
+
 type ManifestRow = [name: string, length: number]
 function mount_archive_VFS(prefix: string, manifest: ManifestRow[], data: Uint8Array) {
     const anyModule = Module as any;
     const FS = anyModule.FS;
-    const read_only_mode = 0o0444; //-r--r--r--
+    const mode = 0o0555; //-r-xr-xr-x
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     const noop = () => { };
     const dummyTime = () => 0;
     const ARCHIVEFS = {
         mount: function () {
-            const root = ARCHIVEFS.createNode(null, "/", read_only_mode);
+            const root = ARCHIVEFS.createNode(null, "/", mode);
             root.children = {};
             return root;
         },
@@ -451,7 +452,7 @@ function mount_archive_VFS(prefix: string, manifest: ManifestRow[], data: Uint8A
         node_ops: {
             getattr: (node: any) => {
                 return {
-                    mode: read_only_mode,
+                    mode: mode,
                     dev: 0,
                     ino: 0,
                     nlink: 0,
@@ -494,13 +495,13 @@ function mount_archive_VFS(prefix: string, manifest: ManifestRow[], data: Uint8A
         let parent = root;
         while (parts.length > 1) {
             const part = parts.shift()!;
-            if (!parent[part]) {
-                parent[part] = ARCHIVEFS.createNode(parent, part, read_only_mode);
-                parent[part].children = {};
+            if (!parent.children[part]) {
+                parent.children[part] = ARCHIVEFS.createNode(parent, part, mode);
+                parent.children[part].children = {};
             }
-            parent = parent[part];
+            parent = parent.children[part];
         }
-        const node = ARCHIVEFS.createNode(parent, parts[0], read_only_mode);
+        const node = ARCHIVEFS.createNode(parent, parts[0], mode);
         node.length = length;
         node.offset = offset;
         offset += length;
