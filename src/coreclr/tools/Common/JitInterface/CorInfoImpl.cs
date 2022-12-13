@@ -3752,10 +3752,14 @@ namespace Internal.JitInterface
                     break;
             }
 
-            relocDelta += addlDelta;
-
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
             RelocType relocType = GetRelocType(targetArchitecture, fRelocType);
+
+            if (relocType == RelocType.IMAGE_REL_BASED_REL32)
+            {
+                relocDelta += addlDelta;
+            }
+
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
 
