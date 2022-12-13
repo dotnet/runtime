@@ -8,6 +8,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Security.Tests
 {
@@ -83,6 +84,47 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65563", TestPlatforms.Android)]
+        public async Task SslStream_CachedCredentials_IsMutuallyAuthenticatedCorrect(
+           SslProtocols protocol)
+        {
+            var clientOptions = new SslClientAuthenticationOptions
+            {
+                ClientCertificates = new X509CertificateCollection() { _clientCertificate },
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = delegate { return true; },
+                TargetHost = Guid.NewGuid().ToString("N")
+            };
+
+            for (int i = 0; i < 5; i++)
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    bool expectMutualAuthentication = (i % 2) == 0;
+
+                    var serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ClientCertificateRequired = expectMutualAuthentication,
+                        ServerCertificate = expectMutualAuthentication ? _serverCertificate : _selfSignedCertificate,
+                        RemoteCertificateValidationCallback = delegate { return true; },
+                        EnabledSslProtocols = protocol
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    // mutual authentication should only be set if server required client cert
+                    Assert.Equal(expectMutualAuthentication, server.IsMutuallyAuthenticated);
+                    Assert.Equal(expectMutualAuthentication, client.IsMutuallyAuthenticated);
+                };
+            }
+        }
+
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         [PlatformSpecific(TestPlatforms.Linux)] // https://github.com/dotnet/runtime/issues/65563
         [Theory]
@@ -128,7 +170,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }
@@ -183,7 +225,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }
@@ -221,7 +263,7 @@ namespace System.Net.Security.Tests
 
                     if (expectMutualAuthentication)
                     {
-                      clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
+                        clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
                     }
                     else
                     {
@@ -242,7 +284,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }

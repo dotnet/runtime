@@ -518,7 +518,6 @@ namespace System.Net.Security
             bool cachedCred = false;                   // this is a return result from this method.
 
             X509Certificate2? selectedCert = SelectClientCertificate(out sessionRestartAttempt);
-
             try
             {
                 // Try to locate cached creds first.
@@ -974,6 +973,12 @@ namespace System.Net.Security
                 }
 
                 _remoteCertificate = certificate;
+                if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_securityContext!))
+                {
+                    // We may slect client cert but it may not be used.
+                    // This is primarily issue on Windows with credential caching
+                    _selectedClientCertificate = null;
+                }
 
                 if (_remoteCertificate == null)
                 {
