@@ -91,8 +91,7 @@ namespace System.Net
             return cert;
         }
 
-        // This is only called when we selected local client certificate.
-        // Currently this is only when Java crypto asked for it.
+        // Check if the local certificate has been sent to the peer during the handshake.
         internal static bool IsLocalCertificateUsed(SafeDeleteContext? securityContext)
         {
             SafeSslHandle? sslContext = ((SafeDeleteSslContext?)securityContext)?.SslContext;
