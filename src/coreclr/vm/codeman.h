@@ -743,11 +743,17 @@ enum class RangeSectionLockState
 //                            [24:17] -> L1
 // This leaves 17 bits of the address to be handled by the RangeSectionFragment linked list
 //
-// For 32bit VA processes, use 1KB chunks holding pointers to the next level. This provides 8 bites of address resolution per level.    [31:24] and [23:16].
+// For 32bit VA processes, use 1KB chunks holding pointers to the next level. This provides 8 bits of address resolution per level.    [31:24] and [23:16].
 // For the 32bit processes, only the last 16bits are handled by the RangeSectionFragment linked list.
 
-// The memory safety model for segment maps is that the pointers held within the individual segments can never change other than to go from NULL to a meaningful pointer, 
-// except for the final level, which is only permitted to change when CleanupRangeSections is in use. That meaningful pointer has process lifetime. 
+// Each level of the tree may be considered collectible or non-collectible (except for the top level, which is ALWAYS non-collectible)
+// The locking model of the tree structure is as follows.
+// Adding a newly allocated level requires holding the Reader lock. Multiple threads may add a level in parallel.
+// Removing a level requires holding the Writer lock.
+// No level which refers to a non-collectible fragment may be considered collectible.
+// A level may be upgraded from collectible to non-collectible, by changing the pointer which points at it to not have the sentinel bit.
+// A level may NOT ever be downgraded from non-collectible to collectible.
+// When a level becomes empty, it may be freed, and the pointer which points at it may be nulled out.
 //
 // Within the linked list of RangeSectionFragments, there are effectively 2 lists.
 // - The non-collectible list, which are always found first.
@@ -756,7 +762,7 @@ enum class RangeSectionLockState
 // Insertion into the map uses atomic updates and fully pre-initialized RangeSection structures, so that insertions can be lock-free with regards to each other.
 // However, they are not lock-free with regards to removals, so the insertions use a Reader lock.
 //
-// Reading from the non-collectible data (the tree structure + the non-collectible list) does not require any locking at all.
+// Reading from the non-collectible data (the non-collectible portion of tree structure + the non-collectible list) does not require any locking at all.
 // Reading from the collectible data will require a ReaderLock. There is a scheme using the RangeSectionLockState where when there is an attempt to read without the
 // lock and we find collectible data, which will cause the runtime to upgrade to using the Reader lock in that situation.
 //
@@ -841,6 +847,123 @@ class RangeSectionMap
 #endif // DACCESS_COMPILE
     };
 
+    // Helper structure which forces all access to the various pointers to be handled via volatile/interlocked operations
+    // The copy/move constructors are all deleted to forbid accidental reads into temporaries, etc.
+    template <class TPtr>
+    class RangeSectionLevelPointer
+    {
+    private:
+        TADDR _ptr;
+
+        TADDR LevelToPtr(TPtr level, bool collectible)
+        {
+            TADDR ptr = (TADDR)level;
+            if (ptr == 0)
+                return ptr;
+
+            if (collectible)
+            {
+                ptr += 1;
+            }
+
+            return ptr;
+        }
+
+        RangeSectionLevelPointer() { _ptr = 0; }
+    public:
+
+        RangeSectionLevelPointer(RangeSectionLevelPointer<TPtr> &) = delete;
+        RangeSectionLevelPointer(RangeSectionLevelPointer<TPtr> &&) = delete;
+        RangeSectionLevelPointer<TPtr>& operator=(const RangeSectionLevelPointer<TPtr>&) = delete;
+
+        bool PointerIsCollectible()
+        {
+            return ((::VolatileLoadWithoutBarrier(&_ptr) & 1) == 1);
+        }
+
+        bool IsNull()
+        {
+            return _ptr == 0;
+        }
+
+        TPtr VolatileLoadWithoutBarrier(RangeSectionLockState *pLockState)
+        {
+            TADDR ptr = ::VolatileLoadWithoutBarrier(&_ptr);
+            if ((ptr & 1) == 1)
+            {
+                if ((*pLockState == RangeSectionLockState::None) || (*pLockState == RangeSectionLockState::NeedsLock))
+                {
+                    *pLockState = RangeSectionLockState::NeedsLock;
+                    return NULL;
+                }
+                return dac_cast<TPtr>(ptr - 1);
+            }
+            else
+            {
+                return dac_cast<TPtr>(ptr);
+            }
+        }
+
+        TPtr VolatileLoad(RangeSectionLockState *pLockState)
+        {
+            TADDR ptr = ::VolatileLoad(&_ptr);
+            if ((ptr & 1) == 1)
+            {
+                if ((*pLockState == RangeSectionLockState::None) || (*pLockState == RangeSectionLockState::NeedsLock))
+                {
+                    *pLockState = RangeSectionLockState::NeedsLock;
+                    return NULL;
+                }
+                return dac_cast<TPtr>(ptr - 1);
+            }
+            else
+            {
+                return dac_cast<TPtr>(ptr);
+            }
+        }
+
+#ifndef DACCESS_COMPILE
+
+        void UpgradeToNonCollectible()
+        {
+            TADDR ptr = ::VolatileLoadWithoutBarrier(&_ptr);
+            if ((ptr & 1) == 1)
+            {
+                // Upgrade to non-collectible
+#ifdef _DEBUG
+                TADDR initialValue = 
+#endif
+                InterlockedCompareExchangeT(&_ptr, ptr - 1, ptr);
+                assert(initialValue == ptr || initialValue == (ptr - 1));
+            }
+        }
+
+        // Install a newly allocated level pointer. Return true if the new buffer is installed.
+        // Return false if a buffer is already installed.
+        bool Install(TPtr level, bool collectible)
+        {
+            TADDR initialPointerStoreAttempt = LevelToPtr(level, collectible);
+            if (0 == InterlockedCompareExchangeT(&_ptr, initialPointerStoreAttempt, (TADDR)0))
+            {
+                return true;
+            }
+            else if (!collectible)
+            {
+                // In this case we update the already stored level to be pointed at via a non-collectible pointer
+                // But since we don't actually install the newly passed in pointer, we still return false.
+                UpgradeToNonCollectible();
+            }
+
+            return false;
+        }
+
+        void Uninstall()
+        {
+            ::VolatileStore(&_ptr, (TADDR)0);
+        }
+#endif // DACCESS_COMPILE
+    };
+
     // Unlike a RangeSection, a RangeSectionFragment cannot span multiple elements of the last level of the RangeSectionMap
     // Always allocated via memset/free
     class RangeSectionFragment
@@ -862,10 +985,10 @@ class RangeSectionMap
 
     typedef RangeSectionFragmentPointer RangeSectionList;
     typedef RangeSectionList RangeSectionL1[entriesPerMapLevel];
-    typedef DPTR(RangeSectionL1) RangeSectionL2[entriesPerMapLevel];
-    typedef DPTR(RangeSectionL2) RangeSectionL3[entriesPerMapLevel];
-    typedef DPTR(RangeSectionL3) RangeSectionL4[entriesPerMapLevel];
-    typedef DPTR(RangeSectionL4) RangeSectionL5[entriesPerMapLevel];
+    typedef RangeSectionLevelPointer<DPTR(RangeSectionL1)> RangeSectionL2[entriesPerMapLevel];
+    typedef RangeSectionLevelPointer<DPTR(RangeSectionL2)> RangeSectionL3[entriesPerMapLevel];
+    typedef RangeSectionLevelPointer<DPTR(RangeSectionL3)> RangeSectionL4[entriesPerMapLevel];
+    typedef RangeSectionLevelPointer<DPTR(RangeSectionL4)> RangeSectionL5[entriesPerMapLevel];
 
 #ifdef TARGET_64BIT
     typedef RangeSectionL5 RangeSectionTopLevel;
@@ -911,21 +1034,22 @@ class RangeSectionMap
 
 #ifndef DACCESS_COMPILE
     template<class T>
-    auto EnsureLevel(TADDR address, T* outerLevel, uintptr_t level) -> decltype(&((**outerLevel)[0]))
+    auto EnsureLevel(TADDR address, T* outerLevel, uintptr_t level, bool collectible) -> decltype(&((*outerLevel->VolatileLoad(NULL))[0]))
     {
+        RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // This function may only be called while the lock is held at least at ReaderLocked
         uintptr_t index = EffectiveBitsForLevel(address, level);
-        auto levelToGetPointerIn = VolatileLoadWithoutBarrier(outerLevel);
+        auto levelToGetPointerIn = outerLevel->VolatileLoad(&lockState);
 
         if (levelToGetPointerIn == NULL)
         {
-            auto levelNew = static_cast<decltype(&(*outerLevel)[0])>(AllocateLevel());
+            auto levelNew = static_cast<decltype(&(outerLevel->VolatileLoad(NULL))[0])>(AllocateLevel());
             if (levelNew == NULL)
                 return NULL;
-            auto levelPreviouslyStored = InterlockedCompareExchangeT(outerLevel, levelNew, NULL);
-            if (levelPreviouslyStored != nullptr)
+            
+            if (!outerLevel->Install(levelNew, collectible))
             {
                 // Handle race where another thread grew the table
-                levelToGetPointerIn = levelPreviouslyStored;
+                levelToGetPointerIn = outerLevel->VolatileLoad(&lockState);
                 free(levelNew);
             }
             else
@@ -934,31 +1058,34 @@ class RangeSectionMap
             }
             assert(levelToGetPointerIn != nullptr);
         }
+        else if (!collectible && outerLevel->PointerIsCollectible())
+        {
+            outerLevel->UpgradeToNonCollectible();
+        }
 
         return &((*levelToGetPointerIn)[index]);
     }
-
     // Returns pointer to address in last level map that actually points at RangeSection space.
-    RangeSectionFragmentPointer* EnsureMapsForAddress(TADDR address)
+    RangeSectionFragmentPointer* EnsureMapsForAddress(TADDR address, bool collectible)
     {
         uintptr_t level = mapLevels + 1;
         uintptr_t topLevelIndex = EffectiveBitsForLevel(address, --level);
         auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
 #ifdef TARGET_64BIT
         auto _RangeSectionL4 = nextLevelAddress;
-        auto _RangeSectionL3 = EnsureLevel(address, _RangeSectionL4, --level);
+        auto _RangeSectionL3 = EnsureLevel(address, _RangeSectionL4, --level, collectible);
         if (_RangeSectionL3 == NULL)
             return NULL; // Failure case
-        auto _RangeSectionL2 = EnsureLevel(address, _RangeSectionL3, --level);
+        auto _RangeSectionL2 = EnsureLevel(address, _RangeSectionL3, --level, collectible);
         if (_RangeSectionL2 == NULL)
             return NULL; // Failure case
-        auto _RangeSectionL1 = EnsureLevel(address, _RangeSectionL2, --level);
+        auto _RangeSectionL1 = EnsureLevel(address, _RangeSectionL2, --level, collectible);
         if (_RangeSectionL1 == NULL)
             return NULL; // Failure case
 #else
         auto _RangeSectionL1 = nextLevelAddress;
 #endif
-        auto result = EnsureLevel(address, _RangeSectionL1, --level);
+        auto result = EnsureLevel(address, _RangeSectionL1, --level, collectible);
         if (result == NULL)
             return NULL; // Failure case
 
@@ -966,23 +1093,63 @@ class RangeSectionMap
     }
 #endif // DACCESS_COMPILE
 
+    void* GetRangeSectionMapLevelForAddress(TADDR address, uintptr_t level, RangeSectionLockState *pLockState)
+    {
+        uintptr_t topLevelIndex = EffectiveBitsForLevel(address, mapLevels);
+        auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
+#ifdef TARGET_64BIT
+        if (level == 4)
+            return nextLevelAddress;
+
+        auto _RangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
+        if (_RangeSectionL4 == NULL)
+            return NULL;
+        auto _RangeSectionL3Ptr = &((*_RangeSectionL4)[EffectiveBitsForLevel(address, 4)]);
+        if (level == 3)
+            return _RangeSectionL3Ptr;
+
+        auto _RangeSectionL3 = _RangeSectionL3Ptr->VolatileLoadWithoutBarrier(pLockState);
+        if (_RangeSectionL3 == NULL)
+            return NULL;
+        
+        auto _RangeSectionL2Ptr = &((*_RangeSectionL3)[EffectiveBitsForLevel(address, 3)]);
+        if (level == 2)
+            return _RangeSectionL2Ptr;
+
+        auto _RangeSectionL2 = _RangeSectionL2Ptr->VolatileLoadWithoutBarrier(pLockState);
+        if (_RangeSectionL2 == NULL)
+            return NULL;
+
+        auto _RangeSectionL1Ptr = &((*_RangeSectionL2)[EffectiveBitsForLevel(address, 2)]);
+        if (level == 1)
+            return _RangeSectionL1Ptr;
+#else
+        if (level == 1)
+        {
+            return nextLevelAddress;
+        }
+#endif
+        assert(!"Unexpected level searched for");
+        return NULL;
+    }
+
     PTR_RangeSectionFragment GetRangeSectionForAddress(TADDR address, RangeSectionLockState *pLockState)
     {
         uintptr_t topLevelIndex = EffectiveBitsForLevel(address, mapLevels);
         auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
 #ifdef TARGET_64BIT
-        auto _RangeSectionL4 = VolatileLoad(nextLevelAddress);
+        auto _RangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
         if (_RangeSectionL4 == NULL)
             return NULL;
-        auto _RangeSectionL3 = (*_RangeSectionL4)[EffectiveBitsForLevel(address, 4)];
+        auto _RangeSectionL3 = (*_RangeSectionL4)[EffectiveBitsForLevel(address, 4)].VolatileLoadWithoutBarrier(pLockState);
         if (_RangeSectionL3 == NULL)
             return NULL;
-        auto _RangeSectionL2 = (*_RangeSectionL3)[EffectiveBitsForLevel(address, 3)];
+        auto _RangeSectionL2 = (*_RangeSectionL3)[EffectiveBitsForLevel(address, 3)].VolatileLoadWithoutBarrier(pLockState);
         if (_RangeSectionL2 == NULL)
             return NULL;
-        auto _RangeSectionL1 = (*_RangeSectionL2)[EffectiveBitsForLevel(address, 2)];
+        auto _RangeSectionL1 = (*_RangeSectionL2)[EffectiveBitsForLevel(address, 2)].VolatileLoadWithoutBarrier(pLockState);
 #else
-        auto _RangeSectionL1 = VolatileLoad(nextLevelAddress);
+        auto _RangeSectionL1 = nextLevelAddress->VolatileLoad(pLockState);
 #endif
         if (_RangeSectionL1 == NULL)
             return NULL;
@@ -1058,7 +1225,7 @@ class RangeSectionMap
             fragments[iFragment].pRangeSection = pRangeSection;
             fragments[iFragment]._range = pRangeSection->_range;
             fragments[iFragment].isCollectibleRangeSectionFragment = collectible;
-            RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForUpdate);
+            RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForUpdate, collectible);
             if (entryInMapToUpdate == NULL)
             {
                 free(fragments);
@@ -1229,7 +1396,7 @@ public:
             // Remove fragments from each of the fragment linked lists
             for (uintptr_t iFragment = 0; iFragment < rangeSectionFragmentCount; iFragment++)
             {
-                RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForCleanup);
+                RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForCleanup, true /* collectible */);
                 assert(entryInMapToUpdate != NULL);
 
 #ifdef _DEBUG
@@ -1260,7 +1427,39 @@ public:
                     assert(pRangeSectionFragmentToFree->isPrimaryRangeSectionFragment);
                 }
 
-                entryInMapToUpdate->VolatileStore(fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState));
+                auto fragmentThatRemains = fragment->pRangeSectionFragmentNext.VolatileLoadWithoutBarrier(pLockState);
+                entryInMapToUpdate->VolatileStore(fragmentThatRemains);
+
+                // Now determine if we need to actually free portions of the map structure
+                if (fragmentThatRemains == NULL)
+                {
+                    for (uintptr_t level = 1; level < mapLevels; level++)
+                    {
+                        // Note that the type here is actually not necessarily correct, but its close enough
+                        auto pointerToLevelData = (RangeSectionLevelPointer<DPTR(RangeSectionL2)>*)GetRangeSectionMapLevelForAddress(addressToPrepForCleanup, level, pLockState);
+                        if (pointerToLevelData == NULL)
+                            break;
+                        auto &rawData = *pointerToLevelData->VolatileLoad(pLockState);
+                        bool foundMeaningfulValue = false;
+
+                        for (uintptr_t i = 0; i < entriesPerMapLevel; i++)
+                        {
+                            if (!rawData[i].IsNull())
+                            {
+                                foundMeaningfulValue = true;
+                                break;
+                            }
+                        }
+
+                        if (foundMeaningfulValue)
+                            break;
+                        
+                        // This level is completely empty. Free it, and then null out the pointer to it.
+                        pointerToLevelData->Uninstall();
+                        free((void*)rawData);
+                    }
+                }
+
                 addressToPrepForCleanup = IncrementAddressByMaxSizeOfFragment(addressToPrepForCleanup);
             }
 
@@ -1308,9 +1507,9 @@ public:
 
         for (int i = 0; i < entriesPerMapLevel; i++)
         {
-            if (level[i] != NULL)
+            if (level[i].IsNull())
             {
-                EnumMemoryRangeSectionMapLevel(flags, *level[i], pLockState);
+                EnumMemoryRangeSectionMapLevel(flags, *level[i].VolatileLoad(pLockState), pLockState);
             }
         }
     }
