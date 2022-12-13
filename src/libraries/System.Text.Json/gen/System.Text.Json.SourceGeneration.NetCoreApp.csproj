@@ -1,17 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    Source gen projects must always target netstandard2.0 which doesn't support nullable reference types.
+    This project defines a class library containing STJ source gen components targeting netcoreapp.
+    This ensures nullability warnings are enabled for all shared sourcegen components.
+  -->
+
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <AnalyzerRoslynVersion>4.4</AnalyzerRoslynVersion>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
   </PropertyGroup>
 
   <Import Project="System.Text.Json.SourceGeneration.targets" />
 
-  <ItemGroup>
+   <ItemGroup>
     <Compile Include="JsonSourceGenerator.Roslyn4.0.cs" />
-  </ItemGroup>
+  </ItemGroup> 
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
