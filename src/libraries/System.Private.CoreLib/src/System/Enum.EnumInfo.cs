@@ -22,10 +22,7 @@ namespace System
                 Values = values;
                 Names = names;
 
-                if (!AreSorted(values))
-                {
-                    Array.Sort(keys: values, items: names);
-                }
+                Array.Sort(keys: values, items: names);
 
                 ValuesAreSequentialFromZero = AreSequentialFromZero(values);
             }
