@@ -1,11 +1,11 @@
 # Microsoft.Extensions.Configuration.Ini
 
-INI configuration provider implementation for [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/). This package enables you to read configuration parameters from [INI files](https://en.wikipedia.org/wiki/INI_file). You can use [IniConfigurationExtensions.AddIniFile](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.iniconfigurationextensions.addinifile) extension method on `IConfigurationBuilder` to add INI configuration provider to the configuration builder.
+INI configuration provider implementation for [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/).
 
 Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/configuration-providers#ini-configuration-provider
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](https://github.com/dotnet/runtime/tree/main/src/libraries#contribution-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](../README.md#contribution-bar)
 
 The APIs and functionality are mature, but do get extended occasionally.
 

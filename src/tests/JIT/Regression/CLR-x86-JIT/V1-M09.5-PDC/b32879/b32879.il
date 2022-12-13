@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib { }
-.assembly 'bug' { }
+.assembly 'b32879' { }
 .class public auto ansi HiDad extends [mscorlib]System.Object
 {
   .method public static void main() il managed forwardref
