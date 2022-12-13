@@ -88,8 +88,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 cws.Options.DangerousDeflateOptions = deflateOpt;
-                await ConnectAsync(cws, uri, cts.Token);
-
+                await cws.ConnectAsync(uri, cts.Token);
 
                 await cws.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Text, WebSocketMessageFlags.DisableCompression, default);
                 Assert.Throws<ArgumentException>("messageFlags", () =>
@@ -126,7 +125,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 cws.Options.DangerousDeflateOptions = deflateOpt;
-                await ConnectAsync(cws, uri, cts.Token);
+                await cws.ConnectAsync(uri, cts.Token);
 
                 await cws.SendAsync(bytes, WebSocketMessageType.Text, true, cts.Token);
 
@@ -152,7 +151,17 @@ namespace System.Net.WebSockets.Client.Tests
 
                 async Task ReadExactAsync(byte[] buf, int n)
                 {
-                    await connection.Stream.ReadAtLeastAsync(buf.AsMemory(0, n), n);
+                    var mem = buf.AsMemory(0, n);
+                    int totalRead = 0;
+                    while (totalRead < n)
+                    {
+                        int read = await connection.Stream.ReadAsync(mem.Slice(totalRead)).ConfigureAwait(false);
+                        if (read == 0)
+                        {
+                            throw new Exception("Unexpected end of stream");
+                        }
+                        totalRead += read;
+                    }
                 }
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
