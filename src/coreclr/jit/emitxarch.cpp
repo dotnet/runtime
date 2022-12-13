@@ -1776,8 +1776,7 @@ unsigned emitter::emitGetRexPrefixSize(instruction ins)
 //
 unsigned emitter::emitGetEvexPrefixSize(instrDesc* id) const
 {
-    instruction ins = id->idIns();
-    assert(IsEvexEncodedInstruction(ins));
+    assert(IsEvexEncodedInstruction(id->idIns()));
     return 4;
 }
 
@@ -1794,10 +1793,8 @@ unsigned emitter::emitGetEvexPrefixSize(instrDesc* id) const
 //
 unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
 {
-    instruction ins  = id->idIns();
-    emitAttr    attr = id->idOpSize();
-
-    unsigned adjustedSize = 0;
+    instruction ins          = id->idIns();
+    unsigned    adjustedSize = 0;
 
     // TODO-XArch-AVX512: Remove redundant code and possiblly collapse EVEX and VEX into a single pathway
     // IsEvexEncodedInstruction(ins) is `true` for AVX/SSE instructions also which needs to be VEX encoded unless
@@ -1909,6 +1906,8 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
             // Adjust code size for CRC32 that has 4-byte opcode but does not use SSE38 or EES3A encoding.
             adjustedSize++;
         }
+
+        emitAttr attr = id->idOpSize();
 
         if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx))
         {
@@ -2322,7 +2321,7 @@ inline bool hasCodeMR(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// emitGetVexPrefixSize: Gets Size of VEX prefix in bytes
+// emitGetVexPrefixSize: Gets size of VEX prefix in bytes
 //
 // Arguments:
 //    id   -- The instruction descriptor
@@ -2332,9 +2331,8 @@ inline bool hasCodeMR(instruction ins)
 //
 unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
 {
-    assert(IsVexEncodedInstruction(id->idIns()));
-
     instruction ins = id->idIns();
+    assert(IsVexEncodedInstruction(ins));
 
     if (EncodedBySSE38orSSE3A(ins))
     {
@@ -3060,12 +3058,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code, int val
 //
 inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 {
-    instruction ins  = id->idIns();
-    regNumber   reg1 = id->idReg1();
-    regNumber   reg2 = id->idReg2();
-    emitAttr    attr = id->idOpSize();
-
-    emitAttr size = EA_SIZE(attr);
+    instruction ins = id->idIns();
 
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
@@ -3078,6 +3071,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     // REX prefix
     if (!hasRexPrefix(code))
     {
+        regNumber reg1 = id->idReg1();
+        regNumber reg2 = id->idReg2();
+        emitAttr  attr = id->idOpSize();
+        emitAttr  size = EA_SIZE(attr);
+
         if ((TakesRexWPrefix(ins, size) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
             IsExtendedReg(reg2, attr))
         {
