@@ -4893,13 +4893,31 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    // This may get called for arbitrary code addresses. Note that the lock is
-    // taken over the call to JitCodeToMethodInfo too so that nobody pulls out
-    // the range section from underneath us.
-
 #ifdef FEATURE_READYTORUN
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // TODO! Looking at users of this API I don't know that the lock structure here is safe. Needs checking.
+    RangeSectionLockState lockState = RangeSectionLockState::None;
     RangeSection * pRS = GetRangeSection(currentPC, &lockState);
+
+    // Since R2R images are not collectible, and we always can find
+    // non-collectible RangeSections without taking a lock we don't need
+    // to take the actual ReaderLock here if GetRangeSection returns NULL
+
+#ifdef _DEBUG
+    if (pRS == NULL)
+    {
+        // This logic checks to ensure that the behavior of the fully locked
+        // lookup matches that of the unlocked lookup.
+        // Note that if the locked lookup finds something, we need to check
+        // the unlocked lookup, in case a new module was loaded in the meantime.
+        ReaderLockHolder rlh;
+        lockState = RangeSectionLockState::ReaderLocked;
+        if (GetRangeSection(currentPC, &lockState) != NULL)
+        {
+            lockState = RangeSectionLockState::None;
+            assert(GetRangeSection(currentPC, &lockState) == NULL);
+        }
+    }
+#endif // _DEBUG
+
     if (pRS != NULL && (pRS->_pR2RModule != NULL))
     {
         if (dac_cast<PTR_ReadyToRunJitManager>(pRS->_pjit)->JitCodeToMethodInfo(pRS, currentPC, NULL, NULL))
@@ -4960,22 +4978,32 @@ PTR_Module ExecutionManager::FindReadyToRunModule(TADDR currentData)
 #ifdef FEATURE_READYTORUN
     RangeSectionLockState lockState = RangeSectionLockState::None;
     RangeSection * pRS = GetRangeSection(currentData, &lockState);
-    if (lockState != RangeSectionLockState::NeedsLock)
-    {
-        if (pRS == NULL)
-            return NULL;
 
-        return pRS->_pR2RModule;
-    }
-    else
+    // Since R2R images are not collectible, and we always can find
+    // non-collectible RangeSections without taking a lock we don't need
+    // to take the actual ReaderLock here if GetRangeSection returns NULL
+    if (pRS == NULL)
     {
-        ReaderLockHolder rlh;
-        lockState = RangeSectionLockState::ReaderLocked;
-        pRS = GetRangeSection(currentData, &lockState);
-        if (pRS == NULL)
-            return NULL;
-        return pRS->_pR2RModule;
+#ifdef _DEBUG
+        {
+            // This logic checks to ensure that the behavior of the fully locked
+            // lookup matches that of the unlocked lookup.
+            // Note that if the locked lookup finds something, we need to check
+            // the unlocked lookup, in case a new module was loaded in the meantime.
+            ReaderLockHolder rlh;
+            lockState = RangeSectionLockState::ReaderLocked;
+            if (GetRangeSection(currentData, &lockState) != NULL)
+            {
+                lockState = RangeSectionLockState::None;
+                assert(GetRangeSection(currentData, &lockState) == NULL);
+            }
+        }
+#endif // _DEBUG
+
+        return NULL;
     }
+
+    return pRS->_pR2RModule;
 #else
     return NULL;
 #endif

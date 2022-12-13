@@ -1036,11 +1036,13 @@ class RangeSectionMap
             assert(LookupRangeSection(fragmentAddress, pLockState) == NULL);
         }
 
+        bool collectible = !!(pRangeSection->_flags & RangeSection::RANGE_SECTION_COLLECTIBLE);
+
         for (uintptr_t iFragment = 0; iFragment < rangeSectionFragmentCount; iFragment++)
         {
             fragments[iFragment].pRangeSection = pRangeSection;
             fragments[iFragment]._range = pRangeSection->_range;
-            fragments[iFragment].isCollectibleRangeSectionFragment = !!(pRangeSection->_flags & RangeSection::RANGE_SECTION_COLLECTIBLE);
+            fragments[iFragment].isCollectibleRangeSectionFragment = collectible;
             RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForUpdate);
             if (entryInMapToUpdate == NULL)
             {
@@ -1056,11 +1058,21 @@ class RangeSectionMap
         // At this point all the needed memory is allocated, and it is no longer possible to fail.
         for (uintptr_t iFragment = 0; iFragment < rangeSectionFragmentCount; iFragment++)
         {
+            RangeSectionFragmentPointer* pFragmentPointerToUpdate = entriesInMapToUpdate[iFragment];
             do
             {
-                RangeSectionFragment* initialFragmentInMap = entriesInMapToUpdate[iFragment]->VolatileLoadWithoutBarrier(pLockState);
+                RangeSectionFragment* initialFragmentInMap = pFragmentPointerToUpdate->VolatileLoadWithoutBarrier(pLockState);
+
+                // When inserting collectible elements into the range section map, ALWAYS put them after any non-collectible
+                // fragments. This is so that when looking up ReadyToRun data, we never will need to take the ReaderLock for real.
+                while (initialFragmentInMap != NULL && collectible && !initialFragmentInMap->isCollectibleRangeSectionFragment)
+                {
+                    pFragmentPointerToUpdate = &initialFragmentInMap->pRangeSectionFragmentNext;
+                    initialFragmentInMap = pFragmentPointerToUpdate->VolatileLoadWithoutBarrier(pLockState);
+                }
+
                 fragments[iFragment].pRangeSectionFragmentNext.VolatileStore(initialFragmentInMap);
-                if (entriesInMapToUpdate[iFragment]->AtomicReplace(&(fragments[iFragment]), initialFragmentInMap))
+                if (pFragmentPointerToUpdate->AtomicReplace(&(fragments[iFragment]), initialFragmentInMap))
                     break;
             } while (true);
         }
@@ -1205,8 +1217,22 @@ public:
                 RangeSectionFragmentPointer* entryInMapToUpdate = EnsureMapsForAddress(addressToPrepForCleanup);
                 assert(entryInMapToUpdate != NULL);
 
+#ifdef _DEBUG
+                bool seenCollectibleRangeList = false;
+#endif
                 while ((entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState))->pRangeSection != pRangeSectionToCleanup)
                 {
+#ifdef _DEBUG
+                    if (entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState)->isCollectibleRangeSectionFragment)
+                    {
+                        seenCollectibleRangeList = true;
+                    }
+                    else
+                    {
+                        // Since the fragment linked lists are sorted such that the collectible ones are always after the non-collectible ones, this should never happen.
+                        assert(!seenCollectibleRangeList); 
+                    }
+#endif
                     entryInMapToUpdate = &(entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState))->pRangeSectionFragmentNext;
                 }
 
