@@ -2317,13 +2317,10 @@ namespace System
                 case TypeCode.UInt64: return ToObject(enumType, (ulong)value);
                 case TypeCode.Single: return ToObject(enumType, BitConverter.SingleToInt32Bits((float)value));
                 case TypeCode.Double: return ToObject(enumType, BitConverter.DoubleToInt64Bits((double)value));
-#if RARE_ENUMS
                 case TypeCode.Char: return ToObject(enumType, (char)value);
                 case TypeCode.Boolean: return ToObject(enumType, (bool)value ? 1L : 0L);
-#endif
             };
 
-#if RARE_ENUMS
             Type valueType = value.GetType();
             if (valueType.IsEnum)
             {
@@ -2332,7 +2329,6 @@ namespace System
 
             if (valueType == typeof(nint)) ToObject(enumType, (nint)value);
             if (valueType == typeof(nuint)) ToObject(enumType, (nuint)value);
-#endif
 
             throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
         }
