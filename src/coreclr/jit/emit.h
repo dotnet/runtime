@@ -2179,11 +2179,6 @@ private:
     // The max count of last instructions is the same as the max count of IG instructions.
     instrDesc* emitLastInstrs[EMIT_MAX_IG_INS_COUNT];
 
-    inline void emitClearLastInstrs()
-    {
-        memset(&emitLastInstrs, 0, (ArrLen(emitLastInstrs) * sizeof(instrDesc*)));
-    }
-
     inline instrDesc* emitGetLastIns() const
     {
         return emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)];

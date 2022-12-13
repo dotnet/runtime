@@ -1167,7 +1167,9 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitClearLastInstrs();
+    // Clear the last instr at index 0.
+    // We must do this so 'emitHasLastIns' returns 'false' at the beginning of codegen.
+    emitLastInstrs[0] = nullptr;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
