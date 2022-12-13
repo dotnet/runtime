@@ -81,10 +81,10 @@ namespace System.Reflection.Emit
         private ModuleBuilderTokenGenerator? token_gen;
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void basic_init(ModuleBuilder ab);
+        private static extern void basic_init(RuntimeModuleBuilder ab);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void set_wrappers_type(ModuleBuilder mb, Type? ab);
+        private static extern void set_wrappers_type(RuntimeModuleBuilder mb, Type? ab);
 
         [DynamicDependency(nameof(table_indexes))]  // Automatically keeps all previous fields too due to StructLayout
         internal RuntimeModuleBuilder(RuntimeAssemblyBuilder assb, string name)
@@ -551,13 +551,13 @@ namespace System.Reflection.Emit
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int getUSIndex(ModuleBuilder mb, string str);
+        private static extern int getUSIndex(RuntimeModuleBuilder mb, string str);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int getToken(ModuleBuilder mb, object obj, bool create_open_instance);
+        private static extern int getToken(RuntimeModuleBuilder mb, object obj, bool create_open_instance);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int getMethodToken(ModuleBuilder mb, MethodBase method,
+        private static extern int getMethodToken(RuntimeModuleBuilder mb, MethodBase method,
                               Type[] opt_param_types);
 
         internal int GetToken(string str)

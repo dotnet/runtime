@@ -193,9 +193,7 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-#pragma warning disable CS8764 // Nullability of return type doesn't match overridden member
         public override TypeInfo CreateTypeInfo()
-#pragma warning restore CS8764
         {
             return _tb.CreateTypeInfo();
         }
