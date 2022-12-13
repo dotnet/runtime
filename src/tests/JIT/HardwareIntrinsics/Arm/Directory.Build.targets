@@ -3,15 +3,6 @@
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 
-  <ItemGroup>
-    <ProjectReference Include="$(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.csproj" ReferenceOutputAssembly="false" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <!-- Ignore the warning we'd otherwise get about GenerateHWIntrinsicsTests_Arm since we don't actually reference it -->
-    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
-  </PropertyGroup>
-
   <PropertyGroup>
     <GeneratedHWIntrinsicTestDirectory Condition="'$(GeneratedHWIntrinsicTestDirectory)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName)/gen/</GeneratedHWIntrinsicTestDirectory>
     <GeneratedHWIntrinsicTestListFile Condition="'$(GeneratedHWIntrinsicTestListFile)' == ''">$(GeneratedHWIntrinsicTestDirectory)GeneratedHWIntrinsicTestList.txt</GeneratedHWIntrinsicTestListFile>
@@ -21,7 +12,8 @@
           Inputs="$(MSBuildAllProjects);$(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.cs"
           Outputs="$(GeneratedHWIntrinsicTestListFile)"
           Condition="'$(Language)' == 'C#'">
-    <Exec Command="$(DotNetCli) run --project $(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.csproj -c $(Configuration) -- $(MSBuildProjectName) $(MSBuildThisFileDirectory)Shared $(GeneratedHWIntrinsicTestDirectory) $(GeneratedHWIntrinsicTestListFile)" />
+    <Exec Command="$(DotNetCli) build $(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.csproj -c $(Configuration) /p:IntermediateOutputPath=$(IntermediateOutputPath)/GenerateHWIntrinsicTests/ /p:OutputPath=$(OutputPath)/GenerateHWIntrinsicTests/" />
+    <Exec Command="$(DotNetCli) exec $(OutputPath)/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.dll $(MSBuildProjectName) $(MSBuildThisFileDirectory)Shared $(GeneratedHWIntrinsicTestDirectory) $(GeneratedHWIntrinsicTestListFile)" />
   </Target>
 
   <Target Name="ReadGeneratedHWIntrinsicTestListFile"
