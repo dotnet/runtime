@@ -229,7 +229,7 @@ namespace System.Threading
             // This thread may be looking at an old version of s_entries.  If the old version had
             // no hash code stored, GetHashCode returns zero and the subsequent SetHashCode call
             // will resolve the potential race.
-            return s_entries[syncIndex].HashCode;
+            return UnsafeEntryRef(syncIndex).HashCode;
         }
 
         /// <summary>

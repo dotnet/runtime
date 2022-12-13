@@ -94,17 +94,9 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
         }
 
-        [ThreadStatic]
-        private static int t_hashSeed;
-
         internal static int GetNewHashCode()
         {
-            int multiplier = Environment.CurrentManagedThreadId * 4 + 5;
-            // Every thread has its own generator for hash codes so that we won't get into a situation
-            // where two threads consistently give out the same hash codes.
-            // Choice of multiplier guarantees period of 2**32 - see Knuth Vol 2 p16 (3.2.1.2 Theorem A).
-            t_hashSeed = t_hashSeed * multiplier + 1;
-            return t_hashSeed + Environment.TickCount;
+            return Random.Shared.Next();
         }
 
         public static unsafe int GetHashCode(object o)
