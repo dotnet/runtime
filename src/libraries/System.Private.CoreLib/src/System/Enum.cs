@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Rare enums types not expressible in C# are not supported in native AOT
+#if !NATIVEAOT
+#define RARE_ENUMS
+#endif
+
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -49,7 +54,7 @@ namespace System
             if (underlyingType == typeof(uint)) return GetNameInlined(GetEnumInfo<uint>(rt), *(uint*)&value);
             if (underlyingType == typeof(long)) return GetNameInlined(GetEnumInfo<long>(rt), *(long*)&value);
             if (underlyingType == typeof(ulong)) return GetNameInlined(GetEnumInfo<ulong>(rt), *(ulong*)&value);
-#if !NATIVEAOT
+#if RARE_ENUMS
             if (underlyingType == typeof(nint)) return GetNameInlined(GetEnumInfo<nint>(rt), *(nint*)&value);
             if (underlyingType == typeof(nuint)) return GetNameInlined(GetEnumInfo<nuint>(rt), *(nuint*)&value);
             if (underlyingType == typeof(float)) return GetNameInlined(GetEnumInfo<float>(rt), *(float*)&value);
@@ -123,7 +128,7 @@ namespace System
                 case TypeCode.UInt64:
                     return GetName(GetEnumInfo<ulong>(enumType), uint64Value);
 
-#if !NATIVEAOT
+#if RARE_ENUMS
                 case TypeCode.Char:
                     if (uint64Value > char.MaxValue) return null;
                     return GetName(GetEnumInfo<char>(enumType), (char)uint64Value);
@@ -134,7 +139,7 @@ namespace System
 #endif
             };
 
-#if !NATIVEAOT
+#if RARE_ENUMS
             if (underlyingType == typeof(nint))
             {
                 if ((long)uint64Value < nint.MinValue || (long)uint64Value > nint.MaxValue) return null;
@@ -224,7 +229,7 @@ namespace System
             else if (underlyingType == typeof(uint)) names = GetEnumInfo<uint>(rt).Names;
             else if (underlyingType == typeof(long)) names = GetEnumInfo<long>(rt).Names;
             else if (underlyingType == typeof(ulong)) names = GetEnumInfo<ulong>(rt).Names;
-#if !NATIVEAOT
+#if RARE_ENUMS
             else if (underlyingType == typeof(nint)) names = GetEnumInfo<nint>(rt).Names;
             else if (underlyingType == typeof(nuint)) names = GetEnumInfo<nuint>(rt).Names;
             else if (underlyingType == typeof(float)) names = GetEnumInfo<float>(rt).Names;
@@ -265,7 +270,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U4 => GetEnumInfo<uint>(enumType).Names,
                 CorElementType.ELEMENT_TYPE_I8 => GetEnumInfo<long>(enumType).Names,
                 CorElementType.ELEMENT_TYPE_U8 => GetEnumInfo<ulong>(enumType).Names,
-#if !NATIVEAOT
+#if RARE_ENUMS
                 CorElementType.ELEMENT_TYPE_R4 => GetEnumInfo<float>(enumType).Names,
                 CorElementType.ELEMENT_TYPE_R8 => GetEnumInfo<double>(enumType).Names,
                 CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType).Names,
@@ -354,7 +359,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U4 => GetEnumInfo<uint>(enumType, getNames: false).CloneValues(),
                 CorElementType.ELEMENT_TYPE_I8 => GetEnumInfo<long>(enumType, getNames: false).CloneValues(),
                 CorElementType.ELEMENT_TYPE_U8 => GetEnumInfo<ulong>(enumType, getNames: false).CloneValues(),
-#if !NATIVEAOT
+#if RARE_ENUMS
                 CorElementType.ELEMENT_TYPE_R4 => GetEnumInfo<float>(enumType, getNames: false).CloneValues(),
                 CorElementType.ELEMENT_TYPE_R8 => GetEnumInfo<double>(enumType, getNames: false).CloneValues(),
                 CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType, getNames: false).CloneValues(),
@@ -382,7 +387,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U4 => GetEnumInfo<uint>(enumType, getNames: false).Values,
                 CorElementType.ELEMENT_TYPE_I8 => GetEnumInfo<long>(enumType, getNames: false).Values,
                 CorElementType.ELEMENT_TYPE_U8 => GetEnumInfo<ulong>(enumType, getNames: false).Values,
-#if !NATIVEAOT
+#if RARE_ENUMS
                 CorElementType.ELEMENT_TYPE_R4 => GetEnumInfo<float>(enumType, getNames: false).Values,
                 CorElementType.ELEMENT_TYPE_R8 => GetEnumInfo<double>(enumType, getNames: false).Values,
                 CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType, getNames: false).Values,
@@ -439,7 +444,7 @@ namespace System
                         return (Unsafe.As<byte, ulong>(ref pThisValue) & flagsValue) == flagsValue;
                     }
 
-#if !NATIVEAOT
+#if RARE_ENUMS
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     goto case CorElementType.ELEMENT_TYPE_U1;
 
@@ -502,7 +507,7 @@ namespace System
             if (underlyingType == typeof(uint)) return IsDefinedPrimitive(rt, *(uint*)&value);
             if (underlyingType == typeof(long)) return IsDefinedPrimitive(rt, *(long*)&value);
             if (underlyingType == typeof(ulong)) return IsDefinedPrimitive(rt, *(ulong*)&value);
-#if !NATIVEAOT
+#if RARE_ENUMS
             if (underlyingType == typeof(nint)) return IsDefinedPrimitive(rt, *(nint*)&value);
             if (underlyingType == typeof(nuint)) return IsDefinedPrimitive(rt, *(nuint*)&value);
             if (underlyingType == typeof(float)) return IsDefinedPrimitive(rt, *(float*)&value);
@@ -799,9 +804,7 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)]
             static bool TryParseRareTypes(RuntimeType rt, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out long result)
             {
-#if NATIVEAOT
-                throw CreateUnknownEnumTypeException();
-#else
+#if RARE_ENUMS
                 bool parsed;
 
                 switch (InternalGetCorElementType(rt))
@@ -853,6 +856,8 @@ namespace System
                 }
 
                 return parsed;
+#else
+                throw CreateUnknownEnumTypeException();
 #endif
             }
         }
@@ -932,7 +937,7 @@ namespace System
             if (underlyingType == typeof(uint)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, uint>(ref result));
             if (underlyingType == typeof(long)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, long>(ref result));
             if (underlyingType == typeof(ulong)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ulong>(ref result));
-#if !NATIVEAOT
+#if RARE_ENUMS
             if (underlyingType == typeof(float)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, float>(ref result));
             if (underlyingType == typeof(double)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, double>(ref result));
             if (underlyingType == typeof(nint)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nint>(ref result));
@@ -941,12 +946,7 @@ namespace System
             if (underlyingType == typeof(bool)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, byte>(ref result));
 #endif
 
-            if (throwOnFailure)
-            {
-                throw CreateUnknownEnumTypeException();
-            }
-            result = default;
-            return false;
+            throw CreateUnknownEnumTypeException();
         }
 
         /// <summary>Core implementation for all {Try}Parse methods, both generic and non-generic, parsing either by value or by name.</summary>
@@ -1041,7 +1041,7 @@ namespace System
                 }
                 else
                 {
-                    // Rare types not expressible in C#
+#if RARE_ENUMS
                     Type underlyingType = GetUnderlyingType(enumType);
                     try
                     {
@@ -1056,6 +1056,9 @@ namespace System
                     {
                         status = Number.ParsingStatus.Overflow; // fall through to returning failure
                     }
+#else
+                    throw CreateUnknownEnumTypeException();
+#endif
                 }
 
                 if (status != Number.ParsingStatus.Overflow)
@@ -1182,13 +1185,13 @@ namespace System
                 case TypeCode.Int64: return (ulong)(long)value;
                 case TypeCode.UInt32: return (uint)value;
                 case TypeCode.UInt64: return (ulong)value;
-#if !NATIVEAOT
+#if RARE_ENUMS
                 case TypeCode.Char: return (char)value;
                 case TypeCode.Boolean: return (bool)value ? 1UL : 0UL;
 #endif
             };
 
-#if !NATIVEAOT
+#if RARE_ENUMS
             if (value is not null)
             {
                 Type valueType = value.GetType();
@@ -1219,7 +1222,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U4 => Unsafe.As<byte, uint>(ref data),
                 CorElementType.ELEMENT_TYPE_I8 => Unsafe.As<byte, long>(ref data),
                 CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data),
-#if !NATIVEAOT
+#if RARE_ENUMS
                 CorElementType.ELEMENT_TYPE_R4 => Unsafe.As<byte, float>(ref data),
                 CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data),
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data),
@@ -1264,7 +1267,7 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_U8:
                     return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
 
-#if !NATIVEAOT
+#if RARE_ENUMS
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     goto case CorElementType.ELEMENT_TYPE_U1;
 
@@ -1309,7 +1312,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_U4 => Unsafe.As<byte, uint>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_I8 => Unsafe.As<byte, long>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U8 => Unsafe.As<byte, ulong>(ref data).GetHashCode(),
-#if !NATIVEAOT
+#if RARE_ENUMS
                 CorElementType.ELEMENT_TYPE_R4 => Unsafe.As<byte, float>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_R8 => Unsafe.As<byte, double>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data).GetHashCode(),
@@ -1362,7 +1365,7 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_U8:
                     return Unsafe.As<byte, ulong>(ref pThisValue).CompareTo(Unsafe.As<byte, ulong>(ref pTargetValue));
 
-#if !NATIVEAOT
+#if RARE_ENUMS
                 case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, float>(ref pThisValue).CompareTo(Unsafe.As<byte, float>(ref pTargetValue));
 
@@ -1416,18 +1419,20 @@ namespace System
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static string HandleRareTypes(RuntimeType enumType, ref byte rawData) =>
+#if RARE_ENUMS
                 InternalGetCorElementType(enumType) switch
                 {
-#if !NATIVEAOT
                     CorElementType.ELEMENT_TYPE_R4 => ToString<float>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_R8 => ToString<double>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_I => ToString<nint>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_U => ToString<nuint>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_BOOLEAN => ToStringBool(enumType, null, ref rawData),
-#endif
                     _ => throw CreateUnknownEnumTypeException(),
                 };
+#else
+                throw CreateUnknownEnumTypeException();
+#endif
         }
 
         /// <summary>Converts the value of this instance to its equivalent string representation using the specified format.</summary>
@@ -1466,18 +1471,20 @@ namespace System
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static string HandleRareTypes(RuntimeType enumType, char formatChar, ref byte rawData) =>
+#if RARE_ENUMS
                 InternalGetCorElementType(enumType) switch
                 {
-#if !NATIVEAOT
                     CorElementType.ELEMENT_TYPE_R4 => ToString<float>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_R8 => ToString<double>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_I => ToString<nint>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_U => ToString<nuint>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_BOOLEAN => ToStringBool(enumType, formatChar.ToString(), ref rawData),
-#endif
                     _ => throw CreateUnknownEnumTypeException(),
                 };
+#else
+                throw CreateUnknownEnumTypeException();
+#endif
         }
 
         /// <summary>This method overload is obsolete; use <see cref="ToString()"/>.</summary>
@@ -1763,7 +1770,7 @@ namespace System
                         CorElementType.ELEMENT_TYPE_U4 => ToString<uint>(rtType, formatChar, ref rawData),
                         CorElementType.ELEMENT_TYPE_I8 => ToString<long>(rtType, formatChar, ref rawData),
                         CorElementType.ELEMENT_TYPE_U8 => ToString<ulong>(rtType, formatChar, ref rawData),
-#if !NATIVEAOT
+#if RARE_ENUMS
                         CorElementType.ELEMENT_TYPE_R4 => ToString<float>(rtType, formatChar, ref rawData),
                         CorElementType.ELEMENT_TYPE_R8 => ToString<double>(rtType, formatChar, ref rawData),
                         CorElementType.ELEMENT_TYPE_I => ToString<nint>(rtType, formatChar, ref rawData),
@@ -1803,7 +1810,7 @@ namespace System
                     CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, uint>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, long>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, ulong>(ref rawData), destination, out charsWritten),
-#if !NATIVEAOT
+#if RARE_ENUMS
                     CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, float>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, double>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten),
@@ -1826,7 +1833,7 @@ namespace System
                     CorElementType.ELEMENT_TYPE_U4 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, uint>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_I8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, long>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_U8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, ulong>(ref rawData), destination, out charsWritten, format),
-#if !NATIVEAOT
+#if RARE_ENUMS
                     CorElementType.ELEMENT_TYPE_R4 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, float>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_R8 => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, double>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten, format),
@@ -1866,7 +1873,7 @@ namespace System
                 if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveDefault(rt, *(sbyte*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(short)) return TryFormatPrimitiveDefault(rt, *(short*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(ushort)) return TryFormatPrimitiveDefault(rt, *(ushort*)&value, destination, out charsWritten);
-#if !NATIVEAOT
+#if RARE_ENUMS
                 if (underlyingType == typeof(nint)) return TryFormatPrimitiveDefault(rt, *(nint*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(nuint)) return TryFormatPrimitiveDefault(rt, *(nuint*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, *(float*)&value, destination, out charsWritten);
@@ -1885,7 +1892,7 @@ namespace System
                 if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveNonDefault(rt, *(sbyte*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(short)) return TryFormatPrimitiveNonDefault(rt, *(short*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(ushort)) return TryFormatPrimitiveNonDefault(rt, *(ushort*)&value, destination, out charsWritten, format);
-#if !NATIVEAOT
+#if RARE_ENUMS
                 if (underlyingType == typeof(nint)) return TryFormatPrimitiveNonDefault(rt, *(nint*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(nuint)) return TryFormatPrimitiveNonDefault(rt, *(nuint*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, *(float*)&value, destination, out charsWritten, format);
@@ -1927,7 +1934,7 @@ namespace System
                 if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveDefault(rt, *(sbyte*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(short)) return TryFormatPrimitiveDefault(rt, *(short*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(ushort)) return TryFormatPrimitiveDefault(rt, *(ushort*)&value, destination, out charsWritten);
-#if !NATIVEAOT
+#if RARE_ENUMS
                 if (underlyingType == typeof(nint)) return TryFormatPrimitiveDefault(rt, *(nint*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(nuint)) return TryFormatPrimitiveDefault(rt, *(nuint*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, *(float*)&value, destination, out charsWritten);
@@ -1946,7 +1953,7 @@ namespace System
                 if (underlyingType == typeof(sbyte)) return TryFormatPrimitiveNonDefault(rt, *(sbyte*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(short)) return TryFormatPrimitiveNonDefault(rt, *(short*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(ushort)) return TryFormatPrimitiveNonDefault(rt, *(ushort*)&value, destination, out charsWritten, format);
-#if !NATIVEAOT
+#if RARE_ENUMS
                 if (underlyingType == typeof(nint)) return TryFormatPrimitiveNonDefault(rt, *(nint*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(nuint)) return TryFormatPrimitiveNonDefault(rt, *(nuint*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, *(float*)&value, destination, out charsWritten, format);
@@ -2310,13 +2317,13 @@ namespace System
                 case TypeCode.UInt64: return ToObject(enumType, (ulong)value);
                 case TypeCode.Single: return ToObject(enumType, BitConverter.SingleToInt32Bits((float)value));
                 case TypeCode.Double: return ToObject(enumType, BitConverter.DoubleToInt64Bits((double)value));
-#if !NATIVEAOT
+#if RARE_ENUMS
                 case TypeCode.Char: return ToObject(enumType, (char)value);
                 case TypeCode.Boolean: return ToObject(enumType, (bool)value ? 1L : 0L);
 #endif
             };
 
-#if !NATIVEAOT
+#if RARE_ENUMS
             Type valueType = value.GetType();
             if (valueType.IsEnum)
             {
