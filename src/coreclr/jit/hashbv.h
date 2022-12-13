@@ -313,7 +313,7 @@ enum class HbvWalk
 };
 
 template <typename TFunctor>
-static HbvWalk ForEachHbvBitSet(const hashBv& bv, TFunctor func)
+HbvWalk ForEachHbvBitSet(const hashBv& bv, TFunctor func)
 {
     for (int hashNum = 0; hashNum < bv.hashtable_size(); hashNum++)
     {
