@@ -146,6 +146,13 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	guint8 *code;
 	guint8 buf [16];
 
+	code = orig_code;
+	if (mono_amd64_dont_patch_callsites && code [-3] == 0x41 && code [-2] == 0xff && code [-1] == 0xd3 && code [-6] == 0x4d && code [-5] == 0x8b && code [-4] == 0x1b && code [-16] == 0x49 && code [-15] == 0xbb) {
+		gpointer *p = *(gpointer**)(code -16 + 2);
+		*p = addr;
+		return;
+	}
+
 	// Since method_start is retrieved from function return address (below current call/jmp to patch) there is a case when
 	// last instruction of a function is the call (due to OP_NOT_REACHED) instruction and then directly followed by a
 	// different method. In that case current orig_code points into next method and method_start will also point into

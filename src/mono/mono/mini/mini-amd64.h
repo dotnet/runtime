@@ -494,6 +494,8 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
+extern gboolean mono_amd64_dont_patch_callsites;
+
 void
 mono_amd64_patch (unsigned char* code, gpointer target);
 

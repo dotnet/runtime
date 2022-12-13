@@ -88,7 +88,7 @@ tailcall_parameter: len:14
 
 br: len:6
 label: len:0
-seq_point: len:46 clob:c
+seq_point: len:49 clob:c
 il_seq_point: len:0
 
 long_add: dest:i src1:i src2:i len:3 clob:1
@@ -127,8 +127,8 @@ long_min_un: dest:i src1:i src2:i len:16 clob:1
 long_max: dest:i src1:i src2:i len:16 clob:1
 long_max_un: dest:i src1:i src2:i len:16 clob:1
 
-throw: src1:i len:24
-rethrow: src1:i len:24
+throw: src1:i len:27
+rethrow: src1:i len:27
 start_handler: len:16
 endfinally: len:9
 endfilter: src1:a len:9
@@ -150,24 +150,24 @@ fcompare: src1:f src2:f clob:a len:13
 rcompare: src1:f src2:f clob:a len:13
 arglist: src1:b len:11
 check_this: src1:b len:5
-call: dest:a clob:c len:32
-voidcall: clob:c len:32
-voidcall_reg: src1:i clob:c len:32
-voidcall_membase: src1:b clob:c len:32
-fcall: dest:f len:64 clob:c
-fcall_reg: dest:f src1:i len:64 clob:c
-fcall_membase: dest:f src1:b len:64 clob:c
-rcall: dest:f len:64 clob:c
-rcall_reg: dest:f src1:i len:64 clob:c
-rcall_membase: dest:f src1:b len:64 clob:c
-lcall: dest:a len:64 clob:c
-lcall_reg: dest:a src1:i len:64 clob:c
-lcall_membase: dest:a src1:b len:64 clob:c
-vcall: len:64 clob:c
-vcall_reg: src1:i len:64 clob:c
-vcall_membase: src1:b len:64 clob:c
-call_reg: dest:a src1:i len:32 clob:c
-call_membase: dest:a src1:b len:32 clob:c
+call: dest:a clob:c len:35
+voidcall: clob:c len:35
+voidcall_reg: src1:i clob:c len:35
+voidcall_membase: src1:b clob:c len:35
+fcall: dest:f len:67 clob:c
+fcall_reg: dest:f src1:i len:67 clob:c
+fcall_membase: dest:f src1:b len:67 clob:c
+rcall: dest:f len:67 clob:c
+rcall_reg: dest:f src1:i len:67 clob:c
+rcall_membase: dest:f src1:b len:67 clob:c
+lcall: dest:a len:67 clob:c
+lcall_reg: dest:a src1:i len:67 clob:c
+lcall_membase: dest:a src1:b len:67 clob:c
+vcall: len:67 clob:c
+vcall_reg: src1:i len:67 clob:c
+vcall_membase: src1:b len:67 clob:c
+call_reg: dest:a src1:i len:35 clob:c
+call_membase: dest:a src1:b len:35 clob:c
 iconst: dest:i len:10
 i8const: dest:i len:10
 r4const: dest:f len:17
@@ -314,9 +314,9 @@ move_f_to_i4: dest:i src1:f len:16
 move_i4_to_f: dest:f src1:i len:16
 move_f_to_i8: dest:i src1:f len:5
 move_i8_to_f: dest:f src1:i len:5
-call_handler: len:14 clob:c
+call_handler: len:17 clob:c
 aotconst: dest:i len:10
-gc_safe_point: clob:c src1:i len:40
+gc_safe_point: clob:c src1:i len:43
 x86_test_null: src1:i len:5
 x86_compare_membase_reg: src1:b src2:i len:9
 x86_compare_membase_imm: src1:b len:13
@@ -583,11 +583,11 @@ amd64_mul_membase_reg: src1:b src2:i len:15
 
 float_conv_to_r4: dest:f src1:f len:17
 
-vcall2: len:64 clob:c
-vcall2_reg: src1:i len:64 clob:c
-vcall2_membase: src1:b len:64 clob:c
+vcall2: len:67 clob:c
+vcall2_reg: src1:i len:67 clob:c
+vcall2_membase: src1:b len:67 clob:c
 
-dyn_call: src1:i src2:i len:192 clob:c
+dyn_call: src1:i src2:i len:195 clob:c
 
 localloc_imm: dest:i len:120
 
@@ -819,7 +819,7 @@ gc_liveness_use: len:0
 gc_spill_slot_liveness_def: len:0
 gc_param_slot_liveness_def: len:0
 
-generic_class_init: src1:A len:32 clob:c
+generic_class_init: src1:A len:35 clob:c
 get_last_error: dest:i len:32
 
 fill_prof_call_ctx: src1:i len:128

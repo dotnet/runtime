@@ -23,6 +23,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
 
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
@@ -63,6 +66,8 @@ static gpointer ss_trampoline;
 
 /* The breakpoint trampoline */
 static gpointer bp_trampoline;
+
+gboolean mono_amd64_dont_patch_callsites;
 
 /* Offset between fp and the first argument in the callee */
 #define ARGS_OFFSET 16
@@ -1426,6 +1431,13 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
+#if defined(__APPLE__)
+	int ret = 0;
+	size_t size = sizeof (ret);
+	if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) != -1 && ret == 1)
+		mono_amd64_dont_patch_callsites = 1;
+#endif
+
 #ifndef DISABLE_JIT
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
@@ -3101,9 +3113,16 @@ emit_call (MonoCompile *cfg, MonoCallInst *call, guint8 *code, MonoJitICallId ji
 				amd64_padding (code, pad_size);
 				g_assert ((guint64)(code + 2 - cfg->native_code) % 8 == 0);
 			}
-			mono_add_patch_info (cfg, GPTRDIFF_TO_INT (code - cfg->native_code), patch.type, patch.target);
-			amd64_set_reg_template (code, GP_SCRATCH_REG);
-			amd64_call_reg (code, GP_SCRATCH_REG);
+			if (mono_amd64_dont_patch_callsites) {
+				mono_add_patch_info_rel (cfg, GPTRDIFF_TO_INT (code - cfg->native_code), patch.type, patch.target, -1);
+				amd64_set_reg_template (code, GP_SCRATCH_REG);
+				amd64_mov_reg_membase (code, GP_SCRATCH_REG, GP_SCRATCH_REG, 0, 8);
+				amd64_call_reg (code, GP_SCRATCH_REG);
+			} else {
+				mono_add_patch_info (cfg, GPTRDIFF_TO_INT (code - cfg->native_code), patch.type, patch.target);
+				amd64_set_reg_template (code, GP_SCRATCH_REG);
+				amd64_call_reg (code, GP_SCRATCH_REG);
+}
 		}
 	}
 
@@ -7450,6 +7469,18 @@ void
 mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
 	unsigned char *ip = ji->ip.i + code;
+
+	if (ji->relocation == -1) {
+		/*
+		 * amd64_set_reg_template (code, GP_SCRATCH_REG);
+		 * amd64_mov_reg_membase (code, GP_SCRATCH_REG, GP_SCRATCH_REG, 0, 8);
+		 * amd64_call_reg (code, GP_SCRATCH_REG);
+		*/
+		gpointer addr = g_malloc0 (8);
+		*(gpointer*)addr = target;
+		amd64_mov_reg_imm_size (ip, GP_SCRATCH_REG, addr, 8);
+		return;
+	}
 
 	/*
 	 * Debug code to help track down problems where the target of a near call is
