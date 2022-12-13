@@ -681,8 +681,8 @@ mono_mem_manager_init_reflection_hashes (MonoMemoryManager *mem_manager)
 
 	// FIXME: GC safety
 
-	MonoArray *holders [nhashes];
-	MonoGCHandle holder_handles [nhashes];
+	MonoArray *holders [16];
+	MonoGCHandle holder_handles [16];
 	for (int i = 0; i < nhashes; ++i) {
 		holders [i] = mono_array_new_checked (mono_get_object_class (), 2, error);
 		mono_error_assert_ok (error);

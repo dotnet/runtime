@@ -10255,7 +10255,7 @@ calli_end:
 			} else if (il_op == MONO_CEE_STSFLD) {
 				MonoInst *store;
 
-				if (m_class_get_mem_manager (field->parent)->collectible && (mini_type_is_reference (ftype) || m_class_has_references (mono_class_from_mono_type_internal (ftype)))) {
+				if (m_class_get_mem_manager (m_field_get_parent (field))->collectible && (mini_type_is_reference (ftype) || m_class_has_references (mono_class_from_mono_type_internal (ftype)))) {
 					/* These are stored on the GC heap, so they need GC barriers */
 					mini_emit_memory_store (cfg, ftype, ins, store_val, 0);
 				} else {
