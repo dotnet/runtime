@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace System.Threading
 {
     /// <summary>
-    /// Manipulates the object header located 4 bytes before each object's MethodTable pointer
+    /// Manipulates the object header located 4 bytes before each object's MethodTable pointer.
     /// in the managed heap.
     /// </summary>
     /// <remarks>
