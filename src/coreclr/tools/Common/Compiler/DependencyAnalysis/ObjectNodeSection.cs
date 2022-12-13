@@ -33,13 +33,9 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Returns true if the section is a standard one (defined as text, data, or rdata currently)
         /// </summary>
-        public bool IsStandardSection
-        {
-            get
-            {
-                return this == DataSection || this == ReadOnlyDataSection || this == FoldableReadOnlyDataSection || this == TextSection || this == XDataSection || this == BssSection;
-            }
-        }
+        public bool IsStandardSection =>
+            this == DataSection || this == ReadOnlyDataSection || this == FoldableReadOnlyDataSection || this == TextSection ||
+            this == XDataSection || this == BssSection || this == CommentSection;
 
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
@@ -48,6 +44,7 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection TextSection = new ObjectNodeSection("text", SectionType.Executable);
         public static readonly ObjectNodeSection TLSSection = new ObjectNodeSection("TLS", SectionType.Writeable);
         public static readonly ObjectNodeSection BssSection = new ObjectNodeSection("bss", SectionType.Uninitialized);
+        public static readonly ObjectNodeSection CommentSection = new ObjectNodeSection("comment", SectionType.Uninitialized);
         public static readonly ObjectNodeSection HydrationTargetSection = new ObjectNodeSection("hydrated", SectionType.Uninitialized);
         public static readonly ObjectNodeSection ManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
         public static readonly ObjectNodeSection FoldableManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);

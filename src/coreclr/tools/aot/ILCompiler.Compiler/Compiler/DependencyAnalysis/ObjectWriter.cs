@@ -3,8 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -844,11 +845,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private readonly bool isElfPlatform;
         private IntPtr _nativeObjectWriter = IntPtr.Zero;
 
         public ObjectWriter(string objectFilePath, NodeFactory factory, ObjectWritingOptions options)
         {
             var triple = GetLLVMTripleFromTarget(factory.Target);
+            isElfPlatform = triple.Contains("elf");
 
             _nativeObjectWriter = InitObjWriter(objectFilePath, triple);
             if (_nativeObjectWriter == IntPtr.Zero)
@@ -942,6 +945,24 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private static unsafe void SetIdentity(ObjectWriter objectWriter)
+        {
+            // emit compiler identity in comment section: .NET AOT {version}
+            byte[] runtimeVersionBytes = objectWriter._sb.Clear().Append(".NET AOT ")
+                .Append(Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion)
+                .Append('\0').UnderlyingArray;
+
+            objectWriter.SetSection(ObjectNodeSection.CommentSection);
+            if (objectWriter.isElfPlatform) objectWriter.EmitIntValue((byte)0, 1);
+
+            fixed (byte* version = &runtimeVersionBytes[0])
+            {
+                objectWriter.EmitBytes((IntPtr)version, runtimeVersionBytes.Length);
+            }
+
+            if (objectWriter.isElfPlatform) objectWriter.EmitIntValue((byte)0, 1);
+        }
+
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
             ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory, options);
@@ -949,6 +970,8 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
+                SetIdentity(objectWriter);
+
                 ObjectNodeSection managedCodeSection;
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
