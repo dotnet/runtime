@@ -733,20 +733,35 @@ enum class RangeSectionLockState
 };
 
 // For 64bit, we work with 8KB chunks of memory holding pointers to the next level. This provides 10 bits of address resolution per level.
-// For *reasons* the X64 hardware is limited to 57bits of addressable address space, and the minimum granularity that makes sense for range lists is 64KB (or every 2^16 bits)
-// Similarly the Arm64 specification requires addresses to use at most 52 bits. Thus we use the maximum addressable range of X64 to provide the real max range
+// For *reasons* the X64 hardware is limited to 57bits of addressable address space, and to make the math work out nicely, the minimum granularity that
+// is 128KB (or every 2^17 bits) for the tree structure.
+//  Similarly the Arm64 specification requires addresses to use at most 52 bits. Thus we use the maximum addressable range of X64 to provide the real max range
 // So the first level is bits [56:49] -> L5
 // Then                       [48:41] -> L4
 //                            [40:33] -> L3
 //                            [32:25] -> L2
 //                            [24:17] -> L1
-// This leaves 17 bits of the address to be handled by the RangeSection linked list
+// This leaves 17 bits of the address to be handled by the RangeSectionFragment linked list
 //
 // For 32bit VA processes, use 1KB chunks holding pointers to the next level. This provides 8 bites of address resolution per level.    [31:24] and [23:16].
+// For the 32bit processes, only the last 16bits are handled by the RangeSectionFragment linked list.
 
 // The memory safety model for segment maps is that the pointers held within the individual segments can never change other than to go from NULL to a meaningful pointer, 
-// except for the final level, which is only permitted to change when CleanupRangeSections is in use.
-
+// except for the final level, which is only permitted to change when CleanupRangeSections is in use. That meaningful pointer has process lifetime. 
+//
+// Within the linked list of RangeSectionFragments, there are effectively 2 lists.
+// - The non-collectible list, which are always found first.
+// - The collectible list, which follows the non-collectible list.
+//
+// Insertion into the map uses atomic updates and fully pre-initialized RangeSection structures, so that insertions can be lock-free with regards to each other.
+// However, they are not lock-free with regards to removals, so the insertions use a Reader lock.
+//
+// Reading from the non-collectible data (the tree structure + the non-collectible list) does not require any locking at all.
+// Reading from the collectible data will require a ReaderLock. There is a scheme using the RangeSectionLockState where when there is an attempt to read without the
+// lock and we find collectible data, which will cause the runtime to upgrade to using the Reader lock in that situation.
+//
+// Reading this code you will ALSO find that the ReaderLock logic used here is intertwined with the GC mode of the process. In particular,
+// in cooperative mode and during GC stackwalking, the ReaderLock is always considered to be held.
 class RangeSectionMap
 {
     class RangeSectionFragment;
