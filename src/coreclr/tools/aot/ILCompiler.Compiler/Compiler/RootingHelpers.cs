@@ -26,7 +26,7 @@ namespace ILCompiler
 
         public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
         {
-            rootProvider.AddCompilationRoot(type, reason);
+            rootProvider.AddReflectionRoot(type, reason);
 
             InstantiatedType fallbackNonCanonicalOwningType = null;
 
@@ -43,7 +43,7 @@ namespace ILCompiler
 
                 type = ((MetadataType)type).MakeInstantiatedType(canonInst);
 
-                rootProvider.AddCompilationRoot(type, reason);
+                rootProvider.AddReflectionRoot(type, reason);
             }
 
             // Also root base types. This is so that we make methods on the base types callable.
@@ -270,7 +270,7 @@ namespace ILCompiler
 
                 dependencies ??= new DependencyList();
 
-                dependencies.Add(factory.MaximallyConstructableType(type), reason);
+                dependencies.Add(factory.ReflectableType(type), reason);
 
                 // If there's any unknown genericness involved, try to create a fitting instantiation that would be usable at runtime.
                 // This is not a complete solution to the problem.
@@ -281,7 +281,7 @@ namespace ILCompiler
                     Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
                     if (!inst.IsNull)
                     {
-                        dependencies.Add(factory.MaximallyConstructableType(((MetadataType)type).MakeInstantiatedType(inst)), reason);
+                        dependencies.Add(factory.ReflectableType(((MetadataType)type).MakeInstantiatedType(inst)), reason);
                     }
                 }
             }

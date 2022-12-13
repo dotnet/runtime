@@ -48,6 +48,7 @@ namespace ILCompiler
                 (DiagnosticUtilities.RequiresAssemblyFilesAttribute, DiagnosticId.RequiresAssemblyFilesAttributeMismatch)
             };
 
+        private readonly List<TypeDesc> _typesWithForcedEEType = new List<TypeDesc>();
         private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
@@ -146,6 +147,11 @@ namespace ILCompiler
                     Debug.Assert((GetMetadataCategory(field) & MetadataCategory.RuntimeMapping) != 0);
                     _fieldsWithRuntimeMapping.Add(field);
                 }
+            }
+
+            if (obj is ReflectableTypeNode reflectableType)
+            {
+                _typesWithForcedEEType.Add(reflectableType.Type);
             }
         }
 
@@ -971,7 +977,7 @@ namespace ILCompiler
 
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
-                _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
+                _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
                 reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts, _options);
         }
 

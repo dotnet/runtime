@@ -287,6 +287,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReflectableFieldNode(field);
             });
 
+            _reflectableTypes = new NodeCache<TypeDesc, ReflectableTypeNode>(type =>
+            {
+                return new ReflectableTypeNode(type);
+            });
+
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
             {
                 return new GenericStaticBaseInfoNode(type);
@@ -891,6 +896,12 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectableFieldNode ReflectableField(FieldDesc field)
         {
             return _reflectableFields.GetOrAdd(field);
+        }
+
+        private NodeCache<TypeDesc, ReflectableTypeNode> _reflectableTypes;
+        public ReflectableTypeNode ReflectableType(TypeDesc type)
+        {
+            return _reflectableTypes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;

@@ -129,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
                     var caDependencies = factory.MetadataManager.GetDependenciesForCustomAttribute(factory, constructor, decodedValue, parent) ?? new DependencyList();
 
                     caDependencies.Add(factory.ReflectableMethod(constructor), "Attribute constructor");
-                    caDependencies.Add(factory.ConstructedTypeSymbol(constructor.OwningType), "Attribute type");
+                    caDependencies.Add(factory.ReflectableType(constructor.OwningType), "Attribute type");
 
                     if (AddDependenciesFromCustomAttributeBlob(caDependencies, factory, constructor.OwningType, decodedValue))
                     {
@@ -259,7 +259,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Reflection will need to be able to allocate this type at runtime
             // (e.g. this could be an array that needs to be allocated, or an enum that needs to be boxed).
-            dependencies.Add(factory.ConstructedTypeSymbol(type), "Custom attribute blob");
+            dependencies.Add(factory.ReflectableType(type), "Custom attribute blob");
 
             if (type.UnderlyingType.IsPrimitive || type.IsString || value == null)
                 return true;

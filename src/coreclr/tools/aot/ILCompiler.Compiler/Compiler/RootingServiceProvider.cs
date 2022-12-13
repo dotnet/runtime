@@ -41,6 +41,11 @@ namespace ILCompiler
             _rootAdder(_factory.MaximallyConstructableType(type), reason);
         }
 
+        public void AddReflectionRoot(TypeDesc type, string reason)
+        {
+            _rootAdder(_factory.ReflectableType(type), reason);
+        }
+
         public void AddReflectionRoot(MethodDesc method, string reason)
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(method))
