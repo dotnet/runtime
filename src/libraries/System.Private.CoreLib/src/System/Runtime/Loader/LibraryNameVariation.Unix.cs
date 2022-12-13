@@ -35,31 +35,26 @@ namespace System.Runtime.Loader
 
                 bool containsDelim = libName.Contains(Path.DirectorySeparatorChar);
 
-                if (containsSuffix)
+                if (containsSuffix && containsDelim)
                 {
                     yield return new LibraryNameVariation(string.Empty, string.Empty);
-                    if (!containsDelim)
-                    {
-                        yield return new LibraryNameVariation(LibraryNamePrefix, string.Empty);
-                    }
-                    yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
-                    if (!containsDelim)
-                    {
-                        yield return new LibraryNameVariation(LibraryNamePrefix, LibraryNameSuffix);
-                    }
                 }
-                else
+                else if (containsSuffix && !containsDelim)
+                {
+                    yield return new LibraryNameVariation(string.Empty, string.Empty);
+                    yield return new LibraryNameVariation(LibraryNamePrefix, string.Empty);
+                }
+                else if (!containsSuffix && containsDelim)
                 {
                     yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
-                    if (!containsDelim)
-                    {
-                        yield return new LibraryNameVariation(LibraryNamePrefix, LibraryNameSuffix);
-                    }
                     yield return new LibraryNameVariation(string.Empty, string.Empty);
-                    if (!containsDelim)
-                    {
-                        yield return new LibraryNameVariation(LibraryNamePrefix, string.Empty);
-                    }
+                }
+                else if (!containsSuffix && !containsDelim)
+                {
+                    yield return new LibraryNameVariation(LibraryNamePrefix, LibraryNameSuffix);
+                    yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
+                    yield return new LibraryNameVariation(LibraryNamePrefix, string.Empty);
+                    yield return new LibraryNameVariation(string.Empty, string.Empty);
                 }
             }
         }
