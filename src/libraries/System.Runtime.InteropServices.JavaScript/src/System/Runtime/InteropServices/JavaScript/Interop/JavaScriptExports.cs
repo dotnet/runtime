@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace System.Runtime.InteropServices.JavaScript
 {
     // this maps to src\mono\wasm\runtime\corebindings.ts
-    // the methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
+    // the public methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
     internal static unsafe partial class JavaScriptExports
     {
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425

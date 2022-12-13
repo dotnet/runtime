@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    public class NonGCStaticsNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public class NonGCStaticsNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly MetadataType _type;
         private readonly PreinitializationManager _preinitializationManager;
@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection GetSection(NodeFactory factory)
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
             if (_preinitializationManager.HasLazyStaticConstructor(_type)
                 || _preinitializationManager.IsPreinitialized(_type))
@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencyList;
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 

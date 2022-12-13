@@ -336,7 +336,7 @@ namespace System.Reflection.Emit
             if (res is TypeBuilder)
             {
                 if (throwOnError)
-                    throw new TypeLoadException(string.Format("Could not load type '{0}' from assembly '{1}'", name, this.name));
+                    throw new TypeLoadException(SR.Format(SR.ClassLoad_General, name, this.name));
                 return null;
             }
             return res;

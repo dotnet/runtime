@@ -964,7 +964,7 @@ namespace System.Xml.Serialization
         {
             if (value == null)
             {
-                throw new ArgumentNullException(SR.Format(SR.XmlMissingArrayType, CurrentTag()));
+                throw new ArgumentNullException(nameof(value), SR.Format(SR.XmlMissingArrayType, CurrentTag()));
             }
 
             if (value.Length == 0)
