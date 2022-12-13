@@ -329,13 +329,13 @@ ICALL_TYPE(FIELDI, "System.Reflection.FieldInfo", FILEDI_1)
 HANDLES(FILEDI_1, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_marshal_info, MonoReflectionMarshalAsAttribute, 1, (MonoReflectionField))
 HANDLES(FILEDI_2, "internal_from_handle_type", ves_icall_System_Reflection_FieldInfo_internal_from_handle_type, MonoReflectionField, 2, (MonoClassField_ref, MonoType_ref))
 
+ICALL_TYPE(LOADER_ALLOC, "System.Reflection.LoaderAllocatorScout", LOADER_ALLOC_1)
+NOHANDLES(ICALL(LOADER_ALLOC_1, "Destroy", ves_icall_System_Reflection_LoaderAllocatorScout_Destroy))
+
 ICALL_TYPE(MDUP, "System.Reflection.Metadata.MetadataUpdater", MDUP_1)
 NOHANDLES(ICALL(MDUP_1, "ApplyUpdateEnabled", ves_icall_AssemblyExtensions_ApplyUpdateEnabled))
 NOHANDLES(ICALL(MDUP_2, "ApplyUpdate_internal", ves_icall_AssemblyExtensions_ApplyUpdate))
 HANDLES(MDUP_3, "GetApplyUpdateCapabilities", ves_icall_AssemblyExtensions_GetApplyUpdateCapabilities, MonoString, 0, ())
-
-ICALL_TYPE(LOADER_ALLOC, "System.Reflection.LoaderAllocatorScout", LOADER_ALLOC_1)
-NOHANDLES(ICALL(LOADER_ALLOC_1, "Destroy", ves_icall_System_Reflection_LoaderAllocatorScout_Destroy))
 
 ICALL_TYPE(MBASE, "System.Reflection.MethodBase", MBASE_1)
 HANDLES(MBASE_1, "GetCurrentMethod", ves_icall_GetCurrentMethod, MonoReflectionMethod, 0, ())

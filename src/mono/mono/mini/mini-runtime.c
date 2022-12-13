@@ -4317,7 +4317,7 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 
 	/* Unregister/free jit info */
 	if (info->jit_infos) {
-		for (int i = 0; i < info->jit_infos->len; ++i) {
+		for (guint i = 0; i < info->jit_infos->len; ++i) {
 			MonoJitInfo *ji = g_ptr_array_index (info->jit_infos, i);
 			mono_jit_info_table_remove (ji);
 		}

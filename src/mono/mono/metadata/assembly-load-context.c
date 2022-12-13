@@ -285,7 +285,7 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContex
 
 	mono_mem_manager_start_unload (alc->memory_manager);
 	mono_alc_memory_managers_lock (alc);
-	for (int i = 0; i < alc->generic_memory_managers->len; i++)
+	for (guint i = 0; i < alc->generic_memory_managers->len; i++)
 		mono_mem_manager_start_unload ((MonoMemoryManager *)g_ptr_array_index (alc->generic_memory_managers, i));
 	mono_alc_memory_managers_unlock (alc);
 }
