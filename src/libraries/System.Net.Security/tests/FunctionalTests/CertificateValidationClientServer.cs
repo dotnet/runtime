@@ -165,11 +165,16 @@ namespace System.Net.Security.Tests
                         clientCerts.Add(_clientCertificate);
                     }
 
-                    Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(
-                        serverName,
-                        clientCerts,
-                        SslProtocolSupport.DefaultSslProtocols,
-                        false);
+                    // Connect to GUID to prevent TLS resume
+                    var options = new SslClientAuthenticationOptions()
+                    {
+                        TargetHost = Guid.NewGuid().ToString("N"),
+                        ClientCertificates = clientCerts,
+                        EnabledSslProtocols = SslProtocolSupport.DefaultSslProtocols,
+                        CertificateChainPolicy = new X509ChainPolicy(),
+                    };
+                    options.CertificateChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreInvalidName;
+                    Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(options, default);
 
                     Task serverAuthentication = sslServerStream.AuthenticateAsServerAsync(
                         _serverCertificate,
@@ -258,7 +263,6 @@ namespace System.Net.Security.Tests
 
             Assert.Equal(expectedSslPolicyErrors, sslPolicyErrors);
             Assert.Equal(_serverCertificate, certificate);
-
             return true;
         }
 

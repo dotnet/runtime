@@ -32,7 +32,6 @@ namespace System.Runtime.InteropServices.JavaScript
         ///     valuews.
         ///   </para>
         /// </returns>
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static object Invoke(this JSObject self, string method, params object?[] args)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -67,7 +66,6 @@ namespace System.Runtime.InteropServices.JavaScript
         ///     valuews.
         ///   </para>
         /// </returns>
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static object GetObjectProperty(this JSObject self, string name)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -92,7 +90,6 @@ namespace System.Runtime.InteropServices.JavaScript
         /// float[], double[]) </param>
         /// <param name="createIfNotExists">Defaults to <see langword="true"/> and creates the property on the javascript object if not found, if set to <see langword="false"/> it will not create the property if it does not exist.  If the property exists, the value is updated with the provided value.</param>
         /// <param name="hasOwnProperty"></param>
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void SetObjectProperty(this JSObject self, string name, object? value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
             ArgumentNullException.ThrowIfNull(self);
