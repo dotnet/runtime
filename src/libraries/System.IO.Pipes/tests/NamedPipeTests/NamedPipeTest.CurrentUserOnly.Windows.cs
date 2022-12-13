@@ -118,6 +118,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Negative tests for PipeOptions.CurrentUserOnly in Windows.
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
     public class NamedPipeTest_CurrentUserOnly_Windows : IClassFixture<TestAccountImpersonator>
     {
         public static bool IsSupportedWindowsVersionAndPrivilegedProcess => PlatformDetection.IsPrivilegedProcess
@@ -210,7 +211,6 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79180", TestRuntimes.Mono)]
         [ConditionalTheory(nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
         [InlineData(false)]
         [InlineData(true)]
