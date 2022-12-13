@@ -113,6 +113,11 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
             }
 
+            if (type.Context.Target.IsOSX && IsTrackedReferenceWithFinalizer(type))
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag;
+            }
+
             return flagsEx;
         }
 
@@ -127,6 +132,23 @@ namespace Internal.Runtime
                             mdType.Module == mdType.Context.SystemModule &&
                             mdType.Name == "CriticalFinalizerObject" &&
                             mdType.Namespace == "System.Runtime.ConstrainedExecution")
+                    return true;
+
+                type = type.BaseType;
+            }
+            while (type != null);
+
+            return false;
+        }
+
+        private static bool IsTrackedReferenceWithFinalizer(TypeDesc type)
+        {
+            do
+            {
+                if (!type.HasFinalizer)
+                    return false;
+
+                if (((MetadataType)type).HasCustomAttribute("System.Runtime.InteropServices.ObjectiveC", "ObjectiveCTrackedTypeAttribute"))
                     return true;
 
                 type = type.BaseType;

@@ -8,8 +8,7 @@
     <PatchVersion>0</PatchVersion>
     <SdkBandVersion>8.0.100</SdkBandVersion>
     <PackageVersionNet6>6.0.10</PackageVersionNet6>
-    <!-- problematic until NetCoreAppCurrent is net8.0 <PackageVersionNet7>7.0.0</PackageVersionNet7> -->
-    <PackageVersionForTemplates7>7.0.0-rtm.22476.8</PackageVersionForTemplates7>
+    <PackageVersionNet7>7.0.0</PackageVersionNet7>
     <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <!-- Set assembly version to align with major and minor version,
@@ -206,7 +205,7 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20221010.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22602.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22606.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.4-alpha.22578.1</MicrosoftDotNetCecilVersion>

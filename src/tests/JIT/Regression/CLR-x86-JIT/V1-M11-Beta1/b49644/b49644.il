@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly globals
+.assembly 'b49644'
 {
 }
 

@@ -8369,18 +8369,9 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         {
             // For un-important blocks, we want to construct the string lazily
 
-            if (helper == CORINFO_HELP_STRCNS_CURRENT_MODULE)
-            {
-                tree = gtNewHelperCallNode(helper, TYP_REF,
-                                           gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT));
-            }
-            else
-            {
-                tree = gtNewHelperCallNode(helper, TYP_REF,
-                                           gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT),
-                                           gtNewIconEmbScpHndNode(tree->AsStrCon()->gtScpHnd));
-            }
-
+            tree =
+                gtNewHelperCallNode(helper, TYP_REF, gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT),
+                                    gtNewIconEmbScpHndNode(tree->AsStrCon()->gtScpHnd));
             return fgMorphTree(tree);
         }
     }
@@ -10975,7 +10966,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
             ret = gtNewZeroConNode(TYP_INT);
         }
         // [x0, x1] < [y0, y1] is true if x1 < y0
-        else if ((op == GT_LT) && (lhsMax < rhsMin))
+        // [x0, x1] <= [y0, y1] is true if x1 <= y0
+        else if (((op == GT_LT) && (lhsMax < rhsMin)) || ((op == GT_LE) && (lhsMax <= rhsMin)))
         {
             ret = gtNewOneConNode(TYP_INT);
         }
@@ -14311,7 +14303,8 @@ GenTree* Compiler::fgInitThisClass()
             if (!(info.compClassAttr & CORINFO_FLG_SHAREDINST))
             {
                 resolvedToken.hClass = info.compClassHnd;
-                return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+                fgSetPreferredInitCctor();
+                return impReadyToRunHelperToTree(&resolvedToken, m_preferredInitCctor, TYP_BYREF);
             }
 
             // We need a runtime lookup.

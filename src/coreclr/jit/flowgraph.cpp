@@ -885,6 +885,19 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     return result;
 }
 
+//------------------------------------------------------------------------------
+// fgSetPreferredInitCctor: Set CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE as the
+// preferred call constructure if it is undefined.
+//
+void Compiler::fgSetPreferredInitCctor()
+{
+    if (m_preferredInitCctor == CORINFO_HELP_UNDEF)
+    {
+        // This is the cheapest helper that triggers the constructor.
+        m_preferredInitCctor = CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+    }
+}
+
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #ifdef FEATURE_READYTORUN
@@ -893,8 +906,8 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
         CORINFO_RESOLVED_TOKEN resolvedToken;
         memset(&resolvedToken, 0, sizeof(resolvedToken));
         resolvedToken.hClass = cls;
-
-        return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+        fgSetPreferredInitCctor();
+        return impReadyToRunHelperToTree(&resolvedToken, m_preferredInitCctor, TYP_BYREF);
     }
 #endif
 
