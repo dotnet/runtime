@@ -519,12 +519,6 @@ mono_wasm_assembly_load (const char *name)
 }
 
 MonoClass*
-mono_wasm_find_corlib_class (const char *namespace, const char *name)
-{
-	return mono_class_from_name (mono_get_corlib (), namespace, name);
-}
-
-MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
 	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
@@ -700,12 +694,6 @@ mono_unbox_int (MonoObject *obj)
 	}
 }
 
-int
-mono_wasm_array_length (MonoArray *array)
-{
-	return mono_array_length (array);
-}
-
 MonoObject*
 mono_wasm_array_get (MonoArray *array, int idx)
 {
@@ -751,13 +739,6 @@ mono_wasm_string_get_data_ref (
 	if (outIsInterned)
 		*outIsInterned = mono_string_instance_is_interned (*string);
 	return;
-}
-
-void
-mono_wasm_string_get_data (
-	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
-) {
-	mono_wasm_string_get_data_ref(&string, outChars, outLengthBytes, outIsInterned);
 }
 
 void add_assembly(const char* base_dir, const char *name) {

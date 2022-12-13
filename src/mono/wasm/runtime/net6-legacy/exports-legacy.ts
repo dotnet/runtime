@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from "../cwraps";
+import { legacy_c_functions as cwraps } from "../cwraps";
 import { mono_wasm_runtime_ready } from "../debug";
 import { mono_wasm_load_icu_data } from "../icu";
 import { runtimeHelpers } from "../imports";

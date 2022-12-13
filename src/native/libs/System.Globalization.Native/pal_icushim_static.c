@@ -50,13 +50,6 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 
 static int32_t load_icu_data(const void* pData);
 
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
-
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
-{
-    return GlobalizationNative_GetICUDTName(culture);
-}
-
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData);
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)

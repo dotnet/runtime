@@ -17,9 +17,11 @@
 
   <PropertyGroup>
     <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
+    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == ''">false</MonoWasmThreads>
     <MonoWasmThreadsNoUser Condition="('$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true') or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
+    <MonoWasmLegacyJsInterop Condition="'$(MonoWasmLegacyJsInterop)' == ''">false</MonoWasmLegacyJsInterop>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -319,8 +321,8 @@
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
-    <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" />
-    <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" />
+    <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)"/>
+    <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)" EnvironmentVariables="MonoWasmLegacyJsInterop=$(MonoWasmLegacyJsInterop);MonoWasmThreads=$(MonoWasmThreads)" />
 
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
@@ -397,7 +399,7 @@
 
   <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
     <PropertyGroup>
-      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),MonoWasmLegacyJsInterop:$(MonoWasmLegacyJsInterop),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
     </PropertyGroup>
 
     <PropertyGroup>

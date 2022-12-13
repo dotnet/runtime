@@ -39,9 +39,7 @@
 #endif
 #include "gc-common.h"
 
-#ifdef CORE_BINDINGS
 void core_initialize_internals ();
-#endif
 
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
@@ -441,22 +439,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	return addr;
 }
 
-typedef void (*background_job_cb)(void);
-void mono_threads_schedule_background_job (background_job_cb cb);
-
-void mono_initialize_internals (void)
-{
-	// Blazor specific custom routines - see dotnet_support.js for backing code
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
-
-#ifdef CORE_BINDINGS
-	core_initialize_internals();
-#endif
-
-	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleBackgroundJob", mono_threads_schedule_background_job);
-}
-
-EMSCRIPTEN_KEEPALIVE void
+void
 mono_wasm_register_bundled_satellite_assemblies (void)
 {
 	/* In legacy satellite_assembly_count is always false */
@@ -610,7 +593,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 	root_domain = mono_jit_init_version ("mono", NULL);
 
-	mono_initialize_internals();
+	core_initialize_internals();
 
 	mono_thread_set_main (mono_thread_current ());
 
@@ -734,28 +717,6 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 	MONO_EXIT_GC_UNSAFE;
 }
 
-// deprecated
-MonoObject*
-mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
-{
-	PVOLATILE(MonoObject) result = NULL;
-	mono_wasm_invoke_method_ref (method, &this_arg, params, out_exc, (MonoObject **)&result);
-
-	if (result) {
-		MONO_ENTER_GC_UNSAFE;
-		MonoMethodSignature *sig = mono_method_signature (method);
-		MonoType *type = mono_signature_get_return_type (sig);
-		// If the method return type is void return null
-		// This gets around a memory access crash when the result return a value when
-		// a void method is invoked.
-		if (mono_type_get_type (type) == MONO_TYPE_VOID)
-			result = NULL;
-		MONO_EXIT_GC_UNSAFE;
-	}
-
-	return result;
-}
-
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JSMarshalerArguments
 {
@@ -837,28 +798,6 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_brea
 			mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
 	}
 	return method;
-}
-
-// TODO: ref
-EMSCRIPTEN_KEEPALIVE char *
-mono_wasm_string_get_utf8 (MonoString *str)
-{
-	char * result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_string_from_js (const char *str)
-{
-	PVOLATILE(MonoString) result = NULL;
-	MONO_ENTER_GC_UNSAFE;
-	if (str)
-		result = mono_string_new (root_domain, str);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -1057,17 +996,6 @@ _wasm_get_obj_type_ref_impl (PPVOLATILE(MonoObject) obj)
 	return _marshal_type_from_mono_type (mono_type, klass, type);
 }
 
-// FIXME: Ref
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_get_obj_type (MonoObject *obj)
-{
-	int result;
-	MONO_ENTER_GC_UNSAFE;
-	result = _wasm_get_obj_type_ref_impl(&obj);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
 // This code runs inside a gc unsafe region
 static int
 _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
@@ -1218,23 +1146,10 @@ mono_wasm_try_unbox_primitive_and_get_type_ref (MonoObject **objRef, void *resul
 	return retval;
 }
 
-// FIXME: Ref
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_array_length (MonoArray *array)
-{
-	return mono_array_length (array);
-}
-
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_array_length_ref (MonoArray **array)
 {
 	return mono_array_length (*array);
-}
-
-EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_array_get (MonoArray *array, int idx)
-{
-	return mono_array_get (array, MonoObject*, idx);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -1352,13 +1267,6 @@ mono_wasm_string_get_data_ref (
 	MONO_EXIT_GC_UNSAFE;
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_string_get_data (
-	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
-) {
-	mono_wasm_string_get_data_ref(&string, outChars, outLengthBytes, outIsInterned);
-}
-
 EMSCRIPTEN_KEEPALIVE MonoType *
 mono_wasm_class_get_type (MonoClass *klass)
 {
@@ -1367,18 +1275,6 @@ mono_wasm_class_get_type (MonoClass *klass)
 	MonoType *result;
 	MONO_ENTER_GC_UNSAFE;
 	result = mono_class_get_type (klass);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoClass *
-mono_wasm_type_get_class (MonoType *type)
-{
-	if (!type)
-		return NULL;
-	MonoClass *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_type_get_class (type);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }

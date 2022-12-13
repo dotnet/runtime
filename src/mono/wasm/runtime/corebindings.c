@@ -34,9 +34,14 @@ extern void mono_wasm_invoke_import(int fn_handle, void *data);
 extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int signature_hash, void* signatures, int *is_exception, MonoObject **result);
 extern void mono_wasm_marshal_promise(void *data);
 
+typedef void (*background_job_cb)(void);
+void mono_threads_schedule_background_job (background_job_cb cb);
+
 
 void core_initialize_internals (void)
 {
+	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleBackgroundJob", mono_threads_schedule_background_job);
+
 	mono_add_internal_call ("Interop/Runtime::ReleaseCSOwnedObject", mono_wasm_release_cs_owned_object);
 	mono_add_internal_call ("Interop/Runtime::BindJSFunction", mono_wasm_bind_js_function);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function);
@@ -45,7 +50,7 @@ void core_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::MarshalPromise", mono_wasm_marshal_promise);
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);
 	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", mono_wasm_deregister_root);
-
+#ifdef USE_LEGACY_JS_INTEROP
 	// legacy
 	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgsRef", mono_wasm_invoke_js_with_args_ref);
 	mono_add_internal_call ("Interop/Runtime::GetObjectPropertyRef", mono_wasm_get_object_property_ref);
@@ -56,6 +61,10 @@ void core_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::TypedArrayToArrayRef", mono_wasm_typed_array_to_array_ref);
 	mono_add_internal_call ("Interop/Runtime::CreateCSOwnedObjectRef", mono_wasm_create_cs_owned_object_ref);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayFromRef", mono_wasm_typed_array_from_ref);
+
+	// Blazor specific custom routines - see dotnet_support.js for backing code
+	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
+#endif /* USE_LEGACY_JS_INTEROP */
 }
 
 // Int8Array 		| int8_t	| byte or SByte (signed byte)
