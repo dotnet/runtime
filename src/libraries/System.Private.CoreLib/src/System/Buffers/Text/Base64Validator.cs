@@ -38,7 +38,7 @@ namespace System.Buffers.Text
                 while (indexOfPaddingInvalidOrWhitespace >= 0)
                 {
                     char charToValidate = base64Text[indexOfPaddingInvalidOrWhitespace];
-                    if (IsCharToBeIgnored(charToValidate))
+                    if (IsByteToBeIgnored(charToValidate))
                     {
                         // Chars to be ignored (e,g, whitespace...) should not count towards the length.
                         length--;
@@ -97,7 +97,7 @@ namespace System.Buffers.Text
             }
 
             // Remove padding to get exact length
-            decodedLength = (length / 4 * 3) - paddingCount;
+            decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
             return true;
         }
 
@@ -190,23 +190,8 @@ namespace System.Buffers.Text
             }
 
             // Remove padding to get exact length
-            decodedLength = (length / 4 * 3) - paddingCount;
+            decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
             return true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsCharToBeIgnored(char aChar)
-        {
-            switch (aChar)
-            {
-                case '\n': // Line feed
-                case '\t': // Horizontal tab
-                case '\r': // Carriage return
-                case ' ':  // Space
-                    return true;
-                default:
-                    return false;
-            }
         }
 
         private static readonly IndexOfAnyValues<byte> validBase64Bytes = IndexOfAnyValues.Create(EncodingMap);

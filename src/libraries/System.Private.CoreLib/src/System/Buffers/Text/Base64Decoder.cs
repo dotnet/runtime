@@ -93,7 +93,7 @@ namespace System.Buffers.Text
                 // or ignored in consumed operations if not.
                 int pendingSrcIncrement = 0;
 
-                while (src + 4 <= srcEnd)
+                while (src <= srcEnd - 4)
                 {
                     // The default increment will be 4 if no bytes that require ignoring are encountered.
                     pendingSrcIncrement = 4;
@@ -106,7 +106,7 @@ namespace System.Buffers.Text
                     if (result < 0)
                     {
                         int firstInvalidIndex = GetIndexOfFirstByteToBeIgnored(src);
-                        if (firstInvalidIndex != -1)
+                        if (firstInvalidIndex >= 0)
                         {
                             int bytesIgnored = 0;
                             int validBytesSearchIndex = firstInvalidIndex;
@@ -114,7 +114,7 @@ namespace System.Buffers.Text
 
                             for (int currentBlockIndex = firstInvalidIndex; currentBlockIndex < 4; currentBlockIndex++)
                             {
-                                while (src + validBytesSearchIndex < srcEnd
+                                while (src < srcEnd - validBytesSearchIndex
                                        && IsByteToBeIgnored(src[validBytesSearchIndex]))
                                 {
                                     validBytesSearchIndex++;
@@ -122,7 +122,7 @@ namespace System.Buffers.Text
                                     totalBytesIgnored++;
                                 }
 
-                                if (src + validBytesSearchIndex >= srcEnd)
+                                if (src >= srcEnd - validBytesSearchIndex)
                                 {
                                     insufficientValidBytesFound = true;
                                     break;
@@ -175,7 +175,7 @@ namespace System.Buffers.Text
                             && IsBlockEndBytesPadding(b2, b3))
                         {
                             int indexOfBytesAfterPadding = pendingSrcIncrement;
-                            while (src + indexOfBytesAfterPadding + 1 <= srcEnd)
+                            while (src <= srcEnd - indexOfBytesAfterPadding - 1)
                             {
                                 if (!IsByteToBeIgnored(src[indexOfBytesAfterPadding++]))
                                 {
@@ -233,7 +233,7 @@ namespace System.Buffers.Text
                         }
                     }
 
-                    if (dest + 3 > destEnd)
+                    if (dest > destEnd - 3)
                     {
                         goto DestinationTooSmallExit;
                     }
@@ -255,7 +255,7 @@ namespace System.Buffers.Text
                 }
 
                 int indexOfBytesNotConsumed = pendingSrcIncrement;
-                while (src + indexOfBytesNotConsumed + 1 <= srcEnd)
+                while (src <= srcEnd - indexOfBytesNotConsumed - 1)
                 {
                     if (!IsByteToBeIgnored(src[indexOfBytesNotConsumed++]))
                     {
@@ -349,7 +349,7 @@ namespace System.Buffers.Text
                     if (result < 0)
                     {
                         int firstInvalidIndex = GetIndexOfFirstByteToBeIgnored(bufferBytes + sourceIndex);
-                        if (firstInvalidIndex != -1)
+                        if (firstInvalidIndex >= 0)
                         {
                             int bytesIgnored = 0;
                             uint validBytesSearchIndex = (uint)firstInvalidIndex + sourceIndex;
@@ -861,18 +861,15 @@ namespace System.Buffers.Text
             || secondToLastByte == EncodingPad && lastByte == EncodingPad;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsByteToBeIgnored(byte charByte)
+        private static bool IsByteToBeIgnored(int charByte)
         {
-            switch (charByte)
+            if (charByte < 32)
             {
-                case 9:  // Line feed
-                case 10: // Horizontal tab
-                case 13: // Carriage return
-                case 32: // Space
-                    return true;
-                default:
-                    return false;
+                const int BitMask = (1 << 9) | (1 << 10) | (1 << 13);
+                return ((1 << charByte) & BitMask) != 0;
             }
+
+            return charByte == 32;
         }
 
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
