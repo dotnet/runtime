@@ -557,29 +557,26 @@ namespace
             it = libName.Begin();
             bool containsDelim = libName.Find(it, DIRECTORY_SEPARATOR_STR_W);
 
-            if (containsSuffix)
+            if (containsSuffix && containsDelim)
             {
                 libNameVariations[varCount++] = NameFmt;
-
-                if (!containsDelim)
-                    libNameVariations[varCount++] = PrefixNameFmt;
-
-                libNameVariations[varCount++] = NameSuffixFmt;
-
-                if (!containsDelim)
-                    libNameVariations[varCount++] = PrefixNameSuffixFmt;
             }
-            else
+            else if (containsSuffix && !containsDelim)
+            {
+                libNameVariations[varCount++] = NameFmt;
+                libNameVariations[varCount++] = PrefixNameFmt;
+            }
+            else if (!containsSuffix && containsDelim)
             {
                 libNameVariations[varCount++] = NameSuffixFmt;
-
-                if (!containsDelim)
-                    libNameVariations[varCount++] = PrefixNameSuffixFmt;
-
                 libNameVariations[varCount++] = NameFmt;
-
-                if (!containsDelim)
-                    libNameVariations[varCount++] = PrefixNameFmt;
+            }
+            else if (!containsSuffix && !containsDelim)
+            {
+                libNameVariations[varCount++] = PrefixNameSuffixFmt;
+                libNameVariations[varCount++] = NameSuffixFmt;
+                libNameVariations[varCount++] = PrefixNameFmt;
+                libNameVariations[varCount++] = NameFmt;
             }
         }
 
