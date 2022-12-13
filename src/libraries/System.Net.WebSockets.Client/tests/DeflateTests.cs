@@ -104,7 +104,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalFact(nameof(WebSocketsSupported))]
         public async Task SendHelloWithDisableCompression()
         {
-            byte[] bytes = "Hello"u8.ToArray();
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello");
 
             int prefixLength = 2;
             byte[] rawPrefix = new byte[] { 0x81, 0x85 }; // fin=1, rsv=0, opcode=text; mask=1, len=5
