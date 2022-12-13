@@ -629,7 +629,7 @@ JNIEnv* GetJNIEnv()
     LOG_DEBUG("Registering JNI thread detach. env ptr %p. Key: %ld", (void*)env, (long)threadLocalEnvKey);
     pthread_setspecific(threadLocalEnvKey, env);
 
-    abort_unless(ret == JNI_OK, "Unable to attach thread to JVM");
+    abort_unless(ret == JNI_OK, "Unable to attach thread to JVM (error: %d)", ret);
     return env;
 }
 
