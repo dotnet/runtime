@@ -2213,9 +2213,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/u_fld_il_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh07_large/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54395</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**">
             <Issue>https://github.com/dotnet/runtime/issues/54396</Issue>
         </ExcludeList>
@@ -2911,6 +2908,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/**">
+            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_79354/Runtime_79354/**">
             <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25027/GitHub_25027/**">

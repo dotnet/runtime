@@ -3975,7 +3975,12 @@ main_loop:
 					} else if ((m_method_is_virtual (del_imethod->method) && !m_method_is_static (del_imethod->method)) && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
 						// 'this' is passed dynamically, we need to recompute the target method
 						// with each call
-						del_imethod = get_virtual_method (del_imethod, LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*)->vtable);
+						MonoObject *obj = LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*);
+						del_imethod = get_virtual_method (del_imethod, obj->vtable);
+						if (m_class_is_valuetype (del_imethod->method->klass)) {
+							// We are calling into a value type method, `this` needs to be unboxed
+							LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, gpointer) = mono_object_unbox_internal (obj);
+						}
 					} else {
 						del->interp_invoke_impl = del_imethod;
 					}
@@ -3998,7 +4003,7 @@ main_loop:
 					MonoObject *this_arg = del->target;
 
 					// replace the MonoDelegate* on the stack with 'this' pointer
-					if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
+					if (m_class_is_valuetype (cmethod->method->klass)) {
 						gpointer unboxed = mono_object_unbox_internal (this_arg);
 						LOCAL_VAR (call_args_offset, gpointer) = unboxed;
 					} else {
@@ -4098,7 +4103,7 @@ main_loop:
 			ip += 5;
 			// FIXME push/pop LMF
 			cmethod = get_virtual_method_fast (cmethod, this_arg->vtable, slot);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
+			if (m_class_is_valuetype (cmethod->method->klass)) {
 				/* unbox */
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
@@ -4148,29 +4153,6 @@ main_loop:
 			goto call;
 		}
 
-		MINT_IN_CASE(MINT_CALLVIRT) {
-			// FIXME CALLVIRT opcodes are not used on netcore. We should kill them.
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
-			return_offset = ip [1];
-			call_args_offset = ip [2];
-
-			MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*);
-
-			// FIXME push/pop LMF
-			cmethod = get_virtual_method (cmethod, this_arg->vtable);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
-				/* unbox */
-				gpointer unboxed = mono_object_unbox_internal (this_arg);
-				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
-			}
-
-#ifdef ENABLE_EXPERIMENT_TIERED
-			ip += 5;
-#else
-			ip += 4;
-#endif
-			goto call;
-		}
 		MINT_IN_CASE(MINT_CALL) {
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			return_offset = ip [1];
