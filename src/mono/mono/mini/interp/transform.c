@@ -5754,6 +5754,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				mono_error_set_for_class_failure (error, klass);
 				goto_if_nok (error, exit);
 			}
+			MonoVTable *vtable = mono_class_vtable_checked (klass, error);
+			goto_if_nok (error, exit);
 
 			if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT) {
 				char* full_name = mono_type_get_full_name (klass);
@@ -5900,8 +5902,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						interp_ins_set_dreg (newobj_fast, dreg);
 						newobj_fast->data [1] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
 					} else {
-						MonoVTable *vtable = mono_class_vtable_checked (klass, error);
-						goto_if_nok (error, exit);
 						td->cbb->contains_call_instruction = TRUE;
 						newobj_fast = interp_add_ins (td, MINT_NEWOBJ);
 						interp_ins_set_dreg (newobj_fast, dreg);
