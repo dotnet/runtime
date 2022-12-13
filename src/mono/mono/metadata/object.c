@@ -2470,8 +2470,13 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 		if (t->type == MONO_TYPE_GENERICINST && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
 			MonoClass *klass = mono_class_from_mono_type_internal (t);
 			MonoObject *boxed_vt = (MonoObject*)params [i];
-			gpointer unboxed_vt = mono_object_unbox_internal (boxed_vt);
 			gpointer nullable_vt = g_alloca (mono_class_value_size (klass, NULL));
+
+			gpointer unboxed_vt;
+			if (boxed_vt)
+				unboxed_vt = mono_object_unbox_internal (boxed_vt);
+			else
+				unboxed_vt = NULL;
 
 			mono_nullable_init_unboxed (nullable_vt, unboxed_vt, klass);
 			if (!params_copy) {
