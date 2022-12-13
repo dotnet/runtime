@@ -24,7 +24,7 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
-        public string TypeRef { get; init; }
+        public string TypeRef { get; private init; }
 
         /// <summary>
         /// If specified as a root type via <c>JsonSerializableAttribute</c>, specifies the location of the attribute application.
@@ -49,7 +49,7 @@ namespace System.Text.Json.SourceGeneration
 
         public bool GenerateSerializationLogic => GenerationModeIsSpecified(JsonSourceGenerationMode.Serialization) && FastPathIsSupported();
 
-        public Type Type { get; init; }
+        public Type Type { get; private init; }
 
         public ClassType ClassType { get; private set; }
 
@@ -57,7 +57,7 @@ namespace System.Text.Json.SourceGeneration
         public bool ImplementsIJsonOnSerializing { get; private set; }
 
         public bool IsPolymorphic { get; private set; }
-        public bool IsValueType { get; init; }
+        public bool IsValueType { get; private init; }
 
         public bool CanBeNull { get; private set; }
 
