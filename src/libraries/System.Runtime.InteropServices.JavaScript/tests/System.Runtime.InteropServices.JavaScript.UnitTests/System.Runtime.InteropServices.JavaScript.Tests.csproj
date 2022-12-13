@@ -6,6 +6,7 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <DefineConstants Condition="'$(FeatureWasmLegacyJsInterop)' == 'true'" >$(DefineConstants);FEATURE_LEGACY_JS_INTEROP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />

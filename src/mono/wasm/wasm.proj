@@ -279,6 +279,7 @@
       <CMakeBuildRuntimeConfigureCmd Condition="'$(WasmEnableSIMD)' == 'true' and '$(Configuration)' == 'Release'">$(CMakeBuildRuntimeConfigureCmd) -DWASM_OPT_ADDITIONAL_FLAGS=&quot;--enable-simd&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_THREADS=0</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmThreadsNoUser)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DDISABLE_WASM_USER_THREADS=1</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd Condition="'$(MonoWasmLegacyJsInterop)' == 'true'">$(CMakeBuildRuntimeConfigureCmd) -DFEATURE_LEGACY_JS_INTEROP=1</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) $(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>

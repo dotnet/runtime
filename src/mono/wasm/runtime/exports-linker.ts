@@ -11,13 +11,6 @@ import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, mono_wasm_
 import { mono_interp_tier_prepare_jiterpreter } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue, mono_jiterp_do_jit_call_indirect } from "./jiterpreter-jit-call";
-import { mono_wasm_create_cs_owned_object_ref } from "./net6-legacy/cs-to-js";
-import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
-import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
-import {
-    mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_with_args_ref, mono_wasm_get_object_property_ref, mono_wasm_set_object_property_ref,
-    mono_wasm_get_by_index_ref, mono_wasm_set_by_index_ref, mono_wasm_get_global_object_ref
-} from "./net6-legacy/method-calls";
 import { mono_wasm_marshal_promise } from "./marshal-to-js";
 import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
@@ -27,6 +20,13 @@ import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pip
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
 import { mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
+import { mono_wasm_create_cs_owned_object_ref } from "./net6-legacy/cs-to-js";
+import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
+import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
+import {
+    mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_with_args_ref, mono_wasm_get_object_property_ref, mono_wasm_set_object_property_ref,
+    mono_wasm_get_by_index_ref, mono_wasm_set_by_index_ref, mono_wasm_get_global_object_ref
+} from "./net6-legacy/method-calls";
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---

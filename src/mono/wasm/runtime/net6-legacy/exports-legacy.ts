@@ -17,6 +17,7 @@ import { mono_bind_static_method, mono_call_assembly_entry_point } from "./metho
 import { mono_wasm_load_runtime } from "../startup";
 import { BINDINGType, MONOType } from "./export-types";
 import { mono_wasm_load_data_archive } from "../assets";
+import { mono_method_resolve } from "./method-binding";
 
 export function export_mono_api(): MONOType {
     return {
@@ -40,7 +41,7 @@ export function export_mono_api(): MONOType {
         mono_wasm_load_runtime,
 
         config: <MonoConfig | MonoConfigError>runtimeHelpers.config,
-        loaded_files: <string[]>[],
+        loaded_files: runtimeHelpers.loadedFiles,
 
         // memory accessors
         setB32,
@@ -74,6 +75,12 @@ export function cwraps_mono_api(mono: MONOType): void {
     Object.assign(mono, {
         mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
     });
+}
+
+export function export_internal_api(): any {
+    return {
+        mono_method_resolve,//MarshalTests.cs
+    };
 }
 
 export function export_binding_api(): BINDINGType {

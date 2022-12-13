@@ -142,8 +142,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <exception cref="PlatformNotSupportedException">The method is executed on an architecture other than WebAssembly.</exception>
         // JavaScriptExports need to be protected from trimming because they are used from C/JS code which IL linker can't see
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
-        // TODO make this DynamicDependency conditional
+#if FEATURE_LEGACY_JS_INTEROP
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExports", "System.Runtime.InteropServices.JavaScript")]
+#endif
         public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)

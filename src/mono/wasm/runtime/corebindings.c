@@ -50,7 +50,7 @@ void core_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::MarshalPromise", mono_wasm_marshal_promise);
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);
 	mono_add_internal_call ("Interop/Runtime::DeregisterGCRoot", mono_wasm_deregister_root);
-#ifdef USE_LEGACY_JS_INTEROP
+#ifdef FEATURE_LEGACY_JS_INTEROP
 	// legacy
 	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgsRef", mono_wasm_invoke_js_with_args_ref);
 	mono_add_internal_call ("Interop/Runtime::GetObjectPropertyRef", mono_wasm_get_object_property_ref);
@@ -64,9 +64,10 @@ void core_initialize_internals (void)
 
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
-#endif /* USE_LEGACY_JS_INTEROP */
+#endif /* FEATURE_LEGACY_JS_INTEROP */
 }
 
+#ifdef FEATURE_LEGACY_JS_INTEROP
 // Int8Array 		| int8_t	| byte or SByte (signed byte)
 // Uint8Array		| uint8_t	| byte or Byte (unsigned byte)
 // Uint8ClampedArray| uint8_t	| byte or Byte (unsigned byte)
@@ -133,44 +134,6 @@ mono_wasm_typed_array_new_ref (char *arr, int length, int size, int type, PPVOLA
 	MONO_EXIT_GC_UNSAFE;
 }
 
-// TODO: Remove - no longer used? If not, convert to ref
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_unbox_enum (PVOLATILE(MonoObject) obj)
-{
-	if (!obj)
-		return 0;
-
-	int result = 0;
-	MONO_ENTER_GC_UNSAFE;
-	PVOLATILE(MonoType) type = mono_class_get_type (mono_object_get_class(obj));
-
-	PVOLATILE(void) ptr = mono_object_unbox (obj);
-	switch (mono_type_get_type(mono_type_get_underlying_type (type))) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-		result = *(unsigned char*)ptr;
-		break;
-	case MONO_TYPE_I2:
-		result = *(short*)ptr;
-		break;
-	case MONO_TYPE_U2:
-		result = *(unsigned short*)ptr;
-		break;
-	case MONO_TYPE_I4:
-		result = *(int*)ptr;
-		break;
-	case MONO_TYPE_U4:
-		result = *(unsigned int*)ptr;
-		break;
-	// WASM doesn't support returning longs to JS
-	// case MONO_TYPE_I8:
-	// case MONO_TYPE_U8:
-	default:
-		printf ("Invalid type %d to mono_unbox_enum\n", mono_type_get_type(mono_type_get_underlying_type (type)));
-		break;
-	}
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
+#endif /* FEATURE_LEGACY_JS_INTEROP */
 
 

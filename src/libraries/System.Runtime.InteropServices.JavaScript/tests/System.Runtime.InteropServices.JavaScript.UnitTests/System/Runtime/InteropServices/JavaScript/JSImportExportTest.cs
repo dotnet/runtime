@@ -44,8 +44,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void DotnetInstance()
         {
+#if FEATURE_LEGACY_JS_INTEROP
             Assert.True(JSHost.DotnetInstance.HasProperty("MONO"));
             Assert.Equal("object", JSHost.DotnetInstance.GetTypeOfProperty("MONO"));
+#endif
 
             JSHost.DotnetInstance.SetProperty("testBool", true);
             Assert.Equal("boolean", JSHost.DotnetInstance.GetTypeOfProperty("testBool"));
