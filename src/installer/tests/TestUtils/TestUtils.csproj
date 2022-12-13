@@ -4,7 +4,6 @@
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>TestUtils</AssemblyName>
-    <PackageId>TestUtils</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
