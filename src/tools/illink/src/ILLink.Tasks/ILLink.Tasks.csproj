@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
     <TargetFramework />
@@ -18,7 +19,8 @@
          NU5129: Targets don't match the package id. This is intentional. -->
     <NoWarn>$(NoWarn);NU5128;NU5129</NoWarn>
     <IncludeBuildOutput>false</IncludeBuildOutput>
-    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddBuildOutputToPackageCore;_AddBuildOutputToPackageDesktop</TargetsForTfmSpecificContentInPackage>
+    <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddBuildOutputToToolsPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -60,19 +62,5 @@
       <Publish Condition="'%(ProjectReference.Publish)' == ''">true</Publish>
     </ProjectReference>
   </ItemGroup>
-
-  <Target Name="_AddBuildOutputToPackageCore" DependsOnTargets="Publish" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <ItemGroup>
-      <!-- Publish .NET Core assets and include them in the package under tools directory. -->
-      <TfmSpecificPackageFile Include="$(PublishDir)**" PackagePath="tools/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="_AddBuildOutputToPackageDesktop" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <ItemGroup>
-      <!-- Include .NET Framework build outputs in the package under tools directory. -->
-      <TfmSpecificPackageFile Include="$(OutputPath)**" PackagePath="tools/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)" />
-    </ItemGroup>
-  </Target>
 
 </Project>

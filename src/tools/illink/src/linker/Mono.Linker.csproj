@@ -11,6 +11,7 @@
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <ContractProject>$(MSBuildThisFileDirectory)ref\Mono.Linker.csproj</ContractProject>
     <RollForward>Major</RollForward>
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,14 +50,6 @@
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-
-  <!-- When publishing illink as a dependency of ILLink.Tasks, we want to include files needed to run it as an application in the
-       publish output. See https://github.com/dotnet/sdk/issues/1675. -->
-  <Target Name="AddRuntimeDependenciesToContent" BeforeTargets="AddDepsJsonAndRuntimeConfigToPublishItemsForReferencingProjects">
-    <PropertyGroup>
-      <PublishDepsFilePath>$(ProjectDepsFilePath)</PublishDepsFilePath>
-    </PropertyGroup>
-  </Target>
 
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 

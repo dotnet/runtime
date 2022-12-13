@@ -261,6 +261,23 @@
     </ItemGroup>
   </Target>
 
+  <!-- Manual invoked target that can be used by toolset packages by adding it to the `TargetsForTfmSpecificContentInPackage` property. -->
+  <Target Name="AddBuildOutputToToolsPackage">
+    <ItemGroup>
+      <!-- Include build outputs in the package under tools directory. -->
+      <TfmSpecificPackageFile Include="$(OutputPath)**"
+                              Exclude="$(OutputPath)publish\**;
+                                       $(OutputPath)"
+                              PackagePath="tools/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)" />
+      <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
+                                   TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
+                                   TargetFramework="$(TargetFramework)"
+                                   Condition="'$(IncludeSymbols)' == 'true'" />
+      <!-- Remove symbols from the non symbol package. -->
+      <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="ValidateAssemblyVersionsInRefPack"
           Condition="'$(SkipValidateAssemblyVersion)' != 'true' and '$(_AssemblyInTargetingPack)' == 'true' and '$(PreReleaseVersionLabel)' == 'servicing'"
           AfterTargets="CoreCompile" >
