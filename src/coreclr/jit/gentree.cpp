@@ -13589,6 +13589,30 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         return icon;
     };
 
+    auto NewZeroExtendNode = [&](var_types type, var_types castToType) -> GenTree* {
+        assert(varTypeIsIntegral(type));
+        assert(!varTypeIsSmall(type));
+        assert(!varTypeIsUnsigned(type));
+        assert(varTypeIsUnsigned(castToType));
+
+        GenTree* morphedTree = gtNewCastNode(TYP_INT, op, false, castToType);
+        if (fgGlobalMorph)
+        {
+            fgMorphTreeDone(morphedTree);
+        }
+
+        if (varTypeIsLong(type))
+        {
+            morphedTree = gtNewCastNode(TYP_LONG, morphedTree, true, TYP_ULONG);
+            if (fgGlobalMorph)
+            {
+                fgMorphTreeDone(morphedTree);
+            }
+        }
+
+        return morphedTree;
+    };
+
     // Here `op` is the non-constant operand, `cons` is the constant operand
     // and `val` is the constant value.
 
@@ -13745,22 +13769,19 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                     goto DONE_FOLD;
                 }
             }
-            else if ((val == 0xFF) && !varTypeIsLong(tree))
+            else if (val == 0xFF)
             {
-                op = gtNewCastNode(tree->TypeGet(), op, false, TYP_UBYTE);
-                if (fgGlobalMorph)
-                {
-                    fgMorphTreeDone(op);
-                }
+                op = NewZeroExtendNode(tree->TypeGet(), TYP_UBYTE);
                 goto DONE_FOLD;
             }
-            else if ((val == 0xFFFF) && !varTypeIsLong(tree))
+            else if (val == 0xFFFF)
             {
-                op = gtNewCastNode(tree->TypeGet(), op, false, TYP_USHORT);
-                if (fgGlobalMorph)
-                {
-                    fgMorphTreeDone(op);
-                }
+                op = NewZeroExtendNode(tree->TypeGet(), TYP_USHORT);
+                goto DONE_FOLD;
+            }
+            else if (val == 0xFFFFFFFF)
+            {
+                op = NewZeroExtendNode(tree->TypeGet(), TYP_UINT);
                 goto DONE_FOLD;
             }
             else
