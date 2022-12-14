@@ -2192,11 +2192,11 @@ namespace System.ComponentModel.Design.Serialization
         event System.ComponentModel.Design.Serialization.ResolveNameEventHandler ResolveName;
         event System.EventHandler SerializationComplete;
         void AddSerializationProvider(System.ComponentModel.Design.Serialization.IDesignerSerializationProvider provider);
-        object CreateInstance(System.Type type, System.Collections.ICollection arguments, string name, bool addToContainer);
-        object GetInstance(string name);
-        string GetName(object value);
-        object GetSerializer(System.Type objectType, System.Type serializerType);
-        System.Type GetType(string typeName);
+        object CreateInstance(System.Type type, System.Collections.ICollection? arguments, string? name, bool addToContainer);
+        object? GetInstance(string name);
+        string? GetName(object value);
+        object? GetSerializer(System.Type? objectType, System.Type serializerType);
+        System.Type? GetType(string typeName);
         void RemoveSerializationProvider(System.ComponentModel.Design.Serialization.IDesignerSerializationProvider provider);
         void ReportError(object errorInformation);
         void SetName(object instance, string name);
