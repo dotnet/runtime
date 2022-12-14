@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Source generators must target netstandard2.0 which doesn't support nullable reference types.
+         In order to enable the nullable reference type compiler checks, we also target .NETCoreApp, without shipping
+         that asset. Note that we can't build against the live version of .NETCoreApp which is why we use NetCoreAppToolCurrent. -->
+    <TargetFrameworks>$(NetCoreAppToolCurrent);netstandard2.0</TargetFrameworks>
     <AnalyzerRoslynVersion>4.4</AnalyzerRoslynVersion>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
@@ -16,6 +19,11 @@
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+  </ItemGroup>
+
+  <!-- Don't reference System.Text.Json from the targeting pack. -->
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
+    <DefaultReferenceExclusion Include="System.Text.Json" />
   </ItemGroup>
 
 </Project>
