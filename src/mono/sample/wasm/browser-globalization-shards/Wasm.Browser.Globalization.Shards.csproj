@@ -2,6 +2,6 @@
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <GlobalizationShard>EFIGS</GlobalizationShard>
-    <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
+    <_SampleProject>Wasm.Browser.Globalization.Shards.csproj</_SampleProject>
   </PropertyGroup>
 </Project>
