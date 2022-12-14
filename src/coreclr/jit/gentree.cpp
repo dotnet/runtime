@@ -19033,7 +19033,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 
 //------------------------------------------------------------------------
 // isEvexCompatibleHWIntrinsics: Checks if the intrinsic has a compatible
-// EVEX form for its intended lowering instruction. 
+// EVEX form for its intended lowering instruction.
 //
 // Return Value:
 // true if the intrisic node lowering instruction has an EVEX form

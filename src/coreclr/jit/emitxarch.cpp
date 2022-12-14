@@ -1106,7 +1106,7 @@ bool emitter::HasHighSIMDReg(const instrDesc* id) const
 }
 
 //------------------------------------------------------------------------
-// IsHighSIMDReg: Checks if a register is strictly an EVEX encoded high SIMD 
+// IsHighSIMDReg: Checks if a register is strictly an EVEX encoded high SIMD
 // registers (mm16-mm31).
 //
 // Arguments:
@@ -1349,7 +1349,6 @@ emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
     assert(!UseEvexEncoding() || !IsEvexEncodedInstruction(ins));
     return code | 0x4000000000ULL;
 }
-
 
 //------------------------------------------------------------------------
 // AddEvexVPrimePrefix: Add the EVEX.V' bit to the EVEX prefix. EVEX.V'
