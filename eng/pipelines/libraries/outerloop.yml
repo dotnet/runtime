@@ -100,4 +100,5 @@ extends:
                 extraStepsParameters:
                   testScope: outerloop
                   creator: dotnet-bot
+                  extraHelixArguments: /p:BuildTargetFramework=net48
                   testRunNamePrefixSuffix: NET48_$(_BuildConfig)
