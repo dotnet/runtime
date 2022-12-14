@@ -136,21 +136,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicBitwiseOr:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_orps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_orpd;
-            }
-            else if (varTypeIsIntegral(baseType))
-            {
-                result = INS_por;
-            }
-            break;
-
         case SIMDIntrinsicCast:
             result = INS_movaps;
             break;
@@ -440,8 +425,7 @@ void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, r
 //
 void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 {
-    assert((simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseAnd) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseOr));
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseAnd);
 
     GenTree*  op1       = simdNode->Op(1);
     GenTree*  op2       = simdNode->Op(2);
@@ -948,7 +932,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             break;
 
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
             genSIMDIntrinsicBinOp(simdNode);
             break;
 

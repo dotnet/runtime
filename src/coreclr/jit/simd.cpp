@@ -1186,7 +1186,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     {
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicCast:
             return true;
 
@@ -2155,7 +2154,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         break;
 
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
         {
             // op1 is the first operand; if instance method, op1 is "this" arg
             // op2 is the second operand

@@ -5053,7 +5053,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             break;
 
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
             genSIMDIntrinsicBinOp(simdNode);
             break;
@@ -5126,9 +5125,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicBitwiseAnd:
                 result = INS_and;
                 break;
-            case SIMDIntrinsicBitwiseOr:
-                result = INS_orr;
-                break;
             case SIMDIntrinsicCast:
                 result = INS_mov;
                 break;
@@ -5148,9 +5144,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
         {
             case SIMDIntrinsicBitwiseAnd:
                 result = INS_and;
-                break;
-            case SIMDIntrinsicBitwiseOr:
-                result = INS_orr;
                 break;
             case SIMDIntrinsicCast:
                 result = INS_mov;
@@ -5290,7 +5283,6 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 {
     assert((simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseAnd) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseOr) ||
            (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicEqual));
 
     GenTree*  op1       = simdNode->Op(1);

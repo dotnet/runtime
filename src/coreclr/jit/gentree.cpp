@@ -18726,7 +18726,6 @@ bool GenTree::isCommutativeSIMDIntrinsic()
     switch (AsSIMD()->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicEqual:
             return true;
         default:
