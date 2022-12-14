@@ -9174,12 +9174,13 @@ void emitter::emitRemoveLastInstruction()
         assert(emitCurIGsize >= emitLastIns->idCodeSize());
 
         // Use an emit location representing the current location (before the instruction is removed).
-        codeGen->genIPmappingUpdateForRemovedInstruction(emitLocation(this), emitLastIns->idCodeSize());
+        // codeGen->genIPmappingUpdateForRemovedInstruction(emitLocation(this), emitLastIns->idCodeSize());
 
         size_t insSize = emitCurIGfreeNext - lastInsActualStartAddr;
 
         emitCurIGfreeNext = lastInsActualStartAddr;
         emitCurIGinsCnt -= 1;
+        emitInsCount -= 1;
         emitCurIGsize -= lastCodeSize;
 
         // We're going to overwrite the memory; zero it.
@@ -9194,7 +9195,7 @@ void emitter::emitRemoveLastInstruction()
 
         // Create an emit location representing the end of the saved IG.
         emitLocation loc(emitLastInsIG, emitSpecifiedOffset(emitLastInsIG->igInsCnt, emitLastInsIG->igSize));
-        codeGen->genIPmappingUpdateForRemovedInstruction(loc, emitLastIns->idCodeSize());
+        // codeGen->genIPmappingUpdateForRemovedInstruction(loc, emitLastIns->idCodeSize());
 
         emitLastInsIG->igInsCnt -= 1;
         emitLastInsIG->igSize -= lastCodeSize;
