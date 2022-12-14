@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
+#include <vector>
 #endif
 
 int run_timed_process(const long, const int, const char *[]);
@@ -70,7 +71,9 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
     const int check_interval = 1000 / ms_factor;
 
     int check_count = 0;
-    char *args[proc_argc];
+    // char *args[proc_argc];
+    // std::unique_ptr<char*[]> args = std::make_unique<char*[]>(proc_argc);
+    std::vector<const char*> args;
 
     pid_t child_pid;
     int child_status;
@@ -78,8 +81,9 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
 
     for (int i = 0; i < proc_argc; i++)
     {
-        args[i] = (char *) proc_argv[i];
+        args.push_back(proc_argv[i]);
     }
+    args.push_back(NULL);
 
     // This is just for development. Will remove it when it's ready to be submitted :)
     for (int j = 0; j < proc_argc; j++)
@@ -99,7 +103,7 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
     {
         // Instructions for child process!
         printf("Running child process...\n");
-        execv(args[0], &args[0]);
+        execv(args[0], const_cast<char* const*>(args.data()));
     }
     else
     {
@@ -108,7 +112,7 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
             // Instructions for the parent process!
             wait_code = waitpid(child_pid, &child_status, WNOHANG);
 
-            if (w == -1)
+            if (wait_code == -1)
                 return EINVAL;
 
             std::this_thread::sleep_for(std::chrono::milliseconds(check_interval));
