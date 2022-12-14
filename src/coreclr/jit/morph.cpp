@@ -9118,7 +9118,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
             noway_assert(op2);
 
-            if (op2->IsIntegralConstUnsignedPow2())
+            if (!optValnumCSE_phase && op2->IsIntegralConstUnsignedPow2())
             {
                 // Transformation: a % b = a & (b - 1);
                 tree = fgMorphUModToAndSub(tree->AsOp());
