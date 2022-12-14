@@ -1185,13 +1185,10 @@ namespace System
                 case TypeCode.Int64: return (ulong)(long)value;
                 case TypeCode.UInt32: return (uint)value;
                 case TypeCode.UInt64: return (ulong)value;
-#if RARE_ENUMS
                 case TypeCode.Char: return (char)value;
                 case TypeCode.Boolean: return (bool)value ? 1UL : 0UL;
-#endif
             };
 
-#if RARE_ENUMS
             if (value is not null)
             {
                 Type valueType = value.GetType();
@@ -1203,7 +1200,6 @@ namespace System
                 if (valueType == typeof(nint)) return (ulong)(nint)value;
                 if (valueType == typeof(nuint)) return (nuint)value;
             }
-#endif
 
             throw CreateUnknownEnumTypeException();
         }
