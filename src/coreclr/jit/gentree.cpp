@@ -14898,7 +14898,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
         case TYP_INT:
 
-            assert(tree->TypeIs(TYP_INT) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
+            assert(tree->TypeIs(TYP_INT, TYP_LONG) || varTypeIsGC(tree) || tree->OperIs(GT_MKREFANY));
             // No GC pointer types should be folded here...
             assert(!varTypeIsGC(op1->TypeGet()) && !varTypeIsGC(op2->TypeGet()));
 

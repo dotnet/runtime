@@ -3234,7 +3234,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
 
             if (VNFuncIsComparison(func))
             {
-                assert(typ == TYP_INT);
+                assert(typ == TYP_INT || typ == TYP_LONG);
                 result = VNForIntCon(EvalComparison(func, arg0Val, arg1Val));
             }
             else
@@ -3260,7 +3260,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
 
             if (VNFuncIsComparison(func))
             {
-                assert(typ == TYP_INT);
+                assert(typ == TYP_INT || typ == TYP_LONG);
                 result = VNForIntCon(EvalComparison(func, arg0Val, arg1Val));
             }
             else

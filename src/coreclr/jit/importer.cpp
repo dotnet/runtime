@@ -8001,7 +8001,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Create and append the operator */
 
-                op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
+                {
+                    var_types op1Type = TYP_INT;
+                    if (varTypeIsLong(op1) || varTypeIsLong(op2))
+                    {
+                        op1Type = TYP_LONG;
+                    }
+                    op1 = gtNewOperNode(oper, op1Type, op1, op2);
+                }
 
                 if (uns)
                 {
