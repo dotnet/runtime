@@ -95,7 +95,7 @@ namespace System.Net.Internals
 #if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
             // WSARecvFrom needs a pinned pointer to the 32bit socket address size: https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsarecvfrom
             // Allocate IntPtr.Size extra bytes at the end of Buffer ensuring IntPtr.Size alignment, so we don't need to pin anything else.
-            // The following forumla will extend 'size' to the alignment boundary then add IntPtr.Size more bytes.
+            // The following formula will extend 'size' to the alignment boundary then add IntPtr.Size more bytes.
             size = (size + IntPtr.Size -  1) / IntPtr.Size * IntPtr.Size + IntPtr.Size;
 #endif
             Buffer = new byte[size];
