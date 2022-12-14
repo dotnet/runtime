@@ -38,6 +38,10 @@ static void
 mono_alc_init (MonoAssemblyLoadContext *alc, gboolean collectible)
 {
 	MonoLoadedImages *li = g_new0 (MonoLoadedImages, 1);
+
+	// FIXME:
+	collectible = FALSE;
+
 	mono_loaded_images_init (li, alc);
 	alc->loaded_images = li;
 	alc->loaded_assemblies = NULL;
@@ -271,6 +275,10 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_PrepareForAssemblyLoadContex
 {
 	MonoGCHandle strong_gchandle = (MonoGCHandle)strong_gchandle_ptr;
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)alc_pointer;
+
+	// FIXME:
+	if (!alc->collectible)
+		return;
 
 	g_assert (alc->collectible);
 	g_assert (!alc->unloading);
@@ -678,6 +686,10 @@ mono_alc_get_all_loaded_assemblies (void)
 MonoBoolean
 ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native)
 {
+	/* Not enabled yet */
+	return FALSE;
+
+#if 0
 	MonoMemoryManager *mem_manager = (MonoMemoryManager *)native;
 	MonoAssemblyLoadContext *alc;
 
@@ -708,4 +720,5 @@ ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native)
 	}
 
 	return TRUE;
+#endif
 }
