@@ -74,7 +74,7 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
 
     pid_t child_pid;
     int child_status;
-    int w;
+    int wait_code;
 
     for (int i = 0; i < proc_argc; i++)
     {
@@ -106,14 +106,14 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
         do
         {
             // Instructions for the parent process!
-            w = waitpid(child_pid, &child_status, WNOHANG);
+            wait_code = waitpid(child_pid, &child_status, WNOHANG);
 
             if (w == -1)
                 return EINVAL;
 
             std::this_thread::sleep_for(std::chrono::milliseconds(check_interval));
 
-            if (w)
+            if (wait_code)
             {
                 if (WIFEXITED(child_status))
                     return WEXITSTATUS(child_status);
