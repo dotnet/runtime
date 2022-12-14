@@ -46,10 +46,30 @@ namespace System.Text.Json.Serialization.Tests
             json = JsonSerializer.Serialize((DayOfWeek)(-1), options);
             Assert.Equal(@"-1", json);
 
-            // Not permitting integers should throw
             options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+            // Not permitting integers should throw
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((DayOfWeek)(-1), options));
+
+            // Numbers should throw
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>("1", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>("-1", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""+1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""-1""", options));
+            
+            day = JsonSerializer.Deserialize<DayOfWeek>(@"""Monday""", options);
+            Assert.Equal(DayOfWeek.Monday, day);
+
+            // Numbers-formatted json string should also consider naming policy
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false, namingPolicy: new ToEnumNumberNamingPolicy<DayOfWeek>()));
+            day = JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options);
+            Assert.Equal(DayOfWeek.Monday, day);
+
+            options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false, namingPolicy: new ToLowerNamingPolicy()));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options));
         }
 
         public class ToLowerNamingPolicy : JsonNamingPolicy
@@ -107,10 +127,20 @@ namespace System.Text.Json.Serialization.Tests
             json = JsonSerializer.Serialize((FileAttributes)(-1), options);
             Assert.Equal(@"-1", json);
 
-            // Not permitting integers should throw
             options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+            // Not permitting integers should throw
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((FileAttributes)(-1), options));
+
+            // Numbers should throw
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>("1", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>("-1", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""+1""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""-1""", options));
+            
+            attributes = JsonSerializer.Deserialize<FileAttributes>(@"""ReadOnly""", options);
+            Assert.Equal(FileAttributes.ReadOnly, attributes);
 
             // Flag values honor naming policy correctly
             options = new JsonSerializerOptions();
@@ -629,6 +659,11 @@ namespace System.Text.Json.Serialization.Tests
 }";
 
             JsonTestHelper.AssertJsonEqual(expected, JsonSerializer.Serialize(dict, options));
+        }
+
+        private class ToEnumNumberNamingPolicy<T> : JsonNamingPolicy where T : struct, Enum
+        {
+            public override string ConvertName(string name) => Enum.TryParse(name, out T value) ? value.ToString("D") : name;
         }
 
         private class ZeroAppenderPolicy : JsonNamingPolicy
