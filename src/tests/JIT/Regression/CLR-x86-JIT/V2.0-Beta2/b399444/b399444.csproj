@@ -8,7 +8,6 @@
     <DebugType>PdbOnly</DebugType>
     <NoStandardLib>True</NoStandardLib>
     <Noconfig>True</Noconfig>
-    <DefineConstants>$(DefineConstants);_65535</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Repro.cs" />
