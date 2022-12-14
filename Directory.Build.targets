@@ -77,7 +77,14 @@
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
   </PropertyGroup>
-  
+
+  <!-- Make P2Ps which consume source generators, reference the netstandard2.0 TFM. This allows source generators to multi-target without participating in the asset selection. -->
+  <ItemGroup>
+    <ProjectReference Update="@(ProjectReference->WithMetadataValue('OutputItemType', 'Analyzer')->WithMetadataValue('ReferenceOutputAssembly', 'false'))"
+                      SetTargetFramework="TargetFramework=netstandard2.0"
+                      SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
       <IsReferenceAssemblyProject>$(IsReferenceAssemblyProject)</IsReferenceAssemblyProject>
