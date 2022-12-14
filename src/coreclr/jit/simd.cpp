@@ -953,7 +953,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         // which determines the simdBaseJitType.
         // The exception is the IsHardwareAccelerated property, which is handled as a special case.
         assert(*simdBaseJitType == CORINFO_TYPE_UNDEF);
-        assert (sig->numArgs != 0);
+        assert(sig->numArgs != 0);
         {
             typeHnd          = info.compCompHnd->getArgClass(sig, sig->args);
             *inOutTypeHnd    = typeHnd;
