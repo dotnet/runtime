@@ -13745,6 +13745,24 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                     goto DONE_FOLD;
                 }
             }
+            else if ((val == 255) && !varTypeIsLong(tree))
+            {
+                op = gtNewCastNode(tree->TypeGet(), op, false, TYP_UBYTE);
+                if (fgGlobalMorph)
+                {
+                    fgMorphTreeDone(op);
+                }
+                goto DONE_FOLD;
+            }
+            else if ((val == 65535) && !varTypeIsLong(tree))
+            {
+                op = gtNewCastNode(tree->TypeGet(), op, false, TYP_USHORT);
+                if (fgGlobalMorph)
+                {
+                    fgMorphTreeDone(op);
+                }
+                goto DONE_FOLD;
+            }
             else
             {
                 /* The GTF_BOOLEAN flag is set for nodes that are part
