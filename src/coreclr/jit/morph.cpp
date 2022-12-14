@@ -9117,6 +9117,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             // then don't morph to a helper call - it can be done faster inline using idiv.
 
             noway_assert(op2);
+
+            if (op2->IsIntegralConstUnsignedPow2())
+            {
+                // Transformation: a % b = a & (b - 1);
+                tree = fgMorphUModToAndSub(tree->AsOp());
+                op1 = tree->AsOp()->gtOp1;
+                op2 = tree->AsOp()->gtOp2;
+                break;
+            }
+
             if ((typ == TYP_LONG) && opts.OptEnabled(CLFLG_CONSTANTFOLD))
             {
                 if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntConCommon()->LngValue() >= 2 &&
@@ -9201,24 +9211,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
             if (!optValnumCSE_phase)
             {
-                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
-                {
-                    // Transformation: a % b = a & (b - 1);
-                    tree = fgMorphUModToAndSub(tree->AsOp());
-                    op1  = tree->AsOp()->gtOp1;
-                    op2  = tree->AsOp()->gtOp2;
-                }
 #ifdef TARGET_ARM64
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
-                else
 #else
                 // XARCH only applies this transformation if we know
                 // that magic division will be used - which is determined
                 // when 'b' is not a power of 2 constant and mod operator is signed.
                 // Lowering for XARCH does this optimization already,
                 // but is also done here to take advantage of CSE.
-                else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
+                if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
 #endif
                 {
                     // Transformation: a % b = a - (a / b) * b;
@@ -12433,7 +12435,8 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 //
 GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 {
-    JITDUMP("\nMorphing UMOD [%06u] to And/Sub\n", dspTreeID(tree));
+    JITDUMP("\nMorphing UMOD [%06u] to And/Sub (before)\n", dspTreeID(tree));
+    DISPTREE(tree);
 
     assert(tree->OperIs(GT_UMOD));
     assert(tree->gtOp2->IsIntegralConstUnsignedPow2());
@@ -12447,6 +12450,9 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 
     DEBUG_DESTROY_NODE(tree->gtOp2);
     DEBUG_DESTROY_NODE(tree);
+    
+    JITDUMP("\nMorphing UMOD [%06u] to And/Sub (after)\n", dspTreeID(tree));
+    DISPTREE(newTree);
 
     return newTree;
 }
