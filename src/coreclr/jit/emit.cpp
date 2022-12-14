@@ -9152,21 +9152,10 @@ void emitter::emitNxtIG(bool extend)
 // NOTE: It is expected that the GC effect of the removed instruction will be handled by the newly
 // generated replacement(s).
 //
-bool emitter::emitRemoveLastInstruction()
+void emitter::emitRemoveLastInstruction()
 {
     assert(emitLastIns != nullptr);
     assert(emitLastInsIG != nullptr);
-
-#ifdef TARGET_ARM64
-    // AJG - This is a temporary change, to prevent the first
-    //       instruction in a group to be optimised away.
-    //       This is for diagnostic and test purposes only.
-
-    if (emitCurIGinsCnt == 1)
-    {
-        return false;
-    }
-#endif
 
     JITDUMP("Removing saved instruction in %s:\n> ", emitLabelString(emitLastInsIG));
     JITDUMPEXEC(dispIns(emitLastIns))
@@ -9216,8 +9205,6 @@ bool emitter::emitRemoveLastInstruction()
 
     emitLastIns   = nullptr;
     emitLastInsIG = nullptr;
-
-    return true;
 }
 
 /*****************************************************************************
