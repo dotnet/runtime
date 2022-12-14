@@ -13818,33 +13818,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                     goto DONE_FOLD;
                 }
             }
-            if (tree->OperIs(GT_RSZ) && (val == 8) && (op2 == cons) && (op->OperIs(GT_AND)))
-            {
-                if (tree->TypeGet() == op->TypeGet())
-                {
-                    if (tree->TypeIs(TYP_INT))
-                    {
-                        if (op->gtGetOp1()->IsIntegralConst(0xFF00))
-                        {
-                            tree->ChangeOper(GT_AND);
-                            op->ChangeOper(GT_RSZ);
-                            cons->AsIntConCommon()->SetIntegralValue(0xFF);
-                            op->gtGetOp1()->AsIntConCommon()->SetIntegralValue(val);
-                            op = gtFoldExprSpecial(tree);
-                            goto DONE_FOLD;
-                        }
-                        else if (op->gtGetOp2()->IsIntegralConst(0xFF00))
-                        {
-                            tree->ChangeOper(GT_AND);
-                            op->ChangeOper(GT_RSZ);
-                            cons->AsIntConCommon()->SetIntegralValue(0xFF);
-                            op->gtGetOp2()->AsIntConCommon()->SetIntegralValue(val);
-                            op = gtFoldExprSpecial(tree);
-                            goto DONE_FOLD;
-                        }
-                    }
-                }
-            }
             break;
 
         case GT_QMARK:
