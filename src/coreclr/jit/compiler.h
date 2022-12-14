@@ -8611,26 +8611,6 @@ private:
     // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
     GenTree* impSIMDPopStack(var_types type, bool expectAddr = false, CORINFO_CLASS_HANDLE structType = nullptr);
 
-    // Transforms operands and returns the SIMD intrinsic to be applied on
-    // transformed operands to obtain given relop result.
-    SIMDIntrinsicID impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
-                                 CORINFO_CLASS_HANDLE typeHnd,
-                                 unsigned             simdVectorSize,
-                                 CorInfoType*         inOutBaseJitType,
-                                 GenTree**            op1,
-                                 GenTree**            op2);
-
-#if defined(TARGET_XARCH)
-
-    // Transforms operands and returns the SIMD intrinsic to be applied on
-    // transformed operands to obtain == comparison result.
-    SIMDIntrinsicID impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
-                                          unsigned             simdVectorSize,
-                                          GenTree**            op1,
-                                          GenTree**            op2);
-
-#endif // defined(TARGET_XARCH)
-
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
     bool areFieldsContiguous(GenTree* op1, GenTree* op2);
     bool areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second);

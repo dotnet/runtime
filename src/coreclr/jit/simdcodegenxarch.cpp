@@ -89,38 +89,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicEqual:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_cmpps;
-                assert(ival != nullptr);
-                *ival = 0;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_cmppd;
-                assert(ival != nullptr);
-                *ival = 0;
-            }
-            else if (baseType == TYP_INT || baseType == TYP_UINT)
-            {
-                result = INS_pcmpeqd;
-            }
-            else if (baseType == TYP_USHORT || baseType == TYP_SHORT)
-            {
-                result = INS_pcmpeqw;
-            }
-            else if (baseType == TYP_UBYTE || baseType == TYP_BYTE)
-            {
-                result = INS_pcmpeqb;
-            }
-            else if ((baseType == TYP_ULONG || baseType == TYP_LONG) &&
-                     (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported))
-            {
-                result = INS_pcmpeqq;
-            }
-            break;
-
         case SIMDIntrinsicBitwiseAnd:
             if (baseType == TYP_FLOAT)
             {
@@ -461,84 +429,6 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
         }
 
         inst_RV_RV(ins, targetReg, otherReg, targetType, emitActualTypeSize(targetType));
-    }
-
-    genProduceReg(simdNode);
-}
-
-//--------------------------------------------------------------------------------
-// genSIMDIntrinsicRelOp: Generate code for a SIMD Intrinsic relational operator
-// <, <=, >, >= and ==
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
-{
-    GenTree*  op1        = simdNode->Op(1);
-    GenTree*  op2        = simdNode->Op(2);
-    var_types baseType   = simdNode->GetSimdBaseType();
-    regNumber targetReg  = simdNode->GetRegNum();
-    var_types targetType = simdNode->TypeGet();
-    SIMDLevel level      = compiler->getSIMDSupportLevel();
-
-    genConsumeMultiOpOperands(simdNode);
-    regNumber op1Reg   = op1->GetRegNum();
-    regNumber op2Reg   = op2->GetRegNum();
-    regNumber otherReg = op2Reg;
-
-    switch (simdNode->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicEqual:
-        {
-            assert(targetReg != REG_NA);
-
-#ifdef DEBUG
-            // SSE2: vector<(u)long> relational op should be implemented in terms of
-            // TYP_INT comparison operations
-            if (baseType == TYP_LONG || baseType == TYP_ULONG)
-            {
-                assert(level >= SIMD_SSE4_Supported);
-            }
-#endif
-
-            unsigned    ival = 0;
-            instruction ins  = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType, &ival);
-
-            // targetReg = op1reg > op2reg
-            // Therefore, we can optimize if op1Reg == targetReg
-            otherReg = op2Reg;
-            if (op1Reg != targetReg)
-            {
-                if (op2Reg == targetReg)
-                {
-                    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicEqual);
-                    otherReg = op1Reg;
-                }
-                else
-                {
-                    inst_Mov(targetType, targetReg, op1Reg, /* canSkip */ false);
-                }
-            }
-
-            if (varTypeIsFloating(baseType))
-            {
-                assert((ival >= 0) && (ival <= 255));
-                GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, otherReg, (int8_t)ival);
-            }
-            else
-            {
-                inst_RV_RV(ins, targetReg, otherReg, targetType, emitActualTypeSize(targetType));
-            }
-        }
-        break;
-
-        default:
-            noway_assert(!"Unimplemented SIMD relational operation.");
-            unreached();
     }
 
     genProduceReg(simdNode);
@@ -933,10 +823,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicBitwiseAnd:
             genSIMDIntrinsicBinOp(simdNode);
-            break;
-
-        case SIMDIntrinsicEqual:
-            genSIMDIntrinsicRelOp(simdNode);
             break;
 
         case SIMDIntrinsicShuffleSSE2:

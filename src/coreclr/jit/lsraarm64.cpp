@@ -835,7 +835,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             break;
 
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicEqual:
             // No special handling required.
             break;
 

@@ -1970,9 +1970,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicBitwiseAnd:
             break;
 
-        case SIMDIntrinsicEqual:
-            break;
-
         case SIMDIntrinsicCast:
             break;
 
