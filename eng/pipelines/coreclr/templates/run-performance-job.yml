@@ -71,7 +71,7 @@ jobs:
           curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - &&
           sudo apt-get -y install nodejs &&
           npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g &&
-          $HELIX_WORKITEM_PAYLOAD/bin/jsvu v8@11.0.162 &&
+          $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 v8@11.0.162 &&
           rm ~/.jsvu/v8 &&
           ln -s ~/.jsvu/v8-11.0.162 ~/.jsvu/v8
     - ${{ if ne(parameters.runtimeType, 'wasm') }}:
