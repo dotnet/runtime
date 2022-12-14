@@ -4661,6 +4661,12 @@ public:
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
+    // This field keep the R2R helper call that would be inserted to trigger the constructor
+    // of the static class. It is set as nongc or gc static base if they are imported, so
+    // CSE can eliminate the repeated call, or the chepeast helper function that triggers it.
+    CorInfoHelpFunc m_preferredInitCctor;
+    void            fgSetPreferredInitCctor();
+
     GenTree* fgInitThisClass();
 
     GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
