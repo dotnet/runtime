@@ -189,7 +189,7 @@ namespace System
 
         public static bool IsPreciseGcSupported => !IsMonoRuntime;
 
-        public static bool IsRareEnumsSupported => !IsNativeAot && !IsMonoRuntime;
+        public static bool IsRareEnumsSupported => !IsNativeAot;
 
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
 

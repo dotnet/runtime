@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Rare enums types not expressible in C# are not supported in native AOT
-#if !NATIVEAOT && !MONO
+#if !NATIVEAOT
 #define RARE_ENUMS
 #endif
 
