@@ -243,9 +243,11 @@ namespace System.Net.Sockets.Tests
     {
         public ConnectEap(ITestOutputHelper output) : base(output) {}
 
-        [Fact]
+        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task ConnectAsync_WithData_DataReceived()
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectAsync_WithData_DataReceived(bool useArrayApi)
         {
             using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -265,12 +267,22 @@ namespace System.Net.Sockets.Tests
 
             using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            Memory<byte> buffer = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }.AsMemory(2, 4);
+            byte[] buffer = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 };
             
             var mre = new ManualResetEventSlim(false);
             var saea = new SocketAsyncEventArgs();
             saea.RemoteEndPoint = serverEp;
-            saea.SetBuffer(buffer);
+
+            // Slice the buffer to test the offset management:
+            if (useArrayApi)
+            {
+                saea.SetBuffer(buffer, 2, 4);
+            }
+            else
+            {
+                saea.SetBuffer(buffer.AsMemory(2, 4));
+            }
+            
             saea.Completed += (_, __) => mre.Set();
 
             if (client.ConnectAsync(saea))
