@@ -13589,13 +13589,13 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         return icon;
     };
 
-    auto NewZeroExtendNode = [&](var_types type, var_types castToType) -> GenTree* {
+    auto NewZeroExtendNode = [&](var_types type, GenTree* op1, var_types castToType) -> GenTree* {
         assert(varTypeIsIntegral(type));
         assert(!varTypeIsSmall(type));
         assert(!varTypeIsUnsigned(type));
         assert(varTypeIsUnsigned(castToType));
 
-        GenTreeCast* cast = gtNewCastNode(TYP_INT, op, false, castToType);
+        GenTreeCast* cast = gtNewCastNode(TYP_INT, op1, false, castToType);
         if (fgGlobalMorph)
         {
             fgMorphTreeDone(cast);
@@ -13771,17 +13771,17 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             }
             else if (val == 0xFF)
             {
-                op = NewZeroExtendNode(tree->TypeGet(), TYP_UBYTE);
+                op = NewZeroExtendNode(tree->TypeGet(), op, TYP_UBYTE);
                 goto DONE_FOLD;
             }
             else if (val == 0xFFFF)
             {
-                op = NewZeroExtendNode(tree->TypeGet(), TYP_USHORT);
+                op = NewZeroExtendNode(tree->TypeGet(), op, TYP_USHORT);
                 goto DONE_FOLD;
             }
             else if ((val == 0xFFFFFFFF) && varTypeIsLong(tree))
             {
-                op = NewZeroExtendNode(tree->TypeGet(), TYP_UINT);
+                op = NewZeroExtendNode(tree->TypeGet(), op, TYP_UINT);
                 goto DONE_FOLD;
             }
             else
