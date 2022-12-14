@@ -536,6 +536,7 @@ jobs:
         ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
           scenarios:
           - jitstress_isas_avx512_forceevex
+          - jitstress_isas_avx512_forceevex_stresshighregs
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
