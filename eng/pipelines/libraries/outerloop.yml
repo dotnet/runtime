@@ -40,7 +40,7 @@ extends:
               - OSX_x64
             jobParameters:
               testScope: outerloop
-              nameSuffix: CoreCLR
+              nameSuffix: CoreCLR_Release
               buildArgs: -s clr+host.native+libs+libs.tests -lc $(_BuildConfig) -hc $(_BuildConfig) -rc Release -testscope outerloop /p:ArchiveTests=true
               timeoutInMinutes: 180
               includeAllPlatforms: ${{ variables['isRollingBuild'] }}
@@ -68,7 +68,7 @@ extends:
                 - OSX_x64
               jobParameters:
                 testScope: outerloop
-                nameSuffix: CoreCLR
+                nameSuffix: CoreCLR_Release
                 buildArgs: -s clr+host.native+libs+libs.tests -lc $(_BuildConfig) -hc $(_BuildConfig) -rc Release -testscope outerloop /p:ArchiveTests=true
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
@@ -90,6 +90,7 @@ extends:
               - ${{ if eq(variables['isRollingBuild'], true) }}:
                 - windows_x64
               jobParameters:
+                framework: net48
                 testScope: outerloop
                 nameSuffix: NET48
                 buildArgs: -s libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true -f net48
