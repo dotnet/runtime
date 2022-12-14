@@ -13745,7 +13745,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                     goto DONE_FOLD;
                 }
             }
-            else if ((val == 255) && !varTypeIsLong(tree))
+            else if ((val == 0xFF) && !varTypeIsLong(tree))
             {
                 op = gtNewCastNode(tree->TypeGet(), op, false, TYP_UBYTE);
                 if (fgGlobalMorph)
@@ -13754,7 +13754,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 }
                 goto DONE_FOLD;
             }
-            else if ((val == 65535) && !varTypeIsLong(tree))
+            else if ((val == 0xFFFF) && !varTypeIsLong(tree))
             {
                 op = gtNewCastNode(tree->TypeGet(), op, false, TYP_USHORT);
                 if (fgGlobalMorph)
@@ -13816,6 +13816,33 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 {
                     op = cons;
                     goto DONE_FOLD;
+                }
+            }
+            if (tree->OperIs(GT_RSZ) && (val == 8) && (op2 == cons) && (op->OperIs(GT_AND)))
+            {
+                if (tree->TypeGet() == op->TypeGet())
+                {
+                    if (tree->TypeIs(TYP_INT))
+                    {
+                        if (op->gtGetOp1()->IsIntegralConst(0xFF00))
+                        {
+                            tree->ChangeOper(GT_AND);
+                            op->ChangeOper(GT_RSZ);
+                            cons->AsIntConCommon()->SetIntegralValue(0xFF);
+                            op->gtGetOp1()->AsIntConCommon()->SetIntegralValue(val);
+                            op = gtFoldExprSpecial(tree);
+                            goto DONE_FOLD;
+                        }
+                        else if (op->gtGetOp2()->IsIntegralConst(0xFF00))
+                        {
+                            tree->ChangeOper(GT_AND);
+                            op->ChangeOper(GT_RSZ);
+                            cons->AsIntConCommon()->SetIntegralValue(0xFF);
+                            op->gtGetOp2()->AsIntConCommon()->SetIntegralValue(val);
+                            op = gtFoldExprSpecial(tree);
+                            goto DONE_FOLD;
+                        }
+                    }
                 }
             }
             break;
