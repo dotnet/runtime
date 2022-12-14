@@ -55,9 +55,6 @@ SIMD_INTRINSIC(".ctor",                     true,        InitFixed,             
 SIMD_INTRINSIC("CopyTo",                    true,        CopyToArray,               "CopyToArray",           TYP_VOID,       2,      {TYP_BYREF, TYP_REF,     TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 SIMD_INTRINSIC("CopyTo",                    true,        CopyToArrayX,              "CopyToArray",           TYP_VOID,       3,      {TYP_BYREF, TYP_REF,     TYP_INT  },   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 
-// Cast
-SIMD_INTRINSIC("op_Explicit",               false,       Cast,                     "Cast",                   TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF,  TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
-
 // Miscellaneous
 SIMD_INTRINSIC("get_IsHardwareAccelerated", false,       HWAccel,                  "HWAccel",                TYP_BOOL,       0,      {TYP_UNDEF,  TYP_UNDEF,  TYP_UNDEF},   {TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 

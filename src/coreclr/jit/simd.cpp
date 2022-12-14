@@ -1180,19 +1180,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     return nullptr;
 }
 
-/* static */ bool Compiler::vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
-{
-    switch (intrinsicId)
-    {
-        case SIMDIntrinsicCast:
-            return true;
-
-        default:
-            break;
-    }
-    return false;
-}
-
 // Pops and returns GenTree node from importer's type stack.
 // Normalizes TYP_STRUCT value in case of GT_CALL and GT_RET_EXPR.
 //
@@ -2019,16 +2006,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             copyBlkDst = op1;
             doCopyBlk  = true;
-        }
-        break;
-
-        // Unary operators that take and return a Vector.
-        case SIMDIntrinsicCast:
-        {
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            simdTree = gtNewSIMDNode(simdType, op1, simdIntrinsicID, simdBaseJitType, size);
-            retVal   = simdTree;
         }
         break;
 

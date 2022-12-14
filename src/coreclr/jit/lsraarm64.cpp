@@ -830,10 +830,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
     switch (simdTree->GetSIMDIntrinsicId())
     {
-        case SIMDIntrinsicCast:
-            // No special handling required.
-            break;
-
         case SIMDIntrinsicInitN:
         {
             var_types baseType = simdTree->GetSimdBaseType();

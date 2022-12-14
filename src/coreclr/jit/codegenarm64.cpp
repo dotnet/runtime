@@ -5048,10 +5048,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicInitN(simdNode);
             break;
 
-        case SIMDIntrinsicCast:
-            genSIMDIntrinsicUnOp(simdNode);
-            break;
-
         case SIMDIntrinsicUpperSave:
             genSIMDIntrinsicUpperSave(simdNode);
             break;
@@ -5096,51 +5092,6 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
             unreached();
     }
 
-    return result;
-}
-
-// getOpForSIMDIntrinsic: return the opcode for the given SIMD Intrinsic
-//
-// Arguments:
-//   intrinsicId    -   SIMD intrinsic Id
-//   baseType       -   Base type of the SIMD vector
-//   ival           -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
-//
-//
-// Return Value:
-//   Instruction (op) to be used, and immed is set if instruction requires an immediate operand.
-//
-instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival /*=nullptr*/)
-{
-    instruction result = INS_invalid;
-    if (varTypeIsFloating(baseType))
-    {
-        switch (intrinsicId)
-        {
-            case SIMDIntrinsicCast:
-                result = INS_mov;
-                break;
-            default:
-                assert(!"Unsupported SIMD intrinsic");
-                unreached();
-        }
-    }
-    else
-    {
-        bool isUnsigned = varTypeIsUnsigned(baseType);
-
-        switch (intrinsicId)
-        {
-            case SIMDIntrinsicCast:
-                result = INS_mov;
-                break;
-            default:
-                assert(!"Unsupported SIMD intrinsic");
-                unreached();
-        }
-    }
-
-    noway_assert(result != INS_invalid);
     return result;
 }
 
@@ -5211,45 +5162,6 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
     // Load the initialized value.
     GetEmitter()->emitIns_Mov(INS_mov, EA_16BYTE, targetReg, vectorReg, /* canSkip */ true);
 
-    genProduceReg(simdNode);
-}
-
-//----------------------------------------------------------------------------------
-// genSIMDIntrinsicUnOp: Generate code for SIMD Intrinsic unary operations like sqrt.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicCast);
-
-    GenTree*  op1       = simdNode->Op(1);
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types targetType = simdNode->TypeGet();
-
-    genConsumeMultiOpOperands(simdNode);
-    regNumber op1Reg = op1->GetRegNum();
-
-    assert(genIsValidFloatReg(op1Reg));
-    assert(genIsValidFloatReg(targetReg));
-
-    instruction ins  = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
-    emitAttr    attr = (simdNode->GetSimdSize() > 8) ? EA_16BYTE : EA_8BYTE;
-
-    if (GetEmitter()->IsMovInstruction(ins))
-    {
-        GetEmitter()->emitIns_Mov(ins, attr, targetReg, op1Reg, /* canSkip */ false, INS_OPTS_NONE);
-    }
-    else
-    {
-        GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, genGetSimdInsOpt(attr, baseType));
-    }
     genProduceReg(simdNode);
 }
 

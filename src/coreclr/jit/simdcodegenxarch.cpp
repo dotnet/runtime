@@ -89,10 +89,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicCast:
-            result = INS_movaps;
-            break;
-
         case SIMDIntrinsicShiftLeftInternal:
             switch (baseType)
             {
@@ -304,38 +300,6 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 
     // Load the initialized value.
     inst_Mov(targetType, targetReg, vectorReg, /* canSkip */ true);
-    genProduceReg(simdNode);
-}
-
-//----------------------------------------------------------------------------------
-// genSIMDIntrinsicUnOp: Generate code for SIMD Intrinsic unary operations like sqrt.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicCast);
-
-    GenTree*  op1       = simdNode->Op(1);
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types targetType = simdNode->TypeGet();
-
-    regNumber   op1Reg = genConsumeReg(op1);
-    instruction ins    = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
-    if (simdNode->GetSIMDIntrinsicId() != SIMDIntrinsicCast)
-    {
-        inst_RV_RV(ins, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
-    }
-    else
-    {
-        inst_Mov(targetType, targetReg, op1Reg, /* canSkip */ true);
-    }
     genProduceReg(simdNode);
 }
 
@@ -747,10 +711,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
     {
         case SIMDIntrinsicInitN:
             genSIMDIntrinsicInitN(simdNode);
-            break;
-
-        case SIMDIntrinsicCast:
-            genSIMDIntrinsicUnOp(simdNode);
             break;
 
         case SIMDIntrinsicShuffleSSE2:

@@ -8833,9 +8833,6 @@ public:
 #endif // FEATURE_SIMD
     }
 
-#ifdef FEATURE_SIMD
-    static bool vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId);
-#endif // !FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
     static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
 #endif // FEATURE_HW_INTRINSICS
