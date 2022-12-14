@@ -78,14 +78,6 @@
     <Description>$(PackageDescription)</Description>
   </PropertyGroup>
 
-  <!-- Make P2Ps which consume source generators, reference the netstandard2.0 TFM.
-       This allows source generators to multi-target without participating in the asset selection.
-       Uses the Microsoft.DotNet.Build.Task.TargetFramework infrastructure. -->
-  <ItemGroup>
-    <ProjectReference Update="@(ProjectReference->WithMetadataValue('OutputItemType', 'Analyzer')->WithMetadataValue('ReferenceOutputAssembly', 'false'))"
-                      ReferringTargetFramework="netstandard2.0" />
-  </ItemGroup>
-
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
       <IsReferenceAssemblyProject>$(IsReferenceAssemblyProject)</IsReferenceAssemblyProject>
@@ -132,6 +124,9 @@
       <_AnalyzerPackFile Include="@(_TargetPathsToSymbols->WithMetadataValue('TargetFramework', 'netstandard2.0'))" IsSymbol="true" />
       <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
     </ItemGroup>
+
+    <Error Text="Analyzers must target netstandard2.0 since they run in the compiler which targets netstandard2.0. $(MSBuildProjectFullPath) targets '$([MSBuild]::ValueOrDefault('$(TargetFrameworks)', '$(TargetFramework)'))' instead."
+           Condition="'@(_AnalyzerPackFile)' == ''" />
   </Target>
 
   <!-- Allows building against source assemblies when the 'SkipUseReferenceAssembly' attribute is present on ProjectReference items. -->
