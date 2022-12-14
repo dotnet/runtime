@@ -4,6 +4,8 @@
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>TestUtils</AssemblyName>
+    <!-- Turn off transitive project references so that this project doesn't compile System.Text.Json's NetCoreAppCurrent tfm. -->
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
   </PropertyGroup>
 
   <ItemGroup>
