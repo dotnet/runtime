@@ -12736,7 +12736,7 @@ EnCSequencePointHelper::~EnCSequencePointHelper()
 
     if (m_pOffsetToHandlerInfo)
     {
-        delete m_pOffsetToHandlerInfo;
+        delete[] m_pOffsetToHandlerInfo;
     }
 }
 
