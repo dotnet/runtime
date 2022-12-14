@@ -177,7 +177,7 @@ jobs:
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
-        - windows.10.amd64.client.open
+        - Windows.10.Amd64.Client.Open
 
     # windows arm
     - ${{ if eq(parameters.platform, 'windows_arm') }}:
