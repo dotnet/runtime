@@ -1,6 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdlib>
 #include <errno.h>
 #include <signal.h>
 
@@ -8,8 +7,10 @@
 #include <windows.h>
 #include <string>
 #else
-#include <unistd.h>
+#include <chrono>
 #include <sys/wait.h>
+#include <thread>
+#include <unistd.h>
 #endif
 
 int run_timed_process(const long, const int, const char *[]);
@@ -22,14 +23,14 @@ int main(const int argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
-    const long timeout_ms = strtol(argv[1], nullptr, 10);
-    int exit_code = run_timed_process(timeout_ms, argc-2, &argv[2]);
+    const long timeout_sec = strtol(argv[1], nullptr, 10);
+    int exit_code = run_timed_process(timeout_sec * 1000L, argc-2, &argv[2]);
 
     printf("App Exit Code: %d\n", exit_code);
     return exit_code;
 }
 
-int run_timed_process(const long timeout, const int exe_argc, const char *exe_path_and_argv[])
+int run_timed_process(const long timeout_ms, const int proc_argc, const char *proc_argv[])
 {
 #ifdef _WIN32
     std::string cmdline(exe_path_and_argv[0]);
@@ -64,21 +65,24 @@ int run_timed_process(const long timeout, const int exe_argc, const char *exe_pa
     return exit_code;
 
 #else
-    const int check_interval = 1000;
+    // TODO: Describe what the 'ms_factor' is, and why it's being used here.
+    const int ms_factor = 40;
+    const int check_interval = 1000 / ms_factor;
+
     int check_count = 0;
-    char **args = new char *[exe_argc];
+    char *args[proc_argc];
 
     pid_t child_pid;
     int child_status;
-    int wait_code;
+    int w;
 
-    for (int i = 0; i < exe_argc; i++)
+    for (int i = 0; i < proc_argc; i++)
     {
-        args[i] = (char *) exe_path_and_argv[i];
+        args[i] = (char *) proc_argv[i];
     }
 
     // This is just for development. Will remove it when it's ready to be submitted :)
-    for (int j = 0; j < exe_argc; j++)
+    for (int j = 0; j < proc_argc; j++)
     {
         printf("[%d]: %s\n", j, args[j]);
     }
@@ -87,11 +91,13 @@ int run_timed_process(const long timeout, const int exe_argc, const char *exe_pa
 
     if (child_pid < 0)
     {
-        printf("Fork failed... No memory available.\n");
+        // Fork failed. No memory remaining available :(
+        printf("Fork failed... Returning ENOMEM.\n");
         return ENOMEM;
     }
     else if (child_pid == 0)
     {
+        // Instructions for child process!
         printf("Running child process...\n");
         execv(args[0], &args[0]);
     }
@@ -99,31 +105,27 @@ int run_timed_process(const long timeout, const int exe_argc, const char *exe_pa
     {
         do
         {
-            wait_code = waitpid(child_pid, &child_status, WNOHANG);
+            // Instructions for the parent process!
+            w = waitpid(child_pid, &child_status, WNOHANG);
 
-            // Something went terribly wrong.
-            if (wait_code == -1)
+            if (w == -1)
                 return EINVAL;
 
-            // TODO: Explain why we are multiplying by 25 here, and dividing
-            // by 40 in the while clause.
-            usleep(check_interval * 25);
+            std::this_thread::sleep_for(std::chrono::milliseconds(check_interval));
 
-            if (wait_code)
+            if (w)
             {
                 if (WIFEXITED(child_status))
-                {
-                    printf("Child process exited successfully with status %d.\n",
-                            WEXITSTATUS(child_status));
                     return WEXITSTATUS(child_status);
-                }
             }
-        } while (check_count++ < ((timeout / check_interval) * 40));
+            check_count += ms_factor;
+
+        } while (check_count < ((timeout_ms / check_interval) * ms_factor));
     }
 
-    printf("Child process took too long and timed out... Exiting it...\n");
+    printf("Child process took too long. Timed out... Exiting...\n");
     kill(child_pid, SIGKILL);
-    delete[] args; // Don't leak memory :)
+
 #endif
     return ETIMEDOUT;
 }

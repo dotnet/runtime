@@ -172,6 +172,19 @@ fi
         <Description>Set CORE_ROOT to the specified value before running the test.</Description>
       </BashCLRTestExecutionScriptArgument>
 
+      <BashCLRTestExecutionScriptArgument Include="watcher">
+        <HasParam>true</HasParam>
+        <ParamText>=*</ParamText> <!-- Bash specific -->
+        <ParamName>watcherFullPath</ParamName>
+        <Command><![CDATA[        export _WatcherFullPath="${i#*=}"
+        if [ ! -f "$_WatcherFullPath" ]
+        then
+            echo "The Watcher FullPath %5C%22${_WatcherFullPath}%5C%22 does not exist"
+            usage
+        fi]]></Command>
+        <Description>Path to the test watcher that will look over the test.</Description>
+      </BashCLRTestExecutionScriptArgument>
+
       <BashCLRTestExecutionScriptArgument Include="e;env">
         <HasParam>true</HasParam>
         <ParamText>=*</ParamText> <!-- Bash specific -->
@@ -179,7 +192,7 @@ fi
         <Command><![CDATA[        export __DotEnv="${i#*=}"
         if [ ! -f "$__DotEnv" ]
         then
-            echo "The Debugger FullPath %5C%22${__DotEnv}%5C%22 does not exist"
+            echo "The dotenv file FullPath %5C%22${__DotEnv}%5C%22 does not exist"
             usage
         fi
         export __DotEnvArg=-e ${__DotEnv}]]></Command>
@@ -242,10 +255,11 @@ then
     exit 1
   fi
 
-  # Copy CORECLR native binaries to $LinkBin,
+  # Copy CORECLR native binaries and the test watcher (if provided) to $LinkBin,
   # so that we can run the test based on that directory
   cp $CORE_ROOT/*.so $LinkBin/
   cp $CORE_ROOT/corerun $LinkBin/
+  cp $_WatcherFullPath/watchdog $LinkBin/
 
   # Copy some files that may be arguments
   for f in *.txt;
@@ -255,6 +269,7 @@ then
 
   ExePath=$LinkBin/$(InputAssemblyName)
   export CORE_ROOT=$PWD/$LinkBin
+  export _WatcherFullPath=$PWD/$LinkBin/watchdog
 fi
 ]]>
           </BashLinkerTestLaunchCmds>
@@ -275,6 +290,7 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
+      <WatcherRunFile>"$_WatcherFullPath" 300</WatcherRunFile>
 
       <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
@@ -311,7 +327,7 @@ if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
 else
-    LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
+    LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(WatcherRunFile) $(CLRTestRunFile)"
 fi
 
 $(BashIlrtTestLaunchCmds)
@@ -476,7 +492,7 @@ usage()
 for i in "$@"
     do
         case $i in
-        -?|-h|--help)
+          -?|-h|--help|/?|/h|/help)
         usage
         %3B%3B
 @(BashCLRTestExecutionScriptArgument -> '        -%(Identity)%(ParamText)|/%(Identity)%(ParamText))
