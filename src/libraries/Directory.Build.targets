@@ -98,8 +98,10 @@
       <RuntimePath>$(LibrariesAllBinArtifactsPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
+    <!-- Source generator projects might multi-target. Make sure that only the netstandard2.0 compiled assets get binplaced. -->
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
-                 Condition="'$(IsNETCoreAppAnalyzer)' == 'true'" />
+                 Condition="'$(IsNETCoreAppAnalyzer)' == 'true' and
+                            '$(TargetFramework)' == 'netstandard2.0'" />
 
     <!-- Setup the shared framework directory for testing -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
