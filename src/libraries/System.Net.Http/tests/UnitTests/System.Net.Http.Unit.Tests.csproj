@@ -322,10 +322,11 @@
              Link="HPack\HPackIntegerTest.cs" />
     <Compile Include="$(CommonPath)..\tests\Tests\System\Net\aspnetcore\Http2\HuffmanDecodingTests.cs"
              Link="HPack\HuffmanDecodingTests.cs" />
+    <Compile Include="$(CommonPath)..\tests\Tests\System\Net\aspnetcore\Http3\QPackDecoderTest.cs"
+             Link="QPack\QPackDecoderTest.cs" />
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
-    <Compile Include="QPack\QPackDecoderTest.cs" />
     <Compile Include="RuntimeSettingParserTest.cs" />
     <Compile Include="StreamToStreamCopyTest.cs" />
     <Compile Include="HttpEnvironmentProxyTest.cs" />
