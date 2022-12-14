@@ -3325,6 +3325,30 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
+
+#if defined(TARGET_AMD64)
+    rbmAllFloat            = RBM_ALLFLOAT_INIT;
+    rbmFltCalleeTrash      = RBM_FLT_CALLEE_TRASH_INIT;
+    rbmCntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
+
+    if (DoJitStressEvexEncoding())
+    {
+        rbmAllFloat |= RBM_HIGHFLOAT;
+        rbmFltCalleeTrash |= RBM_HIGHFLOAT;
+        rbmCntCalleeTrashFloat += 16;
+    }
+    rbmCalleeTrash                    = RBM_CALLEE_TRASH_INIT;
+    rbmCalleeTrashNoGC                = RBM_CALLEE_TRASH_NOGC_INIT;
+    rbmCalleeTrashWriteBarrier        = RBM_CALLEE_TRASH_WRITEBARRIER_INIT;
+    rbmCalleeGCTrashWriteBarrier      = RBM_CALLEE_GCTRASH_WRITEBARRIER_INIT;
+    rbmCalleeTrashWriteBarrierByref   = RBM_CALLEE_TRASH_WRITEBARRIER_BYREF_INIT;
+    rbmCalleeGCTrashWriteBarrierByref = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF_INIT;
+    rbmStopForGCTrash                 = RBM_STOP_FOR_GC_TRASH_INIT;
+    rbmInitPInvokeFrameTrash          = RBM_INIT_PINVOKE_FRAME_TRASH_INIT;
+    rbmProfilerEnterTrash             = RBM_PROFILER_ENTER_TRASH_INIT;
+    rbmProfilerLeaveTrash             = RBM_PROFILER_LEAVE_TRASH_INIT;
+    rbmProfilerTailcallTrash          = RBM_PROFILER_TAILCALL_TRASH_INIT;
+#endif // TARGET_AMD64
 }
 
 #ifdef DEBUG
@@ -10276,3 +10300,25 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS
+
+#if defined(TARGET_AMD64)
+// The following are for initializing register allocator "constants" defined in targetamd.h
+// that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
+// the number of simd (xmm,ymm, and zmm) registers from 16 to 32.
+// As only 64-bit xarch has the capability to have the additional registers, we limit the changes
+// to TARGET_AMD64 only.
+regMaskTP rbmAllFloat;
+regMaskTP rbmFltCalleeTrash;
+regMaskTP rbmCalleeTrash;
+regMaskTP rbmCalleeTrashNoGC;
+regMaskTP rbmCalleeTrashWriteBarrier;
+regMaskTP rbmCalleeGCTrashWriteBarrier;
+regMaskTP rbmCalleeTrashWriteBarrierByref;
+regMaskTP rbmCalleeGCTrashWriteBarrierByref;
+regMaskTP rbmStopForGCTrash;
+regMaskTP rbmProfilerTailcallTrash;
+regMaskTP rbmInitPInvokeFrameTrash;
+regMaskTP rbmProfilerEnterTrash;
+regMaskTP rbmProfilerLeaveTrash;
+unsigned  rbmCntCalleeTrashFloat;
+#endif // TARGET_AMD64

@@ -256,6 +256,14 @@ regMaskTP LinearScan::allSIMDRegs()
     return availableFloatRegs;
 }
 
+//------------------------------------------------------------------------
+// lowSIMDRegs(): Return the set of SIMD registers associated with VEX
+// encoding only, i.e., remove the high EVEX SIMD registers from the available
+// set.
+//
+// Return Value:
+// Register mask of the SSE/VEX-only SIMD registers
+//
 regMaskTP LinearScan::lowSIMDRegs()
 {
 #if defined(TARGET_AMD64)
@@ -479,7 +487,9 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 #endif
 
             default:
+            {
                 unreached();
+            }
         }
 
         if (refPosition != nullptr && refPosition->isFixedRegRef)
@@ -693,10 +703,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independetly
     // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
     // we cannot use EVEX at all)
-    if (!compiler->DoJitStressEvexEncoding())
+    if (compiler->DoJitStressEvexEncoding())
     {
-        availableFloatRegs &= ~RBM_HIGHFLOAT;
-        availableDoubleRegs &= ~RBM_HIGHFLOAT;
+        availableFloatRegs |= RBM_HIGHFLOAT;
+        availableDoubleRegs |= RBM_HIGHFLOAT;
     }
 #endif
 

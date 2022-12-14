@@ -766,16 +766,20 @@ struct HWIntrinsicInfo
 #error Unsupported platform
 #endif
     }
-
+    //------------------------------------------------------------------------
+    // HasEvexSemantics: Checks if the NamedIntrinsic has a lowering to
+    // to an instruction with an EVEX form.
+    //
+    // Return Value:
+    // true if the NamedIntrinsic lowering has an EVEX form.
+    //
     static bool HasEvexSemantics(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
         return (flags & HW_Flag_NoEvexSemantics) == 0;
-#elif defined(TARGET_ARM64)
-        return (flags & HW_Flag_NoEvexSemantics) == 0;
 #else
-#error Unsupported platform
+        return false;
 #endif
     }
 

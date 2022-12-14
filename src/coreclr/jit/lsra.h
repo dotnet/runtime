@@ -736,8 +736,12 @@ private:
     unsigned lsraStressMask;
 
     // This controls the registers available for allocation
-    enum LsraStressLimitRegs{LSRA_LIMIT_NONE = 0, LSRA_LIMIT_CALLEE = 0x1, LSRA_LIMIT_CALLER = 0x2,
-                             LSRA_LIMIT_SMALL_SET = 0x3, LSRA_LIMIT_UPPER_SIMD_SET = 0x4, LSRA_LIMIT_MASK = 0x5};
+    enum LsraStressLimitRegs{LSRA_LIMIT_NONE           = 0,
+                             LSRA_LIMIT_CALLEE         = 0x1,
+                             LSRA_LIMIT_CALLER         = 0x2,
+                             LSRA_LIMIT_SMALL_SET      = 0x3,
+                             LSRA_LIMIT_UPPER_SIMD_SET = 0x2000,
+                             LSRA_LIMIT_MASK           = 0x2003};
 
     // When LSRA_LIMIT_SMALL_SET is specified, it is desirable to select a "mixed" set of caller- and callee-save
     // registers, so as to get different coverage than limiting to callee or caller.
@@ -757,8 +761,9 @@ private:
         (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
 #endif // !UNIX_AMD64_ABI
     static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
-    static const regMaskTP LsraLimitUpperSimdSet = (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 
-                                                    | RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
+    static const regMaskTP LsraLimitUpperSimdSet =
+        (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
+         RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
 #elif defined(TARGET_ARM)
     // On ARM, we may need two registers to set up the target register for a virtual call, so we need
     // to have at least the maximum number of arg registers, plus 2.
