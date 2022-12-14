@@ -139,21 +139,8 @@
     </PropertyGroup>
 
     <!-- Clear the ReferenceAssembly attribute on resolved P2Ps that set SkipUseReferenceAssembly to true. -->
-    <ItemGroup Condition="@(ProjectReference->AnyHaveMetadataValue('SkipUseReferenceAssembly', 'true'))">
-      <_resolvedP2PFiltered Include="@(ProjectReference->WithMetadataValue('SkipUseReferenceAssembly', 'true'))"
-                            ProjectReferenceItemSpec="$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)'))" />
-      <_resolvedP2PFilteredWithProjectReferenceItemSpec Include="@(_resolvedP2PFiltered->Metadata('ProjectReferenceItemSpec'))" />
-
-      <_ResolvedProjectReferencePathsWithMSBuildSourceProjectFile Include="@(_ResolvedProjectReferencePaths->Metadata('MSBuildSourceProjectFile'))"
-                                                                  OriginalIdentity="%(Identity)" />
-      <_ResolvedProjectReferencePathsIncludedWithMSBuildSourceProjectFile Include="@(_ResolvedProjectReferencePathsWithMSBuildSourceProjectFile)"
-                                                                          Exclude="@(_resolvedP2PFilteredWithProjectReferenceItemSpec)" />
-      <_ResolvedProjectReferencePathsExcludedWithMSBuildSourceProjectFile Include="@(_ResolvedProjectReferencePathsWithMSBuildSourceProjectFile)"
-                                                                          Exclude="@(_ResolvedProjectReferencePathsIncludedWithMSBuildSourceProjectFile)" />
-
-      <!-- Item updates aren't allowed inside targets. -->
-      <_ResolvedProjectReferencePaths Remove="@(_ResolvedProjectReferencePathsExcludedWithMSBuildSourceProjectFile->Metadata('OriginalIdentity'))" />
-      <_ResolvedProjectReferencePaths Include="@(_ResolvedProjectReferencePathsExcludedWithMSBuildSourceProjectFile->Metadata('OriginalIdentity'))"
+    <ItemGroup>
+      <_ResolvedProjectReferencePaths Condition="'%(_ResolvedProjectReferencePaths.SkipUseReferenceAssembly)' == 'true'"
                                       ReferenceAssembly="" />
     </ItemGroup>
   </Target>
