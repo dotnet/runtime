@@ -822,11 +822,7 @@ int LinearScan::BuildNode(GenTree* tree)
 int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 {
     int srcCount = 0;
-    // Only SIMDIntrinsicInit can be contained
-    if (simdTree->isContained())
-    {
-        assert(simdTree->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
-    }
+    assert(!simdTree->isContained());
     int dstCount = simdTree->IsValue() ? 1 : 0;
     assert(dstCount == 1);
 
@@ -834,7 +830,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
     switch (simdTree->GetSIMDIntrinsicId())
     {
-        case SIMDIntrinsicInit:
         case SIMDIntrinsicCast:
             // No special handling required.
             break;

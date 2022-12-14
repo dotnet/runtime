@@ -1936,60 +1936,12 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
     bool      buildUses     = true;
     regMaskTP dstCandidates = RBM_NONE;
 
-    if (simdTree->isContained())
-    {
-        // Only SIMDIntrinsicInit can be contained
-        assert(simdTree->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
-    }
+    assert(!simdTree->isContained());
     SetContainsAVXFlags(simdTree->GetSimdSize());
     int srcCount = 0;
 
     switch (simdTree->GetSIMDIntrinsicId())
     {
-        case SIMDIntrinsicInit:
-        {
-            // This sets all fields of a SIMD struct to the given value.
-            // Mark op1 as contained if it is either zero or int constant of all 1's,
-            // or a float constant with 16 or 32 byte simdType (AVX case)
-            //
-            // Note that for small int base types, the initVal has been constructed so that
-            // we can use the full int value.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if !defined(TARGET_64BIT)
-            GenTree* op1 = simdTree->Op(1);
-
-            if (op1->OperGet() == GT_LONG)
-            {
-                assert(op1->isContained());
-                GenTree* op1lo = op1->gtGetOp1();
-                GenTree* op1hi = op1->gtGetOp2();
-
-                if (op1lo->isContained())
-                {
-                    srcCount = 0;
-                    assert(op1hi->isContained());
-                    assert((op1lo->IsIntegralConst(0) && op1hi->IsIntegralConst(0)) ||
-                           (op1lo->IsIntegralConst(-1) && op1hi->IsIntegralConst(-1)));
-                }
-                else
-                {
-                    srcCount = 2;
-                    buildInternalFloatRegisterDefForNode(simdTree);
-                    setInternalRegsDelayFree = true;
-                }
-
-                if (srcCount == 2)
-                {
-                    BuildUse(op1lo, RBM_EAX);
-                    BuildUse(op1hi, RBM_EDX);
-                }
-                buildUses = false;
-            }
-#endif // !defined(TARGET_64BIT)
-        }
-        break;
-
         case SIMDIntrinsicInitN:
         {
             var_types baseType = simdTree->GetSimdBaseType();
@@ -2016,7 +1968,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             break;
 
         case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
             break;
 
         case SIMDIntrinsicEqual:

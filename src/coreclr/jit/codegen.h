@@ -1088,7 +1088,6 @@ protected:
     void genSIMDScalarMove(
         var_types targetType, var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
     void genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg);
-    void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);

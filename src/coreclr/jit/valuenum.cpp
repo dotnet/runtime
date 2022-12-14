@@ -7157,9 +7157,6 @@ void ValueNumStore::InitValueNumStoreStatics()
 
 #ifdef FEATURE_SIMD
 
-    // SIMDIntrinsicInit has an entry of 2 for numArgs, but it only has one normal arg
-    ValueNumFuncSetArity(VNF_SIMD_Init, 1);
-
     // Some SIMD intrinsic nodes have an extra VNF_SimdType arg
     //
     for (SIMDIntrinsicID id = SIMDIntrinsicID::SIMDIntrinsicNone; (id < SIMDIntrinsicID::SIMDIntrinsicInvalid);

@@ -1184,7 +1184,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
 {
     switch (intrinsicId)
     {
-        case SIMDIntrinsicInit:
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
@@ -1866,25 +1865,14 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
     switch (simdIntrinsicID)
     {
-        case SIMDIntrinsicInit:
         case SIMDIntrinsicInitN:
         {
-            // SIMDIntrinsicInit:
-            //    op2 - the initializer value
-            //    op1 - byref of vector
-            //
             // SIMDIntrinsicInitN
             //    op2 - list of initializer values stitched into a list
             //    op1 - byref of vector
             IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), argCount - 1);
             bool                 initFromFirstArgIndir = false;
 
-            if (simdIntrinsicID == SIMDIntrinsicInit)
-            {
-                op2 = impSIMDPopStack(simdBaseType);
-                nodeBuilder.AddOperand(0, op2);
-            }
-            else
             {
                 assert(simdIntrinsicID == SIMDIntrinsicInitN);
                 assert(simdBaseType == TYP_FLOAT);
@@ -1935,59 +1923,8 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             assert(op1->TypeGet() == TYP_BYREF);
 
-            // For integral base types of size less than TYP_INT, expand the initializer
-            // to fill size of TYP_INT bytes.
-            if (varTypeIsSmallInt(simdBaseType))
             {
-                // This case should occur only for Init intrinsic.
-                assert(simdIntrinsicID == SIMDIntrinsicInit);
-
-                unsigned baseSize = genTypeSize(simdBaseType);
-                int      multiplier;
-                if (baseSize == 1)
-                {
-                    multiplier = 0x01010101;
-                }
-                else
-                {
-                    assert(baseSize == 2);
-                    multiplier = 0x00010001;
-                }
-
-                GenTree* t1 = nullptr;
-                if (simdBaseType == TYP_BYTE)
-                {
-                    // What we have is a signed byte initializer,
-                    // which when loaded to a reg will get sign extended to TYP_INT.
-                    // But what we need is the initializer without sign extended or
-                    // rather zero extended to 32-bits.
-                    t1 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(0xff, TYP_INT));
-                }
-                else if (simdBaseType == TYP_SHORT)
-                {
-                    // What we have is a signed short initializer,
-                    // which when loaded to a reg will get sign extended to TYP_INT.
-                    // But what we need is the initializer without sign extended or
-                    // rather zero extended to 32-bits.
-                    t1 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(0xffff, TYP_INT));
-                }
-                else
-                {
-                    // TODO-Casts: this cast is useless.
-                    assert(simdBaseType == TYP_UBYTE || simdBaseType == TYP_USHORT);
-                    t1 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
-                }
-
-                assert(t1 != nullptr);
-                GenTree* t2 = gtNewIconNode(multiplier, TYP_INT);
-                op2         = gtNewOperNode(GT_MUL, TYP_INT, t1, t2);
-
-                // Construct a vector of TYP_INT with the new initializer and cast it back to vector of simdBaseType
-                simdTree = gtNewSIMDNode(simdType, op2, simdIntrinsicID, CORINFO_TYPE_INT, size);
-                simdTree = gtNewSIMDNode(simdType, simdTree, SIMDIntrinsicCast, simdBaseJitType, size);
-            }
-            else
-            {
+                assert(!varTypeIsSmallInt(simdBaseType));
 
                 if (initFromFirstArgIndir)
                 {
