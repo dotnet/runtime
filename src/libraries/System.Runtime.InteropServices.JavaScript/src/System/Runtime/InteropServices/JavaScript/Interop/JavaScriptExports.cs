@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg_1.ToManaged(out IntPtr entrypointPtr);
                 if (entrypointPtr == IntPtr.Zero)
                 {
-                    throw new MissingMethodException("Missing entrypoint");
+                    throw new MissingMethodException(SR.Format(SR.MissingEntrypoint));
                 }
 
                 RuntimeMethodHandle methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(entrypointPtr);
@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
                 if (method == null)
                 {
-                    throw new InvalidProgramException("Can't resolve entrypoint handle");
+                    throw new InvalidProgramException(SR.Format(SR.EntrypointHandle));
                 }
 
                 arg_2.ToManaged(out string?[]? args);
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidProgramException($"Return type '{method.ReturnType.FullName}' from main method in not supported");
+                    throw new InvalidProgramException(SR.Format(SR.ReturnTypeNotSupportedForMain, method.ReturnType.FullName));
                 }
                 arg_result.ToJS(result, (ref JSMarshalerArgument arg, int value) =>
                 {
@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidOperationException("ToManagedCallback is null");
+                    throw new InvalidOperationException(SR.Format(SR.NullToManagedCallback));
                 }
             }
             catch (Exception ex)
@@ -181,7 +181,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidOperationException("TaskCallback is null");
+                    throw new InvalidOperationException(SR.Format(SR.NullTaskCallback));
                 }
             }
             catch (Exception ex)
