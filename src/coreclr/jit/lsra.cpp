@@ -460,6 +460,15 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
                 }
                 break;
 
+#if defined(TARGET_AMD64)
+            case LSRA_LIMIT_UPPER_SIMD_SET:
+                if ((mask & LsraLimitUpperSimdSet) != RBM_NONE)
+                {
+                    mask = getConstrainedRegMask(mask, LsraLimitUpperSimdSet, minRegCount);
+                }
+                break;
+#endif
+
             default:
                 unreached();
         }
