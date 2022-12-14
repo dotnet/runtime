@@ -67,28 +67,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
     instruction result = INS_invalid;
     switch (intrinsicId)
     {
-        case SIMDIntrinsicShuffleSSE2:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_shufps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_shufpd;
-            }
-            else if (baseType == TYP_INT || baseType == TYP_UINT)
-            {
-                result = INS_pshufd;
-            }
-            else if (baseType == TYP_LONG || baseType == TYP_ULONG)
-            {
-                // We don't have a separate SSE2 instruction and will
-                // use the instruction meant for doubles since it is
-                // of the same size as a long.
-                result = INS_shufpd;
-            }
-            break;
-
         case SIMDIntrinsicShiftLeftInternal:
             switch (baseType)
             {
@@ -328,39 +306,6 @@ void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, r
         inst_Mov(simdType, tgtReg, srcReg, /* canSkip */ true);
         GetEmitter()->emitIns_R_I(shiftIns, emitSize, tgtReg, 8);
     }
-}
-
-//------------------------------------------------------------------------
-// genSIMDIntrinsicShuffleSSE2: Generate code for SIMD Intrinsic shuffle.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicShuffleSSE2);
-    noway_assert(compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported);
-
-    GenTree* op1 = simdNode->Op(1);
-    GenTree* op2 = simdNode->Op(2);
-    assert(op2->isContained());
-    assert(op2->IsCnsIntOrI());
-    ssize_t   shuffleControl = op2->AsIntConCommon()->IconValue();
-    var_types baseType       = simdNode->GetSimdBaseType();
-    var_types targetType     = simdNode->TypeGet();
-    regNumber targetReg      = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-
-    regNumber op1Reg = genConsumeReg(op1);
-    inst_Mov(targetType, targetReg, op1Reg, /* canSkip */ true);
-
-    instruction ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
-    assert((shuffleControl >= 0) && (shuffleControl <= 255));
-    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(baseType), targetReg, targetReg, (int8_t)shuffleControl);
-    genProduceReg(simdNode);
 }
 
 //-----------------------------------------------------------------------------
@@ -711,10 +656,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
     {
         case SIMDIntrinsicInitN:
             genSIMDIntrinsicInitN(simdNode);
-            break;
-
-        case SIMDIntrinsicShuffleSSE2:
-            genSIMDIntrinsicShuffleSSE2(simdNode);
             break;
 
         case SIMDIntrinsicUpperSave:

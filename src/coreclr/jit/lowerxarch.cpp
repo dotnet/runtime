@@ -5940,12 +5940,6 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
             break;
 
-        case SIMDIntrinsicShuffleSSE2:
-            // Second operand is an integer constant and marked as contained.
-            assert(simdNode->Op(2)->IsCnsIntOrI());
-            MakeSrcContained(simdNode, simdNode->Op(2));
-            break;
-
         default:
             break;
     }

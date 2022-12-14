@@ -1967,11 +1967,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // We have an array and an index, which may be contained.
             break;
 
-        case SIMDIntrinsicShuffleSSE2:
-            // Second operand is an integer constant and marked as contained.
-            assert(simdTree->Op(2)->isContainedIntOrIImmed());
-            break;
-
         default:
             noway_assert(!"Unimplemented SIMD node type.");
             unreached();

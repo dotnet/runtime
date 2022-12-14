@@ -1091,7 +1091,6 @@ protected:
         var_types targetType, var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
     void genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode);
     void genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
