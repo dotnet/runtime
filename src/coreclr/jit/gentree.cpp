@@ -19041,7 +19041,7 @@ bool GenTree::isEvexCompatibleHWIntrinsic()
 
 // TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
 // implemented in the register allocator
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
     return HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
            !HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
 #else
