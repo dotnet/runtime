@@ -18720,18 +18720,6 @@ void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
     }
 }
 
-bool GenTree::isCommutativeSIMDIntrinsic()
-{
-    assert(gtOper == GT_SIMD);
-    switch (AsSIMD()->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicBitwiseAnd:
-            return true;
-        default:
-            return false;
-    }
-}
-
 void GenTreeMultiOp::ResetOperandArray(size_t    newOperandCount,
                                        Compiler* compiler,
                                        GenTree** inlineOperands,

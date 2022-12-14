@@ -1967,9 +1967,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // We have an array and an index, which may be contained.
             break;
 
-        case SIMDIntrinsicBitwiseAnd:
-            break;
-
         case SIMDIntrinsicCast:
             break;
 

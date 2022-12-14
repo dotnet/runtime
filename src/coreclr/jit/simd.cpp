@@ -1184,7 +1184,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
 {
     switch (intrinsicId)
     {
-        case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicCast:
             return true;
 
@@ -2020,18 +2019,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             copyBlkDst = op1;
             doCopyBlk  = true;
-        }
-        break;
-
-        case SIMDIntrinsicBitwiseAnd:
-        {
-            // op1 is the first operand; if instance method, op1 is "this" arg
-            // op2 is the second operand
-            op2 = impSIMDPopStack(simdType);
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, simdBaseJitType, size);
-            retVal   = simdTree;
         }
         break;
 

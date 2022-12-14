@@ -89,21 +89,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             }
             break;
 
-        case SIMDIntrinsicBitwiseAnd:
-            if (baseType == TYP_FLOAT)
-            {
-                result = INS_andps;
-            }
-            else if (baseType == TYP_DOUBLE)
-            {
-                result = INS_andpd;
-            }
-            else if (varTypeIsIntegral(baseType))
-            {
-                result = INS_pand;
-            }
-            break;
-
         case SIMDIntrinsicCast:
             result = INS_movaps;
             break;
@@ -379,59 +364,6 @@ void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, r
         inst_Mov(simdType, tgtReg, srcReg, /* canSkip */ true);
         GetEmitter()->emitIns_R_I(shiftIns, emitSize, tgtReg, 8);
     }
-}
-
-//--------------------------------------------------------------------------------
-// genSIMDIntrinsicBinOp: Generate code for SIMD Intrinsic binary operations
-// add, sub, mul, bit-wise And, AndNot and Or.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseAnd);
-
-    GenTree*  op1       = simdNode->Op(1);
-    GenTree*  op2       = simdNode->Op(2);
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types targetType = simdNode->TypeGet();
-
-    genConsumeMultiOpOperands(simdNode);
-    regNumber op1Reg   = op1->GetRegNum();
-    regNumber op2Reg   = op2->GetRegNum();
-    regNumber otherReg = op2Reg;
-
-    instruction ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
-
-    // Currently AVX doesn't support integer.
-    // if the ins is INS_cvtsi2ss or INS_cvtsi2sd, we won't use AVX.
-    if (op1Reg != targetReg && compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported &&
-        !(ins == INS_cvtsi2ss32 || ins == INS_cvtsi2sd32 || ins == INS_cvtsi2ss64 || ins == INS_cvtsi2sd64) &&
-        GetEmitter()->IsThreeOperandAVXInstruction(ins))
-    {
-        inst_RV_RV_RV(ins, targetReg, op1Reg, op2Reg, emitActualTypeSize(targetType));
-    }
-    else
-    {
-        if (op2Reg == targetReg)
-        {
-            otherReg = op1Reg;
-        }
-        else
-        {
-            inst_Mov(targetType, targetReg, op1Reg, /* canSkip */ true);
-        }
-
-        inst_RV_RV(ins, targetReg, otherReg, targetType, emitActualTypeSize(targetType));
-    }
-
-    genProduceReg(simdNode);
 }
 
 //------------------------------------------------------------------------
@@ -819,10 +751,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicCast:
             genSIMDIntrinsicUnOp(simdNode);
-            break;
-
-        case SIMDIntrinsicBitwiseAnd:
-            genSIMDIntrinsicBinOp(simdNode);
             break;
 
         case SIMDIntrinsicShuffleSSE2:
