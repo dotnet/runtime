@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -12,29 +13,16 @@ namespace System.Text.Json.Serialization.Converters
     /// (de)serializes as a JSON object with properties representing the dictionary element key and value.
     /// </summary>
     internal sealed class IDictionaryOfTKeyTValueConverter<TDictionary, TKey, TValue>
-        : DictionaryDefaultConverter<TDictionary, TKey, TValue>
+        : DictionaryDefaultConverter<TDictionary, TKey, TValue, TDictionary>
         where TDictionary : IDictionary<TKey, TValue>
         where TKey : notnull
     {
-        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
-        {
-            TDictionary collection = (TDictionary)state.Current.ReturnValue!;
-            collection[key] = value;
-            if (IsValueType)
-            {
-                state.Current.ReturnValue = collection;
-            };
-        }
+        private protected sealed override bool IsReadOnly(object obj)
+            => ((TDictionary)obj).IsReadOnly;
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
+        protected override void Add(ref TDictionary collection, TKey key, in TValue value, JsonSerializerOptions options)
         {
-            base.CreateCollection(ref reader, ref state);
-            TDictionary returnValue = (TDictionary)state.Current.ReturnValue!;
-            if (returnValue.IsReadOnly)
-            {
-                state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-            }
+            collection[key] = value;
         }
 
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)

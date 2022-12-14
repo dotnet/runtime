@@ -106,6 +106,8 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonRequiredAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyOrderAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonUnmappedMemberHandlingAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverterBase.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonAdvancedConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\CastingConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverterWithReflection.cs" />
@@ -388,15 +390,8 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj"
-                      ReferenceOutputAssembly="false"
-                      PackAsAnalyzer="true"
-                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
-    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj"
-                      ReferenceOutputAssembly="false"
-                      PackAsAnalyzer="true" />
-    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj"
-                      ReferenceOutputAssembly="false"
-                      PackAsAnalyzer="true" />
+    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
+    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
   </ItemGroup>
 </Project>

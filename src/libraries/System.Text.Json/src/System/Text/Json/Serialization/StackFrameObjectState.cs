@@ -13,7 +13,6 @@ namespace System.Text.Json
 
         StartToken,
         ReadMetadata,
-        ConstructorArguments,
         CreatedObject,
         ReadElements,
         EndToken,

@@ -2,30 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     /// Converter for <cref>System.Collections.Generic.List{TElement}</cref>.
     internal sealed class ListOfTConverter<TCollection, TElement>
-        : IEnumerableDefaultConverter<TCollection, TElement>
-        where TCollection: List<TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement, TCollection>
+        where TCollection : List<TElement>
     {
-        protected override void Add(in TElement value, ref ReadStack state)
+        private protected sealed override void Add(ref TCollection collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            ((TCollection)state.Current.ReturnValue!).Add(value);
+            collection.Add(value);
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
-        {
-            if (state.Current.JsonTypeInfo.CreateObject == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
-            }
-
-            state.Current.ReturnValue = state.Current.JsonTypeInfo.CreateObject();
-        }
-
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
+        internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             List<TElement> list = value;
 

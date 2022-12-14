@@ -8,7 +8,7 @@ using System.Text.Json.Serialization.Metadata;
 namespace System.Text.Json.Serialization.Converters
 {
     // Converter for F# maps: https://fsharp.github.io/fsharp-core-docs/reference/fsharp-collections-fsharpmap-2.html
-    internal sealed class FSharpMapConverter<TMap, TKey, TValue> : DictionaryDefaultConverter<TMap, TKey, TValue>
+    internal sealed class FSharpMapConverter<TMap, TKey, TValue> : DictionaryDefaultConverter<TMap, TKey, TValue, List<Tuple<TKey, TValue>>>
         where TMap : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : notnull
     {
@@ -21,22 +21,25 @@ namespace System.Text.Json.Serialization.Converters
             _mapConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpMapConstructor<TMap, TKey, TValue>();
         }
 
-        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(ref List<Tuple<TKey, TValue>> collection, TKey key, in TValue value, JsonSerializerOptions options)
         {
-            ((List<Tuple<TKey, TValue>>)state.Current.ReturnValue!).Add (new Tuple<TKey, TValue>(key, value));
+            collection.Add(new Tuple<TKey, TValue>(key, value));
         }
 
         internal override bool CanHaveMetadata => false;
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
+
+        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out List<Tuple<TKey, TValue>>? obj)
         {
-            state.Current.ReturnValue = new List<Tuple<TKey, TValue>>();
+            obj = new List<Tuple<TKey, TValue>>();
+            return true;
         }
 
-        protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
+        private protected override bool TryConvert(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, List<Tuple<TKey, TValue>> obj, out TMap value)
         {
-            state.Current.ReturnValue = _mapConstructor((List<Tuple<TKey, TValue>>)state.Current.ReturnValue!);
+            value = _mapConstructor(obj);
+            return true;
         }
     }
 }

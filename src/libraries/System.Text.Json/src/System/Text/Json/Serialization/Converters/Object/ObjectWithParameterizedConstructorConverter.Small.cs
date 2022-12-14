@@ -79,10 +79,8 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 
-        protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
+        private protected sealed override object CreateArguments(JsonTypeInfo typeInfo)
         {
-            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
-
             typeInfo.CreateObjectWithArgs ??=
                 JsonSerializerOptions.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
 
@@ -120,7 +118,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            state.Current.CtorArgumentState!.Arguments = arguments;
+            return arguments;
         }
     }
 }

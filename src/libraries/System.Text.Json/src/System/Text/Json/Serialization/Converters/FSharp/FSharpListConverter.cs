@@ -8,7 +8,7 @@ using System.Text.Json.Serialization.Metadata;
 namespace System.Text.Json.Serialization.Converters
 {
     // Converter for F# lists: https://fsharp.github.io/fsharp-core-docs/reference/fsharp-collections-list-1.html
-    internal sealed class FSharpListConverter<TList, TElement> : IEnumerableDefaultConverter<TList, TElement>
+    internal sealed class FSharpListConverter<TList, TElement> : IEnumerableDefaultConverter<TList, TElement, List<TElement>>
         where TList : IEnumerable<TElement>
     {
         private readonly Func<IEnumerable<TElement>, TList> _listConstructor;
@@ -20,20 +20,23 @@ namespace System.Text.Json.Serialization.Converters
             _listConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpListConstructor<TList, TElement>();
         }
 
-        protected override void Add(in TElement value, ref ReadStack state)
+        private protected override void Add(ref List<TElement> collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            ((List<TElement>)state.Current.ReturnValue!).Add(value);
+            collection.Add(value);
         }
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
+
+        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out List<TElement>? obj)
         {
-            state.Current.ReturnValue = new List<TElement>();
+            obj = new List<TElement>();
+            return true;
         }
 
-        protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
+        private protected override bool TryConvert(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, List<TElement> obj, out TList value)
         {
-            state.Current.ReturnValue = _listConstructor((List<TElement>)state.Current.ReturnValue!);
+            value = _listConstructor(obj);
+            return true;
         }
     }
 }

@@ -11,16 +11,16 @@ namespace System.Text.Json.Serialization.Converters
     /// representing the dictionary element key and value.
     /// </summary>
     internal sealed class DictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>
-        : DictionaryDefaultConverter<TCollection, TKey, TValue>
+        : DictionaryDefaultConverter<TCollection, TKey, TValue, TCollection>
         where TCollection : Dictionary<TKey, TValue>
         where TKey : notnull
     {
-        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(ref TCollection collection, TKey key, in TValue value, JsonSerializerOptions options)
         {
-            ((TCollection)state.Current.ReturnValue!)[key] = value;
+            collection[key] = value;
         }
 
-        protected internal override bool OnWriteResume(
+        private protected override bool OnWriteResumeCore(
             Utf8JsonWriter writer,
             TCollection value,
             JsonSerializerOptions options,

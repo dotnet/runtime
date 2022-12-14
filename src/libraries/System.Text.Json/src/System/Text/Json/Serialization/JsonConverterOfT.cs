@@ -484,10 +484,10 @@ namespace System.Text.Json.Serialization
                 return TryWrite(writer, value, options, ref state);
             }
 
-            JsonDictionaryConverter<T>? dictionaryConverter = this as JsonDictionaryConverter<T>
-                ?? (this as JsonMetadataServicesConverter<T>)?.Converter as JsonDictionaryConverter<T>;
+            JsonAdvancedConverter<T>? dictionaryConverter = (this as JsonAdvancedConverter<T>)
+                ?? (this as JsonMetadataServicesConverter<T>)?.Converter as JsonAdvancedConverter<T>;
 
-            if (dictionaryConverter == null)
+            if (dictionaryConverter == null || !dictionaryConverter.IsJsonDictionaryConverter)
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.

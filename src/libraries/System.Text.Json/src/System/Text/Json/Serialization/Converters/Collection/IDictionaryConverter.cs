@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -13,31 +14,18 @@ namespace System.Text.Json.Serialization.Converters
     /// representing the dictionary element key and value.
     /// </summary>
     internal sealed class IDictionaryConverter<TDictionary>
-        : JsonDictionaryConverter<TDictionary, string, object?>
+        : JsonDictionaryConverter<TDictionary, string, object?, TDictionary>
         where TDictionary : IDictionary
     {
-        protected override void Add(string key, in object? value, JsonSerializerOptions options, ref ReadStack state)
+        private protected override bool IsReadOnly(object obj)
+            => ((TDictionary)obj).IsReadOnly;
+
+        protected override void Add(ref TDictionary collection, string key, in object? value, JsonSerializerOptions options)
         {
-            TDictionary collection = (TDictionary)state.Current.ReturnValue!;
             collection[key] = value;
-            if (IsValueType)
-            {
-                state.Current.ReturnValue = collection;
-            }
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
-        {
-            base.CreateCollection(ref reader, ref state);
-            TDictionary returnValue = (TDictionary)state.Current.ReturnValue!;
-            if (returnValue.IsReadOnly)
-            {
-                state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-            }
-        }
-
-        protected internal override bool OnWriteResume(Utf8JsonWriter writer, TDictionary value, JsonSerializerOptions options, ref WriteStack state)
+        private protected override bool OnWriteResumeCore(Utf8JsonWriter writer, TDictionary value, JsonSerializerOptions options, ref WriteStack state)
         {
             IDictionaryEnumerator enumerator;
             if (state.Current.CollectionEnumerator == null)

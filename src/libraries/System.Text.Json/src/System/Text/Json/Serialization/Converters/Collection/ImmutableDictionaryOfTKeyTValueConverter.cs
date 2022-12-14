@@ -3,34 +3,38 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal class ImmutableDictionaryOfTKeyTValueConverter<TDictionary, TKey, TValue>
-        : DictionaryDefaultConverter<TDictionary, TKey, TValue>
+        : DictionaryDefaultConverter<TDictionary, TKey, TValue, Dictionary<TKey, TValue>>
         where TDictionary : IReadOnlyDictionary<TKey, TValue>
         where TKey : notnull
     {
-        protected sealed override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected sealed override void Add(ref Dictionary<TKey, TValue> collection, TKey key, in TValue value, JsonSerializerOptions options)
         {
-            ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
+            collection[key] = value;
         }
 
         internal sealed override bool CanHaveMetadata => false;
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
+
+        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out Dictionary<TKey, TValue>? obj)
         {
-            state.Current.ReturnValue = new Dictionary<TKey, TValue>();
+            obj = new Dictionary<TKey, TValue>();
+            return true;
         }
 
-        protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
+        private protected override bool TryConvert(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, Dictionary<TKey, TValue> obj, out TDictionary value)
         {
             Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? creator =
-                (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>?)state.Current.JsonTypeInfo.CreateObjectWithArgs;
+                (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>?)jsonTypeInfo.CreateObjectWithArgs;
             Debug.Assert(creator != null);
-            state.Current.ReturnValue = creator((Dictionary<TKey, TValue>)state.Current.ReturnValue!);
+            value = creator(obj);
+            return true;
         }
     }
 }

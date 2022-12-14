@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ConcurrentQueueOfTConverter<TCollection, TElement>
-        : IEnumerableDefaultConverter<TCollection, TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement, TCollection>
         where TCollection : ConcurrentQueue<TElement>
     {
-        protected override void Add(in TElement value, ref ReadStack state)
+        private protected override void Add(ref TCollection collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            ((TCollection)state.Current.ReturnValue!).Enqueue(value);
+            collection.Enqueue(value);
         }
     }
 }

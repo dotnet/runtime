@@ -3,33 +3,21 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ISetOfTConverter<TCollection, TElement>
-        : IEnumerableDefaultConverter<TCollection, TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement, TCollection>
         where TCollection : ISet<TElement>
     {
-        protected override void Add(in TElement value, ref ReadStack state)
-        {
-            TCollection collection = (TCollection)state.Current.ReturnValue!;
-            collection.Add(value);
-            if (IsValueType)
-            {
-                state.Current.ReturnValue = collection;
-            };
-        }
+        private protected sealed override bool IsReadOnly(object obj)
+            => ((TCollection)obj).IsReadOnly;
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
+        private protected sealed override void Add(ref TCollection collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            base.CreateCollection(ref reader, ref state, options);
-            TCollection returnValue = (TCollection)state.Current.ReturnValue!;
-            if (returnValue.IsReadOnly)
-            {
-                state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-            }
+            collection.Add(value);
         }
 
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)

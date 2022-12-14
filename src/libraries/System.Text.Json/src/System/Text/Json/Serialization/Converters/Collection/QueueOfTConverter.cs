@@ -2,26 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class QueueOfTConverter<TCollection, TElement>
-        : IEnumerableDefaultConverter<TCollection, TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement, TCollection>
         where TCollection : Queue<TElement>
     {
-        protected override void Add(in TElement value, ref ReadStack state)
+        private protected sealed override void Add(ref TCollection collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            ((TCollection)state.Current.ReturnValue!).Enqueue(value);
-        }
-
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
-        {
-            if (state.Current.JsonTypeInfo.CreateObject == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
-            }
-
-            state.Current.ReturnValue = state.Current.JsonTypeInfo.CreateObject();
+            collection.Enqueue(value);
         }
     }
 }

@@ -3,34 +3,39 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
     /// Converter for <cref>System.Array</cref>.
     /// </summary>
-    internal sealed class ArrayConverter<TCollection, TElement> : IEnumerableDefaultConverter<TElement[], TElement>
+    internal sealed class ArrayConverter<TCollection, TElement> : IEnumerableDefaultConverter<TElement[], TElement, List<TElement>>
     {
         internal override bool CanHaveMetadata => false;
 
-        protected override void Add(in TElement value, ref ReadStack state)
+        private protected override void Add(ref List<TElement> collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            ((List<TElement>)state.Current.ReturnValue!).Add(value);
+            collection.Add(value);
         }
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
+
+        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out List<TElement>? obj)
         {
-            state.Current.ReturnValue = new List<TElement>();
+            obj = new List<TElement>();
+            return true;
         }
 
-        protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
+        private protected override bool TryConvert(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, List<TElement> obj, out TElement[] value)
         {
-            List<TElement> list = (List<TElement>)state.Current.ReturnValue!;
-            state.Current.ReturnValue = list.ToArray();
+            List<TElement> list = obj;
+            value = list.ToArray();
+            return true;
         }
 
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TElement[] array, JsonSerializerOptions options, ref WriteStack state)
+        internal override bool OnWriteResume(Utf8JsonWriter writer, TElement[] array, JsonSerializerOptions options, ref WriteStack state)
         {
             int index = state.Current.EnumeratorIndex;
 

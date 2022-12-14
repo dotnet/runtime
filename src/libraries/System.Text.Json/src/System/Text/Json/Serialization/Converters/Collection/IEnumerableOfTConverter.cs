@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -10,25 +12,29 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for <cref>System.Collections.Generic.IEnumerable{TElement}</cref>.
     /// </summary>
     internal sealed class IEnumerableOfTConverter<TCollection, TElement>
-        : IEnumerableDefaultConverter<TCollection, TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement, List<TElement>>
         where TCollection : IEnumerable<TElement>
     {
         private readonly bool _isDeserializable = typeof(TCollection).IsAssignableFrom(typeof(List<TElement>));
 
-        protected override void Add(in TElement value, ref ReadStack state)
+        private protected sealed override void Add(ref List<TElement> collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            ((List<TElement>)state.Current.ReturnValue!).Add(value);
+            collection.Add(value);
         }
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
+
+        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out List<TElement>? obj)
         {
+            // TODO: IsReadOnly
             if (!_isDeserializable)
             {
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
 
-            state.Current.ReturnValue = new List<TElement>();
+            // TODO: ConfigureJsonTypeInfo + remove this method
+            obj = new List<TElement>();
+            return true;
         }
     }
 }

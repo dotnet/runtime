@@ -121,19 +121,17 @@ namespace System.Text.Json
         {
             if (propertyInfo.IsRequired)
             {
-                Debug.Assert(RequiredPropertiesSet != null);
+                Debug.Assert(RequiredPropertiesSet != null, "Required properties are not initialized.");
                 RequiredPropertiesSet[propertyInfo.RequiredPropertyIndex] = true;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InitializeRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
+        internal void EnsureInitializedRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
         {
-            Debug.Assert(RequiredPropertiesSet == null);
-
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties);
+                RequiredPropertiesSet ??= new BitArray(typeInfo.NumberOfRequiredProperties);
             }
         }
 
@@ -142,7 +140,7 @@ namespace System.Text.Json
         {
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                Debug.Assert(RequiredPropertiesSet != null);
+                Debug.Assert(RequiredPropertiesSet != null, "Required properties are not initialized.");
 
                 if (!RequiredPropertiesSet.AllBitsEqual(true))
                 {

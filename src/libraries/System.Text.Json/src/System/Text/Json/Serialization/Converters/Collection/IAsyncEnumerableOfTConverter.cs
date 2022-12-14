@@ -3,13 +3,15 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class IAsyncEnumerableOfTConverter<TAsyncEnumerable, TElement>
-        : JsonCollectionConverter<TAsyncEnumerable, TElement>
+        : JsonCollectionConverter<TAsyncEnumerable, TElement, IAsyncEnumerable<TElement>>
         where TAsyncEnumerable : IAsyncEnumerable<TElement>
     {
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out TAsyncEnumerable value)
@@ -22,15 +24,17 @@ namespace System.Text.Json.Serialization.Converters
             return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value!);
         }
 
-        protected override void Add(in TElement value, ref ReadStack state)
+        private protected override void Add(ref IAsyncEnumerable<TElement> collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            ((BufferedAsyncEnumerable)state.Current.ReturnValue!)._buffer.Add(value);
+            ((BufferedAsyncEnumerable)collection)._buffer.Add(value);
         }
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
+
+        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out IAsyncEnumerable<TElement>? obj)
         {
-            state.Current.ReturnValue = new BufferedAsyncEnumerable();
+            obj = new BufferedAsyncEnumerable();
+            return true;
         }
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, TAsyncEnumerable value, JsonSerializerOptions options, ref WriteStack state)
@@ -44,7 +48,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "Converter needs to consume ValueTask's in a non-async context")]
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TAsyncEnumerable value, JsonSerializerOptions options, ref WriteStack state)
+        internal override bool OnWriteResume(Utf8JsonWriter writer, TAsyncEnumerable value, JsonSerializerOptions options, ref WriteStack state)
         {
             IAsyncEnumerator<TElement> enumerator;
             ValueTask<bool> moveNextTask;

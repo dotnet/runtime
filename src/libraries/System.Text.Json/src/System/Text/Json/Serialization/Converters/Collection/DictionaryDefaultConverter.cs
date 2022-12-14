@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -11,14 +9,14 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonDictionaryConverter{TCollection}</cref> .
     /// </summary>
-    internal abstract class DictionaryDefaultConverter<TDictionary, TKey, TValue>
-        : JsonDictionaryConverter<TDictionary, TKey, TValue>
+    internal abstract class DictionaryDefaultConverter<TDictionary, TKey, TValue, IntermediateType>
+        : JsonDictionaryConverter<TDictionary, TKey, TValue, IntermediateType>
         where TDictionary : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : notnull
     {
         internal override bool CanHaveMetadata => true;
 
-        protected internal override bool OnWriteResume(
+        private protected override bool OnWriteResumeCore(
             Utf8JsonWriter writer,
             TDictionary value,
             JsonSerializerOptions options,

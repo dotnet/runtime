@@ -3,34 +3,36 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal class ImmutableEnumerableOfTConverter<TCollection, TElement>
-        : IEnumerableDefaultConverter<TCollection, TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement, List<TElement>>
         where TCollection : IEnumerable<TElement>
     {
-        protected sealed override void Add(in TElement value, ref ReadStack state)
+        private protected sealed override void Add(ref List<TElement> collection, in TElement value, JsonTypeInfo collectionTypeInfo)
         {
-            ((List<TElement>)state.Current.ReturnValue!).Add(value);
+            collection.Add(value);
         }
 
         internal sealed override bool CanHaveMetadata => false;
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
+
+        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out List<TElement>? obj)
         {
-            state.Current.ReturnValue = new List<TElement>();
+            obj = new List<TElement>();
+            return true;
         }
 
-        protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
+        private protected override bool TryConvert(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, List<TElement> obj, out TCollection value)
         {
-            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
-
-            Func<IEnumerable<TElement>, TCollection>? creator = (Func<IEnumerable<TElement>, TCollection>?)typeInfo.CreateObjectWithArgs;
+            Func<IEnumerable<TElement>, TCollection>? creator = (Func<IEnumerable<TElement>, TCollection>?)jsonTypeInfo.CreateObjectWithArgs;
             Debug.Assert(creator != null);
-            state.Current.ReturnValue = creator((List<TElement>)state.Current.ReturnValue!);
+            value = creator(obj);
+            return true;
         }
     }
 }

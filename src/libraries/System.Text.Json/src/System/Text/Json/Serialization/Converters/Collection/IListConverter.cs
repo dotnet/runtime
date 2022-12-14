@@ -4,37 +4,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     /// Converter for <cref>System.Collections.IList</cref>.
     internal sealed class IListConverter<TCollection>
-        : JsonCollectionConverter<TCollection, object?>
+        : JsonCollectionConverter<TCollection, object?, TCollection>
         where TCollection : IList
     {
-        protected override void Add(in object? value, ref ReadStack state)
+        private protected sealed override bool IsReadOnly(object obj)
+            => ((TCollection)obj).IsReadOnly;
+
+        private protected override void Add(ref TCollection collection, in object? value, JsonTypeInfo collectionTypeInfo)
         {
-            TCollection collection = (TCollection)state.Current.ReturnValue!;
             collection.Add(value);
-            if (IsValueType)
-            {
-                state.Current.ReturnValue = collection;
-            }
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
-        {
-            base.CreateCollection(ref reader, ref state, options);
-            TCollection returnValue = (TCollection)state.Current.ReturnValue!;
-            if (returnValue.IsReadOnly)
-            {
-                state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-            }
-        }
-
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
+        internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             IList list = value;
 

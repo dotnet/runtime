@@ -48,10 +48,8 @@ namespace System.Text.Json.Serialization.Converters
             return obj;
         }
 
-        protected sealed override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
+        private protected sealed override object CreateArguments(JsonTypeInfo typeInfo)
         {
-            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
-
             Debug.Assert(typeInfo.ParameterCache != null);
 
             List<KeyValuePair<string, JsonParameterInfo>> cache = typeInfo.ParameterCache.List;
@@ -63,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
                 arguments[parameterInfo.ClrInfo.Position] = parameterInfo.DefaultValue;
             }
 
-            state.Current.CtorArgumentState!.Arguments = arguments;
+            return arguments;
         }
     }
 }

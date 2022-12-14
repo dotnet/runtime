@@ -2,31 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class IReadOnlyDictionaryOfTKeyTValueConverter<TDictionary, TKey, TValue>
-        : DictionaryDefaultConverter<TDictionary, TKey, TValue>
+        : DictionaryDefaultConverter<TDictionary, TKey, TValue, Dictionary<TKey, TValue>>
         where TDictionary : IReadOnlyDictionary<TKey, TValue>
         where TKey : notnull
     {
         private readonly bool _isDeserializable = typeof(TDictionary).IsAssignableFrom(typeof(Dictionary<TKey, TValue>));
 
-        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(ref Dictionary<TKey, TValue> collection, TKey key, in TValue value, JsonSerializerOptions options)
         {
-            ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
+            collection[key] = value;
         }
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
+
+        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out Dictionary<TKey, TValue>? obj)
         {
+            // TODO: IsReadOnly?
             if (!_isDeserializable)
             {
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
 
-            state.Current.ReturnValue = new Dictionary<TKey, TValue>();
+            // TODO: should use default implementation and ConfigureJsonTypeInfo
+            obj = new Dictionary<TKey, TValue>();
+            return true;
         }
     }
 }
