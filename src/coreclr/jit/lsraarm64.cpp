@@ -1066,6 +1066,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
         }
+        
 
         // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
         // we want to preference op1Reg to the target if op1 is not contained.
@@ -1086,6 +1087,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         else
         {
             srcCount += BuildOperandUses(intrin.op1);
+
+            //TODO: Need to fix this reliably.
+            if ((intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_2))
+            {
+                assert(intrin.op1->OperIs(GT_LCL_VAR));
+                BuildUse(intrin.op1, RBM_NONE, 1);
+            }
         }
     }
 

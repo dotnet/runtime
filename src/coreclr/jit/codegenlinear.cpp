@@ -1541,6 +1541,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         GenTreeLclVar* lcl              = tree->gtSkipReloadOrCopy()->AsLclVar();
         LclVarDsc*     varDsc           = compiler->lvaGetDesc(lcl);
         unsigned       firstFieldVarNum = varDsc->lvFieldLclStart;
+
         for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
         {
             LclVarDsc* fldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);

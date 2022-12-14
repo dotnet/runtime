@@ -1137,7 +1137,35 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case 2:
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
-                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+
+#ifdef TARGET_ARM64
+                if (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup)
+                {
+                    // check the number of fields present in op1 and set NI_AdvSimd_Arm64_VectorTableLookup_2,
+                    // NI_AdvSimd_Arm64_VectorTableLookup_3, etc.
+                    op1 = impPopStack().val;
+                    int fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
+                    switch (fieldCount)
+                    {
+                        case 2:
+                            intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_2;
+                            break;
+                        case 3:
+                            intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_3;
+                            break;
+                        case 4:
+                            intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_4;
+                            break;
+                        default:
+                            noway_assert("Unknown field count");
+                    }
+                    
+                }
+                else
+#endif
+                {
+                    op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                }
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
                                    : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);

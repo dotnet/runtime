@@ -268,6 +268,26 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                 {
                     VarSetOps::AddElemD(compiler, stackVarDeltaSet, varDsc->lvVarIndex);
                 }
+
+                if (lclVarTree->IsMultiRegLclVar())
+                {
+                    unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
+
+                    for (unsigned i = 0; i < 2; ++i)
+                    {
+                        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);
+                        bool       isInReg     = fieldVarDsc->lvIsInReg() && tree->GetRegByIndex(i) != REG_NA;
+                        VarSetOps::AddElemD(compiler, varDeltaSet, fieldVarDsc->lvVarIndex);
+
+                        if (isInReg)
+                        {
+                            compiler->codeGen->genUpdateRegLife(fieldVarDsc, isBorn, isDying DEBUGARG(tree));
+                        }
+                    }
+
+                    printf("field");
+
+                }
             }
         }
         else if (ForCodeGen && lclVarTree->IsMultiRegLclVar())

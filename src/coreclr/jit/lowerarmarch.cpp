@@ -2580,6 +2580,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         switch (intrin.id)
         {
+            case NI_AdvSimd_Arm64_VectorTableLookup_2:
+            case NI_AdvSimd_Arm64_VectorTableLookup_3:
+            case NI_AdvSimd_Arm64_VectorTableLookup_4:
+                //MakeSrcContained(node, intrin.op1);
+                intrin.op1->AsLclVar()->SetMultiReg();
+                break;
             case NI_AdvSimd_DuplicateSelectedScalarToVector64:
             case NI_AdvSimd_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Extract:
