@@ -1121,6 +1121,30 @@ protected:
             idAddr()->_idReg4 = reg;
             assert(reg == idAddr()->_idReg4);
         }
+        bool idHasReg3() const
+        {
+            switch (idInsFmt())
+            {
+                case IF_RWR_RRD_RRD:
+                case IF_RWR_RRD_RRD_CNS:
+                case IF_RWR_RRD_RRD_RRD:
+                case IF_RWR_RRD_SRD_RRD:
+                case IF_RWR_RRD_ARD_RRD:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        bool idHasReg4() const
+        {
+            switch (idInsFmt())
+            {
+                case IF_RWR_RRD_RRD_RRD:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
         insOpts idInsOpt() const
