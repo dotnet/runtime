@@ -2,9 +2,8 @@
 
   <PropertyGroup>
     <!-- Source generators must target netstandard2.0 which doesn't support nullable reference types.
-         In order to enable the nullable reference type compiler checks, we also target .NETCoreApp, without shipping
-         that asset. Note that we can't build against the live version of .NETCoreApp which is why we use NetCoreAppToolCurrent. -->
-    <TargetFrameworks>$(NetCoreAppToolCurrent);netstandard2.0</TargetFrameworks>
+         In order to enable the nullable reference type compiler checks, we also target .NETCoreApp, without consuming the asset. -->
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
     <AnalyzerRoslynVersion>4.4</AnalyzerRoslynVersion>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
@@ -21,9 +20,20 @@
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
   </ItemGroup>
 
-  <!-- Don't reference System.Text.Json from the targeting pack. -->
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">
-    <DefaultReferenceExclusion Include="System.Text.Json" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\ref\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\ref\System.Linq.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Resources.ResourceManager\ref\System.Resources.ResourceManager.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\ref\System.Collections.Immutable.csproj" />
+
+    <!-- Hack to workaround https://github.com/NuGet/Home/issues/10368. -->
+    <Reference Include="System.Memory" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\ref\System.Memory.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

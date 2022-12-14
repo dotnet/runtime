@@ -55,13 +55,10 @@
                                 !$(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
     <IsNETCoreAppAnalyzer Condition="'$(IsGeneratorProject)' == 'true' and
                                      $(NetCoreAppLibraryGenerator.Contains('$(MSBuildProjectName);'))">true</IsNETCoreAppAnalyzer>
-    <!-- Inbox .NETCoreApp analyzers can't use the live targeting pack as they rely on the netstandard shim and building that would
-         create a circular dependency in the graph. -->
-    <UseLocalTargetingRuntimePack Condition="'$(IsNETCoreAppAnalyzer)' == 'true'">false</UseLocalTargetingRuntimePack>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
-                                                   ('$(IsNETCoreAppRef)' == 'true' or '$(IsNETCoreAppSrc)' == 'true')">true</DisableImplicitFrameworkReferences>
+                                                   ('$(IsNETCoreAppRef)' == 'true' or '$(IsNETCoreAppSrc)' == 'true' or '$(IsNETCoreAppAnalyzer)' == 'true')">true</DisableImplicitFrameworkReferences>
     <!-- Enable trimming for any source project that's part of the shared framework.
          Don't attempt to trim PNSE assemblies which are generated from the reference source. -->
     <ILLinkTrimAssembly Condition="'$(ILLinkTrimAssembly)' == '' and
