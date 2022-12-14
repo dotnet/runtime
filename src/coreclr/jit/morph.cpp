@@ -4264,6 +4264,14 @@ BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay)
             return fgRngChkTarget(compCurBB, kind);
         }
     }
+    else
+    {
+        // Tell downstream code that we will end up with a call so that it
+        // knows this is not a leaf function. For optimized code this is
+        // handled by fgRngChkTarget that is called above either in morph or
+        // simple lowering.
+        compUsesThrowHelper = true;
+    }
 
     return nullptr;
 }
