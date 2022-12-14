@@ -46,7 +46,6 @@ namespace Internal.Reflection.Execution
             }
 
             // Using object overload to avoid generic expansion for every underlying enum type
-            // TODO: Sort the values in the aot compiler
             Array.Sort<object, string>(boxedValues, names);
 
             sortedBoxedValues = boxedValues;
