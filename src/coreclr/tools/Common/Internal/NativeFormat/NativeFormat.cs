@@ -52,7 +52,7 @@ namespace Internal.NativeFormat
         ThreadStaticOffset          = 0x4a,
         FieldLayout                 = 0x4b,
         // unused                   = 0x4c,
-        SealedVTableEntries         = 0x4d,
+        // unused                   = 0x4d,
         ClassConstructorPointer     = 0x4e,
         // unused                   = 0x4f,
         GenericVarianceInfo         = 0x50,

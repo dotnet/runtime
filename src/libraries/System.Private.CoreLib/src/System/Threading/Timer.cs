@@ -825,10 +825,8 @@ namespace System.Threading
                        int period,
                        bool flowExecutionContext)
         {
-            if (dueTime < -1)
-                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (period < -1)
-                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(dueTime, -1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(period, -1);
 
             TimerSetup(callback, state, (uint)dueTime, (uint)period, flowExecutionContext);
         }
@@ -839,16 +837,12 @@ namespace System.Threading
                      TimeSpan period)
         {
             long dueTm = (long)dueTime.TotalMilliseconds;
-            if (dueTm < -1)
-                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (dueTm > MaxSupportedTimeout)
-                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
+            ArgumentOutOfRangeException.ThrowIfLessThan(dueTm, -1, nameof(dueTime));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTm, MaxSupportedTimeout, nameof(dueTime));
 
             long periodTm = (long)period.TotalMilliseconds;
-            if (periodTm < -1)
-                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (periodTm > MaxSupportedTimeout)
-                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
+            ArgumentOutOfRangeException.ThrowIfLessThan(periodTm, -1, nameof(period));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(periodTm, MaxSupportedTimeout, nameof(period));
 
             TimerSetup(callback, state, (uint)dueTm, (uint)periodTm);
         }
@@ -867,14 +861,11 @@ namespace System.Threading
                      long dueTime,
                      long period)
         {
-            if (dueTime < -1)
-                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (period < -1)
-                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (dueTime > MaxSupportedTimeout)
-                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
-            if (period > MaxSupportedTimeout)
-                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
+            ArgumentOutOfRangeException.ThrowIfLessThan(dueTime, -1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(period, -1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTime, MaxSupportedTimeout);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(period, MaxSupportedTimeout);
+
             TimerSetup(callback, state, (uint)dueTime, (uint)period);
         }
 
@@ -902,10 +893,8 @@ namespace System.Threading
 
         public bool Change(int dueTime, int period)
         {
-            if (dueTime < -1)
-                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (period < -1)
-                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(dueTime, -1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(period, -1);
 
             return _timer._timer.Change((uint)dueTime, (uint)period);
         }
@@ -923,14 +912,10 @@ namespace System.Threading
 
         public bool Change(long dueTime, long period)
         {
-            if (dueTime < -1)
-                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (period < -1)
-                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            if (dueTime > MaxSupportedTimeout)
-                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
-            if (period > MaxSupportedTimeout)
-                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
+            ArgumentOutOfRangeException.ThrowIfLessThan(dueTime, -1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(period, -1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTime, MaxSupportedTimeout);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(period, MaxSupportedTimeout);
 
             return _timer._timer.Change((uint)dueTime, (uint)period);
         }

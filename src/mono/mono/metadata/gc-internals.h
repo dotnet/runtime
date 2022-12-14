@@ -154,9 +154,6 @@ mono_gc_alloc_handle_array (MonoVTable *vtable, gsize size, gsize max_length, gs
 MonoString*
 mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len);
 
-MonoStringHandle
-mono_gc_alloc_handle_string (MonoVTable *vtable, gsize size, gint32 len);
-
 MonoObject*
 mono_gc_alloc_mature (MonoVTable *vtable, size_t size);
 

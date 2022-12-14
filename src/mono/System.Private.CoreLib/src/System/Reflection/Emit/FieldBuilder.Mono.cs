@@ -170,7 +170,7 @@ namespace System.Reflection.Emit
             RejectIfCreated();
 
             /*if (defaultValue.GetType() != type)
-                throw new ArgumentException("Constant doesn't match field type");*/
+                throw new ArgumentException(SR.Argument_ConstantDoesntMatch);*/
             def_value = defaultValue;
         }
 
@@ -248,7 +248,7 @@ namespace System.Reflection.Emit
         private void RejectIfCreated()
         {
             if (typeb.is_created)
-                throw new InvalidOperationException("Unable to change after type has been created.");
+                throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
         }
 
         internal void ResolveUserTypes()

@@ -101,10 +101,18 @@ class MainApp {
         this.yieldBench();
     }
 
+    bootstraped = false;
 
     yieldBench() {
         let promise = runBenchmark();
         promise.then(ret => {
+            if (!this.bootstraped) {
+                fetch("/bootstrap.flag", {
+                    method: 'POST',
+                    body: "ok"
+                }).then(r => { console.log("bootstrap post request complete, response: ", r); });
+                this.bootstraped = true;
+            }
             document.getElementById("out").innerHTML += ret;
             if (ret.length > 0) {
                 setTimeout(() => { this.yieldBench(); }, 0);

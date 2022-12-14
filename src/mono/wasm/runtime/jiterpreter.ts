@@ -1210,9 +1210,7 @@ function generate_wasm_body (
                 break;
 
             default:
-                if (
-                    opname.startsWith("ret")
-                ) {
+                if (opname.startsWith("ret")) {
                     if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts)
                         append_bailout(builder, ip, BailoutReason.Return);
                     else
@@ -1230,14 +1228,10 @@ function generate_wasm_body (
                 ) {
                     if (!emit_binop(builder, ip, opcode))
                         ip = abort;
-                } else if (
-                    unopTable[opcode]
-                ) {
+                } else if (unopTable[opcode]) {
                     if (!emit_unop(builder, ip, opcode))
                         ip = abort;
-                } else if (
-                    relopbranchTable[opcode]
-                ) {
+                } else if (relopbranchTable[opcode]) {
                     if (!emit_relop_branch(builder, ip, opcode))
                         ip = abort;
                 } else if (
@@ -1262,7 +1256,7 @@ function generate_wasm_body (
                     if (!emit_math_intrinsic(builder, ip, opcode))
                         ip = abort;
                 } else if (
-                    (opcode >= MintOpcode.MINT_LDELEM_I) &&
+                    (opcode >= MintOpcode.MINT_LDELEM_I1) &&
                     (opcode <= MintOpcode.MINT_LDLEN)
                 ) {
                     if (!emit_arrayop(builder, ip, opcode))
@@ -2775,7 +2769,7 @@ function append_getelema1 (
 function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
     const isLoad = (
             (opcode <= MintOpcode.MINT_LDELEMA_TC) &&
-            (opcode >= MintOpcode.MINT_LDELEM_I)
+            (opcode >= MintOpcode.MINT_LDELEM_I1)
         ) || (opcode === MintOpcode.MINT_LDLEN),
         objectOffset = getArgU16(ip, isLoad ? 2 : 1),
         valueOffset = getArgU16(ip, isLoad ? 1 : 3),

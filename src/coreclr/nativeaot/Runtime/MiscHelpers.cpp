@@ -388,9 +388,9 @@ EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseThunkPoolLock()
     g_ThunkPoolLock.Leave();
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhpGetTickCount64()
+EXTERN_C NATIVEAOT_API uint64_t __cdecl RhpGetTickCount64()
 {
-    PalGetTickCount64();
+    return PalGetTickCount64();
 }
 
 EXTERN_C int32_t __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
