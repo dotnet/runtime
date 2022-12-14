@@ -13595,22 +13595,22 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         assert(!varTypeIsUnsigned(type));
         assert(varTypeIsUnsigned(castToType));
 
-        GenTree* morphedTree = gtNewCastNode(TYP_INT, op, false, castToType);
+        GenTreeCast* cast = gtNewCastNode(TYP_INT, op, false, castToType);
         if (fgGlobalMorph)
         {
-            fgMorphTreeDone(morphedTree);
+            fgMorphTreeDone(cast);
         }
 
         if (varTypeIsLong(type))
         {
-            morphedTree = gtNewCastNode(TYP_LONG, morphedTree, true, TYP_ULONG);
+            cast = gtNewCastNode(TYP_LONG, cast, true, TYP_ULONG);
             if (fgGlobalMorph)
             {
-                fgMorphTreeDone(morphedTree);
+                fgMorphTreeDone(cast);
             }
         }
 
-        return morphedTree;
+        return cast;
     };
 
     // Here `op` is the non-constant operand, `cons` is the constant operand
@@ -13779,7 +13779,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op = NewZeroExtendNode(tree->TypeGet(), TYP_USHORT);
                 goto DONE_FOLD;
             }
-            else if (val == 0xFFFFFFFF)
+            else if ((val == 0xFFFFFFFF) && varTypeIsLong(tree))
             {
                 op = NewZeroExtendNode(tree->TypeGet(), TYP_UINT);
                 goto DONE_FOLD;
