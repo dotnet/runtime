@@ -8535,11 +8535,6 @@ private:
         return isOpaqueSIMDType(varDsc->GetStructHnd());
     }
 
-    static bool isRelOpSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
-    {
-        return (intrinsicId == SIMDIntrinsicEqual);
-    }
-
     bool isNumericsNamespace(const char* ns)
     {
         return strcmp(ns, "System.Numerics") == 0;

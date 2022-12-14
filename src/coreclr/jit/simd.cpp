@@ -1335,102 +1335,41 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
     var_types simdType = (*pOp1)->TypeGet();
     assert(varTypeIsSIMD(simdType) && ((*pOp2)->TypeGet() == simdType));
 
-    assert(isRelOpSIMDIntrinsic(relOpIntrinsicId));
+    assert(relOpIntrinsicId == SIMDIntrinsicEqual);
 
     SIMDIntrinsicID intrinsicID = relOpIntrinsicId;
 #ifdef TARGET_XARCH
     CorInfoType simdBaseJitType = *inOutBaseJitType;
     var_types   simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
 
-    if (varTypeIsFloating(simdBaseType))
-    {
-    }
-    else if (varTypeIsIntegral(simdBaseType))
+    if (varTypeIsIntegral(simdBaseType))
     {
         if ((getSIMDSupportLevel() == SIMD_SSE2_Supported) && simdBaseType == TYP_LONG)
         {
             // There is no direct SSE2 support for comparing TYP_LONG vectors.
             // These have to be implemented interms of TYP_INT vector comparison operations.
-            if (intrinsicID == SIMDIntrinsicEqual)
-            {
-                intrinsicID = impSIMDLongRelOpEqual(typeHnd, size, pOp1, pOp2);
-            }
-            else
-            {
-                unreached();
-            }
+            intrinsicID = impSIMDLongRelOpEqual(typeHnd, size, pOp1, pOp2);
         }
         // SSE2 and AVX direct support for signed comparison of int32, int16 and int8 types
         else if (varTypeIsUnsigned(simdBaseType))
         {
-            // Vector<byte>, Vector<ushort>, Vector<uint> and Vector<ulong>:
-            // SSE2 supports > for signed comparison. Therefore, to use it for
-            // comparing unsigned numbers, we subtract a constant from both the
-            // operands such that the result fits within the corresponding signed
-            // type.  The resulting signed numbers are compared using SSE2 signed
-            // comparison.
-            //
-            // Vector<byte>: constant to be subtracted is 2^7
-            // Vector<ushort> constant to be subtracted is 2^15
-            // Vector<uint> constant to be subtracted is 2^31
-            // Vector<ulong> constant to be subtracted is 2^63
-            //
-            // We need to treat op1 and op2 as signed for comparison purpose after
-            // the transformation.
-            __int64 constVal = 0;
             switch (simdBaseType)
             {
                 case TYP_UBYTE:
-                    constVal          = 0x80808080;
                     *inOutBaseJitType = CORINFO_TYPE_BYTE;
                     break;
                 case TYP_USHORT:
-                    constVal          = 0x80008000;
                     *inOutBaseJitType = CORINFO_TYPE_SHORT;
                     break;
                 case TYP_UINT:
-                    constVal          = 0x80000000;
                     *inOutBaseJitType = CORINFO_TYPE_INT;
                     break;
                 case TYP_ULONG:
-                    constVal          = 0x8000000000000000LL;
                     *inOutBaseJitType = CORINFO_TYPE_LONG;
                     break;
                 default:
                     unreached();
                     break;
-            }
-            assert(constVal != 0);
-
-            // This transformation is not required for equality.
-            if (intrinsicID != SIMDIntrinsicEqual)
-            {
-                // For constructing const vector use either long or int base type.
-                CorInfoType tempBaseJitType;
-                GenTree*    initVal;
-                if (simdBaseType == TYP_ULONG)
-                {
-                    tempBaseJitType = CORINFO_TYPE_LONG;
-                    initVal         = gtNewLconNode(constVal);
-                }
-                else
-                {
-                    tempBaseJitType = CORINFO_TYPE_INT;
-                    initVal         = gtNewIconNode((ssize_t)constVal);
-                }
-                initVal->gtType      = JITtype2varType(tempBaseJitType);
-                GenTree* constVector = gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, tempBaseJitType, size);
-
-                // Assign constVector to a temp, since we intend to use it more than once
-                // TODO-CQ: We have quite a few such constant vectors constructed during
-                // the importation of SIMD intrinsics.  Make sure that we have a single
-                // temp per distinct constant per method.
-                GenTree* tmp = fgInsertCommaFormTemp(&constVector, typeHnd);
-
-                // op1 = op1 - constVector
-                // op2 = op2 - constVector
-                *pOp1 = gtNewSIMDNode(simdType, *pOp1, constVector, SIMDIntrinsicSub, simdBaseJitType, size);
-                *pOp2 = gtNewSIMDNode(simdType, *pOp2, tmp, SIMDIntrinsicSub, simdBaseJitType, size);
             }
 
             return impSIMDRelOp(intrinsicID, typeHnd, size, inOutBaseJitType, pOp1, pOp2);
