@@ -2019,7 +2019,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
         // is not allocated the same register as the target.
-        bool isRMW            = intrinsicTree->isRMWHWIntrinsic(compiler);
+        bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 #if defined(TARGET_AMD64)
         bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic();
 #endif
