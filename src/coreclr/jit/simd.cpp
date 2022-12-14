@@ -1185,7 +1185,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     switch (intrinsicId)
     {
         case SIMDIntrinsicInit:
-        case SIMDIntrinsicSub:
         case SIMDIntrinsicEqual:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
@@ -2218,7 +2217,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         }
         break;
 
-        case SIMDIntrinsicSub:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         {
