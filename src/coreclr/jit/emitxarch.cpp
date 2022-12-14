@@ -263,24 +263,27 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
         case INS_vbroadcastf128: // INS_vbroadcastf32x4, INS_vbroadcastf64x2.
         case INS_vbroadcasti128: // INS_vbroadcasti32x4, INS_vbroadcasti64x2.
 
-        // TODO-XARCH-AVX512 these need to be encoded with the proper individual EVEX instructions (movdqu8, movdqu16 etc)
-        // For implementation speed, I have set it up so the standing instruction will default to the 32-bit operand type
-        // i.e., movdqu => movdqu32 etc
-        // Since we are not using k registers yet, this will have no impact on correctness but will affect things once
-        // k registers are used (as that is the point of the "break out operand type" of these instructions)
-        //case INS_movdqa:         // INS_movdqa32, INS_movdqa64.
-        //case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_movdqu32, INS_movdqu64.
-        //case INS_pand:           // INS_pandd, INS_pandq.
-        //case INS_pandn:          // INS_pandnd, INS_pandnq.
-        //case INS_por:            // INS_pord, INS_porq.
-        //case INS_pxor:           // INS_pxord, INS_pxorq
-        //case INS_vextractf128:   // INS_vextractf32x4, INS_vextractf64x2.
-        //case INS_vextracti128:   // INS_vextracti32x4, INS_vextracti64x2.
-        //case INS_vinsertf128:    // INS_vinsertf32x4, INS_vinsertf64x2.
-        //case INS_vinserti128:    // INS_vinserti32x4, INS_vinserti64x2.
-        {
-            return false;
-        }
+            // TODO-XARCH-AVX512 these need to be encoded with the proper individual EVEX instructions (movdqu8,
+            // movdqu16 etc)
+            // For implementation speed, I have set it up so the standing instruction will default to the 32-bit operand
+            // type
+            // i.e., movdqu => movdqu32 etc
+            // Since we are not using k registers yet, this will have no impact on correctness but will affect things
+            // once
+            // k registers are used (as that is the point of the "break out operand type" of these instructions)
+            // case INS_movdqa:         // INS_movdqa32, INS_movdqa64.
+            // case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_movdqu32, INS_movdqu64.
+            // case INS_pand:           // INS_pandd, INS_pandq.
+            // case INS_pandn:          // INS_pandnd, INS_pandnq.
+            // case INS_por:            // INS_pord, INS_porq.
+            // case INS_pxor:           // INS_pxord, INS_pxorq
+            // case INS_vextractf128:   // INS_vextractf32x4, INS_vextractf64x2.
+            // case INS_vextracti128:   // INS_vextracti32x4, INS_vextracti64x2.
+            // case INS_vinsertf128:    // INS_vinsertf32x4, INS_vinsertf64x2.
+            // case INS_vinserti128:    // INS_vinserti32x4, INS_vinserti64x2.
+            {
+                return false;
+            }
         default:
         {
             break;
@@ -767,7 +770,7 @@ bool emitter::Is4ByteSSEInstruction(instruction ins) const
 // Return Value:
 //    true if this instruction requires a VEX or EVEX prefix.
 //
-bool emitter::TakesSimdPrefix(const instrDesc *id) const
+bool emitter::TakesSimdPrefix(const instrDesc* id) const
 {
     instruction ins = id->idIns();
 
@@ -793,7 +796,7 @@ bool emitter::TakesSimdPrefix(const instrDesc *id) const
 // Return Value:
 //    true if this instruction requires a EVEX prefix.
 //
-bool emitter::TakesEvexPrefix(const instrDesc *id) const
+bool emitter::TakesEvexPrefix(const instrDesc* id) const
 {
     if (!emitComp->DoJitStressEvexEncoding())
     {
@@ -1077,8 +1080,16 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
 #endif //! TARGET_AMD64
 }
 
-// Returns true if using this register will require an EVEX.R', EVEX.V' or EVEX.X bit.
-bool emitter::HasHighSIMDReg(const instrDesc *id) const
+//------------------------------------------------------------------------
+// HasHighSIMReg: Checks if an instruction uses a high SIMD registers (mm16-mm31)
+// and will require one of the EVEX high SIMD bits (EVEX.R', EVEX.V', EVEX.X)
+//
+// Arguments:
+// id -- instruction descriptor for encoding
+//
+// Return Value:
+// true if instruction will require EVEX encoding for its register operands.
+bool emitter::HasHighSIMDReg(const instrDesc* id) const
 {
 #if defined(TARGET_AMD64)
     if (IsHighSIMDReg(id->idReg1()) || IsHighSIMDReg(id->idReg2()))
@@ -1087,15 +1098,22 @@ bool emitter::HasHighSIMDReg(const instrDesc *id) const
     if (id->idIsSmallDsc())
         return false;
 
-    if ((id->idHasReg3() && IsHighSIMDReg(id->idReg3())) || 
-        (id->idHasReg4() && IsHighSIMDReg(id->idReg4())))
+    if ((id->idHasReg3() && IsHighSIMDReg(id->idReg3())) || (id->idHasReg4() && IsHighSIMDReg(id->idReg4())))
         return true;
 #endif
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
 }
 
-// Returns true if using this register will require an EVEX.R', EVEX.V' or EVEX.X bit.
+//------------------------------------------------------------------------
+// IsHighSIMDReg: Checks if a register is strictly an EVEX encoded high SIMD 
+// registers (mm16-mm31).
+//
+// Arguments:
+// reg -- register to check
+//
+// Return Value:
+// true if the register is strictly an EVEX encoded high SIMD register
 bool emitter::IsHighSIMDReg(regNumber reg) const
 {
 #ifdef TARGET_AMD64
@@ -1172,7 +1190,17 @@ bool IsXMMReg(regNumber reg)
 #endif // !TARGET_AMD64
 }
 
-// Returns bits to be encoded in instruction for the given register
+//------------------------------------------------------------------------
+// HighAwareRegEncoding: For EVEX encoded high SIMD registers (mm16-mm31),
+// get a register encoding for bits 0-4, where the 5th bit is encoded via
+// EVEX.R', EVEX.R, or EVEX.X.
+//
+// Arguments:
+// reg -- register to encode
+//
+// Return Value:
+// bits 0-4 of register encoding
+//
 unsigned HighAwareRegEncoding(regNumber reg)
 {
     static_assert((REG_XMM0 & 0x7) == 0, "bad XMMBASE");
@@ -1189,7 +1217,7 @@ unsigned RegEncoding(regNumber reg)
 // Utility routines that abstract the logic of adding REX.W, REX.R, REX.X, REX.B and REX prefixes
 // SSE2: separate 1-byte prefix gets added before opcode.
 // AVX:  specific bits within VEX prefix need to be set in bit-inverted form.
-emitter::code_t emitter::AddRexWPrefix(const instrDesc *id, code_t code)
+emitter::code_t emitter::AddRexWPrefix(const instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
@@ -1225,7 +1253,7 @@ emitter::code_t emitter::AddRexWPrefix(const instrDesc *id, code_t code)
 
 #ifdef TARGET_AMD64
 
-emitter::code_t emitter::AddRexRPrefix(const instrDesc *id, code_t code)
+emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
@@ -1255,7 +1283,7 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc *id, code_t code)
     return code | 0x4400000000ULL;
 }
 
-emitter::code_t emitter::AddRexXPrefix(const instrDesc *id, code_t code)
+emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
@@ -1284,7 +1312,7 @@ emitter::code_t emitter::AddRexXPrefix(const instrDesc *id, code_t code)
     return code | 0x4200000000ULL;
 }
 
-emitter::code_t emitter::AddRexBPrefix(const instrDesc *id, code_t code)
+emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
 {
     instruction ins = id->idIns();
 
@@ -1322,18 +1350,38 @@ emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
     return code | 0x4000000000ULL;
 }
 
+
+//------------------------------------------------------------------------
+// AddEvexVPrimePrefix: Add the EVEX.V' bit to the EVEX prefix. EVEX.V'
+// is encoded in inverted form.
+//
+// Arguments:
+// code -- register to encode
+//
+// Return Value:
+// code with EVEX.V' set in verted form.
+//
 emitter::code_t emitter::AddEvexVPrimePrefix(code_t code)
 {
     assert(UseEvexEncoding() && hasEvexPrefix(code));
     return emitter::code_t(code & 0xFFFFFFF7FFFFFFFFULL);
 }
 
+//------------------------------------------------------------------------
+// AddEvexRPrimePrefix: Add the EVEX.R' bit to the EVEX prefix. EVEX.R'
+// is encoded in inverted form.
+//
+// Arguments:
+// code -- register to encode
+//
+// Return Value:
+// code with EVEX.R' set in verted form.
+//
 emitter::code_t emitter::AddEvexRPrimePrefix(code_t code)
 {
     assert(UseEvexEncoding() && hasEvexPrefix(code));
     return emitter::code_t(code & 0xFFEFFFFFFFFFFFFFULL);
 }
-
 
 #endif // TARGET_AMD64
 
@@ -2649,7 +2697,7 @@ bool emitter::EncodedBySSE38orSSE3A(instruction ins) const
  *  part of an opcode.
  */
 
-inline unsigned emitter::insEncodeReg012(const instrDesc *id, regNumber reg, emitAttr size, code_t* code)
+inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emitAttr size, code_t* code)
 {
     assert(reg < REG_STK);
 
@@ -2665,7 +2713,7 @@ inline unsigned emitter::insEncodeReg012(const instrDesc *id, regNumber reg, emi
     {
         if (IsHighSIMDReg(reg))
         {
-            *code = AddRexXPrefix(id, *code);   // EVEX.X
+            *code = AddRexXPrefix(id, *code); // EVEX.X
         }
         if (reg & 0x8)
         {
@@ -2692,7 +2740,7 @@ inline unsigned emitter::insEncodeReg012(const instrDesc *id, regNumber reg, emi
  *  part of an opcode.
  */
 
-inline unsigned emitter::insEncodeReg345(const instrDesc *id, regNumber reg, emitAttr size, code_t* code)
+inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emitAttr size, code_t* code)
 {
     assert(reg < REG_STK);
 
@@ -2734,7 +2782,7 @@ inline unsigned emitter::insEncodeReg345(const instrDesc *id, regNumber reg, emi
  *  Returns modified SIMD opcode with the specified register encoded in bits 3-6 of
  *  byte 2 of VEX and EVEX prefix.
  */
-inline emitter::code_t emitter::insEncodeReg3456(const instrDesc *id, regNumber reg, emitAttr size, code_t code)
+inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber reg, emitAttr size, code_t code)
 {
     instruction ins = id->idIns();
 
@@ -2776,7 +2824,6 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc *id, regNumber 
     }
     if (UseVEXEncoding() && IsVexEncodedInstruction(ins))
     {
-        
 
         // Both prefix encodes register operand in 1's complement form
         assert(regBits <= 0xF);
@@ -2800,7 +2847,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc *id, regNumber 
  *  Used exclusively to generate the REX.X bit and truncate the register.
  */
 
-inline unsigned emitter::insEncodeRegSIB(const instrDesc *id, regNumber reg, code_t* code)
+inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, code_t* code)
 {
     instruction ins = id->idIns();
 
@@ -2816,7 +2863,7 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc *id, regNumber reg, cod
     {
         if (IsHighSIMDReg(reg))
         {
-            *code = AddEvexVPrimePrefix(*code);   // EVEX.X
+            *code = AddEvexVPrimePrefix(*code); // EVEX.X
         }
         if (reg & 0x8)
         {
@@ -2837,7 +2884,7 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc *id, regNumber reg, cod
  *  Returns the "[r/m]" opcode with the mod/RM field set to register.
  */
 
-inline emitter::code_t emitter::insEncodeMRreg(const instrDesc *id, code_t code)
+inline emitter::code_t emitter::insEncodeMRreg(const instrDesc* id, code_t code)
 {
     // If Byte 4 (which is 0xFF00) is 0, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding.
@@ -2855,7 +2902,7 @@ inline emitter::code_t emitter::insEncodeMRreg(const instrDesc *id, code_t code)
  *  Returns the given "[r/m]" opcode with the mod/RM field set to register.
  */
 
-inline emitter::code_t emitter::insEncodeRMreg(const instrDesc *id, code_t code)
+inline emitter::code_t emitter::insEncodeRMreg(const instrDesc* id, code_t code)
 {
     // If Byte 4 (which is 0xFF00) is 0, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding.
@@ -2873,7 +2920,7 @@ inline emitter::code_t emitter::insEncodeRMreg(const instrDesc *id, code_t code)
  *  the given register.
  */
 
-inline emitter::code_t emitter::insEncodeMRreg(const instrDesc *id, regNumber reg, emitAttr size, code_t code)
+inline emitter::code_t emitter::insEncodeMRreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code)
 {
     assert((code & 0xC000) == 0);
     code |= 0xC000;
@@ -2888,7 +2935,7 @@ inline emitter::code_t emitter::insEncodeMRreg(const instrDesc *id, regNumber re
  *  the given register.
  */
 
-inline emitter::code_t emitter::insEncodeMIreg(const instrDesc *id, regNumber reg, emitAttr size, code_t code)
+inline emitter::code_t emitter::insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code)
 {
     assert((code & 0xC000) == 0);
     code |= 0xC000;
@@ -2913,7 +2960,7 @@ inline bool insNeedsRRIb(instruction ins)
  *  Returns the "reg,reg,imm8" opcode with both the reg's set to the
  *  the given register.
  */
-inline emitter::code_t emitter::insEncodeRRIb(const instrDesc *id, regNumber reg, emitAttr size)
+inline emitter::code_t emitter::insEncodeRRIb(const instrDesc* id, regNumber reg, emitAttr size)
 {
     assert(size == EA_4BYTE); // All we handle for now.
     assert(insNeedsRRIb(id->idIns()));
@@ -2932,7 +2979,7 @@ inline emitter::code_t emitter::insEncodeRRIb(const instrDesc *id, regNumber reg
  *  nibble of the opcode
  */
 
-inline emitter::code_t emitter::insEncodeOpreg(const instrDesc *id, regNumber reg, emitAttr size)
+inline emitter::code_t emitter::insEncodeOpreg(const instrDesc* id, regNumber reg, emitAttr size)
 {
     code_t   code    = insCodeRR(id->idIns());
     unsigned regcode = insEncodeReg012(id, reg, size, &code);
