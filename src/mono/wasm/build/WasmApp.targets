@@ -305,9 +305,18 @@
   </Target>
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
-    <PropertyGroup>
-      <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
+    <PropertyGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <WasmIcuDataFileName>icudt.dat</WasmIcuDataFileName>
+      <!-- User can choose the option to load only partial globalization data:
+      "EFIGS" for "en-US" "fr-FR" "es-ES" "it-IT" "de-DE"
+      "CJK" for "ja" "ko" "zh" "en"
+      "no-CJK" for all cultures, excluding "ja" "ko" "zh" -->
+      <WasmIcuDataFileName Condition="'$(GlobalizationShard)' == 'efigs'">icudt_EFIGS.dat</WasmIcuDataFileName>
+      <WasmIcuDataFileName Condition="'$(GlobalizationShard)' == 'cjk'">icudt_CJK.dat</WasmIcuDataFileName>
+      <WasmIcuDataFileName Condition="'$(GlobalizationShard)' == 'no-cjk' or '$(GlobalizationShard)' == 'no_cjk' or '$(GlobalizationShard)' == 'no cjk'">icudt_no_CJK.dat</WasmIcuDataFileName>
+    </PropertyGroup>
 
+    <PropertyGroup>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
