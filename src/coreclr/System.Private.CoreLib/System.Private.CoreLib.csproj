@@ -345,10 +345,4 @@
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
-
-  <!-- Import refererence assembly and ApiCompat logic -->
-  <PropertyGroup>
-    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
-  </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>

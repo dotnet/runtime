@@ -29,22 +29,6 @@
                       Condition="'$(IsSourceProject)' == 'true' and '@(_coreLibProjectReference)' != ''" />
   </ItemGroup>
 
-  <!-- Filter out transitive P2Ps which should be excluded. -->
-  <Target Name="FilterTransitiveProjectReferences"
-          AfterTargets="IncludeTransitiveProjectReferences"
-          Condition="'$(DisableTransitiveProjectReferences)' != 'true' and
-                     '@(DefaultReferenceExclusion)' != ''">
-    <ItemGroup>
-      <_transitiveProjectReferenceWithProjectName Include="@(ProjectReference->Metadata('NuGetPackageId'))"
-                                                  OriginalIdentity="%(Identity)" />
-      <_transitiveIncludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
-                                                          Exclude="@(DefaultReferenceExclusion)" />
-      <_transitiveExcludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
-                                                          Exclude="@(_transitiveIncludedProjectReferenceWithProjectName)" />
-      <ProjectReference Remove="@(_transitiveExcludedProjectReferenceWithProjectName->Metadata('OriginalIdentity'))" />
-    </ItemGroup>
-  </Target>
-
   <!-- Make shared framework assemblies not app-local (non private). -->
   <Target Name="UpdateProjectReferencesWithPrivateAttribute"
           AfterTargets="AssignProjectConfiguration"
@@ -56,26 +40,6 @@
       <ProjectReferenceWithConfiguration PrivateAssets="all"
                                          Private="false"
                                          Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Allows building against source assemblies when the 'SkipUseReferenceAssembly' attribute is present on ProjectReference items. -->
-  <Target Name="HandleReferenceAssemblyAttributeForProjectReferences"
-          AfterTargets="ResolveProjectReferences"
-          BeforeTargets="FindReferenceAssembliesForReferences"
-          Condition="'@(ProjectReference)' != '' and '@(_ResolvedProjectReferencePaths)' != ''">
-    <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies. -->
-    <PropertyGroup Condition="@(_ResolvedProjectReferencePaths->AnyHaveMetadataValue('MSBuildSourceProjectFile', '$(CoreLibProject)'))">
-      <CompileUsingReferenceAssemblies Condition="'$(CompileUsingReferenceAssemblies)' == ''">false</CompileUsingReferenceAssemblies>
-    </PropertyGroup>
-    <!-- Clear the ReferenceAssembly attribute on resolved P2Ps that set SkipUseReferenceAssembly to true. -->
-    <ItemGroup>
-      <_resolvedP2PFiltered Include="@(ProjectReference)"
-                            ProjectReferenceItemSpec="$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)'))" 
-                            SkipUseReferenceAssembly="%(ProjectReference.SkipUseReferenceAssembly)" />
-      <_ResolvedProjectReferencePaths Condition="'%(_resolvedP2PFiltered.ProjectReferenceItemSpec)' == '%(_resolvedP2PFiltered.MSBuildSourceProjectFile)' and
-                                                 '%(_resolvedP2PFiltered.SkipUseReferenceAssembly)' == 'true'"
-                                      ReferenceAssembly="" />
     </ItemGroup>
   </Target>
 

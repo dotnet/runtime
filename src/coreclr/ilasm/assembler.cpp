@@ -2737,4 +2737,9 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
         pGPC->Token(tkOwnerOfCA);
         EmitCustomAttributes(tkOwnerOfCA, pGPC->CAList());
     }
+
+    delete[] nConstraintsArr;
+    delete[] nConstraintIndexArr;
+    delete[] pConstraintsArr;
+    delete[] pGPConstraintsArr;
 }
