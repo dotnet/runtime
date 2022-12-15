@@ -331,6 +331,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
             {
+                assert(newobjThis == nullptr);
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
@@ -1182,11 +1183,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 2:
         {
-            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
+            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic) && (newobjThis == nullptr))
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             ((newobjThis == nullptr) ? 2 : 1)DEBUGARG(
-                                                 "Spilling op1 side effects for SimdAsHWIntrinsic"));
+                                             2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
@@ -1743,18 +1743,17 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 3:
         {
-            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
+            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic) && (newobjThis == nullptr))
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             ((newobjThis == nullptr) ? 3 : 2)
-                                                 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+                                             3 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic))
             {
+                assert(newobjThis == nullptr);
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             ((newobjThis == nullptr) ? 2 : 1)
-                                                 DEBUGARG("Spilling op2 side effects for SimdAsHWIntrinsic"));
+                                             2 DEBUGARG("Spilling op2 side effects for SimdAsHWIntrinsic"));
             }
 
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
@@ -1876,7 +1875,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     else if (areArgumentsContiguous(op2, op3))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 8);
-                        op2                 = gtNewOperNode(GT_IND, TYP_SIMD8, op2Address);
+                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD8, op2Address);
                     }
                     else
                     {
@@ -1916,10 +1915,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             assert(isInstanceMethod);
             assert(SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic));
+
+            if (newobjThis == nullptr)
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             ((newobjThis == nullptr) ? 4 : 3)
-                                                 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+                                             4 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
             assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
@@ -1972,7 +1972,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     else if (areArgumentsContiguous(op2, op3) && areArgumentsContiguous(op3, op4))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 12);
-                        op2                 = gtNewOperNode(GT_IND, TYP_SIMD12, op2Address);
+                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD12, op2Address);
                     }
                     else
                     {
@@ -2005,10 +2005,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             assert(isInstanceMethod);
             assert(SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic));
+
+            if (newobjThis == nullptr)
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             ((newobjThis == nullptr) ? 5 : 4)
-                                                 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+                                             5 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
             assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
@@ -2067,7 +2068,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                              areArgumentsContiguous(op4, op5))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 16);
-                        op2                 = gtNewOperNode(GT_IND, TYP_SIMD16, op2Address);
+                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD16, op2Address);
                     }
                     else
                     {
