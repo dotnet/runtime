@@ -48,86 +48,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM 0b1010
 #define ROUNDPS_TOWARD_ZERO_IMM 0b1011
 
-// getOpForSIMDIntrinsic: return the opcode for the given SIMD Intrinsic
-//
-// Arguments:
-//   intrinsicId    -   SIMD intrinsic Id
-//   baseType       -   Base type of the SIMD vector
-//   ival           -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
-//
-//
-// Return Value:
-//   Instruction (op) to be used, and ival is set if instruction requires an immediate operand.
-//
-instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival /*=nullptr*/)
-{
-    // Minimal required instruction set is SSE2.
-    assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
-
-    instruction result = INS_invalid;
-    switch (intrinsicId)
-    {
-        case SIMDIntrinsicShiftLeftInternal:
-            switch (baseType)
-            {
-                case TYP_SIMD16:
-                    // For SSE2, entire vector is shifted, for AVX2, 16-byte chunks are shifted.
-                    result = INS_pslldq;
-                    break;
-                case TYP_UINT:
-                case TYP_INT:
-                    result = INS_pslld;
-                    break;
-                case TYP_SHORT:
-                case TYP_USHORT:
-                    result = INS_psllw;
-                    break;
-                default:
-                    assert(!"Invalid baseType for SIMDIntrinsicShiftLeftInternal");
-                    result = INS_invalid;
-                    break;
-            }
-            break;
-
-        case SIMDIntrinsicShiftRightInternal:
-            switch (baseType)
-            {
-                case TYP_SIMD16:
-                    // For SSE2, entire vector is shifted, for AVX2, 16-byte chunks are shifted.
-                    result = INS_psrldq;
-                    break;
-                case TYP_UINT:
-                case TYP_INT:
-                    result = INS_psrld;
-                    break;
-                case TYP_SHORT:
-                case TYP_USHORT:
-                    result = INS_psrlw;
-                    break;
-                default:
-                    assert(!"Invalid baseType for SIMDIntrinsicShiftRightInternal");
-                    result = INS_invalid;
-                    break;
-            }
-            break;
-
-        case SIMDIntrinsicUpperSave:
-            result = INS_vextractf128;
-            break;
-
-        case SIMDIntrinsicUpperRestore:
-            result = INS_insertps;
-            break;
-
-        default:
-            assert(!"Unsupported SIMD intrinsic");
-            unreached();
-    }
-
-    noway_assert(result != INS_invalid);
-    return result;
-}
-
 //--------------------------------------------------------------------------------
 // genSIMDExtractUpperHalf: Generate code to extract the upper half of a SIMD register
 //
@@ -149,9 +69,8 @@ void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, r
     }
     else
     {
-        instruction shiftIns = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
         inst_Mov(simdType, tgtReg, srcReg, /* canSkip */ true);
-        GetEmitter()->emitIns_R_I(shiftIns, emitSize, tgtReg, 8);
+        GetEmitter()->emitIns_R_I(INS_psrldq, emitSize, tgtReg, 8);
     }
 }
 

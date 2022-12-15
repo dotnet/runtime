@@ -4882,23 +4882,6 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
     return INS_OPTS_NONE;
 }
 
-// getOpForSIMDIntrinsic: return the opcode for the given SIMD Intrinsic
-//
-// Arguments:
-//   intrinsicId    -   SIMD intrinsic Id
-//   baseType       -   Base type of the SIMD vector
-//   immed          -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
-//
-//
-// Return Value:
-//   Instruction (op) to be used, and immed is set if instruction requires an immediate operand.
-//
-instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival /*=nullptr*/)
-{
-    NYI("unimplemented on LOONGARCH64 yet");
-    return INS_invalid;
-}
-
 //------------------------------------------------------------------------
 // genSIMDIntrinsicInit: Generate code for SIMD Intrinsic Initialize.
 //
