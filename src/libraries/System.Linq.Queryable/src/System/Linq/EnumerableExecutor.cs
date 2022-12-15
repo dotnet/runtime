@@ -43,7 +43,7 @@ namespace System.Linq
             EnumerableRewriter rewriter = new EnumerableRewriter();
             Expression body = rewriter.Visit(_expression);
             Expression<Func<T>> f = Expression.Lambda<Func<T>>(body, (IEnumerable<ParameterExpression>?)null);
-            Func<T> func = f.Compile();
+            Func<T> func = f.Compile(preferInterpretation: true);
             return func();
         }
     }

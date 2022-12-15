@@ -108,7 +108,7 @@ namespace System.Linq
                 EnumerableRewriter rewriter = new EnumerableRewriter();
                 Expression body = rewriter.Visit(_expression);
                 Expression<Func<IEnumerable<T>>> f = Expression.Lambda<Func<IEnumerable<T>>>(body, (IEnumerable<ParameterExpression>?)null);
-                IEnumerable<T> enumerable = f.Compile()();
+                IEnumerable<T> enumerable = f.Compile(preferInterpretation: true)();
                 if (enumerable == this)
                     throw Error.EnumeratingNullEnumerableExpression();
                 _enumerable = enumerable;
