@@ -197,7 +197,9 @@ namespace System.Threading
             if (_spinLimit == SpinningNotInitialized)
             {
                 // Use RhGetProcessCpuCount directly to avoid Environment.ProcessorCount->ClassConstructorRunner->Lock->Environment.ProcessorCount cycle
-                s_processorCount = RuntimeImports.RhGetProcessCpuCount();
+                if (s_processorCount == 0)
+                    s_processorCount = RuntimeImports.RhGetProcessCpuCount();
+
                 _spinLimit = (s_processorCount > 1) ? MaxSpinLimit : SpinningDisabled;
             }
 
