@@ -223,8 +223,7 @@ namespace CoreclrTestLib
             else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
                 createdump.StartInfo.FileName = "sudo";
-                createdump.StartInfo.Arguments = $"{createdumpPath} --crashreport " + arguments;
-                createdump.StartInfo.EnvironmentVariables.Add("DOTNET_DbgEnableElfDumpOnMacOS", "1");
+                createdump.StartInfo.Arguments = $"{createdumpPath} --crashreport {arguments}";
                 crashReportPresent = true;
             }
 
@@ -270,34 +269,41 @@ namespace CoreclrTestLib
 
         static bool RunProcess(string fileName, string arguments)
         {
-            Process proc = new Process();
-
-            proc.StartInfo.FileName = fileName;
-            proc.StartInfo.Arguments = arguments;
-            proc.StartInfo.UseShellExecute = false;
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.RedirectStandardError = true;
+            Process proc = new Process()
+            {
+                StartInfo = new ProcessStartInfo()
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                }
+            };
 
             Console.WriteLine($"Invoking: {proc.StartInfo.FileName} {proc.StartInfo.Arguments}");
             proc.Start();
-            string stdout = proc.StandardOutput.ReadToEnd();
-            if (!string.IsNullOrEmpty(stdout) )
-            {
-                Console.WriteLine($"stdout: {stdout}");
-            }
-            string stderr = proc.StandardError.ReadToEnd();
-            if (!string.IsNullOrEmpty(stderr) )
-            {
-                Console.WriteLine($"stderr: {stderr}");
-            }
 
-            if (!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
+            Task<string> stdOut = proc.StandardOutput.ReadToEndAsync();
+            Task<string> stdErr = proc.StandardError.ReadToEndAsync();
+            if(!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
                 proc.Kill(true);
                 Console.WriteLine($"Timedout: '{fileName} {arguments}");
                 return false;
             }
 
+            Task.WaitAll(stdOut, stdErr);
+            string output = stdOut.Result;
+            string error = stdErr.Result;
+            if (!string.IsNullOrWhiteSpace(output))
+            {
+                Console.WriteLine($"stdout: {output}");
+            }
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                Console.WriteLine($"stderr: {error}");
+            }
             return true;
         }
 
@@ -456,15 +462,30 @@ namespace CoreclrTestLib
                     symbolizerWriter.WriteLine(addrBuilder.ToString());
                 }
 
-                symbolizerOutput = llvmSymbolizer.StandardOutput.ReadToEnd();
+                Task<string> stdout = llvmSymbolizer.StandardOutput.ReadToEndAsync();
+                Task<string> stderr = llvmSymbolizer.StandardError.ReadToEndAsync();
+                bool fSuccess = llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS);
 
-                if (!llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS))
+                Task.WaitAll(stdout, stderr);
+
+                if (!fSuccess)
                 {
                     outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
-                    outputWriter.WriteLine(llvmSymbolizer.StandardError.ReadToEnd());
+                    string output = stdout.Result;
+                    string error = stderr.Result;
+
+                    Console.WriteLine("llvm-symbolizer stdout:");
+                    Console.WriteLine(output);
+                    Console.WriteLine("llvm-symbolizer stderr:");
+                    Console.WriteLine(error);
+
                     llvmSymbolizer.Kill(true);
+
                     return false;
                 }
+
+                symbolizerOutput = stdout.Result;
+
             } catch (Exception e) {
                 outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
                 outputWriter.WriteLine(e.ToString());
