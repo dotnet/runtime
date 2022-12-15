@@ -5935,51 +5935,9 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 {
     switch (simdNode->GetSIMDIntrinsicId())
     {
-        case SIMDIntrinsicInit:
-        {
-            GenTree* op1 = simdNode->Op(1);
-#ifndef TARGET_64BIT
-            if (op1->OperGet() == GT_LONG)
-            {
-                MakeSrcContained(simdNode, op1);
-                GenTree* op1lo = op1->gtGetOp1();
-                GenTree* op1hi = op1->gtGetOp2();
-
-                if ((op1lo->IsIntegralConst(0) && op1hi->IsIntegralConst(0)) ||
-                    (op1lo->IsIntegralConst(-1) && op1hi->IsIntegralConst(-1)))
-                {
-                    MakeSrcContained(op1, op1lo);
-                    MakeSrcContained(op1, op1hi);
-                }
-            }
-            else
-#endif // !TARGET_64BIT
-                if (op1->IsFloatPositiveZero() || op1->IsIntegralConst(0) ||
-                    (varTypeIsIntegral(simdNode->GetSimdBaseType()) && op1->IsIntegralConst(-1)))
-            {
-                MakeSrcContained(simdNode, op1);
-            }
-            else if ((comp->getSIMDSupportLevel() == SIMD_AVX2_Supported) &&
-                     ((simdNode->GetSimdSize() == 16) || (simdNode->GetSimdSize() == 32)))
-            {
-                // Either op1 is a float or dbl constant or an addr
-                if (op1->IsCnsFltOrDbl() || op1->OperIsLocalAddr())
-                {
-                    MakeSrcContained(simdNode, op1);
-                }
-            }
-        }
-        break;
-
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
             CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
-            break;
-
-        case SIMDIntrinsicShuffleSSE2:
-            // Second operand is an integer constant and marked as contained.
-            assert(simdNode->Op(2)->IsCnsIntOrI());
-            MakeSrcContained(simdNode, simdNode->Op(2));
             break;
 
         default:

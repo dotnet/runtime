@@ -791,6 +791,14 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsTrackedReferenceWithFinalizer
+        {
+            get
+            {
+                return (ExtendedFlags & (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag) != 0;
+            }
+        }
+
         internal uint ValueTypeFieldPadding
         {
             get
@@ -1356,6 +1364,12 @@ namespace Internal.Runtime
             {
                 return (EETypeElementType)((_uFlags & (uint)EETypeFlags.ElementTypeMask) >> (byte)EETypeFlags.ElementTypeShift);
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _uFlags = (_uFlags & ~(uint)EETypeFlags.ElementTypeMask) | ((uint)value << (byte)EETypeFlags.ElementTypeShift);
+            }
+#endif
         }
 
         public bool HasCctor

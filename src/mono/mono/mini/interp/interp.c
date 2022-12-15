@@ -1145,15 +1145,25 @@ INTERP_GET_EXCEPTION(array_type_mismatch)
 INTERP_GET_EXCEPTION(arithmetic)
 INTERP_GET_EXCEPTION_CHAR_ARG(argument_out_of_range)
 
+// Inlining throw logic into interp_exec_method makes it bigger and could push us up against
+//  internal limits in things like WASM compilers
+static MONO_NEVER_INLINE void
+interp_throw_ex_general (
+	MonoException *__ex, ThreadContext *context, InterpFrame *frame, const guint16 *ex_ip, gboolean rethrow
+)
+{
+	HANDLE_FUNCTION_ENTER ();
+	MonoExceptionHandle tmp_handle = MONO_HANDLE_NEW (MonoException, __ex);
+	interp_throw (context, MONO_HANDLE_RAW(tmp_handle), (frame), (ex_ip), (rethrow));
+	HANDLE_FUNCTION_RETURN ();
+}
+
 // We conservatively pin exception object here to avoid tweaking the
 // numerous call sites of this macro, even though, in a few cases,
 // this is not needed.
 #define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
 	do {							\
-		MonoException *__ex = (exception);		\
-		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)__ex); \
-		interp_throw (context, __ex, (frame), (ex_ip), (rethrow)); \
-		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)NULL); \
+		interp_throw_ex_general (exception, context, frame, ex_ip, rethrow); \
 		goto resume;							  \
 	} while (0)
 
@@ -3720,6 +3730,7 @@ mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClause
 #if USE_COMPUTED_GOTO
 	static void * const in_labels[] = {
 #define OPDEF(a,b,c,d,e,f) &&LAB_ ## a,
+#define IROPDEF(a,b,c,d,e,f)
 #include "mintops.def"
 	};
 #endif
@@ -3793,19 +3804,6 @@ main_loop:
 		MINT_IN_CASE(MINT_INITLOCALS)
 			memset (locals + ip [1], 0, ip [2]);
 			ip += 3;
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_NOP)
-		MINT_IN_CASE(MINT_IL_SEQ_POINT)
-		MINT_IN_CASE(MINT_NIY)
-		MINT_IN_CASE(MINT_DEF)
-		MINT_IN_CASE(MINT_DUMMY_USE)
-		MINT_IN_CASE(MINT_TIER_PATCHPOINT_DATA)
-#ifndef HOST_BROWSER
-		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER)
-		MINT_IN_CASE(MINT_TIER_PREPARE_JITERPRETER)
-		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER)
-#endif
-			g_assert_not_reached ();
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
@@ -3975,7 +3973,12 @@ main_loop:
 					} else if ((m_method_is_virtual (del_imethod->method) && !m_method_is_static (del_imethod->method)) && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
 						// 'this' is passed dynamically, we need to recompute the target method
 						// with each call
-						del_imethod = get_virtual_method (del_imethod, LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*)->vtable);
+						MonoObject *obj = LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*);
+						del_imethod = get_virtual_method (del_imethod, obj->vtable);
+						if (m_class_is_valuetype (del_imethod->method->klass)) {
+							// We are calling into a value type method, `this` needs to be unboxed
+							LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, gpointer) = mono_object_unbox_internal (obj);
+						}
 					} else {
 						del->interp_invoke_impl = del_imethod;
 					}
@@ -3998,7 +4001,7 @@ main_loop:
 					MonoObject *this_arg = del->target;
 
 					// replace the MonoDelegate* on the stack with 'this' pointer
-					if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
+					if (m_class_is_valuetype (cmethod->method->klass)) {
 						gpointer unboxed = mono_object_unbox_internal (this_arg);
 						LOCAL_VAR (call_args_offset, gpointer) = unboxed;
 					} else {
@@ -4098,7 +4101,7 @@ main_loop:
 			ip += 5;
 			// FIXME push/pop LMF
 			cmethod = get_virtual_method_fast (cmethod, this_arg->vtable, slot);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
+			if (m_class_is_valuetype (cmethod->method->klass)) {
 				/* unbox */
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
@@ -4148,29 +4151,6 @@ main_loop:
 			goto call;
 		}
 
-		MINT_IN_CASE(MINT_CALLVIRT) {
-			// FIXME CALLVIRT opcodes are not used on netcore. We should kill them.
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
-			return_offset = ip [1];
-			call_args_offset = ip [2];
-
-			MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*);
-
-			// FIXME push/pop LMF
-			cmethod = get_virtual_method (cmethod, this_arg->vtable);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
-				/* unbox */
-				gpointer unboxed = mono_object_unbox_internal (this_arg);
-				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
-			}
-
-#ifdef ENABLE_EXPERIMENT_TIERED
-			ip += 5;
-#else
-			ip += 4;
-#endif
-			goto call;
-		}
 		MINT_IN_CASE(MINT_CALL) {
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			return_offset = ip [1];
@@ -7245,12 +7225,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 
-		MINT_IN_CASE(MINT_MOV_SRC_OFF)
-		MINT_IN_CASE(MINT_MOV_DST_OFF)
-			// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
-			g_assert_not_reached ();
-			MINT_IN_BREAK;
-
 #define MOV(argtype1,argtype2) \
 	LOCAL_VAR (ip [1], argtype1) = LOCAL_VAR (ip [2], argtype2); \
 	ip += 3;
@@ -7589,7 +7563,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 #if !USE_COMPUTED_GOTO
 		default:
 			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), GPTRDIFF_TO_INT (ip - frame->imethod->code));
-#endif
+#endif // USE_COMPUTED_GOTO
 		}
 	}
 

@@ -225,14 +225,12 @@ public:
                 // Screen out contextual "uses"
                 //
                 GenTree* const parent = user;
-                bool const     isAddr = parent->OperIs(GT_ADDR);
-
-                bool isCallTarget = false;
 
                 // Quirk:
                 //
                 // fgGetStubAddrArg cannot handle complex trees (it calls gtClone)
                 //
+                bool isCallTarget = false;
                 if (parent->IsCall())
                 {
                     GenTreeCall* const parentCall = parent->AsCall();
@@ -259,7 +257,7 @@ public:
                     lastUse = true;
                 }
 
-                if (!isDef && !isAddr && !isCallTarget && lastUse)
+                if (!isDef && !isCallTarget && lastUse)
                 {
                     m_node       = node;
                     m_use        = use;
@@ -755,10 +753,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Quirks:
     //
-    // Don't substitute nodes "AddFinalArgsAndDetermineABIInfo" doesn't handle into struct args.
+    // Don't substitute nodes args morphing doesn't handle into struct args.
     //
     if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) &&
-        !fwdSubNode->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
+        !fwdSubNode->OperIs(GT_OBJ, GT_FIELD, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
     {
         JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
         return false;
