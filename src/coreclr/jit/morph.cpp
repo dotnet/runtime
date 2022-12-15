@@ -10845,14 +10845,7 @@ SKIP:
         }
 
         // Now we narrow the first operand of AND to int.
-        if (optNarrowTree(andOp->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
-        {
-            optNarrowTree(andOp->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
-        }
-        else
-        {
-            andOp->gtOp1 = gtNewCastNode(TYP_INT, andOp->gtGetOp1(), false, TYP_INT);
-        }
+        andOp->gtOp1 = gtNewCastNode(TYP_INT, andOp->gtGetOp1(), false, TYP_INT);
 
         assert(andMask == andOp->gtGetOp2());
 

@@ -2840,6 +2840,24 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
 }
 #endif // !TARGET_64BIT
 
+GenTree* Lowering::TryOptimizeNarrowTree(GenTree* node, var_types dstType)
+{
+    if (node->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_EQ, GT_NE, GT_LT, GT_LE,
+                     GT_GT, GT_GE, GT_LCL_VAR) &&
+        !node->gtOverflowEx())
+    {
+        bool doit = true;
+
+        if (doit)
+        {
+            node->ChangeType(dstType);
+            return node;
+        }
+
+        return nullptr;
+    }
+}
+
 //------------------------------------------------------------------------
 // Lowering::OptimizeConstCompare: Performs various "compare with const" optimizations.
 //
@@ -2958,6 +2976,20 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         GenTree* andOp1 = op1->gtGetOp1();
         GenTree* andOp2 = op1->gtGetOp2();
+
+        if (!varTypeIsLong(op1) && andOp2->IsIntegralConst() &&
+            ((andOp2->AsIntConCommon()->IntegralValue() >> 32) == 0))
+        {
+            if (andOp1->OperIs(GT_CAST) && !andOp1->gtOverflow() && varTypeIsLong(andOp1->AsCast()->CastFromType()))
+            {
+                GenTree* optimizedAndOp1 = TryOptimizeNarrowTree(andOp1->gtGetOp1(), genActualType(op1));
+                if (optimizedAndOp1 != nullptr)
+                {
+                    BlockRange().Remove(andOp1);
+                    op1->AsOp()->gtOp1 = andOp1 = optimizedAndOp1;
+                }
+            }
+        }
 
         //
         // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
