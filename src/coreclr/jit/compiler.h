@@ -11559,17 +11559,6 @@ extern const BYTE genActualTypes[];
 // to TARGET_AMD64 only.
 extern regMaskTP rbmAllFloat;
 extern regMaskTP rbmFltCalleeTrash;
-extern regMaskTP rbmCalleeTrash;
-extern regMaskTP rbmCalleeTrashNoGC;
-extern regMaskTP rbmCalleeTrashWriteBarrier;
-extern regMaskTP rbmCalleeGCTrashWriteBarrier;
-extern regMaskTP rbmCalleeTrashWriteBarrierByref;
-extern regMaskTP rbmCalleeGCTrashWriteBarrierByref;
-extern regMaskTP rbmStopForGCTrash;
-extern regMaskTP rbmProfilerTailcallTrash;
-extern regMaskTP rbmInitPInvokeFrameTrash;
-extern regMaskTP rbmProfilerEnterTrash;
-extern regMaskTP rbmProfilerLeaveTrash;
 extern unsigned  rbmCntCalleeTrashFloat;
 #endif // TARGET_AMD64
 
