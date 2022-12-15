@@ -3060,9 +3060,10 @@ PhaseStatus Compiler::fgSimpleLowering()
                 }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-                case GT_AND:
+                case GT_EQ:
+                case GT_NE:
                 {
-                    if (fgSimpleLowerAndOp(range, tree->AsOp()))
+                    if (fgSimpleLowerOptimizeEqualityComparison(range, tree->AsOp()))
                     {
                         madeChanges = true;
                     }
@@ -3126,9 +3127,9 @@ PhaseStatus Compiler::fgSimpleLowering()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-bool Compiler::fgSimpleLowerAndOp(LIR::Range& range, GenTreeOp* tree)
+bool Compiler::fgSimpleLowerOptimizeEqualityComparison(LIR::Range& range, GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_AND));
+    assert(tree->OperIs(GT_EQ, GT_NE));
 
     if (opts.OptimizationDisabled())
         return false;
@@ -3138,18 +3139,26 @@ bool Compiler::fgSimpleLowerAndOp(LIR::Range& range, GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    if (!varTypeIsLong(tree) && op2->IsIntegralConst())
+    if (op1->OperIs(GT_AND) && !varTypeIsLong(op1) && op2->IsIntegralConst())
     {
-        if (op1->OperIs(GT_CAST) && !op1->gtOverflow() && varTypeIsLong(op1->AsCast()->CastFromType()))
+        GenTree* andOp1 = op1->gtGetOp1();
+        GenTree* andOp2 = op1->gtGetOp2();
+
+        if (andOp1->OperIs(GT_CAST) && !andOp1->gtOverflow() && andOp2->IsIntegralConst())
         {
-            GenTree* castOp = op1->AsCast()->CastOp();
-            GenTree* optimizedOp1 =
-                fgTrySimpleLowerOptimizeNarrowTree(range, castOp, tree->TypeGet());
-            if (optimizedOp1 != nullptr)
+            GenTreeCast* cast       = andOp1->AsCast();
+            var_types    castToType = cast->CastToType();
+
+            if (varTypeIsLong(cast->CastFromType()))
             {
-                range.Remove(op1);
-                tree->gtOp1 = op1 = optimizedOp1;
-                madeChanges       = true;
+                GenTree* castOp          = cast->CastOp();
+                GenTree* optimizedAndOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, op1->TypeGet());
+                if (optimizedAndOp1 != nullptr)
+                {
+                    range.Remove(cast);
+                    op1->AsOp()->gtOp1 = optimizedAndOp1;
+                    madeChanges        = true;
+                }
             }
         }
     }

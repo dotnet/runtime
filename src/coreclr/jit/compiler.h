@@ -4656,7 +4656,7 @@ public:
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     PhaseStatus fgSimpleLowering();
-    bool fgSimpleLowerAndOp(LIR::Range& range, GenTreeOp* tree);
+    bool fgSimpleLowerOptimizeEqualityComparison(LIR::Range & range, GenTreeOp* tree);
     GenTree* fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range, GenTree* node, var_types dstType);
 
 #if FEATURE_LOOP_ALIGN
