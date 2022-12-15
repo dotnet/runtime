@@ -2789,13 +2789,6 @@ void Compiler::fgInterBlockLocalVarLiveness()
                     }
 
                     JITDUMP("Store [%06u] is dead", dspTreeID(stmt->GetRootNode()));
-                    // Currently side effect extraction cannot handle qmarks.
-                    if (gtTreeContainsOper(stmt->GetRootNode()->gtGetOp2(), GT_QMARK))
-                    {
-                        JITDUMP(" but contains a QMARK, so leaving in place\n");
-                        continue;
-                    }
-
                     // The def ought to be the last thing.
                     assert(stmt->GetRootNode()->gtPrev == cur);
 
