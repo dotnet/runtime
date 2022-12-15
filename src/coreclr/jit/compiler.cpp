@@ -3337,17 +3337,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         rbmCntCalleeTrashFloat += 16;
     }
-    rbmCalleeTrash                    = RBM_CALLEE_TRASH_INIT;
-    rbmCalleeTrashNoGC                = RBM_CALLEE_TRASH_NOGC_INIT;
-    rbmCalleeTrashWriteBarrier        = RBM_CALLEE_TRASH_WRITEBARRIER_INIT;
-    rbmCalleeGCTrashWriteBarrier      = RBM_CALLEE_GCTRASH_WRITEBARRIER_INIT;
-    rbmCalleeTrashWriteBarrierByref   = RBM_CALLEE_TRASH_WRITEBARRIER_BYREF_INIT;
-    rbmCalleeGCTrashWriteBarrierByref = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF_INIT;
-    rbmStopForGCTrash                 = RBM_STOP_FOR_GC_TRASH_INIT;
-    rbmInitPInvokeFrameTrash          = RBM_INIT_PINVOKE_FRAME_TRASH_INIT;
-    rbmProfilerEnterTrash             = RBM_PROFILER_ENTER_TRASH_INIT;
-    rbmProfilerLeaveTrash             = RBM_PROFILER_LEAVE_TRASH_INIT;
-    rbmProfilerTailcallTrash          = RBM_PROFILER_TAILCALL_TRASH_INIT;
 #endif // TARGET_AMD64
 }
 
@@ -10309,16 +10298,5 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
 // to TARGET_AMD64 only.
 regMaskTP rbmAllFloat;
 regMaskTP rbmFltCalleeTrash;
-regMaskTP rbmCalleeTrash;
-regMaskTP rbmCalleeTrashNoGC;
-regMaskTP rbmCalleeTrashWriteBarrier;
-regMaskTP rbmCalleeGCTrashWriteBarrier;
-regMaskTP rbmCalleeTrashWriteBarrierByref;
-regMaskTP rbmCalleeGCTrashWriteBarrierByref;
-regMaskTP rbmStopForGCTrash;
-regMaskTP rbmProfilerTailcallTrash;
-regMaskTP rbmInitPInvokeFrameTrash;
-regMaskTP rbmProfilerEnterTrash;
-regMaskTP rbmProfilerLeaveTrash;
 unsigned  rbmCntCalleeTrashFloat;
 #endif // TARGET_AMD64

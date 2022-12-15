@@ -152,8 +152,7 @@
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM15
 
-  #define RBM_CALLEE_TRASH_INIT   (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
-  #define RBM_CALLEE_TRASH        rbmCalleeTrash
+  #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | rbmFltCalleeTrash)
 
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
 
@@ -183,29 +182,19 @@
   #define REG_WRITE_BARRIER_SRC          REG_ARG_1
   #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
 
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_CALLEE_TRASH_NOGC_INIT   RBM_CALLEE_TRASH
-  #define RBM_CALLEE_TRASH_NOGC        rbmCalleeTrashNoGC
+  #define RBM_CALLEE_TRASH_NOGC        RBM_CALLEE_TRASH
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_INIT    RBM_CALLEE_TRASH_NOGC
-  #define RBM_CALLEE_TRASH_WRITEBARRIER         rbmCalleeTrashWriteBarrier
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_INIT  RBM_CALLEE_TRASH_NOGC
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       rbmCalleeGCTrashWriteBarrier
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
 
   // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF_INIT   (RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC)
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   rbmCalleeTrashWriteBarrierByref
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC)
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-  // Note that RDI and RSI are still valid byref pointers after this helper call, despite their value being changed.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF_INIT (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF rbmCalleeGCTrashWriteBarrierByref
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
 
 #if 0
 #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX,REG_ETW_FRAMED_EBP_LIST \
@@ -441,13 +430,9 @@
 
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\amd64\asmhelpers.asm for more details.
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_PROFILER_ENTER_TRASH_INIT     RBM_CALLEE_TRASH
-  #define RBM_PROFILER_ENTER_TRASH          rbmProfilerEnterTrash
+  #define RBM_PROFILER_ENTER_TRASH          RBM_CALLEE_TRASH
 
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_PROFILER_TAILCALL_TRASH_INIT  RBM_PROFILER_LEAVE_TRASH
-  #define RBM_PROFILER_TAILCALL_TRASH       rbmProfilerTailcallTrash
+  #define RBM_PROFILER_TAILCALL_TRASH       RBM_PROFILER_LEAVE_TRASH
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
 #ifdef UNIX_AMD64_ABI
@@ -456,26 +441,16 @@
   // On Unix a struct of size >=9 and <=16 bytes in size is returned in two return registers.
   // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
   // STOP_FOR_GC helper preserves all the 4 possible return registers.
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_STOP_FOR_GC_TRASH_INIT     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
-  #define RBM_STOP_FOR_GC_TRASH rbmStopForGCTrash
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_PROFILER_LEAVE_TRASH_INIT  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
-  #define RBM_PROFILER_LEAVE_TRASH  rbmProfilerLeaveTrash
+  #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
 #else
   // See vm\amd64\asmhelpers.asm for more details.
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_STOP_FOR_GC_TRASH_INIT (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
-  #define RBM_STOP_FOR_GC_TRASH rbmStopForGCTrash
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_PROFILER_LEAVE_TRASH_INIT (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
-  #define RBM_PROFILER_LEAVE_TRASH  rbmProfilerLeaveTrash
+  #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
 #endif
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define RBM_INIT_PINVOKE_FRAME_TRASH_INIT  RBM_CALLEE_TRASH
-  #define RBM_INIT_PINVOKE_FRAME_TRASH  rbmInitPInvokeFrameTrash
+  #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R10 | RBM_RCX))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_RCX
