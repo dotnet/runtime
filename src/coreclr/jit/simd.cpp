@@ -1444,13 +1444,13 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 }
 
 //--------------------------------------------------------------------------------------------------------
-// createAddressNodeForSIMDInit: Generate the address node if we want to initialize vector2, vector3 or vector4
+// CreateAddressNodeForSimdHWIntrinsicCreate: Generate the address node if we want to initialize a simd type
 // from first argument's address.
 //
 // Arguments:
-//      tree - GenTree*. This the tree node which is used to get the address for indir.
-//      simdsize - unsigned. This the simd vector size.
-//      arrayElementsCount - unsigned. This is used for generating the boundary check for array.
+//      tree         - The tree node which is used to get the address for indir.
+//      simdBaseType - The type of the elements in the SIMD node
+//      simdsize     - The simd vector size.
 //
 // Return value:
 //      return the address node.
@@ -1459,7 +1459,7 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 //      Currently just supports GT_FIELD and GT_IND(GT_INDEX_ADDR), because we can only verify those nodes
 //      are located contiguously or not. In future we should support more cases.
 //
-GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize)
+GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize)
 {
     GenTree*  byrefNode = nullptr;
     unsigned  offset    = 0;
@@ -1508,7 +1508,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
         // The length for boundary check should be the maximum index number which should be
         // (first argument's index number) + (how many array arguments we have) - 1
         // = indexVal + arrayElementsCount - 1
-        unsigned arrayElementsCount = simdSize / genTypeSize(baseType);
+        unsigned arrayElementsCount = simdSize / genTypeSize(simdBaseType);
         checkIndexExpr              = gtNewIconNode(indexVal + arrayElementsCount - 1);
         GenTreeArrLen*    arrLen    = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
         GenTreeBoundsChk* arrBndsChk =

@@ -1873,6 +1873,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                         copyBlkSrc = vecCon;
                     }
+                    else if (areArgumentsContiguous(op2, op3))
+                    {
+                        GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 8);
+                        op2                 = gtNewOperNode(GT_IND, TYP_SIMD8, op2Address);
+                    }
                     else
                     {
 #if defined(TARGET_XARCH)
@@ -1964,6 +1969,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                         copyBlkSrc = vecCon;
                     }
+                    else if (areArgumentsContiguous(op2, op3) && areArgumentsContiguous(op3, op4))
+                    {
+                        GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 12);
+                        op2                 = gtNewOperNode(GT_IND, TYP_SIMD12, op2Address);
+                    }
                     else
                     {
                         IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), 4);
@@ -2052,6 +2062,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         vecCon->gtSimd16Val.f32[3] = static_cast<float>(op5->AsDblCon()->DconValue());
 
                         copyBlkSrc = vecCon;
+                    }
+                    else if (areArgumentsContiguous(op2, op3) && areArgumentsContiguous(op3, op4) &&
+                             areArgumentsContiguous(op4, op5))
+                    {
+                        GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 16);
+                        op2                 = gtNewOperNode(GT_IND, TYP_SIMD16, op2Address);
                     }
                     else
                     {
