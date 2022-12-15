@@ -271,6 +271,7 @@ namespace System.Threading
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
             int currentThreadID = Environment.CurrentManagedThreadIdUnchecked;
+            Debug.Assert((uint)ManagedThreadId.None > (uint)SBLK_MASK_LOCK_THREADID);
             // if thread ID is uninitialized too big, we do uncommon part.
             if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID)
             {
@@ -453,8 +454,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsAcquired(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             Debug.Assert(!(obj is Lock),
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
