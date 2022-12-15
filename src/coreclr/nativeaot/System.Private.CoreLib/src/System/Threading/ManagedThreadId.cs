@@ -246,6 +246,8 @@ namespace System.Threading
             }
         }
 
+        internal static int CurrentManagedThreadIdUnchecked => RuntimeImports.RhGetCurrentManagedThreadId();
+
         public static int Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
