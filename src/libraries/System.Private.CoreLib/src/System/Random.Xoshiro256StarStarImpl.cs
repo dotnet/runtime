@@ -92,17 +92,20 @@ namespace System
             {
                 if (maxValue > 1)
                 {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling((uint)maxValue);
-                    while (true)
+                    ulong randomProduct = (ulong)maxValue * NextUInt32();
+                    uint lowPart = (uint)(randomProduct & uint.MaxValue);
+                    if (lowPart < maxValue)
                     {
-                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
-                        if (result < (uint)maxValue)
+                        uint remainder = ((uint)0 - (uint)maxValue) % (uint)maxValue;
+
+                        while (lowPart < remainder)
                         {
-                            return (int)result;
+                            randomProduct = (ulong)maxValue * NextUInt32();
+                            lowPart = (uint)(randomProduct & uint.MaxValue);
                         }
                     }
+
+                    return (int)(randomProduct >> (sizeof(uint) * 8));
                 }
 
                 Debug.Assert(maxValue == 0 || maxValue == 1);
@@ -111,21 +114,12 @@ namespace System
 
             public override int Next(int minValue, int maxValue)
             {
-                ulong exclusiveRange = (ulong)((long)maxValue - minValue);
+                int exclusiveRange = (maxValue - minValue);
 
                 if (exclusiveRange > 1)
                 {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
-                    while (true)
-                    {
-                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
-                        if (result < exclusiveRange)
-                        {
-                            return (int)result + minValue;
-                        }
-                    }
+                    return Next(exclusiveRange) + minValue;
+
                 }
 
                 Debug.Assert(minValue == maxValue || minValue + 1 == maxValue);
@@ -149,46 +143,37 @@ namespace System
 
             public override long NextInt64(long maxValue)
             {
-                if (maxValue > 1)
+                if (maxValue <= int.MaxValue)
                 {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling((ulong)maxValue);
-                    while (true)
+                    return Next((int)maxValue);
+                }
+
+                UInt128 randomProduct = (UInt128)maxValue * NextUInt64();
+                ulong lowPart = (ulong)(randomProduct & ulong.MaxValue);
+                if (lowPart < (ulong)maxValue)
+                {
+                    ulong remainder = ((ulong)0 - (ulong)maxValue) % (ulong)maxValue;
+
+                    while (lowPart < remainder)
                     {
-                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
-                        if (result < (ulong)maxValue)
-                        {
-                            return (long)result;
-                        }
+                        randomProduct = (UInt128)maxValue * NextUInt64();
+                        lowPart = (ulong)(randomProduct & ulong.MaxValue);
                     }
                 }
 
-                Debug.Assert(maxValue == 0 || maxValue == 1);
-                return 0;
+                return (int)(randomProduct >> (sizeof(ulong) * 8));
             }
 
             public override long NextInt64(long minValue, long maxValue)
             {
-                ulong exclusiveRange = (ulong)(maxValue - minValue);
+                long exclusiveRange = (maxValue - minValue);
 
-                if (exclusiveRange > 1)
+                if (exclusiveRange <= int.MaxValue)
                 {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
-                    while (true)
-                    {
-                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
-                        if (result < exclusiveRange)
-                        {
-                            return (long)result + minValue;
-                        }
-                    }
+                    return Next((int)exclusiveRange) + minValue;
                 }
 
-                Debug.Assert(minValue == maxValue || minValue + 1 == maxValue);
-                return minValue;
+                return NextInt64(exclusiveRange) + minValue;
             }
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);
