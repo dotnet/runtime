@@ -257,10 +257,71 @@ namespace System.Numerics
         public static Decimal32 MaxMagnitudeNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
         public static Decimal32 MinMagnitude(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
         public static Decimal32 MinMagnitudeNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
-        public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => throw new NotImplementedException();
-        public static Decimal32 Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
-        public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
-        public static Decimal32 Parse(string s, NumberStyles style, IFormatProvider? provider) => throw new NotImplementedException();
+
+        //
+        // Parsing (INumberBase, IParsable, ISpanParsable)
+        //
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+        {
+            // NumberFormatInfo.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO, it won't let me call this because it's internal to System.
+            return IeeeDecimalNumber.ParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
+        public static Decimal32 Parse(string s, IFormatProvider? provider)
+        {
+            // if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); // TODO, it won't let me call this because it's internal to System.
+            return IeeeDecimalNumber.ParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
+        public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider = null) // TODO what should the default for NumberStyles be?
+        {
+            // NumberFormatInfo.ValidateParseStyleFloatingPoint(style); // TODO, it won't let me call this because it's internal to System.
+            return IeeeDecimalNumber.ParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(string, NumberStyles, IFormatProvider?)" />
+        public static Decimal32 Parse(string s, NumberStyles style, IFormatProvider? provider)
+        {
+            // NumberFormatInfo.ValidateParseStyleFloatingPoint(style); // TODO, it won't let me call these because they are internal to System.
+            // if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return IeeeDecimalNumber.ParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
+        {
+            // NumberFormatInfo.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO
+            return IeeeDecimalNumber.TryParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider), out result) == IeeeDecimalNumber.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => TryParse(s, NumberStyles.Number, provider, out result);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
+        {
+            // NumberFormatInfo.ValidateParseStyleFloatingPoint(style);  // TODO
+            return IeeeDecimalNumber.TryParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider), out result) == IeeeDecimalNumber.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
+        {
+            // NumberFormatInfo.ValidateParseStyleFloatingPoint(style); // TODO
+
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return IeeeDecimalNumber.TryParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider), out result) == IeeeDecimalNumber.ParsingStatus.OK;
+        }
+
         public static Decimal32 Pow(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
         public static Decimal32 Quantize(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
         public static Decimal32 Quantum(Decimal32 x) => throw new NotImplementedException();
@@ -277,38 +338,558 @@ namespace System.Numerics
         public static Decimal32 Tan(Decimal32 x) => throw new NotImplementedException();
         public static Decimal32 Tanh(Decimal32 x) => throw new NotImplementedException();
         public static Decimal32 TanPi(Decimal32 x) => throw new NotImplementedException();
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
-        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Decimal32 CreateChecked<TOther>(TOther value) // TODO these are copy-pastes of the DIM. Do we still want them?
+            where TOther : INumberBase<TOther>
+        {
+            Decimal32 result;
+
+            if (typeof(TOther) == typeof(Decimal32))
+            {
+                result = (Decimal32)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Decimal32 CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Decimal32 result;
+
+            if (typeof(TOther) == typeof(Decimal32))
+            {
+                result = (Decimal32)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Decimal32 CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Decimal32 result;
+
+            if (typeof(TOther) == typeof(Decimal32))
+            {
+                result = (Decimal32)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Decimal32>.TryConvertFromChecked<TOther>(TOther value, out Decimal32 result)
+        static bool INumberBase<Decimal32>.TryConvertFromChecked<TOther>(TOther value, out Decimal32 result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out Decimal32 result)
+            where TOther : INumberBase<TOther>
         {
-            return TryConvertFrom<TOther>(value, out result);
+            if (typeof(TOther) == typeof(byte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Decimal32>.TryConvertFromSaturating<TOther>(TOther value, out Decimal32 result)
+        static bool INumberBase<Decimal32>.TryConvertFromSaturating<TOther>(TOther value, out Decimal32 result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out Decimal32 result)
+            where TOther : INumberBase<TOther>
         {
-            return TryConvertFrom<TOther>(value, out result);
+            if (typeof(TOther) == typeof(byte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Decimal32>.TryConvertFromTruncating<TOther>(TOther value, out Decimal32 result)
-        {
-            return TryConvertFrom<TOther>(value, out result);
-        }
-        private static bool TryConvertFrom<TOther>(TOther value, out Decimal32 result)
+        static bool INumberBase<Decimal32>.TryConvertFromTruncating<TOther>(TOther value, out Decimal32 result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out Decimal32 result)
             where TOther : INumberBase<TOther>
         {
-            // TODO
+            if (typeof(TOther) == typeof(byte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
         }
-        static bool INumberBase<Decimal32>.TryConvertToChecked<TOther>(Decimal32 value, out TOther result) => throw new NotImplementedException();
-        static bool INumberBase<Decimal32>.TryConvertToSaturating<TOther>(Decimal32 value, out TOther result) => throw new NotImplementedException();
-        static bool INumberBase<Decimal32>.TryConvertToTruncating<TOther>(Decimal32 value, out TOther result) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal32>.TryConvertToChecked<TOther>(Decimal32 value, [MaybeNullWhen(false)] out TOther result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal32>.TryConvertToSaturating<TOther>(Decimal32 value, [MaybeNullWhen(false)] out TOther result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Complex))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Decimal32>.TryConvertToTruncating<TOther>(Decimal32 value, [MaybeNullWhen(false)] out TOther result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(Complex))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                throw new NotImplementedException();
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
+        }
+
         public int CompareTo(Decimal32 other) => throw new NotImplementedException();
         public int CompareTo(object? obj) => throw new NotImplementedException();
         public bool Equals(Decimal32 other) => throw new NotImplementedException();
