@@ -6153,6 +6153,25 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 #endif
 
 /*
+ * mono_aot_direct_pinvoke_enabled_for_method
+ *
+ * Return whether the method is specified to be directly pinvoked
+ */
+static gboolean
+mono_aot_direct_pinvoke_enabled_for_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	const char *sym = get_pinvoke_import (acfg, method);
+	const char *module_name = acfg->image->module_name;
+	if (g_hash_table_contains (acfg->direct_pinvokes, module_name)) {
+		GHashTable *val = g_hash_table_lookup (acfg->direct_pinvokes, module_name);
+		if (!val)
+			return TRUE;
+		return g_hash_table_contains (val, sym);
+	}
+	return FALSE;
+}
+
+/*
  * is_direct_callable:
  *
  *   Return whenever the method identified by JI is directly callable without
