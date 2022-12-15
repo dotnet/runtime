@@ -2840,7 +2840,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
 }
 #endif // !TARGET_64BIT
 
-GenTree* Lowering::OptimizeNarrowTree(GenTree* node, var_types srcType, var_types dstType)
+GenTree* Lowering::TryOptimizeNarrowTree(GenTree* node, var_types srcType, var_types dstType)
 {
     assert(varTypeIsIntegralOrI(srcType));
     assert(varTypeIsIntegralOrI(dstType));
@@ -2865,7 +2865,7 @@ GenTree* Lowering::OptimizeNarrowTree(GenTree* node, var_types srcType, var_type
 
             // Remove cast.
             GenTree* castOp = cast->CastOp();
-            GenTree* newNode = OptimizeNarrowTree(castOp, cast->CastFromType(), dstType);
+            GenTree* newNode = TryOptimizeNarrowTree(castOp, cast->CastFromType(), dstType);
 
             BlockRange().Remove(cast);
 
@@ -2884,34 +2884,28 @@ GenTree* Lowering::OptimizeNarrowTree(GenTree* node, var_types srcType, var_type
             if (node->OperIsUnary())
             {
                 GenTree* op1 = node->gtGetOp1();
-                GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
-                if (newOp1 != op1)
-                {
-                    assert(op1->OperIs(GT_CAST));
-
-                    node->AsOp()->gtOp1 = newOp1;
-                }
+                //GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
+                //if (newOp1 != op1)
+                //{
+                //    node->AsOp()->gtOp1 = newOp1;
+                //}
             }
             else if (node->OperIsBinary())
             {
                 GenTree* op1    = node->gtGetOp1();
                 GenTree* op2    = node->gtGetOp2();
 
-                GenTree* newOp2 = OptimizeNarrowTree(op2, srcType, dstType);
-                if (newOp2 != op2)
-                {
-                    assert(op2->OperIs(GT_CAST));
+                //GenTree* newOp2 = OptimizeNarrowTree(op2, srcType, dstType);
+                //if (newOp2 != op2)
+                //{
+                //    node->AsOp()->gtOp2 = newOp2;
+                //}
 
-                    node->AsOp()->gtOp2 = newOp2;
-                }
-
-                GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
-                if (newOp1 != op1)
-                {
-                    assert(op1->OperIs(GT_CAST));
-
-                    node->AsOp()->gtOp1 = newOp1;
-                }
+                //GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
+                //if (newOp1 != op1)
+                //{
+                //    node->AsOp()->gtOp1 = newOp1;
+                //}
             }
 
             return node;
@@ -3046,7 +3040,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 GenTree* castOp          = andOp1->AsCast()->CastOp();
                 GenTree* optimizedCastOp =
-                    OptimizeNarrowTree(castOp, andOp1->AsCast()->CastFromType(), op1->TypeGet());
+                    TryOptimizeNarrowTree(castOp, andOp1->AsCast()->CastFromType(), op1->TypeGet());
                 if (optimizedCastOp != nullptr)
                 {
                     BlockRange().Remove(andOp1);
