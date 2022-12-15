@@ -1200,7 +1200,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            ssize_t ival  = op3->AsIntConCommon()->IconValue();
+            ssize_t ival = op3->AsIntConCommon()->IconValue();
 
             ssize_t zmask   = (ival & 0x0F);
             ssize_t count_d = (ival & 0x30) >> 4;
@@ -1217,7 +1217,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 ival = (count_s << 6) | (count_d << 4) | (zmask);
                 op3->AsIntConCommon()->SetIconValue(ival);
             }
-            else if(op2IsVectorZero)
+            else if (op2IsVectorZero)
             {
                 // When op2 is zero, we can modify the mask to
                 // directly zero the element we're inserting
@@ -1267,8 +1267,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTreeHWIntrinsic* op1Intrinsic = op1->AsHWIntrinsic();
 
-            if ((op1Intrinsic->GetHWIntrinsicId() != NI_SSE41_Insert) ||
-                (op1Intrinsic->GetSimdBaseType() != TYP_FLOAT))
+            if ((op1Intrinsic->GetHWIntrinsicId() != NI_SSE41_Insert) || (op1Intrinsic->GetSimdBaseType() != TYP_FLOAT))
             {
                 // Nothing to do if op1 isn't a float32 Sse41.Insert
                 break;
@@ -7312,8 +7311,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                                 if (op1->IsVectorZero())
                                 {
-                                    // When op1 is zero, we can contain it and we expect that
-                                    // ival is already in the correct state to account for it
+// When op1 is zero, we can contain it and we expect that
+// ival is already in the correct state to account for it
 
 #if DEBUG
                                     ssize_t ival = lastOp->AsIntConCommon()->IconValue();
@@ -7333,8 +7332,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 else if (op2->IsVectorZero())
                                 {
-                                    // When op2 is zero, we can contain it and we expect that
-                                    // zmask is already in the correct state to account for it
+// When op2 is zero, we can contain it and we expect that
+// zmask is already in the correct state to account for it
 
 #if DEBUG
                                     ssize_t ival = lastOp->AsIntConCommon()->IconValue();
