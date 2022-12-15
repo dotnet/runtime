@@ -3144,7 +3144,7 @@ bool Compiler::fgSimpleLowerAndOp(LIR::Range& range, GenTreeOp* tree)
         {
             GenTree* castOp = op1->AsCast()->CastOp();
             GenTree* optimizedOp1 =
-                fgTrySimpleLowerOptimizeNarrowTree(range, castOp, op1->AsCast()->CastFromType(), tree->TypeGet());
+                fgTrySimpleLowerOptimizeNarrowTree(range, castOp, tree->TypeGet());
             if (optimizedOp1 != nullptr)
             {
                 range.Remove(op1);
@@ -3159,13 +3159,12 @@ bool Compiler::fgSimpleLowerAndOp(LIR::Range& range, GenTreeOp* tree)
 
 GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
                                                       GenTree*    node,
-                                                      var_types   srcType,
                                                       var_types   dstType)
 {
-    assert(varTypeIsIntegralOrI(srcType));
     assert(varTypeIsIntegralOrI(dstType));
-    assert(!varTypeIsSmall(srcType));
     assert(!varTypeIsSmall(dstType));
+
+    var_types srcType = node->TypeGet();
 
     if (node->gtSetFlags())
         return nullptr;
@@ -3185,7 +3184,7 @@ GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
 
             // Remove cast.
             GenTree* castOp  = cast->CastOp();
-            GenTree* newNode = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, cast->CastFromType(), dstType);
+            GenTree* newNode = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, dstType);
 
             range.Remove(cast);
 
@@ -3204,7 +3203,7 @@ GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
             if (node->OperIsUnary())
             {
                 GenTree* op1    = node->gtGetOp1();
-                GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, srcType, dstType);
+                GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, dstType);
                 if (newOp1 != nullptr)
                 {
                     node->AsOp()->gtOp1 = newOp1;
@@ -3215,13 +3214,13 @@ GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
                 GenTree* op1 = node->gtGetOp1();
                 GenTree* op2 = node->gtGetOp2();
 
-                GenTree* newOp2 = fgTrySimpleLowerOptimizeNarrowTree(range, op2, srcType, dstType);
+                GenTree* newOp2 = fgTrySimpleLowerOptimizeNarrowTree(range, op2, dstType);
                 if (newOp2 != nullptr)
                 {
                     node->AsOp()->gtOp2 = newOp2;
                 }
 
-                GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, srcType, dstType);
+                GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, dstType);
                 if (newOp1 != nullptr)
                 {
                     node->AsOp()->gtOp1 = newOp1;
