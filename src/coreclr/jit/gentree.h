@@ -3955,8 +3955,10 @@ struct GenTreeCast : public GenTreeOp
         return false;
     }
 
+#ifdef TARGET_AMD64 
     bool usedForIndexing = false;
     bool skippedGenForIndexing = false;
+#endif
 };
 
 // GT_BOX nodes are place markers for boxed values.  The "real" tree

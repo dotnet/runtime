@@ -4193,6 +4193,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         {
             GenTree* index = indir->Index();
             assert(!index->isContained());
+#ifdef TARGET_AMD64
             if (index->OperIs(GT_CAST) && index->AsCast()->usedForIndexing && index->AsCast()->skippedGenForIndexing)
             {
                 amIndxReg = index->AsCast()->CastOp()->GetRegNum();
@@ -4201,6 +4202,9 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
             {
                 amIndxReg = index->GetRegNum();
             }
+#else
+            amIndxReg = index->GetRegNum();
+#endif
             assert(amIndxReg != REG_NA);
         }
 
