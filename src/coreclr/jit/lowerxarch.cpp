@@ -6013,36 +6013,15 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTree* childNode, bool* supportsRegOptional)
 {
-    return IsContainableHWIntrinsicOp(nullptr, parentNode, childNode, supportsRegOptional);
-}
-
-//----------------------------------------------------------------------------------------------
-// IsContainableHWIntrinsicOp: Determines whether a child node is containable for a given HWIntrinsic
-//
-//  Arguments:
-//     [In, Opt] grandparentNode     - The hardware intrinsic node which is the parent of 'parentNode'
-//     [In]      parentNode          - The hardware intrinsic node which is the parent of 'childNode'
-//     [In]      childNode           - The node to check if it can be contained by 'parentNode'
-//     [Out]     supportsRegOptional - On return, this will be true if 'parentNode' supports 'childNode' being
-//     regOptional; otherwise, false.
-//
-// Return Value:
-//    true if 'childNode' is a containable by 'parentNode'; otherwise, false.
-//
-bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
-                                          GenTreeHWIntrinsic* parentNode,
-                                          GenTree*            childNode,
-                                          bool*               supportsRegOptional)
-{
     assert(parentNode != nullptr);
     assert(childNode != nullptr);
     assert(supportsRegOptional != nullptr);
 
-    NamedIntrinsic      containingIntrinsicId = parentNode->GetHWIntrinsicId();
-    HWIntrinsicCategory category              = HWIntrinsicInfo::lookupCategory(containingIntrinsicId);
+    NamedIntrinsic      parentIntrinsicId = parentNode->GetHWIntrinsicId();
+    HWIntrinsicCategory category          = HWIntrinsicInfo::lookupCategory(parentIntrinsicId);
 
     // We shouldn't have called in here if parentNode doesn't support containment
-    assert(HWIntrinsicInfo::SupportsContainment(containingIntrinsicId));
+    assert(HWIntrinsicInfo::SupportsContainment(parentIntrinsicId));
 
     // parentNode supports nodes that read from an aligned memory address
     //
@@ -6087,7 +6066,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
 
         case HW_Category_SimpleSIMD:
         {
-            switch (containingIntrinsicId)
+            switch (parentIntrinsicId)
             {
                 case NI_SSE41_ConvertToVector128Int16:
                 case NI_SSE41_ConvertToVector128Int32:
@@ -6201,7 +6180,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
 
         case HW_Category_IMM:
         {
-            switch (containingIntrinsicId)
+            switch (parentIntrinsicId)
             {
                 case NI_SSE_Shuffle:
                 case NI_SSE2_ShiftLeftLogical:
@@ -6266,7 +6245,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
 
                     if (parentNode->GetSimdBaseType() == TYP_FLOAT)
                     {
-                        assert(containingIntrinsicId == NI_SSE41_Insert);
+                        assert(parentIntrinsicId == NI_SSE41_Insert);
 
                         // Sse41.Insert(V128<float>, V128<float>, byte) is a bit special
                         // in that it has different behavior depending on whether the
@@ -6338,7 +6317,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
             assert(supportsAlignedSIMDLoads == false);
             assert(supportsUnalignedSIMDLoads == false);
 
-            switch (containingIntrinsicId)
+            switch (parentIntrinsicId)
             {
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
@@ -6390,7 +6369,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
                     if (!varTypeIsIntegral(childNode->TypeGet()))
                     {
                         // The floating-point overload doesn't require any special semantics
-                        assert(containingIntrinsicId == NI_SSE2_ConvertScalarToVector128Double);
+                        assert(parentIntrinsicId == NI_SSE2_ConvertScalarToVector128Double);
                         supportsSIMDScalarLoads = true;
                         supportsGeneralLoads    = supportsSIMDScalarLoads;
                         break;
@@ -6430,7 +6409,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
 
             // CRC32 codegen depends on its second oprand's type.
             // Currently, we are using SIMDBaseType to store the op2Type info.
-            if (containingIntrinsicId == NI_SSE42_Crc32)
+            if (parentIntrinsicId == NI_SSE42_Crc32)
             {
                 var_types op2Type = parentNode->GetSimdBaseType();
                 expectedSize      = genTypeSize(op2Type);
@@ -6450,18 +6429,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
         }
     }
 
-    bool isSafeToContainMem;
-
-    // Code motion safety checks
-    //
-    if (grandparentNode != nullptr)
-    {
-        isSafeToContainMem = IsSafeToContainMem(grandparentNode, parentNode, childNode);
-    }
-    else
-    {
-        isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
-    }
+    bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
 
     *supportsRegOptional = isSafeToContainMem && supportsGeneralLoads;
 
@@ -6478,7 +6446,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
             else if (childNode->IsCnsNonZeroFltOrDbl())
             {
                 // Always safe.
-                //
                 canBeContained = true;
             }
             else if (childNode->IsCnsVec())
@@ -6507,28 +6474,30 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
                 return false;
             }
 
-            GenTree* op1                    = hwintrinsic->Op(1);
-            bool     op1SupportsRegOptional = false;
+            GenTree* op1 = hwintrinsic->Op(1);
 
-            if (IsContainableHWIntrinsicOp(parentNode, hwintrinsic, op1, &op1SupportsRegOptional) && op1->isContained())
+            if (IsSafeToContainMem(parentNode, hwintrinsic, op1))
             {
-                // We have CreateScalarUnsafe where the underlying scalar is contained
-                // As such, we can contain the CreateScalarUnsafe and consume the value
-                // directly in codegen.
+                if (op1->isContained())
+                {
+                    // We have CreateScalarUnsafe where the underlying scalar is contained
+                    // As such, we can contain the CreateScalarUnsafe and consume the value
+                    // directly in codegen.
 
-                return true;
-            }
+                    return true;
+                }
 
-            if (op1SupportsRegOptional && op1->IsRegOptional() && varTypeIsFloating(op1))
-            {
-                // We have CreateScalarUnsafe where the underlying scalar was marked reg
-                // optional. As such, we can contain the CreateScalarUnsafe and consume
-                // the value directly in codegen.
-                //
-                // We only want to do this when op1 produces a floating-point value since that means
-                // it will already be in a SIMD register in the scenario it isn't spilled.
+                if (op1->IsRegOptional() && varTypeIsFloating(op1))
+                {
+                    // We have CreateScalarUnsafe where the underlying scalar was marked reg
+                    // optional. As such, we can contain the CreateScalarUnsafe and consume
+                    // the value directly in codegen.
+                    //
+                    // We only want to do this when op1 produces a floating-point value since that means
+                    // it will already be in a SIMD register in the scenario it isn't spilled.
 
-                return true;
+                    return true;
+                }
             }
 
             return false;
@@ -6696,7 +6665,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // contained by the relevant store operation instead.
                             return;
                         }
-
                         break;
                     }
 
@@ -6706,12 +6674,51 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
-                        if (!varTypeIsSIMD(op1))
+                    {
+                        if (node->OperIsMemoryLoad())
                         {
                             ContainCheckHWIntrinsicAddr(node, op1);
                             return;
                         }
                         break;
+                    }
+
+                    case NI_AVX2_BroadcastScalarToVector128:
+                    case NI_AVX2_BroadcastScalarToVector256:
+                    {
+                        if (node->OperIsMemoryLoad())
+                        {
+                            ContainCheckHWIntrinsicAddr(node, op1);
+                            return;
+                        }
+
+                        if (varTypeIsIntegral(simdBaseType) && op1->OperIsHWIntrinsic())
+                        {
+                            GenTreeHWIntrinsic* childNode   = op1->AsHWIntrinsic();
+                            NamedIntrinsic      childNodeId = childNode->GetHWIntrinsicId();
+
+                            if ((childNodeId == NI_Vector128_CreateScalarUnsafe) ||
+                                (childNodeId == NI_Vector256_CreateScalarUnsafe))
+                            {
+                                // We have a very special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
+                                // 
+                                // This is one of the only instructions where it supports taking integer types from
+                                // a SIMD register or directly as a scalar from memory. Most other instructions, in
+                                // comparison, take such values from general-purpose registers instead.
+                                //
+                                // Because of this, we're going to remove the CreateScalarUnsafe and try to contain
+                                // op1 directly, we'll then special case the codegen to materialize the value into a
+                                // SIMD register in the case it is marked optional and doesn't get spilled.
+
+                                node->Op(1) = childNode->Op(1);
+                                BlockRange().Remove(op1);
+
+                                op1 = node->Op(1);
+                                op1->ClearContained();
+                            }
+                        }
+                        break;
+                    }
 
                     default:
                     {
@@ -6719,24 +6726,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
 
+                assert(!node->OperIsMemoryLoad());
                 bool supportsRegOptional = false;
 
-                if (node->OperIsMemoryLoad())
-                {
-                    // We have a few cases that can be potential memory loads
-
-                    assert((intrinsicId == NI_SSE41_ConvertToVector128Int16) ||
-                           (intrinsicId == NI_SSE41_ConvertToVector128Int32) ||
-                           (intrinsicId == NI_SSE41_ConvertToVector128Int64) ||
-                           (intrinsicId == NI_AVX2_BroadcastScalarToVector128) ||
-                           (intrinsicId == NI_AVX2_BroadcastScalarToVector256) ||
-                           (intrinsicId == NI_AVX2_ConvertToVector256Int16) ||
-                           (intrinsicId == NI_AVX2_ConvertToVector256Int32) ||
-                           (intrinsicId == NI_AVX2_ConvertToVector256Int64));
-
-                    ContainCheckHWIntrinsicAddr(node, op1);
-                }
-                else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                 {
                     MakeSrcContained(node, op1);
                 }

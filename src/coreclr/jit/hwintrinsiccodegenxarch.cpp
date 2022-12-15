@@ -481,15 +481,40 @@ void CodeGen::genHWIntrinsic_R_RM(
         break;
 
         case OperandKind::Reg:
+        {
+            regNumber rmOpReg = rmOpDesc.GetReg();
+
             if (emit->IsMovInstruction(ins))
             {
-                emit->emitIns_Mov(ins, attr, reg, rmOpDesc.GetReg(), /* canSkip */ false);
+                emit->emitIns_Mov(ins, attr, reg, rmOpReg, /* canSkip */ false);
             }
             else
             {
-                emit->emitIns_R_R(ins, attr, reg, rmOpDesc.GetReg());
+                if (varTypeIsIntegral(rmOp) && ((node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128) ||
+                                                (node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256)))
+                {
+                    // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
+                    //
+                    // This is one of the only instructions where it supports taking integer types from
+                    // a SIMD register or directly as a scalar from memory. Most other instructions, in
+                    // comparison, take such values from general-purpose registers instead.
+                    //
+                    // Because of this, we removed the CreateScalarUnsafe and tried to contain op1 directly
+                    // that failed and we either didn't get marked regOptional or we did and didn't get spilled
+                    //
+                    // As such, we need to emulate the removed CreateScalarUnsafe to ensure that op1 is in a
+                    // SIMD register so the broadcast instruction can execute succesfully. We'll just move
+                    // the value into the target register and then broadcast it out from that.
+
+                    emitAttr movdAttr = emitActualTypeSize(node->GetSimdBaseType());
+                    emit->emitIns_Mov(INS_movd, movdAttr, reg, rmOpReg, /* canSkip */ false);
+                    rmOpReg = reg;
+                }
+
+                emit->emitIns_R_R(ins, attr, reg, rmOpReg);
             }
             break;
+        }
 
         default:
             unreached();

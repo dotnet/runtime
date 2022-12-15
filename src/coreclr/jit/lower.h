@@ -478,11 +478,6 @@ public:
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_HW_INTRINSICS)
-    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* grandparentNode,
-                                    GenTreeHWIntrinsic* parentNode,
-                                    GenTree*            childNode,
-                                    bool*               supportsRegOptional);
-
     bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTree* childNode, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
