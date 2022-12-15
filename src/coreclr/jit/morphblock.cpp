@@ -843,8 +843,10 @@ void MorphCopyBlockHelper::MorphStructCases()
     //
     bool requiresCopyBlock = false;
 
-    // If either src or dest is a reg-sized non-field-addressed struct, keep the copyBlock.
-    if ((m_dstVarDsc != nullptr && m_dstVarDsc->lvRegStruct) || (m_srcVarDsc != nullptr && m_srcVarDsc->lvRegStruct))
+    // If either src or dest is a reg-sized non-field-addressed struct, keep the copyBlock;
+    // this will avoid having to DNER the enregisterable local when creating LCL_FLD nodes.
+    if ((m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->lvRegStruct) ||
+        (m_src->OperIs(GT_LCL_VAR) && m_srcVarDsc->lvRegStruct))
     {
         requiresCopyBlock = true;
     }
