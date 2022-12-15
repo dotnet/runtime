@@ -8535,11 +8535,6 @@ private:
         return isOpaqueSIMDType(varDsc->GetStructHnd());
     }
 
-    static bool isRelOpSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
-    {
-        return (intrinsicId == SIMDIntrinsicEqual);
-    }
-
     bool isNumericsNamespace(const char* ns)
     {
         return strcmp(ns, "System.Numerics") == 0;
@@ -8615,26 +8610,6 @@ private:
     // Pops and returns GenTree node from importers type stack.
     // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
     GenTree* impSIMDPopStack(var_types type, bool expectAddr = false, CORINFO_CLASS_HANDLE structType = nullptr);
-
-    // Transforms operands and returns the SIMD intrinsic to be applied on
-    // transformed operands to obtain given relop result.
-    SIMDIntrinsicID impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
-                                 CORINFO_CLASS_HANDLE typeHnd,
-                                 unsigned             simdVectorSize,
-                                 CorInfoType*         inOutBaseJitType,
-                                 GenTree**            op1,
-                                 GenTree**            op2);
-
-#if defined(TARGET_XARCH)
-
-    // Transforms operands and returns the SIMD intrinsic to be applied on
-    // transformed operands to obtain == comparison result.
-    SIMDIntrinsicID impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
-                                          unsigned             simdVectorSize,
-                                          GenTree**            op1,
-                                          GenTree**            op2);
-
-#endif // defined(TARGET_XARCH)
 
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
     bool areFieldsContiguous(GenTree* op1, GenTree* op2);
@@ -8858,9 +8833,6 @@ public:
 #endif // FEATURE_SIMD
     }
 
-#ifdef FEATURE_SIMD
-    static bool vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId);
-#endif // !FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
     static bool vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID);
 #endif // FEATURE_HW_INTRINSICS

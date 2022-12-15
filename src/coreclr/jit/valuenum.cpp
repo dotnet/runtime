@@ -7155,32 +7155,6 @@ void ValueNumStore::InitValueNumStoreStatics()
     vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;                               /* clear old arity value   */              \
     vnfOpAttribs[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask) /* set the new arity value */
 
-#ifdef FEATURE_SIMD
-
-    // SIMDIntrinsicInit has an entry of 2 for numArgs, but it only has one normal arg
-    ValueNumFuncSetArity(VNF_SIMD_Init, 1);
-
-    // Some SIMD intrinsic nodes have an extra VNF_SimdType arg
-    //
-    for (SIMDIntrinsicID id = SIMDIntrinsicID::SIMDIntrinsicNone; (id < SIMDIntrinsicID::SIMDIntrinsicInvalid);
-         id                 = (SIMDIntrinsicID)(id + 1))
-    {
-        bool encodeResultType = Compiler::vnEncodesResultTypeForSIMDIntrinsic(id);
-
-        if (encodeResultType)
-        {
-            // These SIMDIntrinsic's have an extra VNF_SimdType arg.
-            //
-            VNFunc   func     = VNFunc(VNF_SIMD_FIRST + id);
-            unsigned oldArity = VNFuncArity(func);
-            unsigned newArity = oldArity + 1;
-
-            ValueNumFuncSetArity(func, newArity);
-        }
-    }
-
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
 
     for (NamedIntrinsic id = (NamedIntrinsic)(NI_HW_INTRINSIC_START + 1); (id < NI_HW_INTRINSIC_END);
@@ -9680,33 +9654,10 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
             return;
         }
 
-        bool encodeResultType = vnEncodesResultTypeForSIMDIntrinsic(tree->GetSIMDIntrinsicId());
-
-        if (encodeResultType)
-        {
-            ValueNum simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetNormalizedSimdBaseJitType());
-            resvnp.SetBoth(simdTypeVN);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("    simdTypeVN is ");
-                vnPrint(simdTypeVN, 1);
-                printf("\n");
-            }
-#endif
-        }
-
         if (tree->GetOperandCount() == 1)
         {
             // A unary SIMD node.
             excSetPair = op1Xvnp;
-            if (encodeResultType)
-            {
-                normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc, op1vnp, resvnp);
-                assert(vnStore->VNFuncArity(simdFunc) == 2);
-            }
-            else
             {
                 normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc, op1vnp);
                 assert(vnStore->VNFuncArity(simdFunc) == 1);
@@ -9719,12 +9670,6 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
             vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
 
             excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-            if (encodeResultType)
-            {
-                normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc, op1vnp, op2vnp, resvnp);
-                assert(vnStore->VNFuncArity(simdFunc) == 3);
-            }
-            else
             {
                 normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc, op1vnp, op2vnp);
                 assert(vnStore->VNFuncArity(simdFunc) == 2);

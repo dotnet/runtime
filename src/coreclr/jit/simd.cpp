@@ -953,20 +953,7 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         // which determines the simdBaseJitType.
         // The exception is the IsHardwareAccelerated property, which is handled as a special case.
         assert(*simdBaseJitType == CORINFO_TYPE_UNDEF);
-        if (sig->numArgs == 0)
-        {
-            const SIMDIntrinsicInfo* hwAccelIntrinsicInfo = &(simdIntrinsicInfoArray[SIMDIntrinsicHWAccel]);
-            const char* methodName = info.compCompHnd->getMethodNameFromMetadata(methodHnd, nullptr, nullptr, nullptr);
-            if ((strcmp(methodName, hwAccelIntrinsicInfo->methodName) == 0) &&
-                JITtype2varType(sig->retType) == hwAccelIntrinsicInfo->retType)
-            {
-                // Sanity check
-                assert(hwAccelIntrinsicInfo->argCount == 0 && hwAccelIntrinsicInfo->isInstMethod == false);
-                return hwAccelIntrinsicInfo;
-            }
-            return nullptr;
-        }
-        else
+        assert(sig->numArgs != 0);
         {
             typeHnd          = info.compCompHnd->getArgClass(sig, sig->args);
             *inOutTypeHnd    = typeHnd;
@@ -1180,24 +1167,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
     return nullptr;
 }
 
-/* static */ bool Compiler::vnEncodesResultTypeForSIMDIntrinsic(SIMDIntrinsicID intrinsicId)
-{
-    switch (intrinsicId)
-    {
-        case SIMDIntrinsicInit:
-        case SIMDIntrinsicSub:
-        case SIMDIntrinsicEqual:
-        case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicCast:
-            return true;
-
-        default:
-            break;
-    }
-    return false;
-}
-
 // Pops and returns GenTree node from importer's type stack.
 // Normalizes TYP_STRUCT value in case of GT_CALL and GT_RET_EXPR.
 //
@@ -1263,185 +1232,6 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
     }
 
     return tree;
-}
-
-#ifdef TARGET_XARCH
-// impSIMDLongRelOpEqual: transforms operands and returns the SIMD intrinsic to be applied on
-// transformed operands to obtain == comparison result.
-//
-// Arguments:
-//    typeHnd  -  type handle of SIMD vector
-//    size     -  SIMD vector size
-//    op1      -  in-out parameter; first operand
-//    op2      -  in-out parameter; second operand
-//
-// Return Value:
-//    Modifies in-out params op1, op2 and returns intrinsic ID to be applied to modified operands
-//
-SIMDIntrinsicID Compiler::impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
-                                                unsigned             size,
-                                                GenTree**            pOp1,
-                                                GenTree**            pOp2)
-{
-    var_types simdType = (*pOp1)->TypeGet();
-    assert(varTypeIsSIMD(simdType) && ((*pOp2)->TypeGet() == simdType));
-
-    // There is no direct SSE2 support for comparing TYP_LONG vectors.
-    // These have to be implemented in terms of TYP_INT vector comparison operations.
-    //
-    // Equality(v1, v2):
-    // tmp = (v1 == v2) i.e. compare for equality as if v1 and v2 are vector<int>
-    // result = BitwiseAnd(t, shuffle(t, (2, 3, 0, 1)))
-    // Shuffle is meant to swap the comparison results of low-32-bits and high 32-bits of respective long elements.
-
-    // Compare vector<long> as if they were vector<int> and assign the result to a temp
-    GenTree* compResult = gtNewSIMDNode(simdType, *pOp1, *pOp2, SIMDIntrinsicEqual, CORINFO_TYPE_INT, size);
-    unsigned lclNum     = lvaGrabTemp(true DEBUGARG("SIMD Long =="));
-    lvaSetStruct(lclNum, typeHnd, false);
-    GenTree* tmp = gtNewLclvNode(lclNum, simdType);
-    GenTree* asg = gtNewTempAssign(lclNum, compResult);
-
-    // op1 = GT_COMMA(tmp=compResult, tmp)
-    // op2 = Shuffle(tmp, 0xB1)
-    // IntrinsicId = BitwiseAnd
-    *pOp1 = gtNewOperNode(GT_COMMA, simdType, asg, tmp);
-    *pOp2 = gtNewSIMDNode(simdType, gtNewLclvNode(lclNum, simdType), gtNewIconNode(SHUFFLE_ZWXY, TYP_INT),
-                          SIMDIntrinsicShuffleSSE2, CORINFO_TYPE_INT, size);
-    return SIMDIntrinsicBitwiseAnd;
-}
-#endif // TARGET_XARCH
-
-// Transforms operands and returns the SIMD intrinsic to be applied on
-// transformed operands to obtain given relop result.
-//
-// Arguments:
-//    relOpIntrinsicId - Relational operator SIMD intrinsic
-//    typeHnd          - type handle of SIMD vector
-//    size             - SIMD vector size
-//    inOutBaseJitType - base JIT type of SIMD vector
-//    pOp1             - in-out parameter; first operand
-//    pOp2             - in-out parameter; second operand
-//
-// Return Value:
-//    Modifies in-out params pOp1, pOp2, inOutBaseType and returns intrinsic ID to be applied to modified operands
-//
-SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
-                                       CORINFO_CLASS_HANDLE typeHnd,
-                                       unsigned             size,
-                                       CorInfoType*         inOutBaseJitType,
-                                       GenTree**            pOp1,
-                                       GenTree**            pOp2)
-{
-    var_types simdType = (*pOp1)->TypeGet();
-    assert(varTypeIsSIMD(simdType) && ((*pOp2)->TypeGet() == simdType));
-
-    assert(isRelOpSIMDIntrinsic(relOpIntrinsicId));
-
-    SIMDIntrinsicID intrinsicID = relOpIntrinsicId;
-#ifdef TARGET_XARCH
-    CorInfoType simdBaseJitType = *inOutBaseJitType;
-    var_types   simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
-
-    if (varTypeIsFloating(simdBaseType))
-    {
-    }
-    else if (varTypeIsIntegral(simdBaseType))
-    {
-        if ((getSIMDSupportLevel() == SIMD_SSE2_Supported) && simdBaseType == TYP_LONG)
-        {
-            // There is no direct SSE2 support for comparing TYP_LONG vectors.
-            // These have to be implemented interms of TYP_INT vector comparison operations.
-            if (intrinsicID == SIMDIntrinsicEqual)
-            {
-                intrinsicID = impSIMDLongRelOpEqual(typeHnd, size, pOp1, pOp2);
-            }
-            else
-            {
-                unreached();
-            }
-        }
-        // SSE2 and AVX direct support for signed comparison of int32, int16 and int8 types
-        else if (varTypeIsUnsigned(simdBaseType))
-        {
-            // Vector<byte>, Vector<ushort>, Vector<uint> and Vector<ulong>:
-            // SSE2 supports > for signed comparison. Therefore, to use it for
-            // comparing unsigned numbers, we subtract a constant from both the
-            // operands such that the result fits within the corresponding signed
-            // type.  The resulting signed numbers are compared using SSE2 signed
-            // comparison.
-            //
-            // Vector<byte>: constant to be subtracted is 2^7
-            // Vector<ushort> constant to be subtracted is 2^15
-            // Vector<uint> constant to be subtracted is 2^31
-            // Vector<ulong> constant to be subtracted is 2^63
-            //
-            // We need to treat op1 and op2 as signed for comparison purpose after
-            // the transformation.
-            __int64 constVal = 0;
-            switch (simdBaseType)
-            {
-                case TYP_UBYTE:
-                    constVal          = 0x80808080;
-                    *inOutBaseJitType = CORINFO_TYPE_BYTE;
-                    break;
-                case TYP_USHORT:
-                    constVal          = 0x80008000;
-                    *inOutBaseJitType = CORINFO_TYPE_SHORT;
-                    break;
-                case TYP_UINT:
-                    constVal          = 0x80000000;
-                    *inOutBaseJitType = CORINFO_TYPE_INT;
-                    break;
-                case TYP_ULONG:
-                    constVal          = 0x8000000000000000LL;
-                    *inOutBaseJitType = CORINFO_TYPE_LONG;
-                    break;
-                default:
-                    unreached();
-                    break;
-            }
-            assert(constVal != 0);
-
-            // This transformation is not required for equality.
-            if (intrinsicID != SIMDIntrinsicEqual)
-            {
-                // For constructing const vector use either long or int base type.
-                CorInfoType tempBaseJitType;
-                GenTree*    initVal;
-                if (simdBaseType == TYP_ULONG)
-                {
-                    tempBaseJitType = CORINFO_TYPE_LONG;
-                    initVal         = gtNewLconNode(constVal);
-                }
-                else
-                {
-                    tempBaseJitType = CORINFO_TYPE_INT;
-                    initVal         = gtNewIconNode((ssize_t)constVal);
-                }
-                initVal->gtType      = JITtype2varType(tempBaseJitType);
-                GenTree* constVector = gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, tempBaseJitType, size);
-
-                // Assign constVector to a temp, since we intend to use it more than once
-                // TODO-CQ: We have quite a few such constant vectors constructed during
-                // the importation of SIMD intrinsics.  Make sure that we have a single
-                // temp per distinct constant per method.
-                GenTree* tmp = fgInsertCommaFormTemp(&constVector, typeHnd);
-
-                // op1 = op1 - constVector
-                // op2 = op2 - constVector
-                *pOp1 = gtNewSIMDNode(simdType, *pOp1, constVector, SIMDIntrinsicSub, simdBaseJitType, size);
-                *pOp2 = gtNewSIMDNode(simdType, *pOp2, tmp, SIMDIntrinsicSub, simdBaseJitType, size);
-            }
-
-            return impSIMDRelOp(intrinsicID, typeHnd, size, inOutBaseJitType, pOp1, pOp2);
-        }
-    }
-#elif !defined(TARGET_ARM64)
-    assert(!"impSIMDRelOp() unimplemented on target arch");
-    unreached();
-#endif // !TARGET_XARCH
-
-    return intrinsicID;
 }
 
 //------------------------------------------------------------------------
@@ -1885,28 +1675,21 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
     {
         // The user disabled support for the baseline ISA so
         // don't emit any SIMD intrinsics as they all require
-        // this at a minimum. We will, however, return false
-        // for IsHardwareAccelerated as that will help with
-        // dead code elimination.
+        // this at a minimum.
 
-        return (intrinsicInfo->id == SIMDIntrinsicHWAccel) ? gtNewIconNode(0, TYP_INT) : nullptr;
+        return nullptr;
     }
 
     SIMDIntrinsicID simdIntrinsicID = intrinsicInfo->id;
     var_types       simdBaseType;
     var_types       simdType;
 
-    if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+    assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
         simdType     = getSIMDTypeForSize(size);
     }
-    else
-    {
-        assert(simdIntrinsicID == SIMDIntrinsicHWAccel);
-        simdBaseType = TYP_UNKNOWN;
-        simdType     = TYP_UNKNOWN;
-    }
+
     bool      instMethod = intrinsicInfo->isInstMethod;
     var_types callType   = JITtype2varType(sig->retType);
     if (callType == TYP_STRUCT)
@@ -1928,25 +1711,14 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
     switch (simdIntrinsicID)
     {
-        case SIMDIntrinsicInit:
         case SIMDIntrinsicInitN:
         {
-            // SIMDIntrinsicInit:
-            //    op2 - the initializer value
-            //    op1 - byref of vector
-            //
             // SIMDIntrinsicInitN
             //    op2 - list of initializer values stitched into a list
             //    op1 - byref of vector
             IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), argCount - 1);
             bool                 initFromFirstArgIndir = false;
 
-            if (simdIntrinsicID == SIMDIntrinsicInit)
-            {
-                op2 = impSIMDPopStack(simdBaseType);
-                nodeBuilder.AddOperand(0, op2);
-            }
-            else
             {
                 assert(simdIntrinsicID == SIMDIntrinsicInitN);
                 assert(simdBaseType == TYP_FLOAT);
@@ -1997,59 +1769,8 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             assert(op1->TypeGet() == TYP_BYREF);
 
-            // For integral base types of size less than TYP_INT, expand the initializer
-            // to fill size of TYP_INT bytes.
-            if (varTypeIsSmallInt(simdBaseType))
             {
-                // This case should occur only for Init intrinsic.
-                assert(simdIntrinsicID == SIMDIntrinsicInit);
-
-                unsigned baseSize = genTypeSize(simdBaseType);
-                int      multiplier;
-                if (baseSize == 1)
-                {
-                    multiplier = 0x01010101;
-                }
-                else
-                {
-                    assert(baseSize == 2);
-                    multiplier = 0x00010001;
-                }
-
-                GenTree* t1 = nullptr;
-                if (simdBaseType == TYP_BYTE)
-                {
-                    // What we have is a signed byte initializer,
-                    // which when loaded to a reg will get sign extended to TYP_INT.
-                    // But what we need is the initializer without sign extended or
-                    // rather zero extended to 32-bits.
-                    t1 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(0xff, TYP_INT));
-                }
-                else if (simdBaseType == TYP_SHORT)
-                {
-                    // What we have is a signed short initializer,
-                    // which when loaded to a reg will get sign extended to TYP_INT.
-                    // But what we need is the initializer without sign extended or
-                    // rather zero extended to 32-bits.
-                    t1 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(0xffff, TYP_INT));
-                }
-                else
-                {
-                    // TODO-Casts: this cast is useless.
-                    assert(simdBaseType == TYP_UBYTE || simdBaseType == TYP_USHORT);
-                    t1 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
-                }
-
-                assert(t1 != nullptr);
-                GenTree* t2 = gtNewIconNode(multiplier, TYP_INT);
-                op2         = gtNewOperNode(GT_MUL, TYP_INT, t1, t2);
-
-                // Construct a vector of TYP_INT with the new initializer and cast it back to vector of simdBaseType
-                simdTree = gtNewSIMDNode(simdType, op2, simdIntrinsicID, CORINFO_TYPE_INT, size);
-                simdTree = gtNewSIMDNode(simdType, simdTree, SIMDIntrinsicCast, simdBaseJitType, size);
-            }
-            else
-            {
+                assert(!varTypeIsSmallInt(simdBaseType));
 
                 if (initFromFirstArgIndir)
                 {
@@ -2265,48 +1986,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
             copyBlkDst = op1;
             doCopyBlk  = true;
-        }
-        break;
-
-        case SIMDIntrinsicEqual:
-        {
-            op2 = impSIMDPopStack(simdType);
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            SIMDIntrinsicID intrinsicID = impSIMDRelOp(simdIntrinsicID, clsHnd, size, &simdBaseJitType, &op1, &op2);
-            simdTree = gtNewSIMDNode(genActualType(callType), op1, op2, intrinsicID, simdBaseJitType, size);
-            retVal   = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicSub:
-        case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
-        {
-            // op1 is the first operand; if instance method, op1 is "this" arg
-            // op2 is the second operand
-            op2 = impSIMDPopStack(simdType);
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            simdTree = gtNewSIMDNode(simdType, op1, op2, simdIntrinsicID, simdBaseJitType, size);
-            retVal   = simdTree;
-        }
-        break;
-
-        // Unary operators that take and return a Vector.
-        case SIMDIntrinsicCast:
-        {
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            simdTree = gtNewSIMDNode(simdType, op1, simdIntrinsicID, simdBaseJitType, size);
-            retVal   = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicHWAccel:
-        {
-            GenTreeIntCon* intConstTree = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, 1);
-            retVal                      = intConstTree;
         }
         break;
 

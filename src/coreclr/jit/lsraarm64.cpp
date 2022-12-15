@@ -822,11 +822,7 @@ int LinearScan::BuildNode(GenTree* tree)
 int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 {
     int srcCount = 0;
-    // Only SIMDIntrinsicInit can be contained
-    if (simdTree->isContained())
-    {
-        assert(simdTree->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
-    }
+    assert(!simdTree->isContained());
     int dstCount = simdTree->IsValue() ? 1 : 0;
     assert(dstCount == 1);
 
@@ -834,18 +830,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
     switch (simdTree->GetSIMDIntrinsicId())
     {
-        case SIMDIntrinsicInit:
-        case SIMDIntrinsicCast:
-            // No special handling required.
-            break;
-
-        case SIMDIntrinsicSub:
-        case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicEqual:
-            // No special handling required.
-            break;
-
         case SIMDIntrinsicInitN:
         {
             var_types baseType = simdTree->GetSimdBaseType();
@@ -878,7 +862,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicCopyToArray:
         case SIMDIntrinsicCopyToArrayX:
         case SIMDIntrinsicNone:
-        case SIMDIntrinsicHWAccel:
         case SIMDIntrinsicInvalid:
             assert(!"These intrinsics should not be seen during register allocation");
             FALLTHROUGH;

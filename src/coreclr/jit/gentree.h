@@ -1504,15 +1504,6 @@ public:
         return OperIsSimple(gtOper);
     }
 
-#ifdef FEATURE_SIMD
-    bool isCommutativeSIMDIntrinsic();
-#else  // !
-    bool isCommutativeSIMDIntrinsic()
-    {
-        return false;
-    }
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
@@ -1541,8 +1532,7 @@ public:
 
     bool OperIsCommutative()
     {
-        return OperIsCommutative(gtOper) || (OperIsSIMD(gtOper) && isCommutativeSIMDIntrinsic()) ||
-               (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
+        return OperIsCommutative(gtOper) || (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
     }
 
     static bool OperMayOverflow(genTreeOps gtOper)
@@ -8718,7 +8708,6 @@ inline bool GenTree::IsVectorCreate() const
     {
         switch (AsSIMD()->GetSIMDIntrinsicId())
         {
-            case SIMDIntrinsicInit:
             case SIMDIntrinsicInitN:
                 return true;
 
