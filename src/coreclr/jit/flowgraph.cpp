@@ -3134,36 +3134,89 @@ bool Compiler::fgSimpleLowerOptimizeEqualityComparison(LIR::Range& range, GenTre
     if (opts.OptimizationDisabled())
         return false;
 
-    bool madeChanges = false;
+    if (!tree->gtGetOp1()->OperIs(GT_AND))
+        return false;
 
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
+    if (!tree->gtGetOp2()->IsIntegralConst())
+        return false;
 
-    if (op1->OperIs(GT_AND) && !varTypeIsLong(op1) && op2->IsIntegralConst())
+    // Now we perform the following optimization:
+    // EQ/NE(AND(OP long, CNS_LNG), CNS_LNG) =>
+    // EQ/NE(AND(CAST(int <- OP), CNS_INT), CNS_INT)
+    // when the constants are sufficiently small.
+    // This transform cannot preserve VNs.
+
+    GenTreeOp*           op1 = tree->gtGetOp1()->AsOp();
+    GenTreeIntConCommon* op2 = tree->gtGetOp2()->AsIntConCommon();
+
+    // Now check for compares with small constant longs that can be cast to int.
+    // Note that we filter out negative values here so that the transformations
+    // below are correct. E. g. "EQ(-1L, CAST_UN(int))" is always "false", but were
+    // we to make it into "EQ(-1, int)", "true" becomes possible for negative inputs.
+    if (!op2->TypeIs(TYP_LONG) || ((op2->LngValue() >> 31) != 0))
+        return false;
+
+    // Is the result of the mask effectively an INT?
+    if (!op1->gtGetOp2()->OperIs(GT_CNS_NATIVELONG))
+        return false;
+
+    GenTreeIntConCommon* andMask = op1->gtGetOp2()->AsIntConCommon();
+    if ((andMask->LngValue() >> 32) != 0)
+        return false;
+
+    // Now we narrow the first operand of AND to int.
+    GenTreeCast* cast = gtNewCastNode(TYP_INT, op1->gtGetOp1(), false, TYP_INT);
+    range.InsertAfter(op1->gtGetOp1(), cast);
+    op1->gtOp1 = cast;
+
+    GenTree* castOp          = cast->CastOp();
+    GenTree* optimizedAndOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, TYP_INT);
+    if (optimizedAndOp1 != nullptr)
     {
-        GenTree* andOp1 = op1->gtGetOp1();
-        GenTree* andOp2 = op1->gtGetOp2();
-
-        if (andOp1->OperIs(GT_CAST) && !andOp1->gtOverflow() && andOp2->IsIntegralConst())
-        {
-            GenTreeCast* cast       = andOp1->AsCast();
-            var_types    castToType = cast->CastToType();
-
-            if (varTypeIsLong(cast->CastFromType()))
-            {
-                GenTree* castOp          = cast->CastOp();
-                GenTree* optimizedAndOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, op1->TypeGet());
-                if (optimizedAndOp1 != nullptr)
-                {
-                    range.Remove(cast);
-                    op1->AsOp()->gtOp1 = optimizedAndOp1;
-                    madeChanges        = true;
-                }
-            }
-        }
+        range.Remove(cast);
+        op1->gtOp1 = optimizedAndOp1;
     }
 
-    return madeChanges;
+    assert(andMask == op1->gtGetOp2());
+
+    // Now replace the mask node.
+    andMask->BashToConst(static_cast<int32_t>(andMask->LngValue()));
+
+    // Now change the type of the AND node.
+    op1->ChangeType(TYP_INT);
+
+    // Finally we replace the comparand.
+    op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
+
+    return true;
+
+    // bool madeChanges = false;
+
+    // if (op1->OperIs(GT_AND) && !varTypeIsLong(op1) && op2->IsIntegralConst())
+    //{
+    //     GenTree* andOp1 = op1->gtGetOp1();
+    //     GenTree* andOp2 = op1->gtGetOp2();
+
+    //    if (andOp1->OperIs(GT_CAST) && !andOp1->gtOverflow() && andOp2->IsIntegralConst())
+    //    {
+    //        GenTreeCast* cast       = andOp1->AsCast();
+    //        var_types    castToType = cast->CastToType();
+
+    //        if (varTypeIsLong(cast->CastFromType()))
+    //        {
+    //            GenTree* castOp          = cast->CastOp();
+    //            GenTree* optimizedAndOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, op1->TypeGet());
+    //            if (optimizedAndOp1 != nullptr)
+    //            {
+    //                range.Remove(cast);
+    //                op1->gtOp1 = optimizedAndOp1;
+    //                madeChanges        = true;
+    //            }
+    //        }
+    //    }
+    //}
+
+    // return madeChanges;
 }
 
 GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,

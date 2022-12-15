@@ -10822,43 +10822,6 @@ SKIP:
         return cmp;
     }
 
-    // Now we perform the following optimization:
-    // EQ/NE(AND(OP long, CNS_LNG), CNS_LNG) =>
-    // EQ/NE(AND(CAST(int <- OP), CNS_INT), CNS_INT)
-    // when the constants are sufficiently small.
-    // This transform cannot preserve VNs.
-    if (fgGlobalMorph)
-    {
-        assert(op1->TypeIs(TYP_LONG) && op1->OperIs(GT_AND));
-
-        // Is the result of the mask effectively an INT?
-        GenTreeOp* andOp = op1->AsOp();
-        if (!andOp->gtGetOp2()->OperIs(GT_CNS_NATIVELONG))
-        {
-            return cmp;
-        }
-
-        GenTreeIntConCommon* andMask = andOp->gtGetOp2()->AsIntConCommon();
-        if ((andMask->LngValue() >> 32) != 0)
-        {
-            return cmp;
-        }
-
-        // Now we narrow the first operand of AND to int.
-        andOp->gtOp1 = gtNewCastNode(TYP_INT, andOp->gtGetOp1(), false, TYP_INT);
-
-        assert(andMask == andOp->gtGetOp2());
-
-        // Now replace the mask node.
-        andMask->BashToConst(static_cast<int32_t>(andMask->LngValue()));
-
-        // Now change the type of the AND node.
-        andOp->ChangeType(TYP_INT);
-
-        // Finally we replace the comparand.
-        op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
-    }
-
     return cmp;
 }
 
