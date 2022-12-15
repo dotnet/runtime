@@ -2853,9 +2853,9 @@ GenTree* Lowering::TryOptimizeNarrowTree(GenTree* node, var_types dstType)
             node->ChangeType(dstType);
             return node;
         }
-
-        return nullptr;
     }
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
