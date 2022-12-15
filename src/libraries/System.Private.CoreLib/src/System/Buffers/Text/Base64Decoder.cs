@@ -115,20 +115,21 @@ namespace System.Buffers.Text
 
                 lastBlockStatus = IgnoreWhitespaceAndTryConsumeValidBytes(ref src, srcEnd, ref dest, destEnd, ref decodingMap, ref totalBytesIgnored, isFinalBlock, lastBlockStatus, false, out pendingSrcIncrement);
 
-                // Check if
-                if (lastBlockStatus == OperationStatus.Done
-                    || lastBlockStatus == OperationStatus.NeedMoreData)
+                // Assess the end block and bytes beyond it.
+                if (lastBlockStatus == OperationStatus.Done)
                 {
                     if (!isFinalBlock)
                     {
                         int remainingBytes = (int)(srcEnd - src);
-                        if (remainingBytes > 0 && remainingBytes < 4)
+                        if (remainingBytes is > 0 and < 4)
                         {
+                            // An incomplete block of bytes was found.
                             lastBlockStatus = OperationStatus.NeedMoreData;
                         }
                     }
                     else
                     {
+                        // Check if there are bytes that should not be ignored beyond the expected end of the valid input range.
                         int indexOfBytesNotConsumed = pendingSrcIncrement;
                         while (src <= srcEnd - indexOfBytesNotConsumed - 1)
                         {
