@@ -6857,9 +6857,9 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 //         {args}
 //       GT_COMMA
 //         GT_CALL Dispatcher
-//           GT_ADDR ReturnAddress
+//           GT_LCL_VAR_ADDR ReturnAddress
 //           {CallTargetStub}
-//           GT_ADDR ReturnValue
+//           GT_LCL_VAR_ADDR ReturnValue
 //         GT_LCL ReturnValue
 // whenever the call node returns a value. If the call node does not return a
 // value the last comma will not be there.
@@ -7147,9 +7147,8 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
             lvaGetDesc(newRetLcl)->lvIsMultiRegRet = true;
         }
 
-        retValArg =
-            gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType)));
-        retVal = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
+        retValArg = gtNewLclVarAddrNode(newRetLcl);
+        retVal    = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
     }
     else
     {
@@ -7168,7 +7167,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
         lvaSetVarAddrExposed(lvaRetAddrVar DEBUGARG(AddressExposedReason::DISPATCH_RET_BUF));
     }
 
-    GenTree* retAddrSlot = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaRetAddrVar, TYP_I_IMPL));
+    GenTree* retAddrSlot = gtNewLclVarAddrNode(lvaRetAddrVar);
 
     NewCallArg retAddrSlotArg = NewCallArg::Primitive(retAddrSlot);
     NewCallArg callTargetArg  = NewCallArg::Primitive(callTarget);
@@ -8629,34 +8628,29 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
                                           unsigned*    simdSizeOut,
                                           bool         ignoreUsedInSIMDIntrinsic /*false*/)
 {
-    if (tree->OperIs(GT_FIELD))
+    if (tree->OperIs(GT_FIELD) && tree->AsField()->IsInstance())
     {
         GenTree* objRef = tree->AsField()->GetFldObj();
-        if ((objRef != nullptr) && objRef->OperIs(GT_ADDR))
+        if (objRef->OperIs(GT_LCL_VAR_ADDR))
         {
-            GenTree* obj = objRef->AsOp()->gtOp1;
-
-            if (isSIMDTypeLocal(obj))
+            LclVarDsc* varDsc = lvaGetDesc(objRef->AsLclVarCommon());
+            if (varTypeIsSIMD(varDsc) && (varDsc->lvIsUsedInSIMDIntrinsic() || ignoreUsedInSIMDIntrinsic))
             {
-                LclVarDsc* varDsc = lvaGetDesc(obj->AsLclVarCommon());
-                if (varDsc->lvIsUsedInSIMDIntrinsic() || ignoreUsedInSIMDIntrinsic)
+                CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
+                var_types   simdBaseType    = JITtype2varType(simdBaseJitType);
+                unsigned    fieldOffset     = tree->AsField()->gtFldOffset;
+                unsigned    baseTypeSize    = genTypeSize(simdBaseType);
+
+                // Below condition is convervative. We don't actually need the two types to
+                // match (only the tree type is relevant), but we don't have a convenient way
+                // to turn the tree type into "CorInfoType".
+                if ((tree->TypeGet() == simdBaseType) && ((fieldOffset % baseTypeSize) == 0))
                 {
-                    CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
-                    var_types   simdBaseType    = JITtype2varType(simdBaseJitType);
-                    unsigned    fieldOffset     = tree->AsField()->gtFldOffset;
-                    unsigned    baseTypeSize    = genTypeSize(simdBaseType);
+                    *simdSizeOut        = varDsc->lvExactSize;
+                    *simdBaseJitTypeOut = simdBaseJitType;
+                    *indexOut           = fieldOffset / baseTypeSize;
 
-                    // Below condition is convervative. We don't actually need the two types to
-                    // match (only the tree type is relevant), but we don't have a convenient way
-                    // to turn the tree type into "CorInfoType".
-                    if ((tree->TypeGet() == simdBaseType) && ((fieldOffset % baseTypeSize) == 0))
-                    {
-                        *simdSizeOut        = varDsc->lvExactSize;
-                        *simdBaseJitTypeOut = simdBaseJitType;
-                        *indexOut           = fieldOffset / baseTypeSize;
-
-                        return obj;
-                    }
+                    return objRef;
                 }
             }
         }
@@ -8876,17 +8870,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             /* fgDoNormalizeOnStore can change op2 */
             noway_assert(op1 == tree->AsOp()->gtOp1);
             op2 = tree->AsOp()->gtOp2;
-
-            // Location nodes cannot be CSEd.
-            op1->gtFlags |= GTF_DONT_CSE;
-            break;
-
-        case GT_ADDR:
-            if (op1->OperIs(GT_FIELD) && op1->AsField()->IsInstance())
-            {
-                op1->SetOper(GT_FIELD_ADDR);
-                return fgMorphField(op1, mac);
-            }
 
             // Location nodes cannot be CSEd.
             op1->gtFlags |= GTF_DONT_CSE;
@@ -9503,15 +9486,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
         // Propagate the new flags
         tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
-
-        // addresses of locals do not need GTF_GLOB_REF, even if the child has
-        // it (is address exposed). Note that general addressing may still need
-        // GTF_GLOB_REF, for example if the subtree has a comma that involves a
-        // global reference.
-        if (tree->OperIs(GT_ADDR) && ((tree->gtFlags & GTF_GLOB_REF) != 0) && tree->IsLocalAddrExpr())
-        {
-            tree->gtFlags &= ~GTF_GLOB_REF;
-        }
     } // if (op1)
 
     /*-------------------------------------------------------------------------
@@ -10083,14 +10057,6 @@ DONE_MORPHING_CHILDREN:
         case GT_BLK:
         case GT_IND:
         {
-            // If we have IND(ADDR(X)) and X has GTF_GLOB_REF, we must set GTF_GLOB_REF on
-            // the OBJ. Note that the GTF_GLOB_REF will have been cleared on ADDR(X) where X
-            // is a local, even if it has been address-exposed.
-            if (op1->OperIs(GT_ADDR))
-            {
-                tree->gtFlags |= (op1->AsUnOp()->gtGetOp1()->gtFlags & GTF_GLOB_REF);
-            }
-
             if (!tree->OperIs(GT_IND))
             {
                 break;
@@ -10182,53 +10148,6 @@ DONE_MORPHING_CHILDREN:
             }
         }
         break;
-
-        case GT_ADDR:
-            // Can not remove a GT_ADDR if it is currently a CSE candidate.
-            if (gtIsActiveCSE_Candidate(tree))
-            {
-                break;
-            }
-
-            // Perform the transform ADDR(IND(...)) == (...).
-            if (op1->OperIsIndir())
-            {
-                GenTree* addr = op1->AsIndir()->Addr();
-
-                noway_assert(varTypeIsI(genActualType(addr)));
-
-                DEBUG_DESTROY_NODE(op1);
-                DEBUG_DESTROY_NODE(tree);
-
-                return addr;
-            }
-            // Perform the transform ADDR(COMMA(x, ..., z)) == COMMA(x, ..., ADDR(z)).
-            else if (op1->OperIs(GT_COMMA) && !optValnumCSE_phase)
-            {
-                ArrayStack<GenTree*> commas(getAllocator(CMK_ArrayStack));
-                for (GenTree* comma = op1; comma != nullptr && comma->gtOper == GT_COMMA; comma = comma->gtGetOp2())
-                {
-                    commas.Push(comma);
-                }
-
-                GenTree* commaNode       = commas.Top();
-                GenTree* addr            = gtNewOperNode(GT_ADDR, TYP_BYREF, commaNode->AsOp()->gtOp2);
-                commaNode->AsOp()->gtOp2 = addr;
-
-                // Retype the comma nodes to match "addr" and update their side effects.
-                while (!commas.Empty())
-                {
-                    GenTree* comma = commas.Pop();
-                    comma->gtType  = addr->TypeGet();
-#ifdef DEBUG
-                    comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-                    gtUpdateNodeSideEffects(comma);
-                }
-
-                return op1;
-            }
-            break;
 
         case GT_COLON:
             if (fgGlobalMorph)

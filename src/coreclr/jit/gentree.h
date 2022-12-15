@@ -1554,7 +1554,9 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        return gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK || OperIsBlk(gtOper);
+        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_OBJ, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK,
+                                           GT_STORE_DYN_BLK, GT_NULLCHECK));
+        return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
     static bool OperIsArrLength(genTreeOps gtOper)

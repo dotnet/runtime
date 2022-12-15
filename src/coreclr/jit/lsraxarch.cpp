@@ -493,20 +493,7 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_ADDR:
-        {
-            // For a GT_ADDR, the child node should not be evaluated into a register
-            GenTree* child = tree->gtGetOp1();
-            assert(!isCandidateLocalRef(child));
-            assert(child->isContained());
-            assert(dstCount == 1);
-            srcCount = 0;
-        }
-        break;
-
-#if !defined(FEATURE_PUT_STRUCT_ARG_STK)
         case GT_OBJ:
-#endif
         case GT_BLK:
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");

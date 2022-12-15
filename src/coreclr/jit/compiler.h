@@ -8517,14 +8517,6 @@ private:
                 (structHandle != m_simdHandleCache->SIMDVector4Handle));
     }
 
-    // Returns true if the tree corresponds to a TYP_SIMD lcl var.
-    // Note that both SIMD vector args and locals are mared as lvSIMDType = true, but
-    // type of an arg node is TYP_BYREF and a local node is TYP_SIMD or TYP_STRUCT.
-    bool isSIMDTypeLocal(GenTree* tree)
-    {
-        return tree->OperIsLocal() && lvaGetDesc(tree->AsLclVarCommon())->lvSIMDType;
-    }
-
     // Returns true if the lclVar is an opaque SIMD type.
     bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
     {
@@ -10821,7 +10813,6 @@ public:
             case GT_BITCAST:
             case GT_CKFINITE:
             case GT_LCLHEAP:
-            case GT_ADDR:
             case GT_IND:
             case GT_OBJ:
             case GT_BLK:

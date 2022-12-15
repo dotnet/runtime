@@ -1196,13 +1196,17 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
         tree = gtNewOperNode(GT_IND, type, tree);
     }
 
-    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_ADDR))
+    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
     {
-        GenTree* location = tree->AsIndir()->Addr()->gtGetOp1();
-        if (location->OperIs(GT_LCL_VAR) && location->TypeIs(type))
+        GenTreeLclVar* lclAddr = tree->AsIndir()->Addr()->AsLclVar();
+        LclVarDsc*     varDsc  = lvaGetDesc(lclAddr);
+        if (varDsc->TypeGet() == type)
         {
             assert(type != TYP_STRUCT);
-            tree = location;
+            lclAddr->ChangeType(type);
+            lclAddr->SetOper(GT_LCL_VAR);
+
+            tree = lclAddr;
         }
     }
 
@@ -1227,8 +1231,8 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
     }
     else if (tree->gtType == TYP_BYREF)
     {
-        assert(tree->IsLocal() || (tree->OperGet() == GT_RET_EXPR) || (tree->OperGet() == GT_CALL) ||
-               ((tree->gtOper == GT_ADDR) && varTypeIsSIMD(tree->gtGetOp1())));
+        assert(tree->IsLocal() || tree->OperIs(GT_RET_EXPR, GT_CALL) ||
+               (tree->OperIs(GT_LCL_VAR_ADDR) && varTypeIsSIMD(lvaGetDesc(tree->AsLclVar()))));
     }
 
     return tree;
@@ -1254,11 +1258,11 @@ GenTree* Compiler::getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORI
     if (opcode == CEE_NEWOBJ)
     {
         op1 = newobjThis;
-        assert(newobjThis->gtOper == GT_ADDR && newobjThis->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
+        assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
 
         // push newobj result on type stack
-        unsigned tmp = op1->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-        impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(clsHnd).NormaliseForStack());
+        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
+        impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), verMakeTypeInfo(clsHnd).NormaliseForStack());
     }
     else
     {
@@ -1273,10 +1277,10 @@ GenTree* Compiler::getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORI
 // is used in a SIMD intrinsic.
 // Arguments:
 //      tree - GenTree*
-
+//
 void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 {
-    assert(tree->OperIsLocal());
+    assert(tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR));
     LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
     lclVarDsc->lvUsedInSIMDIntrinsic = true;
 }
@@ -1299,24 +1303,18 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
     GenTree* op2ObjRef = op2->AsField()->GetFldObj();
     while (op1ObjRef != nullptr && op2ObjRef != nullptr)
     {
-
         if (op1ObjRef->OperGet() != op2ObjRef->OperGet())
         {
             break;
         }
-        else if (op1ObjRef->OperGet() == GT_ADDR)
-        {
-            op1ObjRef = op1ObjRef->AsOp()->gtOp1;
-            op2ObjRef = op2ObjRef->AsOp()->gtOp1;
-        }
 
-        if (op1ObjRef->OperIsLocal() && op2ObjRef->OperIsLocal() &&
-            op1ObjRef->AsLclVarCommon()->GetLclNum() == op2ObjRef->AsLclVarCommon()->GetLclNum())
+        if (op1ObjRef->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR) &&
+            (op1ObjRef->AsLclVarCommon()->GetLclNum() == op2ObjRef->AsLclVarCommon()->GetLclNum()))
         {
             return true;
         }
-        else if (op1ObjRef->OperGet() == GT_FIELD && op2ObjRef->OperGet() == GT_FIELD &&
-                 op1ObjRef->AsField()->gtFldHnd == op2ObjRef->AsField()->gtFldHnd)
+
+        if (op1ObjRef->OperIs(GT_FIELD) && (op1ObjRef->AsField()->gtFldHnd == op2ObjRef->AsField()->gtFldHnd))
         {
             op1ObjRef = op1ObjRef->AsField()->GetFldObj();
             op2ObjRef = op2ObjRef->AsField()->GetFldObj();
@@ -1486,10 +1484,8 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
     if (tree->OperIs(GT_FIELD))
     {
         GenTree* objRef = tree->AsField()->GetFldObj();
-        if (objRef != nullptr && objRef->gtOper == GT_ADDR)
+        if ((objRef != nullptr) && objRef->OperIs(GT_LCL_VAR_ADDR))
         {
-            GenTree* obj = objRef->AsOp()->gtOp1;
-
             // If the field is directly from a struct, then in this case,
             // we should set this struct's lvUsedInSIMDIntrinsic as true,
             // so that this sturct won't be promoted.
@@ -1501,9 +1497,9 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
             // TODO-CQ:
             //  In future, we should optimize this case so that if there is a nested field like s1.s2.x and s1.s2.x's
             //  address is used for initializing the vector, then s1 can be promoted but s2 can't.
-            if (varTypeIsSIMD(obj) && obj->OperIsLocal())
+            if (varTypeIsSIMD(lvaGetDesc(objRef->AsLclVar())))
             {
-                setLclRelatedToSIMDIntrinsic(obj);
+                setLclRelatedToSIMDIntrinsic(objRef);
             }
         }
 
@@ -1564,18 +1560,18 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
     GenTree* expr = stmt->GetRootNode();
     if (expr->OperGet() == GT_ASG && expr->TypeGet() == TYP_FLOAT)
     {
-        GenTree*    curDst            = expr->AsOp()->gtOp1;
-        GenTree*    curSrc            = expr->AsOp()->gtOp2;
-        unsigned    index             = 0;
-        CorInfoType simdBaseJitType   = CORINFO_TYPE_UNDEF;
-        unsigned    simdSize          = 0;
-        GenTree*    srcSimdStructNode = getSIMDStructFromField(curSrc, &simdBaseJitType, &index, &simdSize, true);
+        GenTree*    curDst          = expr->AsOp()->gtOp1;
+        GenTree*    curSrc          = expr->AsOp()->gtOp2;
+        unsigned    index           = 0;
+        CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+        unsigned    simdSize        = 0;
+        GenTree*    srcSimdLclAddr  = getSIMDStructFromField(curSrc, &simdBaseJitType, &index, &simdSize, true);
 
-        if (srcSimdStructNode == nullptr || simdBaseJitType != CORINFO_TYPE_FLOAT)
+        if (srcSimdLclAddr == nullptr || simdBaseJitType != CORINFO_TYPE_FLOAT)
         {
             fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
         }
-        else if (index == 0 && isSIMDTypeLocal(srcSimdStructNode))
+        else if (index == 0)
         {
             fgPreviousCandidateSIMDFieldAsgStmt = stmt;
         }
@@ -1595,21 +1591,14 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
                 if (index == (simdSize / genTypeSize(simdBaseType) - 1))
                 {
                     // Successfully found the pattern, mark the lclvar as UsedInSIMDIntrinsic
-                    if (srcSimdStructNode->OperIsLocal())
-                    {
-                        setLclRelatedToSIMDIntrinsic(srcSimdStructNode);
-                    }
+                    setLclRelatedToSIMDIntrinsic(srcSimdLclAddr);
 
-                    if (curDst->OperGet() == GT_FIELD)
+                    if (curDst->OperIs(GT_FIELD) && curDst->AsField()->IsInstance())
                     {
                         GenTree* objRef = curDst->AsField()->GetFldObj();
-                        if (objRef != nullptr && objRef->gtOper == GT_ADDR)
+                        if (objRef->OperIs(GT_LCL_VAR_ADDR) && varTypeIsStruct(lvaGetDesc(objRef->AsLclVar())))
                         {
-                            GenTree* obj = objRef->AsOp()->gtOp1;
-                            if (varTypeIsStruct(obj) && obj->OperIsLocal())
-                            {
-                                setLclRelatedToSIMDIntrinsic(obj);
-                            }
+                            setLclRelatedToSIMDIntrinsic(objRef);
                         }
                     }
                 }
@@ -1775,11 +1764,11 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 if (initFromFirstArgIndir)
                 {
                     simdTree = op2;
-                    if (op1->AsOp()->gtOp1->OperIsLocal())
+                    if (op1->OperIs(GT_LCL_VAR_ADDR))
                     {
                         // label the dst struct's lclvar is used for SIMD intrinsic,
                         // so that this dst struct won't be promoted.
-                        setLclRelatedToSIMDIntrinsic(op1->AsOp()->gtOp1);
+                        setLclRelatedToSIMDIntrinsic(op1);
                     }
                 }
                 else
