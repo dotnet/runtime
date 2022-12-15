@@ -3189,34 +3189,6 @@ bool Compiler::fgSimpleLowerOptimizeEqualityComparison(LIR::Range& range, GenTre
     op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
 
     return true;
-
-    // bool madeChanges = false;
-
-    // if (op1->OperIs(GT_AND) && !varTypeIsLong(op1) && op2->IsIntegralConst())
-    //{
-    //     GenTree* andOp1 = op1->gtGetOp1();
-    //     GenTree* andOp2 = op1->gtGetOp2();
-
-    //    if (andOp1->OperIs(GT_CAST) && !andOp1->gtOverflow() && andOp2->IsIntegralConst())
-    //    {
-    //        GenTreeCast* cast       = andOp1->AsCast();
-    //        var_types    castToType = cast->CastToType();
-
-    //        if (varTypeIsLong(cast->CastFromType()))
-    //        {
-    //            GenTree* castOp          = cast->CastOp();
-    //            GenTree* optimizedAndOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, op1->TypeGet());
-    //            if (optimizedAndOp1 != nullptr)
-    //            {
-    //                range.Remove(cast);
-    //                op1->gtOp1 = optimizedAndOp1;
-    //                madeChanges        = true;
-    //            }
-    //        }
-    //    }
-    //}
-
-    // return madeChanges;
 }
 
 GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
