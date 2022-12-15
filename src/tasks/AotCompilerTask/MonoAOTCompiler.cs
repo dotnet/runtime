@@ -101,10 +101,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDirectIcalls { get; set; }
 
     /// <summary>
-    /// When this option is specified, P/Invoke methods are invoked directly instead of going through the operating system symbol lookup operation
-    /// This requires UseStaticLinking=true.
+    /// PInvokes to call directly.
     /// </summary>
-    public bool UseDirectPInvoke { get; set; }
+    public string[] DirectPInvokes { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// File with list of PInvokes to call directly.
+    /// </summary>
+    public string[] DirectPInvokeLists { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// Instructs the AOT compiler to emit DWARF debugging information.
@@ -364,9 +368,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(UseDirectIcalls)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
-        if (UseDirectPInvoke && !UseStaticLinking)
+        if (DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0)
         {
-            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+            if (!UseStaticLinking)
+                throw new LogAsErrorException($"'{nameof(DirectPInvokes)}' and '{nameof(DirectPInvokeLists)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+
+            foreach (var directPInvokeList in DirectPInvokeLists)
+            {
+                if (!File.Exists(directPInvokeList))
+                    throw new LogAsErrorException($"Could not find file '{directPInvokeList}'.");
+            }
         }
 
         if (UseStaticLinking && (parsedOutputType == MonoAotOutputType.Library))
@@ -609,6 +620,22 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseStaticLinking)
         {
             aotArgs.Add($"static");
+        }
+
+        if (DirectPInvokes.Length > 0)
+        {
+            foreach (var directPInvoke in DirectPInvokes)
+            {
+                aotArgs.Add($"direct-pinvokes={directPInvoke}");
+            }
+        }
+
+        if (DirectPInvokeLists.Length > 0)
+        {
+            foreach (var directPInvokeList in DirectPInvokeLists)
+            {
+                aotArgs.Add($"direct-pinvoke-list={directPInvokeList}");
+            }
         }
 
         if (UseDwarfDebug)
