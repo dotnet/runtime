@@ -667,6 +667,7 @@
     <PropertyGroup>
       <WasmMemorySnapshotCaptureGenerator>wasm-memory-snapshot-capture.js</WasmMemorySnapshotCaptureGenerator>
       <WasmMemorySnapshotFileName>memory.dat</WasmMemorySnapshotFileName>
+      <WasmMemorySnapshotNodeExecutable Condition="'$(WasmMemorySnapshotNodeExecutable)' == ''">$(EmscriptenNodeExecutable)</WasmMemorySnapshotNodeExecutable>
     </PropertyGroup>
     <ItemGroup>
       <WasmMemorySnapshotCaptureLine Include="const dotnet = (await import('./dotnet.js')).dotnet%3B" />
@@ -675,7 +676,7 @@
     </ItemGroup>
     <WriteLinesToFile File="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Lines="@(WasmMemorySnapshotCaptureLine)" Overwrite="true" Encoding="UTF-8" />
     <Message Text="Snapshot runner generated at $(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Importance="High" />
-    <Exec WorkingDirectory="$(WasmAppDir)" Command="$(EmscriptenNodeExecutable) $(WasmMemorySnapshotCaptureGenerator)" />
+    <Exec WorkingDirectory="$(WasmAppDir)" Command="$(WasmMemorySnapshotNodeExecutable) $(WasmMemorySnapshotCaptureGenerator)" />
     <Message Text="Snapshot taken at $(WasmAppDir)$(WasmMemorySnapshotFileName)" Importance="High" />
     <AppendMemorySnapshotToWasmFile Source="$(WasmAppDir)dotnet.wasm" Destination="$(WasmAppDir)dotnet2.wasm" DataSectionFile="$(WasmAppDir)$(WasmMemorySnapshotFileName)" />
     <Delete Files="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator);$(WasmAppDir)dotnet.wasm;$(WasmAppDir)$(WasmMemorySnapshotFileName)" />
