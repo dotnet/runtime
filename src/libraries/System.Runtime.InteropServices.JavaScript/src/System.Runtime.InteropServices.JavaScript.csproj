@@ -29,6 +29,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\DataView.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Function.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Uint8Array.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\LegacyHostImplementation.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHost.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalerType.cs" />

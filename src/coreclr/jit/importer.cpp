@@ -1199,30 +1199,20 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 {
     assert(varTypeIsStruct(structVal) || eeIsValueClass(structHnd));
 
-    var_types type = structVal->TypeGet();
-
+    var_types  type = structVal->TypeGet();
     genTreeOps oper = structVal->gtOper;
 
-    if (oper == GT_OBJ && willDeref)
-    {
-        assert(structVal->AsObj()->GetLayout()->GetClassHandle() == structHnd);
-        return (structVal->AsObj()->Addr());
-    }
-    else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY ||
-             structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
+    if (oper == GT_CALL || oper == GT_RET_EXPR || (oper == GT_OBJ && !willDeref) || oper == GT_MKREFANY ||
+        structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
         impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
 
-        // The 'return value' is now the temp itself
-
-        type          = genActualType(lvaTable[tmpNum].TypeGet());
-        GenTree* temp = gtNewLclvNode(tmpNum, type);
-        temp          = gtNewOperNode(GT_ADDR, TYP_BYREF, temp);
-        return temp;
+        // The 'return value' is now address of the temp itself.
+        return gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
     }
-    else if (oper == GT_COMMA)
+    if (oper == GT_COMMA)
     {
         assert(structVal->AsOp()->gtOp2->gtType == type); // Second thing is the struct
 
@@ -1255,7 +1245,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         return (structVal);
     }
 
-    return (gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+    return gtNewOperNode(GT_ADDR, TYP_BYREF, structVal);
 }
 
 //------------------------------------------------------------------------
@@ -1443,9 +1433,9 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 // In case of a chained GT_COMMA case, we sink the last
                 // GT_COMMA below the blockNode addr.
                 GenTree* blockNodeAddr = blockNode->AsOp()->gtOp1;
-                assert(blockNodeAddr->gtType == TYP_BYREF);
+                assert(blockNodeAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
                 GenTree* commaNode       = parent;
-                commaNode->gtType        = TYP_BYREF;
+                commaNode->gtType        = blockNodeAddr->gtType;
                 commaNode->AsOp()->gtOp2 = blockNodeAddr;
                 blockNode->AsOp()->gtOp1 = commaNode;
                 if (parent == structVal)
@@ -2155,7 +2145,7 @@ void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(con
 
     if ((tree->gtFlags & spillFlags) != 0 ||
         (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
-         !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
+         !impIsAddressInLocal(tree) && // No need to spill the LCL_ADDR nodes.
          gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
                                        // lvAddrTaken flag.
     {
@@ -3871,22 +3861,15 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     //  - Pointer to block of int32 dimensions: address of lvaNewObjArrayArgs temp.
     //
 
-    node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-    node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
+    node = gtNewLclVarAddrNode(lvaNewObjArrayArgs);
 
     // Pop dimension arguments from the stack one at a time and store it
     // into lvaNewObjArrayArgs temp.
     for (int i = pCallInfo->sig.numArgs - 1; i >= 0; i--)
     {
-        GenTree* arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
-
-        GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-        dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
-        dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
-                             new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
-        dest = gtNewOperNode(GT_IND, TYP_INT, dest);
-
-        node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
+        GenTree* arg  = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
+        GenTree* dest = gtNewLclFldNode(lvaNewObjArrayArgs, TYP_INT, sizeof(INT32) * i);
+        node          = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
     }
 
     node =
@@ -4199,6 +4182,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     FieldSeq::FieldKind fieldKind =
         isSharedStatic ? FieldSeq::FieldKind::SharedStatic : FieldSeq::FieldKind::SimpleStatic;
 
+    bool hasConstAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
+                        (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
+
     FieldSeq* innerFldSeq;
     FieldSeq* outerFldSeq;
     if (isBoxedStatic)
@@ -4208,18 +4194,15 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     }
     else
     {
-        bool hasKnownAddr = (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_ADDRESS) ||
-                            (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS);
-
         ssize_t offset;
-        if (hasKnownAddr)
+        if (hasConstAddr)
         {
             // Change SimpleStatic to SimpleStaticKnownAddress
             assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
             fieldKind = FieldSeq::FieldKind::SimpleStaticKnownAddress;
 
-            offset = reinterpret_cast<ssize_t>(info.compCompHnd->getFieldAddress(pResolvedToken->hField));
-            assert(offset != 0);
+            assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
+            offset = reinterpret_cast<ssize_t>(pFieldInfo->fieldLookup.addr);
         }
         else
         {
@@ -4230,6 +4213,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         outerFldSeq = nullptr;
     }
 
+    bool     isStaticReadOnlyInitedRef = false;
     GenTree* op1;
     switch (pFieldInfo->fieldAccessor)
     {
@@ -4276,7 +4260,13 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     callFlags |= GTF_CALL_HOISTABLE;
                 }
 
-                op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+                op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
+                if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF &&
+                    (pFieldInfo->helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
+                     pFieldInfo->helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE))
+                {
+                    m_preferredInitCctor = pFieldInfo->helper;
+                }
                 op1->gtFlags |= callFlags;
 
                 op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
@@ -4322,53 +4312,41 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
-            // Do we need the address of a static field?
-            //
-            if (access & CORINFO_ACCESS_ADDRESS)
+// TODO-CQ: enable this optimization for 32 bit targets.
+#ifdef TARGET_64BIT
+            if (!isBoxedStatic && (lclTyp == TYP_REF) && ((access & CORINFO_ACCESS_ADDRESS) == 0))
             {
-                void** pFldAddr = nullptr;
-                void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
-
-                // We should always be able to access this static's address directly.
-                assert(pFldAddr == nullptr);
-
-                // Create the address node.
-                GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
-                op1                     = gtNewIconHandleNode((size_t)fldAddr, handleKind, innerFldSeq);
-                INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
-
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
+                bool isSpeculative = true;
+                if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=
+                     NO_CLASS_HANDLE))
                 {
-                    op1->gtFlags |= GTF_ICON_INITCLASS;
+                    isStaticReadOnlyInitedRef = !isSpeculative;
                 }
             }
-            else // We need the value of a static field
+#endif // TARGET_64BIT
+
+            assert(hasConstAddr);
+            assert(pFieldInfo->fieldLookup.addr != nullptr);
+            assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
+            size_t       fldAddr = reinterpret_cast<size_t>(pFieldInfo->fieldLookup.addr);
+            GenTreeFlags handleKind;
+            if (isBoxedStatic)
             {
-                op1 = gtNewFieldRef(lclTyp, pResolvedToken->hField);
-
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-                {
-                    op1->gtFlags |= GTF_FLD_INITCLASS;
-                }
-
-                if (isBoxedStatic)
-                {
-                    op1->ChangeType(TYP_REF); // points at boxed object
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
-
-                    if (varTypeIsStruct(lclTyp))
-                    {
-                        // Constructor adds GTF_GLOB_REF.  Note that this is *not* GTF_EXCEPT.
-                        op1 = gtNewObjNode(pFieldInfo->structType, op1);
-                    }
-                    else
-                    {
-                        op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-                        op1->gtFlags |= (GTF_GLOB_REF | GTF_IND_NONFAULTING);
-                    }
-                }
-
-                return op1;
+                handleKind = GTF_ICON_STATIC_BOX_PTR;
+            }
+            else if (isStaticReadOnlyInitedRef)
+            {
+                handleKind = GTF_ICON_CONST_PTR;
+            }
+            else
+            {
+                handleKind = GTF_ICON_STATIC_HDL;
+            }
+            op1 = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
+            INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
+            if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
+            {
+                op1->gtFlags |= GTF_ICON_INITCLASS;
             }
             break;
         }
@@ -4391,6 +4369,10 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         {
             op1 = gtNewOperNode(GT_IND, lclTyp, op1);
             op1->gtFlags |= GTF_GLOB_REF;
+        }
+        if (isStaticReadOnlyInitedRef)
+        {
+            op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
         }
     }
 
@@ -6954,8 +6936,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     lclNum = impInlineFetchLocal(lclNum DEBUGARG("Inline ldloca(s) first use temp"));
 
                     assert(!lvaGetDesc(lclNum)->lvNormalizeOnLoad());
-                    op1 = gtNewLclvNode(lclNum, lvaGetActualType(lclNum));
-
+                    op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -6985,8 +6966,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         return;
                     }
 
-                    assert(op1->gtOper == GT_LCL_VAR);
-
+                    op1->ChangeType(TYP_BYREF);
+                    op1->SetOper(GT_LCL_VAR_ADDR);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -7001,22 +6982,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ADRVAR;
 
             ADRVAR:
-
-                op1 = impCreateLocalNode(lclNum DEBUGARG(opcodeOffs + sz + 1));
+                // Note that this is supposed to create the transient type "*"
+                // which may be used as a TYP_I_IMPL. However we catch places
+                // where it is used as a TYP_I_IMPL and change the node if needed.
+                // Thus we are pessimistic and may report byrefs in the GC info
+                // where it was not absolutely needed, but doing otherwise would
+                // require careful rethinking of the importer routines which use
+                // the IL validity model (e. g. "impGetByRefResultType").
+                op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
 
             _PUSH_ADRVAR:
-                assert(op1->gtOper == GT_LCL_VAR);
-
-                /* Note that this is supposed to create the transient type "*"
-                   which may be used as a TYP_I_IMPL. However we catch places
-                   where it is used as a TYP_I_IMPL and change the node if needed.
-                   Thus we are pessimistic and may report byrefs in the GC info
-                   where it was not absolutely needed, but it is safer this way.
-                 */
-                op1 = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
-
-                // &aliasedVar doesnt need GTF_GLOB_REF, though alisasedVar does
-                assert((op1->gtFlags & GTF_GLOB_REF) == 0);
+                assert(op1->OperIs(GT_LCL_VAR_ADDR));
 
                 tiRetVal = typeInfo(TI_BYTE).MakeByRef();
                 impPushOnStack(op1, tiRetVal);
@@ -7031,12 +7007,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG);
 
-                /* The ARGLIST cookie is a hidden 'last' parameter, we have already
-                   adjusted the arg count cos this is like fetching the last param */
-                assertImp(0 < numArgs);
-                lclNum = lvaVarargsHandleArg;
-                op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
-                op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
+                // The ARGLIST cookie is a hidden 'last' parameter, we have already
+                // adjusted the arg count cos this is like fetching the last param.
+                assertImp(numArgs > 0);
+                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -8394,8 +8368,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         clone = true;
                     }
-                    else if (op1->TypeIs(TYP_BYREF, TYP_I_IMPL) && impIsAddressInLocal(op1) &&
-                             (OPCODE)impGetNonPrefixOpcode(codeAddr + sz, codeEndp) != CEE_INITOBJ)
+                    else if (op1->TypeIs(TYP_BYREF, TYP_I_IMPL) && impIsAddressInLocal(op1))
                     {
                         // We mark implicit byrefs with GTF_GLOB_REF (see gtNewFieldRef for why).
                         // Avoid cloning for these.
@@ -8977,8 +8950,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lclDsc->lvHasLdAddrOp = true;
 
                         // Obtain the address of the temp
-                        newObjThisPtr =
-                            gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
+                        newObjThisPtr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
                     }
                     else
                     {
@@ -12739,11 +12711,11 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
         op = op->AsField()->GetFldObj();
     }
 
-    if (op->OperIs(GT_ADDR) && op->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
+    if (op->OperIs(GT_LCL_VAR_ADDR))
     {
         if (lclVarTreeOut != nullptr)
         {
-            *lclVarTreeOut = op->AsUnOp()->gtOp1;
+            *lclVarTreeOut = const_cast<GenTree*>(op);
         }
 
         return true;
@@ -13126,7 +13098,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     {
         LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
 
-        if (varTypeIsStruct(lclVarTree))
+        if (varTypeIsStruct(varDsc))
         {
             inlCurArgInfo->argIsByRefToStructLocal = true;
 #ifdef FEATURE_SIMD

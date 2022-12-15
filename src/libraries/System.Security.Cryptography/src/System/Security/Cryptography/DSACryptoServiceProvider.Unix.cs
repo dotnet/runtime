@@ -47,8 +47,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("tvos")]
         public DSACryptoServiceProvider(int dwKeySize) : base()
         {
-            if (dwKeySize < 0)
-                throw new ArgumentOutOfRangeException(nameof(dwKeySize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(dwKeySize);
 
             // This class wraps DSA
             _impl = DSA.Create();

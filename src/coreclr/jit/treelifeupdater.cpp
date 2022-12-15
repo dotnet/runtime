@@ -184,28 +184,6 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
     unsigned int lclNum = lclVarTree->AsLclVarCommon()->GetLclNum();
     LclVarDsc*   varDsc = compiler->lvaGetDesc(lclNum);
 
-#ifdef DEBUG
-#if !defined(TARGET_AMD64)
-    // There are no addr nodes on ARM and we are experimenting with encountering vars in 'random' order.
-    // Struct fields are not traversed in a consistent order, so ignore them when
-    // verifying that we see the var nodes in execution order
-    if (ForCodeGen)
-    {
-        if (tree->OperIsIndir())
-        {
-            assert(indirAddrLocal != NULL);
-        }
-        else if (tree->gtNext != NULL && tree->gtNext->gtOper == GT_ADDR &&
-                 ((tree->gtNext->gtNext == NULL || !tree->gtNext->gtNext->OperIsIndir())))
-        {
-            assert(tree->IsLocal()); // Can only take the address of a local.
-            // The ADDR might occur in a context where the address it contributes is eventually
-            // dereferenced, so we can't say that this is not a use or def.
-        }
-    }
-#endif // !TARGET_AMD64
-#endif // DEBUG
-
     compiler->compCurLifeTree = tree;
     VarSetOps::Assign(compiler, newLife, compiler->compCurLife);
 

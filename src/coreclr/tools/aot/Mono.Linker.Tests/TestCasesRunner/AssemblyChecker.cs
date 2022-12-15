@@ -3,10 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using FluentAssertions;
+using ILCompiler;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Mono.Cecil;
@@ -20,16 +24,63 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class AssemblyChecker
 	{
+		internal readonly struct AssemblyQualifiedToken : IEquatable<AssemblyQualifiedToken>
+		{
+			public string? AssemblyName { get; }
+			public int Token { get; }
+
+			public AssemblyQualifiedToken (string? assemblyName, int token) => (AssemblyName, Token) = (assemblyName, token);
+
+			public AssemblyQualifiedToken (TypeSystemEntity entity) =>
+				(AssemblyName, Token) = entity switch {
+					EcmaType type => (type.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (type.Handle)),
+					EcmaMethod method => (method.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (method.Handle)),
+					PropertyPseudoDesc property => (((EcmaType) property.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (property.Handle)),
+					EventPseudoDesc @event => (((EcmaType) @event.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (@event.Handle)),
+					ILStubMethod => (null, 0), // Ignore compiler generated methods
+					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {entity} yet.")
+				};
+
+			public AssemblyQualifiedToken (IMemberDefinition member) =>
+				(AssemblyName, Token) = member switch {
+					TypeDefinition type => (type.Module.Assembly.Name.Name, type.MetadataToken.ToInt32 ()),
+					MethodDefinition method => (method.Module.Assembly.Name.Name, method.MetadataToken.ToInt32 ()),
+					PropertyDefinition property => (property.Module.Assembly.Name.Name, property.MetadataToken.ToInt32 ()),
+					EventDefinition @event => (@event.Module.Assembly.Name.Name, @event.MetadataToken.ToInt32 ()),
+					FieldDefinition field => (field.Module.Assembly.Name.Name, field.MetadataToken.ToInt32 ()),
+					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {member} yet.")
+				};
+
+			public override int GetHashCode () => AssemblyName == null ? 0 : AssemblyName.GetHashCode () ^ Token.GetHashCode ();
+			public override string ToString () => $"{AssemblyName}: {Token}";
+			public bool Equals (AssemblyQualifiedToken other) =>
+				string.CompareOrdinal (AssemblyName, other.AssemblyName) == 0 && Token == other.Token;
+			public override bool Equals ([NotNullWhen (true)] object? obj) => ((AssemblyQualifiedToken?) obj)?.Equals (this) == true;
+
+			public bool IsNil => AssemblyName == null;
+		}
+
 		private readonly BaseAssemblyResolver originalsResolver;
 		private readonly ReaderParameters originalReaderParameters;
 		private readonly AssemblyDefinition originalAssembly;
 		private readonly ILCompilerTestCaseResult testResult;
 
-		private readonly Dictionary<string, TypeSystemEntity> linkedMembers;
+		private readonly Dictionary<AssemblyQualifiedToken, TypeSystemEntity> linkedMembers;
 		private readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
 		private readonly HashSet<string> verifiedEventMethods = new HashSet<string> ();
 		private readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 		private bool checkNames;
+
+		// Note: It's enough to exclude the type name, all of its members will also be excluded then
+		private static readonly HashSet<string> ExcludeDisplayNames = new () {
+				// Ignore compiler injected attributes to describe language version
+				"Microsoft.CodeAnalysis.EmbeddedAttribute",
+				"System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+
+				// Ignore NativeAOT injected members
+				"<Module>.StartupCodeMain(Int32,IntPtr)",
+				"<Module>.MainMethodWrapper()"
+			};
 
 		public AssemblyChecker (
 			BaseAssemblyResolver originalsResolver,
@@ -41,7 +92,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			this.originalReaderParameters = originalReaderParameters;
 			this.originalAssembly = original;
 			this.testResult = testResult;
-			this.linkedMembers = new (StringComparer.Ordinal);
+			this.linkedMembers = new ();
 
 			checkNames = original.MainModule.GetTypeReferences ().Any (attr =>
 				attr.Name == nameof (RemovedNameValueAttribute));
@@ -68,32 +119,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			PopulateLinkedMembers ();
 
-			// Workaround for compiler injected attribute to describe the language version
-			linkedMembers.Remove ("Microsoft.CodeAnalysis.EmbeddedAttribute.EmbeddedAttribute()");
-			linkedMembers.Remove ("System.Runtime.CompilerServices.RefSafetyRulesAttribute.Version");
-			linkedMembers.Remove ("System.Runtime.CompilerServices.RefSafetyRulesAttribute.RefSafetyRulesAttribute(Int32)");
-
-			// Workaround for NativeAOT injected members
-			linkedMembers.Remove ("<Module>.StartupCodeMain(Int32,IntPtr)");
-			linkedMembers.Remove ("<Module>.MainMethodWrapper()");
-
-			// Workaround for compiler injected attribute to describe the language version
-			verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
-			verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
-
 			var membersToAssert = originalAssembly.MainModule.Types;
 			foreach (var originalMember in membersToAssert) {
 				if (originalMember is TypeDefinition td) {
+					AssemblyQualifiedToken token = new (td);
+
 					if (td.Name == "<Module>") {
-						linkedMembers.Remove (td.Name);
+						linkedMembers.Remove (token);
 						continue;
 					}
 
 					linkedMembers.TryGetValue (
-						NameUtils.GetExpectedOriginDisplayName (originalMember),
+						token,
 						out TypeSystemEntity? linkedMember);
+
 					VerifyTypeDefinition (td, linkedMember as TypeDesc);
-					linkedMembers.Remove (td.FullName);
+					linkedMembers.Remove (token);
 
 					continue;
 				}
@@ -104,7 +145,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// Filter out all members which are not from the main assembly
 			// The Kept attributes are "optional" for non-main assemblies
 			string mainModuleName = originalAssembly.Name.Name;
-			List<string> externalMembers = linkedMembers.Where (m => GetModuleName (m.Value) != mainModuleName).Select (m => m.Key).ToList ();
+			List<AssemblyQualifiedToken> externalMembers = linkedMembers.Where (m => GetModuleName (m.Value) != mainModuleName).Select (m => m.Key).ToList ();
 			foreach (var externalMember in externalMembers) {
 				linkedMembers.Remove (externalMember);
 			}
@@ -113,7 +154,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.True (
 					false,
 					"Linked output includes unexpected member:\n  " +
-					string.Join ("\n  ", linkedMembers.Keys));
+					string.Join ("\n  ", linkedMembers.Values.Select (e => e.GetDisplayName ())));
 		}
 
 		private void PopulateLinkedMembers ()
@@ -130,14 +171,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
 
-				if (!ShouldIncludeType (methodDef.OwningType))
+				if (!ShouldIncludeMethod (methodDef))
+					return;
+
+				TypeDesc owningType = methodDef.OwningType;
+
+				// Skip any methods on a delegate - we handle those in the AddType
+				// (AOT generates different methods for delegates compared to IL/metadata shapes)
+				if (owningType?.IsDelegate == true)
 					return;
 
 				if (!AddMember (methodDef))
 					return;
 
-				if (methodDef.OwningType is { } owningType)
+				if (owningType is not null) {
 					AddType (owningType);
+				}
+
+				if (methodDef.GetPropertyForAccessor () is { } property)
+					AddProperty (property);
+
+				if (methodDef.GetEventForAccessor () is { } @event)
+					AddEvent (@event);
 			}
 
 			void AddType (TypeDesc type)
@@ -153,21 +208,43 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (typeDef is MetadataType { ContainingType: { } containingType }) {
 					AddType (containingType);
 				}
-			}
 
-			bool AddMember (TypeSystemEntity entity)
-			{
-				if (NameUtils.GetActualOriginDisplayName (entity) is string fullName &&
-					!linkedMembers.ContainsKey (fullName)) {
-
-					linkedMembers.Add (fullName, entity);
-					return true;
+				if (typeDef.IsDelegate) {
+					// AOT's handling of delegates is very different from the IL/metadata picture
+					// So to simplify this, we're going to automatically "mark" all of the delegate's methods
+					foreach (MethodDesc m in typeDef.GetMethods()) {
+						if (ShouldIncludeEntityByDisplayName(m)) {
+							AddMember (m);
+						}
+					}
 				}
-
-				return false;
 			}
 
-			bool ShouldIncludeType (TypeDesc type)
+			void AddProperty (PropertyPseudoDesc property)
+			{
+				// Note that this is currently called from AddMethod which will exit if the owning type is excluded
+				// and also add the owning type if necessary
+				if (!ShouldIncludeEntityByDisplayName (property))
+					return;
+
+				AddMember (property);
+			}
+
+			void AddEvent (EventPseudoDesc @event)
+			{
+				// Note that this is currently called from AddMethod which will exit if the owning type is excluded
+				// and also add the owning type if necessary
+				if (!ShouldIncludeEntityByDisplayName (@event))
+					return;
+
+				AddMember (@event);
+			}
+
+			bool AddMember (TypeSystemEntity entity) => linkedMembers.TryAdd (new AssemblyQualifiedToken (entity), entity);
+
+			static bool ShouldIncludeEntityByDisplayName (TypeSystemEntity entity) => !ExcludeDisplayNames.Contains (entity.GetDisplayName ());
+
+			static bool ShouldIncludeType (TypeDesc type)
 			{
 				if (type is MetadataType metadataType) {
 					if (metadataType.ContainingType is { } containingType) {
@@ -183,11 +260,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					if (metadataType.Namespace.StartsWith ("System"))
 						return false;
 
-					return true;
+
+					return ShouldIncludeEntityByDisplayName (type);
 				}
 
 				return false;
 			}
+
+			static bool ShouldIncludeMethod (MethodDesc method) => ShouldIncludeType (method.OwningType) && ShouldIncludeEntityByDisplayName (method);
 		}
 
 		private static string? GetModuleName (TypeSystemEntity entity)
@@ -253,6 +333,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			checkNames = prev;
 
 			if (original.HasAttribute (nameof (CreatedMemberAttribute))) {
+				// For now always fail on this attribute since we don't know how to validate it
+				throw new NotSupportedException ("CreatedMemberAttribute is not yet supported by the test infra");
+#if false
 				foreach (var attr in original.CustomAttributes.Where (l => l.AttributeType.Name == nameof (CreatedMemberAttribute))) {
 					var newName = original.FullName + "::" + attr.ConstructorArguments[0].Value.ToString ();
 
@@ -262,6 +345,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 					linkedMembers.Remove (linkedMemberName);
 				}
+#endif
 			}
 		}
 
@@ -286,27 +370,37 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #endif
 
 			foreach (var td in original.NestedTypes) {
-				string originalFullName = NameUtils.GetExpectedOriginDisplayName (td);
+				AssemblyQualifiedToken token = new (td);
 				linkedMembers.TryGetValue (
-					originalFullName,
+					token,
 					out TypeSystemEntity? linkedMember);
 
 				VerifyTypeDefinition (td, linkedMember as TypeDesc);
-				linkedMembers.Remove (originalFullName);
+				linkedMembers.Remove (token);
 			}
 
-#if false
 			//// Need to check properties before fields so that the KeptBackingFieldAttribute is handled correctly
 			foreach (var p in original.Properties) {
-				VerifyProperty (p, linked.Properties.FirstOrDefault (l => p.Name == l.Name), linked);
-				linkedMembers.Remove (p.FullName);
+				AssemblyQualifiedToken token = new AssemblyQualifiedToken (p);
+
+				linkedMembers.TryGetValue (
+					token,
+					out TypeSystemEntity? linkedMember);
+				VerifyProperty (p, linkedMember as PropertyPseudoDesc, linked);
+				linkedMembers.Remove (token);
 			}
 			// Need to check events before fields so that the KeptBackingFieldAttribute is handled correctly
 			foreach (var e in original.Events) {
-				VerifyEvent (e, linked.Events.FirstOrDefault (l => e.Name == l.Name), linked);
-				linkedMembers.Remove (e.FullName);
+				AssemblyQualifiedToken token = new AssemblyQualifiedToken (e);
+
+				linkedMembers.TryGetValue (
+					token,
+					out TypeSystemEntity? linkedMember);
+				VerifyEvent (e, linkedMember as EventPseudoDesc, linked);
+				linkedMembers.Remove (token);
 			}
 
+#if false
 			// Need to check delegate cache fields before the normal field check
 			VerifyDelegateBackingFields (original, linked);
 
@@ -322,13 +416,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (verifiedEventMethods.Contains (m.FullName))
 					continue;
 
-				string originalFullName = NameUtils.GetExpectedOriginDisplayName (m);
+				AssemblyQualifiedToken token = new (m);
 				linkedMembers.TryGetValue (
-					originalFullName,
+					token,
 					out TypeSystemEntity? linkedMember);
 
 				VerifyMethod (m, linkedMember as MethodDesc);
-				linkedMembers.Remove (originalFullName);
+				linkedMembers.Remove (token);
 			}
 		}
 
@@ -390,7 +484,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return builder.ToString ();
 		}
 
-		private void VerifyField (FieldDefinition src, FieldDefinition? linked)
+		private void VerifyField (FieldDefinition src, FieldDesc? linked)
 		{
 			bool expectedKept = ShouldBeKept (src);
 
@@ -404,79 +498,94 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyFieldKept (src, linked);
 		}
 
-		private void VerifyFieldKept (FieldDefinition src, FieldDefinition? linked)
+		private static void VerifyFieldKept (FieldDefinition src, FieldDesc? linked)
 		{
 			if (linked == null) {
 				Assert.True (false, $"Field `{src}' should have been kept");
 				return;
 			}
 
+
+			if (src.HasConstant)
+				throw new NotImplementedException ("Constant value for a field is not yet supported by the test infra.");
+#if false
 			if (!Equals (src.Constant, linked.Constant)) {
 				Assert.True (false, $"Field '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
 			}
+#endif
 
+#if false
 			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
+#endif
 		}
 
-		private void VerifyProperty (PropertyDefinition src, PropertyDefinition? linked, TypeDefinition linkedType)
+		private void VerifyProperty (PropertyDefinition src, PropertyPseudoDesc? linked, TypeDesc linkedType)
 		{
 			VerifyMemberBackingField (src, linkedType);
 
 			bool expectedKept = ShouldBeKept (src);
 
 			if (!expectedKept) {
-				if (linked != null)
+				if (linked is not null)
 					Assert.True (false, $"Property `{src}' should have been removed");
 
 				return;
 			}
 
-			if (linked == null) {
+			if (linked is null) {
 				Assert.True (false, $"Property `{src}' should have been kept");
 				return;
 			}
 
+			if (src.HasConstant)
+				throw new NotSupportedException ("Constant value for a property is not yet supported by the test infra.");
+#if false
 			if (src.Constant != linked.Constant) {
 				Assert.True (false, $"Property '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
 			}
+#endif
 
+#if false
 			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
+#endif
 		}
 
-		private void VerifyEvent (EventDefinition src, EventDefinition? linked, TypeDefinition linkedType)
+		private void VerifyEvent (EventDefinition src, EventPseudoDesc? linked, TypeDesc linkedType)
 		{
 			VerifyMemberBackingField (src, linkedType);
 
 			bool expectedKept = ShouldBeKept (src);
 
 			if (!expectedKept) {
-				if (linked != null)
+				if (linked is not null)
 					Assert.True (false, $"Event `{src}' should have been removed");
 
 				return;
 			}
 
-			if (linked == null) {
+			if (linked is null) {
 				Assert.True (false, $"Event `{src}' should have been kept");
 				return;
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
-				//VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
+				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
 				verifiedEventMethods.Add (src.AddMethod.FullName);
-				linkedMembers.Remove (src.AddMethod.FullName);
+				linkedMembers.Remove (new AssemblyQualifiedToken (src.AddMethod));
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
-				//VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
+				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
 				verifiedEventMethods.Add (src.RemoveMethod.FullName);
-				linkedMembers.Remove (src.RemoveMethod.FullName);
+				linkedMembers.Remove (new AssemblyQualifiedToken (src.RemoveMethod));
 			}
 
+#if false
 			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
+#endif
 		}
 
 		private void VerifyMethod (MethodDefinition src, MethodDesc? linked)
@@ -497,7 +606,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyMethodKept (src, linked);
 		}
 
-		private void VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
+		private void VerifyMemberBackingField (IMemberDefinition src, TypeDesc? linkedType)
 		{
 			var keptBackingFieldAttribute = src.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (KeptBackingFieldAttribute));
 			if (keptBackingFieldAttribute == null)
@@ -521,9 +630,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
-			VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name));
+			VerifyFieldKept (srcField, linkedType?.GetFields ()?.FirstOrDefault (l => srcField.Name == l.Name));
 			verifiedGeneratedFields.Add (srcField.FullName);
-			linkedMembers.Remove (srcField.FullName);
+			linkedMembers.Remove (new AssemblyQualifiedToken (srcField));
 		}
 
 		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDesc? linked)
@@ -825,6 +934,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			linkedAttrs.Should ().BeEquivalentTo (expectedAttrs, $"Security attributes on `{src}' are not matching");
 		}
 
+#if false
 		protected virtual void VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
 		{
 			var expectedIndices = GetCustomAttributeCtorValues<object> (src, nameof (KeptInitializerData))
@@ -883,12 +993,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			VerifyFieldKept (src, linked);
 			verifiedGeneratedFields.Add (linked!.FullName);
-			linkedMembers.Remove (linked.FullName);
+			linkedMembers.Remove (new (linked));
 			//VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ());
-			linkedMembers.Remove (linked.FieldType.FullName);
-			linkedMembers.Remove (linked.DeclaringType.FullName);
+			linkedMembers.Remove (new (linked.FieldType.Resolve ()));
+			linkedMembers.Remove (new (linked.DeclaringType.Resolve ()));
 			verifiedGeneratedTypes.Add (linked.DeclaringType.FullName);
 		}
+#endif
 
 		private static bool IsLdtokenOnPrivateImplementationDetails (TypeDefinition privateImplementationDetails, Instruction instruction)
 		{
@@ -957,6 +1068,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (attr => attr.AttributeType.ToString ());
 		}
 
+#if false
 		private void VerifyFixedBufferFields (TypeDefinition src, TypeDefinition linked)
 		{
 			var fields = src.Fields.Where (f => f.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptFixedBufferAttribute)));
@@ -987,7 +1099,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault ();
 				VerifyFieldKept (originalElementField, linkedField);
 				verifiedGeneratedFields.Add (originalElementField.FullName);
-				linkedMembers.Remove (linkedField!.FullName);
+				linkedMembers.Remove (new (linkedField!));
 
 				//VerifyTypeDefinitionKept (originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType);
 				verifiedGeneratedTypes.Add (originalCompilerGeneratedBufferType.FullName);
@@ -1010,9 +1122,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				var linkedField = linked?.Fields.FirstOrDefault (l => l.Name == srcField.Name);
 				VerifyFieldKept (srcField, linkedField);
 				verifiedGeneratedFields.Add (srcField.FullName);
-				linkedMembers.Remove (srcField.FullName);
+				linkedMembers.Remove (new (srcField));
 			}
 		}
+#endif
 
 		private void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
 		{

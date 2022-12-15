@@ -1421,7 +1421,7 @@ namespace System.Text
             }
             else
             {
-                const ushort asciiMask = ushort.MaxValue - 127; // 0x7F80
+                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
                 Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
                 // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
                 return zeroIsAscii != Vector128<ushort>.Zero;
