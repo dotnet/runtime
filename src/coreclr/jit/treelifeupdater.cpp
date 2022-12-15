@@ -284,9 +284,6 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                             compiler->codeGen->genUpdateRegLife(fieldVarDsc, isBorn, isDying DEBUGARG(tree));
                         }
                     }
-
-                    printf("field");
-
                 }
             }
         }

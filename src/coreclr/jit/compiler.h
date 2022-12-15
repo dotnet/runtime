@@ -666,7 +666,10 @@ public:
                               // Valid on promoted struct local fields.
     };
 
-    unsigned char lvFieldCnt; //  Number of fields in the promoted VarDsc.
+    union {
+        unsigned char lvFieldCnt; //  Number of fields in the promoted VarDsc.
+        unsigned char regCount;
+    };
     unsigned char lvFldOffset;
     unsigned char lvFldOrdinal;
 

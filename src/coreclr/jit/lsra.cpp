@@ -2178,7 +2178,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
     {
         // We should never see ParamDefs or ZeroInits within a basic block.
         assert(currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit);
-        if (currentRefPosition->isIntervalRef() && currentRefPosition->getInterval()->isLocalVar)
+        if (currentRefPosition->isIntervalRef() && currentRefPosition->getInterval()->isLocalVar /*&& !currentRefPosition->needsConsecutive*/)
         {
             unsigned varNum   = currentRefPosition->getInterval()->varNum;
             unsigned varIndex = currentRefPosition->getInterval()->getVarIndex(compiler);
@@ -2214,7 +2214,23 @@ void LinearScan::checkLastUses(BasicBlock* block)
                             loc);
                     foundDiff = true;
                 }
-                VarSetOps::AddElemD(compiler, computedLive, varIndex);
+
+                if (currentRefPosition->needsConsecutive)
+                {
+                    // If this is a case of consecutive registers, refPositions are added so they get register
+                    // They may not be bbLiveIn but are just used directly as operand. Only add them in computedLive
+                    // if they were part of bbLiveIn. 
+                    if(VarSetOps::IsMember(compiler, block->bbLiveIn, varIndex))
+                    {
+                        JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
+                        VarSetOps::AddElemD(compiler, computedLive, varIndex);
+                    }
+                }
+                else
+                {
+                    JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
+                    VarSetOps::AddElemD(compiler, computedLive, varIndex);
+                }
             }
             else if (currentRefPosition->lastUse)
             {
@@ -2229,6 +2245,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
             {
+                JITDUMP("-- V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
                 VarSetOps::RemoveElemD(compiler, computedLive, varIndex);
             }
         }

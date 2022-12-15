@@ -1256,21 +1256,32 @@ bool LinearScan::isCandidateMultiRegLclVar(GenTreeLclVar* lclNode)
 {
     assert(compiler->lvaEnregMultiRegVars && lclNode->IsMultiReg());
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode);
-    bool       isMultiReg = lclNode->IsMultiReg(); 
-    if (strcmp(compiler->info.compMethodName, "Test") != 0)
+    bool       isMultiReg = false; 
+    if (lclNode->IsMultiReg())
     {
-        assert(varDsc->lvPromoted);
-        bool isMultiReg = (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT);
-        if (!isMultiReg)
+        if (!lclNode->IsMultiRegUse())
         {
-            lclNode->ClearMultiReg();
+            assert(varDsc->lvPromoted);
+            bool isMultiReg = (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT);
+            if (!isMultiReg)
+            {
+                lclNode->ClearMultiReg();
+            }
+        }
+        else
+        {
+            isMultiReg = true;
         }
     }
+    
 #ifdef DEBUG
-    for (unsigned int i = 0; i < varDsc->lvFieldCnt; i++)
+    if (!lclNode->IsMultiRegUse())
     {
-        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-        assert(isCandidateVar(fieldVarDsc) == isMultiReg);
+        for (unsigned int i = 0; i < varDsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+            assert(isCandidateVar(fieldVarDsc) == isMultiReg);
+        }
     }
 #endif // DEBUG
     return isMultiReg;
@@ -1667,7 +1678,7 @@ int LinearScan::ComputeOperandDstCount(GenTree* operand)
     }
     if (operand->IsValue())
     {
-        // Operands that are values and are not contained consume all of their operands
+        // Operands that are values and are not contained, consume all of their operands
         // and produce one or more registers.
         return operand->GetRegisterDstCount(compiler);
     }
@@ -1769,10 +1780,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
     // Currently produce is unused, but need to strengthen an assert to check if produce is
     // as expected. See https://github.com/dotnet/runtime/issues/8678
     int produce = newDefListCount - oldDefListCount;
-    if (strcmp(compiler->info.compMethodName, "Test") != 0)
-    {
-        assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
-    }
+    assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
 
     // If we are constraining registers, modify all the RefPositions we've just built to specify the
     // minimum reg count required.
@@ -3042,7 +3050,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 // Notes:
 //    The node must not be contained, and must have been processed by buildRefPositionsForNode().
 //
-RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int multiRegIdx)
+RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int multiRegIdx, bool needsConsecutive)
 {
     assert(!operand->isContained());
     Interval* interval;
@@ -3096,6 +3104,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
         operand = nullptr;
     }
     RefPosition* useRefPos = newRefPosition(interval, currentLoc, RefTypeUse, operand, candidates, multiRegIdx);
+    useRefPos->needsConsecutive = needsConsecutive;
     useRefPos->setRegOptional(regOptional);
     return useRefPos;
 }

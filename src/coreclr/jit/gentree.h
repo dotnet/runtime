@@ -3771,6 +3771,7 @@ struct GenTreeLclVar : public GenTreeLclVarCommon
 private:
     regNumberSmall     gtOtherReg[MAX_MULTIREG_COUNT - 1];
     MultiRegSpillFlags gtSpillFlags;
+    bool               isMultiRegUse;
 
 public:
     INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for JIT dumps)
@@ -3780,6 +3781,13 @@ public:
     {
         return ((gtFlags & GTF_VAR_MULTIREG) != 0);
     }
+
+    bool IsMultiRegUse() const
+    {
+        assert(!isMultiRegUse || ((gtFlags & GTF_VAR_MULTIREG) != 0));
+        return isMultiRegUse;
+    }
+
     void ClearMultiReg()
     {
         gtFlags &= ~GTF_VAR_MULTIREG;
@@ -3788,6 +3796,12 @@ public:
     {
         gtFlags |= GTF_VAR_MULTIREG;
         ClearOtherRegFlags();
+    }
+
+    void SetMultiRegUse()
+    {
+        isMultiRegUse = true;
+        SetMultiReg();
     }
 
     regNumber GetRegNumByIdx(int regIndex) const

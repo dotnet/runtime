@@ -805,6 +805,12 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 
     if (OperIsScalarLocal())
     {
+#ifdef FEATURE_HW_INTRINSICS
+        if (AsLclVar()->IsMultiRegUse())
+        {
+            return compiler->lvaGetDesc(AsLclVar())->regCount;
+        }
+#endif // FEATURE_HW_INTRINSICS
         return AsLclVar()->GetFieldCount(compiler);
     }
     assert(!"Unexpected multi-reg node");
@@ -864,6 +870,7 @@ bool GenTree::IsMultiRegNode() const
     {
         return true;
     }
+
     return false;
 }
 

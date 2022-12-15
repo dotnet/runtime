@@ -1086,13 +1086,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            srcCount += BuildOperandUses(intrin.op1);
-
             //TODO: Need to fix this reliably.
             if ((intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_2))
             {
                 assert(intrin.op1->OperIs(GT_LCL_VAR));
-                BuildUse(intrin.op1, RBM_NONE, 1);
+                BuildUse(intrin.op1, RBM_NONE, 0, /* needsConsecutive */true);
+                BuildUse(intrin.op1, RBM_NONE, 1, /* needsConsecutive */ true);
+                srcCount+=2;
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op1);
             }
         }
     }

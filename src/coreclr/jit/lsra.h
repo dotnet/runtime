@@ -1838,7 +1838,7 @@ private:
     bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
-    RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
+    RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0, bool needsConsecutive = false);
 
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
@@ -2261,6 +2261,7 @@ public:
     // across all targets and that happened to be 4 on Arm.  Hence index value
     // would be 0..MAX_RET_REG_COUNT-1.
     unsigned char multiRegIdx : 2;
+    bool needsConsecutive;
 
     // Last Use - this may be true for multiple RefPositions in the same Interval
     unsigned char lastUse : 1;
@@ -2347,6 +2348,7 @@ public:
         , registerAssignment(RBM_NONE)
         , refType(refType)
         , multiRegIdx(0)
+        , needsConsecutive(false)
         , lastUse(false)
         , reload(false)
         , spillAfter(false)

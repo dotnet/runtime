@@ -773,6 +773,26 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_MultiReg) != 0;
     }
 
+    static int GetMultiRegUseCount(NamedIntrinsic id)
+    {
+        //assert(IsMultiRegU)
+        switch (id)
+        {
+#ifdef TARGET_ARM64
+            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
+        case NI_AdvSimd_Arm64_VectorTableLookup_2:
+            return 2;
+        case NI_AdvSimd_Arm64_VectorTableLookup_3:
+            return 3;
+        case NI_AdvSimd_Arm64_VectorTableLookup_4:
+            return 4;
+#endif
+
+            default:
+                unreached();
+        }
+    }
+
     static int GetMultiRegCount(NamedIntrinsic id)
     {
         assert(IsMultiReg(id));
