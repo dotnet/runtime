@@ -2844,37 +2844,37 @@ GenTree* Lowering::OptimizeNarrowTree(GenTree* node, var_types srcType, var_type
 {
     assert(varTypeIsIntegralOrI(srcType));
     assert(varTypeIsIntegralOrI(dstType));
+    assert(!varTypeIsSmall(srcType));
+    assert(!varTypeIsSmall(dstType));
 
     if (node->isContained() || node->gtSetFlags())
         return nullptr;
 
-    if ((genTypeSize(srcType) > genTypeSize(dstType)))
+    if ((genTypeSize(srcType) >= genTypeSize(dstType)))
     {
         if (node->OperIs(GT_CAST) && !node->gtOverflow())
         {
-            return nullptr;
-            //GenTreeCast* cast       = node->AsCast();
-            //var_types    castToType = cast->CastToType();
+            GenTreeCast* cast       = node->AsCast();
+            var_types    castToType = cast->CastToType();
 
-            //if (varTypeIsIntegralOrI(dstType) != varTypeIsIntegralOrI(node))
-            //    return nullptr;
+            if (varTypeIsIntegralOrI(dstType) != varTypeIsIntegralOrI(node))
+                return nullptr;
 
-            //if ((genTypeSize(castToType)) < genTypeSize(dstType))
-            //    return nullptr;
+            if ((genTypeSize(castToType)) < genTypeSize(dstType))
+                return nullptr;
 
-            //// Remove cast.
-            //GenTree* castOp = cast->CastOp();
-            //GenTree* newNode = OptimizeNarrowTree(castOp, cast->CastFromType(), dstType);
-            //if (castOp != newNode)
-            //{
-            //    assert(castOp->OperIs(GT_CAST));
-            //    BlockRange().Remove(cast);
-            //}
-            //return newNode;
-        }
-        else if (node->OperIs(GT_IND))
-        {
-            return nullptr
+            // Remove cast.
+            GenTree* castOp = cast->CastOp();
+            GenTree* newNode = OptimizeNarrowTree(castOp, cast->CastFromType(), dstType);
+
+            BlockRange().Remove(cast);
+
+            if (newNode != nullptr)
+            {
+                assert(false);
+                return newNode;
+            }
+            return castOp;
         }
         else if (node->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_EQ, GT_NE, GT_LT, GT_LE, GT_GT, GT_GE,
                          GT_LCL_VAR, GT_LCL_FLD) &&
@@ -2885,34 +2885,34 @@ GenTree* Lowering::OptimizeNarrowTree(GenTree* node, var_types srcType, var_type
             if (node->OperIsUnary())
             {
                 GenTree* op1 = node->gtGetOp1();
-                //GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
-                //if (newOp1 != op1)
-                //{
-                //    assert(op1->OperIs(GT_CAST));
+                GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
+                if (newOp1 != op1)
+                {
+                    assert(op1->OperIs(GT_CAST));
 
-                //    node->AsOp()->gtOp1 = newOp1;
-                //}
+                    node->AsOp()->gtOp1 = newOp1;
+                }
             }
             else if (node->OperIsBinary())
             {
                 GenTree* op1    = node->gtGetOp1();
                 GenTree* op2    = node->gtGetOp2();
 
-                //GenTree* newOp2 = OptimizeNarrowTree(op2, srcType, dstType);
-                //if (newOp2 != op2)
-                //{
-                //    assert(op2->OperIs(GT_CAST));
+                GenTree* newOp2 = OptimizeNarrowTree(op2, srcType, dstType);
+                if (newOp2 != op2)
+                {
+                    assert(op2->OperIs(GT_CAST));
 
-                //    node->AsOp()->gtOp2 = newOp2;
-                //}
+                    node->AsOp()->gtOp2 = newOp2;
+                }
 
-                //GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
-                //if (newOp1 != op1)
-                //{
-                //    assert(op1->OperIs(GT_CAST));
+                GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
+                if (newOp1 != op1)
+                {
+                    assert(op1->OperIs(GT_CAST));
 
-                //    node->AsOp()->gtOp1 = newOp1;
-                //}
+                    node->AsOp()->gtOp1 = newOp1;
+                }
             }
 
             return node;
