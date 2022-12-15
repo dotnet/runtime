@@ -207,7 +207,6 @@ typedef struct MonoAotOptions {
 	gboolean log_instances;
 	gboolean gen_msym_dir;
 	char *gen_msym_dir_path;
-	gboolean direct_pinvoke;
 	GList *direct_pinvokes;
 	GList *direct_pinvoke_lists;
 	gboolean direct_icalls;
@@ -6227,7 +6226,7 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 		/* Cross assembly calls */
 		return method_is_externally_callable (acfg, patch_info->data.method);
 	} else if ((patch_info->type == MONO_PATCH_INFO_ICALL_ADDR_CALL && patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		if (acfg->aot_opts.direct_pinvoke)
+		if (mono_aot_direct_pinvoke_enabled_for_method (acfg, patch_info->data.method))
 			return TRUE;
 	} else if (patch_info->type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
 		if (acfg->aot_opts.direct_icalls)
@@ -8523,8 +8522,6 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			mini_debug_options.no_seq_points_compact_data = FALSE;
 			opts->gen_msym_dir = TRUE;
 			opts->gen_msym_dir_path = g_strdup (arg + strlen ("msym_dir="));
-		} else if (str_begins_with (arg, "direct-pinvoke")) {
-			opts->direct_pinvoke = TRUE;
 		} else if (str_begins_with (arg, "direct-pinvokes")) {
 			opts->direct_pinvokes = g_list_append (opts->direct_pinvokes, g_strdup (arg + strlen ("direct-pinvokes=")));
 		} else if (str_begins_with (arg, "direct-pinvoke-lists")) {
@@ -8643,7 +8640,6 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    bitcode\n");
 			printf ("    data-outfile=\n");
 			printf ("    direct-icalls\n");
-			printf ("    direct-pinvoke\n");
 			printf ("    direct-pinvokes=\n");
 			printf ("    direct-pinvoke-lists=\n");
 			printf ("    dwarfdebug\n");
@@ -9156,7 +9152,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags = (JitFlags)(flags | JIT_FLAG_LLVM_ONLY | JIT_FLAG_EXPLICIT_NULL_CHECKS);
 	if (acfg->aot_opts.no_direct_calls)
 		flags = (JitFlags)(flags | JIT_FLAG_NO_DIRECT_ICALLS);
-	if (acfg->aot_opts.direct_pinvoke)
+	if (acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists)
 		flags = (JitFlags)(flags | JIT_FLAG_DIRECT_PINVOKE);
 	if (acfg->aot_opts.interp)
 		flags = (JitFlags)(flags | JIT_FLAG_INTERP);
@@ -10175,7 +10171,7 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 			MonoMethod *method = (MonoMethod *)data;
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 				sym = lookup_icall_symbol_name_aot (method);
-			else if (llvm_acfg->aot_opts.direct_pinvoke)
+			else if (mono_aot_direct_pinvoke_enabled_for_method (llvm_acfg, method))
 				sym = get_pinvoke_import (llvm_acfg, method);
 		} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 			MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
