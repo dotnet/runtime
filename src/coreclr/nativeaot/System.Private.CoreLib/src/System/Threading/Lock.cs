@@ -191,14 +191,10 @@ namespace System.Threading
             if (millisecondsTimeout == 0)
                 return false;
 
-            if (s_processorCount == 0)
+            if (_spinLimit == SpinningNotInitialized)
             {
                 // Use RhGetProcessCpuCount directly to avoid Environment.ProcessorCount->ClassConstructorRunner->Lock->Environment.ProcessorCount cycle
                 s_processorCount = RuntimeImports.RhGetProcessCpuCount();
-            }
-
-            if (_spinLimit == SpinningNotInitialized)
-            {
                 _spinLimit = (s_processorCount > 1) ? MaxSpinLimit : SpinningDisabled;
             }
 
@@ -349,8 +345,7 @@ namespace System.Threading
         internal bool IsAcquiredByThread(int currentThreadId)
         {
             bool acquired = (currentThreadId == _owningThreadId);
-            if (acquired)
-                Debug.Assert((_state & Locked) != 0);
+            Debug.Assert(!acquired || (_state & Locked) != 0);
             return acquired;
         }
 

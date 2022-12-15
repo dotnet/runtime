@@ -254,8 +254,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int Acquire(object obj)
         {
-            // Lock.s_processorCount is lazy-initialized at fist contention.
-            // untill then assume multicore
             return TryAcquire(obj, oneShot: false);
         }
 
@@ -318,6 +316,8 @@ namespace System.Threading
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
                 return GetSyncIndex(obj);
 
+            // Lock.s_processorCount is lazy-initialized at fist contended acquire
+            // untill then it is 0 and we assume we have multicore machine
             int retries = oneShot || Lock.s_processorCount == 1 ? 0 : 16;
 
             // retry when the lock is owned by somebody else.

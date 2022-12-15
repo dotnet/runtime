@@ -58,7 +58,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Enter(object obj, ref bool lockTaken)
         {
-            // we are inlining lockTaken check as the check is likely be optimizied away
+            // we are inlining lockTaken check as the check is likely be optimized away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
@@ -83,7 +83,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TryEnter(object obj, ref bool lockTaken)
         {
-            // we are inlining lockTaken check as the check is likely be optimizied away
+            // we are inlining lockTaken check as the check is likely be optimized away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
@@ -113,7 +113,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
-            // we are inlining lockTaken check as the check is likely be optimizied away
+            // we are inlining lockTaken check as the check is likely be optimized away
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
