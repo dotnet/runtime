@@ -3169,65 +3169,67 @@ GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
     if (node->gtSetFlags())
         return nullptr;
 
-    if ((genTypeSize(srcType) >= genTypeSize(dstType)))
+    if (node->gtOverflowEx())
+        return nullptr;
+
+    if (genTypeSize(srcType) < genTypeSize(dstType))
+        return nullptr;
+
+    if (node->OperIs(GT_CAST))
     {
-        if (node->OperIs(GT_CAST) && !node->gtOverflow())
+        GenTreeCast* cast       = node->AsCast();
+        var_types    castToType = cast->CastToType();
+
+        if (varTypeIsIntegralOrI(dstType) != varTypeIsIntegralOrI(node))
+            return nullptr;
+
+        if ((genTypeSize(castToType)) < genTypeSize(dstType))
+            return nullptr;
+
+        // Remove cast.
+        GenTree* castOp  = cast->CastOp();
+        GenTree* newNode = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, dstType);
+
+        range.Remove(cast);
+
+        if (newNode != nullptr)
         {
-            GenTreeCast* cast       = node->AsCast();
-            var_types    castToType = cast->CastToType();
-
-            if (varTypeIsIntegralOrI(dstType) != varTypeIsIntegralOrI(node))
-                return nullptr;
-
-            if ((genTypeSize(castToType)) < genTypeSize(dstType))
-                return nullptr;
-
-            // Remove cast.
-            GenTree* castOp  = cast->CastOp();
-            GenTree* newNode = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, dstType);
-
-            range.Remove(cast);
-
-            if (newNode != nullptr)
-            {
-                return newNode;
-            }
-            return castOp;
+            return newNode;
         }
-        else if (node->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_EQ, GT_NE, GT_LT, GT_LE, GT_GT, GT_GE,
-                              GT_LCL_VAR, GT_LCL_FLD, GT_IND) &&
-                 !node->gtOverflowEx())
+        return castOp;
+    }
+    else if (node->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_EQ, GT_NE, GT_LT, GT_LE, GT_GT, GT_GE,
+                            GT_LCL_VAR, GT_LCL_FLD))
+    {
+        node->ChangeType(dstType);
+
+        if (node->OperIsUnary())
         {
-            node->ChangeType(dstType);
-
-            if (node->OperIsUnary())
+            GenTree* op1    = node->gtGetOp1();
+            GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, dstType);
+            if (newOp1 != nullptr)
             {
-                GenTree* op1    = node->gtGetOp1();
-                GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, dstType);
-                if (newOp1 != nullptr)
-                {
-                    node->AsOp()->gtOp1 = newOp1;
-                }
+                node->AsOp()->gtOp1 = newOp1;
             }
-            else if (node->OperIsBinary())
-            {
-                GenTree* op1 = node->gtGetOp1();
-                GenTree* op2 = node->gtGetOp2();
-
-                GenTree* newOp2 = fgTrySimpleLowerOptimizeNarrowTree(range, op2, dstType);
-                if (newOp2 != nullptr)
-                {
-                    node->AsOp()->gtOp2 = newOp2;
-                }
-
-                GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, dstType);
-                if (newOp1 != nullptr)
-                {
-                    node->AsOp()->gtOp1 = newOp1;
-                }
-            }
-            return node;
         }
+        else if (node->OperIsBinary())
+        {
+            GenTree* op1 = node->gtGetOp1();
+            GenTree* op2 = node->gtGetOp2();
+
+            GenTree* newOp2 = fgTrySimpleLowerOptimizeNarrowTree(range, op2, dstType);
+            if (newOp2 != nullptr)
+            {
+                node->AsOp()->gtOp2 = newOp2;
+            }
+
+            GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, dstType);
+            if (newOp1 != nullptr)
+            {
+                node->AsOp()->gtOp1 = newOp1;
+            }
+        }
+        return node;
     }
 
     return nullptr;
