@@ -11,6 +11,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-conc-hash.h>
 #include <mono/metadata/mono-hash.h>
+#include <mono/metadata/weak-hash.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-coop-mutex.h>
@@ -125,10 +126,8 @@ struct _MonoAssemblyLoadContext {
 };
 
 struct _MonoMemoryManager {
-	// Whether the MemoryManager can be unloaded on netcore; should only be set at creation
+	// Whether the MemoryManager can be unloaded; should only be set at creation
 	gboolean collectible;
-	// Whether this is a singleton or generic MemoryManager
-	gboolean is_generic;
 	// Whether the MemoryManager is in the process of being freed
 	gboolean freeing;
 
@@ -156,6 +155,10 @@ struct _MonoMemoryManager {
 	/* Information maintained by the execution engine */
 	gpointer runtime_info;
 
+	// Handles pointing to the corresponding LoaderAllocator object
+	MonoGCHandle loader_allocator_handle;
+	MonoGCHandle loader_allocator_weak_handle;
+
 	// Hashtables for Reflection handles
 	MonoGHashTable *type_hash;
 	MonoConcGHashTable *refobject_hash;
@@ -163,6 +166,11 @@ struct _MonoMemoryManager {
 	MonoGHashTable *type_init_exception_hash;
 	// Maps delegate trampoline addr -> delegate object
 	//MonoGHashTable *delegate_hash_table;
+
+	/* Same hashes for collectible mem managers */
+	MonoWeakHashTable *weak_type_hash;
+	MonoWeakHashTable *weak_refobject_hash;
+	MonoWeakHashTable *weak_type_init_exception_hash;
 
 	/*
 	 * Generic instances and aggregated custom modifiers depend on many alcs, and they need to be deleted if one
@@ -367,6 +375,15 @@ g_slist_prepend_mem_manager (MonoMemoryManager *memory_manager, GSList *list, gp
 
 	return new_list;
 }
+
+MonoGCHandle
+mono_mem_manager_get_loader_alloc (MonoMemoryManager *mem_manager);
+
+void
+mono_mem_manager_init_reflection_hashes (MonoMemoryManager *mem_manager);
+
+void
+mono_mem_manager_start_unload (MonoMemoryManager *mem_manager);
 
 G_END_DECLS
 
