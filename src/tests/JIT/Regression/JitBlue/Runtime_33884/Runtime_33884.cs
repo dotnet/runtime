@@ -15,7 +15,7 @@ public class TestStructs
 {
     static RefWrapper[] arr;
 
-    public static RefWrapper GetElement() // 8 byte size return will be retyped as a ref.
+    static RefWrapper GetElement() // 8 byte size return will be retyped as a ref.
     {
         return arr[0];
     }

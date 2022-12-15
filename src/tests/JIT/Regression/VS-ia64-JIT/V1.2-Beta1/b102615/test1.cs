@@ -46,7 +46,7 @@ public class Test_test1
         foo(s);
     }
 
-    public static void foo(S s)
+    static void foo(S s)
     {
         Console.WriteLine(s.O1);
         Console.WriteLine(s.O2);

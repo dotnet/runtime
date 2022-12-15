@@ -25,7 +25,7 @@ public class Runtime_53549 : I
     // we allow GDV on i.F().
     //
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int H(I i)
+    static int H(I i)
     {
         return G(i.F()) ? 100 : -1;
     }

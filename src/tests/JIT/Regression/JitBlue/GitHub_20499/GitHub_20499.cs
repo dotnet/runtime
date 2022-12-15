@@ -27,7 +27,7 @@ public class X
     Z z;
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Synchronized)]
-    public S G() => z.F();
+    S G() => z.F();
 
     public static int Main()
     {

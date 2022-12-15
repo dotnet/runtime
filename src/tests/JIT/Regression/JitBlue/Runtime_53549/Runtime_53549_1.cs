@@ -35,7 +35,7 @@ public class Repro
     static string s;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int F(A[] a)
+    static int F(A[] a)
     {
         int i = 0;
         for (; i < a.Length; i++)

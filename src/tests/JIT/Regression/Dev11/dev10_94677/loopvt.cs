@@ -35,7 +35,7 @@ public class DblArray3
 {
 
     // instance field of valuetype
-    public static void f4(VT[] keys, uint m_ReadMultipleMaxBatchSize)
+    static void f4(VT[] keys, uint m_ReadMultipleMaxBatchSize)
     {
 
         // Create first batch.

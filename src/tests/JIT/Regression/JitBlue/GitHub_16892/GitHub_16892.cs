@@ -28,7 +28,7 @@ class Item
 
 public class Program
 {
-    public Item[] itemArray;
+    Item[] itemArray;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     void Init()

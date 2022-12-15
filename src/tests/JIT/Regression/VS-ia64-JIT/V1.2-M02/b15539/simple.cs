@@ -22,7 +22,7 @@ public class A
         return test(vc);
     }
 
-    public static int test(VC vc)
+    static int test(VC vc)
     {
         if (vc.x == 5)
         {

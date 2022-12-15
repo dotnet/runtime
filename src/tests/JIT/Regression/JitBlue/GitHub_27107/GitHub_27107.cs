@@ -17,8 +17,8 @@ struct T
 
 public class Program
 {
-    public T t;
-    public T t1;
+    T t;
+    T t1;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     int Test()

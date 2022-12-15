@@ -21,7 +21,7 @@ struct MyStruct
 public class MainApp
 {
     [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    public static MyStruct Foo()
+    static MyStruct Foo()
     {
         return new MyStruct();
     }

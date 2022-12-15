@@ -107,7 +107,7 @@ public class ArrayBounds
 		}
 	}
 
-	public static int RunTests(TestDelegate d)
+	static int RunTests(TestDelegate d)
 	{
 		try
 		{
