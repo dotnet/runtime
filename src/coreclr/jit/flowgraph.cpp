@@ -3130,6 +3130,9 @@ bool Compiler::fgSimpleLowerAndOp(LIR::Range& range, GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_AND));
 
+    if (opts.OptimizationDisabled())
+        return false;
+
     bool madeChanges = false;
 
     GenTree* op1 = tree->gtGetOp1();
