@@ -14127,6 +14127,50 @@ init_options (MonoAotOptions *aot_opts)
 	aot_opts->clangxx = g_strdup ("clang++");
 }
 
+static gboolean
+mono_aot_add_direct_pinvoke (MonoAotCompile *acfg, char *dpi)
+{
+	char *direct_pinvoke = g_strdup (dpi);
+	if (!direct_pinvoke)
+		return TRUE;
+
+	if (direct_pinvoke[0] == '#')
+		return TRUE;
+
+	g_strstrip (direct_pinvoke);
+	if (!direct_pinvoke)
+		return TRUE;
+
+	char **direct_pinvoke_split = g_strsplit (direct_pinvoke, "!", -1);
+	char *library_name = g_strdup (direct_pinvoke_split[0]);
+	if (!direct_pinvoke_split[1]) {
+		g_hash_table_insert (acfg->direct_pinvokes, library_name, NULL);
+		g_strfreev (direct_pinvoke_split);
+		return TRUE;
+	}
+	if (direct_pinvoke_split[2]) {
+		aot_printerrf (acfg, "The provided 'direct_pinvoke' AOT option '%s' shouldn't contain multiple '!'\n", dpi);
+		g_strfreev (direct_pinvoke_split);
+		return FALSE;
+	}
+
+	char *entrypoint_name = g_strdup (direct_pinvoke_split[1]);
+	if (g_hash_table_contains (acfg->direct_pinvokes, library_name)) {
+		GHashTable *val = g_hash_table_lookup (acfg->direct_pinvokes, library_name);
+		if (!val || g_hash_table_contains (val, entrypoint_name)) {
+			g_strfreev (direct_pinvoke_split);
+			return TRUE;
+		}
+		g_hash_table_insert (val, entrypoint_name, NULL);
+	} else {
+		GHashTable *val = g_hash_table_new_full (NULL, g_str_equal, g_free, NULL);
+		g_hash_table_insert (val, entrypoint_name, NULL);
+		g_hash_table_insert (acfg->direct_pinvokes, library_name, val);
+	}
+	g_strfreev (direct_pinvoke_split);
+	return TRUE;
+}
+
 static int
 aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 {
@@ -14210,9 +14254,45 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 #endif
 
-	if (acfg->aot_opts.direct_pinvoke && !acfg->aot_opts.static_link) {
-		aot_printerrf (acfg, "The 'direct-pinvoke' AOT option also requires the 'static' AOT option.\n");
-		return 1;
+	if (acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists) {
+		if (!acfg->aot_opts.static_link) {
+			aot_printerrf (acfg, "The 'direct-pinvokes' and 'direct-pinvoke-lists' AOT options also require the 'static' AOT option.\n");
+			return 1;
+		}
+		char *any_module = (char *)g_malloc0(2);
+		any_module[0] = '*';
+		g_hash_table_insert (acfg->direct_pinvokes, any_module, NULL);
+	}
+	gboolean added_direct_pinvoke = TRUE;
+	if (acfg->aot_opts.direct_pinvokes) {
+		GList *l;
+
+		for (l = acfg->aot_opts.direct_pinvokes; l; l = l->next) {
+			added_direct_pinvoke = mono_aot_add_direct_pinvoke (acfg, (char*)l->data);
+			if (!added_direct_pinvoke)
+				return 1;
+		}
+	}
+	if (acfg->aot_opts.direct_pinvoke_lists) {
+		GList *l;
+
+		for (l = acfg->aot_opts.direct_pinvoke_lists; l; l = l->next) {
+			char *direct_pinvoke_list = (char*)l->data;
+			FILE *direct_pinvoke_list_file = fopen (direct_pinvoke_list, "r");
+			if (!direct_pinvoke_list_file) {
+				aot_printerrf (acfg, "Failed to open the provided 'direct-pinvoke-list' '%s', fopen failed.\n", direct_pinvoke_list);
+				return 1;
+			}
+
+			char *line = NULL;
+			size_t line_len = 0;
+			while (getline (&line, &line_len, direct_pinvoke_list_file) != -1 && added_direct_pinvoke) {
+				added_direct_pinvoke = mono_aot_add_direct_pinvoke (acfg, line);
+			}
+			fclose (direct_pinvoke_list_file);
+			if (!added_direct_pinvoke)
+				return 1;
+		}
 	}
 
 	if (acfg->aot_opts.static_link)
