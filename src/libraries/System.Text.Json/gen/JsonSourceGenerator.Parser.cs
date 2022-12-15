@@ -1606,7 +1606,6 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _jsonDocumentType);
 
                 AddTypeIfNotNull(_knownUnsupportedTypes, _serializationInfoType);
-                AddTypeIfNotNull(_knownUnsupportedTypes, _serializationInfoType);
                 AddTypeIfNotNull(_knownUnsupportedTypes, _intPtrType);
                 AddTypeIfNotNull(_knownUnsupportedTypes, _uIntPtrType);
 
