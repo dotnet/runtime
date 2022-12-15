@@ -208,6 +208,8 @@ typedef struct MonoAotOptions {
 	gboolean gen_msym_dir;
 	char *gen_msym_dir_path;
 	gboolean direct_pinvoke;
+	GList *direct_pinvokes;
+	GList *direct_pinvoke_lists;
 	gboolean direct_icalls;
 	gboolean direct_extern_calls;
 	gboolean no_direct_calls;
@@ -307,6 +309,7 @@ typedef struct MonoAotCompile {
 	GHashTable *method_to_cfg;
 	GHashTable *token_info_hash;
 	GHashTable *method_to_pinvoke_import;
+	GHashTable *direct_pinvokes;
 	GHashTable *method_to_external_icall_symbol_name;
 	GPtrArray *extra_methods;
 	GPtrArray *image_table;
@@ -8503,6 +8506,10 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->gen_msym_dir_path = g_strdup (arg + strlen ("msym_dir="));
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
 			opts->direct_pinvoke = TRUE;
+		} else if (str_begins_with (arg, "direct-pinvokes")) {
+			opts->direct_pinvokes = g_list_append (opts->direct_pinvokes, g_strdup (arg + strlen ("direct-pinvokes=")));
+		} else if (str_begins_with (arg, "direct-pinvoke-lists")) {
+			opts->direct_pinvoke_lists = g_list_append (opts->direct_pinvoke_lists, g_strdup (arg + strlen ("direct-pinvoke-lists=")));
 		} else if (str_begins_with (arg, "direct-icalls")) {
 			opts->direct_icalls = TRUE;
 		} else if (str_begins_with (arg, "direct-extern-calls")) {
@@ -8618,6 +8625,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    data-outfile=\n");
 			printf ("    direct-icalls\n");
 			printf ("    direct-pinvoke\n");
+			printf ("    direct-pinvokes=\n");
+			printf ("    direct-pinvoke-lists=\n");
 			printf ("    dwarfdebug\n");
 			printf ("    full\n");
 			printf ("    hybrid\n");
@@ -13698,6 +13707,7 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
 	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 	acfg->method_to_pinvoke_import = g_hash_table_new_full (NULL, NULL, NULL, g_free);
+	acfg->direct_pinvokes = g_hash_table_new_full (NULL, g_str_equal, g_free, (GDestroyNotify)g_hash_table_destroy);
 	acfg->method_to_external_icall_symbol_name = g_hash_table_new_full (NULL, NULL, NULL, g_free);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
@@ -13767,6 +13777,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->method_to_cfg);
 	g_hash_table_destroy (acfg->token_info_hash);
 	g_hash_table_destroy (acfg->method_to_pinvoke_import);
+	g_hash_table_destroy (acfg->direct_pinvokes);
 	g_hash_table_destroy (acfg->method_to_external_icall_symbol_name);
 	g_hash_table_destroy (acfg->image_hash);
 	g_hash_table_destroy (acfg->unwind_info_offsets);
