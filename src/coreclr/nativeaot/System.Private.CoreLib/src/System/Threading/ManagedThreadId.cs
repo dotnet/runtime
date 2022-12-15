@@ -9,8 +9,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Runtime;
-using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -176,7 +174,7 @@ namespace System.Threading
             }
         }
 
-        public const int IdNone = -1;
+        public const int IdNone = 0;
 
         // The main thread takes the first available id, which is 1. This id will not be recycled until the process exit.
         // We use this id to detect the main thread and report it as a foreground one.
@@ -248,16 +246,13 @@ namespace System.Threading
             }
         }
 
-        // We do -1 adjustment so that uninitialized result would be -1 and
-        // automatically trigger slow path in thin locks
-        internal static int CurrentManagedThreadIdUnchecked => t_currentManagedThreadId - 1;
+        internal static int CurrentManagedThreadIdUnchecked => t_currentManagedThreadId;
 
         public static int Current
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                int currentManagedThreadId = CurrentManagedThreadIdUnchecked;
+                int currentManagedThreadId = t_currentManagedThreadId;
                 if (currentManagedThreadId == IdNone)
                     return MakeForCurrentThread();
                 else
@@ -267,13 +262,12 @@ namespace System.Threading
 
         public static ManagedThreadId GetCurrentThreadId()
         {
-            if (CurrentManagedThreadIdUnchecked == IdNone)
+            if (t_currentManagedThreadId == IdNone)
                 MakeForCurrentThread();
 
             return t_currentThreadId;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static int MakeForCurrentThread()
         {
             return SetForCurrentThread(new ManagedThreadId());
@@ -282,8 +276,7 @@ namespace System.Threading
         public static int SetForCurrentThread(ManagedThreadId threadId)
         {
             t_currentThreadId = threadId;
-            // we store the value with +1 adjustment. see comments on CurrentManagedThreadIdUnchecked
-            t_currentManagedThreadId = threadId.Id + 1;
+            t_currentManagedThreadId = threadId.Id;
             return threadId.Id;
         }
 

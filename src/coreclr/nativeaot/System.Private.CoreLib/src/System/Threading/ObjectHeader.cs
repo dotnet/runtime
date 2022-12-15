@@ -269,9 +269,9 @@ namespace System.Threading
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            Debug.Assert(unchecked((uint)ManagedThreadId.IdNone) > (uint)SBLK_MASK_LOCK_THREADID);
-            // if thread ID is uninitialized too big, we do uncommon part.
-            if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID)
+
+            // if thread ID is uninitialized or too big, we do "uncommon" part.
+            if ((uint)(currentThreadID - 1) <= (uint)SBLK_MASK_LOCK_THREADID)
             {
                 // for an object used in locking there are two common cases:
                 // - header bits are unused or
@@ -407,8 +407,9 @@ namespace System.Threading
             Debug.Assert(!(obj is Lock),
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
-            // thread ID may be uninitialized (-1), that is the same as not owning the lock.
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            // transform uninitialized ID into -1, so it will not match any possible lock owner
+            currentThreadID |= (currentThreadID - 1) >> 31;
 
             Lock fatLock;
             fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
@@ -459,8 +460,9 @@ namespace System.Threading
             Debug.Assert(!(obj is Lock),
                 "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
-            // thread ID may be uninitialized (-1), that is the same as not owning the lock.
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            // transform uninitialized ID into -1, so it will not match any possible lock owner
+            currentThreadID |= (currentThreadID - 1) >> 31;
 
             fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
             {
