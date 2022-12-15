@@ -730,7 +730,6 @@ namespace Internal.Runtime.TypeLoader
             if (!state.HasStaticConstructor)
                 return;
 
-            Debug.Assert(state.ClassConstructorPointer.HasValue);
             IntPtr canonicalClassConstructorFunctionPointer = state.ClassConstructorPointer.Value;
 
             IntPtr generatedTypeStaticData = GetRuntimeTypeHandle(type).ToEETypePtr()->DynamicNonGcStaticsData;
