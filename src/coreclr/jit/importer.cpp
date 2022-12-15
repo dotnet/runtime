@@ -4298,6 +4298,25 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             break;
         }
 
+        case CORINFO_FIELD_STATIC_DATASEGMENT:
+        {
+#ifdef FEATURE_READYTORUN
+            assert(opts.IsReadyToRun());
+            assert((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) == 0);
+            assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE);
+            assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
+
+            op1         = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
+            op1->gtType = TYP_BYREF;
+
+            FieldSeq* fseq = GetFieldSeqStore()->Create(pResolvedToken->hField, pFieldInfo->offset, fieldKind);
+            op1            = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(pFieldInfo->offset, fseq));
+#else
+            unreached();
+#endif // FEATURE_READYTORUN
+        }
+        break;
+
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
 #ifdef FEATURE_READYTORUN
@@ -9439,6 +9458,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_DATASEGMENT:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -9584,6 +9604,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                        case CORINFO_FIELD_STATIC_DATASEGMENT:
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_STFLD_NEEDS_HELPER);
@@ -9689,6 +9710,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_DATASEGMENT:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
