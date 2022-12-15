@@ -1444,11 +1444,12 @@ def html_color(color, text):
 def calculate_improvements_regressions(base_diff_sizes):
     num_improvements = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size < base_size)
     num_regressions = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size > base_size)
+    num_same = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size == base_size)
 
     byte_improvements = sum(max(0, base_size - diff_size) for (base_size, diff_size) in base_diff_sizes)
     byte_regressions = sum(max(0, diff_size - base_size) for (base_size, diff_size) in base_diff_sizes)
 
-    return (num_improvements, num_regressions, byte_improvements, byte_regressions)
+    return (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions)
 
 class SuperPMIReplayAsmDiffs:
     """ SuperPMI Replay AsmDiffs class
@@ -1836,12 +1837,13 @@ class SuperPMIReplayAsmDiffs:
                     if self.coreclr_args.metrics is None:
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
 
-                        (num_improvements, num_regressions, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
+                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
 
-                        logging.info("{:,d} contexts with diffs ({:,d} improvements, {:,d} regressions)".format(
+                        logging.info("{:,d} contexts with diffs ({:,d} improvements, {:,d} regressions, {:,d} same size)".format(
                             len(diffs),
                             num_improvements,
                             num_regressions,
+                            num_same,
                             byte_improvements,
                             byte_regressions))
                         
@@ -1941,12 +1943,17 @@ class SuperPMIReplayAsmDiffs:
 
                 if missing_base_contexts > 0 or missing_diff_contexts > 0:
                     missed_color = "#d35400"
-                    base_color = missed_color if missing_base_contexts > 0 else "green"
-                    diff_color = missed_color if missing_diff_contexts > 0 else "green"
-                    write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
-                        html_color(missed_color, "MISSED"),
-                        html_color(base_color, "{:,d}".format(missing_base_contexts)),
-                        html_color(diff_color, "{:,d}".format(missing_diff_contexts))))
+                    if missing_base_contexts == missing_diff_contexts:
+                        write_fh.write("{} contexts: {}\n\n".format(
+                            html_color(missed_color, "MISSED"),
+                            html_color(missed_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / diffed_contexts * 100))))
+                    else:
+                        base_color = missed_color if missing_base_contexts > 0 else "green"
+                        diff_color = missed_color if missing_diff_contexts > 0 else "green"
+                        write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
+                            html_color(missed_color, "MISSED"),
+                            html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / diffed_contexts * 100)),
+                            html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / diffed_contexts * 100))))
 
                 def has_diffs(row):
                     return int(row["Contexts with diffs"]) > 0
@@ -1992,17 +1999,18 @@ class SuperPMIReplayAsmDiffs:
 
                 if any_diffs:
                     write_fh.write("#### Improvements/regressions per collection\n\n")
-                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Improvements (bytes)|Regressions (bytes)|\n")
-                    write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
+                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
 
                     def write_row(name, diffs):
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
-                        (num_improvements, num_regressions, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
-                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|\n".format(
+                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
                             name,
                             len(diffs),
                             html_color("green", "{:,d}".format(num_improvements)),
                             html_color("red", "{:,d}".format(num_regressions)),
+                            html_color("blue", "{:,d}".format(num_same)),
                             html_color("green", "-{:,d}".format(byte_improvements)),
                             html_color("red", "+{:,d}".format(byte_regressions))))
 
@@ -2026,13 +2034,15 @@ class SuperPMIReplayAsmDiffs:
                          int(diff_metrics["Overall"]["Missing compiles"])) for (mch_file, base_metrics, diff_metrics, _, _) in asm_diffs]
 
                 def write_row(name, num_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff):
-                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
+                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
                         name,
                         num_contexts,
                         num_minopts,
                         num_fullopts,
                         num_missed_base,
-                        num_missed_diff))
+                        num_missed_base / num_contexts * 100,
+                        num_missed_diff,
+                        num_missed_diff / num_contexts * 100))
                           
                 for t in rows:
                     write_row(*t)
