@@ -3974,7 +3974,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
             if (!omitCopy && fgDidEarlyLiveness)
             {
-                omitCopy = !varDsc->lvPromoted && (lcl->gtFlags & GTF_VAR_DEATH) != 0;
+                omitCopy = !varDsc->lvPromoted && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
 
             if (!omitCopy && (totalAppearances == 1))

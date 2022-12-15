@@ -8,28 +8,6 @@ class LocalSequencer final : public GenTreeVisitor<LocalSequencer>
     GenTree* m_rootNode;
     GenTree* m_prevNode;
 
-    void MoveNodeToEnd(GenTree* node)
-    {
-        if (node->gtNext == nullptr)
-        {
-            return;
-        }
-
-        assert(m_prevNode != node);
-
-        GenTree* prev = node->gtPrev;
-        GenTree* next = node->gtNext;
-        // Fix the def of the local to appear after uses on the RHS.
-        assert(prev != nullptr); // Should have 'sentinel'
-        prev->gtNext = next;
-        next->gtPrev = prev;
-
-        m_prevNode->gtNext = node;
-        node->gtPrev       = m_prevNode;
-        node->gtNext       = nullptr;
-        m_prevNode         = node;
-    }
-
 public:
     enum
     {
@@ -131,6 +109,29 @@ public:
         Start(stmt);
         WalkTree(stmt->GetRootNodePointer(), nullptr);
         Finish(stmt);
+    }
+
+private:
+    void MoveNodeToEnd(GenTree* node)
+    {
+        if (node->gtNext == nullptr)
+        {
+            return;
+        }
+
+        assert(m_prevNode != node);
+
+        GenTree* prev = node->gtPrev;
+        GenTree* next = node->gtNext;
+
+        assert(prev != nullptr); // Should have 'sentinel'
+        prev->gtNext = next;
+        next->gtPrev = prev;
+
+        m_prevNode->gtNext = node;
+        node->gtPrev       = m_prevNode;
+        node->gtNext       = nullptr;
+        m_prevNode         = node;
     }
 };
 
@@ -782,7 +783,6 @@ public:
         }
 
         assert(TopValue(0).Node() == node);
-
         return Compiler::WALK_CONTINUE;
     }
 

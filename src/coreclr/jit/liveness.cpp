@@ -1257,7 +1257,14 @@ class LiveVarAnalysis
             // Early liveness happens between import and morph where we may
             // have identified a tailcall-to-loop candidate but not yet
             // expanded it. In OSR compilations we need to model the potential
-            // backedge that does not go to the entry.
+            // backedge.
+            //
+            // Technically we would need to do this in normal compilations too,
+            // but given that the tailcall-to-loop optimization is sound we can
+            // rely on the call node we will see in this block having all the
+            // necessary dependencies. That's not the case in OSR where the OSR
+            // state index variable may be live at this point without appearing
+            // as an explicit use anywhere.
             VarSetOps::UnionD(m_compiler, m_liveOut, m_compiler->fgEntryBB->bbLiveIn);
             if (m_compiler->fgEntryBB->bbNum <= block->bbNum)
             {

@@ -287,7 +287,6 @@ public:
             if ((lclNum == m_lclNum) || (lclNum == m_parentLclNum) ||
                 (dsc->lvIsStructField && (dsc->lvParentLcl == m_lclNum)))
             {
-                // TODO-TP: Abort the walk early above and here.
                 m_useCount++;
             }
 
