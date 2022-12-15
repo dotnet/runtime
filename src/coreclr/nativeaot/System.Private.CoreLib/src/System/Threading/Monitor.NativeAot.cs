@@ -42,7 +42,7 @@ namespace System.Threading
         public static void Enter(object obj)
         {
             int resultOrIndex = ObjectHeader.Acquire(obj);
-            if (resultOrIndex == 1)
+            if (resultOrIndex < 0)
                 return;
 
             Lock lck = resultOrIndex == 0 ?
@@ -70,7 +70,7 @@ namespace System.Threading
         public static bool TryEnter(object obj)
         {
             int resultOrIndex = ObjectHeader.TryAcquire(obj);
-            if (resultOrIndex == 1)
+            if (resultOrIndex < 0)
                 return true;
 
             if (resultOrIndex == 0)
@@ -97,7 +97,7 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
             int resultOrIndex = ObjectHeader.TryAcquire(obj);
-            if (resultOrIndex == 1)
+            if (resultOrIndex < 0)
                 return true;
 
             Lock lck = resultOrIndex == 0 ?

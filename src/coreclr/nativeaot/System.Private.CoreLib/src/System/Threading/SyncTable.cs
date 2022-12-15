@@ -52,7 +52,7 @@ namespace System.Threading
         /// </summary>
 #if DEBUG
         // Exercise table expansion more frequently in debug builds
-        private const int InitialSize = 2;
+        private const int InitialSize = 1;
 #else
         private const int InitialSize = 1 << 7;
 #endif
@@ -78,11 +78,11 @@ namespace System.Threading
         private static int s_freeEntryList;
 
         /// <summary>
-        /// The index of the lowest never used entry.  We skip the 0th and 1st entries and start with 2.
+        /// The index of the lowest never used entry.  We skip the 0th entry and start with 1.
         /// If all entries have been used, s_unusedEntryIndex == s_entries.Length.  This counter
         /// never decreases.
         /// </summary>
-        private static int s_unusedEntryIndex = 2;
+        private static int s_unusedEntryIndex = 1;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref Entry UnsafeEntryRef(int i)

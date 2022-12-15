@@ -248,16 +248,16 @@ namespace System.Threading
         //
 
         // Returs:
-        //   1 - success
-        //   0 - failed
-        //   syncIndex - retry with the Lock
+        // -1 - success
+        // 0 - failed
+        // syncIndex - retry with the Lock
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int Acquire(object obj)
         {
             return TryAcquire(obj, oneShot: false);
         }
 
-        // 1 - success
+        // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -286,14 +286,14 @@ namespace System.Threading
                     {
                         if (Interlocked.CompareExchange(ref *pHeader, oldBits | currentThreadID, oldBits) == oldBits)
                         {
-                            return 1;
+                            return -1;
                         }
                     }
                     else if (GetSyncEntryIndex(oldBits, out int syncIndex))
                     {
                         if (SyncTable.GetLockObject(syncIndex).TryAcquireOneShot(currentThreadID))
                         {
-                            return 1;
+                            return -1;
                         }
 
                         // has sync entry -> slow path
@@ -306,7 +306,7 @@ namespace System.Threading
         }
 
         // handling uncommon cases here - recursive lock, contention, retries
-        // 1 - success
+        // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
         private static unsafe int TryAcquireUncommon(object obj, bool oneShot)
@@ -341,7 +341,7 @@ namespace System.Threading
                             int newBits = oldBits | currentThreadID;
                             if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
                             {
-                                return 1;
+                                return -1;
                             }
 
                             // contention on a lock that noone owned,
@@ -370,7 +370,7 @@ namespace System.Threading
                             {
                                 if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
                                 {
-                                    return 1;
+                                    return -1;
                                 }
 
                                 // rare contention on owned lock,

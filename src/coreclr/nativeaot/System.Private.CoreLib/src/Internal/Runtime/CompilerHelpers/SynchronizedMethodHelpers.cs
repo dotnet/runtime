@@ -15,7 +15,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             // Inlined Monitor.Enter with a few tweaks
             int resultOrIndex = ObjectHeader.Acquire(obj);
-            if (resultOrIndex == 1)
+            if (resultOrIndex < 0)
             {
                 lockTaken = true;
                 return;
@@ -49,7 +49,7 @@ namespace Internal.Runtime.CompilerHelpers
             // Inlined Monitor.Enter with a few tweaks
             object obj = GetStaticLockObject(pEEType);
             int resultOrIndex = ObjectHeader.Acquire(obj);
-            if (resultOrIndex == 1)
+            if (resultOrIndex < 0)
             {
                 lockTaken = true;
                 return;
