@@ -6659,7 +6659,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 (childNodeId == NI_Vector256_CreateScalarUnsafe))
                             {
                                 // We have a very special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
-                                // 
+                                //
                                 // This is one of the only instructions where it supports taking integer types from
                                 // a SIMD register or directly as a scalar from memory. Most other instructions, in
                                 // comparison, take such values from general-purpose registers instead.
