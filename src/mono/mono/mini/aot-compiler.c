@@ -8666,6 +8666,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    outfile=\n");
 			printf ("    profile=\n");
 			printf ("    profile-only\n");
+			printf ("    mibc-profile=\n");
 			printf ("    print-skipped-methods\n");
 			printf ("    readonly-value=\n");
 			printf ("    save-temps\n");
