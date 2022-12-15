@@ -1193,8 +1193,7 @@ protected:
 
 #endif // !defined(TARGET_64BIT)
 
-    // Do liveness update for register produced by the current node in codegen after
-    // code has been emitted for it.
+    void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc);
     void genProduceReg(GenTree* tree);
     void genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclNode, regNumber regNum);
     void genUnspillLocal(
