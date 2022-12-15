@@ -2928,7 +2928,6 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 if (targetReg != REG_NA)
                 {
                     emit->emitIns_R_I(INS_movi, emitActualTypeSize(targetType), targetReg, 0x00, INS_OPTS_16B);
-                    genProduceReg(lclNode);
                 }
                 else
                 {
@@ -2941,8 +2940,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                         assert(targetType == TYP_SIMD8);
                         GetEmitter()->emitIns_S_R(INS_str, EA_8BYTE, REG_ZR, varNum, 0);
                     }
-                    genUpdateLife(lclNode);
                 }
+                genUpdateLifeStore(lclNode, targetReg, varDsc);
                 return;
             }
             if (zeroInit)
