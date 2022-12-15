@@ -726,13 +726,16 @@ namespace Internal.JitInterface
                         pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
-
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type));
+                        var helperId = GetReadyToRunHelperFromStaticBaseHelper(id);
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
@@ -1500,6 +1503,10 @@ namespace Internal.JitInterface
                     // TODO: Handle the case when the RVA is in the TLS range
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
 
+                    ISymbolNode node = _compilation.GetFieldRvaData(field);
+                    pResult->fieldLookup.addr = (void*)ObjectToHandle(node);
+                    pResult->fieldLookup.accessType = node.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
+
                     // We are not going through a helper. The constructor has to be triggered explicitly.
                     if (!IsClassPreInited(field.OwningType))
                     {
@@ -1532,7 +1539,7 @@ namespace Internal.JitInterface
                 else
                 {
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
-                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
+                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_UNDEF;
 
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
                     CORINFO_FIELD_ACCESSOR intrinsicAccessor;
@@ -1546,18 +1553,27 @@ namespace Internal.JitInterface
                     {
                         if (field.HasGCStaticBase)
                         {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
                         }
                         else
                         {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetThreadNonGcStaticBase;
                         }
                     }
                     else
                     {
-                        helperId = field.HasGCStaticBase ?
-                            ReadyToRunHelperId.GetGCStaticBase :
-                            ReadyToRunHelperId.GetNonGCStaticBase;
+                        if (field.HasGCStaticBase)
+                        {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE;
+                            helperId = ReadyToRunHelperId.GetGCStaticBase;
+                        }
+                        else
+                        {
+                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        }
                     }
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
@@ -2998,8 +3014,16 @@ namespace Internal.JitInterface
             return 0;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, bool ignoreMovableObjects)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
+            Debug.Assert(fieldHandle != null);
+            FieldDesc field = HandleToObject(fieldHandle);
+
+            // For crossgen2 we only support RVA fields
+            if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) && field.HasRva)
+            {
+                return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
+            }
             return false;
         }
 

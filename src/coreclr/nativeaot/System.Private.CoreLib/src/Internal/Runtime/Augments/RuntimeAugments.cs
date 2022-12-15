@@ -165,22 +165,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateObject);
         }
 
-        public static IntPtr GetAllocateArrayHelperForType(RuntimeTypeHandle type)
-        {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateArray);
-        }
-
-        public static IntPtr GetCastingHelperForType(RuntimeTypeHandle type, bool throwing)
-        {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type),
-                throwing ? RuntimeHelperKind.CastClass : RuntimeHelperKind.IsInst);
-        }
-
-        public static IntPtr GetDispatchMapForType(RuntimeTypeHandle typeHandle)
-        {
-            return CreateEETypePtr(typeHandle).DispatchMap;
-        }
-
         public static IntPtr GetFallbackDefaultConstructor()
         {
             return Activator.GetFallbackDefaultConstructor();
@@ -864,7 +848,6 @@ namespace Internal.Runtime.Augments
             IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
             if (newThunk == IntPtr.Zero)
                 throw new OutOfMemoryException();
-            TypeLoaderCallbacks.RegisterThunk(newThunk);
             return newThunk;
         }
 

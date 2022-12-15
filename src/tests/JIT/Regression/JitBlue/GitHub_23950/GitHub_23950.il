@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib {}
 
-.assembly GitHub_23970 {}
+.assembly 'GitHub_23950' {}
 
 // Test that jit can inline method with a pinned pointer
 

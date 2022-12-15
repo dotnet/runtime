@@ -305,6 +305,7 @@ namespace ILCompiler
                 bool fullyRoot;
                 string reason;
 
+                // https://github.com/dotnet/runtime/issues/78752
                 // Compat with https://github.com/dotnet/linker/issues/1541 IL Linker bug:
                 // Asking to root an assembly with entrypoint will not actually root things in the assembly.
                 // We need to emulate this because the SDK injects a root for the entrypoint assembly right now
@@ -741,6 +742,11 @@ namespace ILCompiler
 
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectableField(fieldToReport), reason);
+            }
+
+            if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
+            {
+                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
             }
         }
 

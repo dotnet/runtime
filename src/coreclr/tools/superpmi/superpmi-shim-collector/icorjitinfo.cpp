@@ -1700,24 +1700,11 @@ unsigned interceptor_ICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppI
     return temp;
 }
 
-// return the data's address (for static fields only)
-void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
-{
-    mc->cr->AddCall("getFieldAddress");
-    void* temp = original_ICorJitInfo->getFieldAddress(field, ppIndirection);
-
-    // Figure out the element type so we know how much we can load
-    CORINFO_CLASS_HANDLE cch;
-    CorInfoType          cit = getFieldType(field, &cch, NULL);
-    mc->recGetFieldAddress(field, ppIndirection, temp, cit);
-    return temp;
-}
-
-bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     mc->cr->AddCall("getReadonlyStaticFieldValue");
-    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
-    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects, result);
+    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects, result);
     return result;
 }
 

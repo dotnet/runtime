@@ -1504,15 +1504,6 @@ public:
         return OperIsSimple(gtOper);
     }
 
-#ifdef FEATURE_SIMD
-    bool isCommutativeSIMDIntrinsic();
-#else  // !
-    bool isCommutativeSIMDIntrinsic()
-    {
-        return false;
-    }
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
@@ -1541,8 +1532,7 @@ public:
 
     bool OperIsCommutative()
     {
-        return OperIsCommutative(gtOper) || (OperIsSIMD(gtOper) && isCommutativeSIMDIntrinsic()) ||
-               (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
+        return OperIsCommutative(gtOper) || (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
     }
 
     static bool OperMayOverflow(genTreeOps gtOper)
@@ -1564,7 +1554,9 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        return gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK || OperIsBlk(gtOper);
+        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_OBJ, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK,
+                                           GT_STORE_DYN_BLK, GT_NULLCHECK));
+        return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
     static bool OperIsArrLength(genTreeOps gtOper)
@@ -2209,6 +2201,12 @@ public:
         assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
         return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
+    }
+
+    template <typename... T>
+    bool IsIconHandle(GenTreeFlags handleType, T... rest) const
+    {
+        return IsIconHandle(handleType) || IsIconHandle(rest...);
     }
 
     // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag.
@@ -4055,6 +4053,7 @@ struct GenTreeField : public GenTreeUnOp
     // True if this field is a volatile memory operation.
     bool IsVolatile() const
     {
+        assert(((gtFlags & GTF_FLD_VOLATILE) == 0) || OperIs(GT_FIELD));
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
 
@@ -8711,7 +8710,6 @@ inline bool GenTree::IsVectorCreate() const
     {
         switch (AsSIMD()->GetSIMDIntrinsicId())
         {
-            case SIMDIntrinsicInit:
             case SIMDIntrinsicInitN:
                 return true;
 

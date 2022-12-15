@@ -192,8 +192,8 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                if (offset < 0 || offset >= Length)
-                    throw new ArgumentOutOfRangeException(nameof(offset));
+                ArgumentOutOfRangeException.ThrowIfNegative(offset);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(offset, Length);
 
                 _rgchWorkBuf ??= new char[1];
 
@@ -256,8 +256,7 @@ namespace System.Data.SqlTypes
         // If the SqlChars is Null, setLength will make it non-Null.
         public void SetLength(long value)
         {
-            if (value < 0)
-                throw new ArgumentOutOfRangeException(nameof(value));
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             if (FStream())
             {
@@ -272,10 +271,9 @@ namespace System.Data.SqlTypes
                 if (null == _rgchBuf)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);
 
-                if (value > _rgchBuf.Length)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _rgchBuf.Length);
 
-                else if (IsNull)
+                if (IsNull)
                     // At this point we know that value is small enough
                     // Go back in buffer mode
                     _state = SqlBytesCharsState.Buffer;
@@ -294,17 +292,16 @@ namespace System.Data.SqlTypes
                 throw new SqlNullValueException();
 
             // Validate the arguments
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset > Length || offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            if (offsetInBuffer > buffer.Length || offsetInBuffer < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetInBuffer));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetInBuffer, buffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offsetInBuffer);
 
-            if (count < 0 || count > buffer.Length - offsetInBuffer)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offsetInBuffer);
 
             // Adjust count based on data length
             if (count > Length - offset)
@@ -341,22 +338,21 @@ namespace System.Data.SqlTypes
             else
             {
                 // Validate the arguments
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer));
+                ArgumentNullException.ThrowIfNull(buffer);
 
                 if (_rgchBuf == null)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);
 
-                if (offset < 0)
-                    throw new ArgumentOutOfRangeException(nameof(offset));
+                ArgumentOutOfRangeException.ThrowIfNegative(offset);
+
                 if (offset > _rgchBuf.Length)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
 
-                if (offsetInBuffer < 0 || offsetInBuffer > buffer.Length)
-                    throw new ArgumentOutOfRangeException(nameof(offsetInBuffer));
+                ArgumentOutOfRangeException.ThrowIfNegative(offsetInBuffer);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetInBuffer, buffer.Length);
 
-                if (count < 0 || count > buffer.Length - offsetInBuffer)
-                    throw new ArgumentOutOfRangeException(nameof(count));
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offsetInBuffer);
 
                 if (count > _rgchBuf.Length - offset)
                     throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
@@ -650,8 +646,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > buffer.Length - offset)
@@ -667,8 +662,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > buffer.Length - offset)

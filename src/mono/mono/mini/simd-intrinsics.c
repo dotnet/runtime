@@ -302,6 +302,20 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				break;
 			case SN_Divide:
 			case SN_op_Division:
+				if (strcmp ("Vector4", m_class_get_name (klass)) && strcmp ("Vector2", m_class_get_name (klass))) {
+					if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type != MONO_TYPE_GENERICINST)) {
+						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
+						ins->inst_c1 = arg_type;
+						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
+						ins->inst_c0 = OP_FDIV;
+						return ins;
+					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
+						instc0 = OP_FDIV;
+						break;
+					} else {
+						return NULL;
+					}
+				}
 				instc0 = OP_FDIV;
 				break;
 			case SN_Max:
@@ -325,6 +339,11 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
 						ins->inst_c0 = OP_FMUL;
 						return ins;
+					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
+						instc0 = OP_FMUL;
+						break;
+					} else {
+						return NULL;
 					}
 				}
 				instc0 = OP_FMUL;
@@ -1468,10 +1487,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 	}
 	case SN_Narrow: {
-#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
+#ifdef TARGET_ARM64
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
 
@@ -1562,6 +1581,33 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return NULL;
 			}
 		}
+#elif defined(TARGET_WASM)
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+
+		if (size != 16)
+			return NULL;
+
+		int intrins = -1;
+		switch (arg0_type) {
+		case MONO_TYPE_I2:
+			intrins = INTRINS_WASM_NARROW_SIGNED_V16;
+			break;
+		case MONO_TYPE_I4:
+			intrins = INTRINS_WASM_NARROW_SIGNED_V8;
+			break;
+		case MONO_TYPE_U2:
+			intrins = INTRINS_WASM_NARROW_UNSIGNED_V16;
+			break;
+		case MONO_TYPE_U4:
+			intrins = INTRINS_WASM_NARROW_UNSIGNED_V8;
+			break;
+		}
+
+		if (intrins != -1)
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
+
+		return NULL;
 #else
 		return NULL;
 #endif
@@ -4486,6 +4532,20 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128`1"))
 			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector")){
+		return emit_sri_vector (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Numerics") && !strcmp (class_name, "Vector`1")){
+		return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
+	}
+
+	if (!strcmp (class_ns, "System.Numerics")) {
+		//if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Vector3", class_name))
+		if (!strcmp ("Vector4", class_name))
+			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
 	}
 
 	return NULL;

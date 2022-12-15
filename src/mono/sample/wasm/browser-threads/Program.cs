@@ -18,6 +18,9 @@ namespace Sample
             return 0;
         }
 
+        [JSImport("globalThis.console.log")]
+        public static partial void ConsoleLog(string status);
+
         [JSImport("Sample.Test.updateProgress", "main.js")]
         static partial void updateProgress(string status);
 
@@ -72,6 +75,7 @@ public class ExpensiveComputation
 
     public void Run()
     {
+        Sample.Test.ConsoleLog("Hello from ManagedThreadId " + Thread.CurrentThread.ManagedThreadId);
         long result = Fib(UpTo);
         if (result < (long)int.MaxValue)
             _tcs.SetResult((int)result);

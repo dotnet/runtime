@@ -42,8 +42,7 @@ namespace System.Collections.Generic
         // is used.
         public Queue(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             _array = new T[capacity];
         }
 
@@ -164,7 +163,7 @@ namespace System.Collections.Generic
             }
             catch (ArrayTypeMismatchException)
             {
-                throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
             }
         }
 
@@ -377,10 +376,7 @@ namespace System.Collections.Generic
         /// <returns>The new capacity of this queue.</returns>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (_array.Length < capacity)
             {

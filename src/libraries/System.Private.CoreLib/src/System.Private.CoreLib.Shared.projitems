@@ -2235,8 +2235,9 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" Condition="'$(TargetsAndroid)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" Condition="'$(TargetsAndroid)' != 'true' and '$(IsiOSLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Android.cs" Condition="'$(TargetsAndroid)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.Logcat.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
       <Link>Common\Interop\Android\Interop.Logcat.cs</Link>
     </Compile>
@@ -2309,8 +2310,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs" Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
@@ -2329,6 +2328,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(IsMobileLike)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs" Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">

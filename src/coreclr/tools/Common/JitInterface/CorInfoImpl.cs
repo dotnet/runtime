@@ -3237,6 +3237,29 @@ namespace Internal.JitInterface
             }
         }
 
+        public static ReadyToRunHelperId GetReadyToRunHelperFromStaticBaseHelper(CorInfoHelpFunc helper)
+        {
+            ReadyToRunHelperId res;
+            switch (helper)
+            {
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetNonGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadNonGcStaticBase;
+                    break;
+                default:
+                    throw new NotImplementedException("ReadyToRun: " + helper.ToString());
+            }
+            return res;
+        }
+
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
 
@@ -3312,25 +3335,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("isRIDClassDomainID"); }
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
-
-        private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, void** ppIndirection)
-        {
-            FieldDesc fieldDesc = HandleToObject(field);
-            Debug.Assert(fieldDesc.HasRva);
-            ISymbolNode node = _compilation.GetFieldRvaData(fieldDesc);
-            void *handle = (void *)ObjectToHandle(node);
-            if (node.RepresentsIndirectionCell)
-            {
-                *ppIndirection = handle;
-                return null;
-            }
-            else
-            {
-                if (ppIndirection != null)
-                    *ppIndirection = null;
-                return handle;
-            }
-        }
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {
@@ -4079,5 +4083,25 @@ namespace Internal.JitInterface
             return supportEnabled ? _compilation.InstructionSetSupport.IsInstructionSetSupported(instructionSet) : false;
         }
 #endif
+
+        private static bool TryReadRvaFieldData(FieldDesc field, byte* buffer, int bufferSize, int valueOffset)
+        {
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize > 0);
+            Debug.Assert(valueOffset >= 0);
+            Debug.Assert(field.IsStatic);
+            Debug.Assert(field.HasRva);
+
+            if (!field.IsThreadStatic && field.IsInitOnly && field is EcmaField ecmaField)
+            {
+                ReadOnlySpan<byte> rvaData = ecmaField.GetFieldRvaData();
+                if (rvaData.Length >= bufferSize && valueOffset <= rvaData.Length - bufferSize)
+                {
+                    rvaData.Slice(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

@@ -4,7 +4,7 @@ using Xunit;
 
 public class Program_widen
 {
-    // Random field we assign some bogus values to to trick the inliner below.
+    // Random field we assign some bogus values to trick the inliner below.
     // We cannot use NoInlining as the runtime disables tailcalls from such functions.
     private static int s_val;
 

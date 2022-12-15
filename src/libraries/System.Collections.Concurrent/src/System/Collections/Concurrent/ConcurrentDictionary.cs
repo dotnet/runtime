@@ -169,14 +169,8 @@ namespace System.Collections.Concurrent
 
         internal ConcurrentDictionary(int concurrencyLevel, int capacity, bool growLockArray, IEqualityComparer<TKey>? comparer)
         {
-            if (concurrencyLevel < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(concurrencyLevel), SR.ConcurrentDictionary_ConcurrencyLevelMustBePositive);
-            }
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ConcurrentDictionary_CapacityMustNotBeNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(concurrencyLevel, 1);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             // The capacity should be at least as large as the concurrency level. Otherwise, we would have locks that don't guard
             // any buckets.
@@ -639,10 +633,7 @@ namespace System.Collections.Concurrent
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ConcurrentDictionary_IndexIsNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             int locksAcquired = 0;
             try
@@ -1767,11 +1758,7 @@ namespace System.Collections.Concurrent
         void ICollection.CopyTo(Array array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
-
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ConcurrentDictionary_IndexIsNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             int locksAcquired = 0;
             try

@@ -10,8 +10,7 @@ using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
-
-#pragma warning disable 8500 // sizeof of managed types
+#pragma warning disable 8500 // address / sizeof of managed types
 
 namespace System
 {
@@ -113,7 +112,7 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            _reference = ref Unsafe.As<byte, T>(ref *(byte*)pointer);
+            _reference = ref *(T*)pointer;
             _length = length;
         }
 
@@ -305,7 +304,7 @@ namespace System
                 // The runtime eventually calls memset, which can efficiently support large buffers.
                 // We don't need to check IsReferenceOrContainsReferences because no references
                 // can ever be stored in types this small.
-                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), Unsafe.As<T, byte>(ref value), (uint)_length);
+                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _reference), *(byte*)&value, (uint)_length);
             }
             else
             {

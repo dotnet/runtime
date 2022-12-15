@@ -723,9 +723,12 @@ namespace ILCompiler
                                 switch (opcode)
                                 {
                                     case ILOpcode.conv_u:
+                                    case ILOpcode.conv_i:
                                         stack.Push(StackValueKind.NativeInt,
                                             context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32((int)val));
                                         break;
+                                    default:
+                                        return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
                             else if (popped.ValueKind == StackValueKind.Float)

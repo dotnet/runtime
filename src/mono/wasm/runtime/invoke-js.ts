@@ -3,7 +3,7 @@
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, MarshalerType, get_signature_type, imported_js_function_symbol } from "./marshal";
-import { setI32 } from "./memory";
+import { setI32_unchecked } from "./memory";
 import { conv_string_root, js_string_to_mono_string_root } from "./strings";
 import { mono_assert, MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle } from "./types";
 import { Int32Ptr } from "./types/emscripten";
@@ -84,9 +84,11 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         (<any>bound_fn)[imported_js_function_symbol] = true;
         const fn_handle = fn_wrapper_by_fn_handle.length;
         fn_wrapper_by_fn_handle.push(bound_fn);
-        setI32(function_js_handle, <any>fn_handle);
+        setI32_unchecked(function_js_handle, <any>fn_handle);
+        wrap_no_error_root(is_exception, resultRoot);
         endMeasure(mark, MeasuredBlock.bindJsFunction, js_function_name);
     } catch (ex: any) {
+        setI32_unchecked(function_js_handle, 0);
         Module.printErr(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -257,7 +259,7 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
     const parts = function_name.split(".");
     if (js_module_name) {
         scope = importedModules.get(js_module_name);
-        mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.Import() first.`);
+        mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() first.`);
     }
     else if (parts[0] === "INTERNAL") {
         scope = INTERNAL;
@@ -354,7 +356,7 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
         res = mono_wasm_symbolicate_string(res);
     }
     if (is_exception) {
-        Module.setValue(is_exception, 1, "i32");
+        setI32_unchecked(is_exception, 1);
     }
     return res;
 }
@@ -363,4 +365,14 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
 export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
     const res = _wrap_error_flag(is_exception, ex);
     js_string_to_mono_string_root(res, <any>result);
+}
+
+// to set out parameters of icalls
+export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmRoot<MonoObject>): void {
+    if (is_exception) {
+        setI32_unchecked(is_exception, 0);
+    }
+    if (result) {
+        result.clear();
+    }
 }

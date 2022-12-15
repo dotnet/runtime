@@ -62,6 +62,7 @@ inline void FATAL_GC_ERROR()
 // + creates some ro segs
 // We can add more mechanisms here.
 //#define STRESS_REGIONS
+#define MARK_PHASE_PREFETCH
 #endif //USE_REGIONS
 
 // FEATURE_STRUCTALIGN was added by Midori. In CLR we are not interested
@@ -1222,9 +1223,11 @@ enum bookkeeping_element
 
 class mark_queue_t
 {
+#ifdef MARK_PHASE_PREFETCH
     static const size_t slot_count = 16;
     uint8_t* slot_table[slot_count];
     size_t curr_slot_index;
+#endif //MARK_PHASE_PREFETCH
 
 public:
     mark_queue_t();
@@ -4111,12 +4114,6 @@ public:
 
     PER_HEAP_ISOLATED
     size_t heap_hard_limit_oh[total_oh_count];
-
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_heap;
-
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_bookkeeping;
 
     PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;

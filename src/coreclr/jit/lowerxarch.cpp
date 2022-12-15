@@ -5593,6 +5593,62 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 }
 
 //------------------------------------------------------------------------
+// ContainCheckSelect: determine whether the sources of a select should be contained.
+//
+// Arguments:
+//    select - the GT_SELECT or GT_SELECT_HI node.
+//
+void Lowering::ContainCheckSelect(GenTreeOp* select)
+{
+#ifdef TARGET_64BIT
+    assert(select->OperIs(GT_SELECT));
+#else
+    assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
+#endif
+
+    // TODO-CQ: Support containing relops here for the GT_SELECT case.
+
+    GenTree* op1 = select->gtOp1;
+    GenTree* op2 = select->gtOp2;
+
+    // op1 and op2 are emitted as two separate instructions due to the
+    // conditional nature of cmov, so both operands can be contained memory
+    // operands.
+    unsigned operSize = genTypeSize(select);
+    assert((operSize == 4) || (operSize == TARGET_POINTER_SIZE));
+
+    if (genTypeSize(op1) == operSize)
+    {
+        if (IsContainableMemoryOp(op1))
+        {
+            if (IsSafeToContainMem(select, op1))
+            {
+                MakeSrcContained(select, op1);
+            }
+        }
+        else if (IsSafeToContainMem(select, op1))
+        {
+            MakeSrcRegOptional(select, op1);
+        }
+    }
+
+    if (genTypeSize(op2) == operSize)
+    {
+        if (IsContainableMemoryOp(op2))
+        {
+            if (IsSafeToContainMem(select, op2))
+            {
+                MakeSrcContained(select, op2);
+            }
+        }
+        else if (IsSafeToContainMem(select, op2))
+        {
+            MakeSrcRegOptional(select, op2);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // LowerRMWMemOp: Determine if this is a valid RMW mem op, and if so lower it accordingly
 //
 // Arguments:
@@ -5753,8 +5809,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         binOpInRMW = IsBinOpInRMWStoreInd(node);
         if (!binOpInRMW)
         {
-            const unsigned operatorSize = genTypeSize(node->TypeGet());
-            if ((genTypeSize(op2->TypeGet()) == operatorSize) && IsContainableMemoryOp(op2))
+            if (IsContainableMemoryOpSize(node, op2) && IsContainableMemoryOp(op2))
             {
                 isSafeToContainOp2 = IsSafeToContainMem(node, op2);
                 if (isSafeToContainOp2)
@@ -5773,7 +5828,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
                     directlyEncodable = true;
                     operand           = op1;
                 }
-                else if ((genTypeSize(op1->TypeGet()) == operatorSize) && IsContainableMemoryOp(op1))
+                else if (IsContainableMemoryOpSize(node, op1) && IsContainableMemoryOp(op1))
                 {
                     isSafeToContainOp1 = IsSafeToContainMem(node, op1);
                     if (isSafeToContainOp1)
@@ -5880,51 +5935,9 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 {
     switch (simdNode->GetSIMDIntrinsicId())
     {
-        case SIMDIntrinsicInit:
-        {
-            GenTree* op1 = simdNode->Op(1);
-#ifndef TARGET_64BIT
-            if (op1->OperGet() == GT_LONG)
-            {
-                MakeSrcContained(simdNode, op1);
-                GenTree* op1lo = op1->gtGetOp1();
-                GenTree* op1hi = op1->gtGetOp2();
-
-                if ((op1lo->IsIntegralConst(0) && op1hi->IsIntegralConst(0)) ||
-                    (op1lo->IsIntegralConst(-1) && op1hi->IsIntegralConst(-1)))
-                {
-                    MakeSrcContained(op1, op1lo);
-                    MakeSrcContained(op1, op1hi);
-                }
-            }
-            else
-#endif // !TARGET_64BIT
-                if (op1->IsFloatPositiveZero() || op1->IsIntegralConst(0) ||
-                    (varTypeIsIntegral(simdNode->GetSimdBaseType()) && op1->IsIntegralConst(-1)))
-            {
-                MakeSrcContained(simdNode, op1);
-            }
-            else if ((comp->getSIMDSupportLevel() == SIMD_AVX2_Supported) &&
-                     ((simdNode->GetSimdSize() == 16) || (simdNode->GetSimdSize() == 32)))
-            {
-                // Either op1 is a float or dbl constant or an addr
-                if (op1->IsCnsFltOrDbl() || op1->OperIsLocalAddr())
-                {
-                    MakeSrcContained(simdNode, op1);
-                }
-            }
-        }
-        break;
-
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
             CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
-            break;
-
-        case SIMDIntrinsicShuffleSSE2:
-            // Second operand is an integer constant and marked as contained.
-            assert(simdNode->Op(2)->IsCnsIntOrI());
-            MakeSrcContained(simdNode, simdNode->Op(2));
             break;
 
         default:
