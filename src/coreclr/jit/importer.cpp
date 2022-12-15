@@ -934,16 +934,9 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     assert(varTypeIsStruct(dest) && (dest->OperIsLocal() || dest->OperIsIndir() || dest->OperIs(GT_FIELD)));
 
     assert(dest->TypeGet() == src->TypeGet());
-    // TODO-1stClassStructs: delete the "!IND" condition once "IND<struct>" nodes are no more.
-    if (dest->TypeIs(TYP_STRUCT) && !src->gtEffectiveVal()->OperIs(GT_IND))
+    if (dest->TypeIs(TYP_STRUCT))
     {
         assert(ClassLayout::AreCompatible(dest->GetLayout(this), src->GetLayout(this)));
-    }
-
-    if (dest->OperIs(GT_FIELD) && dest->TypeIs(TYP_STRUCT))
-    {
-        // TODO-ADDR: delete this once FIELD<struct> nodes are transformed into OBJs (not INDs).
-        dest = gtNewObjNode(dest->GetLayout(this), gtNewOperNode(GT_ADDR, TYP_BYREF, dest));
     }
 
     DebugInfo usedDI = di;
@@ -1328,29 +1321,13 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
     {
         structType = impNormStructType(structHnd);
     }
-    bool                 alreadyNormalized = false;
-    GenTreeLclVarCommon* structLcl         = nullptr;
+    GenTreeLclVarCommon* structLcl = nullptr;
 
-    genTreeOps oper = structVal->OperGet();
-    switch (oper)
+    switch (structVal->OperGet())
     {
-        // GT_MKREFANY is supported directly by args morphing.
-        case GT_MKREFANY:
-            alreadyNormalized = true;
-            break;
-
         case GT_CALL:
         case GT_RET_EXPR:
             makeTemp = true;
-            break;
-
-        case GT_FIELD:
-            // Wrap it in a GT_OBJ, if needed.
-            structVal->gtType = structType;
-            if (structType == TYP_STRUCT)
-            {
-                structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
-            }
             break;
 
         case GT_LCL_VAR:
@@ -1360,35 +1337,21 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
             FALLTHROUGH;
 
+        case GT_IND:
         case GT_OBJ:
         case GT_BLK:
-            // These should already have the appropriate type.
-            assert(structVal->gtType == structType);
-            alreadyNormalized = true;
-            break;
-
-        case GT_IND:
-            assert(structVal->gtType == structType);
-            structVal         = gtNewObjNode(structHnd, structVal->gtGetOp1());
-            alreadyNormalized = true;
-            break;
-
+        case GT_FIELD:
         case GT_CNS_VEC:
-            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
-            break;
-
 #ifdef FEATURE_SIMD
         case GT_SIMD:
-            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
-            break;
-#endif // FEATURE_SIMD
+#endif
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            assert(structVal->gtType == structType);
-            assert(varTypeIsSIMD(structVal) ||
-                   HWIntrinsicInfo::IsMultiReg(structVal->AsHWIntrinsic()->GetHWIntrinsicId()));
-            break;
 #endif
+        case GT_MKREFANY:
+            // These should already have the appropriate type.
+            assert(structVal->TypeGet() == structType);
+            break;
 
         case GT_COMMA:
         {
@@ -1409,22 +1372,15 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 } while (blockNode->OperGet() == GT_COMMA);
             }
 
-            if (blockNode->OperGet() == GT_FIELD)
-            {
-                // If we have a GT_FIELD then wrap it in a GT_OBJ.
-                blockNode = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, blockNode));
-            }
-
 #ifdef FEATURE_SIMD
             if (blockNode->OperIsSimdOrHWintrinsic() || blockNode->IsCnsVec())
             {
                 parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel);
-                alreadyNormalized     = true;
             }
             else
 #endif
             {
-                noway_assert(blockNode->OperIsBlk());
+                noway_assert(blockNode->OperIsBlk() || blockNode->OperIs(GT_FIELD));
 
                 // Sink the GT_COMMA below the blockNode addr.
                 // That is GT_COMMA(op1, op2=blockNode) is transformed into
@@ -1442,7 +1398,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 {
                     structVal = blockNode;
                 }
-                alreadyNormalized = true;
             }
         }
         break;
@@ -1451,22 +1406,19 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             noway_assert(!"Unexpected node in impNormStructVal()");
             break;
     }
-    structVal->gtType = structType;
 
-    if (!alreadyNormalized)
+    if (makeTemp)
     {
-        if (makeTemp)
-        {
-            unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
+        unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
-            impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
+        impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
 
-            // The structVal is now the temp itself
+        // The structVal is now the temp itself
 
-            structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
-            structVal = structLcl;
-        }
-        if ((structType == TYP_STRUCT) && !structVal->OperIsBlk())
+        structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
+        structVal = structLcl;
+
+        if (structType == TYP_STRUCT)
         {
             // Wrap it in a GT_OBJ
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
@@ -10085,26 +10037,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
             }
             case CEE_REFANYTYPE:
-
+            {
                 op1 = impPopStack().val;
 
-                // make certain it is normalized;
-                op1 = impNormStructVal(op1, impGetRefAnyClass(), CHECK_SPILL_ALL);
-
-                if (op1->gtOper == GT_OBJ)
+                if (op1->OperIs(GT_MKREFANY))
                 {
-                    // Get the address of the refany
-                    op1 = op1->AsOp()->gtOp1;
-
-                    // Fetch the type from the correct slot
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
-                    op1 = gtNewOperNode(GT_IND, TYP_BYREF, op1);
-                }
-                else
-                {
-                    assertImp(op1->gtOper == GT_MKREFANY);
-
                     // The pointer may have side-effects
                     if (op1->AsOp()->gtOp1->gtFlags & GTF_SIDE_EFFECT)
                     {
@@ -10117,25 +10054,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We already have the class handle
                     op1 = op1->AsOp()->gtOp2;
                 }
-
-                // convert native TypeHandle to RuntimeTypeHandle
+                else
                 {
-                    op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
+                    // Get the address of the refany
+                    op1 = impGetStructAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
 
-                    CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
-
-                    // The handle struct is returned in register
-                    op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
-                    op1->AsCall()->gtRetClsHnd  = classHandle;
-#if FEATURE_MULTIREG_RET
-                    op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
-#endif
-
-                    tiRetVal = typeInfo(TI_STRUCT, classHandle);
+                    // Fetch the type from the correct slot
+                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
+                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
+                    op1 = gtNewOperNode(GT_IND, TYP_BYREF, op1);
                 }
 
+                // Convert native TypeHandle to RuntimeTypeHandle.
+                op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
+
+                CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
+
+                // The handle struct is returned in register
+                op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
+                op1->AsCall()->gtRetClsHnd  = classHandle;
+#if FEATURE_MULTIREG_RET
+                op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
+#endif
+
+                tiRetVal = typeInfo(TI_STRUCT, classHandle);
                 impPushOnStack(op1, tiRetVal);
-                break;
+            }
+            break;
 
             case CEE_LDTOKEN:
             {

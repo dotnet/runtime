@@ -739,21 +739,10 @@ void MorphCopyBlockHelper::PrepareSrc()
         m_srcVarDsc    = m_comp->lvaGetDesc(m_srcLclNum);
     }
 
-    // Verify that the types on the LHS and RHS match and morph away "IND<struct>" nodes.
+    // Verify that the types on the LHS and RHS match.
     assert(m_dst->TypeGet() == m_src->TypeGet());
     if (m_dst->TypeIs(TYP_STRUCT))
     {
-        // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
-        if (m_src->OperIs(GT_IND))
-        {
-            m_src->SetOper(m_blockLayout->IsBlockLayout() ? GT_BLK : GT_OBJ);
-            m_src->AsBlk()->SetLayout(m_blockLayout);
-            m_src->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
-            m_src->AsBlk()->gtBlkOpGcUnsafe = false;
-#endif // !JIT32_GCENCODER
-        }
-
         assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
     }
     // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
@@ -1577,18 +1566,25 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 
         if ((size != 0) && FitsIn<int32_t>(size))
         {
-            GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
-            GenTree* asg = gtNewAssignNode(lhs, tree->Data());
+            ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
+            GenTree*     dst    = gtNewStructVal(layout, tree->Addr());
+            dst->gtFlags |= GTF_GLOB_REF;
+
+            GenTree* src = tree->Data();
+            if (src->OperIs(GT_IND))
+            {
+                assert(src->TypeIs(TYP_STRUCT));
+                src->SetOper(GT_BLK);
+                src->AsBlk()->Initialize(layout);
+            }
+
+            GenTree* asg = gtNewAssignNode(dst, src);
             asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+            fgAssignSetVarDef(asg);
 
-            GenTree* lclVarTree = fgIsIndirOfAddrOfLocal(lhs);
-            if (lclVarTree != nullptr)
-            {
-                lclVarTree->gtFlags |= GTF_VAR_DEF;
-            }
+            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
 
             return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
         }

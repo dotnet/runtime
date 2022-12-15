@@ -7149,29 +7149,25 @@ public:
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, nullptr)
-        , m_layout(layout)
-        , gtBlkOpKind(BlkOpKindInvalid)
-#ifndef JIT32_GCENCODER
-        , gtBlkOpGcUnsafe(false)
-#endif
     {
-        assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+        Initialize(layout);
     }
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, data)
-        , m_layout(layout)
-        , gtBlkOpKind(BlkOpKindInvalid)
-#ifndef JIT32_GCENCODER
-        , gtBlkOpGcUnsafe(false)
-#endif
     {
-        assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
-        gtFlags |= (data->gtFlags & GTF_ALL_EFFECT);
+        Initialize(layout);
+    }
+
+    void Initialize(ClassLayout* layout)
+    {
+        assert(OperIsBlk(OperGet()) && ((layout != nullptr) || OperIs(GT_STORE_DYN_BLK)));
+
+        m_layout    = layout;
+        gtBlkOpKind = BlkOpKindInvalid;
+#ifndef JIT32_GCENCODER
+        gtBlkOpGcUnsafe = false;
+#endif
     }
 
 #if DEBUGGABLE_GENTREE

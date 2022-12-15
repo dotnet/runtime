@@ -5160,7 +5160,17 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
     if (tree->OperIs(GT_FIELD))
     {
-        tree->SetOper(GT_IND);
+        if (tree->TypeIs(TYP_STRUCT))
+        {
+            ClassLayout* layout = tree->GetLayout(this);
+            tree->SetOper(GT_OBJ);
+            tree->AsBlk()->Initialize(layout);
+        }
+        else
+        {
+            tree->SetOper(GT_IND);
+        }
+
         tree->AsIndir()->SetAddr(addr);
     }
     else // Otherwise, we have a FIELD_ADDR.

@@ -15674,12 +15674,11 @@ GenTree* Compiler::gtNewTempAssign(
     if (varTypeIsStruct(varDsc) && (valStructHnd == NO_CLASS_HANDLE) && !varTypeIsSIMD(valTyp))
     {
         // There are some cases where we do not have a struct handle on the return value:
-        // 1. Handle-less IND/BLK/LCL_FLD<struct> nodes.
+        // 1. Handle-less BLK/LCL_FLD nodes.
         // 2. The zero constant created by local assertion propagation.
-        // In these cases, we can use the type of the merge return for the assignment.
+        // In these cases, we can use the type of the local for the assignment.
         assert(val->gtEffectiveVal(true)->OperIs(GT_IND, GT_BLK, GT_LCL_FLD, GT_CNS_INT));
-        assert(tmp == genReturnLocal);
-        valStructHnd = lvaGetStruct(genReturnLocal);
+        valStructHnd = lvaGetDesc(tmp)->GetStructHnd();
         assert(valStructHnd != NO_CLASS_HANDLE);
     }
 
