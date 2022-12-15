@@ -2971,18 +2971,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             emitAttr    attr = emitActualTypeSize(targetType);
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
-
-            genUpdateLife(lclNode);
-
-            varDsc->SetRegNum(REG_STK);
         }
         else // store into register (i.e move into register)
         {
             // Assign into targetReg when dataReg (from op1) is not the same register
             inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
-
-            genProduceReg(lclNode);
         }
+        genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
 }
 
@@ -5256,6 +5251,7 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 
     unsigned offs   = treeNode->GetLclOffs();
     unsigned varNum = treeNode->GetLclNum();
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
     assert(varNum < compiler->lvaCount);
 
     GenTree* data = treeNode->gtGetOp1();
@@ -5273,8 +5269,6 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 
         // Update life after instruction emitted
         genUpdateLife(treeNode);
-
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         varDsc->SetRegNum(REG_STK);
 
         return;
@@ -5289,20 +5283,14 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
         assert(GetEmitter()->isVectorRegister(tgtReg));
 
         inst_Mov(treeNode->TypeGet(), tgtReg, dataReg, /* canSkip */ true);
-        genProduceReg(treeNode);
     }
     else
     {
         // Need an additional integer register to extract upper 4 bytes from data.
         regNumber tmpReg = treeNode->GetSingleTempReg();
         GetEmitter()->emitStoreSimd12ToLclOffset(varNum, offs, dataReg, tmpReg);
-
-        // Update life after instruction emitted
-        genUpdateLife(treeNode);
-
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-        varDsc->SetRegNum(REG_STK);
     }
+    genUpdateLifeStore(treeNode, tgtReg, varDsc);
 }
 
 #endif // FEATURE_SIMD

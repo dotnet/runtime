@@ -2084,6 +2084,30 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
 }
 
 //-------------------------------------------------------------------------
+// genProduceReg: Do liveness udpate after tree store instructions were
+// emitted, update result var's home if it was stored on stack.
+//
+// Arguments:
+//     tree        -  Gentree node
+//     targetReg   -  of the tree
+//     varDsc      -  result value's variable
+//
+// Return Value:
+//     None.
+void CodeGen::genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+{
+    if (targetReg != REG_NA)
+    {
+        genProduceReg(tree);
+    }
+    else
+    {
+        genUpdateLife(tree);
+        varDsc->SetRegNum(REG_STK);
+    }
+}
+
+//-------------------------------------------------------------------------
 // genProduceReg: do liveness update for register produced by the current
 // node in codegen after code has been emitted for it.
 //

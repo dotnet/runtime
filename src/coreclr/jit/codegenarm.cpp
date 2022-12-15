@@ -1116,19 +1116,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
                 emitter* emit = GetEmitter();
                 emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
-
-                // Updating variable liveness after instruction was emitted
-                genUpdateLife(tree);
-
-                varDsc->SetRegNum(REG_STK);
             }
             else // store into register (i.e move into register)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
                 inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
-
-                genProduceReg(tree);
             }
+
+            genUpdateLifeStore(tree, targetReg, varDsc);
         }
     }
 }
