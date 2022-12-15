@@ -979,16 +979,26 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
     {
         createScalarOps[0]->Op(1) = argX->gtGetOp1();
         BlockRange().Remove(argX);
+
+        createScalarOps[0]->Op(1)->ClearContained();
+        ContainCheckHWIntrinsic(createScalarOps[0]);
     }
     if (argY->OperIs(GT_NEG))
     {
         createScalarOps[1]->Op(1) = argY->gtGetOp1();
         BlockRange().Remove(argY);
+
+        createScalarOps[1]->Op(1)->ClearContained();
+        ContainCheckHWIntrinsic(createScalarOps[1]);
     }
     if (argZ->OperIs(GT_NEG))
     {
         createScalarOps[2]->Op(1) = argZ->gtGetOp1();
         BlockRange().Remove(argZ);
+
+        createScalarOps[2]->Op(1)->ClearContained();
+        ContainCheckHWIntrinsic(createScalarOps[2]);
+
         node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplySubtractNegatedScalar : NI_FMA_MultiplySubtractScalar);
     }
     else
