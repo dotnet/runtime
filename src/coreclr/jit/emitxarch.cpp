@@ -15,6 +15,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+// Simple test change
+
 #if defined(TARGET_XARCH)
 
 /*****************************************************************************/
