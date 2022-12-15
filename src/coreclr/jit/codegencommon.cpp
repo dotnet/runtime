@@ -7319,15 +7319,15 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
 }
 
 //------------------------------------------------------------------------
-// genIPmappingUpdateForRemovedInstruction: Update the IP mapping table for a removed instruction.
-// If the last IP mapping corresponds to the location immediately after the removed instruction, then
-// update the mapping to the location before the removed instruction.
+// genIPmappingUpdateForReplacedInstruction: Update the IP mapping table for a replaced instruction.
+// If the last IP mapping corresponds to the location of the old location, then
+// update it to the new location.
 //
 // Arguments:
-//    loc - the emitter location we compare against
-//    removedCodeSize - the size of the instruction being removed
+//    oldLoc - the emitter location of the removed instruction.
+//    newLoc - the emitter location of the new instruction.
 //
-void CodeGen::genIPmappingUpdateForRemovedInstruction(emitLocation loc, unsigned removedCodeSize)
+void CodeGen::genIPmappingUpdateForReplacedInstruction(emitLocation oldLoc, emitLocation newLoc)
 {
     if (!compiler->opts.compDbgInfo)
     {
@@ -7340,27 +7340,22 @@ void CodeGen::genIPmappingUpdateForRemovedInstruction(emitLocation loc, unsigned
     }
 
     IPmappingDsc& prev = compiler->genIPmappings.back();
-    if (prev.ipmdNativeLoc == loc)
+    if (prev.ipmdNativeLoc == oldLoc)
     {
 #ifdef DEBUG
         if (verbose)
         {
-            printf("Updating last IP mapping: ");
+            JITDUMP("Updating last IP mapping: ");
             genIPmappingDisp(unsigned(-1), &prev);
         }
 #endif // DEBUG
 
-        int newInsCount  = prev.ipmdNativeLoc.GetInsNum() - 1;
-        int newInsOffset = prev.ipmdNativeLoc.GetInsOffset() - removedCodeSize;
-        assert(newInsCount >= 0);
-        assert(newInsOffset >= 0);
-        unsigned newLoc = GetEmitter()->emitSpecifiedOffset(newInsCount, newInsOffset);
-        prev.ipmdNativeLoc.SetLocation(prev.ipmdNativeLoc.GetIG(), newLoc);
+        prev.ipmdNativeLoc.SetLocation(newLoc);
 
 #ifdef DEBUG
         if (verbose)
         {
-            printf("                      to: ");
+            JITDUMP("                      to: ");
             genIPmappingDisp(unsigned(-1), &prev);
         }
 #endif // DEBUG

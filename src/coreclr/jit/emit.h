@@ -153,6 +153,7 @@ public:
 
     void CaptureLocation(emitter* emit);
     void SetLocation(insGroup* _ig, unsigned _codePos);
+    void SetLocation(emitLocation newLocation);
 
     bool IsCurrentLocation(emitter* emit) const;
 
