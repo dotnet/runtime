@@ -48,32 +48,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM 0b1010
 #define ROUNDPS_TOWARD_ZERO_IMM 0b1011
 
-//--------------------------------------------------------------------------------
-// genSIMDExtractUpperHalf: Generate code to extract the upper half of a SIMD register
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Notes:
-//    This is used for the WidenHi intrinsic to extract the upper half.
-//    On SSE*, this is 8 bytes, and on AVX2 it is 16 bytes.
-//
-void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg)
-{
-    var_types simdType = simdNode->TypeGet();
-    emitAttr  emitSize = emitActualTypeSize(simdType);
-    if (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
-    {
-        instruction extractIns = varTypeIsFloating(simdNode->GetSimdBaseType()) ? INS_vextractf128 : INS_vextracti128;
-        GetEmitter()->emitIns_R_R_I(extractIns, EA_32BYTE, tgtReg, srcReg, 0x01);
-    }
-    else
-    {
-        inst_Mov(simdType, tgtReg, srcReg, /* canSkip */ true);
-        GetEmitter()->emitIns_R_I(INS_psrldq, emitSize, tgtReg, 8);
-    }
-}
-
 //-----------------------------------------------------------------------------
 // genStoreIndTypeSIMD12: store indirect a TYP_SIMD12 (i.e. Vector3) to memory.
 // Since Vector3 is not a hardware supported write size, it is performed

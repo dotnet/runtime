@@ -1080,15 +1080,6 @@ protected:
 #endif
     void genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode);
-    void genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
-                               var_types       simdType,
-                               var_types       baseType,
-                               regNumber       tmpReg,
-                               regNumber       tmpIntReg,
-                               regNumber       targetReg);
-    void genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode);
-    void genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg);
     void genSIMDIntrinsic(GenTreeSIMD* simdNode);
 
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires
