@@ -8587,16 +8587,6 @@ private:
         return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
-    // Get SIMD Intrinsic info given the method handle.
-    // Also sets typeHnd, argCount, baseType and sizeBytes out params.
-    const SIMDIntrinsicInfo* getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* typeHnd,
-                                                  CORINFO_METHOD_HANDLE methodHnd,
-                                                  CORINFO_SIG_INFO*     sig,
-                                                  bool                  isNewObj,
-                                                  unsigned*             argCount,
-                                                  CorInfoType*          simdBaseJitType,
-                                                  unsigned*             sizeBytes);
-
     // Pops and returns GenTree node from importers type stack.
     // Normalizes TYP_STRUCT value in case of GT_CALL, GT_RET_EXPR and arg nodes.
     GenTree* impSIMDPopStack(var_types type, bool expectAddr = false, CORINFO_CLASS_HANDLE structType = nullptr);
@@ -8607,17 +8597,6 @@ private:
     bool areArrayElementsContiguous(GenTree* op1, GenTree* op2);
     bool areArgumentsContiguous(GenTree* op1, GenTree* op2);
     GenTree* CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize);
-
-    // check methodHnd to see if it is a SIMD method that is expanded as an intrinsic in the JIT.
-    GenTree* impSIMDIntrinsic(OPCODE                opcode,
-                              GenTree*              newobjThis,
-                              CORINFO_CLASS_HANDLE  clsHnd,
-                              CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
-                              unsigned              methodFlags,
-                              int                   memberRef);
-
-    GenTree* getOp1ForConstructor(OPCODE opcode, GenTree* newobjThis, CORINFO_CLASS_HANDLE clsHnd);
 
     // Whether SIMD vector occupies part of SIMD register.
     // SSE2: vector2f/3f are considered sub register SIMD types.

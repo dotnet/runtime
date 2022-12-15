@@ -1901,6 +1901,43 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
+                case NI_Vector3_CreateFromVector2:
+                case NI_Vector4_CreateFromVector3:
+                {
+                    assert(retType == TYP_VOID);
+                    assert(simdBaseType == TYP_FLOAT);
+                    assert((simdSize == 12) || (simdSize == 16));
+
+                    // TODO-CQ: We should be able to check for contiguous args here after
+                    // the relevant methods are updated to support more than just float
+
+                    if (op2->IsCnsVec() && op3->IsCnsFltOrDbl())
+                    {
+                        GenTreeVecCon* vecCon = op2->AsVecCon();
+                        vecCon->gtType        = simdType;
+
+                        if (simdSize == 12)
+                        {
+                            vecCon->gtSimd12Val.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        }
+                        else
+                        {
+                            vecCon->gtSimd16Val.f32[3] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        }
+
+                        copyBlkSrc = vecCon;
+                    }
+                    else
+                    {
+                        GenTree* idx = gtNewIconNode((simdSize == 12) ? 2 : 3, TYP_INT);
+                        copyBlkSrc   = gtNewSimdWithElementNode(simdType, op2, op3, idx, simdBaseJitType, simdSize,
+                                                                /* isSimdAsHWIntrinsic */ true);
+                    }
+
+                    copyBlkDst = op1;
+                    break;
+                }
+
                 default:
                 {
                     // Some platforms warn about unhandled switch cases
@@ -1985,6 +2022,40 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                         copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD12, std::move(nodeBuilder), NI_Vector128_Create,
                                                               simdBaseJitType, 16, /* isSimdAsHWIntrinsic */ true);
+                    }
+
+                    copyBlkDst = op1;
+                    break;
+                }
+
+                case NI_Vector4_CreateFromVector2:
+                {
+                    assert(retType == TYP_VOID);
+                    assert(simdBaseType == TYP_FLOAT);
+                    assert(simdSize == 16);
+
+                    // TODO-CQ: We should be able to check for contiguous args here after
+                    // the relevant methods are updated to support more than just float
+
+                    if (op2->IsCnsVec() && op3->IsCnsFltOrDbl() && op4->IsCnsFltOrDbl())
+                    {
+                        GenTreeVecCon* vecCon = op2->AsVecCon();
+                        vecCon->gtType        = simdType;
+
+                        vecCon->gtSimd16Val.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        vecCon->gtSimd16Val.f32[3] = static_cast<float>(op4->AsDblCon()->DconValue());
+
+                        copyBlkSrc = vecCon;
+                    }
+                    else
+                    {
+                        GenTree* idx = gtNewIconNode(2, TYP_INT);
+                        op2          = gtNewSimdWithElementNode(simdType, op2, op3, idx, simdBaseJitType, simdSize,
+                                                                /* isSimdAsHWIntrinsic */ true);
+
+                        idx          = gtNewIconNode(3, TYP_INT);
+                        copyBlkSrc   = gtNewSimdWithElementNode(simdType, op2, op4, idx, simdBaseJitType, simdSize,
+                                                                /* isSimdAsHWIntrinsic */ true);
                     }
 
                     copyBlkDst = op1;
