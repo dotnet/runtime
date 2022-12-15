@@ -22,7 +22,7 @@ class Z
 
 }
 
-class X
+public class X
 {
     Z z;
 

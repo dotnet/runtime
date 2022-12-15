@@ -31,7 +31,7 @@ struct VT
 }
 
 
-class DblArray3
+public class DblArray3
 {
 
     // instance field of valuetype

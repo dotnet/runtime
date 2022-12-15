@@ -181,7 +181,7 @@ namespace GitHub_23199_32Bit
         }
 
 
-        static int Main()
+        public static int Main()
         {
             TestCrossgenedReturnWith2PointersStruct();
             TestTwoPointers();

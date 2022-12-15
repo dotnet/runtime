@@ -4,7 +4,7 @@
 
 using System;
 delegate void TestDelegate();
-class ArrayBounds
+public class ArrayBounds
 {
 	public static void f1a()
 	{

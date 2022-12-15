@@ -10,7 +10,7 @@ struct S
 }
 
 
-class Test_struct1
+public class Test_struct1
 {
     public static void c(S s1)
     {

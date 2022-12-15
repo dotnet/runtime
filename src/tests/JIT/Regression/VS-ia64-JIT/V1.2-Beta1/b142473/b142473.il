@@ -27,7 +27,7 @@
 
 
 
-.class private auto ansi myclass
+.class public auto ansi myclass
        extends [mscorlib]System.Object
 {
   .method public static int32  Main() cil managed

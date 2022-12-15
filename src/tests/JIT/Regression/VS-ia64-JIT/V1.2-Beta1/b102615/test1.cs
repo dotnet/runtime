@@ -22,7 +22,7 @@ class C
     }
 }
 
-class Test_test1
+public class Test_test1
 {
     public static int Main()
     {

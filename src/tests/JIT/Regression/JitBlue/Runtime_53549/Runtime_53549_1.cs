@@ -30,7 +30,7 @@ class B : A
     public override decimal X => d + 1;
 }
 
-class Repro
+public class Repro
 {
     static string s;
 

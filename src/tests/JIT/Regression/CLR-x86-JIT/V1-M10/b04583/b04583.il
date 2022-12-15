@@ -10,8 +10,8 @@
 .assembly b04583
 {
 }
-.class _simple {
-.method static int32 main() {
+.class public _simple {
+.method public static int32 main() {
 .entrypoint
 .maxstack	100
 

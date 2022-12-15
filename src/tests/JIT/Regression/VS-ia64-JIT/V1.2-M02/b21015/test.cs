@@ -26,7 +26,7 @@ struct T
     }
 }
 
-class Tester
+public class Tester
 {
     public static int Main()
     {

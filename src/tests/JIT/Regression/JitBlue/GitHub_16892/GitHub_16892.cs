@@ -26,7 +26,7 @@ class Item
     public int GetValue() { return _value; }
 }
 
-class Program
+public class Program
 {
     public Item[] itemArray;
 
@@ -73,7 +73,7 @@ class Program
             
     }
 
-    static int Main()
+    public static int Main()
     {
         Program prog = new Program();
 

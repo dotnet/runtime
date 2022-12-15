@@ -11,7 +11,7 @@ struct RefWrapper
     public Object a; // a ref field
 }
 
-class TestStructs
+public class TestStructs
 {
     static RefWrapper[] arr;
 

@@ -18,7 +18,7 @@ struct MyStruct
     int j;
 }
 
-class MainApp
+public class MainApp
 {
     [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     public static MyStruct Foo()

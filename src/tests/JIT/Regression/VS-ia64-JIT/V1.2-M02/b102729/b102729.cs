@@ -11,7 +11,7 @@ struct Foo
 #pragma warning restore 0414
 }
 
-class Bar
+public class Bar
 {
     static Foo[] _myArray;
 

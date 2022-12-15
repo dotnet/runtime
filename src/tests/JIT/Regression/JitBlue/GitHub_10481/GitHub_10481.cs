@@ -88,7 +88,7 @@ namespace N
         }
     }
 
-    static class C
+    public static class C
     {
         public static int Main()
         {

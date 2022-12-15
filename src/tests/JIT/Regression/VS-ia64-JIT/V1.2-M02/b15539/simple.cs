@@ -12,7 +12,7 @@ internal struct VC
 }
 
 
-internal class A
+public class A
 {
     public static int Main()
     {

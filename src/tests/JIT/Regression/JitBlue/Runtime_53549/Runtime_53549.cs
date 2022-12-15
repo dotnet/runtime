@@ -10,7 +10,7 @@ interface I
     public Decimal F();
 }
 
-class Runtime_53549 : I
+public class Runtime_53549 : I
 {
     Decimal z;
 
