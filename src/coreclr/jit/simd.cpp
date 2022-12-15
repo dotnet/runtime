@@ -1014,27 +1014,11 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
             unsigned int fixedArgCnt    = simdIntrinsicInfoArray[i].argCount;
             unsigned int expectedArgCnt = fixedArgCnt;
 
-            // First handle SIMDIntrinsicInitN, where the arg count depends on the type.
             // The listed arg types include the vector and the first two init values, which is the expected number
             // for Vector2.  For other cases, we'll check their types here.
             if (*argCount > expectedArgCnt)
             {
-                if (i == SIMDIntrinsicInitN)
-                {
-                    if (*argCount == 3 && typeHnd == m_simdHandleCache->SIMDVector2Handle)
-                    {
-                        expectedArgCnt = 3;
-                    }
-                    else if (*argCount == 4 && typeHnd == m_simdHandleCache->SIMDVector3Handle)
-                    {
-                        expectedArgCnt = 4;
-                    }
-                    else if (*argCount == 5 && typeHnd == m_simdHandleCache->SIMDVector4Handle)
-                    {
-                        expectedArgCnt = 5;
-                    }
-                }
-                else if (i == SIMDIntrinsicInitFixed)
+                if (i == SIMDIntrinsicInitFixed)
                 {
                     if (*argCount == 4 && typeHnd == m_simdHandleCache->SIMDVector4Handle)
                     {
@@ -1700,89 +1684,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
     switch (simdIntrinsicID)
     {
-        case SIMDIntrinsicInitN:
-        {
-            // SIMDIntrinsicInitN
-            //    op2 - list of initializer values stitched into a list
-            //    op1 - byref of vector
-            IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), argCount - 1);
-            bool                 initFromFirstArgIndir = false;
-
-            {
-                assert(simdIntrinsicID == SIMDIntrinsicInitN);
-                assert(simdBaseType == TYP_FLOAT);
-
-                unsigned initCount    = argCount - 1;
-                unsigned elementCount = getSIMDVectorLength(size, simdBaseType);
-                noway_assert(initCount == elementCount);
-
-                // Build an array with the N values.
-                // We must maintain left-to-right order of the args, but we will pop
-                // them off in reverse order (the Nth arg was pushed onto the stack last).
-
-                GenTree* prevArg           = nullptr;
-                bool     areArgsContiguous = true;
-                for (unsigned i = 0; i < initCount; i++)
-                {
-                    GenTree* arg = impSIMDPopStack(simdBaseType);
-
-                    if (areArgsContiguous)
-                    {
-                        GenTree* curArg = arg;
-
-                        if (prevArg != nullptr)
-                        {
-                            // Recall that we are popping the args off the stack in reverse order.
-                            areArgsContiguous = areArgumentsContiguous(curArg, prevArg);
-                        }
-                        prevArg = curArg;
-                    }
-
-                    assert(genActualType(arg) == genActualType(simdBaseType));
-                    nodeBuilder.AddOperand(initCount - i - 1, arg);
-                }
-
-                if (areArgsContiguous && simdBaseType == TYP_FLOAT)
-                {
-                    // Since Vector2, Vector3 and Vector4's arguments type are only float,
-                    // we initialize the vector from first argument address, only when
-                    // the simdBaseType is TYP_FLOAT and the arguments are located contiguously in memory
-                    initFromFirstArgIndir = true;
-                    GenTree*  op2Address  = createAddressNodeForSIMDInit(nodeBuilder.GetOperand(0), size);
-                    var_types simdType    = getSIMDTypeForSize(size);
-                    op2                   = gtNewOperNode(GT_IND, simdType, op2Address);
-                }
-            }
-
-            op1 = getOp1ForConstructor(opcode, newobjThis, clsHnd);
-
-            assert(op1->TypeGet() == TYP_BYREF);
-
-            {
-                assert(!varTypeIsSmallInt(simdBaseType));
-
-                if (initFromFirstArgIndir)
-                {
-                    simdTree = op2;
-                    if (op1->OperIs(GT_LCL_VAR_ADDR))
-                    {
-                        // label the dst struct's lclvar is used for SIMD intrinsic,
-                        // so that this dst struct won't be promoted.
-                        setLclRelatedToSIMDIntrinsic(op1);
-                    }
-                }
-                else
-                {
-                    simdTree = new (this, GT_SIMD)
-                        GenTreeSIMD(simdType, std::move(nodeBuilder), simdIntrinsicID, simdBaseJitType, size);
-                }
-            }
-
-            copyBlkDst = op1;
-            doCopyBlk  = true;
-        }
-        break;
-
         case SIMDIntrinsicInitArray:
         case SIMDIntrinsicInitArrayX:
         case SIMDIntrinsicCopyToArray:

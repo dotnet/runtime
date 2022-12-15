@@ -8705,20 +8705,6 @@ inline bool GenTree::IsVectorCreate() const
     }
 #endif // FEATURE_HW_INTRINSICS
 
-#ifdef FEATURE_SIMD
-    if (OperIs(GT_SIMD))
-    {
-        switch (AsSIMD()->GetSIMDIntrinsicId())
-        {
-            case SIMDIntrinsicInitN:
-                return true;
-
-            default:
-                return false;
-        }
-    }
-#endif // FEATURE_SIMD
-
     return false;
 }
 

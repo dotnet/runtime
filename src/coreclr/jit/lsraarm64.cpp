@@ -818,29 +818,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
     switch (simdTree->GetSIMDIntrinsicId())
     {
-        case SIMDIntrinsicInitN:
-        {
-            var_types baseType = simdTree->GetSimdBaseType();
-            srcCount           = (short)(simdTree->GetSimdSize() / genTypeSize(baseType));
-            assert(simdTree->GetOperandCount() == static_cast<size_t>(srcCount));
-            if (varTypeIsFloating(simdTree->GetSimdBaseType()))
-            {
-                // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-
-            for (GenTree* operand : simdTree->Operands())
-            {
-                assert(operand->TypeIs(baseType));
-                assert(!operand->isContained());
-
-                BuildUse(operand);
-            }
-
-            buildUses = false;
-            break;
-        }
-
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
             break;

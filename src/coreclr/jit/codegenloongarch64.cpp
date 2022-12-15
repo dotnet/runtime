@@ -4913,21 +4913,6 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     NYI("unimplemented on LOONGARCH64 yet");
 }
 
-//-------------------------------------------------------------------------------------------
-// genSIMDIntrinsicInitN: Generate code for SIMD Intrinsic Initialize for the form that takes
-//                        a number of arguments equal to the length of the Vector.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
-{
-    NYI("unimplemented on LOONGARCH64 yet");
-}
-
 //----------------------------------------------------------------------------------
 // genSIMDIntrinsicUnOp: Generate code for SIMD Intrinsic unary operations like sqrt.
 //
