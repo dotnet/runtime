@@ -222,21 +222,19 @@ public:
                 // Screen out contextual "uses"
                 //
                 GenTree* const parent = user;
-                bool const     isAddr = parent->OperIs(GT_ADDR);
-
-                bool isCallTarget = false;
 
                 // Quirk:
                 //
                 // fgGetStubAddrArg cannot handle complex trees (it calls gtClone)
                 //
+                bool isCallTarget = false;
                 if (parent->IsCall())
                 {
                     GenTreeCall* const parentCall = parent->AsCall();
                     isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
                 }
 
-                if (!isDef && !isAddr && !isCallTarget)
+                if (!isDef && !isCallTarget)
                 {
                     m_node       = node;
                     m_use        = use;
