@@ -4309,7 +4309,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             GenTree*  baseAddr = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
             FieldSeq* fseq     = GetFieldSeqStore()->Create(pResolvedToken->hField, pFieldInfo->offset, fieldKind);
             GenTree*  offset   = gtNewIconNode(pFieldInfo->offset, fseq);
-            op1                = gtNewOperNode(GT_ADD, TYP_BYREF, baseAddr, offset);
+            op1                = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, offset);
 #else
             unreached();
 #endif // FEATURE_READYTORUN
