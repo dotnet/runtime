@@ -1977,8 +1977,6 @@ public:
                       ssize_t*              pOffset   = nullptr,
                       unsigned*             pSize     = nullptr);
 
-    bool DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset = nullptr);
-
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
 

@@ -17164,8 +17164,6 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //------------------------------------------------------------------------
 // DefinesLocal: Does "this" define a local?
 //
-// Recognizes "ASG" stores.
-//
 // Arguments:
 //    comp        - the compiler instance
 //    pLclVarTree - [out] parameter for the local representing the definition
@@ -17173,9 +17171,12 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //                  a "full" definition (overwrites the entire variable)
 //    pOffset     - optional [out] parameter for the offset, relative to the
 //                  local, at which the store is performed
+//    pSize       - optional [out] parameter for the amount of bytes affected
+//                  by the store
 //
 // Return Value:
-//    Whether "this" represents a store to a local variable.
+//    Whether "this" represents a store to a possibly tracked local variable
+//    before rationalization.
 //
 // Notes:
 //    This function is contractually bound to recognize a superset of stores
@@ -17186,9 +17187,6 @@ bool GenTree::DefinesLocal(
     Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset, unsigned* pSize)
 {
     assert((pOffset == nullptr) || (*pOffset == 0));
-
-    GenTreeLclVarCommon* lclVarTree = nullptr;
-    ssize_t              offset     = 0;
 
     if (OperIs(GT_ASG))
     {
@@ -17234,18 +17232,13 @@ bool GenTree::DefinesLocal(
     }
     else if (OperIs(GT_CALL))
     {
-        GenTree* retBufArg = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
-        if (retBufArg == nullptr)
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
+        if (lclAddr == nullptr)
         {
             return false;
         }
 
-        if (!retBufArg->DefinesLocalAddr(&lclVarTree, &offset))
-        {
-            return false;
-        }
-
-        *pLclVarTree = lclVarTree;
+        *pLclVarTree = lclAddr;
 
         if ((pIsEntire != nullptr) || (pSize != nullptr))
         {
@@ -17253,7 +17246,7 @@ bool GenTree::DefinesLocal(
 
             if (pIsEntire != nullptr)
             {
-                *pIsEntire = storeSize == comp->lvaLclExactSize(lclVarTree->GetLclNum());
+                *pIsEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
             }
 
             if (pSize != nullptr)
@@ -17264,36 +17257,7 @@ bool GenTree::DefinesLocal(
 
         if (pOffset != nullptr)
         {
-            *pOffset = offset;
-        }
-
-        return true;
-    }
-
-    return false;
-}
-
-//------------------------------------------------------------------------
-// DefinesLocalAddr: Does "this" represent a local address tree?
-//
-// Arguments:
-//    pLclVarTree - [out] parameter for the local node
-//    pOffset     - optional [out] parameter for the offset (relative to the
-//                  local itself) that this tree computes. The caller must
-//                  initialize this to zero.
-//
-// Return Value:
-//    Whether "this" is a LCL_VAR|FLD_ADDR-equivalent tree.
-//
-bool GenTree::DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset)
-{
-    if (OperIsLocalAddr())
-    {
-        *pLclVarTree = AsLclVarCommon();
-
-        if (pOffset != nullptr)
-        {
-            *pOffset += AsLclVarCommon()->GetLclOffs();
+            *pOffset = lclAddr->GetLclOffs();
         }
 
         return true;
@@ -18569,7 +18533,7 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 // Returns:
 //   A tree representing the address of a local.
 //
-GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 {
     if (!call->IsOptimizingRetBufAsLocal())
     {
@@ -18595,9 +18559,9 @@ GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-    assert(node->OperIsLocalAddr() && lvaGetDesc(node->AsLclVarCommon())->lvHiddenBufferStructArg);
+    assert(node->OperIsLocalAddr() && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
 
-    return node;
+    return node->AsLclVarCommon();
 }
 
 //------------------------------------------------------------------------
