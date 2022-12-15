@@ -3040,14 +3040,13 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         GenTree* andOp1 = op1->gtGetOp1();
         GenTree* andOp2 = op1->gtGetOp2();
 
-        if (!varTypeIsLong(op1) && andOp2->IsIntegralConst() &&
-            ((andOp2->AsIntConCommon()->IntegralValue() >> 32) == 0))
+        if (!varTypeIsLong(op1) && andOp2->IsIntegralConst())
         {
             if (andOp1->OperIs(GT_CAST) && !andOp1->gtOverflow() && varTypeIsLong(andOp1->AsCast()->CastFromType()))
             {
                 GenTree* castOp          = andOp1->AsCast()->CastOp();
                 GenTree* optimizedCastOp =
-                    OptimizeNarrowTree(castOp, andOp1->AsCast()->CastFromType(), genActualType(op1));
+                    OptimizeNarrowTree(castOp, andOp1->AsCast()->CastFromType(), op1->TypeGet());
                 if (optimizedCastOp != nullptr)
                 {
                     BlockRange().Remove(andOp1);
