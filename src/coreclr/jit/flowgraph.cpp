@@ -3067,6 +3067,7 @@ PhaseStatus Compiler::fgSimpleLowering()
                     {
                         madeChanges = true;
                     }
+                    break;
                 }
 
                 default:
@@ -3196,7 +3197,9 @@ GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
                                                       var_types   dstType)
 {
     assert(varTypeIsIntegralOrI(dstType));
-    assert(!varTypeIsSmall(dstType));
+
+    if (!varTypeIsIntegralOrI(node))
+        return nullptr;
 
     var_types srcType = node->TypeGet();
 
@@ -3235,7 +3238,7 @@ GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
     else if (node->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_EQ, GT_NE, GT_LT, GT_LE, GT_GT, GT_GE,
                             GT_LCL_VAR, GT_LCL_FLD, GT_IND))
     {
-        node->ChangeType(dstType);
+        node->ChangeType(genActualType(dstType));
 
         if (node->OperIsUnary())
         {
