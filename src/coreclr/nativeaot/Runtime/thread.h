@@ -95,7 +95,6 @@ struct ThreadBuffer
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
-    uint32_t                m_managedThreadId;                      // managed thread ID
     EEThreadId              m_threadId;                             // OS thread ID
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
     NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
@@ -193,8 +192,6 @@ public:
 
 #ifndef DACCESS_COMPILE
     uint64_t            GetPalThreadIdForLogging();
-    int32_t             GetManagedThreadId();
-    void                SetManagedThreadId(int32_t id);
     bool                IsCurrentThread();
 
     void                GcScanRoots(void * pfnEnumCallback, void * pvCallbackData);

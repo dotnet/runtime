@@ -581,14 +581,6 @@ namespace System.Runtime
         internal static extern unsafe ulong RhCurrentOSThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetCurrentManagedThreadId")]
-        internal static extern unsafe int RhGetCurrentManagedThreadId();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhSetCurrentManagedThreadId")]
-        internal static extern unsafe void RhSetCurrentManagedThreadId(int id);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport("*", "RhGetCurrentThunkContext")]
         internal static extern IntPtr GetCurrentInteropThunkContext();
 
