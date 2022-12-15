@@ -6111,6 +6111,44 @@ method_is_externally_callable (MonoAotCompile *acfg, MonoMethod *method)
 	}
 }
 
+#ifdef MONO_ARCH_AOT_SUPPORTED
+static const char *
+get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
+{
+	MonoImage *image = m_class_get_image (method->klass);
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
+	MonoTableInfo *tables = image->tables;
+	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
+	guint32 im_cols [MONO_IMPLMAP_SIZE];
+	char *import;
+
+	import = (char *)g_hash_table_lookup (acfg->method_to_pinvoke_import, method);
+	if (import != NULL)
+		return import;
+
+	if (piinfo->implmap_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_IMPLMAP, piinfo->implmap_idx))
+		return NULL;
+
+	mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
+
+	int module_idx = im_cols [MONO_IMPLMAP_SCOPE];
+	if (module_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, module_idx))
+		return NULL;
+
+	import = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+
+	g_hash_table_insert (acfg->method_to_pinvoke_import, method, import);
+
+	return import;
+}
+#else
+static const char *
+get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
+{
+	return NULL;
+}
+#endif
+
 /*
  * is_direct_callable:
  *
@@ -6177,44 +6215,6 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 
 	return FALSE;
 }
-
-#ifdef MONO_ARCH_AOT_SUPPORTED
-static const char *
-get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
-{
-	MonoImage *image = m_class_get_image (method->klass);
-	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
-	MonoTableInfo *tables = image->tables;
-	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
-	guint32 im_cols [MONO_IMPLMAP_SIZE];
-	char *import;
-
-	import = (char *)g_hash_table_lookup (acfg->method_to_pinvoke_import, method);
-	if (import != NULL)
-		return import;
-
-	if (piinfo->implmap_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_IMPLMAP, piinfo->implmap_idx))
-		return NULL;
-
-	mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
-
-	int module_idx = im_cols [MONO_IMPLMAP_SCOPE];
-	if (module_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, module_idx))
-		return NULL;
-
-	import = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
-
-	g_hash_table_insert (acfg->method_to_pinvoke_import, method, import);
-
-	return import;
-}
-#else
-static const char *
-get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
-{
-	return NULL;
-}
-#endif
 
 static gint
 compare_lne (MonoDebugLineNumberEntry *a, MonoDebugLineNumberEntry *b)
