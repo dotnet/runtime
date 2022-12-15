@@ -946,16 +946,15 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
     GenTree* op1 = lclVar->gtOp1;
 
     assert(!op1->isContained());
-    regNumber targetReg  = treeNode->GetRegNum();
-    regNumber operandReg = genConsumeReg(op1);
+    regNumber  targetReg  = treeNode->GetRegNum();
+    regNumber  operandReg = genConsumeReg(op1);
+    LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
 
     if (targetReg != REG_NA)
     {
         assert(!GetEmitter()->isGeneralRegister(targetReg));
 
         inst_Mov(treeNode->TypeGet(), targetReg, operandReg, /* canSkip */ true);
-
-        genProduceReg(treeNode);
     }
     else
     {
@@ -974,13 +973,9 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
         // Store upper 4 bytes
         GetEmitter()->emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, operandReg, varNum, offs + 8);
-
-        // Update the life of treeNode
-        genUpdateLife(treeNode);
-
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-        varDsc->SetRegNum(REG_STK);
     }
+
+    genUpdateLifeStore(treeNode, targetReg, varDsc);
 }
 
 //-----------------------------------------------------------------------------

@@ -2971,18 +2971,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             emitAttr    attr = emitActualTypeSize(targetType);
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
-
-            genUpdateLife(lclNode);
-
-            varDsc->SetRegNum(REG_STK);
         }
         else // store into register (i.e move into register)
         {
             // Assign into targetReg when dataReg (from op1) is not the same register
             inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
-
-            genProduceReg(lclNode);
         }
+        genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
 }
 
@@ -5609,18 +5604,14 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
         // Simply use mov if we move a SIMD12 reg to another SIMD12 reg
         inst_Mov(treeNode->TypeGet(), targetReg, operandReg, /* canSkip */ true);
-        genProduceReg(treeNode);
     }
     else
     {
         // Need an additional integer register to extract upper 4 bytes from data.
         regNumber tmpReg = lclVar->GetSingleTempReg();
         GetEmitter()->emitStoreSIMD12ToLclOffset(varNum, offs, operandReg, tmpReg);
-
-        // Update life after instruction emitted
-        genUpdateLife(treeNode);
-        varDsc->SetRegNum(REG_STK);
     }
+    genUpdateLifeStore(treeNode, targetReg, varDsc);
 }
 
 #endif // FEATURE_SIMD
