@@ -2840,81 +2840,6 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
 }
 #endif // !TARGET_64BIT
 
-GenTree* Lowering::TryOptimizeNarrowTree(GenTree* node, var_types srcType, var_types dstType)
-{
-    assert(varTypeIsIntegralOrI(srcType));
-    assert(varTypeIsIntegralOrI(dstType));
-    assert(!varTypeIsSmall(srcType));
-    assert(!varTypeIsSmall(dstType));
-
-    if (node->isContained() || node->gtSetFlags())
-        return nullptr;
-
-    if ((genTypeSize(srcType) >= genTypeSize(dstType)))
-    {
-        if (node->OperIs(GT_CAST) && !node->gtOverflow())
-        {
-            GenTreeCast* cast       = node->AsCast();
-            var_types    castToType = cast->CastToType();
-
-            if (varTypeIsIntegralOrI(dstType) != varTypeIsIntegralOrI(node))
-                return nullptr;
-
-            if ((genTypeSize(castToType)) < genTypeSize(dstType))
-                return nullptr;
-
-            // Remove cast.
-            GenTree* castOp = cast->CastOp();
-            GenTree* newNode = TryOptimizeNarrowTree(castOp, cast->CastFromType(), dstType);
-
-            BlockRange().Remove(cast);
-
-            if (newNode != nullptr)
-            {
-                return newNode;
-            }
-            return castOp;
-        }
-        else if (node->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_EQ, GT_NE, GT_LT, GT_LE, GT_GT, GT_GE,
-                         GT_LCL_VAR, GT_LCL_FLD) &&
-            !node->gtOverflowEx())
-        {
-            node->ChangeType(dstType);
-
-            if (node->OperIsUnary())
-            {
-                GenTree* op1 = node->gtGetOp1();
-                //GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
-                //if (newOp1 != op1)
-                //{
-                //    node->AsOp()->gtOp1 = newOp1;
-                //}
-            }
-            else if (node->OperIsBinary())
-            {
-                GenTree* op1    = node->gtGetOp1();
-                GenTree* op2    = node->gtGetOp2();
-
-                //GenTree* newOp2 = OptimizeNarrowTree(op2, srcType, dstType);
-                //if (newOp2 != op2)
-                //{
-                //    node->AsOp()->gtOp2 = newOp2;
-                //}
-
-                //GenTree* newOp1 = OptimizeNarrowTree(op1, srcType, dstType);
-                //if (newOp1 != op1)
-                //{
-                //    node->AsOp()->gtOp1 = newOp1;
-                //}
-            }
-
-            return node;
-        }        
-    }
-
-    return nullptr;
-}
-
 //------------------------------------------------------------------------
 // Lowering::OptimizeConstCompare: Performs various "compare with const" optimizations.
 //
@@ -3033,21 +2958,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         GenTree* andOp1 = op1->gtGetOp1();
         GenTree* andOp2 = op1->gtGetOp2();
-
-        if (!varTypeIsLong(op1) && andOp2->IsIntegralConst())
-        {
-            if (andOp1->OperIs(GT_CAST) && !andOp1->gtOverflow() && varTypeIsLong(andOp1->AsCast()->CastFromType()))
-            {
-                GenTree* castOp          = andOp1->AsCast()->CastOp();
-                GenTree* optimizedCastOp =
-                    TryOptimizeNarrowTree(castOp, andOp1->AsCast()->CastFromType(), op1->TypeGet());
-                if (optimizedCastOp != nullptr)
-                {
-                    BlockRange().Remove(andOp1);
-                    op1->AsOp()->gtOp1 = andOp1 = optimizedCastOp;
-                }
-            }
-        }
 
         //
         // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)

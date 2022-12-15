@@ -3060,6 +3060,14 @@ PhaseStatus Compiler::fgSimpleLowering()
                 }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+                case GT_AND:
+                {
+                    if (fgSimpleLowerAndOp(range, tree->AsOp()))
+                    {
+                        madeChanges = true;
+                    }
+                }
+
                 default:
                 {
                     // No other operators need processing.
@@ -3116,6 +3124,111 @@ PhaseStatus Compiler::fgSimpleLowering()
 #endif // FEATURE_FIXED_OUT_ARGS
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+bool Compiler::fgSimpleLowerAndOp(LIR::Range& range, GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_AND));
+
+    bool madeChanges = false;
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    if (!varTypeIsLong(tree) && op2->IsIntegralConst())
+    {
+        if (op1->OperIs(GT_CAST) && !op1->gtOverflow() && varTypeIsLong(op1->AsCast()->CastFromType()))
+        {
+            GenTree* castOp = op1->AsCast()->CastOp();
+            GenTree* optimizedOp1 =
+                fgTrySimpleLowerOptimizeNarrowTree(range, castOp, op1->AsCast()->CastFromType(), tree->TypeGet());
+            if (optimizedOp1 != nullptr)
+            {
+                range.Remove(op1);
+                tree->gtOp1 = op1 = optimizedOp1;
+                madeChanges       = true;
+            }
+        }
+    }
+
+    return madeChanges;
+}
+
+GenTree* Compiler::fgTrySimpleLowerOptimizeNarrowTree(LIR::Range& range,
+                                                      GenTree*    node,
+                                                      var_types   srcType,
+                                                      var_types   dstType)
+{
+    assert(varTypeIsIntegralOrI(srcType));
+    assert(varTypeIsIntegralOrI(dstType));
+    assert(!varTypeIsSmall(srcType));
+    assert(!varTypeIsSmall(dstType));
+
+    if (node->gtSetFlags())
+        return nullptr;
+
+    if ((genTypeSize(srcType) >= genTypeSize(dstType)))
+    {
+        if (node->OperIs(GT_CAST) && !node->gtOverflow())
+        {
+            GenTreeCast* cast       = node->AsCast();
+            var_types    castToType = cast->CastToType();
+
+            if (varTypeIsIntegralOrI(dstType) != varTypeIsIntegralOrI(node))
+                return nullptr;
+
+            if ((genTypeSize(castToType)) < genTypeSize(dstType))
+                return nullptr;
+
+            // Remove cast.
+            GenTree* castOp  = cast->CastOp();
+            GenTree* newNode = fgTrySimpleLowerOptimizeNarrowTree(range, castOp, cast->CastFromType(), dstType);
+
+            range.Remove(cast);
+
+            if (newNode != nullptr)
+            {
+                return newNode;
+            }
+            return castOp;
+        }
+        else if (node->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_OR, GT_XOR, GT_EQ, GT_NE, GT_LT, GT_LE, GT_GT, GT_GE,
+                              GT_LCL_VAR, GT_LCL_FLD, GT_IND) &&
+                 !node->gtOverflowEx())
+        {
+            node->ChangeType(dstType);
+
+            if (node->OperIsUnary())
+            {
+                GenTree* op1    = node->gtGetOp1();
+                GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, srcType, dstType);
+                if (newOp1 != nullptr)
+                {
+                    node->AsOp()->gtOp1 = newOp1;
+                }
+            }
+            else if (node->OperIsBinary())
+            {
+                GenTree* op1 = node->gtGetOp1();
+                GenTree* op2 = node->gtGetOp2();
+
+                GenTree* newOp2 = fgTrySimpleLowerOptimizeNarrowTree(range, op2, srcType, dstType);
+                if (newOp2 != nullptr)
+                {
+                    node->AsOp()->gtOp2 = newOp2;
+                }
+
+                GenTree* newOp1 = fgTrySimpleLowerOptimizeNarrowTree(range, op1, srcType, dstType);
+                if (newOp1 != nullptr)
+                {
+                    node->AsOp()->gtOp1 = newOp1;
+                }
+            }
+            return node;
+        }
+    }
+
+    return nullptr;
 }
 
 /*****************************************************************************************************
