@@ -167,8 +167,11 @@ namespace System.Threading
         {
             if (iteration > 0)
             {
-                // no need for much randomness here, we will just hash the frame address + iteration.
+                // no need for much randomness here, we will just hash the stack address + iteration.
                 uint rand = ((uint)&iteration + iteration) * 2654435769u;
+                // set the highmost bit to ensure minimum number of spins is exponentialy increasing
+                // that is in case some stack location results in a sequence of very low spin counts
+                rand |= (1 << 32);
                 uint spins = rand >> (byte)(32 - Math.Min(iteration, MaxExponentialBackoffBits));
                 Thread.SpinWaitInternal((int)spins);
             }
