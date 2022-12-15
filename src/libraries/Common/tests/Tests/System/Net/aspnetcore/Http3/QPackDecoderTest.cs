@@ -29,7 +29,7 @@ namespace System.Net.Http.Unit.Tests.QPack
         private static readonly byte[] _literalFieldLineWithLiteralName = new byte[] { 0x37, 0x0d, 0x6c, 0x69, 0x74, 0x65, 0x72, 0x61, 0x6c, 0x2d, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x2d, 0x66, 0x69, 0x65, 0x6c, 0x64 };
 
         private const string _contentTypeString = "content-type";
-        private const string _translateString = "literal-header-field";
+        private const string _literalHeaderFieldString = "literal-header-field";
 
         // n     e     w       -      h     e     a     d     e     r      *
         // 10101000 10111110 00010110 10011100 10100011 10010000 10110110 01111111
@@ -97,7 +97,7 @@ namespace System.Net.Http.Unit.Tests.QPack
                 .Concat(_headerValue)
                 .ToArray();
 
-            TestDecodeWithoutIndexing(encoded, _translateString, _headerValueString);
+            TestDecodeWithoutIndexing(encoded, _literalHeaderFieldString, _headerValueString);
         }
 
         [Fact]
@@ -140,7 +140,7 @@ namespace System.Net.Http.Unit.Tests.QPack
                 .Concat(_headerValueHuffman)
                 .ToArray();
 
-            TestDecodeWithoutIndexing(encoded, _translateString, _headerValueString);
+            TestDecodeWithoutIndexing(encoded, _literalHeaderFieldString, _headerValueString);
         }
 
         [Fact]
@@ -184,8 +184,8 @@ namespace System.Net.Http.Unit.Tests.QPack
             _decoder.Decode(encoded, endHeaders: true, handler: _handler);
 
             Assert.Equal(1, _handler.DecodedHeaders.Count);
-            Assert.True(_handler.DecodedHeaders.ContainsKey(_translateString));
-            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_translateString]);
+            Assert.True(_handler.DecodedHeaders.ContainsKey(_literalHeaderFieldString));
+            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_literalHeaderFieldString]);
         }
 
         [Fact]
@@ -200,8 +200,8 @@ namespace System.Net.Http.Unit.Tests.QPack
             _decoder.Decode(encoded[1..], endHeaders: true, handler: _handler);
 
             Assert.Equal(1, _handler.DecodedHeaders.Count);
-            Assert.True(_handler.DecodedHeaders.ContainsKey(_translateString));
-            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_translateString]);
+            Assert.True(_handler.DecodedHeaders.ContainsKey(_literalHeaderFieldString));
+            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_literalHeaderFieldString]);
         }
 
         [Fact]
@@ -212,12 +212,12 @@ namespace System.Net.Http.Unit.Tests.QPack
                 .ToArray();
 
             _decoder.Decode(new byte[] { 0x00, 0x00 }, endHeaders: false, handler: _handler);
-            _decoder.Decode(encoded[..(_headerNameString.Length / 2)], endHeaders: false, handler: _handler);
-            _decoder.Decode(encoded[(_headerNameString.Length / 2)..], endHeaders: true, handler: _handler);
+            _decoder.Decode(encoded[..(_literalHeaderFieldString.Length / 2)], endHeaders: false, handler: _handler);
+            _decoder.Decode(encoded[(_literalHeaderFieldString.Length / 2)..], endHeaders: true, handler: _handler);
 
             Assert.Equal(1, _handler.DecodedHeaders.Count);
-            Assert.True(_handler.DecodedHeaders.ContainsKey(_translateString));
-            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_translateString]);
+            Assert.True(_handler.DecodedHeaders.ContainsKey(_literalHeaderFieldString));
+            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_literalHeaderFieldString]);
         }
 
         [Fact]
@@ -232,12 +232,11 @@ namespace System.Net.Http.Unit.Tests.QPack
             _decoder.Decode(encoded[^_headerValue.Length..], endHeaders: true, handler: _handler);
 
             Assert.Equal(1, _handler.DecodedHeaders.Count);
-            Assert.True(_handler.DecodedHeaders.ContainsKey(_translateString));
-            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_translateString]);
+            Assert.True(_handler.DecodedHeaders.ContainsKey(_literalHeaderFieldString));
+            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_literalHeaderFieldString]);
         }
 
         [Fact]
-        // Ideally should be ran with a value length of or bigger than 2 bytes
         public void LiteralFieldWithoutNameReferece_ValueLengthBrokenIntoSeparateBuffers()
         {
             byte[] encoded = _literalFieldLineWithLiteralName
@@ -249,8 +248,8 @@ namespace System.Net.Http.Unit.Tests.QPack
             _decoder.Decode(encoded[^(_headerValue.Length - 1)..], endHeaders: true, handler: _handler);
 
             Assert.Equal(1, _handler.DecodedHeaders.Count);
-            Assert.True(_handler.DecodedHeaders.ContainsKey(_translateString));
-            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_translateString]);
+            Assert.True(_handler.DecodedHeaders.ContainsKey(_literalHeaderFieldString));
+            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_literalHeaderFieldString]);
         }
 
         [Fact]
@@ -265,8 +264,8 @@ namespace System.Net.Http.Unit.Tests.QPack
             _decoder.Decode(encoded[^(_headerValueString.Length / 2)..], endHeaders: true, handler: _handler);
 
             Assert.Equal(1, _handler.DecodedHeaders.Count);
-            Assert.True(_handler.DecodedHeaders.ContainsKey(_translateString));
-            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_translateString]);
+            Assert.True(_handler.DecodedHeaders.ContainsKey(_literalHeaderFieldString));
+            Assert.Equal(_headerValueString, _handler.DecodedHeaders[_literalHeaderFieldString]);
         }
     
         public static readonly TheoryData<byte[]> _incompleteHeaderBlockData = new TheoryData<byte[]>
