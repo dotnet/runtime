@@ -55,9 +55,19 @@ namespace System.Numerics
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
-        [Intrinsic]
-        public Vector(T[] values) : this(values, 0)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector(T[] values)
         {
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+            Unsafe.SkipInit(out this);
+
+            if (values.Length < Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+            }
+
+            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref address);
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given array.</summary>
@@ -66,22 +76,19 @@ namespace System.Numerics
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T[] values, int index)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if (values is null)
-            {
-                ThrowHelper.ThrowNullReferenceException();
-            }
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+            Unsafe.SkipInit(out this);
 
             if ((index < 0) || ((values.Length - index) < Count))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
+            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.Add(ref address, index));
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
@@ -91,14 +98,16 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(ReadOnlySpan<T> values)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+            Unsafe.SkipInit(out this);
 
             if (values.Length < Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref address);
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
@@ -108,14 +117,16 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(ReadOnlySpan<byte> values)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+            Unsafe.SkipInit(out this);
 
-            if (values.Length < Vector<byte>.Count)
+            if (values.Length < Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(values));
+            ref byte address = ref MemoryMarshal.GetReference(values);
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref address);
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given span.</summary>
@@ -652,8 +663,19 @@ namespace System.Numerics
         /// <param name="destination">The array to which the current instance is copied.</param>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</exception>
-        [Intrinsic]
-        public void CopyTo(T[] destination) => CopyTo(destination, 0);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void CopyTo(T[] destination)
+        {
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+
+            if (destination.Length < Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
+            Unsafe.WriteUnaligned(ref address, this);
+        }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given array starting at the specified index.</summary>
         /// <param name="destination">The array to which the current instance is copied.</param>
@@ -661,15 +683,10 @@ namespace System.Numerics
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex" /> is negative or greater than the length of <paramref name="destination" />.</exception>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(T[] destination, int startIndex)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if (destination is null)
-            {
-                ThrowHelper.ThrowNullReferenceException();
-            }
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if ((uint)startIndex >= (uint)destination.Length)
             {
@@ -681,37 +698,38 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref destination[startIndex]), this);
+            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref address, startIndex), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="destination">The span to which the current instance is copied.</param>
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(Span<byte> destination)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if ((uint)destination.Length < (uint)Vector<byte>.Count)
-            {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-            }
-
-            Unsafe.WriteUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(destination), this);
-        }
-
-        /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
-        /// <param name="destination">The span to which the current instance is copied.</param>
-        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</exception>
-        public void CopyTo(Span<T> destination)
-        {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
             if ((uint)destination.Length < (uint)Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            ref byte address = ref MemoryMarshal.GetReference(destination);
+            Unsafe.WriteUnaligned(ref address, this);
+        }
+
+        /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
+        /// <param name="destination">The span to which the current instance is copied.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void CopyTo(Span<T> destination)
+        {
+            if ((uint)destination.Length < (uint)Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
+            Unsafe.WriteUnaligned(ref address, this);
         }
 
         /// <summary>Returns a boolean indicating whether the given Object is equal to this vector instance.</summary>
@@ -809,22 +827,23 @@ namespace System.Numerics
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="destination">The span to which the current instance is copied.</param>
         /// <returns><c>true</c> if the current instance was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<byte> destination)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if ((uint)destination.Length < (uint)Vector<byte>.Count)
+            if ((uint)destination.Length < (uint)Count)
             {
                 return false;
             }
 
-            Unsafe.WriteUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(destination), this);
+            ref byte address = ref MemoryMarshal.GetReference(destination);
+            Unsafe.WriteUnaligned(ref address, this);
             return true;
         }
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="destination">The span to which the current instance is copied.</param>
         /// <returns><c>true</c> if the current instance was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<T> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();

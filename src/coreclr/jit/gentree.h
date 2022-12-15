@@ -6330,8 +6330,6 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
     }
 #endif
 
-    bool OperIsMemoryLoad() const;
-
     SIMDIntrinsicID GetSIMDIntrinsicId() const
     {
         return gtSIMDIntrinsicID;

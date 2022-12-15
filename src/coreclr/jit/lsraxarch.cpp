@@ -343,12 +343,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildIntrinsic(tree->AsOp());
             break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            srcCount = BuildSIMD(tree->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic(), &dstCount);
@@ -1904,52 +1898,6 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     BuildDef(tree);
     return srcCount;
 }
-
-#ifdef FEATURE_SIMD
-//------------------------------------------------------------------------
-// BuildSIMD: Set the NodeInfo for a GT_SIMD tree.
-//
-// Arguments:
-//    tree       - The GT_SIMD node of interest
-//
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
-{
-    // All intrinsics have a dstCount of 1
-    assert(simdTree->IsValue());
-
-    bool      buildUses     = true;
-    regMaskTP dstCandidates = RBM_NONE;
-
-    assert(!simdTree->isContained());
-    SetContainsAVXFlags(simdTree->GetSimdSize());
-    int srcCount = 0;
-
-    switch (simdTree->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicInitArray:
-            // We have an array and an index, which may be contained.
-            break;
-
-        default:
-            noway_assert(!"Unimplemented SIMD node type.");
-            unreached();
-    }
-    if (buildUses)
-    {
-        assert(srcCount == 0);
-        // This is overly conservative, but is here for zero diffs.
-        GenTree* op1 = simdTree->Op(1);
-        GenTree* op2 = (simdTree->GetOperandCount() == 2) ? simdTree->Op(2) : nullptr;
-        srcCount     = BuildRMWUses(simdTree, op1, op2);
-    }
-    buildInternalRegisterUses();
-    BuildDef(simdTree, dstCandidates);
-    return srcCount;
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------

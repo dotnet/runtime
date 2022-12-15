@@ -380,12 +380,6 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            srcCount = BuildSIMD(tree->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic(), &dstCount);
@@ -796,68 +790,6 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
-
-#ifdef FEATURE_SIMD
-//------------------------------------------------------------------------
-// BuildSIMD: Set the NodeInfo for a GT_SIMD tree.
-//
-// Arguments:
-//    tree       - The GT_SIMD node of interest
-//
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
-{
-    int srcCount = 0;
-    assert(!simdTree->isContained());
-    int dstCount = simdTree->IsValue() ? 1 : 0;
-    assert(dstCount == 1);
-
-    bool buildUses = true;
-
-    switch (simdTree->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicInitArray:
-            // We have an array and an index, which may be contained.
-            break;
-
-        case SIMDIntrinsicInitArrayX:
-        case SIMDIntrinsicInitFixed:
-        case SIMDIntrinsicCopyToArray:
-        case SIMDIntrinsicCopyToArrayX:
-        case SIMDIntrinsicNone:
-        case SIMDIntrinsicInvalid:
-            assert(!"These intrinsics should not be seen during register allocation");
-            FALLTHROUGH;
-
-        default:
-            noway_assert(!"Unimplemented SIMD node type.");
-            unreached();
-    }
-    if (buildUses)
-    {
-        assert(srcCount == 0);
-        srcCount = BuildOperandUses(simdTree->Op(1));
-
-        if ((simdTree->GetOperandCount() == 2) && !simdTree->Op(2)->isContained())
-        {
-            srcCount += BuildOperandUses(simdTree->Op(2));
-        }
-    }
-    assert(internalCount <= MaxInternalCount);
-    buildInternalRegisterUses();
-    if (dstCount == 1)
-    {
-        BuildDef(simdTree);
-    }
-    else
-    {
-        assert(dstCount == 0);
-    }
-    return srcCount;
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 
