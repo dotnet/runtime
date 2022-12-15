@@ -8568,6 +8568,21 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
 {
     ssize_t val = 0;
+
+    // Special case for NativeAOT: ADD(ICON_STATIC, CNS_INT) where CNS_INT has field sequence corresponding to field's
+    // offset
+    if (tree->OperIs(GT_ADD) && tree->gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_HDL) && tree->gtGetOp2()->IsCnsIntOrI())
+    {
+        GenTreeIntCon* cns1 = tree->gtGetOp1()->AsIntCon();
+        GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
+        if ((cns1->gtFieldSeq == nullptr) && (cns2->gtFieldSeq != nullptr))
+        {
+            *pAddress = cns1->IconValue() + cns2->IconValue();
+            *pFseq    = cns2->gtFieldSeq;
+            return true;
+        }
+    }
+
     // Accumulate final offset
     while (tree->OperIs(GT_ADD))
     {
@@ -8633,10 +8648,17 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     FieldSeq* fieldSeq = nullptr;
     if (varTypeIsIntegral(tree) && GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &address, &fieldSeq))
     {
-        assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
+        ssize_t              byteOffset  = 0;
+        if (fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress)
+        {
+            byteOffset = address - fieldSeq->GetOffset();
+        }
+        else
+        {
+            assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic);
+        }
 
-        ssize_t   byteOffset     = address - fieldSeq->GetOffset();
         int       size           = (int)genTypeSize(tree->TypeGet());
         const int maxElementSize = sizeof(int64_t);
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))

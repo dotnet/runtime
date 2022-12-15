@@ -4306,11 +4306,10 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE);
             assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
 
-            op1         = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
-            op1->gtType = TYP_BYREF;
-
-            FieldSeq* fseq = GetFieldSeqStore()->Create(pResolvedToken->hField, pFieldInfo->offset, fieldKind);
-            op1            = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(pFieldInfo->offset, fseq));
+            GenTree*  baseAddr = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
+            FieldSeq* fseq     = GetFieldSeqStore()->Create(pResolvedToken->hField, pFieldInfo->offset, fieldKind);
+            GenTree*  offset   = gtNewIconNode(pFieldInfo->offset, fseq);
+            op1                = gtNewOperNode(GT_ADD, TYP_BYREF, baseAddr, offset);
 #else
             unreached();
 #endif // FEATURE_READYTORUN
