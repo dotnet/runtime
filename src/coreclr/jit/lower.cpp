@@ -2871,7 +2871,6 @@ GenTree* Lowering::OptimizeNarrowTree(GenTree* node, var_types srcType, var_type
 
             if (newNode != nullptr)
             {
-                assert(false);
                 return newNode;
             }
             return castOp;
