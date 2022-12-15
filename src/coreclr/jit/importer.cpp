@@ -520,10 +520,9 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
                 assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
-                GenTreeLclVarCommon* lclNode = retBuf->IsLocalAddrExpr();
-                if (lclNode != nullptr)
+                if (retBuf->OperIs(GT_LCL_VAR_ADDR))
                 {
-                    dstVarDsc = lvaGetDesc(lclNode);
+                    dstVarDsc = lvaGetDesc(retBuf->AsLclVarCommon());
                 }
             }
         }
@@ -2527,12 +2526,12 @@ CORINFO_CLASS_HANDLE Compiler::impGetObjectClass()
 /* static */
 void Compiler::impBashVarAddrsToI(GenTree* tree1, GenTree* tree2)
 {
-    if (tree1->IsLocalAddrExpr() != nullptr)
+    if (tree1->OperIsLocalAddr())
     {
         tree1->gtType = TYP_I_IMPL;
     }
 
-    if (tree2 && (tree2->IsLocalAddrExpr() != nullptr))
+    if (tree2 && tree2->OperIsLocalAddr())
     {
         tree2->gtType = TYP_I_IMPL;
     }
@@ -6798,7 +6797,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // We had better assign it a value of the correct type
                 assertImp(
                     genActualType(lclTyp) == genActualType(op1->gtType) ||
-                    (genActualType(lclTyp) == TYP_I_IMPL && op1->IsLocalAddrExpr() != nullptr) ||
+                    (genActualType(lclTyp) == TYP_I_IMPL && op1->OperIsLocalAddr()) ||
                     (genActualType(lclTyp) == TYP_I_IMPL && (op1->gtType == TYP_BYREF || op1->gtType == TYP_REF)) ||
                     (genActualType(op1->gtType) == TYP_I_IMPL && lclTyp == TYP_BYREF) ||
                     (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
@@ -12780,10 +12779,6 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 // Returns:
 //     true if it points into a local
 //
-// Remarks:
-//   This is a variant of GenTree::IsLocalAddrExpr that is more suitable for
-//   use during import. Unlike that function, this one handles field nodes.
-//
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
     const GenTree* op = tree;
@@ -13491,7 +13486,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 assert(varTypeIsIntOrI(sigType));
 
                 /* If possible bash the BYREF to an int */
-                if (inlArgNode->IsLocalAddrExpr() != nullptr)
+                if (inlArgNode->OperIsLocalAddr())
                 {
                     inlArgNode->gtType           = TYP_I_IMPL;
                     lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));

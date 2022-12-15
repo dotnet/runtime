@@ -7841,14 +7841,19 @@ GenTreeObj* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
     // An Obj is not a global reference, if it is known to be a local struct.
     if ((addr->gtFlags & GTF_GLOB_REF) == 0)
     {
-        GenTreeLclVarCommon* lclNode = addr->IsLocalAddrExpr();
-        if (lclNode != nullptr)
+        // TODO-Bug: this method does not have enough information to make this determination.
+        // The local may end up (or already is) address-exposed.
+        if (addr->OperIsLocalAddr())
         {
             objNode->gtFlags |= GTF_IND_NONFAULTING;
-            if (!lvaIsImplicitByRefLocal(lclNode->GetLclNum()))
+            if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
             {
-                objNode->gtFlags &= ~GTF_GLOB_REF;
+                objNode->gtFlags |= GTF_GLOB_REF;
             }
+        }
+        else
+        {
+            objNode->gtFlags |= GTF_GLOB_REF;
         }
     }
 
@@ -17297,14 +17302,6 @@ bool GenTree::DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffs
     return false;
 }
 
-// If this tree evaluates some sum of a local address and some constants,
-// return the node for the local being addressed
-
-const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
-{
-    return OperIsLocalAddr() ? AsLclVarCommon() : nullptr;
-}
-
 //------------------------------------------------------------------------
 // IsImplicitByrefParameterValuePreMorph:
 //    Determine if this tree represents the value of an implicit byref
@@ -18202,79 +18199,73 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         case GT_IND:
         {
             GenTreeIndir* indir = obj->AsIndir();
+            GenTree*      base  = indir->Base();
 
-            if (indir->HasBase() && !indir->HasIndex())
+            // indir(lcl_var_addr) --> lcl
+            //
+            // This comes up during constrained callvirt on ref types.
+            //
+            if (base->OperIs(GT_LCL_VAR_ADDR))
             {
-                // indir(addr(lcl)) --> lcl
+                const unsigned objLcl = base->AsLclVarCommon()->GetLclNum();
+                objClass              = lvaTable[objLcl].lvClassHnd;
+                *pIsExact             = lvaTable[objLcl].lvClassIsExact;
+            }
+            else if (base->OperIs(GT_INDEX_ADDR, GT_ARR_ELEM))
+            {
+                // indir(arr_elem(...)) -> array element type
+
+                if (base->OperIs(GT_INDEX_ADDR))
+                {
+                    objClass = gtGetArrayElementClassHandle(base->AsIndexAddr()->Arr());
+                }
+                else
+                {
+                    objClass = gtGetArrayElementClassHandle(base->AsArrElem()->gtArrObj);
+                }
+
+                *pIsExact   = false;
+                *pIsNonNull = false;
+            }
+            else if (base->OperGet() == GT_ADD)
+            {
+                // TODO-VNTypes: use "IsFieldAddr" here instead.
+
+                // This could be a static field access.
                 //
-                // This comes up during constrained callvirt on ref types.
+                // See if op1 is a static field base helper call
+                // and if so, op2 will have the field info.
+                GenTree* op1 = base->AsOp()->gtOp1;
+                GenTree* op2 = base->AsOp()->gtOp2;
 
-                GenTree*             base = indir->Base();
-                GenTreeLclVarCommon* lcl  = base->IsLocalAddrExpr();
-
-                if ((lcl != nullptr) && (base->OperGet() != GT_ADD))
+                if (op2->IsCnsIntOrI())
                 {
-                    const unsigned objLcl = lcl->GetLclNum();
-                    objClass              = lvaTable[objLcl].lvClassHnd;
-                    *pIsExact             = lvaTable[objLcl].lvClassIsExact;
-                }
-                else if (base->OperIs(GT_INDEX_ADDR, GT_ARR_ELEM))
-                {
-                    // indir(arr_elem(...)) -> array element type
-
-                    if (base->OperIs(GT_INDEX_ADDR))
+                    FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
+                    if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                     {
-                        objClass = gtGetArrayElementClassHandle(base->AsIndexAddr()->Arr());
-                    }
-                    else
-                    {
-                        objClass = gtGetArrayElementClassHandle(base->AsArrElem()->gtArrObj);
-                    }
+                        // No benefit to calling gtGetFieldClassHandle here, as
+                        // the exact field being accessed can vary.
+                        CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
+                        CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
+                        var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
 
-                    *pIsExact   = false;
-                    *pIsNonNull = false;
-                }
-                else if (base->OperGet() == GT_ADD)
-                {
-                    // TODO-VNTypes: use "IsFieldAddr" here instead.
-
-                    // This could be a static field access.
-                    //
-                    // See if op1 is a static field base helper call
-                    // and if so, op2 will have the field info.
-                    GenTree* op1 = base->AsOp()->gtOp1;
-                    GenTree* op2 = base->AsOp()->gtOp2;
-
-                    if (op2->IsCnsIntOrI())
-                    {
-                        FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
-                        if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
+                        if (fieldType == TYP_REF)
                         {
-                            // No benefit to calling gtGetFieldClassHandle here, as
-                            // the exact field being accessed can vary.
-                            CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
-                            CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
-                            var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
-
-                            if (fieldType == TYP_REF)
-                            {
-                                objClass = fieldClass;
-                            }
+                            objClass = fieldClass;
                         }
                     }
                 }
-                else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
+            }
+            else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
+            {
+                // Check if we have IND(ICON_HANDLE) that represents a static field
+                FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
+                if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
                 {
-                    // Check if we have IND(ICON_HANDLE) that represents a static field
-                    FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
-                    if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
-                    {
-                        CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
-                        objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
-                    }
+                    CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
+                    objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
                 }
             }
-
             break;
         }
 
@@ -25017,7 +25008,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || IsLocalAddrExpr();
+    return OperIsConst() || OperIsLocalAddr();
 }
 
 //------------------------------------------------------------------------
