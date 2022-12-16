@@ -16,7 +16,9 @@ Native-sized integer types and pointers have alignment that matches their size o
 The alignment of fields is not guaranteed when `FieldOffsetAttribute` is used to explicitly adjust field offsets.
 
 ## Atomic memory accesses
-Memory accesses to *properly aligned* data of primitive types are always atomic. The value that is observed is always a result of complete read and write operations.
+Memory accesses to *properly aligned* data of primitive and Enum types with size with sizes up to the platform pointer size are always atomic. The value that is observed is always a result of complete read and write operations.
+
+Primitive types: bool, char, int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, native int, native unsigned int.
 
 Values of unmanaged pointers are treated as native integer primitive types. Memory accesses to *properly aligned* values of unmanaged pointers are atomic.
 
