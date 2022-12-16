@@ -48,9 +48,15 @@ As of this writing there is no specific support for operating with incoherent me
 As a consequence:
 * Speculative writes are not allowed.
 * Reads cannot be introduced.
-* Unused reads can be elided.
+* Unused reads can be elided. (note: if a read can cause a fault it is not "unused")
 * Adjacent non-volatile reads from the same location can be coalesced.
 * Adjacent non-volatile writes to the same location can be coalesced.
+
+The practical motivations for these rules are:
+- We can't allow speculative writes as we consider changing the value to be observable, thus effects of a speculative write may not be possible to undo.
+- A read cannot be re-done, since it could fetch a different value and thus introduce a data race that the program did not have.
+- Reading from a variable and not observing sideeffects of the read is the same as not performing a read, thus unused reads can be removed.
+- Coalescing of adjacent ordinary memory accesses to the same location is ok because most programs do not rely on presence of data races thus, unlike introducing, removing data races is ok. Programs that do rely on observing data races shall use `volatile` accesses.
 
 ## Thread-local memory accesses
 It may be possible for an optimizing compiler to prove that some data is accessible only by a single thread. In such case it is permitted to perform further optimizations such as duplicating or removal of memory accesses.
