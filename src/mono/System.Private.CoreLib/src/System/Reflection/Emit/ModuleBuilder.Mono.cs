@@ -204,7 +204,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
-                throw new ArgumentException(SR.Argument_GlobalMethodsMustBeStatic);
+                throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
             if (global_type_created)
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             CreateGlobalType();
@@ -219,7 +219,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
-                throw new ArgumentException(SR.Argument_GlobalMethodsMustBeStatic);
+                throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
             if (global_type_created)
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             CreateGlobalType();

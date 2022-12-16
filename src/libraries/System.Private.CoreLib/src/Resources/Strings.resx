@@ -1095,8 +1095,8 @@
   <data name="Argument_OpenGenericTypeNotPermitted" xml:space="preserve">
     <value>Open Generic Type not permitted.</value>
   </data>
-  <data name="Argument_GlobalMethodsMustBeStatic" xml:space="preserve">
-    <value>Global methods must be static.</value>
+  <data name="Argument_GlobalMembersMustBeStatic" xml:space="preserve">
+    <value>Global members must be static.</value>
   </data>
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
     <value>Must be an array type.</value>
