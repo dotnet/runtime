@@ -16466,6 +16466,47 @@ bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// gtTreeContainsOper -- check if the tree contains any subtree with the specified oper.
+//
+// Arguments:
+//    tree - tree to examine
+//    oper - oper to check for
+//
+// Return Value:
+//    True if any subtree has the specified oper; otherwise false.
+//
+bool Compiler::gtTreeContainsOper(GenTree* tree, genTreeOps oper)
+{
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+        genTreeOps m_oper;
+
+    public:
+        Visitor(Compiler* comp, genTreeOps oper) : GenTreeVisitor(comp), m_oper(oper)
+        {
+        }
+
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if ((*use)->OperIs(m_oper))
+            {
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this, oper);
+    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+}
+
+//------------------------------------------------------------------------
 // gtCollectExceptions: walk a tree collecting a bit set of exceptions the tree
 // may throw.
 //
