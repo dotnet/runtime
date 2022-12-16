@@ -172,8 +172,39 @@ namespace MemoryMarshalGetArrayDataReferenceTest
 
             Equals(Problem4(new byte[] { 1, 1 }), 0);
 
+            try
+            {
+                int[] inputArray = CreateArray(17);
+
+                Create(out Vector<int> v, inputArray, inputArray.Length);
+            }
+            catch
+            {
+                _errors++;
+            }
+
             return 100 + _errors;
         }
+
+        public static void Create(out Vector<int> result, int[] values, int index)
+        {
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+
+            if ((index < 0) || ((values.Length - index) < Vector<int>.Count))
+            {
+                ThrowArgumentOutOfRangeException();
+            }
+
+            result = Unsafe.ReadUnaligned<Vector<int>>(ref Unsafe.As<int, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(values), index)));
+        }
+
+        public static void ThrowArgumentOutOfRangeException()
+        {
+            throw new ArgumentOutOfRangeException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int[] CreateArray(int size) => new int[size];
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void Equals<T>(T left, T right, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")

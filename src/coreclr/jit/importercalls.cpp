@@ -2601,6 +2601,29 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
+            {
+                assert(sig->numArgs == 1);
+
+                GenTree*             array    = impPopStack().val;
+                CORINFO_CLASS_HANDLE elemHnd  = sig->sigInst.methInst[0];
+                CorInfoType          jitType  = info.compCompHnd->asCorInfoType(elemHnd);
+                var_types            elemType = JITtype2varType(jitType);
+
+                GenTree* arrayClone;
+                array = impCloneExpr(array, &arrayClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                     nullptr DEBUGARG("MemoryMarshal.GetArrayDataReference array"));
+
+                impAppendTree(gtNewNullCheck(array, compCurBB), (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
+
+                GenTree*          index     = gtNewIconNode(0, TYP_I_IMPL);
+                GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(arrayClone, index, elemType, elemHnd);
+                indexAddr->gtFlags &= ~GTF_INX_RNGCHK;
+                indexAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
+                retNode = indexAddr;
+                break;
+            }
+
             case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
@@ -7511,6 +7534,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "IsKnownConstant") == 0)
             {
                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+            }
+        }
+    }
+    else if (strcmp(namespaceName, "System.Runtime.InteropServices") == 0)
+    {
+        if (strcmp(className, "MemoryMarshal") == 0)
+        {
+            if (strcmp(methodName, "GetArrayDataReference") == 0)
+            {
+                result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
             }
         }
     }
