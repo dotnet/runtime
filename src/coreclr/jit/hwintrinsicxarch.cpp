@@ -1084,8 +1084,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             if (areArgsContiguous)
             {
                 op1                 = nodeBuilder.GetOperand(0);
-                GenTree* op1Address = CreateAddressNodeForSimdHWIntrinsicCreate(op1, simdBaseType, 16);
-                retNode             = gtNewOperNode(GT_IND, TYP_SIMD16, op1Address);
+                GenTree* op1Address = CreateAddressNodeForSimdHWIntrinsicCreate(op1, simdBaseType, simdSize);
+                retNode             = gtNewOperNode(GT_IND, retType, op1Address);
             }
             else
             {
