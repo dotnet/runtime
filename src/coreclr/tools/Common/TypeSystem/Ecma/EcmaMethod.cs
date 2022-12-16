@@ -370,6 +370,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsStaticConstructor
+        {
+            get
+            {
+                return Attributes.IsRuntimeSpecialName() && Name == ".cctor";
+            }
+        }
+
         public MethodAttributes Attributes
         {
             get
