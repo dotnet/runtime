@@ -8,11 +8,6 @@ namespace structinreg
  
     class Program3
     {
-        class TestClass
-        {
-            object w;
-        };
-
         public struct S1
         {
             public int x;
@@ -171,20 +166,6 @@ namespace structinreg
             public long w;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        public struct S28
-        {
-            public object x;
-            public int y;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct S29
-        {
-            public int x;
-            public object y;
-        }
- 
         public struct S30
         {
             public long x;
@@ -211,8 +192,6 @@ namespace structinreg
         public delegate void MyCallback18(S18 s);
         public delegate void MyCallback19(S19 s);
         public delegate void MyCallback20(S20 s);
-        public delegate void MyCallback28(S28 s);
-        public delegate void MyCallback29(S29 s);
         public delegate void MyCallback30(S30 s1, S30 s2, S30 s3);
         
         [DllImport("jitstructtests_lib")]
@@ -276,12 +255,6 @@ namespace structinreg
         public static extern void InvokeCallback20(MyCallback20 callback, S20 s);
         
         [DllImport("jitstructtests_lib")]
-        public static extern void InvokeCallback28(MyCallback28 callback, S28 s);
-
-        [DllImport("jitstructtests_lib")]
-        public static extern void InvokeCallback29(MyCallback29 callback, S29 s);
- 
-        [DllImport("jitstructtests_lib")]
         public static extern void InvokeCallback30(MyCallback30 callback, S30 s1, S30 s2, S30 s3);
 
         [DllImport("jitstructtests_lib")]
@@ -344,12 +317,6 @@ namespace structinreg
         [DllImport("jitstructtests_lib")]
         public static extern S20 InvokeCallback20R(MyCallback20 callback, S20 s);
 
-        [DllImport("jitstructtests_lib")]
-        public static extern S28 InvokeCallback28R(MyCallback28 callback, S28 s);
-
-        [DllImport("jitstructtests_lib")]
-        public static extern S29 InvokeCallback29R(MyCallback29 callback, S29 s);
- 
         static public int Main1()
         {
             Program3 p = new Program3();
@@ -636,53 +603,6 @@ namespace structinreg
                     }
                 }, s20);
 
-                TestClass testClass = new TestClass();
-                S28 s28;
-                s28.x = null;
-                s28.y = 1;
-
-                InvokeCallback28((par) => {
-                    Console.WriteLine("S28: {0}, {1}", par.x == null ? "Null" : "Not null", par.y);
-                    if (par.x != null || par.y != 1)
-                    {
-                        throw new System.Exception();
-                    }
-                }, s28);
-
-                s28.x = testClass;
-                s28.y = 5;
-
-                InvokeCallback28((par) => {
-                    Console.WriteLine("S28: {0}, {1}", par.x == null ? "Null" : "Not null", par.y);
-                    if (par.x != testClass || par.y != 5)
-                    {
-                        throw new System.Exception();
-                    }
-                }, s28);
-
-                S29 s29;
-                s29.x = 1;
-                s29.y = null;
-
-                InvokeCallback29((par) => {
-                    Console.WriteLine("S29: {0}, {1}", par.x, par.y == null ? "Null" : "Not null");
-                    if (par.x != 1 || par.y != null)
-                    {
-                        throw new System.Exception();
-                    }
-                }, s29);
-
-                s29.x = 5;
-                s29.y = testClass;
-
-                InvokeCallback29((par) => {
-                    Console.WriteLine("S29: {0}, {1}", par.x, par.y == null ? "Null" : "Not null");
-                    if (par.x != 5 || par.y != testClass)
-                    {
-                        throw new System.Exception();
-                    }
-                }, s29);
-                 
                 S30 s30;
                 s30.x = 1;
                 s30.y = 2;
@@ -979,65 +899,6 @@ namespace structinreg
                 }, s20);
                 Console.WriteLine("S20R: {0}, {1}, {2}, {3}", s20r.x, s20r.y, s20r.z, s20r.w);
                 if (s20r.x != 1 || s20r.y != 2 || s20r.z != 3 || s20r.w != 4)
-                {
-                    throw new System.Exception();
-                }
-                
-                s28.x = null;
-                S28 s28r = InvokeCallback28R((par) => {
-                    Console.WriteLine("S28: {0}, {1}", par.x == null ? "Null" : "Not null", par.y);
-                    if (par.x == null || par.y != 5)
-                    {
-                        throw new System.Exception();
-                    }
-                }, s28);
-                Console.WriteLine("S28R: {0}, {1}", s28r.x == null ? "Null" : "Not null", s28r.y);
-                if (s28r.x == null || s28r.y != 5)
-                {
-                    throw new System.Exception();
-                }
-
-                s28.x = testClass;
-                s28.y = 5;
-
-                s28r = InvokeCallback28R((par) => {
-                    Console.WriteLine("S28: {0}, {1}", par.x == null ? "Null" : "Not null", par.y);
-                    if (par.x != testClass || par.y != 5)
-                    {
-                        throw new System.Exception();
-                    }
-                }, s28);
-                Console.WriteLine("S28R: {0}, {1}", s28r.x == null ? "Null" : "Not null", s28r.y);
-                if (s28r.x != testClass || s28r.y != 5)
-                {
-                    throw new System.Exception();
-                }
-
-                s29.y = null;
-                S29 s29r = InvokeCallback29R((par) => {
-                    Console.WriteLine("S29: {0}, {1}", par.x, par.y == null ? "Null" : "Not null");
-                    if (par.x != 5 || par.y == null)
-                    {
-                        throw new System.Exception();
-                    }
-                }, s29);
-                Console.WriteLine("S29R: {0}, {1}", s29r.x, s29r.y == null ? "Null" : "Not null");
-                if (s29r.x != 5 || s29r.y == null)
-                {
-                    throw new System.Exception();
-                }
-
-                s29.x = 5;
-                s29.y = testClass;
-                s29r = InvokeCallback29R((par) => {
-                    Console.WriteLine("S29: {0}, {1}", par.x, par.y == null ? "Null" : "Not null");
-                    if (par.x != 5 || par.y != testClass)
-                    {
-                        throw new System.Exception();
-                    }
-                }, s29);            
-                Console.WriteLine("S29R: {0}, {1}", s29r.x, s29r.y == null ? "Null" : "Not null");
-                if (s29r.x != 5 || s29r.y != testClass)
                 {
                     throw new System.Exception();
                 }
