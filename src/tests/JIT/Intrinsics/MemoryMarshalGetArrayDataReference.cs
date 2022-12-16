@@ -174,7 +174,7 @@ namespace MemoryMarshalGetArrayDataReferenceTest
             Equals(Problem4(new byte[] { 1, 1 }), 0);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static int Problem5()
+            static void Problem5()
             {
                 int[] inputArray = CreateArray(17);
 
