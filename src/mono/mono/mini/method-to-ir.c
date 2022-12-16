@@ -6667,8 +6667,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method && !cfg->deopt && !cfg->interp_entry_only) {
 		if (header->num_clauses) {
-			/* deopt is only disabled for gsharedvt */
-			g_assert (cfg->gsharedvt);
 			for (guint i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */
@@ -10081,11 +10079,14 @@ calli_end:
 				CHECK_TYPELOAD (klass);
 			}
 
-			addr = mono_special_static_field_get_offset (field, cfg->error);
-			CHECK_CFG_ERROR;
-			CHECK_TYPELOAD (klass);
-
 			is_special_static = mono_class_field_is_special_static (field);
+			if (is_special_static) {
+				addr = mono_special_static_field_get_offset (field, cfg->error);
+				CHECK_CFG_ERROR;
+				CHECK_TYPELOAD (klass);
+			} else {
+				addr = NULL;
+			}
 
 			if (is_special_static && ((gsize)addr & 0x80000000) == 0)
 				thread_ins = mono_create_tls_get (cfg, TLS_KEY_THREAD);
@@ -10254,8 +10255,13 @@ calli_end:
 			} else if (il_op == MONO_CEE_STSFLD) {
 				MonoInst *store;
 
-				EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, ftype, ins->dreg, 0, store_val->dreg);
-				store->flags |= ins_flag;
+				if (m_class_get_mem_manager (m_field_get_parent (field))->collectible && (mini_type_is_reference (ftype) || m_class_has_references (mono_class_from_mono_type_internal (ftype)))) {
+					/* These are stored on the GC heap, so they need GC barriers */
+					mini_emit_memory_store (cfg, ftype, ins, store_val, 0);
+				} else {
+					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, ftype, ins->dreg, 0, store_val->dreg);
+					store->flags |= ins_flag;
+				}
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = NULL;

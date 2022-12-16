@@ -290,7 +290,7 @@ collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
 collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help="Specify a \"load path\" where assemblies can be found during pmi.dll run. Optional; the argument values are translated to PMIPATH environment variable.")
-collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
+collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file. Default is a constructed file name in the current directory.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
 collect_parser.add_argument("--use_zapdisable", action="store_true", help="Sets DOTNET_ZapDisable=1 and DOTNET_ReadyToRun=0 when doing collection to cause NGEN/ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
@@ -664,6 +664,8 @@ class SuperPMICollect:
 
         self.coreclr_args = coreclr_args
 
+        self.temp_location = None
+
         # Pathname for a temporary .MCL file used for noticing SuperPMI replay failures against base MCH.
         self.base_fail_mcl_file = None
 
@@ -671,12 +673,22 @@ class SuperPMICollect:
         self.base_mch_file = None
 
         # Final .MCH file path
-        self.final_mch_file = None
+        if self.coreclr_args.output_mch_path is not None:
+            self.final_mch_file = os.path.abspath(self.coreclr_args.output_mch_path)
+            final_mch_dir = os.path.dirname(self.final_mch_file)
+            if not os.path.isdir(final_mch_dir):
+                os.makedirs(final_mch_dir)
+        else:
+            # Default directory is the current working directory (before we've changed the directory using "TempDir")
+            default_mch_location = os.path.abspath(os.getcwd())
+            if not os.path.isdir(default_mch_location):
+                os.makedirs(default_mch_location)
+            default_mch_basename = "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type)
+            default_mch_extension = "mch"
+            self.final_mch_file = create_unique_file_name(default_mch_location, default_mch_basename, default_mch_extension)
 
         # The .TOC file path for the clean thin unique .MCH file
-        self.toc_file = None
-
-        self.temp_location = None
+        self.toc_file = "{}.mct".format(self.final_mch_file)
 
     ############################################################################
     # Instance Methods
@@ -707,19 +719,6 @@ class SuperPMICollect:
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
 
                 self.temp_location = temp_location
-
-                if self.coreclr_args.output_mch_path is not None:
-                    self.final_mch_file = os.path.abspath(self.coreclr_args.output_mch_path)
-                    final_mch_dir = os.path.dirname(self.final_mch_file)
-                    if not os.path.isdir(final_mch_dir):
-                        os.makedirs(final_mch_dir)
-                else:
-                    default_coreclr_bin_mch_location = os.path.join(self.coreclr_args.spmi_location, "mch", "{}.{}.{}".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type))
-                    if not os.path.isdir(default_coreclr_bin_mch_location):
-                        os.makedirs(default_coreclr_bin_mch_location)
-                    self.final_mch_file = os.path.abspath(os.path.join(default_coreclr_bin_mch_location, "{}.{}.{}.mch".format(self.coreclr_args.host_os, self.coreclr_args.arch, self.coreclr_args.build_type)))
-
-                self.toc_file = "{}.mct".format(self.final_mch_file)
 
                 # If we have passed temp_dir, then we have a few flags we need
                 # to check to see where we are in the collection process. Note that this
@@ -756,6 +755,9 @@ class SuperPMICollect:
 
         except Exception as exception:
             logging.critical(exception)
+
+        if passed:
+            logging.info("Generated MCH file: %s", self.final_mch_file)
 
         return passed
 
@@ -1493,6 +1495,7 @@ class SuperPMIReplayAsmDiffs:
             "DOTNET_JitDisasm": "*",
             "DOTNET_JitUnwindDump": "*",
             "DOTNET_JitEHDump": "*",
+            "DOTNET_JitAlignLoops": "0", # disable loop alignment to filter noise
             "DOTNET_JitDiffableDasm": "1",
             "DOTNET_JitEnableNoWayAssert": "1",
             "DOTNET_JitNoForceFallback": "1",
@@ -4271,9 +4274,6 @@ def main(args):
 
         collection = SuperPMICollect(coreclr_args)
         success = collection.collect()
-
-        if success and coreclr_args.output_mch_path is not None:
-            logging.info("Generated MCH file: %s", coreclr_args.output_mch_path)
 
         end_time = datetime.datetime.now()
         elapsed_time = end_time - begin_time

@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0x3aa9c940 {}
+.assembly 'b27873' {}
 .class ILGEN_0x3aa9c940 {
 
 //BEGIN STATIC FIELDS

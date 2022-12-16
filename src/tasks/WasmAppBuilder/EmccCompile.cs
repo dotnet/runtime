@@ -244,7 +244,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             }
         }
 
-        private bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
+        private static bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
         {
             if (!File.Exists(srcFile))
                 throw new LogAsErrorException($"Could not find source file {srcFile}");
@@ -271,8 +271,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             {
                 if (!File.Exists(inFile))
                 {
-                    reason = $"Could not find dependency file {inFile} needed for compiling {srcFile} to {outFile}";
-                    Log.LogWarning(reason);
+                    reason = $"the dependency file {inFile} needed for compiling {srcFile} to {outFile} could not be found.";
                     return true;
                 }
 

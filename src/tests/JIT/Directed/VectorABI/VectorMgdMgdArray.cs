@@ -1083,7 +1083,7 @@ public static class VectorMgdMgd
         }
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
 
         HVATests<byte> byteTests = new HVATests<byte>();

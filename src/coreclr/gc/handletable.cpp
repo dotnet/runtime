@@ -1120,14 +1120,14 @@ void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
             // dump the generation number and the number of blocks scanned
             LOG((LF_GC, level,     "--------------------------------------------------------------\n"));
             LOG((LF_GC, level,     "    Condemned Generation      = %d\n", i));
-            LOG((LF_GC, level,     "    Blocks Scanned            = %I64u\n", totalBlocksScanned));
+            LOG((LF_GC, level,     "    Blocks Scanned            = %llu\n", totalBlocksScanned));
 
             // if we scanned any blocks in this generation then dump some interesting numbers
             if (totalBlocksScanned)
             {
-                LOG((LF_GC, level, "    Blocks Examined           = %I64u\n", pTable->_DEBUG_TotalBlocksScannedNonTrivially[i]));
-                LOG((LF_GC, level, "    Slots Scanned             = %I64u\n", pTable->_DEBUG_TotalHandleSlotsScanned       [i]));
-                LOG((LF_GC, level, "    Handles Scanned           = %I64u\n", pTable->_DEBUG_TotalHandlesActuallyScanned   [i]));
+                LOG((LF_GC, level, "    Blocks Examined           = %llu\n", pTable->_DEBUG_TotalBlocksScannedNonTrivially[i]));
+                LOG((LF_GC, level, "    Slots Scanned             = %llu\n", pTable->_DEBUG_TotalHandleSlotsScanned       [i]));
+                LOG((LF_GC, level, "    Handles Scanned           = %llu\n", pTable->_DEBUG_TotalHandlesActuallyScanned   [i]));
 
                 double blocksScanned  = (double) totalBlocksScanned;
                 double blocksExamined = (double) pTable->_DEBUG_TotalBlocksScannedNonTrivially[i];

@@ -887,7 +887,7 @@ namespace System.Reflection.Emit
             if (loc.m_label < 0 || loc.m_label >= num_labels)
                 throw new System.ArgumentException(SR.Argument_InvalidLabel);
             if (labels![loc.m_label].addr >= 0)
-                throw new System.ArgumentException(SR.Argument_InvalidLabel);
+                throw new System.ArgumentException(SR.Argument_RedefinedLabel);
             labels[loc.m_label].addr = code_len;
             if (labels[loc.m_label].maxStack > cur_stack)
                 cur_stack = labels[loc.m_label].maxStack;
@@ -898,10 +898,10 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(excType);
             if (!((excType == typeof(Exception)) ||
                    excType.IsSubclassOf(typeof(Exception))))
-                throw new ArgumentException(SR.Argument_TypeMustBeOfExceptionType, nameof(excType));
+                throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
             ConstructorInfo? ctor = excType.GetConstructor(Type.EmptyTypes);
             if (ctor == null)
-                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
+                throw new ArgumentException(SR.Argument_MissingDefaultConstructor, nameof(excType));
             Emit(OpCodes.Newobj, ctor);
             Emit(OpCodes.Throw);
         }

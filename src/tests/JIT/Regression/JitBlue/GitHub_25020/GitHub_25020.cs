@@ -9,7 +9,7 @@ namespace GitHub_25020
 {
     class Program
     {    
-        static int Main(string[] args)
+        static int Main()
         {
             DynamicMethod dm = new DynamicMethod("MyMethod", typeof(string), new Type[] { typeof(string), typeof(string) });
             

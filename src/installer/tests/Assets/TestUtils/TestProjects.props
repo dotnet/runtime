@@ -1,11 +1,11 @@
 <Project>
   <!--
-    This file is imported by the test projects from the artifacts dir or the src/tests dir. It
+    This file is imported by the test projects from the artifacts dir or the src/installer/tests dir. It
     provides basic info needed for restore and build with the vanilla SDK.
   -->
 
   <PropertyGroup>
-    <NetCoreAppCurrent>net7.0</NetCoreAppCurrent>
+    <NetCoreAppCurrent>net8.0</NetCoreAppCurrent>
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <!--

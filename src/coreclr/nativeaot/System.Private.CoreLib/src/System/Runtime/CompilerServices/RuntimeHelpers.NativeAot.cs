@@ -72,7 +72,7 @@ namespace System.Runtime.CompilerServices
             if ((!eeType.IsValueType) || eeType.IsPrimitive)
                 return obj;
 
-            return RuntimeImports.RhMemberwiseClone(obj);
+            return obj.MemberwiseClone();
         }
 
         public static new bool Equals(object? o1, object? o2)
@@ -94,17 +94,9 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhCompareObjectContentsAndPadding(o1, o2);
         }
 
-        [ThreadStatic]
-        private static int t_hashSeed;
-
         internal static int GetNewHashCode()
         {
-            int multiplier = Environment.CurrentManagedThreadId * 4 + 5;
-            // Every thread has its own generator for hash codes so that we won't get into a situation
-            // where two threads consistently give out the same hash codes.
-            // Choice of multiplier guarantees period of 2**32 - see Knuth Vol 2 p16 (3.2.1.2 Theorem A).
-            t_hashSeed = t_hashSeed * multiplier + 1;
-            return t_hashSeed;
+            return Random.Shared.Next();
         }
 
         public static unsafe int GetHashCode(object o)
@@ -208,8 +200,16 @@ namespace System.Runtime.CompilerServices
 
         internal static unsafe nuint GetRawObjectDataSize(this object obj)
         {
-            Debug.Assert(obj.GetEETypePtr().ComponentSize == 0);
-            return obj.GetEETypePtr().BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(MethodTable*);
+            MethodTable* pMT = GetMethodTable(obj);
+
+            // See comment on RawArrayData for details
+            nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
+            if (pMT->HasComponentSize)
+                rawSize += (uint)Unsafe.As<RawArrayData>(obj).Length * (nuint)pMT->ComponentSize;
+
+            GC.KeepAlive(obj); // Keep MethodTable alive
+
+            return rawSize;
         }
 
         internal static unsafe ushort GetElementSize(this Array array)
@@ -219,6 +219,9 @@ namespace System.Runtime.CompilerServices
 
         internal static unsafe MethodTable* GetMethodTable(this object obj)
             => obj.m_pEEType;
+
+        internal static unsafe ref MethodTable* GetMethodTableRef(this object obj)
+            => ref obj.m_pEEType;
 
         internal static unsafe EETypePtr GetEETypePtr(this object obj)
             => new EETypePtr(obj.m_pEEType);

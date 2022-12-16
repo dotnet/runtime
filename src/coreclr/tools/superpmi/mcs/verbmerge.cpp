@@ -349,7 +349,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
     {
         const _WIN32_FIND_DATAW& findData     = fileArray[i];
         LPWSTR                   fileFullPath = MergePathStrings(dir, findData.cFileName);
-
+#ifdef TARGET_WINDOWS
         if (wcslen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
         {
             if (wcscmp(dir, W(".")) == 0)
@@ -377,6 +377,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 
             fileFullPath = newBuffer;
         }
+#endif // TARGET_WINDOWS
 
         // Is it zero length? If so, skip it.
         if ((findData.nFileSizeLow == 0) && (findData.nFileSizeHigh == 0))
