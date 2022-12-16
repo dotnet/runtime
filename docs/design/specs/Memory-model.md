@@ -141,7 +141,7 @@ The ordering side-effects of reference assignment should not be used for general
 
 There was a lot of ambiguity around the guarantees provided by object assignments. Going forward the runtimes will only provide the guarantees described in this document. 
 
-_It is beleived that compiler optimizations do not violate the ordering guarantees in sections about [data-dependent reads](~#data-dependent-reads-are-ordered) and [object assignments]([~#object-assignment), but further investigations are needed to ensure compliance or to fix possible violations. That is tracked by the following issue:_ https://github.com/dotnet/runtime/issues/79764
+_It is beleived that compiler optimizations do not violate the ordering guarantees in sections about [data-dependent reads](~#data-dependent-reads-are-ordered) and [object assignments](~#object-assignment), but further investigations are needed to ensure compliance or to fix possible violations. That is tracked by the following issue:_ https://github.com/dotnet/runtime/issues/79764
 
 ## Instance constructors
 .NET runtime does not specify any ordering effects to the instance constructors.
