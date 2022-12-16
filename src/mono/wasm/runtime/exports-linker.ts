@@ -53,7 +53,6 @@ const mono_wasm_legacy_interop_exports = !MonoWasmLegacyJsInterop ? undefined : 
     mono_wasm_invoke_js_blazor,
 };
 
-
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
 // --- keep in sync with dotnet.es6.lib.js ---
