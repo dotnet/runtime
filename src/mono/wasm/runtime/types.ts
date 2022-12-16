@@ -96,6 +96,14 @@ export type MonoConfig = {
      */
     globalizationMode?: GlobalizationMode,
     /**
+     * User can choose the option to load only partial globalization data:
+     * "icudt_EFIGS.dat" for "en-*" "fr-FR" "es-ES" "it-IT" "de-DE"
+     * "icudt_CJK.dat" for "ja" "ko" "zh" "en"
+     * "icudt_no_CJK.dat" for all cultures, excluding "ja" "ko" "zh"
+     *  "customName"
+     */
+    isIcuDataCustom?: boolean,
+    /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
      * debugLevel < 0 enabled debugging and disables debug logging.
@@ -168,13 +176,13 @@ export interface AssetEntry extends ResourceRequest {
     /**
      * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
      */
-    loadRemote?: boolean, // 
+    loadRemote?: boolean, //
     /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
     isOptional?: boolean
     /**
-     * If provided, runtime doesn't have to fetch the data. 
+     * If provided, runtime doesn't have to fetch the data.
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
     buffer?: ArrayBuffer

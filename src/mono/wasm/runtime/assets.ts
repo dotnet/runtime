@@ -47,6 +47,40 @@ const skipInstantiateByAssetTypes: {
     "dotnetwasm": true,
 };
 
+export function get_skipped_icu_assets() : { [name: string]: boolean; }
+{
+    const preferredCulture = (navigator.languages && navigator.languages[0]);
+    const prefix = preferredCulture.split("-")[0];
+    if (["en", "fr", "it", "de", "es"].includes(prefix))
+    {
+        return {
+            "icudt.dat": true,
+            "icudt_EFIGS.dat": false,
+            "icudt_CJK.dat": true,
+            "icudt_no_CJK.dat": true
+        };
+    }
+    if (["zh", "ko", "ja",].includes(prefix)) {
+        return {
+            "icudt.dat": true,
+            "icudt_EFIGS.dat": true,
+            "icudt_CJK.dat": false,
+            "icudt_no_CJK.dat": true
+        };
+    }
+    return {
+        "icudt.dat": true,
+        "icudt_EFIGS.dat": true,
+        "icudt_CJK.dat": true,
+        "icudt_no_CJK.dat": false
+    };
+}
+
+export function skipIcuAssets(asset : AssetEntryInternal, skipIcuByAssetNames: { [name: string]: boolean; }) : boolean{
+    // if custom then there is only one icu file in assets and it should not be skipped
+    return !(asset.behavior == "icu" && !runtimeHelpers.config.isIcuDataCustom && skipIcuByAssetNames[asset.name]);
+}
+
 export function resolve_asset_path(behavior: AssetBehaviours) {
     const asset: AssetEntry | undefined = runtimeHelpers.config.assets?.find(a => a.behavior == behavior);
     mono_assert(asset, () => `Can't find asset for ${behavior}`);
@@ -64,13 +98,14 @@ export async function mono_download_assets(): Promise<void> {
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     try {
         const promises_of_assets_with_buffer: Promise<AssetWithBuffer>[] = [];
+        const skipIcuByAssetNames = get_skipped_icu_assets();
         // start fetching and instantiating all assets in parallel
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;
-            if (!skipInstantiateByAssetTypes[asset.behavior]) {
+            if (!skipInstantiateByAssetTypes[asset.behavior] && skipIcuAssets(asset, skipIcuByAssetNames)) {
                 expected_instantiated_assets_count++;
             }
-            if (!skipDownloadsByAssetTypes[asset.behavior]) {
+            if (!skipDownloadsByAssetTypes[asset.behavior] && skipIcuAssets(asset, skipIcuByAssetNames)) {
                 const headersOnly = skipBufferByAssetTypes[asset.behavior];// `response.arrayBuffer()` can't be called twice. Some usecases are calling it on response in the instantiation.
                 expected_downloaded_assets_count++;
                 if (asset.pendingDownload) {
@@ -117,10 +152,10 @@ export async function mono_download_assets(): Promise<void> {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
                         mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                        if (!skipDownloadsByAssetTypes[asset.behavior]) {
+                        if (!skipDownloadsByAssetTypes[asset.behavior] && skipIcuAssets(asset, skipIcuByAssetNames)) {
                             expected_downloaded_assets_count--;
                         }
-                        if (!skipInstantiateByAssetTypes[asset.behavior]) {
+                        if (!skipInstantiateByAssetTypes[asset.behavior] && skipIcuAssets(asset, skipIcuByAssetNames)) {
                             expected_instantiated_assets_count--;
                         }
                     }

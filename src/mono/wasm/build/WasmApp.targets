@@ -305,18 +305,8 @@
   </Target>
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
-    <PropertyGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <WasmIcuDataFileName>icudt.dat</WasmIcuDataFileName>
-      <!-- User can choose the option to load only partial globalization data:
-      "EFIGS" for "en-US" "fr-FR" "es-ES" "it-IT" "de-DE"
-      "CJK" for "ja" "ko" "zh" "en"
-      "no-CJK" for all cultures, excluding "ja" "ko" "zh" -->
-      <WasmIcuDataFileName Condition="'$(GlobalizationShard)' == 'efigs'">icudt_EFIGS.dat</WasmIcuDataFileName>
-      <WasmIcuDataFileName Condition="'$(GlobalizationShard)' == 'cjk'">icudt_CJK.dat</WasmIcuDataFileName>
-      <WasmIcuDataFileName Condition="'$(GlobalizationShard)' == 'no-cjk' or '$(GlobalizationShard)' == 'no_cjk' or '$(GlobalizationShard)' == 'no cjk'">icudt_no_CJK.dat</WasmIcuDataFileName>
-    </PropertyGroup>
-
     <PropertyGroup>
+      <IsIcuDataCustom Condition="'$(InvariantGlobalization)' != 'true' and '$(IcuFileName)' != ''">true</IsIcuDataCustom>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
@@ -324,6 +314,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <WasmIcuDataFileNames Condition="'$(IsIcuDataCustom)' != 'true'" Include="icudt.dat;icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat"/>
+      <WasmIcuDataFileNames Condition="'$(IsIcuDataCustom)' == 'true'" Include="$(IcuFileName)"/>
+
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
@@ -333,7 +326,7 @@
                                   '$(_HasDotnetJsSymbols)' != 'true' and
                                   Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
 
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')"/>
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
 
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
@@ -341,7 +334,7 @@
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);$(WasmMainJSPath);$(WasmIcuDataFileName);@(WasmNativeAsset)"
+          Inputs="@(_WasmAssembliesInternal);$(WasmMainJSPath);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
@@ -366,7 +359,8 @@
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-      IcuDataFileName="$(WasmIcuDataFileName)"
+      IcuDataFileNames="@(WasmIcuDataFileNames)"
+      IsIcuDataCustom="$(IsIcuDataCustom)"
       RemoteSources="@(WasmRemoteSources)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
