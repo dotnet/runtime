@@ -292,6 +292,9 @@ namespace Internal.TypeSystem.Ecma
                 foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
                 {
                     var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+                    if (typeDefinition.Attributes.IsNested())
+                        continue;
+
                     if (stringComparer.Equals(typeDefinition.Name, name) &&
                         stringComparer.Equals(typeDefinition.Namespace, nameSpace))
                     {
