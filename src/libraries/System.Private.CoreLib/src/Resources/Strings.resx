@@ -3044,9 +3044,6 @@
   <data name="NotSupported_OleAutBadVarType" xml:space="preserve">
     <value>The given Variant type is not supported by this OleAut function.</value>
   </data>
-  <data name="NotSupported_OnlyCallAndCallVirtAllowed" xml:space="preserve">
-    <value>Only Call and CallVirt are allowed</value>
-  </data>
   <data name="NotSupported_OpenType" xml:space="preserve">
     <value>Cannot create arrays of open type.</value>
   </data>

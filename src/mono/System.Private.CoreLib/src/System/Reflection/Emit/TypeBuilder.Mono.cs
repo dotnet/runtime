@@ -1958,7 +1958,7 @@ namespace System.Reflection.Emit
                         destValue = ticks;
                         return true;
                     default:
-                        throw new ArgumentException(SR.Format(SR.Argument_ConstantNotSupported, type!.ToString()));
+                        throw new ArgumentException(SR.Format(SR.Argument_ConstantNotSupported, type));
                 }
             }
             else

@@ -140,7 +140,7 @@ namespace System.Reflection.Emit
         private void RejectIfCreated()
         {
             if (typeb.is_created)
-                throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
+                throw new InvalidOperationException(SR.InvalidOperation_MethodBaked);
         }
     }
 }

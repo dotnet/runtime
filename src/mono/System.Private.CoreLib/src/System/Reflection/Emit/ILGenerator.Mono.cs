@@ -790,7 +790,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(methodInfo);
             short value = opcode.Value;
             if (!(value == OpCodes.Call.Value || value == OpCodes.Callvirt.Value))
-                throw new NotSupportedException(SR.NotSupported_OnlyCallAndCallVirtAllowed);
+                throw new NotSupportedException(SR.Argument_NotMethodCallOpcode);
             if ((methodInfo.CallingConvention & CallingConventions.VarArgs) == 0)
                 optionalParameterTypes = null;
             if (optionalParameterTypes != null)

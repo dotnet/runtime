@@ -47,7 +47,7 @@ namespace System
 
         public override bool Equals(object? o)
         {
-            throw new NotSupportedException(SR.PlatformNotSupported_ArgIterator);
+            throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
         public override int GetHashCode()
