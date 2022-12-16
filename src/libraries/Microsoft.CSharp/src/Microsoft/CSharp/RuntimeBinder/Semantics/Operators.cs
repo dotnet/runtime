@@ -1046,8 +1046,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bt2 = WhichTypeIsBetter(bofs1.Type2(), bofs2.Type2(), type2);
             }
 
-            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt1));
-            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt2));
+            Debug.Assert(Enum.IsDefined(bt1));
+            Debug.Assert(Enum.IsDefined(bt2));
             int res = bt1 switch
             {
                 BetterType.Left => -1,
@@ -1550,7 +1550,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bt = WhichTypeIsBetter(uofs1.GetType(), uofs2.GetType(), typeArg);
             }
 
-            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt));
+            Debug.Assert(Enum.IsDefined(bt));
             return bt switch
             {
                 BetterType.Left => -1,

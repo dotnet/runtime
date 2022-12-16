@@ -98,10 +98,7 @@ namespace System.Formats.Tar
             get => _header._mTime;
             set
             {
-                if (value < DateTimeOffset.UnixEpoch)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
                 _header._mTime = value;
             }
         }

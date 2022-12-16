@@ -30,15 +30,6 @@ namespace Internal.Runtime
 #if INPLACE_RUNTIME
             return RuntimeExceptionHelpers.GetRuntimeException(id);
 #else
-            DynamicModule* dynamicModule = this.DynamicModule;
-            if (dynamicModule != null)
-            {
-                delegate* <System.Runtime.ExceptionIDs, System.Exception> getRuntimeException = dynamicModule->GetRuntimeException;
-                if (getRuntimeException != null)
-                {
-                    return getRuntimeException(id);
-                }
-            }
             if (IsParameterizedType)
             {
                 return RelatedParameterType->GetClasslibException(id);

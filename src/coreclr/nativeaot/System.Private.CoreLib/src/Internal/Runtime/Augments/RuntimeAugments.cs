@@ -165,17 +165,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateObject);
         }
 
-        public static IntPtr GetAllocateArrayHelperForType(RuntimeTypeHandle type)
-        {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateArray);
-        }
-
-        public static IntPtr GetCastingHelperForType(RuntimeTypeHandle type, bool throwing)
-        {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type),
-                throwing ? RuntimeHelperKind.CastClass : RuntimeHelperKind.IsInst);
-        }
-
         public static IntPtr GetFallbackDefaultConstructor()
         {
             return Activator.GetFallbackDefaultConstructor();

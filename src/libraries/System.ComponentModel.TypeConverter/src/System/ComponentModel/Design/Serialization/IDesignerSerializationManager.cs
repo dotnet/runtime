@@ -71,30 +71,30 @@ namespace System.ComponentModel.Design.Serialization
         /// of named instances. Objects that implement IComponent will be
         /// added to the design time container if addToContainer is true.
         /// </summary>
-        object CreateInstance(Type type, ICollection arguments, string name, bool addToContainer);
+        object CreateInstance(Type type, ICollection? arguments, string? name, bool addToContainer);
 
         /// <summary>
         /// Retrieves an instance of a created object of the given name, or
         /// null if that object does not exist.
         /// </summary>
-        object GetInstance(string name);
+        object? GetInstance(string name);
 
         /// <summary>
         /// Retrieves a name for the specified object, or null if the object
         /// has no name.
         /// </summary>
-        string GetName(object value);
+        string? GetName(object value);
 
         /// <summary>
         /// Retrieves a serializer of the requested type for the given
         /// object type.
         /// </summary>
-        object GetSerializer(Type objectType, Type serializerType);
+        object? GetSerializer(Type? objectType, Type serializerType);
 
         /// <summary>
         /// Retrieves a type of the given name.
         /// </summary>
-        Type GetType(string typeName);
+        Type? GetType(string typeName);
 
         /// <summary>
         /// Removes a previously added serialization provider.

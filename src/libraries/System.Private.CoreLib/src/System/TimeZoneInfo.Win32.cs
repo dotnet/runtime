@@ -752,14 +752,16 @@ namespace System
             // filePath   = "C:\Windows\System32\tzres.dll"
             // resourceId = -100
             //
-            string[] resources = resource.Split(',');
+            ReadOnlySpan<char> resourceSpan = resource;
+            Span<Range> resources = stackalloc Range[3];
+            resources = resources.Slice(0, resourceSpan.Split(resources, ','));
             if (resources.Length != 2)
             {
                 return string.Empty;
             }
 
             // Get the resource ID
-            if (!int.TryParse(resources[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int resourceId))
+            if (!int.TryParse(resourceSpan[resources[1]], NumberStyles.Integer, CultureInfo.InvariantCulture, out int resourceId))
             {
                 return string.Empty;
             }
@@ -772,7 +774,7 @@ namespace System
             string system32 = Environment.SystemDirectory;
 
             // trim the string "@tzres.dll" to "tzres.dll" and append the "mui" file extension to it.
-            string tzresDll = $"{resources[0].AsSpan().TrimStart('@')}.mui";
+            string tzresDll = $"{resourceSpan[resources[0]].TrimStart('@')}.mui";
 
             try
             {
