@@ -558,28 +558,116 @@ void GenTree::DumpNodeSizes(FILE* fp)
 
 #endif // MEASURE_NODE_SIZE
 
+//-----------------------------------------------------------
+// begin: Get the iterator for the beginning of the locals list.
+//
+// Return Value:
+//     Iterator representing the beginning.
+//
+LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
+{
+    GenTree* first = m_stmt->GetRootNode()->gtNext;
+    assert((first == nullptr) || first->OperIsLocal() || first->OperIsLocalAddr());
+    return iterator(static_cast<GenTreeLclVarCommon*>(first));
+}
+
+//-----------------------------------------------------------
+// GetForwardEdge: Get the edge that points forward to a node.
+//
+// Arguments:
+//     node - The node the edge should be pointing at.
+//
+// Return Value:
+//     The edge, such as *edge == node.
+//
+GenTree** LocalsGenTreeList::GetForwardEdge(GenTreeLclVarCommon* node)
+{
+    if (node->gtPrev == nullptr)
+    {
+        assert(m_stmt->GetRootNode()->gtNext == node);
+        return &m_stmt->GetRootNode()->gtNext;
+    }
+    else
+    {
+        assert(node->gtPrev->gtNext == node);
+        return &node->gtPrev->gtNext;
+    }
+}
+
+//-----------------------------------------------------------
+// GetBackwardEdge: Get the edge that points backwards to a node.
+//
+// Arguments:
+//     node - The node the edge should be pointing at.
+//
+// Return Value:
+//     The edge, such as *edge == node.
+//
+GenTree** LocalsGenTreeList::GetBackwardEdge(GenTreeLclVarCommon* node)
+{
+    if (node->gtNext == nullptr)
+    {
+        assert(m_stmt->GetRootNode()->gtPrev == node);
+        return &m_stmt->GetRootNode()->gtPrev;
+    }
+    else
+    {
+        assert(node->gtNext->gtPrev == node);
+        return &node->gtNext->gtPrev;
+    }
+}
+
+void LocalsGenTreeList::Remove(GenTreeLclVarCommon* node)
+{
+    GenTree** forwardEdge  = GetForwardEdge(node);
+    GenTree** backwardEdge = GetBackwardEdge(node);
+
+    *forwardEdge  = node->gtNext;
+    *backwardEdge = node->gtPrev;
+}
+
+void LocalsGenTreeList::Replace(GenTreeLclVarCommon* firstNode,
+                                GenTreeLclVarCommon* lastNode,
+                                GenTreeLclVarCommon* newFirstNode,
+                                GenTreeLclVarCommon* newLastNode)
+{
+    assert((newFirstNode != nullptr) && (newLastNode != nullptr));
+
+    GenTree** forwardEdge  = GetForwardEdge(firstNode);
+    GenTree** backwardEdge = GetBackwardEdge(lastNode);
+
+    GenTree* prev = firstNode->gtPrev;
+    GenTree* next = lastNode->gtNext;
+
+    *forwardEdge         = newFirstNode;
+    *backwardEdge        = newLastNode;
+    newFirstNode->gtPrev = prev;
+    newLastNode->gtNext  = next;
+}
+
+//-----------------------------------------------------------
 // TreeList: convenience method for enabling range-based `for` iteration over the
 // execution order of the GenTree linked list, e.g.:
 //    for (GenTree* const tree : stmt->TreeList()) ...
 //
-// Only valid between fgSetBlockOrder and rationalization. See fgStmtListThreading.
+// Only valid between fgSetBlockOrder and rationalization. See fgNodeThreading.
 //
 GenTreeList Statement::TreeList() const
 {
-    assert(JitTls::GetCompiler()->fgStmtListThreading == NodeThreading::AllTrees);
+    assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllTrees);
     return GenTreeList(GetTreeList());
 }
 
-// LocalsTreeList: convenience method for enabling range-based `for` iteration over the
-// execution order of the GenTree locals linked list, e.g.:
-//    for (GenTree* const tree : stmt->LocalsTreeList()) ...
+//-----------------------------------------------------------
+// LocalsTreeList: Manages the locals tree list and allows for range-based
+// iteration.
 //
-// Only valid between local morph and forward sub. See fgStmtListThreading.
+// Only valid between local morph and forward sub. See fgNodeThreading.
 //
-GenTreeList Statement::LocalsTreeList() const
+LocalsGenTreeList Statement::LocalsTreeList()
 {
-    assert(JitTls::GetCompiler()->fgStmtListThreading == NodeThreading::AllLocals);
-    return GenTreeList(GetRootNode()->gtNext);
+    assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllLocals);
+    return LocalsGenTreeList(this);
 }
 
 /*****************************************************************************
@@ -9146,13 +9234,13 @@ GenTreeCall* Compiler::gtCloneCandidateCall(GenTreeCall* call)
 
 void Compiler::gtUpdateSideEffects(Statement* stmt, GenTree* tree)
 {
-    if (fgStmtListThreading == NodeThreading::AllTrees)
+    if (fgNodeThreading == NodeThreading::AllTrees)
     {
         gtUpdateTreeAncestorsSideEffects(tree);
     }
     else
     {
-        assert(fgStmtListThreading != NodeThreading::LIR);
+        assert(fgNodeThreading != NodeThreading::LIR);
         gtUpdateStmtSideEffects(stmt);
     }
 }
@@ -9166,7 +9254,7 @@ void Compiler::gtUpdateSideEffects(Statement* stmt, GenTree* tree)
 //
 void Compiler::gtUpdateTreeAncestorsSideEffects(GenTree* tree)
 {
-    assert(fgStmtListThreading == NodeThreading::AllTrees);
+    assert(fgNodeThreading == NodeThreading::AllTrees);
     while (tree != nullptr)
     {
         gtUpdateNodeSideEffects(tree);
@@ -14216,7 +14304,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         }
     }
 
-    if (fgStmtListThreading == NodeThreading::AllTrees)
+    if (fgNodeThreading == NodeThreading::AllTrees)
     {
         fgSetStmtSeq(asgStmt);
         fgSetStmtSeq(copyStmt);

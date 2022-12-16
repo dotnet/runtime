@@ -482,7 +482,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 fgPerNodeLocalVarLiveness(node);
             }
         }
-        else if (fgStmtListThreading == NodeThreading::AllTrees)
+        else if (fgNodeThreading == NodeThreading::AllTrees)
         {
             for (Statement* const stmt : block->NonPhiStatements())
             {
@@ -495,14 +495,13 @@ void Compiler::fgPerBlockLocalVarLiveness()
         }
         else
         {
-            assert(fgIsDoingEarlyLiveness && (fgStmtListThreading == NodeThreading::AllLocals));
+            assert(fgIsDoingEarlyLiveness && (fgNodeThreading == NodeThreading::AllLocals));
 
             for (Statement* stmt : block->Statements())
             {
-                for (GenTree* cur : stmt->LocalsTreeList())
+                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                 {
-                    assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
-                    fgMarkUseDef(cur->AsLclVarCommon());
+                    fgMarkUseDef(lcl);
                 }
             }
         }
@@ -2705,7 +2704,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
         {
             fgComputeLifeLIR(life, block, volatileVars);
         }
-        else if (fgStmtListThreading == NodeThreading::AllTrees)
+        else if (fgNodeThreading == NodeThreading::AllTrees)
         {
             /* Get the first statement in the block */
 
@@ -2755,7 +2754,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
         }
         else
         {
-            assert(fgIsDoingEarlyLiveness && (fgStmtListThreading == NodeThreading::AllLocals));
+            assert(fgIsDoingEarlyLiveness && (fgNodeThreading == NodeThreading::AllLocals));
             compCurStmt = nullptr;
             VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
 

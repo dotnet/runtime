@@ -386,7 +386,7 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const D
 {
     Statement* stmt = gtNewStmt(tree, di);
 
-    if (fgStmtListThreading != NodeThreading::None)
+    if (fgNodeThreading != NodeThreading::None)
     {
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);

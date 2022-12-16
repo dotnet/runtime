@@ -2633,7 +2633,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
         {
             test->SetRootNode(sideEffList);
 
-            if (fgStmtListThreading != NodeThreading::None)
+            if (fgNodeThreading != NodeThreading::None)
             {
                 gtSetStmtInfo(test);
                 fgSetStmtSeq(test);
@@ -2950,7 +2950,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                         else
                         {
                             Statement* nopStmt = fgNewStmtAtEnd(block, nop);
-                            if (fgStmtListThreading == NodeThreading::AllTrees)
+                            if (fgNodeThreading == NodeThreading::AllTrees)
                             {
                                 fgSetStmtSeq(nopStmt);
                             }
@@ -3219,7 +3219,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
                 switchStmt->SetRootNode(sideEffList);
 
-                if (fgStmtListThreading != NodeThreading::None)
+                if (fgNodeThreading != NodeThreading::None)
                 {
                     compCurBB = block;
 
@@ -3300,7 +3300,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
         }
-        else if (fgStmtListThreading != NodeThreading::None)
+        else if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
@@ -3725,7 +3725,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         noway_assert(clone);
         Statement* cloneStmt = gtNewStmt(clone);
 
-        if (fgStmtListThreading != NodeThreading::None)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(cloneStmt);
         }
@@ -3883,7 +3883,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
                     condStmt->SetRootNode(sideEffList);
 
-                    if (fgStmtListThreading == NodeThreading::AllTrees)
+                    if (fgNodeThreading == NodeThreading::AllTrees)
                     {
                         compCurBB = block;
 
@@ -3998,7 +3998,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // links. We don't know if it does or doesn't reorder nodes, so we end up always re-threading the links.
 
         gtSetStmtInfo(stmt);
-        if (fgStmtListThreading == NodeThreading::AllTrees)
+        if (fgNodeThreading == NodeThreading::AllTrees)
         {
             fgSetStmtSeq(stmt);
         }
@@ -4112,7 +4112,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
             return false;
         }
 
-        if (fgStmtListThreading == NodeThreading::AllTrees)
+        if (fgNodeThreading == NodeThreading::AllTrees)
         {
             gtSetStmtInfo(stmt);
             fgSetStmtSeq(stmt);
@@ -4392,7 +4392,7 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         newBlock->bbJumpSwt->bbsHasDominantCase = false;
 
-        if (fgStmtListThreading == NodeThreading::AllTrees)
+        if (fgNodeThreading == NodeThreading::AllTrees)
         {
             // The switch tree has been modified.
             JITDUMP("Rethreading " FMT_STMT "\n", switchStmt->GetID());
@@ -5803,7 +5803,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
             // may need to rethread
             //
-            if (fgStmtListThreading == NodeThreading::AllTrees)
+            if (fgNodeThreading == NodeThreading::AllTrees)
             {
                 JITDUMP("Rethreading " FMT_STMT "\n", condTestStmt->GetID());
                 gtSetStmtInfo(condTestStmt);

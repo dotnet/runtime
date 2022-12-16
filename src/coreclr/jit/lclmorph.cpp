@@ -137,7 +137,7 @@ private:
 
 void Compiler::fgSequenceLocals(Statement* stmt)
 {
-    assert((fgStmtListThreading == NodeThreading::AllLocals) || (mostRecentlyActivePhase == PHASE_STR_ADRLCL));
+    assert((fgNodeThreading == NodeThreading::AllLocals) || (mostRecentlyActivePhase == PHASE_STR_ADRLCL));
     LocalSequencer seq(this);
     seq.Sequence(stmt);
 }

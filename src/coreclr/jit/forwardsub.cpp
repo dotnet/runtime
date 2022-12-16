@@ -546,10 +546,8 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         unsigned parentLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : BAD_VAR_NUM;
 
         bool found = false;
-        for (GenTree* cur : nextStmt->LocalsTreeList())
+        for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
         {
-            assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
-            GenTreeLclVarCommon* lcl = cur->AsLclVarCommon();
             if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
             {
                 // TODO: Unify this with forward sub visitor.
@@ -864,74 +862,25 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         fwdSubNode = gtNewCastNode(TYP_INT, fwdSubNode, false, varDsc->TypeGet());
     }
 
-    JITDUMP("Forward sub from:\n");
-    DISPSTMT(stmt);
-    JITDUMP("\nLocals:");
-    const char* sep = " ";
-    for (GenTree* cur = stmt->GetRootNode()->gtNext; cur != nullptr; cur = cur->gtNext)
-    {
-        JITDUMP("%s[%06u]", sep, dspTreeID(cur));
-        sep = " -> ";
-    }
-
-    JITDUMP("\nTo:\n");
-    DISPSTMT(nextStmt);
-    JITDUMP("\nLocals: ");
-    sep = " ";
-    for (GenTree* cur = nextStmt->GetRootNode()->gtNext; cur != nullptr; cur = cur->gtNext)
-    {
-        JITDUMP("%s[%06u]", sep, dspTreeID(cur));
-        sep = " -> ";
-    }
-    JITDUMP("\n");
-
     // Looks good, forward sub!
     //
-    GenTree** use    = fsv.GetUse();
-    GenTree*  useLcl = *use;
-    *use             = fwdSubNode;
+    GenTree**            use    = fsv.GetUse();
+    GenTreeLclVarCommon* useLcl = (*use)->AsLclVarCommon();
+    *use                        = fwdSubNode;
 
-    // TODO: Abstract this nicely.
-    GenTree** forwardEdge;
-    GenTree** backwardEdge;
-    if (useLcl->gtPrev == nullptr)
+    // We expect the last local in the statement is the defined local and
+    // replace the use of it with the rest from the statement.
+    assert(lhsNode->gtNext == nullptr);
+
+    GenTreeLclVarCommon* firstLcl = *stmt->LocalsTreeList().begin();
+
+    if (firstLcl == lhsNode)
     {
-        assert(nextStmt->GetRootNode()->gtNext == useLcl);
-        forwardEdge = &nextStmt->GetRootNode()->gtNext;
+        nextStmt->LocalsTreeList().Remove(useLcl);
     }
     else
     {
-        forwardEdge = &useLcl->gtPrev->gtNext;
-    }
-
-    if (useLcl->gtNext == nullptr)
-    {
-        assert(nextStmt->GetRootNode()->gtPrev == useLcl);
-        backwardEdge = &nextStmt->GetRootNode()->gtPrev;
-    }
-    else
-    {
-        backwardEdge = &useLcl->gtNext->gtPrev;
-    }
-
-    assert(rootNode->gtPrev == rootNode->gtGetOp1());
-    if (rootNode->gtNext == rootNode->gtGetOp1())
-    {
-        // RHS of forward subbed statement has no locals so we just need to remove useLcl from the list.
-        *forwardEdge  = useLcl->gtNext;
-        *backwardEdge = useLcl->gtPrev;
-    }
-    else
-    {
-        assert(rootNode->gtPrev->gtPrev != nullptr);
-        GenTree* firstNode = rootNode->gtNext;
-        GenTree* lastNode  = rootNode->gtPrev->gtPrev;
-        // RHS of forward subbed statement has locals. Link them in place of useLcl.
-        *forwardEdge  = firstNode;
-        *backwardEdge = lastNode;
-
-        firstNode->gtPrev = useLcl->gtPrev;
-        lastNode->gtNext  = useLcl->gtNext;
+        nextStmt->LocalsTreeList().Replace(useLcl, useLcl, firstLcl, lhsNode->gtPrev->AsLclVarCommon());
     }
 
     if (!fwdSubNodeInvariant)

@@ -1824,7 +1824,7 @@ struct RichIPMapping
 };
 
 // Current kind of node threading stored in GenTree::gtPrev and GenTree::gtNext.
-// See fgStmtListThreading for more information.
+// See fgNodeThreading for more information.
 enum class NodeThreading
 {
     None,
@@ -4447,21 +4447,21 @@ public:
     // doubly linked lists during certain phases of the compilation.
     // - Local morph threads all locals to be used for early liveness and
     //   forward sub when optimizing. This is kept valid until after forward sub.
-    //   Since the root node is not a local we keep the first local in
-    //   Statement::GetRootNode()->gtNext and the last local in
-    //   Statement::GetRootNode()->gtPrev. fgSequenceLocals can be used to
-    //   (re-)sequence a statement into this form, and
-    //   Statement::LocalsTreeList for range-based iteration.
+    //   The first local is kept in Statement::GetRootNode()->gtNext and the last
+    //   local in Statement::GetRootNode()->gtPrev. fgSequenceLocals can be used
+    //   to (re-)sequence a statement into this form, and
+    //   Statement::LocalsTreeList for range-based iteration. The order must
+    //   match tree order.
     //
     // - fgSetBlockOrder threads all nodes. This is kept valid until LIR form.
-    // In this form the first node is given by Statement::GetTreeList and the
-    // last node is given by Statement::GetRootNode(). fgSetStmtSeq can be used
-    // to (re-)sequence a statement into this form, and Statement::TreeList for
-    // range-based iteration.
+    //   In this form the first node is given by Statement::GetTreeList and the
+    //   last node is given by Statement::GetRootNode(). fgSetStmtSeq can be used
+    //   to (re-)sequence a statement into this form, and Statement::TreeList for
+    //   range-based iteration. The order must match tree order.
     //
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
-    NodeThreading fgStmtListThreading;
+    NodeThreading fgNodeThreading;
     bool          fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
     bool          fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
     bool          fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights

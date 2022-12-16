@@ -2800,7 +2800,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         block->bbTraversalStamp = curTraversalStamp;
     }
 
-    bool sequenced = fgStmtListThreading != NodeThreading::None;
+    bool sequenced = fgNodeThreading != NodeThreading::None;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -3240,7 +3240,7 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
         // TODO: return?
     }
 
-    assert(fgStmtListThreading != NodeThreading::None);
+    assert(fgNodeThreading != NodeThreading::None);
 
     noway_assert(stmt->GetTreeList());
 
@@ -3434,7 +3434,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         // For each statement check that the nodes are threaded correctly - m_treeList.
-        if (fgStmtListThreading != NodeThreading::None)
+        if (fgNodeThreading != NodeThreading::None)
         {
             fgDebugCheckNodeLinks(block, stmt);
         }

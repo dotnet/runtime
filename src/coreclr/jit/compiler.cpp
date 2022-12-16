@@ -4601,7 +4601,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
-        fgStmtListThreading = NodeThreading::AllLocals;
+        fgNodeThreading = NodeThreading::AllLocals;
     }
 
     // Do an early pass of liveness for forward sub and morph. This data is
@@ -4614,7 +4614,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
 
     // Locals tree list is no longer kept valid.
-    fgStmtListThreading = NodeThreading::None;
+    fgNodeThreading = NodeThreading::None;
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -4758,7 +4758,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_SET_BLOCK_ORDER, &Compiler::fgSetBlockOrder);
 
-    fgStmtListThreading = NodeThreading::AllTrees;
+    fgNodeThreading = NodeThreading::AllTrees;
 
     // At this point we know if we are fully interruptible or not
     if (opts.OptimizationEnabled())
@@ -4952,7 +4952,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
 
-    fgStmtListThreading = NodeThreading::LIR;
+    fgNodeThreading = NodeThreading::LIR;
 
     // Here we do "simple lowering".  When the RyuJIT backend works for all
     // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate

@@ -13562,7 +13562,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
         gtSetStmtInfo(stmt);
 
         // This may be called both when the nodes are linked and when they aren't.
-        if (fgStmtListThreading == NodeThreading::AllTrees)
+        if (fgNodeThreading == NodeThreading::AllTrees)
         {
             fgSetStmtSeq(stmt);
         }
