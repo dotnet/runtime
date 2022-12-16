@@ -234,11 +234,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new FieldRvaDataNode(key);
             });
 
-            _uninitializedWritableDataBlobs = new NodeCache<UninitializedWritableDataBlobKey, BlobNode>(key =>
-            {
-                return new BlobNode(key.Name, ObjectNodeSection.BssSection, new byte[key.Size], key.Alignment);
-            });
-
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
             {
                 return new ExternSymbolNode(name);
@@ -653,7 +648,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<DispatchCellKey, InterfaceDispatchCellNode> _interfaceDispatchCells;
 
-        public InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method, string callSite = null)
+        public InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method, ISortableSymbolNode callSite = null)
         {
             return _interfaceDispatchCells.GetOrAdd(new DispatchCellKey(method, callSite));
         }
@@ -691,13 +686,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
         {
             return _GCStaticEETypes.GetOrAdd(gcMap);
-        }
-
-        private NodeCache<UninitializedWritableDataBlobKey, BlobNode> _uninitializedWritableDataBlobs;
-
-        public BlobNode UninitializedWritableDataBlob(Utf8String name, int size, int alignment)
-        {
-            return _uninitializedWritableDataBlobs.GetOrAdd(new UninitializedWritableDataBlobKey(name, size, alignment));
         }
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
@@ -1215,9 +1203,9 @@ namespace ILCompiler.DependencyAnalysis
         protected struct DispatchCellKey : IEquatable<DispatchCellKey>
         {
             public readonly MethodDesc Target;
-            public readonly string CallsiteId;
+            public readonly ISortableSymbolNode CallsiteId;
 
-            public DispatchCellKey(MethodDesc target, string callsiteId)
+            public DispatchCellKey(MethodDesc target, ISortableSymbolNode callsiteId)
             {
                 Target = target;
                 CallsiteId = callsiteId;
@@ -1252,27 +1240,6 @@ namespace ILCompiler.DependencyAnalysis
             // The name is part of the symbolic name and we don't do any mangling on it.
             public bool Equals(ReadOnlyDataBlobKey other) => Name.Equals(other.Name);
             public override bool Equals(object obj) => obj is ReadOnlyDataBlobKey && Equals((ReadOnlyDataBlobKey)obj);
-            public override int GetHashCode() => Name.GetHashCode();
-        }
-
-        protected struct UninitializedWritableDataBlobKey : IEquatable<UninitializedWritableDataBlobKey>
-        {
-            public readonly Utf8String Name;
-            public readonly int Size;
-            public readonly int Alignment;
-
-            public UninitializedWritableDataBlobKey(Utf8String name, int size, int alignment)
-            {
-                Name = name;
-                Size = size;
-                Alignment = alignment;
-            }
-
-            // The assumption here is that the name of the blob is unique.
-            // We can't emit two blobs with the same name and different contents.
-            // The name is part of the symbolic name and we don't do any mangling on it.
-            public bool Equals(UninitializedWritableDataBlobKey other) => Name.Equals(other.Name);
-            public override bool Equals(object obj) => obj is UninitializedWritableDataBlobKey && Equals((UninitializedWritableDataBlobKey)obj);
             public override int GetHashCode() => Name.GetHashCode();
         }
 
