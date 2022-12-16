@@ -67,7 +67,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values)));
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[0]));
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given array.</summary>
@@ -86,7 +86,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(values), index)));
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref values[index]));
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
@@ -666,7 +666,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination)), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[0]), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given array starting at the specified index.</summary>
@@ -690,7 +690,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destination), startIndex)), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[startIndex]), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>

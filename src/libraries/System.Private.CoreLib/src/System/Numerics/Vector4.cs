@@ -682,7 +682,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetArrayDataReference(array)), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -710,7 +710,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />. The length of the destination span must be at least 4.</summary>
