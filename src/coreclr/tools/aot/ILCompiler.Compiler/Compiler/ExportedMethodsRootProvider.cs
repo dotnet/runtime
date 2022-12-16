@@ -48,7 +48,7 @@ namespace ILCompiler
                         && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
                     {
                         var method = (EcmaMethod)_module.GetMethod(ca.Parent);
-                        if (method.GetRuntimeExportName() != null)
+                        if (method.GetUnmanagedCallersOnlyExportName() != null)
                             yield return method;
                     }
                 }
