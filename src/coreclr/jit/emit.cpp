@@ -49,7 +49,6 @@ void emitLocation::SetLocation(emitLocation newLocation)
     assert(Valid());
 }
 
-
 bool emitLocation::IsCurrentLocation(emitter* emit) const
 {
     assert(Valid());
