@@ -101,6 +101,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDirectIcalls { get; set; }
 
     /// <summary>
+    /// When this option is specified, P/Invoke methods are invoked directly instead of going through the operating system symbol lookup operation
+    /// This requires UseStaticLinking=true.
+    /// </summary>
+    public bool UseDirectPInvoke { get; set; }
+
+    /// <summary>
     /// PInvokes to call directly.
     /// </summary>
     public string[] DirectPInvokes { get; set; } = Array.Empty<string>();
@@ -368,10 +374,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(UseDirectIcalls)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
-        if (DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0)
+        if (UseDirectPInvoke || DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0)
         {
             if (!UseStaticLinking)
-                throw new LogAsErrorException($"'{nameof(DirectPInvokes)}' and '{nameof(DirectPInvokeLists)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+                throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}', '{nameof(DirectPInvokes)}', and '{nameof(DirectPInvokeLists)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
 
             foreach (var directPInvokeList in DirectPInvokeLists)
             {
@@ -620,6 +626,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseStaticLinking)
         {
             aotArgs.Add($"static");
+        }
+
+        if (UseDirectPInvoke)
+        {
+            aotArgs.Add($"direct-pinvoke");
         }
 
         if (DirectPInvokes.Length > 0)
