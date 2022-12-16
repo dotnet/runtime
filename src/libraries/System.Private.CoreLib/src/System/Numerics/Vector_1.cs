@@ -9,6 +9,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 
+// We use sizeof(Vector<T>) in a few places and want to ignore the warning that it could be a managed type
+#pragma warning disable 8500
+
 namespace System.Numerics
 {
     /* Note: The following patterns are used throughout the code here and are described here
@@ -108,11 +111,11 @@ namespace System.Numerics
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <c>sizeof(<see cref="Vector{T}" />)</c> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Vector(ReadOnlySpan<byte> values)
+        public unsafe Vector(ReadOnlySpan<byte> values)
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
-            if (values.Length < Count)
+            if (values.Length < sizeof(Vector<T>))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
@@ -151,9 +154,7 @@ namespace System.Numerics
             get
             {
                 ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-#pragma warning disable 8500 // sizeof of managed types
                 return sizeof(Vector<T>) / sizeof(T);
-#pragma warning restore 8500
             }
         }
 
@@ -695,9 +696,9 @@ namespace System.Numerics
         /// <param name="destination">The span to which the current instance is copied.</param>
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(Span<byte> destination)
+        public unsafe void CopyTo(Span<byte> destination)
         {
-            if ((uint)destination.Length < (uint)Count)
+            if (destination.Length < sizeof(Vector<T>))
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -711,7 +712,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(Span<T> destination)
         {
-            if ((uint)destination.Length < (uint)Count)
+            if (destination.Length < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -815,9 +816,9 @@ namespace System.Numerics
         /// <param name="destination">The span to which the current instance is copied.</param>
         /// <returns><c>true</c> if the current instance was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryCopyTo(Span<byte> destination)
+        public unsafe bool TryCopyTo(Span<byte> destination)
         {
-            if ((uint)destination.Length < (uint)Count)
+            if (destination.Length < sizeof(Vector<T>))
             {
                 return false;
             }
@@ -832,7 +833,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<T> destination)
         {
-            if ((uint)destination.Length < (uint)Count)
+            if (destination.Length < Count)
             {
                 return false;
             }
@@ -842,3 +843,5 @@ namespace System.Numerics
         }
     }
 }
+
+#pragma warning restore CS8500

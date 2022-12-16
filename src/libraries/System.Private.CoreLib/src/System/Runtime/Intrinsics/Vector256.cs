@@ -577,7 +577,7 @@ namespace System.Runtime.Intrinsics
         public static void CopyTo<T>(this Vector256<T> vector, Span<T> destination)
             where T : struct
         {
-            if ((uint)destination.Length < (uint)Vector256<T>.Count)
+            if (destination.Length < Vector256<T>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -2753,7 +2753,7 @@ namespace System.Runtime.Intrinsics
         public static bool TryCopyTo<T>(this Vector256<T> vector, Span<T> destination)
             where T : struct
         {
-            if ((uint)destination.Length < (uint)Vector256<T>.Count)
+            if (destination.Length < Vector256<T>.Count)
             {
                 return false;
             }

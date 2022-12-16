@@ -612,7 +612,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(Span<float> destination)
         {
-            if ((uint)destination.Length < (uint)Count)
+            if (destination.Length < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -626,7 +626,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryCopyTo(Span<float> destination)
         {
-            if ((uint)destination.Length < (uint)Count)
+            if (destination.Length < Count)
             {
                 return false;
             }
