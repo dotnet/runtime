@@ -260,7 +260,10 @@ void Thread::Construct()
     // alloc_context ever needs different initialization, a matching change to the tls_CurrentThread
     // static initialization will need to be made.
 
-    m_uPalThreadIdForLogging = PalGetCurrentThreadIdForLogging();
+    m_pTransitionFrame = TOP_OF_STACK_MARKER;
+    m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
+    m_hPalThread = INVALID_HANDLE_VALUE;
+
     m_threadId.SetToCurrentThread();
 
     HANDLE curProcessPseudo = PalGetCurrentProcess();
@@ -328,7 +331,7 @@ bool Thread::CatchAtSafePoint()
 
 uint64_t Thread::GetPalThreadIdForLogging()
 {
-    return m_uPalThreadIdForLogging;
+    return *(uint64_t*)&m_threadId;
 }
 
 bool Thread::IsCurrentThread()

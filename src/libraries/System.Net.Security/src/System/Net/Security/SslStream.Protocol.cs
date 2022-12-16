@@ -816,6 +816,24 @@ namespace System.Net.Security
                                       inputBuffer,
                                       ref result,
                                       _sslAuthenticationOptions);
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.HandshakeStarted)
+                        {
+                            status = SslStreamPal.SelectApplicationProtocol(
+                                        _credentialsHandle!,
+                                        _securityContext!,
+                                        _sslAuthenticationOptions,
+                                        _lastFrame.RawApplicationProtocols);
+
+                            if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                            {
+                                status = SslStreamPal.AcceptSecurityContext(
+                                        ref _credentialsHandle!,
+                                        ref _securityContext,
+                                        ReadOnlySpan<byte>.Empty,
+                                        ref result,
+                                        _sslAuthenticationOptions);
+                            }
+                        }
                     }
                     else
                     {

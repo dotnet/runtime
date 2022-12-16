@@ -4,6 +4,8 @@
 #include "pal_ssl.h"
 #include <dlfcn.h>
 
+#include "coretls_structs.h"
+
 // 10.13.4 introduced public API but linking would fail on all prior versions.
 // For that reason we use function pointers instead of direct call.
 // This can be revisited after we drop support for 10.12 and iOS 10
@@ -172,6 +174,14 @@ int32_t AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int3
 #pragma clang diagnostic pop
 }
 
+int32_t AppleCryptoNative_SslSetBreakOnClientHello(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnClientHello, setBreak, pOSStatus);
+#pragma clang diagnostic pop
+}
+
 int32_t AppleCryptoNative_SslSetCertificate(SSLContextRef sslContext, CFArrayRef certRefs)
 {
 #pragma clang diagnostic push
@@ -230,6 +240,58 @@ int32_t AppleCryptoNative_SSLSetALPNProtocols(SSLContextRef sslContext,
     return *pOSStatus == noErr;
 }
 
+int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* protocol, int length, int32_t* pOSStatus)
+{
+    if (sslContext == NULL || protocol == NULL || length <= 0 || pOSStatus == NULL)
+        return -1;
+
+    if (!SSLSetALPNProtocolsPtr)
+    {
+        // not available.
+        *pOSStatus = errSecNotAvailable;
+        return 1;
+    }
+
+    CFStringRef value = CFStringCreateWithBytes(NULL, protocol, length, kCFStringEncodingASCII, 0);
+    if (!value)
+    {
+        *pOSStatus = errSecMemoryError;
+        return -2;
+    }
+
+    CFArrayRef protocolList = CFArrayCreate(kCFAllocatorDefault, (const void **)&value, 1, &kCFTypeArrayCallBacks);
+    if (!protocolList)
+    {
+        CFRelease(value);
+        *pOSStatus = errSecMemoryError;
+        return -2;
+    }
+
+
+    *pOSStatus = (*SSLSetALPNProtocolsPtr)(sslContext, protocolList);
+    if  (*pOSStatus == 0)
+    {
+        struct SSLContext* ctx = (struct SSLContext*)sslContext;
+        tls_handshake_t tls = ctx->hdsk;
+
+        // This is extra consistency check to verify that the ALPN data appeared where we expect them
+        // before dereferencing sslContext
+        if (tls != NULL && tls->alpnOwnData.length == length + 1)
+        {
+            tls->alpn_announced = 1;
+            tls->alpn_received = 1 ;
+        }
+        else
+        {
+            *pOSStatus = errSecNotAvailable;
+        }
+    }
+
+    CFRelease(value);
+    CFRelease(protocolList);
+    return 1;
+}
+
 int32_t AppleCryptoNative_SslGetAlpnSelected(SSLContextRef sslContext, CFDataRef* protocol)
 {
     if (sslContext == NULL || protocol == NULL)
@@ -285,6 +347,8 @@ PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
             return PAL_TlsHandshakeState_ServerAuthCompleted;
         case errSSLClientCertRequested:
             return PAL_TlsHandshakeState_ClientCertRequested;
+        case errSSLClientHelloReceived:
+           return PAL_TlsHandshakeState_ClientHelloReceived;
         default:
             return osStatus;
     }

@@ -54,27 +54,27 @@
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
         <source>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' is invalid.</source>
-        <target state="new">The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' is invalid.</target>
+        <target state="translated">Die Konfiguration von „ExceptionMarshalling“ und „ExceptionMarshallingCustomType“ ist ungültig.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationMessage">
         <source>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' on method '{0}' is invalid. {1}</source>
-        <target state="new">The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' on method '{0}' is invalid. {1}</target>
+        <target state="translated">Die Konfiguration von „ExceptionMarshalling“ und „ExceptionMarshallingCustomType“ für die Methode „{0}“ ist ungültig. {1}</target>
         <note>{1} is a message containing additional details about what is not valid</note>
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationMissingCustomType">
         <source>'ExceptionMarshallingCustomType' must be specified when 'ExceptionMarshalling' is set to 'ExceptionMarshalling.Custom'.</source>
-        <target state="new">'ExceptionMarshallingCustomType' must be specified when 'ExceptionMarshalling' is set to 'ExceptionMarshalling.Custom'.</target>
+        <target state="translated">„ExceptionMarshallingCustomType“ muss angegeben werden, wenn „ExceptionMarshalling“ auf „ExceptionMarshalling.Custom“ festgelegt ist.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationNotCustom">
         <source>'ExceptionMarshalling' should be set to 'ExceptionMarshalling.Custom' when 'ExceptionMarshallingCustomType' is specified.</source>
-        <target state="new">'ExceptionMarshalling' should be set to 'ExceptionMarshalling.Custom' when 'ExceptionMarshallingCustomType' is specified.</target>
+        <target state="translated">„ExceptionMarshalling“ muss auf „ExceptionMarshalling.Custom“ festgelegt werden, wenn „ExceptionMarshallingCustomType“ angegeben ist.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingValue">
         <source>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</source>
-        <target state="new">The provided value is not a known flag of the 'ExceptionMarshalling' enum.</target>
+        <target state="translated">Der angegebene Wert ist kein bekanntes Flag der „ExceptionMarshalling“-Enumeration.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -99,7 +99,7 @@
       </trans-unit>
       <trans-unit id="InvalidVirtualMethodIndexAttributeUsage">
         <source>Invalid 'VirtualMethodIndexAttribute' usage</source>
-        <target state="new">Invalid 'VirtualMethodIndexAttribute' usage</target>
+        <target state="translated">Ungültige Verwendung von „VirtualMethodIndexAttribute“</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

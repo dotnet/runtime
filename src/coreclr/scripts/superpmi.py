@@ -1495,6 +1495,7 @@ class SuperPMIReplayAsmDiffs:
             "DOTNET_JitDisasm": "*",
             "DOTNET_JitUnwindDump": "*",
             "DOTNET_JitEHDump": "*",
+            "DOTNET_JitAlignLoops": "0", # disable loop alignment to filter noise
             "DOTNET_JitDiffableDasm": "1",
             "DOTNET_JitEnableNoWayAssert": "1",
             "DOTNET_JitNoForceFallback": "1",
