@@ -160,7 +160,7 @@
     <value>The serialization stream contains no inner exceptions.</value>
   </data>
   <data name="AggregateException_InnerException" xml:space="preserve">
-    <value>(Inner Exception #{0})</value>
+    <value>(Inner Exception #{0}) </value>
     <comment>This text is prepended to each inner exception description during aggregate exception formatting</comment>
   </data>
   <data name="AppDomain_Name" xml:space="preserve">
@@ -1134,9 +1134,6 @@
   <data name="Argument_IncompatablePropertyAndTypeHandle" xml:space="preserve">
     <value>The property handle and the type handle are incompatible.</value>
   </data>
-  <data name="Argument_IncorrectLength" xml:space="preserve">
-    <value>Incorrect Argument length.</value>
-  </data>
   <data name="Argument_InterfaceMap" xml:space="preserve">
     <value>'this' type cannot be an interface itself.</value>
   </data>
@@ -1158,8 +1155,8 @@
   <data name="Argument_InvalidArrayLength" xml:space="preserve">
     <value>Length of the array must be {0}.</value>
   </data>
-   <data name="Argument_InvalidArrayType" xml:space="preserve">
-    <value>Array type is invalid.</value>
+   <data name="Argument_IncompatibleArrayType" xml:space="preserve">
+    <value>Array type is incompatible.</value>
   </data>
   <data name="Argument_MultiDimensionalArrayCannotBeBound" xml:space="preserve">
     <value>Invalid array spec, multi-dimensional array cannot be bound.</value>
@@ -1372,9 +1369,6 @@
   <data name="Argument_MismatchedArrays" xml:space="preserve">
     <value>Two arrays, {0} and {1}, must be of  the same size.</value>
   </data>
-  <data name="Argument_MissingDefaultConstructor" xml:space="preserve">
-    <value>Was missing default constructor.</value>
-  </data>
   <data name="Argument_MustBeFalse" xml:space="preserve">
     <value>Argument must be initialized to false</value>
   </data>
@@ -1388,7 +1382,7 @@
     <value>MethodInfo must be a runtime MethodInfo object.</value>
   </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
-    <value>'type' must contain a TypeBuilder as a generic argument.</value>
+    <value>Type must be a runtime Type object.</value>
   </data>
   <data name="Argument_MustBeTypeBuilder" xml:space="preserve">
     <value>'type' must contain a TypeBuilder as a generic argument.</value>

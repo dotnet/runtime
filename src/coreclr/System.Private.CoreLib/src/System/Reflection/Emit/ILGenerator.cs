@@ -1204,7 +1204,7 @@ namespace System.Reflection.Emit
             ConstructorInfo? con = excType.GetConstructor(Type.EmptyTypes);
             if (con == null)
             {
-                throw new ArgumentException(SR.Argument_MissingDefaultConstructor);
+                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName);
             }
             Emit(OpCodes.Newobj, con);
             Emit(OpCodes.Throw);
