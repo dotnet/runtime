@@ -130,6 +130,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsStaticConstructor
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public override MethodDesc GetMethodDefinition()
         {
             return _methodDef;

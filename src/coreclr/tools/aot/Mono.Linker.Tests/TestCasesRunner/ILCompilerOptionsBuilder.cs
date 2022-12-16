@@ -44,6 +44,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanCompileToIL", false);
 			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanEmitObjectArrayDelegate", false);
 			Options.FeatureSwitches.Add ("System.Linq.Expressions.CanCreateArbitraryDelegates", false);
+			Options.FeatureSwitches.Add ("System.Diagnostics.Debugger.IsSupported", false);
+			Options.FeatureSwitches.Add ("System.Text.Encoding.EnableUnsafeUTF7Encoding", false);
+			Options.FeatureSwitches.Add ("System.Diagnostics.Tracing.EventSource.IsSupported", false);
+			Options.FeatureSwitches.Add ("System.Globalization.Invariant", true);
+			Options.FeatureSwitches.Add ("System.Resources.UseSystemResourceKeys", true);
+
+			Options.FrameworkCompilation = false;
 		}
 
 		public virtual void AddSearchDirectory (NPath directory)
@@ -224,6 +231,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// we keep the information in flag + values format for as long as we can so that this information doesn't have to be parsed out of a single string
 			foreach (var additionalArgument in options.AdditionalArguments)
 				AddAdditionalArgument (additionalArgument.Key, additionalArgument.Value);
+
+			if (options.IlcFrameworkCompilation)
+				Options.FrameworkCompilation = true;
 		}
 
 		private static void AppendExpandedPaths (Dictionary<string, string> dictionary, string pattern)

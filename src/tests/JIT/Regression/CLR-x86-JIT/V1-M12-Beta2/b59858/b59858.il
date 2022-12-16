@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly t5 {}
+.assembly 'b59858' {}
 //=================================================
 
 // Generated Method Number 30907

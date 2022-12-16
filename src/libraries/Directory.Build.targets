@@ -125,7 +125,6 @@
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
@@ -135,7 +134,6 @@
 
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)AvoidRestoreCycleOnSelfReference.targets" Condition="'$(AvoidRestoreCycleOnSelfReference)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true'" />
 
   <ItemGroup Condition="'$(UseTargetFrameworkPackage)' != 'false'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="$(MicrosoftDotNetBuildTasksTargetFrameworkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
@@ -215,23 +213,4 @@
       </ItemGroup>
     </When>
   </Choose>
-
-  <Target Name="GetAnalyzerPackFiles"
-          DependsOnTargets="$(GenerateNuspecDependsOn)"
-          Returns="@(_AnalyzerPackFile)">
-    <PropertyGroup>
-      <_analyzerPath>analyzers/dotnet</_analyzerPath>
-      <_analyzerPath Condition="'$(AnalyzerRoslynVersion)' != ''">$(_analyzerPath)/roslyn$(AnalyzerRoslynVersion)</_analyzerPath>
-      <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_AnalyzerPackFile Include="@(_BuildOutputInPackage)" IsSymbol="false" />
-      <_AnalyzerPackFile Include="@(_TargetPathsToSymbols)" IsSymbol="true" />
-      <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
-    </ItemGroup>
-
-    <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'"
-           Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
-  </Target>
 </Project>

@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 
-.assembly Test {}
+.assembly 'b48850' {}
  
 .method public static int32 Main()
 {

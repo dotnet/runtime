@@ -389,7 +389,8 @@ namespace Microsoft.Interop
             }
 
             // Marshalling ref parameter, but no ref marshaller is specified
-            if (elementDirection == MarshalDirection.Bidirectional && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.BidirectionalMode))
+            if (elementDirection == MarshalDirection.Bidirectional
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.BidirectionalMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {

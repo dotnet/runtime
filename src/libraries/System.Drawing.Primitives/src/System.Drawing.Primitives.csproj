@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Drawing</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
@@ -37,6 +37,7 @@
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Runtime" />
