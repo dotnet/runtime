@@ -48,7 +48,7 @@ namespace System.Buffers
                 return values.Length switch
                 {
                     2 => new IndexOfAny2ByteValues(values),
-                    3 => new IndexOfAny3Values<byte>(values),
+                    3 => new IndexOfAny3ByteValues(values),
                     4 => new IndexOfAny4Values<byte, byte>(values),
                     _ => new IndexOfAny5Values<byte, byte>(values),
                 };
@@ -80,7 +80,7 @@ namespace System.Buffers
             if (values.Length == 1)
             {
                 char value = values[0];
-                return SpanHelpers.CanUsePackedIndexOf(value)
+                return PackedSpanHelpers.CanUsePackedIndexOf(value)
                     ? new IndexOfAny1CharValue<TrueConst>(value)
                     : new IndexOfAny1CharValue<FalseConst>(value);
             }
@@ -95,14 +95,19 @@ namespace System.Buffers
             {
                 char value0 = values[0];
                 char value1 = values[1];
-                return SpanHelpers.CanUsePackedIndexOf(value0) && SpanHelpers.CanUsePackedIndexOf(value1)
+                return PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1)
                     ? new IndexOfAny2CharValue<TrueConst>(value0, value1)
                     : new IndexOfAny2CharValue<FalseConst>(value0, value1);
             }
 
             if (values.Length == 3)
             {
-                return new IndexOfAny3Values<char>(values);
+                char value0 = values[0];
+                char value1 = values[1];
+                char value2 = values[2];
+                return PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
+                    ? new IndexOfAny3CharValue<TrueConst>(value0, value1, value2)
+                    : new IndexOfAny3CharValue<FalseConst>(value0, value1, value2);
             }
 
             // IndexOfAnyAsciiSearcher for chars is slower than IndexOfAny3Values, but faster than IndexOfAny4Values
@@ -180,7 +185,7 @@ namespace System.Buffers
             }
 
             Debug.Assert(typeof(T) == typeof(char));
-            return (IndexOfAnyValues<T>)(object)(SpanHelpers.CanUsePackedIndexOf(min) && SpanHelpers.CanUsePackedIndexOf(max)
+            return (IndexOfAnyValues<T>)(object)(PackedSpanHelpers.CanUsePackedIndexOf(min) && PackedSpanHelpers.CanUsePackedIndexOf(max)
                 ? new IndexOfAnyCharValuesInRange<TrueConst>(*(char*)&min, *(char*)&max)
                 : new IndexOfAnyCharValuesInRange<FalseConst>(*(char*)&min, *(char*)&max));
         }

@@ -14,7 +14,7 @@ namespace System.Buffers
         public IndexOfAny2CharValue(char value0, char value1) =>
             (_e0, _e1) = (value0, value1);
 
-        internal override char[] GetValues() => new[] { _e0 };
+        internal override char[] GetValues() => new[] { _e0, _e1 };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>
@@ -23,7 +23,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
             TShouldUsePacked.Value
-                ? SpanHelpers.PackedIndexOfAny(ref MemoryMarshal.GetReference(span), _e0, _e1, span.Length)
+                ? PackedSpanHelpers.PackedIndexOfAny(ref MemoryMarshal.GetReference(span), _e0, _e1, span.Length)
                 : SpanHelpers.NonPackedIndexOfAnyValueType<short, SpanHelpers.DontNegate<short>>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<char, short>(ref _e0),
@@ -33,7 +33,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
             TShouldUsePacked.Value
-                ? SpanHelpers.PackedIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), _e0, _e1, span.Length)
+                ? PackedSpanHelpers.PackedIndexOfAnyExcept(ref MemoryMarshal.GetReference(span), _e0, _e1, span.Length)
                 : SpanHelpers.NonPackedIndexOfAnyValueType<short, SpanHelpers.Negate<short>>(
                     ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<char, short>(ref _e0),
