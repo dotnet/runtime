@@ -558,6 +558,30 @@ void GenTree::DumpNodeSizes(FILE* fp)
 
 #endif // MEASURE_NODE_SIZE
 
+// TreeList: convenience method for enabling range-based `for` iteration over the
+// execution order of the GenTree linked list, e.g.:
+//    for (GenTree* const tree : stmt->TreeList()) ...
+//
+// Only valid between fgSetBlockOrder and rationalization. See fgStmtListThreading.
+//
+GenTreeList Statement::TreeList() const
+{
+    assert(JitTls::GetCompiler()->fgStmtListThreading == NodeThreading::AllTrees);
+    return GenTreeList(GetTreeList());
+}
+
+// LocalsTreeList: convenience method for enabling range-based `for` iteration over the
+// execution order of the GenTree locals linked list, e.g.:
+//    for (GenTree* const tree : stmt->LocalsTreeList()) ...
+//
+// Only valid between local morph and forward sub. See fgStmtListThreading.
+//
+GenTreeList Statement::LocalsTreeList() const
+{
+    assert(JitTls::GetCompiler()->fgStmtListThreading == NodeThreading::AllLocals);
+    return GenTreeList(GetRootNode()->gtNext);
+}
+
 /*****************************************************************************
  *
  *  Walk all basic blocks and call the given function pointer for all tree
@@ -9122,12 +9146,13 @@ GenTreeCall* Compiler::gtCloneCandidateCall(GenTreeCall* call)
 
 void Compiler::gtUpdateSideEffects(Statement* stmt, GenTree* tree)
 {
-    if (fgStmtListThreaded)
+    if (fgStmtListThreading == NodeThreading::AllTrees)
     {
         gtUpdateTreeAncestorsSideEffects(tree);
     }
     else
     {
+        assert(fgStmtListThreading != NodeThreading::LIR);
         gtUpdateStmtSideEffects(stmt);
     }
 }
@@ -9141,7 +9166,7 @@ void Compiler::gtUpdateSideEffects(Statement* stmt, GenTree* tree)
 //
 void Compiler::gtUpdateTreeAncestorsSideEffects(GenTree* tree)
 {
-    assert(fgStmtListThreaded);
+    assert(fgStmtListThreading == NodeThreading::AllTrees);
     while (tree != nullptr)
     {
         gtUpdateNodeSideEffects(tree);
@@ -14191,7 +14216,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         }
     }
 
-    if (fgStmtListThreaded)
+    if (fgStmtListThreading == NodeThreading::AllTrees)
     {
         fgSetStmtSeq(asgStmt);
         fgSetStmtSeq(copyStmt);
@@ -16504,6 +16529,16 @@ bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
     return (optValnumCSE_phase && IS_CSE_INDEX(tree->gtCSEnum));
 }
 
+//------------------------------------------------------------------------
+// gtTreeContainsOper -- check if the tree contains any subtree with the specified oper.
+//
+// Arguments:
+//    tree - tree to examine
+//    oper - oper to check for
+//
+// Return Value:
+//    True if any subtree has the specified oper; otherwise false.
+//
 bool Compiler::gtTreeContainsOper(GenTree* tree, genTreeOps oper)
 {
     class Visitor final : public GenTreeVisitor<Visitor>

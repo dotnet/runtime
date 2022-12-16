@@ -7509,14 +7509,8 @@ public:
         m_treeList = treeHead;
     }
 
-    // TreeList: convenience method for enabling range-based `for` iteration over the
-    // execution order of the GenTree linked list, e.g.:
-    //    for (GenTree* const tree : stmt->TreeList()) ...
-    //
-    GenTreeList TreeList() const
-    {
-        return GenTreeList(GetTreeList());
-    }
+    GenTreeList TreeList() const;
+    GenTreeList LocalsTreeList() const;
 
     const DebugInfo& GetDebugInfo() const
     {

@@ -546,7 +546,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         unsigned parentLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : BAD_VAR_NUM;
 
         bool found = false;
-        for (GenTree* cur = nextStmt->GetRootNode()->gtNext; cur != nullptr; cur = cur->gtNext)
+        for (GenTree* cur : nextStmt->LocalsTreeList())
         {
             assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
             GenTreeLclVarCommon* lcl = cur->AsLclVarCommon();

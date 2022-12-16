@@ -1700,7 +1700,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
 
                 indir->gtFlags |= GTF_ORDER_SIDEEFF | GTF_IND_NONFAULTING;
                 indir->gtFlags &= ~GTF_EXCEPT;
-                assert(!fgStmtListThreaded);
+                assert(fgStmtListThreading == NodeThreading::None);
                 gtUpdateStmtSideEffects(stmt);
 
                 JITDUMP("After:\n");

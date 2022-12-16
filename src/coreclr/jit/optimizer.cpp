@@ -6454,7 +6454,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     }
 #endif
 
-    if (fgStmtListThreaded)
+    if (fgStmtListThreading == NodeThreading::AllTrees)
     {
         gtSetStmtInfo(hoistStmt);
         fgSetStmtSeq(hoistStmt);
@@ -9445,7 +9445,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     // Recost/rethread the tree if necessary
     //
-    if (m_comp->fgStmtListThreaded)
+    if (m_comp->fgStmtListThreading != NodeThreading::None)
     {
         m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
         m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
@@ -9769,7 +9769,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
 
     // Recost/rethread the tree if necessary
     //
-    if (m_comp->fgStmtListThreaded)
+    if (m_comp->fgStmtListThreading != NodeThreading::None)
     {
         m_comp->gtSetStmtInfo(test.testStmt);
         m_comp->fgSetStmtSeq(test.testStmt);
@@ -10102,7 +10102,7 @@ void Compiler::optRemoveRedundantZeroInits()
     bool            hasGCSafePoint = false;
     bool            canThrow       = false;
 
-    assert(fgStmtListThreaded);
+    assert(fgStmtListThreading == NodeThreading::AllTrees);
 
     for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) == 0);
          block             = block->GetUniqueSucc())

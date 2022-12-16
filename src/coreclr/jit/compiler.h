@@ -1823,6 +1823,16 @@ struct RichIPMapping
     DebugInfo    debugInfo;
 };
 
+// Current kind of node threading stored in GenTree::gtPrev and GenTree::gtNext.
+// See fgStmtListThreading for more information.
+enum class NodeThreading
+{
+    None,
+    AllLocals, // Locals are threaded (after local morph when optimizing)
+    AllTrees,  // All nodes are threaded (after gtSetBlockOrder)
+    LIR,       // Nodes are in LIR form (after rationalization)
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1873,6 +1883,7 @@ class Compiler
     friend class LIR;
     friend class ObjectAllocator;
     friend class LocalAddressVisitor;
+    friend struct Statement;
     friend struct GenTree;
     friend class MorphInitBlockHelper;
     friend class MorphCopyBlockHelper;
@@ -4418,30 +4429,47 @@ public:
     bool fgRemoveRestOfBlock; // true if we know that we will throw
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
 
-    // There are two modes for ordering of the trees.
-    //  - In FGOrderTree, the dominant ordering is the tree order, and the nodes contained in
-    //    each tree and sub-tree are contiguous, and can be traversed (in gtNext/gtPrev order)
-    //    by traversing the tree according to the order of the operands.
-    //  - In FGOrderLinear, the dominant ordering is the linear order.
-
     enum FlowGraphOrder
     {
         FGOrderTree,
         FGOrderLinear
     };
+    // There are two modes for ordering of the trees.
+    //  - In FGOrderTree, the dominant ordering is the tree order, and the nodes contained in
+    //    each tree and sub-tree are contiguous, and can be traversed (in gtNext/gtPrev order)
+    //    by traversing the tree according to the order of the operands.
+    //  - In FGOrderLinear, the dominant ordering is the linear order.
     FlowGraphOrder fgOrder;
 
-    // The following are boolean flags that keep track of the state of internal data structures
+    // The following are flags that keep track of the state of internal data structures
 
-    bool     fgStmtListThreaded;       // true if the node list is now threaded
-    bool     fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
-    bool     fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
-    bool     fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
-    bool     fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
-    bool     fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
-    weight_t fgCalledCount;            // count of the number of times this method was called
-                                       // This is derived from the profile data
-                                       // or is BB_UNITY_WEIGHT when we don't have profile data
+    // Even in tree form (fgOrder == FGOrderTree) the trees are threaded in a
+    // doubly linked lists during certain phases of the compilation.
+    // - Local morph threads all locals to be used for early liveness and
+    //   forward sub when optimizing. This is kept valid until after forward sub.
+    //   Since the root node is not a local we keep the first local in
+    //   Statement::GetRootNode()->gtNext and the last local in
+    //   Statement::GetRootNode()->gtPrev. fgSequenceLocals can be used to
+    //   (re-)sequence a statement into this form, and
+    //   Statement::LocalsTreeList for range-based iteration.
+    //
+    // - fgSetBlockOrder threads all nodes. This is kept valid until LIR form.
+    // In this form the first node is given by Statement::GetTreeList and the
+    // last node is given by Statement::GetRootNode(). fgSetStmtSeq can be used
+    // to (re-)sequence a statement into this form, and Statement::TreeList for
+    // range-based iteration.
+    //
+    // - Rationalization links all nodes into linear form which is kept until
+    //   the end of compilation. The first and last nodes are stored in the block.
+    NodeThreading fgStmtListThreading;
+    bool          fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
+    bool          fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
+    bool          fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
+    bool          fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
+    bool          fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
+    weight_t      fgCalledCount;            // count of the number of times this method was called
+                                            // This is derived from the profile data
+                                            // or is BB_UNITY_WEIGHT when we don't have profile data
 
 #if defined(FEATURE_EH_FUNCLETS)
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
