@@ -33,7 +33,6 @@ import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/imports";
 
-
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
 let isCustomStartup = false;
