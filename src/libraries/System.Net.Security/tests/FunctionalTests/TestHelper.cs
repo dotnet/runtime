@@ -51,10 +51,10 @@ namespace System.Net.Security.Tests
             return true;
         }
 
-        public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams()
+        public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams(bool leaveInnerStreamOpen = false)
         {
             (Stream clientStream, Stream serverStream) = GetConnectedStreams();
-            return (new SslStream(clientStream), new SslStream(serverStream));
+            return (new SslStream(clientStream, leaveInnerStreamOpen), new SslStream(serverStream, leaveInnerStreamOpen));
         }
 
         public static (Stream ClientStream, Stream ServerStream) GetConnectedStreams()
