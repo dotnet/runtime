@@ -155,7 +155,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
-        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
+        builder.AppendLine($@"XUnitWrapperLibrary.TestSummary summary = new();");
+        // builder.AppendLine($@"XUnitWrapperLibrary.TestSummary summary = new(""{assemblyName}"");");
+        // builder.AppendLine("summary.OpenTempLog();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
         builder.AppendLine("System.Console.SetOut(outputRecorder);");
@@ -178,18 +180,24 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 {
                     if (currentTestExecutor != 0)
                         testExecutorBuilder.AppendLine("}");
+
                     currentTestExecutor++;
                     testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
+                    testExecutorBuilder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}_templog.xml"")) {{");
                     builder.AppendLine($"TestExecutor{currentTestExecutor}();");
                     testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empircally seems to work well
                 }
+
                 testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
                 totalTestsEmitted++;
                 testsLeftInCurrentTestExecutor--;
             }
+
+            testExecutorBuilder.AppendLine("}");
             testExecutorBuilder.AppendLine("}");
         }
 
+        // builder.AppendLine($@"summary.CloseTempLog();");
         builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
         builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
         builder.AppendLine($@"if (workitemUploadRoot != null) System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
@@ -197,7 +205,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("return 100;");
 
         builder.Append(testExecutorBuilder);
-
         builder.AppendLine("public static class TestCount { public const int Count = " + totalTestsEmitted.ToString() + "; }");
         return builder.ToString();
     }

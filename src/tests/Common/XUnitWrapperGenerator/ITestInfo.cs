@@ -341,11 +341,11 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Running test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
         builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
         builder.AppendLine(testExecutionExpression);
-        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput());");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput(), tempLogSw);");
         builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Passed test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
         builder.AppendLine("}");
         builder.AppendLine("catch (System.Exception ex) {");
-        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex, {_outputRecorderIdentifier}.GetTestOutput());");
+        builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex, {_outputRecorderIdentifier}.GetTestOutput(), tempLogSw);");
         builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Failed test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
         builder.AppendLine("}");
 
@@ -359,6 +359,6 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", @\"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty);";
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression}, \"{skippedTest.ContainingType}\", @\"{skippedTest.Method}\", System.TimeSpan.Zero, string.Empty, tempLogSw);";
     }
 }

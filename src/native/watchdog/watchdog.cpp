@@ -34,12 +34,12 @@ int main(const int argc, const char *argv[])
 int run_timed_process(const long timeout_ms, const int proc_argc, const char *proc_argv[])
 {
 #ifdef _WIN32
-    std::string cmdline(exe_path_and_argv[0]);
+    std::string cmdline(proc_argv[0]);
 
-    for (int i = 1; i < exe_argc; i++)
+    for (int i = 1; i < proc_argc; i++)
     {
         cmdline.append(" ");
-        cmdline.append(exe_path_and_argv[i]);
+        cmdline.append(proc_argv[i]);
     }
 
     STARTUPINFOA startup_info;
@@ -71,8 +71,6 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
     const int check_interval = 1000 / ms_factor;
 
     int check_count = 0;
-    // char *args[proc_argc];
-    // std::unique_ptr<char*[]> args = std::make_unique<char*[]>(proc_argc);
     std::vector<const char*> args;
 
     pid_t child_pid;
