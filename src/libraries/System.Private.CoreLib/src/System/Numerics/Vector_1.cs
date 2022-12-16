@@ -114,6 +114,7 @@ namespace System.Numerics
         public unsafe Vector(ReadOnlySpan<byte> values)
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
             if (values.Length < sizeof(Vector<T>))
             {
@@ -698,6 +699,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void CopyTo(Span<byte> destination)
         {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
             if (destination.Length < sizeof(Vector<T>))
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
@@ -818,6 +821,8 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe bool TryCopyTo(Span<byte> destination)
         {
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+
             if (destination.Length < sizeof(Vector<T>))
             {
                 return false;
