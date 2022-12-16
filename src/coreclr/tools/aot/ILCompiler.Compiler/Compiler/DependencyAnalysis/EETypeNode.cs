@@ -79,7 +79,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
-            _writableDataNode = factory.Target.SupportsRelativePointers ? new WritableDataNode(type) : null;
+            _writableDataNode = factory.Target.SupportsRelativePointers ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             factory.TypeSystemContext.EnsureLoadableType(type);
@@ -1257,15 +1257,16 @@ namespace ILCompiler.DependencyAnalysis
 
         private sealed class WritableDataNode : ObjectNode, ISymbolDefinitionNode
         {
-            private readonly TypeDesc _type;
+            private readonly EETypeNode _type;
 
-            public WritableDataNode(TypeDesc type) => _type = type;
+            public WritableDataNode(EETypeNode type) => _type = type;
             public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.BssSection;
             public override bool StaticDependenciesAreComputed => true;
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-                => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type));
+                => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type.Type));
             public int Offset => 0;
             public override bool IsShareable => true;
+            public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _type.ShouldSkipEmittingObjectNode(factory);
 
             public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
                 => new ObjectData(new byte[WritableData.GetSize(factory.Target.PointerSize)],
