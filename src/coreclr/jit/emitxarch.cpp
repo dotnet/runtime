@@ -14615,6 +14615,21 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 ssize_t emitter::GetInputSizeInBytes(instrDesc* id)
 {
     insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[id->idIns()] & Input_Mask));
+
+    // INS_movd can represent either movd or movq(https://github.com/dotnet/runtime/issues/47943).
+    // As such, this is a special case and we need to calculate size based on emitAttr.
+    if (id->idIns() == INS_movd)
+    {
+        if (EA_SIZE(id->idOpSize()) == EA_8BYTE)
+        {
+            inputSize = Input_64Bit;
+        }
+        else
+        {
+            inputSize = Input_32Bit;
+        }
+    }
+
     switch (inputSize)
     {
         case 0:
