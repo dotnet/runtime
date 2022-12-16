@@ -41,7 +41,6 @@ namespace System.Numerics
         [Intrinsic]
         public Vector(T value)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             Unsafe.SkipInit(out this);
 
             for (int index = 0; index < Count; index++)
@@ -59,15 +58,13 @@ namespace System.Numerics
         public Vector(T[] values)
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
-            Unsafe.SkipInit(out this);
 
             if (values.Length < Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values)));
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given array.</summary>
@@ -80,15 +77,13 @@ namespace System.Numerics
         public Vector(T[] values, int index)
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
-            Unsafe.SkipInit(out this);
 
             if ((index < 0) || ((values.Length - index) < Count))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.Add(ref address, index));
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(values), index)));
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
@@ -99,15 +94,13 @@ namespace System.Numerics
         public Vector(ReadOnlySpan<T> values)
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
-            Unsafe.SkipInit(out this);
 
             if (values.Length < Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
@@ -118,15 +111,13 @@ namespace System.Numerics
         public Vector(ReadOnlySpan<byte> values)
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
-            Unsafe.SkipInit(out this);
 
             if (values.Length < Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
-            ref byte address = ref MemoryMarshal.GetReference(values);
-            this = Unsafe.ReadUnaligned<Vector<T>>(ref address);
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(values));
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given span.</summary>
@@ -673,8 +664,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref address, this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination)), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given array starting at the specified index.</summary>
@@ -698,8 +688,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref address, startIndex), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(destination), startIndex)), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
@@ -713,8 +702,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref MemoryMarshal.GetReference(destination);
-            Unsafe.WriteUnaligned(ref address, this);
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), this);
         }
 
         /// <summary>Copies a <see cref="Vector{T}" /> to a given span.</summary>
@@ -728,8 +716,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
         }
 
         /// <summary>Returns a boolean indicating whether the given Object is equal to this vector instance.</summary>
@@ -835,8 +822,7 @@ namespace System.Numerics
                 return false;
             }
 
-            ref byte address = ref MemoryMarshal.GetReference(destination);
-            Unsafe.WriteUnaligned(ref address, this);
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), this);
             return true;
         }
 
@@ -846,14 +832,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
             if ((uint)destination.Length < (uint)Count)
             {
                 return false;
             }
 
-            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
             return true;
         }
     }

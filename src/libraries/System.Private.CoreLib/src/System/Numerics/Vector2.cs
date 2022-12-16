@@ -575,8 +575,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<float, byte>(ref MemoryMarshal.GetArrayDataReference(array));
-            Unsafe.WriteUnaligned(ref address, this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetArrayDataReference(array)), this);
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -604,8 +603,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<float, byte>(ref MemoryMarshal.GetArrayDataReference(array));
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref address, index), this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), this);
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />.The length of the destination span must be at least 2.</summary>
@@ -619,8 +617,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
         }
 
         /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 2.</summary>
@@ -634,8 +631,7 @@ namespace System.Numerics
                 return false;
             }
 
-            ref byte address = ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, this);
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
             return true;
         }
 
