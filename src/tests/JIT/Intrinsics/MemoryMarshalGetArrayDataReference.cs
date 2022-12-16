@@ -201,9 +201,10 @@ namespace MemoryMarshalGetArrayDataReferenceTest
                 static int[] CreateArray(int size) => new int[size];
             }
 
+            Problem5();
             try
             {
-                Problem5();
+                
             }
             catch
             {
