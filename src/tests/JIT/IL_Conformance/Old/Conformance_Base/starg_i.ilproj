@@ -2,11 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
-    <!-- Fails in JIT when calling _ldarg.args, thinking it cannot convert byref to int argument 
-         BADCODE("the call argument has a type that can't be implicitly converted to the signature type")
-         The reason is that in an unloadable context, static members are referenced as byref while
-         in regular case it is TYP_I_IMP -->
-    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
