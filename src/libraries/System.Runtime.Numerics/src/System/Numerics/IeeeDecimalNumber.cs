@@ -120,7 +120,7 @@ namespace System.Numerics
             }
         }
 
-        // IeeeDecimalNumber Parsing TODO potentially rewrite this
+        // IeeeDecimalNumber Parsing TODO potentially rewrite this description
 
         // The Parse methods provided by the numeric classes convert a
         // string to a numeric value. The optional style parameter specifies the
@@ -140,7 +140,7 @@ namespace System.Numerics
         [DoesNotReturn]
         internal static void ThrowFormatException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type = 0) => throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
 
-        internal static Half ParseDecimal32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        internal static Decimal32 ParseDecimal32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
             if (!TryParseDecimal32(value, styles, info, out Decimal32 result))
             {
@@ -152,7 +152,7 @@ namespace System.Numerics
 
         internal static unsafe bool TryParseDecimal32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Decimal32 result)
         {
-            IeeeDecimalNumberBuffer number = new IeeeDecimalNumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[HalfNumberBufferLength]);
+            IeeeDecimalNumberBuffer number = new IeeeDecimalNumberBuffer(stackalloc byte[Decimal32BufferLength]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -168,15 +168,15 @@ namespace System.Numerics
 
                 if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
                 {
-                    result = Half.PositiveInfinity;
+                    result = Decimal32.PositiveInfinity;
                 }
                 else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
                 {
-                    result = Half.NegativeInfinity;
+                    result = Decimal32.NegativeInfinity;
                 }
                 else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
                 {
-                    result = Half.NaN;
+                    result = Decimal32.NaN;
                 }
                 else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
                 {
@@ -184,15 +184,15 @@ namespace System.Numerics
 
                     if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
                     {
-                        result = Half.PositiveInfinity;
+                        result = Decimal32.PositiveInfinity;
                     }
                     else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
                     {
-                        result = Half.NaN;
+                        result = Decimal32.NaN;
                     }
                     else
                     {
-                        result = Half.Zero;
+                        result = Decimal32.Zero;
                         return false;
                     }
                 }
@@ -200,37 +200,350 @@ namespace System.Numerics
                          !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
                          valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
                 {
-                    result = Half.NaN;
+                    result = Decimal32.NaN;
                 }
                 else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
                          !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
                 {
-                    result = Half.NaN;
+                    result = Decimal32.NaN;
                 }
                 else
                 {
-                    result = Half.Zero;
+                    result = Decimal32.Zero;
                     return false; // We really failed
                 }
             }
             else
             {
-                result = NumberToHalf(ref number);
+                result = NumberToDecimal32(ref number);
             }
 
             return true;
         }
 
-        internal static Decimal32 NumberToDecimal32(ref NumberBuffer number)
+        internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> value, NumberStyles styles, ref IeeeDecimalNumberBuffer number, NumberFormatInfo info)
+        {
+            Debug.Assert(info != null);
+            fixed (char* stringPointer = &MemoryMarshal.GetReference(value))
+            {
+                char* p = stringPointer;
+                if (!TryParseNumber(ref p, p + value.Length, styles, ref number, info)
+                    || ((int)(p - stringPointer) < value.Length && !TrailingZeros(value, (int)(p - stringPointer))))
+                {
+                    number.CheckConsistency();
+                    return false;
+                }
+            }
+
+            number.CheckConsistency();
+            return true;
+        }
+
+        // This is almost a direct copy paste of the one in Number.Parsing.cs
+        private static unsafe bool TryParseNumber(scoped ref char* str, char* strEnd, NumberStyles styles, ref IeeeDecimalNumberBuffer number, NumberFormatInfo info)
+        {
+            Debug.Assert(str != null);
+            Debug.Assert(strEnd != null);
+            Debug.Assert(str <= strEnd);
+            Debug.Assert((styles & NumberStyles.AllowHexSpecifier) == 0);
+
+            const int StateSign = 0x0001;
+            const int StateParens = 0x0002;
+            const int StateDigits = 0x0004;
+            const int StateNonZero = 0x0008;
+            const int StateDecimal = 0x0010;
+            const int StateCurrency = 0x0020;
+
+            Debug.Assert(number.DigitsCount == 0);
+            Debug.Assert(number.Scale == 0);
+            Debug.Assert(!number.IsNegative);
+            Debug.Assert(!number.HasNonZeroTail);
+
+            number.CheckConsistency();
+
+            string decSep;                  // decimal separator from NumberFormatInfo.
+            string groupSep;                // group separator from NumberFormatInfo.
+            string? currSymbol = null;       // currency symbol from NumberFormatInfo.
+
+            bool parsingCurrency = false;
+            if ((styles & NumberStyles.AllowCurrencySymbol) != 0)
+            {
+                currSymbol = info.CurrencySymbol;
+
+                // The idea here is to match the currency separators and on failure match the number separators to keep the perf of VB's IsNumeric fast.
+                // The values of decSep are setup to use the correct relevant separator (currency in the if part and decimal in the else part).
+                decSep = info.CurrencyDecimalSeparator;
+                groupSep = info.CurrencyGroupSeparator;
+                parsingCurrency = true;
+            }
+            else
+            {
+                decSep = info.NumberDecimalSeparator;
+                groupSep = info.NumberGroupSeparator;
+            }
+
+            int state = 0;
+            char* p = str;
+            char ch = p < strEnd ? *p : '\0';
+            char* next;
+
+            while (true)
+            {
+                // Eat whitespace unless we've found a sign which isn't followed by a currency symbol.
+                // "-Kr 1231.47" is legal but "- 1231.47" is not.
+                if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && info.NumberNegativePattern != 2)))
+                {
+                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchNegativeSignChars(p, strEnd, info)) != null && (number.IsNegative = true))))
+                    {
+                        state |= StateSign;
+                        p = next - 1;
+                    }
+                    else if (ch == '(' && ((styles & NumberStyles.AllowParentheses) != 0) && ((state & StateSign) == 0))
+                    {
+                        state |= StateSign | StateParens;
+                        number.IsNegative = true;
+                    }
+                    else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                    {
+                        state |= StateCurrency;
+                        currSymbol = null;
+                        // We already found the currency symbol. There should not be more currency symbols. Set
+                        // currSymbol to NULL so that we won't search it again in the later code path.
+                        p = next - 1;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                ch = ++p < strEnd ? *p : '\0';
+            }
+
+            int digCount = 0;
+            int digEnd = 0;
+            int maxDigCount = number.Digits.Length - 1;
+            int numberOfTrailingZeros = 0;
+
+            while (true)
+            {
+                if (IsDigit(ch))
+                {
+                    state |= StateDigits;
+
+                    if (ch != '0' || (state & StateNonZero) != 0)
+                    {
+                        if (digCount < maxDigCount)
+                        {
+                            number.Digits[digCount] = (byte)(ch);
+                            if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
+                            {
+                                digEnd = digCount + 1;
+                            }
+                        }
+                        else if (ch != '0')
+                        {
+                            // For decimal and binary floating-point numbers, we only
+                            // need to store digits up to maxDigCount. However, we still
+                            // need to keep track of whether any additional digits past
+                            // maxDigCount were non-zero, as that can impact rounding
+                            // for an input that falls evenly between two representable
+                            // results.
+
+                            number.HasNonZeroTail = true;
+                        }
+
+                        if ((state & StateDecimal) == 0)
+                        {
+                            number.Scale++;
+                        }
+
+                        if (digCount < maxDigCount)
+                        {
+                            // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part for floating point numbers, so we keep a count of the number of trailing zeros and update digCount later
+                            if (ch == '0')
+                            {
+                                numberOfTrailingZeros++;
+                            }
+                            else
+                            {
+                                numberOfTrailingZeros = 0;
+                            }
+                        }
+                        digCount++;
+                        state |= StateNonZero;
+                    }
+                    else if ((state & StateDecimal) != 0)
+                    {
+                        number.Scale--;
+                    }
+                }
+                else if (((styles & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, decSep)) != null || (parsingCurrency && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, info.NumberDecimalSeparator)) != null))
+                {
+                    state |= StateDecimal;
+                    p = next - 1;
+                }
+                else if (((styles & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, groupSep)) != null || (parsingCurrency && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, info.NumberGroupSeparator)) != null))
+                {
+                    p = next - 1;
+                }
+                else
+                {
+                    break;
+                }
+                ch = ++p < strEnd ? *p : '\0';
+            }
+
+            bool negExp = false;
+            number.DigitsCount = digEnd;
+            number.Digits[digEnd] = (byte)('\0');
+            if ((state & StateDigits) != 0)
+            {
+                if ((ch == 'E' || ch == 'e') && ((styles & NumberStyles.AllowExponent) != 0))
+                {
+                    char* temp = p;
+                    ch = ++p < strEnd ? *p : '\0';
+                    if ((next = MatchChars(p, strEnd, info._positiveSign)) != null)
+                    {
+                        ch = (p = next) < strEnd ? *p : '\0';
+                    }
+                    else if ((next = MatchNegativeSignChars(p, strEnd, info)) != null)
+                    {
+                        ch = (p = next) < strEnd ? *p : '\0';
+                        negExp = true;
+                    }
+                    if (IsDigit(ch))
+                    {
+                        int exp = 0;
+                        do
+                        {
+                            exp = exp * 10 + (ch - '0');
+                            ch = ++p < strEnd ? *p : '\0';
+                            if (exp > 1000)
+                            {
+                                exp = 9999;
+                                while (IsDigit(ch))
+                                {
+                                    ch = ++p < strEnd ? *p : '\0';
+                                }
+                            }
+                        } while (IsDigit(ch));
+                        if (negExp)
+                        {
+                            exp = -exp;
+                        }
+                        number.Scale += exp;
+                    }
+                    else
+                    {
+                        p = temp;
+                        ch = p < strEnd ? *p : '\0';
+                    }
+                }
+
+                if (number.Kind == NumberBufferKind.FloatingPoint && !number.HasNonZeroTail)
+                {
+                    // Adjust the number buffer for trailing zeros
+                    int numberOfFractionalDigits = digEnd - number.Scale;
+                    if (numberOfFractionalDigits > 0)
+                    {
+                        numberOfTrailingZeros = Math.Min(numberOfTrailingZeros, numberOfFractionalDigits);
+                        Debug.Assert(numberOfTrailingZeros >= 0);
+                        number.DigitsCount = digEnd - numberOfTrailingZeros;
+                        number.Digits[number.DigitsCount] = (byte)('\0');
+                    }
+                }
+
+                while (true)
+                {
+                    if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
+                    {
+                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchNegativeSignChars(p, strEnd, info)) != null) && (number.IsNegative = true))))
+                        {
+                            state |= StateSign;
+                            p = next - 1;
+                        }
+                        else if (ch == ')' && ((state & StateParens) != 0))
+                        {
+                            state &= ~StateParens;
+                        }
+                        else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                        {
+                            currSymbol = null;
+                            p = next - 1;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    ch = ++p < strEnd ? *p : '\0';
+                }
+                if ((state & StateParens) == 0)
+                {
+                    if ((state & StateNonZero) == 0)
+                    {
+                        if (number.Kind != NumberBufferKind.Decimal)
+                        {
+                            number.Scale = 0;
+                        }
+                        if ((number.Kind == NumberBufferKind.Integer) && (state & StateDecimal) == 0)
+                        {
+                            number.IsNegative = false;
+                        }
+                    }
+                    str = p;
+                    return true;
+                }
+            }
+            str = p;
+            return false;
+        }
+
+        private static unsafe char* MatchChars(char* p, char* pEnd, string value)
+        {
+            Debug.Assert(p != null && pEnd != null && p <= pEnd && value != null);
+            fixed (char* stringPointer = value)
+            {
+                char* str = stringPointer;
+                if (*str != '\0')
+                {
+                    // We only hurt the failure case
+                    // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
+                    // space character we use 0x20 space character instead to mean the same.
+                    while (true)
+                    {
+                        char cp = p < pEnd ? *p : '\0';
+                        if (cp != *str && !(IsSpaceReplacingChar(*str) && cp == '\u0020'))
+                        {
+                            break;
+                        }
+                        p++;
+                        str++;
+                        if (*str == '\0')
+                            return p;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
+
+        private static bool IsWhite(int ch) => ch == 0x20 || (uint)(ch - 0x09) <= (0x0D - 0x09);
+
+        private static bool IsDigit(int ch) => ((uint)ch - '0') <= 9;
+
+        internal static Decimal32 NumberToDecimal32(ref IeeeDecimalNumberBuffer number)
         {
             number.CheckConsistency();
             Decimal32 result;
 
-            if ((number.DigitsCount == 0) || (number.Scale < Decimal32MinExponent))
+            if ((number.DigitsCount == 0) || (number.Scale < Decimal32.MinQExponent))
             {
                 result = default;
             }
-            else if (number.Scale > Decimal32MaxExponent)
+            else if (number.Scale > Decimal32.MaxQExponent)
             {
                 result = Decimal32.PositiveInfinity;
             }
@@ -243,7 +556,86 @@ namespace System.Numerics
             return number.IsNegative ? Decimal32.Negate(result) : result;
         }
 
-        internal enum ParsingStatus // No Overflow because these types can represent Infinity
+        private static ushort NumberToDecimal32FloatingPointBits(ref IeeeDecimalNumberBuffer number, in FloatingPointInfo info)
+        {
+            Debug.Assert(info.DenormalMantissaBits == 10);
+
+            Debug.Assert(number.GetDigitsPointer()[0] != '0');
+
+            Debug.Assert(number.Scale <= FloatingPointMaxExponent);
+            Debug.Assert(number.Scale >= FloatingPointMinExponent);
+
+            Debug.Assert(number.DigitsCount != 0);
+
+            // The input is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
+            // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
+            // We decompose the mantissa into two parts: an integer part and a fractional
+            // part.  If the exponent is positive, then the integer part consists of the
+            // first 'exponent' digits, or all present digits if there are fewer digits.
+            // If the exponent is zero or negative, then the integer part is empty.  In
+            // either case, the remaining digits form the fractional part of the mantissa.
+
+            uint totalDigits = (uint)(number.DigitsCount);
+            uint positiveExponent = (uint)(Math.Max(0, number.Scale));
+
+            uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
+            uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
+
+            int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
+            int fastExponent = Math.Abs(exponent);
+
+            // Above 19 digits, we rely on slow path
+            if (totalDigits <= 19)
+            {
+                byte* src = number.GetDigitsPointer();
+
+                // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
+                // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
+                // on floating-point arithmetic to compute the correct result. This is
+                // because each floating-point precision values allows us to exactly represent
+                // different whole integers and certain powers of 10, depending on the underlying
+                // formats exact range. Additionally, IEEE operations dictate that the result is
+                // computed to the infinitely precise result and then rounded, which means that
+                // we can rely on it to produce the correct result when both inputs are exact.
+                // This is known as Clinger's fast path
+
+                ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
+
+                if ((mantissa <= info.MaxMantissaFastPath) && (fastExponent <= info.MaxExponentFastPath))
+                {
+                    double mantissa_d = mantissa;
+                    double scale = s_Pow10DoubleTable[fastExponent];
+
+                    if (fractionalDigitsPresent != 0)
+                    {
+                        mantissa_d /= scale;
+                    }
+                    else
+                    {
+                        mantissa_d *= scale;
+                    }
+
+                    return BitConverter.HalfToUInt16Bits((Half)(mantissa_d));
+                }
+
+                // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
+                // https://arxiv.org/abs/2101.11408
+                (int Exponent, ulong Mantissa) am = ComputeFloat(exponent, mantissa, info);
+
+                // If we called ComputeFloat and we have an invalid power of 2 (Exponent < 0),
+                // then we need to go the slow way around again. This is very uncommon.
+                if (am.Exponent > 0)
+                {
+                    ulong word = am.Mantissa;
+                    word |= (ulong)(uint)(am.Exponent) << info.DenormalMantissaBits;
+                    return (ushort)word;
+                }
+
+            }
+            return (ushort)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
+        }
+
+        internal enum ParsingStatus // No ParsingStatus.Overflow because these types can represent infinity
         {
             OK,
             Failed

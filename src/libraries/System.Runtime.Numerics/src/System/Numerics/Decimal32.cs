@@ -931,5 +931,11 @@ namespace System.Numerics
         }
 
         public string ToString(string? format, IFormatProvider? formatProvider) => throw new NotImplementedException();
+
+        // IEEE 754 specifies NaNs to be propagated
+        internal static Decimal32 Negate(Decimal32 value)
+        {
+            return IsNaN(value) ? value : new Decimal32((ushort)(value._value ^ SignMask));
+        }
     }
 }
