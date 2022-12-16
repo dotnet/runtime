@@ -1362,8 +1362,12 @@ emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
 //
 emitter::code_t emitter::AddEvexVPrimePrefix(code_t code)
 {
+#if defined(TARGET_AMD64)
     assert(UseEvexEncoding() && hasEvexPrefix(code));
     return emitter::code_t(code & 0xFFFFFFF7FFFFFFFFULL);
+#else
+    unreached();
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1378,8 +1382,12 @@ emitter::code_t emitter::AddEvexVPrimePrefix(code_t code)
 //
 emitter::code_t emitter::AddEvexRPrimePrefix(code_t code)
 {
+#if defined(TARGET_AMD64)
     assert(UseEvexEncoding() && hasEvexPrefix(code));
     return emitter::code_t(code & 0xFFEFFFFFFFFFFFFFULL);
+#else
+    unreached();
+#endif
 }
 
 #endif // TARGET_AMD64
@@ -2808,8 +2816,9 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
 
             // TODO-XARCH-AVX512 I don't like that we redefine regBits on the EVEX case.
             // Rather see these paths cleaned up.
-            regBits = HighAwareRegEncoding(reg);
 #if defined(TARGET_AMD64)
+            regBits = HighAwareRegEncoding(reg);
+
             if (IsHighSIMDReg(reg))
             {
                 // Have to set the EVEX V' bit
