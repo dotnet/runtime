@@ -170,6 +170,13 @@ namespace System.Net.Security
             }
         }
 
+        private enum StreamUse
+        {
+            NotInUse = 0,
+            InUse = 1,
+            Disposed = 2,
+        };
+
         private int _nestedWrite;
         private int _nestedRead;
 
@@ -703,7 +710,7 @@ namespace System.Net.Security
         public override int ReadByte()
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            if (Interlocked.Exchange(ref _nestedRead, (int)StreamUse.InUse) == (int)StreamUse.InUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
@@ -724,7 +731,7 @@ namespace System.Net.Security
                 // Regardless of whether we were able to read a byte from the buffer,
                 // reset the read tracking.  If we weren't able to read a byte, the
                 // subsequent call to Read will set the flag again.
-                _nestedRead = 0;
+                _nestedRead = (int)StreamUse.NotInUse;
             }
 
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.
