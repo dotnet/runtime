@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     case TypeCode.UInt64:
                         return MarshalType.ENUM64;
                     default:
-                        throw new JSException($"Unsupported enum underlying type {typeCode}");
+                        throw new ArgumentException(SR.Format(SR.UnsupportedEnumType, type.FullName));
                 }
             }
 
@@ -69,7 +69,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (type.IsArray)
             {
                 if (!type.IsSZArray)
-                    throw new JSException("Only single-dimensional arrays with a zero lower bound can be marshaled to JS");
+                    throw new ArgumentException(SR.Format(SR.UnsupportedArrayType, type.FullName));
 
                 var elementType = type.GetElementType();
                 switch (Type.GetTypeCode(elementType))
@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     case TypeCode.Double:
                         return MarshalType.ARRAY_DOUBLE;
                     default:
-                        throw new JSException($"Unsupported array element type {elementType}");
+                        throw new ArgumentException(SR.Format(SR.UnsupportedElementType, elementType));
                 }
             }
             else if (type == typeof(IntPtr))
@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (defaultValue.HasValue)
                         return defaultValue.Value;
                     else
-                        throw new JSException($"Unsupported marshal type {t}");
+                        throw new InvalidProgramException(SR.Format(SR.UnsupportedLegacyMarshlerType, t));
             }
         }
 

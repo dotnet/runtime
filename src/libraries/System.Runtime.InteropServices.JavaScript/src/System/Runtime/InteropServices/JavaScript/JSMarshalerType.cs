@@ -444,7 +444,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 || underlying == MarshalerType.DateTime
                 || underlying == MarshalerType.DateTimeOffset
                 ) return;
-            throw new ArgumentException("Bad nullable value type");
+            throw new ArgumentException(SR.Format(SR.UnsupportedNullableType, underlying));
         }
 
         internal static void CheckArray(JSMarshalerType underlyingSig)
@@ -457,7 +457,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 || underlying == MarshalerType.Object
                 || underlying == MarshalerType.JSObject
                 ) return;
-            throw new ArgumentException("Bad array element type");
+            throw new ArgumentException(SR.Format(SR.UnsupportedElementType, underlying));
         }
 
         internal static void CheckArraySegment(JSMarshalerType underlyingSig)
@@ -467,7 +467,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 || underlying == MarshalerType.Int32
                 || underlying == MarshalerType.Double
                 ) return;
-            throw new ArgumentException("Bad array element type");
+            throw new ArgumentException(SR.Format(SR.UnsupportedElementType, underlying));
         }
 
         internal static void CheckTask(JSMarshalerType underlyingSig)
@@ -483,7 +483,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 || underlying == MarshalerType.Function
                 )
             {
-                throw new ArgumentException("Bad task result type");
+                throw new ArgumentException(SR.Format(SR.UnsupportedTaskResultType, underlying));
             }
         }
     }
