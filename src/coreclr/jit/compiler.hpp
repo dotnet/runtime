@@ -846,14 +846,34 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
 
     if (oper == GT_ADDR)
     {
-        if (op1->OperIsIndir())
+        switch (op1->OperGet())
         {
-            assert(op1->IsValue());
-            return op1->AsIndir()->Addr();
-        }
+            case GT_LCL_VAR:
+                return gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), type);
 
-        assert(op1->OperIsLocalRead() || op1->OperIs(GT_FIELD));
-        op1->SetDoNotCSE();
+            case GT_LCL_FLD:
+                return gtNewLclFldAddrNode(op1->AsLclFld()->GetLclNum(), op1->AsLclFld()->GetLclOffs(), type);
+
+            case GT_BLK:
+            case GT_OBJ:
+            case GT_IND:
+                return op1->AsIndir()->Addr();
+
+            case GT_FIELD:
+            {
+                GenTreeField* fieldAddr =
+                    new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, op1->AsField()->GetFldObj(),
+                                                           op1->AsField()->gtFldHnd, op1->AsField()->gtFldOffset);
+                fieldAddr->gtFldMayOverlap = op1->AsField()->gtFldMayOverlap;
+#ifdef FEATURE_READYTORUN
+                fieldAddr->gtFieldLookup = op1->AsField()->gtFieldLookup;
+#endif
+                return fieldAddr;
+            }
+
+            default:
+                unreached();
+        }
     }
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
@@ -4082,7 +4102,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_BITCAST:
         case GT_CKFINITE:
         case GT_LCLHEAP:
-        case GT_ADDR:
         case GT_IND:
         case GT_OBJ:
         case GT_BLK:

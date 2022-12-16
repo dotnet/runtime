@@ -389,11 +389,6 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(typeDef.Instantiation.IsNull || typeDef.Instantiation.Length == arguments.Length);
 
-            MetadataType typeAsMetadataType = typeDef as MetadataType;
-
-            if (typeAsMetadataType != null)
-                return GetInstantiatedType(typeAsMetadataType, arguments);
-
             _genericTypeInstances ??= new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
 
             GenericTypeInstanceKey key = new GenericTypeInstanceKey(typeDef, arguments);

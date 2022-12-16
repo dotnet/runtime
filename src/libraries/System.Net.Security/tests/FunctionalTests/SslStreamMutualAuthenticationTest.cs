@@ -86,7 +86,6 @@ namespace System.Net.Security.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65563", TestPlatforms.Android)]
         public async Task SslStream_CachedCredentials_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
         {
