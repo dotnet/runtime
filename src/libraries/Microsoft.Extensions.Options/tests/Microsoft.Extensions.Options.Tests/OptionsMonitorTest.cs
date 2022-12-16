@@ -491,6 +491,7 @@ namespace Microsoft.Extensions.Options.Tests
         /// Replicates https://github.com/dotnet/runtime/issues/79529
         /// </summary>
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Synchronous wait is not supported on browser")]
         public void InstantiatesOnlyOneOptionsInstance()
         {
             using AutoResetEvent @event = new(initialState: false);
