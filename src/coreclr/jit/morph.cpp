@@ -9108,25 +9108,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
         case GT_UMOD:
 
-#ifdef TARGET_ARMARCH
 //
 // Note for TARGET_ARMARCH we don't have  a remainder instruction, so we don't do this optimization
 //
-#else  // TARGET_XARCH
+#ifdef TARGET_X86
             // If this is an unsigned long mod with a constant divisor,
             // then don't morph to a helper call - it can be done faster inline using idiv.
 
             noway_assert(op2);
-
-            if (!optValnumCSE_phase && op2->IsIntegralConstUnsignedPow2())
-            {
-                // Transformation: a % b = a & (b - 1);
-                tree = fgMorphUModToAndSub(tree->AsOp());
-                op1 = tree->AsOp()->gtOp1;
-                op2 = tree->AsOp()->gtOp2;
-                break;
-            }
-
             if ((typ == TYP_LONG) && opts.OptEnabled(CLFLG_CONSTANTFOLD))
             {
                 if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntConCommon()->LngValue() >= 2 &&
@@ -9155,12 +9144,21 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     return tree;
                 }
             }
-#endif // TARGET_XARCH
+#endif // TARGET_X86
 
         ASSIGN_HELPER_FOR_MOD:
 
             if (!optValnumCSE_phase)
             {
+                if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
+                {
+                    // Transformation: a % b = a & (b - 1);
+                    tree = fgMorphUModToAndSub(tree->AsOp());
+                    op1  = tree->AsOp()->gtOp1;
+                    op2  = tree->AsOp()->gtOp2;
+                    break;
+                }
+
                 if (tree->OperIs(GT_MOD, GT_UMOD) && (op2->IsIntegralConst(1)))
                 {
                     // Transformation: a % 1 = 0
