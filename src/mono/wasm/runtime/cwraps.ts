@@ -27,7 +27,6 @@ const legacy_interop_cwraps: SigLine[] = !MonoWasmLegacyJsInterop ? [] : [
     [true, "mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
 ];
 
-
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
 const fn_signatures: SigLine[] = [
     // MONO
