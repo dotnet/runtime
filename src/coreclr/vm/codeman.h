@@ -1505,7 +1505,7 @@ public:
         if (!DacEnumMemoryRegion(dac_cast<TADDR>(&level), sizeof(level)))
             return;
 
-        for (int i = 0; i < entriesPerMapLevel; i++)
+        for (uintptr_t i = 0; i < entriesPerMapLevel; i++)
         {
             if (level[i].IsNull())
             {
