@@ -740,8 +740,13 @@ private:
                              LSRA_LIMIT_CALLEE         = 0x1,
                              LSRA_LIMIT_CALLER         = 0x2,
                              LSRA_LIMIT_SMALL_SET      = 0x3,
+#if defined(TARGET_AMD64)
                              LSRA_LIMIT_UPPER_SIMD_SET = 0x2000,
-                             LSRA_LIMIT_MASK           = 0x2003};
+                             LSRA_LIMIT_MASK           = 0x2003
+#else
+                             LSRA_LIMIT_MASK           = 0x3
+#endif
+                             };
 
     // When LSRA_LIMIT_SMALL_SET is specified, it is desirable to select a "mixed" set of caller- and callee-save
     // registers, so as to get different coverage than limiting to callee or caller.
