@@ -12,6 +12,8 @@ using System.Runtime.Versioning;
 // In AOT compilers, see Internal.IL.Stubs.UnsafeIntrinsics for details.
 //
 
+#pragma warning disable 8500 // address / sizeof of managed types
+
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -49,13 +51,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SizeOf<T>()
         {
-#if CORECLR
-            typeof(T).ToString(); // Type token used by the actual method body
-#endif
-            throw new PlatformNotSupportedException();
-
-            // sizeof !!T
-            // ret
+            return sizeof(T);
         }
 
         /// <summary>
@@ -108,7 +104,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
+            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)sizeof(T)));
 #endif
             // ldarg .0
             // ldarg .1
@@ -134,7 +130,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
+            return ref AddByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)sizeof(T)));
 #endif
 
             // ldarg .0
@@ -161,7 +157,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return (byte*)source + (elementOffset * (nint)SizeOf<T>());
+            return (byte*)source + (elementOffset * (nint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -187,7 +183,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref AddByteOffset(ref source, (nuint)(elementOffset * (nuint)SizeOf<T>()));
+            return ref AddByteOffset(ref source, (nuint)(elementOffset * (nuint)sizeof(T)));
 #endif
 
             // ldarg .0
@@ -505,7 +501,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return Unsafe.As<byte, T>(ref *(byte*)source);
+            return *(T*)source;
 #endif
 
             // ldarg.0
@@ -529,7 +525,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            return Unsafe.As<byte, T>(ref source);
+            return As<byte, T>(ref source);
 #endif
 
             // ldarg.0
@@ -554,7 +550,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            Unsafe.As<byte, T>(ref *(byte*)destination) = value;
+            *(T*)destination = value;
 #endif
 
             // ldarg .0
@@ -579,7 +575,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            Unsafe.As<byte, T>(ref destination) = value;
+            As<byte, T>(ref destination) = value;
 #endif
 
             // ldarg .0
@@ -612,54 +608,35 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Reads a value of type <typeparamref name="T"/> from the given location.
         /// </summary>
-        //[Intrinsic]
-        // AOT:Read
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(void* source)
         {
-            return Unsafe.As<byte, T>(ref *(byte*)source);
-
-            // ldarg.0
-            // ldobj !!T
-            // ret
+            return *(T*)source;
         }
 
         /// <summary>
         /// Writes a value of type <typeparamref name="T"/> to the given location.
         /// </summary>
-        //[Intrinsic]
-        // AOT:Write
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write<T>(void* destination, T value)
         {
-            Unsafe.As<byte, T>(ref *(byte*)destination) = value;
-
-            // ldarg .0
-            // ldarg .1
-            // stobj !!T
-            // ret
+            *(T*)destination = value;
         }
 
         /// <summary>
         /// Reinterprets the given location as a reference to a value of type <typeparamref name="T"/>.
         /// </summary>
         [Intrinsic]
-        // CoreCLR:METHOD__UNSAFE__AS_REF_POINTER
-        // AOT:AsRef
-        // Mono:AsRef
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AsRef<T>(void* source)
         {
-            return ref Unsafe.As<byte, T>(ref *(byte*)source);
-
-            // ldarg .0
-            // ret
+            return ref *(T*)source;
         }
 
         /// <summary>
@@ -709,7 +686,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T NullRef<T>()
         {
-            return ref Unsafe.AsRef<T>(null);
+            return ref AsRef<T>(null);
 
             // ldc.i4.0
             // conv.u
@@ -729,7 +706,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNullRef<T>(ref T source)
         {
-            return Unsafe.AsPointer(ref source) == null;
+            return AsPointer(ref source) == null;
 
             // ldarg.0
             // ldc.i4.0
@@ -767,7 +744,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
+            return ref SubtractByteOffset(ref source, (IntPtr)(elementOffset * (nint)sizeof(T)));
 #endif
 
             // ldarg .0
@@ -793,7 +770,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return (byte*)source - (elementOffset * (nint)Unsafe.SizeOf<T>());
+            return (byte*)source - (elementOffset * (nint)sizeof(T));
 #endif
 
             // ldarg .0
@@ -818,7 +795,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)SizeOf<T>()));
+            return ref SubtractByteOffset(ref source, (IntPtr)((nint)elementOffset * (nint)sizeof(T)));
 #endif
 
             // ldarg .0
@@ -843,7 +820,7 @@ namespace System.Runtime.CompilerServices
             typeof(T).ToString();
             throw new PlatformNotSupportedException();
 #else
-            return ref SubtractByteOffset(ref source, (nuint)(elementOffset * (nuint)Unsafe.SizeOf<T>()));
+            return ref SubtractByteOffset(ref source, (nuint)(elementOffset * (nuint)sizeof(T)));
 #endif
 
             // ldarg .0

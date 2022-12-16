@@ -62,6 +62,7 @@ inline void FATAL_GC_ERROR()
 // + creates some ro segs
 // We can add more mechanisms here.
 //#define STRESS_REGIONS
+#define MARK_PHASE_PREFETCH
 #endif //USE_REGIONS
 
 // FEATURE_STRUCTALIGN was added by Midori. In CLR we are not interested
@@ -1222,9 +1223,11 @@ enum bookkeeping_element
 
 class mark_queue_t
 {
+#ifdef MARK_PHASE_PREFETCH
     static const size_t slot_count = 16;
     uint8_t* slot_table[slot_count];
     size_t curr_slot_index;
+#endif //MARK_PHASE_PREFETCH
 
 public:
     mark_queue_t();
@@ -4113,12 +4116,6 @@ public:
     size_t heap_hard_limit_oh[total_oh_count];
 
     PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_heap;
-
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_bookkeeping;
-
-    PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;
 
     PER_HEAP_ISOLATED
@@ -5936,9 +5933,9 @@ private:
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
-    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn);
-    bool allocate_basic_region (uint8_t** start, uint8_t** end, region_allocator_callback_fn fn);
-    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn);
+    bool allocate_region (int gen_num, size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn);
+    bool allocate_basic_region (int gen_num, uint8_t** start, uint8_t** end, region_allocator_callback_fn fn);
+    bool allocate_large_region (int gen_num, uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn);
     void delete_region (uint8_t* start);
     void delete_region_impl (uint8_t* start);
     uint32_t get_va_memory_load()

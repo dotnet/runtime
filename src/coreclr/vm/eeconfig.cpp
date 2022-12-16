@@ -172,7 +172,6 @@ HRESULT EEConfig::Init()
     fSuppressChecks = false;
     fConditionalContracts = false;
     fEnableFullDebug = false;
-    iExposeExceptionsInCOM = 0;
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
@@ -389,7 +388,7 @@ HRESULT EEConfig::sync()
                 if (WszGetModuleFileName(NULL, wszFileName) != 0)
                 {
                     // just keep the name
-                    LPCWSTR pwszName = wcsrchr(wszFileName, W('\\'));
+                    LPCWSTR pwszName = wcsrchr(wszFileName, DIRECTORY_SEPARATOR_CHAR_W);
                     pwszName = (pwszName == NULL) ? wszFileName.GetUnicode() : (pwszName + 1);
 
                     if (SString::_wcsicmp(pwszName,pszGCStressExe) == 0)
@@ -605,8 +604,6 @@ HRESULT EEConfig::sync()
     fVerifierOff    = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VerifierOff) != 0);
 
     fJitVerificationDisable = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitVerificationDisable) != 0);
-
-    iExposeExceptionsInCOM = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ExposeExceptionsInCOM, iExposeExceptionsInCOM);
 #endif
 
 #ifdef FEATURE_COMINTEROP

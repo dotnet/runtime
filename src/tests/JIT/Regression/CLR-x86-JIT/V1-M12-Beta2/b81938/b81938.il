@@ -7,8 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly a { }
-.method public static int32 main(string[] args) il managed
+.assembly 'b81938' { }
+.method public static int32 main() il managed
 {
 	.entrypoint
 	.maxstack  8

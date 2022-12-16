@@ -779,22 +779,26 @@ namespace ILCompiler.DependencyAnalysis
             if ((ProfileDataManager != null) && (ProfileDataManager.EmbedPgoDataInR2RImage))
             {
                 // Profile instrumentation data attaches here
-                HashSet<MethodDesc> methodsToInsertInstrumentationDataFor = new HashSet<MethodDesc>();
-                foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
+
+                bool HasAnyProfileDataForInput()
                 {
-                    foreach (MethodDesc method in ProfileDataManager.GetMethodsForModuleDesc(inputModule))
+                    foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
                     {
-                        if (ProfileDataManager[method].SchemaData != null)
+                        foreach (MethodDesc method in ProfileDataManager.GetInputProfileDataMethodsForModule(inputModule))
                         {
-                            methodsToInsertInstrumentationDataFor.Add(method);
+                            if (ProfileDataManager[method].SchemaData != null)
+                            {
+                                return true;
+                            }
                         }
                     }
+
+                    return false;
                 }
-                if (methodsToInsertInstrumentationDataFor.Count != 0)
+
+                if (ProfileDataManager.SynthesizeRandomPgoData || HasAnyProfileDataForInput())
                 {
-                    MethodDesc[] methodsToInsert = methodsToInsertInstrumentationDataFor.ToArray();
-                    methodsToInsert.MergeSort(TypeSystemComparer.Instance.Compare);
-                    InstrumentationDataTable = new InstrumentationDataTableNode(this, methodsToInsert, ProfileDataManager);
+                    InstrumentationDataTable = new InstrumentationDataTableNode(this, ProfileDataManager);
                     Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable, InstrumentationDataTable);
                 }
             }

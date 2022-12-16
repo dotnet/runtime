@@ -9,7 +9,7 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarFile_ExtractToDirectory_File_Tests : TarTestsBase
     {
-        [ConditionalFact(nameof(IsUnixButNotSuperUser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
         public void Extract_SpecialFiles_Unix_Unelevated_ThrowsUnauthorizedAccess()
         {
             string originalFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.ustar, "specialfiles");

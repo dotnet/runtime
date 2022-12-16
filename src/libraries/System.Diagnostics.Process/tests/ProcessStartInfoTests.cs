@@ -27,7 +27,8 @@ namespace System.Diagnostics.Tests
         private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
 
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported
-            => PlatformDetection.IsWindowsAndElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+            => PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer
+            && PlatformDetection.IsPrivilegedProcess && RemoteExecutor.IsSupported;
 
         [Fact]
         public void TestEnvironmentProperty()

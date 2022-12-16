@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -112,9 +112,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			AddLinkOptions (sandbox, compilationResult, builder, metadataProvider);
 
 			var logWriter = new TestLogWriter ();
-			trimmer.Trim (builder.Options, logWriter);
+			var trimmingResults = trimmer.Trim (builder.Options, logWriter);
 
-			return new ILCompilerTestCaseResult (testCase, compilationResult.InputAssemblyPath, compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, logWriter);
+			return new ILCompilerTestCaseResult (testCase, compilationResult.InputAssemblyPath, compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, trimmingResults, logWriter);
 		}
 
 		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, ILCompilerOptionsBuilder builder, TestCaseMetadataProvider metadataProvider)

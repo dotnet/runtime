@@ -35,7 +35,7 @@ namespace ILCompiler
                 new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
-                Array.Empty<MetadataType>())
+                Array.Empty<MetadataType>(), default)
         {
         }
 
@@ -51,8 +51,9 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<MethodDesc>> reflectableMethods,
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
-            IEnumerable<MetadataType> rootedCctorContexts)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy)
+            IEnumerable<MetadataType> rootedCctorContexts,
+            MetadataManagerOptions options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             _typesWithRootedCctorContext = new List<MetadataType>(rootedCctorContexts);

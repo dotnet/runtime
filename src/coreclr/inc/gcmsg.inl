@@ -44,13 +44,13 @@
     static const char* gcDetailedStartMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "*GC* %d(gen0:%d)(%d)(alloc: %Id)(%s)(%d)";
+        return "*GC* %d(gen0:%d)(%d)(alloc: %zd)(%s)(%d)";
     }
 
     static const char* gcDetailedEndMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "*EGC* %Id(gen0:%Id)(%Id)(%d)(%s)(%s)(%s)(ml: %d->%d)";
+        return "*EGC* %zd(gen0:%zd)(%zd)(%d)(%s)(%s)(%s)(ml: %d->%d)";
     }
 
     static const char* gcStartMarkMsg()
@@ -80,7 +80,7 @@
     static const char* gcStartCompactMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "---- Compact Phase on heap %d: %Ix(%Ix)----";
+        return "---- Compact Phase on heap %d: %zx(%zx)----";
     }
 
     static const char* gcEndCompactMsg()
@@ -92,31 +92,31 @@
     static const char* gcMemCopyMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return " mc: [%Ix->%Ix, %Ix->%Ix[";
+        return " mc: [%zx->%zx, %zx->%zx[";
     }
 
     static const char* gcPlanPlugMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix(%d), x: %Ix (%s)";
+        return "(%zx)[%zx->%zx, NA: [%zx(%zd), %zx[: %zx(%d), x: %zx (%s)";
     }
 
     static const char* gcPlanPinnedPlugMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "(%Ix)PP: [%Ix, %Ix[%Ix](m:%d)";
+        return "(%zx)PP: [%zx, %zx[%zx](m:%d)";
     }
 
     static const char* gcDesiredNewAllocationMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "h%d g%d surv: %Id current: %Id alloc: %Id (%d%%) f: %d%% new-size: %Id new-alloc: %Id";
+        return "h%d g%d surv: %zd current: %zd alloc: %zd (%d%%) f: %d%% new-size: %zd new-alloc: %zd";
     }
 
     static const char* gcMakeUnusedArrayMsg()
     {
         STATIC_CONTRACT_LEAF;
-        return "Making unused array [%Ix, %Ix[";
+        return "Making unused array [%zx, %zx[";
     }
 
     static const char* gcStartBgcThread()
@@ -129,4 +129,10 @@
     {
         STATIC_CONTRACT_LEAF;
         return "Relocating reference *(%p) from %p to %p";
+    }
+
+    static const char* gcLoggingIsOffMsg()
+    {
+        STATIC_CONTRACT_LEAF;
+        return "TraceGC is not turned on";
     }

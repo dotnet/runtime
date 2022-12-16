@@ -191,7 +191,7 @@ namespace System.Diagnostics
         {
             ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith('\\') ? 2 : 0);
             return
-                !baseName.Equals(".", StringComparison.Ordinal) &&
+                baseName is not "." &&
                 !baseName.Equals(Interop.Kernel32.GetComputerName(), StringComparison.OrdinalIgnoreCase);
         }
 
@@ -499,7 +499,7 @@ namespace System.Diagnostics
 
                     ReadOnlySpan<char> instanceName = PERF_INSTANCE_DEFINITION.GetName(in instance, data.Slice(instancePos));
 
-                    if (instanceName.Equals("_Total", StringComparison.Ordinal))
+                    if (instanceName is "_Total")
                     {
                         // continue
                     }

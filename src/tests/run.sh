@@ -18,6 +18,7 @@ function print_usage {
     echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
+    echo '  --synthesizepgo                  : Runs the tests allowing crossgen2 to synthesize PGO data'
     echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with DOTNET_JitStressRegs=n'
     echo '  --jitminopts                     : Runs the tests with DOTNET_JITMinOpts=1'
@@ -140,6 +141,9 @@ do
         --runcrossgen2tests)
             export RunCrossGen2=1
             ;;
+        --synthesizepgo)
+            export CrossGen2SynthesizePgo=1
+            ;;
         --sequential)
             runSequential=1
             ;;
@@ -253,6 +257,10 @@ fi
 
 if [[ -n "$RunCrossGen2" ]]; then
     runtestPyArguments+=("--run_crossgen2_tests")
+fi
+
+if [[ -n "$CrossGen2SynthesizePgo" ]]; then
+    runtestPyArguments+=("--synthesize_pgo")
 fi
 
 if [[ "$limitedCoreDumps" == "ON" ]]; then
