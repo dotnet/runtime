@@ -40,11 +40,38 @@ public class TestSummary
 
             string outputElement = !string.IsNullOrWhiteSpace(Output)
                                  ? $"<output><![CDATA[{Output}]]></output>"
-                                 : string.Empty
+                                 : string.Empty;
 
             if (Exception is not null)
             {
-                // Append the exception here :)
+                string? message = Exception.Message;
+
+                if (Exception is System.Reflection.TargetInvocationException tie)
+                {
+                    if (tie.InnerException is not null)
+                    {
+                        message = $"{message}\n INNER EXCEPTION--\n"
+                            + $"{tie.InnerException.GetType()}--\n"
+                            + $"{tie.InnerException.Message}--\n"
+                            + $"{tie.InnerException.StackTrace}";
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    message = "NoExceptionMessage";
+                }
+
+                testResultSb.Append($@" result=""Fail"">"
+                                  + $@"<failure exception-type=""{Exception.GetType()}"">"
+                                  + $"<message><![CDATA[{message}]]></message>"
+                                  + "<stack-trace><![CDATA[");
+
+                testResultSb.Append(!string.IsNullOrWhiteSpace(Exception.StackTrace)
+                                    ? Exception.StackTrace
+                                    : "NoStackTrace");
+
+                testResultSb.AppendLine($"]]></stack-trace></failure>{outputElement}</test>");
             }
             else if (SkipReason is not null)
             {
@@ -146,38 +173,7 @@ public class TestSummary
 
         foreach (var test in _testResults)
         {
-            resultsFile.Append($@"<test name=""{test.Name}"" type=""{test.ContainingTypeName}"" method=""{test.MethodName}"" time=""{test.Duration.TotalSeconds:F6}"" ");
-            string outputElement = !string.IsNullOrWhiteSpace(test.Output) ? $"<output><![CDATA[{test.Output}]]></output>" : string.Empty;
-            if (test.Exception is not null)
-            {
-                string exceptionMessage = test.Exception.Message;
-                if (test.Exception is System.Reflection.TargetInvocationException tie)
-                {
-                    if (tie.InnerException != null)
-                    {
-                        exceptionMessage = $"{exceptionMessage} \n INNER EXCEPTION--\n {tie.InnerException.GetType()}--\n{tie.InnerException.Message}--\n{tie.InnerException.StackTrace}";
-                    }
-                }
-                if (string.IsNullOrWhiteSpace(exceptionMessage))
-                {
-                    exceptionMessage = "NoExceptionMessage";
-                }
-
-                string? stackTrace = test.Exception.StackTrace;
-                if (string.IsNullOrWhiteSpace(stackTrace))
-                {
-                    stackTrace = "NoStackTrace";
-                }
-                resultsFile.AppendLine($@"result=""Fail""><failure exception-type=""{test.Exception.GetType()}""><message><![CDATA[{exceptionMessage}]]></message><stack-trace><![CDATA[{stackTrace}]]></stack-trace></failure>{outputElement}</test>");
-            }
-            else if (test.SkipReason is not null)
-            {
-                resultsFile.AppendLine($@"result=""Skip""><reason><![CDATA[{(!string.IsNullOrWhiteSpace(test.SkipReason) ? test.SkipReason : "No Known Skip Reason")}]]></reason></test>");
-            }
-            else
-            {
-                resultsFile.AppendLine($@" result=""Pass"">{outputElement}</test>");
-            }
+            resultsFile.AppendLine(test.ToXmlString());
         }
 
         resultsFile.AppendLine("</collection>");

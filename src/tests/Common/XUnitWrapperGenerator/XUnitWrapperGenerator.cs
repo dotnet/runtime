@@ -179,7 +179,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 if (testsLeftInCurrentTestExecutor == 0)
                 {
                     if (currentTestExecutor != 0)
+                    {
                         testExecutorBuilder.AppendLine("}");
+                        testExecutorBuilder.AppendLine("}");
+                    }
 
                     currentTestExecutor++;
                     testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
