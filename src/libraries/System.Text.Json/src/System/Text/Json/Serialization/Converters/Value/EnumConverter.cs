@@ -363,11 +363,15 @@ namespace System.Text.Json.Serialization.Converters
                 success = CheckIfValidNamedEnumLiteral(source);
             }
 
-            T result = default;
+            T result;
             if (success)
             {
                 // Try parsing case sensitive first
                 success = Enum.TryParse(source, out result) || Enum.TryParse(source, ignoreCase: true, out result);
+            }
+            else
+            {
+                result = default;
             }
 
             if (rentedBuffer != null)
@@ -382,19 +386,10 @@ namespace System.Text.Json.Serialization.Converters
 #else
         private bool TryParseEnumCore(string? enumString, JsonSerializerOptions options, out T value)
         {
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0)
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0 && (enumString is null || !CheckIfValidNamedEnumLiteral(enumString.AsSpan())))
             {
-                if (enumString is null)
-                {
-                    value = default;
-                    return false;
-                }
-
-                if (!CheckIfValidNamedEnumLiteral(enumString.AsSpan()))
-                {
-                    value = default;
-                    return false;
-                }
+                value = default;
+                return false;
             }
 
             // Try parsing case sensitive first
