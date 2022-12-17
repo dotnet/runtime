@@ -394,8 +394,8 @@ namespace System.ComponentModel
         public static object? CreateInstance(
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
-            Type[]? argTypes,
-            object[]? args)
+            Type?[]? argTypes,
+            object?[]? args)
         {
             ArgumentNullException.ThrowIfNull(objectType);
 
@@ -3014,8 +3014,8 @@ namespace System.ComponentModel
             public override object? CreateInstance(
                 IServiceProvider? provider,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
-                Type[]? argTypes,
-                object[]? args)
+                Type?[]? argTypes,
+                object?[]? args)
             {
                 ArgumentNullException.ThrowIfNull(objectType);
 
