@@ -150,15 +150,13 @@ namespace Internal.Runtime.TypeLoader
 
         protected internal override bool ComputeHasStaticConstructor(TypeDesc type)
         {
-            if (type.RetrieveRuntimeTypeHandleIfPossible())
-            {
-                unsafe
-                {
-                    return type.RuntimeTypeHandle.ToEETypePtr()->HasCctor;
-                }
-            }
-            Debug.Assert(type is not DefType);
-            return false;
+            // This assumes we can compute the information from a type definition
+            // (`type` is going to be a definition here because that's how the type system is structured).
+            // We don't maintain consistency for this at runtime. Different instantiations of
+            // a single definition may or may not have a static constructor after AOT compilation.
+            // Asking about this for a definition is an invalid question.
+            // If this is ever needed, we need to restructure things in the common type system.
+            throw new NotImplementedException();
         }
 
         public override bool SupportsUniversalCanon => false;

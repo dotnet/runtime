@@ -41,9 +41,14 @@ namespace System.Text.Json.Reflection
 
         public static Type? GetCompatibleGenericBaseClass(
             this Type type,
-            Type baseType,
+            Type? baseType,
             bool sourceGenType = false)
         {
+            if (baseType is null)
+            {
+                return null;
+            }
+
             Debug.Assert(baseType.IsGenericType);
             Debug.Assert(!baseType.IsInterface);
             Debug.Assert(baseType == baseType.GetGenericTypeDefinition());

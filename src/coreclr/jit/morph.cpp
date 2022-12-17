@@ -5160,7 +5160,17 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
     if (tree->OperIs(GT_FIELD))
     {
-        tree->SetOper(GT_IND);
+        if (tree->TypeIs(TYP_STRUCT))
+        {
+            ClassLayout* layout = tree->GetLayout(this);
+            tree->SetOper(GT_OBJ);
+            tree->AsBlk()->Initialize(layout);
+        }
+        else
+        {
+            tree->SetOper(GT_IND);
+        }
+
         tree->AsIndir()->SetAddr(addr);
     }
     else // Otherwise, we have a FIELD_ADDR.
@@ -12090,12 +12100,6 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     if (op1SideEffects != nullptr)
     {
         GenTree* comma = gtNewOperNode(GT_COMMA, zero->TypeGet(), op1SideEffects, zero);
-
-#ifdef DEBUG
-        // op1 may already have been morphed, so unset this bit.
-        op1SideEffects->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
-
         INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
         DEBUG_DESTROY_NODE(tree);

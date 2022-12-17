@@ -2594,6 +2594,43 @@ interp_transform_internal_calls (MonoMethod *method, MonoMethod *target_method, 
 }
 
 static gboolean
+interp_type_as_ptr (MonoType *tp);
+
+/* Return whenever TYPE represents a vtype with only one scalar member */
+static gboolean
+is_scalar_vtype (MonoType *type)
+{
+	MonoClass *klass;
+	MonoClassField *field;
+	gpointer iter;
+
+	if (!MONO_TYPE_ISSTRUCT (type))
+		return FALSE;
+	klass = mono_class_from_mono_type_internal (type);
+	mono_class_init_internal (klass);
+
+	int size = mono_class_value_size (klass, NULL);
+	if (size == 0 || size > SIZEOF_VOID_P)
+		return FALSE;
+
+	iter = NULL;
+	int nfields = 0;
+	field = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		nfields ++;
+		if (nfields > 1)
+			return FALSE;
+		MonoType *t = mini_get_underlying_type (field->type);
+		if (!interp_type_as_ptr (t))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+static gboolean
 interp_type_as_ptr (MonoType *tp)
 {
 	if (MONO_TYPE_IS_POINTER (tp))
@@ -2603,7 +2640,7 @@ interp_type_as_ptr (MonoType *tp)
 	if ((tp)->type == MONO_TYPE_I4)
 		return TRUE;
 #if SIZEOF_VOID_P == 8
-	if ((tp)->type == MONO_TYPE_I8)
+	if ((tp)->type == MONO_TYPE_I8 || (tp)->type == MONO_TYPE_U8)
 		return TRUE;
 #endif
 	if ((tp)->type == MONO_TYPE_BOOLEAN)
@@ -2611,6 +2648,8 @@ interp_type_as_ptr (MonoType *tp)
 	if ((tp)->type == MONO_TYPE_CHAR)
 		return TRUE;
 	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tp->data.klass))
+		return TRUE;
+	if (is_scalar_vtype (tp))
 		return TRUE;
 	return FALSE;
 }

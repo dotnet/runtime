@@ -150,7 +150,8 @@
   <Target Name="IncludeAnalyzersInPackage"
           Condition="'@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('PackAsAnalyzer', 'true'))">
     <MSBuild Projects="@(ProjectReference->WithMetadataValue('PackAsAnalyzer', 'true'))"
-             Targets="GetAnalyzerPackFiles">
+             Targets="GetAnalyzerPackFiles"
+             RemoveProperties="SetTargetFramework">
       <Output TaskParameter="TargetOutputs" ItemName="_AnalyzerFile" />
     </MSBuild>
 

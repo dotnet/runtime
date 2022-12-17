@@ -408,9 +408,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
             src->ChangeOper(GT_OBJ);
             src->AsObj()->SetAddr(lclAddr);
-            src->AsObj()->SetLayout(layout);
-            src->AsObj()->gtBlkOpKind     = GenTreeBlk::BlkOpKindInvalid;
-            src->AsObj()->gtBlkOpGcUnsafe = false;
+            src->AsObj()->Initialize(layout);
 
             BlockRange().InsertBefore(src, lclAddr);
         }

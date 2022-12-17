@@ -246,6 +246,8 @@ namespace System.Threading
             }
         }
 
+        internal static int CurrentManagedThreadIdUnchecked => t_currentManagedThreadId;
+
         public static int Current
         {
             get

@@ -15668,12 +15668,11 @@ GenTree* Compiler::gtNewTempAssign(
     if (varTypeIsStruct(varDsc) && (valStructHnd == NO_CLASS_HANDLE) && !varTypeIsSIMD(valTyp))
     {
         // There are some cases where we do not have a struct handle on the return value:
-        // 1. Handle-less IND/BLK/LCL_FLD<struct> nodes.
+        // 1. Handle-less BLK/LCL_FLD nodes.
         // 2. The zero constant created by local assertion propagation.
-        // In these cases, we can use the type of the merge return for the assignment.
+        // In these cases, we can use the type of the local for the assignment.
         assert(val->gtEffectiveVal(true)->OperIs(GT_IND, GT_BLK, GT_LCL_FLD, GT_CNS_INT));
-        assert(tmp == genReturnLocal);
-        valStructHnd = lvaGetStruct(genReturnLocal);
+        valStructHnd = lvaGetDesc(tmp)->GetStructHnd();
         assert(valStructHnd != NO_CLASS_HANDLE);
     }
 
@@ -15999,72 +15998,19 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
     return true;
 }
 
-GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
-{
-    // 'list' starts off as null,
-    //        and when it is null we haven't started the list yet.
-    //
-    if (list != nullptr)
-    {
-        // Create a GT_COMMA that appends 'expr' in front of the remaining set of expressions in (*list)
-        GenTree* result = gtNewOperNode(GT_COMMA, TYP_VOID, expr, list);
-
-        // Set the flags in the comma node
-        result->gtFlags |= (list->gtFlags & GTF_ALL_EFFECT);
-        result->gtFlags |= (expr->gtFlags & GTF_ALL_EFFECT);
-        DBEXEC(fgGlobalMorph, result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-        // 'list' and 'expr' should have valuenumbers defined for both or for neither one (unless we are remorphing,
-        // in which case a prior transform involving either node may have discarded or otherwise invalidated the value
-        // numbers).
-        assert((list->gtVNPair.BothDefined() == expr->gtVNPair.BothDefined()) || !fgGlobalMorph);
-
-        // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
-        //
-        if (list->gtVNPair.BothDefined() && expr->gtVNPair.BothDefined())
-        {
-            // The result of a GT_COMMA node is op2, the normal value number is op2vnp
-            // But we also need to include the union of side effects from op1 and op2.
-            // we compute this value into exceptions_vnp.
-            ValueNumPair op1vnp;
-            ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
-            ValueNumPair op2vnp;
-            ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
-
-            vnStore->VNPUnpackExc(expr->gtVNPair, &op1vnp, &op1Xvnp);
-            vnStore->VNPUnpackExc(list->gtVNPair, &op2vnp, &op2Xvnp);
-
-            ValueNumPair exceptions_vnp = ValueNumStore::VNPForEmptyExcSet();
-
-            exceptions_vnp = vnStore->VNPExcSetUnion(exceptions_vnp, op1Xvnp);
-            exceptions_vnp = vnStore->VNPExcSetUnion(exceptions_vnp, op2Xvnp);
-
-            result->gtVNPair = vnStore->VNPWithExc(op2vnp, exceptions_vnp);
-        }
-
-        return result;
-    }
-    else
-    {
-        // The 'expr' will start the list of expressions
-        return expr;
-    }
-}
-
 //------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //
 // Arguments:
 //    expr       - the expression tree to extract side effects from
-//    pList      - pointer to a (possibly null) GT_COMMA list that
-//                 will contain the extracted side effects
+//    pList      - pointer to a (possibly null) node
 //    flags      - side effect flags to be considered
 //    ignoreRoot - ignore side effects on the expression root node
 //
 // Notes:
-//    Side effects are prepended to the GT_COMMA list such that op1 of
-//    each comma node holds the side effect tree and op2 points to the
-//    next comma node. The original side effect execution order is preserved.
+//    pList is modified such that the original pList is executed after all side
+//    effects that were extracted. The original side effect execution order is
+//    preserved.
 //
 void Compiler::gtExtractSideEffList(GenTree*     expr,
                                     GenTree**    pList,
@@ -16073,18 +16019,23 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 {
     class SideEffectExtractor final : public GenTreeVisitor<SideEffectExtractor>
     {
-    public:
-        const GenTreeFlags   m_flags;
-        ArrayStack<GenTree*> m_sideEffects;
+        const GenTreeFlags m_flags;
 
+        GenTree* m_result = nullptr;
+
+    public:
         enum
         {
             DoPreOrder        = true,
             UseExecutionOrder = true
         };
 
-        SideEffectExtractor(Compiler* compiler, GenTreeFlags flags)
-            : GenTreeVisitor(compiler), m_flags(flags), m_sideEffects(compiler->getAllocator(CMK_SideEffects))
+        GenTree* GetResult()
+        {
+            return m_result;
+        }
+
+        SideEffectExtractor(Compiler* compiler, GenTreeFlags flags) : GenTreeVisitor(compiler), m_flags(flags)
         {
         }
 
@@ -16098,7 +16049,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             {
                 if (m_compiler->gtNodeHasSideEffects(node, m_flags))
                 {
-                    PushSideEffects(node);
+                    Append(node);
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {
                         JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
@@ -16115,7 +16066,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                 // gtNodeHasSideEffects and make this check unconditionally.
                 if (node->OperIsAtomicOp())
                 {
-                    PushSideEffects(node);
+                    Append(node);
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
 
@@ -16131,7 +16082,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                 // those need to be extracted as if they're side effects.
                 if (!UnmarkCSE(node))
                 {
-                    PushSideEffects(node);
+                    Append(node);
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
 
@@ -16141,6 +16092,59 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             }
 
             return treeHasSideEffects ? Compiler::WALK_CONTINUE : Compiler::WALK_SKIP_SUBTREES;
+        }
+
+        void Append(GenTree* node)
+        {
+            if (m_result == nullptr)
+            {
+                m_result = node;
+                return;
+            }
+
+            GenTree* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, m_result, node);
+            comma->gtFlags |= (m_result->gtFlags | node->gtFlags) & GTF_ALL_EFFECT;
+
+#ifdef DEBUG
+            if (m_compiler->fgGlobalMorph)
+            {
+                // Either both should be morphed or neither should be.
+                assert((m_result->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) ==
+                       (node->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
+                comma->gtDebugFlags |= node->gtDebugFlags & GTF_DEBUG_NODE_MORPHED;
+            }
+#endif
+
+            // Both should have valuenumbers defined for both or for neither
+            // one (unless we are remorphing, in which case a prior transform
+            // involving either node may have discarded or otherwise
+            // invalidated the value numbers).
+            assert((m_result->gtVNPair.BothDefined() == node->gtVNPair.BothDefined()) || !m_compiler->fgGlobalMorph);
+
+            // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
+            //
+            if (m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
+            {
+                // The result of a GT_COMMA node is op2, the normal value number is op2vnp
+                // But we also need to include the union of side effects from op1 and op2.
+                // we compute this value into exceptions_vnp.
+                ValueNumPair op1vnp;
+                ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
+                ValueNumPair op2vnp;
+                ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
+
+                m_compiler->vnStore->VNPUnpackExc(node->gtVNPair, &op1vnp, &op1Xvnp);
+                m_compiler->vnStore->VNPUnpackExc(m_result->gtVNPair, &op2vnp, &op2Xvnp);
+
+                ValueNumPair exceptions_vnp = ValueNumStore::VNPForEmptyExcSet();
+
+                exceptions_vnp = m_compiler->vnStore->VNPExcSetUnion(exceptions_vnp, op1Xvnp);
+                exceptions_vnp = m_compiler->vnStore->VNPExcSetUnion(exceptions_vnp, op2Xvnp);
+
+                comma->gtVNPair = m_compiler->vnStore->VNPWithExc(op2vnp, exceptions_vnp);
+            }
+
+            m_result = comma;
         }
 
     private:
@@ -16167,11 +16171,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                 return false;
             }
         }
-
-        void PushSideEffects(GenTree* node)
-        {
-            m_sideEffects.Push(node);
-        }
     };
 
     SideEffectExtractor extractor(this, flags);
@@ -16188,19 +16187,12 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
         extractor.WalkTree(&expr, nullptr);
     }
 
-    GenTree* list = *pList;
-
-    // The extractor returns side effects in execution order but gtBuildCommaList prepends
-    // to the comma-based side effect list so we have to build the list in reverse order.
-    // This is also why the list cannot be built while traversing the tree.
-    // The number of side effects is usually small (<= 4), less than the ArrayStack's
-    // built-in size, so memory allocation is avoided.
-    while (!extractor.m_sideEffects.Empty())
+    if (*pList != nullptr)
     {
-        list = gtBuildCommaList(list, extractor.m_sideEffects.Pop());
+        extractor.Append(*pList);
     }
 
-    *pList = list;
+    *pList = extractor.GetResult();
 }
 
 /*****************************************************************************
@@ -18804,6 +18796,13 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ExtractVector128:
         {
             // These HWIntrinsic operations are contained as part of a store
+            return true;
+        }
+
+        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector256_CreateScalarUnsafe:
+        {
+            // These HWIntrinsic operations are contained as part of scalar ops
             return true;
         }
 

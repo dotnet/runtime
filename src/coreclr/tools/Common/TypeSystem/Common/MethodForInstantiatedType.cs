@@ -127,6 +127,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsStaticConstructor
+        {
+            get
+            {
+                return _typicalMethodDef.IsStaticConstructor;
+            }
+        }
+
         public override string Name
         {
             get
