@@ -28,7 +28,8 @@ namespace System
             //
             //     See <http://creativecommons.org/publicdomain/zero/1.0/>.
 
-            // Next(int maxValue) and NextInt64(long maxValue) are based on the algorithm from https://arxiv.org/pdf/1805.10941.pdf:
+            // Next(int maxValue), Next(int minValue, int maxValue), NextInt64(long maxValue) and NextInt64(int minValue, int maxValue)
+            // are based on the algorithm from https://arxiv.org/pdf/1805.10941.pdf:
             //
             //     Written in 2018 by Daniel Lemire
 
@@ -96,6 +97,7 @@ namespace System
             {
                 ulong randomProduct = (ulong)maxValue * NextUInt32();
                 uint lowPart = (uint)(randomProduct & uint.MaxValue);
+
                 if (lowPart < (uint)maxValue)
                 {
                     uint remainder = ((uint)0 - (uint)maxValue) % (uint)maxValue;
@@ -112,9 +114,23 @@ namespace System
 
             public override int Next(int minValue, int maxValue)
             {
-                int exclusiveRange = maxValue - minValue;
+                uint exclusiveRange = (uint)(maxValue - minValue);
 
-                return Next(exclusiveRange) + minValue;
+                ulong randomProduct = (ulong)exclusiveRange * NextUInt32();
+                uint lowPart = (uint)(randomProduct & uint.MaxValue);
+
+                if (lowPart < (uint)exclusiveRange)
+                {
+                    uint remainder = ((uint)0 - (uint)exclusiveRange) % (uint)exclusiveRange;
+
+                    while (lowPart < remainder)
+                    {
+                        randomProduct = (ulong)maxValue * NextUInt32();
+                        lowPart = (uint)(randomProduct & uint.MaxValue);
+                    }
+                }
+
+                return (int)(randomProduct >> (sizeof(uint) * 8)) + minValue;
             }
 
             public override long NextInt64()
@@ -148,14 +164,28 @@ namespace System
                     }
                 }
 
-                return (int)(randomProduct >> (sizeof(ulong) * 8));
+                return (long)(randomProduct >> (sizeof(ulong) * 8));
             }
 
             public override long NextInt64(long minValue, long maxValue)
             {
-                long exclusiveRange = maxValue - minValue;
+                ulong exclusiveRange = (ulong)(maxValue - minValue);
 
-                return NextInt64(exclusiveRange) + minValue;
+                UInt128 randomProduct = (UInt128)exclusiveRange * NextUInt64();
+                ulong lowPart = (ulong)(randomProduct & ulong.MaxValue);
+
+                if (lowPart < exclusiveRange)
+                {
+                    ulong remainder = ((ulong)0 - exclusiveRange) % exclusiveRange;
+
+                    while (lowPart < remainder)
+                    {
+                        randomProduct = (UInt128)exclusiveRange * NextUInt64();
+                        lowPart = (ulong)(randomProduct & ulong.MaxValue);
+                    }
+                }
+
+                return (long)(randomProduct >> (sizeof(ulong) * 8)) + minValue;
             }
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);
