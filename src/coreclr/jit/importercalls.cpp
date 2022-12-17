@@ -2610,7 +2610,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CorInfoType          jitType  = info.compCompHnd->asCorInfoType(elemHnd);
                 var_types            elemType = JITtype2varType(jitType);
 
-                if (fgAddrCanBeNull(array))
+                if (fgAddrCouldBeNull(array))
                 {
                     GenTree* arrayClone;
                     array = impCloneExpr(array, &arrayClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
