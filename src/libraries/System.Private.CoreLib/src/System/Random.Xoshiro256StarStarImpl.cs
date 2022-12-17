@@ -28,6 +28,10 @@ namespace System
             //
             //     See <http://creativecommons.org/publicdomain/zero/1.0/>.
 
+            // Next(int maxValue) and NextInt64(long maxValue) are based on the algorithm from https://arxiv.org/pdf/1805.10941.pdf:
+            //
+            //     Written in 2018 by Daniel Lemire
+
             private ulong _s0, _s1, _s2, _s3;
 
             public unsafe XoshiroImpl()
@@ -92,7 +96,7 @@ namespace System
             {
                 ulong randomProduct = (ulong)maxValue * NextUInt32();
                 uint lowPart = (uint)(randomProduct & uint.MaxValue);
-                if (lowPart < maxValue)
+                if (lowPart < (uint)maxValue)
                 {
                     uint remainder = ((uint)0 - (uint)maxValue) % (uint)maxValue;
 
