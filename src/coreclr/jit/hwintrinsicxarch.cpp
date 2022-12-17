@@ -1144,11 +1144,20 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                op2 = impSIMDPopStack(retType);
-                op1 = impSIMDPopStack(retType);
+                CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+                CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+                var_types               argType  = TYP_UNKNOWN;
+                CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+                op2     = getArgForHWIntrinsic(argType, argClass);
+
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+                op1     = getArgForHWIntrinsic(argType, argClass);
 
                 retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize,
                                              /* isSimdAsHWIntrinsic */ false);
+                break;
             }
             break;
         }

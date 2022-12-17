@@ -1901,6 +1901,41 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
+// SkipContainedCreateScalarUnsafe: Skips a contained CreateScalarUnsafe node
+// and gets the underlying op1 instead
+// 
+// Arguments:
+//    node - The node to handle
+// 
+// Return Value:
+//    If node is a contained CreateScalarUnsafe, it's op1 is returned;
+//    otherwise node is returned unchanged.
+static GenTree* SkipContainedCreateScalarUnsafe(GenTree* node)
+{
+    if (!node->OperIsHWIntrinsic() || !node->isContained())
+    {
+        return node;
+    }
+
+    GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+    switch (intrinsicId)
+    {
+        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector256_CreateScalarUnsafe:
+        {
+            return hwintrinsic->Op(1);
+        }
+
+        default:
+        {
+            return node;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // BuildHWIntrinsic: Set the NodeInfo for a GT_HWINTRINSIC tree.
 //
 // Arguments:
@@ -1938,10 +1973,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        GenTree* op1    = intrinsicTree->Op(1);
-        GenTree* op2    = (numArgs >= 2) ? intrinsicTree->Op(2) : nullptr;
-        GenTree* op3    = (numArgs >= 3) ? intrinsicTree->Op(3) : nullptr;
-        GenTree* lastOp = intrinsicTree->Op(numArgs);
+        // A contained CreateScalarUnsafe is special in that we're not containing it to load from
+        // memory and it isn't a constant. Instead, its essentially a "transparent" node we're ignoring
+        // to simplify the overall IR handling. As such, we need to "skip" such nodes when present and
+        // get the underlying op1 so that delayFreeUse and other preferencing remains correct.
+
+        GenTree* op1    = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(1));
+        GenTree* op2    = (numArgs >= 2) ? SkipContainedCreateScalarUnsafe(intrinsicTree->Op(2)) : nullptr;
+        GenTree* op3    = (numArgs >= 3) ? SkipContainedCreateScalarUnsafe(intrinsicTree->Op(3)) : nullptr;
+        GenTree* lastOp = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(numArgs));
 
         bool buildUses = true;
 
