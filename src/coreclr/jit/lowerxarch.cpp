@@ -1125,7 +1125,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 node->ChangeHWIntrinsicId(NI_Vector128_GetElement);
-                LowerNode(node);
+                return LowerNode(node);
             }
             break;
         }
@@ -1186,6 +1186,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 // zero. This ensures we don't need to handle a case where op2 is zero
                 // but not contained.
 
+                GenTree* nextNode = node->gtNext;
+
                 LIR::Use use;
 
                 if (BlockRange().TryGetUse(node, &use))
@@ -1201,7 +1203,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 op3->SetUnusedValue();
                 BlockRange().Remove(node);
 
-                return op1->gtNext;
+                return nextNode;
             }
 
             if (!op3->IsCnsIntOrI())
@@ -3525,17 +3527,23 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     }
 
     assert(result->GetHWIntrinsicId() != intrinsicId);
+    GenTree* nextNode = LowerNode(result);
 
-    LowerNode(result);
     if (intrinsicId == NI_Vector256_WithElement)
     {
         // Now that we have finalized the shape of the tree, lower the insertion node as well.
+
         assert(node->GetHWIntrinsicId() == NI_AVX_InsertVector128);
         assert(node != result);
-        LowerNode(node);
+
+        nextNode = LowerNode(node);
+    }
+    else
+    {
+        assert(node == result);
     }
 
-    return node->gtNext;
+    return nextNode;
 }
 
 //----------------------------------------------------------------------------------------------
