@@ -90,39 +90,27 @@ namespace System
 
             public override int Next(int maxValue)
             {
-                if (maxValue > 1)
+                ulong randomProduct = (ulong)maxValue * NextUInt32();
+                uint lowPart = (uint)(randomProduct & uint.MaxValue);
+                if (lowPart < maxValue)
                 {
-                    ulong randomProduct = (ulong)maxValue * NextUInt32();
-                    uint lowPart = (uint)(randomProduct & uint.MaxValue);
-                    if (lowPart < maxValue)
+                    uint remainder = (0 - (uint)maxValue) % maxValue;
+
+                    while (lowPart < remainder)
                     {
-                        uint remainder = (0 - (uint)maxValue) % maxValue;
-
-                        while (lowPart < remainder)
-                        {
-                            randomProduct = (ulong)maxValue * NextUInt32();
-                            lowPart = (uint)(randomProduct & uint.MaxValue);
-                        }
+                        randomProduct = (ulong)maxValue * NextUInt32();
+                        lowPart = (uint)(randomProduct & uint.MaxValue);
                     }
-
-                    return (int)(randomProduct >> (sizeof(uint) * 8));
                 }
 
-                Debug.Assert(maxValue == 0 || maxValue == 1);
-                return 0;
+                return (int)(randomProduct >> (sizeof(uint) * 8));
             }
 
             public override int Next(int minValue, int maxValue)
             {
                 int exclusiveRange = maxValue - minValue;
 
-                if (exclusiveRange > 1)
-                {
-                    return Next(exclusiveRange) + minValue;
-                }
-
-                Debug.Assert(minValue == maxValue || minValue + 1 == maxValue);
-                return minValue;
+                return Next(exclusiveRange) + minValue;
             }
 
             public override long NextInt64()
@@ -142,13 +130,9 @@ namespace System
 
             public override long NextInt64(long maxValue)
             {
-                if (maxValue <= int.MaxValue)
-                {
-                    return Next((int)maxValue);
-                }
-
                 UInt128 randomProduct = (UInt128)maxValue * NextUInt64();
                 ulong lowPart = (ulong)(randomProduct & ulong.MaxValue);
+                
                 if (lowPart < maxValue)
                 {
                     ulong remainder = (0 - (ulong)maxValue) % maxValue;
@@ -166,11 +150,6 @@ namespace System
             public override long NextInt64(long minValue, long maxValue)
             {
                 exclusiveRange = maxValue - minValue;
-
-                if (exclusiveRange <= int.MaxValue)
-                {
-                    return Next((int)exclusiveRange) + minValue;
-                }
 
                 return NextInt64(exclusiveRange) + minValue;
             }
