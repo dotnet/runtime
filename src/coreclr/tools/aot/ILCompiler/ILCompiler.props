@@ -17,7 +17,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SelfContained>false</SelfContained>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <UseAppHost>true</UseAppHost>
   </PropertyGroup>
