@@ -109,19 +109,25 @@ public class TestSummary
     public void ReportPassedTest(string name, string containingTypeName, string methodName, TimeSpan duration, string output, StreamWriter tempLogSw)
     {
         PassedTests++;
-        _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, null, output));
+        var result = new TestResult(name, containingTypeName, methodName, duration, null, null, output);
+        _testResults.Add(result);
+        tempLogSw.WriteLine(result.ToXmlString());
     }
 
     public void ReportFailedTest(string name, string containingTypeName, string methodName, TimeSpan duration, Exception ex, string output, StreamWriter tempLogSw)
     {
         FailedTests++;
-        _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, ex, null, output));
+        var result = new TestResult(name, containingTypeName, methodName, duration, ex, null, output);
+        _testResults.Add(result);
+        tempLogSw.WriteLine(result.ToXmlString());
     }
 
     public void ReportSkippedTest(string name, string containingTypeName, string methodName, TimeSpan duration, string reason, StreamWriter tempLogSw)
     {
         SkippedTests++;
-        _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, reason, null));
+        var result = new TestResult(name, containingTypeName, methodName, duration, null, reason, null);
+        _testResults.Add(result);
+        tempLogSw.WriteLine(result.ToXmlString());
     }
 
     // public void OpenTempLog()
@@ -140,7 +146,7 @@ public class TestSummary
     //     }
     // }
 
-    // NOTE: This will likely change with the existence of the temp log.
+    // NOTE: This will likely change or be removed altogether with the existence of the temp log.
     public string GetTestResultOutput(string assemblyName)
     {
         double totalRunSeconds = (DateTime.Now - _testRunStart).TotalSeconds;
