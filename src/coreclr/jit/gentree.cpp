@@ -9234,7 +9234,7 @@ void Compiler::gtUpdateNodeOperSideEffects(GenTree* tree)
         tree->gtFlags &= ~GTF_EXCEPT;
         if (tree->OperIsIndirOrArrMetaData())
         {
-            tree->SetIndirExceptionFlags(this);
+            tree->gtFlags |= GTF_IND_NONFAULTING;
         }
     }
 
@@ -9981,9 +9981,12 @@ bool GenTree::Precedes(GenTree* other)
 // Arguments:
 //    comp  - compiler instance
 //
+// Remarks:
+//    This should only be used for reads.
+//
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrMetaData());
+    assert(OperIsIndirOrArrMetaData() && OperIsUnary());
 
     if (OperMayThrow(comp))
     {
