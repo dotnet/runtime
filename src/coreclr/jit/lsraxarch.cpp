@@ -1903,10 +1903,10 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 //------------------------------------------------------------------------
 // SkipContainedCreateScalarUnsafe: Skips a contained CreateScalarUnsafe node
 // and gets the underlying op1 instead
-// 
+//
 // Arguments:
 //    node - The node to handle
-// 
+//
 // Return Value:
 //    If node is a contained CreateScalarUnsafe, it's op1 is returned;
 //    otherwise node is returned unchanged.
