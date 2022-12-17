@@ -137,7 +137,7 @@ namespace System
                 UInt128 randomProduct = (UInt128)maxValue * NextUInt64();
                 ulong lowPart = (ulong)(randomProduct & ulong.MaxValue);
 
-                if (lowPart < maxValue)
+                if (lowPart < (ulong)maxValue)
                 {
                     ulong remainder = ((ulong)0 - (ulong)maxValue) % (ulong)maxValue;
 
@@ -153,7 +153,7 @@ namespace System
 
             public override long NextInt64(long minValue, long maxValue)
             {
-                exclusiveRange = maxValue - minValue;
+                long exclusiveRange = maxValue - minValue;
 
                 return NextInt64(exclusiveRange) + minValue;
             }
