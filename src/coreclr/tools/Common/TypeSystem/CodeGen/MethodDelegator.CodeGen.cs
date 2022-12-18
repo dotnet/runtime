@@ -85,14 +85,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IsRuntimeExport
-        {
-            get
-            {
-                return _wrappedMethod.IsRuntimeExport;
-            }
-        }
-
         public override bool IsSpecialName
         {
             get
