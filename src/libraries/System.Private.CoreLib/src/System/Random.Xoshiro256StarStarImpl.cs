@@ -125,7 +125,7 @@ namespace System
 
                     while (lowPart < remainder)
                     {
-                        randomProduct = (ulong)maxValue * NextUInt32();
+                        randomProduct = (ulong)exclusiveRange * NextUInt32();
                         lowPart = (uint)(randomProduct & uint.MaxValue);
                     }
                 }
