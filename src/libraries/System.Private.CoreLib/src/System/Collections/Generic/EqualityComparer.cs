@@ -119,13 +119,12 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T? x, T? y)
         {
-            if (x != null)
-            {
-                if (y != null) return x.Equals(y);
+            if (x is null)
+                return y is null;
+            if (y is null)
                 return false;
-            }
-            if (y != null) return false;
-            return true;
+
+            return x.Equals(y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -188,13 +187,12 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T? x, T? y)
         {
-            if (x != null)
-            {
-                if (y != null) return x.Equals(y);
+            if (x is null)
+                return y is null;
+            if (y is null)
                 return false;
-            }
-            if (y != null) return false;
-            return true;
+
+            return x.Equals(y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -261,5 +259,248 @@ namespace System.Collections.Generic
 
         public override int GetHashCode() =>
             GetType().GetHashCode();
+    }
+
+    public static class EqualityComparer
+    {
+        // Equality comparison using sequence equality
+        public static IEqualityComparer<TEnumerable> CreateEnumerableComparer<TEnumerable, T>(IEqualityComparer<T>? elementComparer = null)
+            where TEnumerable : IEnumerable<T> =>
+            new EnumerableEqualityComparer<TEnumerable, T>(elementComparer);
+
+        public static IEqualityComparer<TSet> CreateSetComparer<TSet, T>(IEqualityComparer<T>? elementComparer = null)
+            where TSet : IReadOnlySet<T> =>
+            new SetEqualityComparer<TSet, T>(elementComparer);
+
+        public static IEqualityComparer<TDictionary> CreateDictionaryComparer<TDictionary, TKey, TValue>(IEqualityComparer<TKey>? keyComparer = null, IEqualityComparer<TValue>? valueComparer = null)
+            where TDictionary : IReadOnlyDictionary<TKey, TValue> =>
+            new DictionaryEqualityComparer<TDictionary, TKey, TValue>(keyComparer, valueComparer);
+    }
+
+    [Serializable]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    // Needs to be public to support binary serialization compatibility
+    public sealed partial class EnumerableEqualityComparer<TEnumerable, T> : EqualityComparer<TEnumerable>
+        where TEnumerable : IEnumerable<T>
+    {
+        private readonly IEqualityComparer<T> _elementComparer;
+
+        public EnumerableEqualityComparer(IEqualityComparer<T>? elementComparer = null)
+        {
+            _elementComparer = elementComparer ?? EqualityComparer<T>.Default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool Equals(TEnumerable? x, TEnumerable? y)
+        {
+            if (x is null)
+                return y is null;
+            if (y is null)
+                return false;
+
+            return SequenceEquals(x, y);
+        }
+
+        private bool SequenceEquals(TEnumerable first, TEnumerable second)
+        {
+            if (first is ICollection<T> firstCol && second is ICollection<T> secondCol)
+            {
+                if (first is T[] firstArray && second is T[] secondArray)
+                {
+                    return ((ReadOnlySpan<T>)firstArray).SequenceEqual(secondArray, _elementComparer);
+                }
+
+                if (firstCol.Count != secondCol.Count)
+                {
+                    return false;
+                }
+
+                if (firstCol is IList<T> firstList && secondCol is IList<T> secondList)
+                {
+
+                    int count = firstCol.Count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (!_elementComparer.Equals(firstList[i], secondList[i]))
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+
+            using IEnumerator<T> xEnumerator = first.GetEnumerator();
+            using IEnumerator<T> yEnumerator = second.GetEnumerator();
+
+            while (xEnumerator.MoveNext())
+            {
+                if (!(yEnumerator.MoveNext() && _elementComparer.Equals(xEnumerator.Current, yEnumerator.Current)))
+                {
+                    return false;
+                }
+            }
+
+            return !yEnumerator.MoveNext();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode([DisallowNull] TEnumerable obj) =>
+            obj?.GetHashCode() ?? 0;
+
+        // Equals method for the comparer itself.
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is not null &&
+            obj is EnumerableEqualityComparer<TEnumerable, T> other &&
+            _elementComparer == other._elementComparer;
+
+        public override int GetHashCode() => HashCode.Combine(
+            GetType().GetHashCode(),
+            _elementComparer.GetHashCode());
+    }
+
+    [Serializable]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    // Needs to be public to support binary serialization compatibility
+    public sealed partial class SetEqualityComparer<TSet, T> : EqualityComparer<TSet>
+        where TSet : IReadOnlySet<T>
+    {
+        private readonly IEqualityComparer<T> _elementComparer;
+
+        public SetEqualityComparer(IEqualityComparer<T>? elementComparer = null)
+        {
+            _elementComparer = elementComparer ?? EqualityComparer<T>.Default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool Equals(TSet? x, TSet? y)
+        {
+            if (x is null)
+                return y is null;
+            if (y is null)
+                return false;
+
+            if (x.Count != y.Count)
+                return false;
+
+            if (x is HashSet<T> hashSetx && hashSetx.Comparer.Equals(_elementComparer) &&
+                y is HashSet<T> hashSety && hashSety.Comparer.Equals(_elementComparer))
+                return hashSetx.SetEquals(hashSety);
+
+            // Otherwise, do an O(N^2) match.
+            foreach (T yi in y)
+            {
+                bool found = false;
+                foreach (T xi in x)
+                {
+                    if (_elementComparer.Equals(yi, xi))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode([DisallowNull] TSet obj) =>
+            obj?.GetHashCode() ?? 0;
+
+        // Equals method for the comparer itself.
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is not null &&
+            obj is SetEqualityComparer<TSet, T> other &&
+            _elementComparer == other._elementComparer;
+
+        public override int GetHashCode() => HashCode.Combine(
+            GetType().GetHashCode(),
+            _elementComparer.GetHashCode());
+    }
+
+    [Serializable]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    // Needs to be public to support binary serialization compatibility
+    public sealed partial class DictionaryEqualityComparer<TDictionary, TKey, TValue> : EqualityComparer<TDictionary>
+        where TDictionary : IReadOnlyDictionary<TKey, TValue>
+    {
+        private readonly IEqualityComparer<TKey> _keyComparer;
+        private readonly IEqualityComparer<TValue> _valueComparer;
+
+        public DictionaryEqualityComparer(
+            IEqualityComparer<TKey>? keyComparer = null,
+            IEqualityComparer<TValue>? valueComparer = null)
+        {
+            _keyComparer = keyComparer ?? EqualityComparer<TKey>.Default;
+            _valueComparer = valueComparer ?? EqualityComparer<TValue>.Default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool Equals(TDictionary? x, TDictionary? y)
+        {
+            if (x is null)
+                return y is null;
+            if (y is null)
+                return false;
+
+            if (x.Count != y.Count)
+                return false;
+
+            // if (x is Dictionary<TKey, TValue> dictx && dictx.Comparer.Equals(_keyComparer) &&
+            //     y is Dictionary<TKey, TValue> dicty && dicty.Comparer.Equals(_keyComparer))
+            // {
+            //     foreach ((TKey yKey, TValue yValue) in y)
+            //     {
+            //         if (!x.TryGetValue(yKey, out TValue xValue) || !_valueComparer.Equals(yValue, xValue))
+            //             return false;
+            //     }
+            //
+            //     return true;
+            // }
+
+            foreach ((TKey yKey, TValue yValue) in y)
+            {
+                bool found = false;
+                foreach ((TKey xKey, TValue xValue) in x)
+                {
+                    if (_keyComparer.Equals(yKey, xKey) &&
+                        _valueComparer.Equals(yValue, xValue))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode([DisallowNull] TDictionary obj) =>
+            obj?.GetHashCode() ?? 0;
+
+        // Equals method for the comparer itself.
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is not null &&
+            obj is DictionaryEqualityComparer<TDictionary, TKey, TValue> other &&
+            _keyComparer == other._keyComparer &&
+            _valueComparer == other._valueComparer;
+
+        public override int GetHashCode() => HashCode.Combine(
+            GetType().GetHashCode(),
+            _keyComparer.GetHashCode(),
+            _valueComparer.GetHashCode());
     }
 }

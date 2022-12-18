@@ -153,4 +153,56 @@ namespace System.Collections.Generic
             info.SetType(typeof(ObjectComparer<T>));
         }
     }
+
+    public static partial class ComparerFactory
+    {
+        // Comparison using lexicographic ordering
+        public static IComparer<TEnumerable> CreateEnumerableComparer<TEnumerable, T>(IComparer<T>? elementComparer = null)
+            where TEnumerable : IEnumerable<T> =>
+            new EnumerableComparer<TEnumerable, T>(elementComparer);
+    }
+
+    [Serializable]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    // Needs to be public to support binary serialization compatibility
+    public sealed partial class EnumerableComparer<TEnumerable, T> : Comparer<TEnumerable>
+        where TEnumerable : IEnumerable<T>
+    {
+        private readonly IComparer<T> _elementComparer;
+
+        public EnumerableComparer(IComparer<T>? elementComparer = null)
+        {
+            _elementComparer = elementComparer ?? Comparer<T>.Default;
+        }
+
+        public override int Compare(TEnumerable? x, TEnumerable? y)
+        {
+            if (ReferenceEquals(x, y)) return 0;
+            if (x is null) return -1; // x < y
+            if (y is null) return 1; // x > y
+
+            using IEnumerator<T> xEnumerator = x.GetEnumerator();
+            using IEnumerator<T> yEnumerator = y.GetEnumerator();
+
+            while (xEnumerator.MoveNext())
+            {
+                if (!yEnumerator.MoveNext()) return 1; // x > y
+
+                var elementComparison = _elementComparer.Compare(xEnumerator.Current, yEnumerator.Current);
+                if (elementComparison != 0)
+                    return elementComparison;
+            }
+
+            return yEnumerator.MoveNext()
+                ? -1 // x < y
+                : 0; // x == y
+        }
+
+        // Equals method for the comparer itself.
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj != null && GetType() == obj.GetType();
+
+        public override int GetHashCode() =>
+            GetType().GetHashCode();
+    }
 }
