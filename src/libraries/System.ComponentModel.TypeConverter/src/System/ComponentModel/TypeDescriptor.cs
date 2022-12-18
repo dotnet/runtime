@@ -394,7 +394,7 @@ namespace System.ComponentModel
         public static object? CreateInstance(
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
-            Type?[]? argTypes,
+            Type[]? argTypes,
             object?[]? args)
         {
             ArgumentNullException.ThrowIfNull(objectType);
