@@ -34,12 +34,12 @@
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_live.csproj"
              Targets="Restore"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
-              ;RuntimeArtifactsPath=$(RuntimeArtifactsPath)" />
+              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)" />
 
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_live.csproj"
              Targets="Publish;PublishItemsOutputGroup"
              Properties="PublishOnBuild=false
-              ;RuntimeArtifactsPath=$(RuntimeArtifactsPath)">
+              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)">
       <Output TaskParameter="TargetOutputs"
               ItemName="_RawCrossgenPublishFiles" />
     </MSBuild>
