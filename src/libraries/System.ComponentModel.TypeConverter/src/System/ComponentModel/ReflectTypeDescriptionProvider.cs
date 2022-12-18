@@ -260,7 +260,7 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object[]? args)
+            object?[]? args)
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
 

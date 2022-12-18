@@ -53,7 +53,7 @@ namespace System.ComponentModel
         public virtual object? CreateInstance(
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
-            Type?[]? argTypes,
+            Type[]? argTypes,
             object?[]? args)
         {
             if (_parent != null)
