@@ -4692,6 +4692,8 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
         return true;
     }
 
+    op = op->gtEffectiveVal(/* commaOnly */ true);
+
     if (!op->OperIs(GT_LCL_VAR))
     {
         return false;

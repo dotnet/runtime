@@ -4,16 +4,11 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime;
 using System.Runtime.InteropServices;
 
-using Internal.Runtime;
 using Internal.Runtime.Augments;
-using Internal.Runtime.TypeLoader;
 using System.Collections.Generic;
-using System.Threading;
 
-using Internal.Metadata.NativeFormat;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -149,7 +144,6 @@ namespace Internal.Runtime.TypeLoader
             bool successful = false;
             IntPtr eeTypePtrPlusGCDesc = IntPtr.Zero;
             IntPtr writableDataPtr = IntPtr.Zero;
-            DynamicModule* dynamicModulePtr = null;
             IntPtr gcStaticData = IntPtr.Zero;
             IntPtr nonGcStaticData = IntPtr.Zero;
             IntPtr genericComposition = IntPtr.Zero;
@@ -167,11 +161,6 @@ namespace Internal.Runtime.TypeLoader
                     pTemplateEEType = pTemplateEEType->DynamicTemplateType;
                 }
 
-                ModuleInfo moduleInfo = TypeLoaderEnvironment.GetModuleInfoForType(state.TypeBeingBuilt);
-                dynamicModulePtr = moduleInfo.DynamicModulePtr;
-                Debug.Assert(dynamicModulePtr != null);
-
-                uint valueTypeFieldPaddingEncoded = 0;
                 int baseSize = 0;
 
                 bool isValueType;
@@ -181,9 +170,6 @@ namespace Internal.Runtime.TypeLoader
                 bool isGeneric;
                 uint flags;
                 ushort runtimeInterfacesLength = 0;
-                bool isGenericEETypeDef = false;
-                bool isAbstractClass;
-                bool isByRefLike;
                 IntPtr typeManager = IntPtr.Zero;
 
                 if (state.RuntimeInterfaces != null)
@@ -191,168 +177,58 @@ namespace Internal.Runtime.TypeLoader
                     runtimeInterfacesLength = checked((ushort)state.RuntimeInterfaces.Length);
                 }
 
-                if (pTemplateEEType != null)
-                {
-                    valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(
-                        pTemplateEEType->ValueTypeFieldPadding,
-                        (uint)pTemplateEEType->FieldAlignmentRequirement,
-                        IntPtr.Size);
-                    baseSize = (int)pTemplateEEType->BaseSize;
-                    isValueType = pTemplateEEType->IsValueType;
-                    hasFinalizer = pTemplateEEType->IsFinalizable;
-                    isNullable = pTemplateEEType->IsNullable;
-                    flags = pTemplateEEType->Flags;
-                    isArray = pTemplateEEType->IsArray;
-                    isGeneric = pTemplateEEType->IsGeneric;
-                    isAbstractClass = pTemplateEEType->IsAbstract && !pTemplateEEType->IsInterface;
-                    isByRefLike = pTemplateEEType->IsByRefLike;
-                    typeManager = pTemplateEEType->PointerToTypeManager;
-                    Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
-                }
-                else if (state.TypeBeingBuilt.IsGenericDefinition)
-                {
-                    // is this SUPPORTS_NATIVE_METADATA_TYPE_LOADING?
-                    Debug.Assert(false);
-                    flags = EETypeBuilderHelpers.ComputeFlags(state.TypeBeingBuilt);
-                    Debug.Assert((flags & (uint)EETypeFlags.HasComponentSizeFlag) != 0);
-                    flags |= checked((ushort)state.TypeBeingBuilt.Instantiation.Length);
-
-                    isValueType = state.TypeBeingBuilt.IsValueType;
-                    hasFinalizer = false;
-                    isArray = false;
-                    isNullable = false;
-                    isGeneric = false;
-                    isGenericEETypeDef = true;
-                    isAbstractClass = false;
-                    isByRefLike = false;
-                    baseSize = 0;
-                    typeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
-                }
-                else
-                {
-                    Debug.Fail("This code path should be unreachable (universal generics).");
-                    throw new UnreachableException();
-                }
+                baseSize = (int)pTemplateEEType->BaseSize;
+                isValueType = pTemplateEEType->IsValueType;
+                hasFinalizer = pTemplateEEType->IsFinalizable;
+                isNullable = pTemplateEEType->IsNullable;
+                flags = pTemplateEEType->Flags;
+                isArray = pTemplateEEType->IsArray;
+                isGeneric = pTemplateEEType->IsGeneric;
+                typeManager = pTemplateEEType->PointerToTypeManager;
+                Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
 
                 flags |= (uint)EETypeFlags.IsDynamicTypeFlag;
 
-                // TODO! Change to if template is Universal or non-Existent
-
-                // FEATURE_UNIVERSAL_GENERICS?
-                if (state.TypeSize.HasValue)
+                if (state.TypeBeingBuilt.IsMdArray)
                 {
-                    baseSize = state.TypeSize.Value;
-
-                    int baseSizeBeforeAlignment = baseSize;
-
-                    baseSize = MemoryHelpers.AlignUp(baseSize, IntPtr.Size);
-
-                    if (isValueType)
-                    {
-                        // Compute the valuetype padding size based on size before adding the object type pointer field to the size
-                        uint cbValueTypeFieldPadding = (uint)(baseSize - baseSizeBeforeAlignment);
-
-                        // Add Object type pointer field to base size
-                        baseSize += IntPtr.Size;
-
-                        valueTypeFieldPaddingEncoded = (uint)EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(cbValueTypeFieldPadding, (uint)state.FieldAlignment.Value, IntPtr.Size);
-                    }
-
-                    // Minimum base size is 3 pointers, and requires us to bump the size of an empty class type
-                    if (baseSize <= IntPtr.Size)
-                    {
-                        // ValueTypes should already have had their size bumped up by the normal type layout process
-                        Debug.Assert(!isValueType);
-                        baseSize += IntPtr.Size;
-                    }
-
-                    // Add sync block skew
-                    baseSize += IntPtr.Size;
-
-                    // Minimum basesize is 3 pointers
-                    Debug.Assert(baseSize >= (IntPtr.Size * 3));
+                    // If we're building an MDArray, the template is object[,] and we
+                    // need to recompute the base size.
+                    baseSize = IntPtr.Size + // sync block
+                        2 * IntPtr.Size + // EETypePtr + Length
+                        state.ArrayRank.Value * sizeof(int) * 2; // 2 ints per rank for bounds
                 }
 
                 // Optional fields encoding
                 int cbOptionalFieldsSize;
-                OptionalFieldsRuntimeBuilder optionalFields;
-                {
-                    optionalFields = new OptionalFieldsRuntimeBuilder(pTemplateEEType != null ? pTemplateEEType->OptionalFieldsPtr : null);
+                OptionalFieldsRuntimeBuilder optionalFields = new OptionalFieldsRuntimeBuilder(pTemplateEEType->OptionalFieldsPtr);
 
-                    uint rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
+                uint rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
 
-                    if (state.NumSealedVTableEntries > 0)
-                        rareFlags |= (uint)EETypeRareFlags.HasSealedVTableEntriesFlag;
+                int allocatedNonGCDataSize = state.NonGcDataSize;
+                if (state.HasStaticConstructor)
+                    allocatedNonGCDataSize += -TypeBuilder.ClassConstructorOffset;
 
-                    if (state.NonGcDataSize != 0)
-                        rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithNonGcStatics;
+                if (allocatedNonGCDataSize != 0)
+                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithNonGcStatics;
 
-                    if (state.GcDataSize != 0)
-                        rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithGcStatics;
+                if (state.GcDataSize != 0)
+                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithGcStatics;
 
-                    if (state.ThreadDataSize != 0)
-                        rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
+                if (state.ThreadDataSize != 0)
+                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
 
-#if TARGET_ARM
-                    if (state.FieldAlignment == 8)
-                        rareFlags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.RequiresAlign8Flag;
-#endif
-
-#if TARGET_ARM || TARGET_ARM64
-                    if (state.IsHFA)
-                        rareFlags |= (uint)EETypeRareFlags.IsHFAFlag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.IsHFAFlag;
-#endif
-                    if (state.HasStaticConstructor)
-                        rareFlags |= (uint)EETypeRareFlags.HasCctorFlag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.HasCctorFlag;
-
-                    if (isAbstractClass)
-                        rareFlags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.IsAbstractClassFlag;
-
-                    if (isByRefLike)
-                        rareFlags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
-                    else
-                        rareFlags &= ~(uint)EETypeRareFlags.IsByRefLikeFlag;
-
-                    if (isNullable)
-                    {
-                        uint nullableValueOffset = state.NullableValueOffset;
-
-                        // The stored offset is never zero (Nullable has a boolean there indicating whether the value is valid).
-                        // If the real offset is one, then the field isn't set. Otherwise the offset is encoded - 1 to save space.
-                        if (nullableValueOffset == 1)
-                            optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
-                        else
-                            optionalFields.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, checked(nullableValueOffset - 1));
-                    }
-                    else
-                    {
-                        optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
-                    }
-
-                    rareFlags |= (uint)EETypeRareFlags.HasDynamicModuleFlag;
-
+                if (rareFlags != 0)
                     optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
 
-                    // Dispatch map is fetched from template type
-                    optionalFields.ClearField(EETypeOptionalFieldTag.DispatchMap);
+                // Dispatch map is fetched from template type
+                optionalFields.ClearField(EETypeOptionalFieldTag.DispatchMap);
 
-                    optionalFields.ClearField(EETypeOptionalFieldTag.ValueTypeFieldPadding);
+                // Compute size of optional fields encoding
+                cbOptionalFieldsSize = optionalFields.Encode();
 
-                    if (valueTypeFieldPaddingEncoded != 0)
-                        optionalFields.SetFieldValue(EETypeOptionalFieldTag.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
-
-                    // Compute size of optional fields encoding
-                    cbOptionalFieldsSize = optionalFields.Encode();
-                    Debug.Assert(cbOptionalFieldsSize > 0);
-                }
+                // Clear the optional fields flag. We'll set it if we set optional fields later in this method.
+                if (cbOptionalFieldsSize == 0)
+                    flags &= ~(uint)EETypeFlags.OptionalFieldsFlag;
 
                 // Note: The number of vtable slots on the MethodTable to create is not necessary equal to the number of
                 // vtable slots on the template type for universal generics (see ComputeVTableLayout)
@@ -371,17 +247,14 @@ namespace Internal.Runtime.TypeLoader
                         numVtableSlots,
                         runtimeInterfacesLength,
                         hasFinalizer,
-                        true,
-                        state.NumSealedVTableEntries > 0,
+                        cbOptionalFieldsSize > 0,
+                        (rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0,
                         isGeneric,
-                        state.NonGcDataSize != 0,
+                        allocatedNonGCDataSize != 0,
                         state.GcDataSize != 0,
                         state.ThreadDataSize != 0);
 
                     // Dynamic types have an extra pointer-sized field that contains a pointer to their template type
-                    cbEEType += IntPtr.Size;
-
-                    // Add another pointer sized field for a DynamicModule
                     cbEEType += IntPtr.Size;
 
                     int cbGCDesc = GetInstanceGCDescSize(state, pTemplateEEType, isValueType, isArray);
@@ -409,43 +282,17 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(pEEType->HasGCPointers == (cbGCDesc != 0));
 
                     // Copy the encoded optional fields buffer to the newly allocated memory, and update the OptionalFields field on the MethodTable
-                    // It is important to set the optional fields first on the newly created MethodTable, because all other 'setters'
-                    // will assert that the type is dynamic, just to make sure we are not making any changes to statically compiled types
-                    pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
-                    optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
-
-                    pEEType->DynamicModule = dynamicModulePtr;
+                    if (cbOptionalFieldsSize > 0)
+                    {
+                        pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
+                        optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
+                    }
 
                     // Copy VTable entries from template type
-                    // FEATURE_UNIVERSAL_GENERICS can be simplified to just copy memory
-                    int numSlotsFilled = 0;
                     IntPtr* pVtable = (IntPtr*)((byte*)pEEType + sizeof(MethodTable));
-                    if (pTemplateEEType != null)
-                    {
-                        IntPtr* pTemplateVtable = (IntPtr*)((byte*)pTemplateEEType + sizeof(MethodTable));
-                        for (int i = 0; i < pTemplateEEType->NumVtableSlots; i++)
-                        {
-                            int vtableSlotInDynamicType = i;
-                            if (vtableSlotInDynamicType != -1)
-                            {
-                                Debug.Assert(vtableSlotInDynamicType < numVtableSlots);
-                                pVtable[vtableSlotInDynamicType] = pTemplateVtable[i];
-                                numSlotsFilled++;
-                            }
-                        }
-                    }
-                    else if (isGenericEETypeDef)
-                    {
-                        // If creating a Generic Type Definition
-                        Debug.Assert(pEEType->NumVtableSlots == 0);
-                    }
-                    else
-                    {
-                        // SUPPORTS_NATIVE_METADATA_TYPE_LOADING restructure the ifs
-                        Environment.FailFast("Template type loader is null, but metadata based type loader is not in use");
-                    }
-
-                    Debug.Assert(numSlotsFilled == numVtableSlots);
+                    IntPtr* pTemplateVtable = (IntPtr*)((byte*)pTemplateEEType + sizeof(MethodTable));
+                    for (int i = 0; i < numVtableSlots; i++)
+                        pVtable[i] = pTemplateVtable[i];
 
                     // Copy Pointer to finalizer method from the template type
                     if (hasFinalizer)
@@ -455,18 +302,10 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 // Copy the sealed vtable entries if they exist on the template type
-                if (state.NumSealedVTableEntries > 0)
+                if ((rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
                 {
-                    state.HalfBakedSealedVTable = MemoryHelpers.AllocateMemory((int)state.NumSealedVTableEntries * IntPtr.Size);
-
                     uint cbSealedVirtualSlotsTypeOffset = pEEType->GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
-                    *((IntPtr*)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = state.HalfBakedSealedVTable;
-
-                    for (ushort i = 0; i < state.NumSealedVTableEntries; i++)
-                    {
-                        IntPtr value = pTemplateEEType->GetSealedVirtualSlot(i);
-                        pEEType->SetSealedVirtualSlot(value, i);
-                    }
+                    *((void**)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = pTemplateEEType->GetSealedVirtualTable();
                 }
 
                 if (MethodTable.SupportsWritableData)
@@ -480,12 +319,12 @@ namespace Internal.Runtime.TypeLoader
 
                 int nonGCStaticDataOffset = 0;
 
-                if (!isArray && !isGenericEETypeDef)
+                if (!isArray)
                 {
                     nonGCStaticDataOffset = state.HasStaticConstructor ? -TypeBuilder.ClassConstructorOffset : 0;
 
                     // If we have a class constructor, our NonGcDataSize MUST be non-zero
-                    Debug.Assert(!state.HasStaticConstructor || (state.NonGcDataSize != 0));
+                    Debug.Assert(!state.HasStaticConstructor || (allocatedNonGCDataSize != 0));
                 }
 
                 if (isGeneric)
@@ -493,16 +332,16 @@ namespace Internal.Runtime.TypeLoader
                     genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity, pEEType->HasGenericVariance));
                     pEEType->SetGenericComposition(genericComposition);
 
-                    if (state.NonGcDataSize > 0)
+                    if (allocatedNonGCDataSize > 0)
                     {
-                        nonGcStaticData = MemoryHelpers.AllocateMemory(state.NonGcDataSize);
-                        MemoryHelpers.Memset(nonGcStaticData, state.NonGcDataSize, 0);
-                        Debug.Assert(nonGCStaticDataOffset <= state.NonGcDataSize);
+                        nonGcStaticData = MemoryHelpers.AllocateMemory(allocatedNonGCDataSize);
+                        MemoryHelpers.Memset(nonGcStaticData, allocatedNonGCDataSize, 0);
+                        Debug.Assert(nonGCStaticDataOffset <= allocatedNonGCDataSize);
                         pEEType->DynamicNonGcStaticsData = (IntPtr)((byte*)nonGcStaticData + nonGCStaticDataOffset);
                     }
                 }
 
-                if (!isGenericEETypeDef && state.ThreadDataSize != 0)
+                if (state.ThreadDataSize != 0)
                 {
                     state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue(pEEType->TypeManager);
 
@@ -512,7 +351,7 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->DynamicThreadStaticsIndex = threadStaticIndex;
                 }
 
-                if (!isGenericEETypeDef && state.GcDataSize != 0)
+                if (state.GcDataSize != 0)
                 {
                     // Statics are allocated on GC heap
                     object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
@@ -525,7 +364,6 @@ namespace Internal.Runtime.TypeLoader
                     state.HalfBakedDictionary = state.Dictionary.Allocate();
 
                 Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
-                Debug.Assert((state.NumSealedVTableEntries == 0 && state.HalfBakedSealedVTable == IntPtr.Zero) || (state.NumSealedVTableEntries > 0 && state.HalfBakedSealedVTable != IntPtr.Zero));
                 Debug.Assert((state.Dictionary == null && state.HalfBakedDictionary == IntPtr.Zero) || (state.Dictionary != null && state.HalfBakedDictionary != IntPtr.Zero));
 
                 successful = true;
@@ -536,8 +374,6 @@ namespace Internal.Runtime.TypeLoader
                 {
                     if (eeTypePtrPlusGCDesc != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(eeTypePtrPlusGCDesc);
-                    if (state.HalfBakedSealedVTable != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(state.HalfBakedSealedVTable);
                     if (state.HalfBakedDictionary != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(state.HalfBakedDictionary);
                     if (gcStaticData != IntPtr.Zero)
@@ -799,8 +635,7 @@ namespace Internal.Runtime.TypeLoader
 
             // We used a pointer as a template. We need to make this a byref.
             Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
-            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->Flags = EETypeBuilderHelpers.ComputeFlags(byRefType);
-            Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.ByRef);
+            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType = EETypeElementType.ByRef;
             Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
             state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape = ParameterizedTypeShapeConstants.ByRef;
 
@@ -819,7 +654,6 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(false == state.HasStaticConstructor);
                 Debug.Assert(0 == state.GcDataSize);
                 Debug.Assert(0 == state.ThreadStaticOffset);
-                Debug.Assert(0 == state.NumSealedVTableEntries);
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);
                 Debug.Assert(IntPtr.Zero == state.ThreadStaticDesc);
 
@@ -827,14 +661,6 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeTypeHandle templateTypeHandle = typeof(void*).TypeHandle;
 
                 pTemplateEEType = templateTypeHandle.ToEETypePtr();
-            }
-            else if (type.IsMdArray || (type.IsSzArray && ((ArrayType)type).ElementType.IsPointer))
-            {
-                // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and
-                // we don't need to do much for them in terms of type building. We can pretty much just take
-                // the MethodTable for any of those, massage the bits that matter (GCDesc, element type,
-                // component size,...) to be of the right shape and we're done.
-                pTemplateEEType = typeof(object[,]).TypeHandle.ToEETypePtr();
             }
             else
             {
