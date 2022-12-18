@@ -23,6 +23,10 @@ namespace System.Collections.Frozen
     /// </remarks>
     public static class FrozenDictionary
     {
+        // TODO: these need to be tuned through benchmarks to find the right values
+        private const int MaxItemsInSmallDictionary = 3;
+        private const int MaxItemsInSmallInt32Dictionary = 8;
+
         /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
         /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
         /// <param name="comparer">The comparer implementation to use to compare keys for equality. If null, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
@@ -105,13 +109,38 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
                 {
-                    // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
-                    // the underlying FrozenHashtable's Int32 index as the keys themselves, avoiding the need to store the
-                    // same keys yet again.
-                    return typeof(TKey) == typeof(int) ?
-                        (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source) :
-                        new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
+                    if (typeof(TKey) == typeof(int))
+                    {
+                        var k = (int[])(object)source.Keys.ToArray();
+                        var v = source.Values.ToArray();
+
+                        Array.Sort(k, v);
+
+                        var min = k[0];
+                        var max = k[k.Length - 1];
+
+                        if (max - min + 1 == k.Length)
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new ClosedRangeInt32FrozenDictionary<TValue>(k, v);
+                        }
+                        else if (k.Length <= MaxItemsInSmallInt32Dictionary)
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new SmallInt32FrozenDictionary<TValue>(k, v);
+                        }
+
+                        // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
+                        // the underlying FrozenHashtable's Int32 index as the keys themselves, avoiding the need to store the
+                        // same keys yet again.
+                        return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
+                    }
+
+                    return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
                 }
+            }
+            else if (source.Count <= MaxItemsInSmallDictionary)
+            {
+                // use the specialized dictionary for low item counts
+                return new SmallFrozenDictionary<TKey, TValue>(source, comparer);
             }
             else if (typeof(TKey) == typeof(string))
             {

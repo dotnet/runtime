@@ -12,12 +12,9 @@ namespace System.Collections.Frozen
     {
         private readonly FrozenHashTable _hashTable;
 
-        internal Int32FrozenSet(HashSet<int> source) : base(EqualityComparer<int>.Default)
+        internal Int32FrozenSet(int[] entries) : base(EqualityComparer<int>.Default)
         {
-            Debug.Assert(source.Count != 0);
-
-            int[] entries = new int[source.Count];
-            source.CopyTo(entries);
+            Debug.Assert(entries.Length != 0);
 
             _hashTable = FrozenHashTable.Create(
                 entries,

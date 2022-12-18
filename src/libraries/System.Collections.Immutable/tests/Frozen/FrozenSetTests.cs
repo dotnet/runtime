@@ -139,11 +139,11 @@ namespace System.Collections.Frozen.Tests
                 original.ToFrozenSet(comparer) :
                 original.ToFrozenSet();
 
-            // Make sure creating the frozen dictionary didn't alter the original
+            // Make sure creating the frozen set didn't alter the original
             Assert.Equal(originalItems.Length, original.Count);
             Assert.All(originalItems, p => Assert.True(frozen.Contains(p)));
 
-            // Make sure the frozen dictionary matches the original
+            // Make sure the frozen set matches the original
             Assert.Equal(original.Count, frozen.Count);
             Assert.Equal(original, new HashSet<T>(frozen));
             Assert.All(originalItems, p => Assert.True(frozen.Contains(p)));
@@ -270,5 +270,23 @@ namespace System.Collections.Frozen.Tests
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType_ThrowType => typeof(InvalidCastException);
 
         protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(ArgumentOutOfRangeException);
+
+        [Fact]
+        public void Sparse_LookupItems_AlltemsFoundAsExpected()
+        {
+            foreach (int size in new[] { 1, 2, 10, 63, 64, 65, 999, 1024 })
+            {
+                foreach (int skip in new[] { 2, 3, 5 })
+                {
+                    var original = new HashSet<int>(Enumerable.Range(-3, size).Where(i => i % skip == 0));
+                    var frozen = original.ToFrozenSet();
+
+                    for (int i = -10; i <= size + 66; i++)
+                    {
+                        Assert.Equal(original.Contains(i), frozen.Contains(i));
+                    }
+                }
+            }
+        }
     }
 }

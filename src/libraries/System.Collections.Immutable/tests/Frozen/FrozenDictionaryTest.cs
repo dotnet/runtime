@@ -476,5 +476,43 @@ namespace System.Collections.Frozen.Tests
             Assert.Equal(new DictionaryEntry("hello", 123), deArray[2]);
             Assert.Equal(new DictionaryEntry("world", 456), deArray[3]);
         }
+
+        [Fact]
+        public void Sparse_LookupItems_AlltemsFoundAsExpected()
+        {
+            foreach (int size in new[] { 1, 2, 10, 63, 64, 65, 999, 1024 })
+            {
+                foreach (int skip in new[] { 2, 3, 5 })
+                {
+                    var sequence = Enumerable
+                        .Range(-3, size)
+                        .Where(i => i % skip == 0)
+                        .Select(i => new KeyValuePair<int, string>(i, i.ToString()));
+
+                    var original = new Dictionary<int, string>();
+                    foreach (var kvp in sequence)
+                    {
+                        original[kvp.Key] = kvp.Value;
+                    }
+
+                    var frozen = original.ToFrozenDictionary();
+
+                    for (int i = -10; i <= size + 66; i++)
+                    {
+                        Assert.Equal(original.ContainsKey(i), frozen.ContainsKey(i));
+
+                        if (original.ContainsKey(i))
+                        {
+                            if (original[i] != frozen[i])
+                            {
+                                System.Diagnostics.Debugger.Break();
+                            }
+
+                            Assert.Equal(original[i], frozen[i]);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

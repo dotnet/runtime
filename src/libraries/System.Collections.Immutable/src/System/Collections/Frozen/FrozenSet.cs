@@ -1,10 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace System.Collections.Frozen
 {
@@ -21,6 +23,11 @@ namespace System.Collections.Frozen
     /// </remarks>
     public static class FrozenSet
     {
+        // TODO: these need to be tuned through benchmarks to find the right values
+        private const int MaxItemsInSmallSet = 3;
+        private const int MaxItemsInSmallInt32Set = 8;
+        private const int MaxSparsenessFactorInSparseRangeInt32Set = 8;
+
         /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
         /// <param name="source">The values to use to populate the set.</param>
         /// <param name="comparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
@@ -60,13 +67,40 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<T>.Default))
                 {
-                    // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
-                    // the underlying FrozenHashtable's Int32 index as the values themselves, avoiding the need to store the
-                    // same values yet again.
-                    return typeof(T) == typeof(int) ?
-                        (FrozenSet<T>)(object)new Int32FrozenSet((HashSet<int>)(object)uniqueValues) :
-                        new ValueTypeDefaultComparerFrozenSet<T>(uniqueValues);
+                    if (typeof(T) == typeof(int))
+                    {
+                        var a = (int[])(object)uniqueValues.ToArray();
+                        Array.Sort(a);
+
+                        var min = a[0];
+                        var max = a[a.Length - 1];
+
+                        if (max - min + 1 == a.Length)
+                        {
+                            return (FrozenSet<T>)(object)new ClosedRangeInt32FrozenSet(a);
+                        }
+                        else if ((max - min + 1) / a.Length <= MaxSparsenessFactorInSparseRangeInt32Set)
+                        {
+                            return (FrozenSet<T>)(object)new SparseRangeInt32FrozenSet(a);
+                        }
+                        else if (a.Length <= MaxItemsInSmallInt32Set)
+                        {
+                            return (FrozenSet<T>)(object)new SmallInt32FrozenSet(a);
+                        }
+
+                        // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
+                        // the underlying FrozenHashtable's Int32 index as the values themselves, avoiding the need to store the
+                        // same values yet again.
+                        return (FrozenSet<T>)(object)new Int32FrozenSet(a);
+                    }
+
+                    return new ValueTypeDefaultComparerFrozenSet<T>(uniqueValues);
                 }
+            }
+            else if (uniqueValues.Count <= MaxItemsInSmallSet)
+            {
+                // use the specialized set for low item counts
+                return new SmallFrozenSet<T>(uniqueValues, comparer);
             }
             else if (typeof(T) == typeof(string))
             {
