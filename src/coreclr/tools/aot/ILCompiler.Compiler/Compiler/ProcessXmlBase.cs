@@ -133,7 +133,7 @@ namespace ILCompiler
 
         private void ProcessType(ModuleDesc assembly)
         {
-            if (ShouldProcessElement() && ShouldProcessTypes)
+            if (ShouldProcessTypes && ShouldProcessElement())
             {
                 string typeName = _reader.GetAttribute("fullname");
 
