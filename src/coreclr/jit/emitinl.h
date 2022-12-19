@@ -207,15 +207,22 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
 
 #endif // TARGET_XARCH
 
+// TODO-XARCH-AVX512 the following are defined via compiler.h but re-defining via
+// extern here to avoid having to introduce a dependency of compiler.h on to
+// emitinl.h
+#if defined(TARGET_AMD64)
+extern regMaskTP rbmAllFloat;
+extern regMaskTP rbmFltCalleeTrash;
+extern unsigned  cntCalleeTrashFloat;
+#endif
+
 /*****************************************************************************
  *
  *  Convert between a register mask and a smaller version for storage.
  */
-
 /*static*/ inline void emitter::emitEncodeCallGCregs(regMaskTP regmask, instrDesc* id)
 {
-    // TODO-XARCH-AVX512 global defined in compiler.h, not in scope here
-    // assert((regmask & RBM_CALLEE_TRASH) == 0);
+    assert((regmask & RBM_CALLEE_TRASH) == 0);
 
     unsigned encodeMask;
 
