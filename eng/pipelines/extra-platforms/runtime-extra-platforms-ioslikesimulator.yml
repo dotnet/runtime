@@ -47,7 +47,7 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
-# Build the whole product using Mono for Android and run runtime tests with Android devices
+# Build the whole product using Mono for iOSSimulator/tvOSSimulator and run runtime tests with iOS/tvOS simulators
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -58,8 +58,10 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - iOSSimulator_arm64
-      - tvOSSimulator_arm64
+      - iOSSimulator_x64
+      - tvOSSimulator_x64
+      - ${{ if eq(variables['isRollingBuild'], true) }}:
+        - iOSSimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -78,6 +80,3 @@ jobs:
       timeoutInMinutes: 240
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
