@@ -131,7 +131,7 @@
     <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</CoreCLRToolPath>
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
 
-    <WasmtimeDir>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'wasmtime'))</WasmtimeDir>
+    <WasmtimeDir>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
