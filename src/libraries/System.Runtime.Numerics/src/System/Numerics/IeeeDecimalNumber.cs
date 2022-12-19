@@ -15,9 +15,19 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
+
+
+/*    // Extension of NumberFormatInfo to bring in internal helpers, if needed
+    internal static class NumberFormatInfoExtension
+    {
+        public static bool Extension_AllowHyphenDuringParsing(this NumberFormatInfo formatInfo)
+        {
+            return formatInfo.AllowHyphenDuringParsing;
+        }
+    }*/
+
     internal static class IeeeDecimalNumber
     {
-
         // IeeeDecimalNumberBuffer
 
         internal const int Decimal32BufferLength = 0 + 1 + 1; // TODO: X for the longest input + 1 for rounding (+1 for the null terminator)
@@ -402,7 +412,7 @@ namespace System.Numerics
                 {
                     char* temp = p;
                     ch = ++p < strEnd ? *p : '\0';
-                    if ((next = MatchChars(p, strEnd, info._positiveSign)) != null)
+                    if ((next = MatchChars(p, strEnd, info.PositiveSign)) != null)
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                     }
@@ -497,6 +507,18 @@ namespace System.Numerics
             }
             str = p;
             return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe char* MatchNegativeSignChars(char* p, char* pEnd, NumberFormatInfo info)
+        {
+            char* ret = MatchChars(p, pEnd, info.NegativeSign);
+            if (ret == null && info.AllowHyphenDuringParsing && p < pEnd && *p == '-')
+            {
+                ret = p + 1;
+            }
+
+            return ret;
         }
 
         private static unsafe char* MatchChars(char* p, char* pEnd, string value)

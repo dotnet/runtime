@@ -8736,6 +8736,7 @@ namespace System.Globalization
     public sealed partial class NumberFormatInfo : System.ICloneable, System.IFormatProvider
     {
         public NumberFormatInfo() { }
+        public bool AllowHyphenDuringParsing { get { throw null; } }
         public int CurrencyDecimalDigits { get { throw null; } set { } }
         public string CurrencyDecimalSeparator { get { throw null; } set { } }
         public string CurrencyGroupSeparator { get { throw null; } set { } }
