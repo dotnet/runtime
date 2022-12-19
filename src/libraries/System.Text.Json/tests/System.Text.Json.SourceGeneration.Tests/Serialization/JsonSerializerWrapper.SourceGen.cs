@@ -132,6 +132,5 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             return options;
         }
-        //=> options is null ? _defaultContext.Options : new JsonSerializerOptions(options) { TypeInfoResolver = _defaultContext };
     }
 }
