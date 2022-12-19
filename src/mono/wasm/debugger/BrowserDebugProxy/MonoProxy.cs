@@ -77,10 +77,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 type,
                 args = new JArray(JObject.FromObject(new
-                                {
-                                    type = "string",
-                                    value = message,
-                                })),
+                {
+                    type = "string",
+                    value = message,
+                })),
                 executionContextId = context.Id
             });
             SendEvent(sessionId, "Runtime.consoleAPICalled", o, token);
@@ -165,7 +165,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             bool? is_default = aux_data["isDefault"]?.Value<bool>();
                             if (is_default == true)
                             {
-                                await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), id, aux_data, _defaultPauseOnExceptions), token);
+                                await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper(this, logger, sessionId), id, aux_data, _defaultPauseOnExceptions), token);
                             }
                         }
                         return true;
@@ -262,7 +262,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (!contexts.TryGetValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
             {
-                if  (method == "Debugger.setPauseOnExceptions")
+                if (method == "Debugger.setPauseOnExceptions")
                 {
                     string state = args["state"].Value<string>();
                     var pauseOnException = GetPauseOnExceptionsStatusFromString(state);
@@ -512,11 +512,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             switch (property.Key)
                             {
                                 case "JustMyCodeStepping":
-                                    SetJustMyCode(id, (bool) property.Value, token);
-                                break;
+                                    await SetJustMyCode(id, (bool)property.Value, context, token);
+                                    break;
                                 default:
                                     logger.LogDebug($"DotnetDebugger.setDebuggerProperty failed for {property.Key} with value {property.Value}");
-                                break;
+                                    break;
                             }
                         }
                         return true;
@@ -543,12 +543,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 case "DotnetDebugger.setSymbolOptions":
                     {
-                        var shouldUpdateSymbolStore = false;
+                        SendResponse(id, Result.OkFromObject(new { }), token);
                         CachePathSymbolServer = args["symbolOptions"]?["cachePath"]?.Value<string>();
                         var urls = args["symbolOptions"]?["searchPaths"]?.Value<JArray>();
-                        SendResponse(id, Result.OkFromObject(new { }), token);
                         if (urls == null)
                             return true;
+                        var shouldUpdateSymbolStore = false;
                         foreach (var url in urls)
                         {
                             if (!string.IsNullOrEmpty(url.Value<string>()) && !UrlSymbolServerList.Contains(url.Value<string>()))
@@ -557,20 +557,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 shouldUpdateSymbolStore = true;
                             }
                         }
-                        if (shouldUpdateSymbolStore)
-                        {
-                            if (await IsRuntimeAlreadyReadyAlready(id, token))
-                            {
-                                DebugStore store = await RuntimeReady(id, token);
-                                store.CreateSymbolServer();
-                                var asmList = await store.LoadPDBFromSymbolServer(token);
-                                foreach (var asm in asmList)
-                                {
-                                    foreach (var source in asm.Sources)
-                                        await OnSourceFileAdded(id, source, context, token);
-                                }
-                            }
-                        }
+                        if (shouldUpdateSymbolStore && !JustMyCode)
+                            return await LoadSymbolsFromSymbolServer(id, context, token);
                         return true;
                     }
                 case "DotnetDebugger.getMethodLocation":
@@ -597,6 +585,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
 
+        private async Task<bool> LoadSymbolsFromSymbolServer(MessageId id, ExecutionContext context, CancellationToken token)
+        {
+            if (await IsRuntimeAlreadyReadyAlready(id, token))
+            {
+                DebugStore store = await RuntimeReady(id, token);
+                store.CreateSymbolServer();
+                var asmList = await store.LoadPDBFromSymbolServer(token);
+                foreach (var asm in asmList)
+                {
+                    foreach (var source in asm.Sources)
+                        await OnSourceFileAdded(id, source, context, token);
+                }
+            }
+            return true;
+        }
+
         private async Task<bool> ApplyUpdates(MessageId id, JObject args, CancellationToken token)
         {
             var context = GetContext(id);
@@ -609,8 +613,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return applyUpdates;
         }
 
-        private void SetJustMyCode(MessageId id, bool isEnabled, CancellationToken token)
+        private async Task SetJustMyCode(MessageId id, bool isEnabled, ExecutionContext context, CancellationToken token)
         {
+            if (JustMyCode != isEnabled && isEnabled == false)
+            {
+                JustMyCode = isEnabled;
+                await LoadSymbolsFromSymbolServer(id, context, token);
+            }
             JustMyCode = isEnabled;
             SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
         }

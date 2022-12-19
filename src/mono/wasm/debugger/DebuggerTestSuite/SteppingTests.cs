@@ -1046,16 +1046,18 @@ namespace DebuggerTests
             string cachePath = System.IO.Path.GetTempPath();
             var searchPaths = new JArray();
             searchPaths.Add("https://symbols.nuget.org/download/symbols");
-
+            var waitForScript = WaitForScriptParsedEventsAsync(new string [] { "JArray.cs" });
             var symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
-            await SetSymbolOptions(symbolOptions);
             await SetJustMyCode(justMyCode);
+            await SetSymbolOptions(symbolOptions);
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] TestLoadSymbols:Run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 1516, 8,
                 "TestLoadSymbols.Run"
             );
+            if (!justMyCode)
+                await waitForScript;
             await StepAndCheck(StepKind.Into, justMyCode ? "dotnet://debugger-test.dll/debugger-test.cs" : "dotnet://Newtonsoft.Json.dll/JArray.cs", justMyCode ? 1519 : 350, justMyCode ? 8 : 12, justMyCode ? "TestLoadSymbols.Run" : "Newtonsoft.Json.Linq.JArray.Add",
                 locals_fn: async (locals) =>
                 {

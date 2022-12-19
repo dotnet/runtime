@@ -413,9 +413,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                             IsCompilerGenerated = true;
                             break;
                     }
-
                 }
             }
+            if (!hasDebugInformation)
+                DebuggerAttrInfo.HasNonUserCode = true;
             DebuggerAttrInfo.ClearInsignificantAttrFlags();
         }
 
@@ -1179,7 +1180,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 method.Value.pdbMetadataReader = pdbMetadataReader;
                 method.Value.UpdatePdbInformation(method.Value.methodDefHandle);
-                method.Value.DebuggerAttrInfo.HasNonUserCode = true;
             }
         }
 
@@ -1562,7 +1562,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     }
                     assembly = new AssemblyInfo(this, id, bytes[0], bytes[1], logger, token);
-                    if (symbolStore != null)
+                    if (symbolStore != null && !monoProxy.JustMyCode)
                         await assembly.LoadPDBFromSymbolServer(token);
                 }
                 catch (Exception e)
