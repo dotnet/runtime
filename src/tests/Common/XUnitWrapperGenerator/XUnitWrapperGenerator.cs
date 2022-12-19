@@ -160,6 +160,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
         builder.AppendLine("System.Console.SetOut(outputRecorder);");
 
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}_templog.xml""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}_templog.xml"");");
+
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
         StringBuilder testExecutorBuilder = new();
@@ -177,16 +180,24 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 if (testsLeftInCurrentTestExecutor == 0)
                 {
                     if (currentTestExecutor != 0)
+                    {
                         testExecutorBuilder.AppendLine("}");
+                        testExecutorBuilder.AppendLine("}");
+                    }
+
                     currentTestExecutor++;
                     testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
+                    testExecutorBuilder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}_templog.xml"")) {{");
                     builder.AppendLine($"TestExecutor{currentTestExecutor}();");
                     testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empircally seems to work well
                 }
+
                 testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
                 totalTestsEmitted++;
                 testsLeftInCurrentTestExecutor--;
             }
+
+            testExecutorBuilder.AppendLine("}");
             testExecutorBuilder.AppendLine("}");
         }
 
@@ -197,7 +208,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("return 100;");
 
         builder.Append(testExecutorBuilder);
-
         builder.AppendLine("public static class TestCount { public const int Count = " + totalTestsEmitted.ToString() + "; }");
         return builder.ToString();
     }
