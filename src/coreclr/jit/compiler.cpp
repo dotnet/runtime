@@ -3329,13 +3329,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #if defined(TARGET_AMD64)
     rbmAllFloat            = RBM_ALLFLOAT_INIT;
     rbmFltCalleeTrash      = RBM_FLT_CALLEE_TRASH_INIT;
-    rbmCntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
+    cntCalleeTrashFloat    = CNT_CALLEE_TRASH_FLOAT_INIT;
 
     if (DoJitStressEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
-        rbmCntCalleeTrashFloat += 16;
+        cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
 #endif // TARGET_AMD64
 }
@@ -10298,5 +10298,5 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
 // to TARGET_AMD64 only.
 regMaskTP rbmAllFloat;
 regMaskTP rbmFltCalleeTrash;
-unsigned  rbmCntCalleeTrashFloat;
+unsigned  cntCalleeTrashFloat;
 #endif // TARGET_AMD64

@@ -176,10 +176,6 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic supports some sort of containment analysis
     HW_Flag_SupportsContainment = 0x2000,
-
-    // The intrinsic does not have an EVEX compatible form
-    HW_Flag_NoEvexSemantics = 0x4000
-
 #else
 #error Unsupported platform
 #endif
@@ -775,8 +771,8 @@ struct HWIntrinsicInfo
     //
     static bool HasEvexSemantics(NamedIntrinsic id)
     {
-        HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
+        HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_NoEvexSemantics) == 0;
 #else
         return false;
