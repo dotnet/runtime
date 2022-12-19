@@ -2886,7 +2886,8 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 
 #if HOST_BROWSER
 #define INTERP_ENTRY_UPDATE_HIT_COUNT(_method) \
-	mono_interp_record_interp_entry (_method)
+	if (mono_opt_jiterpreter_interp_entry_enabled) \
+		mono_interp_record_interp_entry (_method)
 #else
 #define INTERP_ENTRY_UPDATE_HIT_COUNT(_method)
 #endif
