@@ -5,9 +5,9 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-#if TARGET_WASI
+#if TARGET_BROWSER
         public static string OSDescription => "Browser";
-#elif TARGET_BROWSER
+#elif TARGET_WASI
         public static string OSDescription => "WASI";
 #else
     #error
