@@ -338,7 +338,7 @@ namespace System.Net.Security
             {
                 if (reAuthenticationData == null)
                 {
-                    _nestedAuth = (int)StreamUse.InUse;
+                    _nestedAuth = (int)StreamUse.NotInUse;
                     _isRenego = false;
                 }
             }
