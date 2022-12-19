@@ -10302,7 +10302,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
 #endif // TRACK_ENREG_STATS
 
 #if defined(TARGET_AMD64)
-// The following are for initializing register allocator "constants" defined in targetamd.h
+// The following are for initializing register allocator "constants" defined in targetamd64.h
 // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
 // the number of simd (xmm,ymm, and zmm) registers from 16 to 32.
 // As only 64-bit xarch has the capability to have the additional registers, we limit the changes
