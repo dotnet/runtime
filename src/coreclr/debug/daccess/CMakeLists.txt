@@ -43,6 +43,10 @@ target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
 
 add_dependencies(daccess eventing_headers)
 
+if(CLR_CMAKE_HOST_UNIX)
+  add_definitions(-DFEATURE_ENABLE_HARDWARE_EXCEPTIONS)
+endif()
+
 if(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
   add_definitions(-DUSE_DAC_TABLE_RVA)
 

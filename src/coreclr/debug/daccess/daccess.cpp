@@ -64,6 +64,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         }
 
 #ifdef HOST_UNIX
+        PAL_SetInitializeDLLFlags(PAL_INITIALIZE_DLL | PAL_INITIALIZE_REGISTER_SIGNALS);
         int err = PAL_InitializeDLL();
         if(err != 0)
         {
