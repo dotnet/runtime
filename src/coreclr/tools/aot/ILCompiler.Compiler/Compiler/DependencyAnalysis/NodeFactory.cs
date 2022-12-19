@@ -292,28 +292,15 @@ namespace ILCompiler.DependencyAnalysis
                 return new ObjectGetTypeFlowDependenciesNode(type);
             });
 
-            _shadowConcreteMethods = new NodeCache<MethodKey, IMethodNode>(methodKey =>
-            {
-                MethodDesc canonMethod = methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            _shadowConcreteMethods = new ShadowConcreteMethodHashtable(this);
 
-                if (methodKey.IsUnboxingStub)
-                {
-                    return new ShadowConcreteUnboxingThunkNode(methodKey.Method, MethodEntrypoint(canonMethod, true));
-                }
-                else
-                {
-                    return new ShadowConcreteMethodNode(methodKey.Method, MethodEntrypoint(canonMethod));
-                }
+            _shadowConcreteUnboxingMethods = new NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode>(method =>
+            {
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                return new ShadowConcreteUnboxingThunkNode(method, MethodEntrypoint(canonMethod, true));
             });
 
-            _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
-            {
-                // We don't need to track virtual method uses for types that have a vtable with a known layout.
-                // It's a waste of CPU time and memory.
-                Debug.Assert(!VTable(method.OwningType).HasFixedSlots);
-
-                return new VirtualMethodUseNode(method);
-            });
+            _virtMethods = new VirtualMethodUseHashtable(this);
 
             _variantMethods = new NodeCache<MethodDesc, VariantInterfaceMethodUseNode>((MethodDesc method) =>
             {
@@ -401,13 +388,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new StructMarshallingDataNode(type);
             });
 
-            _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
-            {
-                if (CompilationModuleGroup.ShouldProduceFullVTable(type))
-                    return new EagerlyBuiltVTableSliceNode(type);
-                else
-                    return _vtableSliceProvider.GetSlice(type);
-            });
+            _vTableNodes = new VTableSliceHashtable(this);
 
             _methodGenericDictionaries = new NodeCache<MethodDesc, ISortableSymbolNode>(method =>
             {
@@ -780,11 +761,28 @@ namespace ILCompiler.DependencyAnalysis
             return _pInvokeMethodFixups.GetOrAdd(methodData);
         }
 
-        private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
+        private sealed class VTableSliceHashtable : LockFreeReaderHashtable<TypeDesc, VTableSliceNode>
+        {
+            private readonly NodeFactory _factory;
+            public VTableSliceHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(TypeDesc key, VTableSliceNode value) => key == value.Type;
+            protected override bool CompareValueToValue(VTableSliceNode value1, VTableSliceNode value2) => value1.Type == value2.Type;
+            protected override VTableSliceNode CreateValueFromKey(TypeDesc key)
+            {
+                if (_factory.CompilationModuleGroup.ShouldProduceFullVTable(key))
+                    return new EagerlyBuiltVTableSliceNode(key);
+                else
+                    return _factory._vtableSliceProvider.GetSlice(key);
+            }
+            protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(VTableSliceNode value) => value.Type.GetHashCode();
+        }
+
+        private VTableSliceHashtable _vTableNodes;
 
         public VTableSliceNode VTable(TypeDesc type)
         {
-            return _vTableNodes.GetOrAdd(type);
+            return _vTableNodes.GetOrCreateValue(type);
         }
 
         private NodeCache<MethodDesc, ISortableSymbolNode> _methodGenericDictionaries;
@@ -896,10 +894,26 @@ namespace ILCompiler.DependencyAnalysis
             return _objectGetTypeFlowDependencies.GetOrAdd(type);
         }
 
-        private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;
+        private sealed class ShadowConcreteMethodHashtable : LockFreeReaderHashtable<MethodDesc, ShadowConcreteMethodNode>
+        {
+            private readonly NodeFactory _factory;
+            public ShadowConcreteMethodHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(MethodDesc key, ShadowConcreteMethodNode value) => key == value.Method;
+            protected override bool CompareValueToValue(ShadowConcreteMethodNode value1, ShadowConcreteMethodNode value2) => value1.Method == value2.Method;
+            protected override ShadowConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
+                new ShadowConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+            protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(ShadowConcreteMethodNode value) => value.Method.GetHashCode();
+        }
+
+        private ShadowConcreteMethodHashtable _shadowConcreteMethods;
+        private NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode> _shadowConcreteUnboxingMethods;
         public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false)
         {
-            return _shadowConcreteMethods.GetOrAdd(new MethodKey(method, isUnboxingStub));
+            if (isUnboxingStub)
+                return _shadowConcreteUnboxingMethods.GetOrAdd(method);
+            else
+                return _shadowConcreteMethods.GetOrCreateValue(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
@@ -965,11 +979,28 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;
+        private sealed class VirtualMethodUseHashtable : LockFreeReaderHashtable<MethodDesc, VirtualMethodUseNode>
+        {
+            private readonly NodeFactory _factory;
+            public VirtualMethodUseHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(MethodDesc key, VirtualMethodUseNode value) => key == value.Method;
+            protected override bool CompareValueToValue(VirtualMethodUseNode value1, VirtualMethodUseNode value2) => value1.Method == value2.Method;
+            protected override VirtualMethodUseNode CreateValueFromKey(MethodDesc key)
+            {
+                // We don't need to track virtual method uses for types that have a vtable with a known layout.
+                // It's a waste of CPU time and memory.
+                Debug.Assert(!_factory.VTable(key.OwningType).HasFixedSlots);
+                return new VirtualMethodUseNode(key);
+            }
+            protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(VirtualMethodUseNode value) => value.Method.GetHashCode();
+        }
+
+        private VirtualMethodUseHashtable _virtMethods;
 
         public DependencyNodeCore<NodeFactory> VirtualMethodUse(MethodDesc decl)
         {
-            return _virtMethods.GetOrAdd(decl);
+            return _virtMethods.GetOrCreateValue(decl);
         }
 
         private NodeCache<MethodDesc, VariantInterfaceMethodUseNode> _variantMethods;
