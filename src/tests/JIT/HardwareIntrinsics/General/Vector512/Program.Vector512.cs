@@ -10,7 +10,6 @@ namespace JIT.HardwareIntrinsics.General._Vector512
     {
         static Program()
         {
-
         }
     }
 }

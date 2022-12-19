@@ -3,8 +3,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeBuildOutput>true</IncludeBuildOutput>
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
-    <!-- TODO: Enable when package shipped with NET 7. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IsPackable>true</IsPackable>
     <PackageDescription>Exposes Threading APIs for WebAssembly projects</PackageDescription>
     <!-- 

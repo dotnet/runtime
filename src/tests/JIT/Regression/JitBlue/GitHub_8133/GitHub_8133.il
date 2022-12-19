@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
+.assembly 'GitHub_8133' {}
 
 // The original repro for this test was SBCG due to incorrect computation of value numbers for the ref-typed locals
 // in Test::Main(). Despite the fact that each local refers to a different array element, all of the locals were

@@ -197,10 +197,6 @@ namespace System.Text.Json
         /// -or-
         ///
         /// There is remaining data in the string beyond a single JSON value.</exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
@@ -243,10 +239,6 @@ namespace System.Text.Json
         /// -or-
         ///
         /// There is remaining data in the string beyond a single JSON value.</exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
@@ -259,6 +251,72 @@ namespace System.Text.Json
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromSpan(json, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Parses the text representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="json">JSON text to parse.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="json"/> is <see langword="null"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the string beyond a single JSON value.</exception>
+        /// <remarks>Using a <see cref="string"/> is not as efficient as using the
+        /// UTF-8 methods since the implementation natively uses UTF-8.
+        /// </remarks>
+        public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonTypeInfo jsonTypeInfo)
+        {
+            if (json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return ReadFromSpanAsObject(json.AsSpan(), jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Parses the text representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="json">JSON text to parse.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid.
+        ///
+        /// -or-
+        ///
+        /// There is remaining data in the string beyond a single JSON value.</exception>
+        /// <remarks>Using a <see cref="string"/> is not as efficient as using the
+        /// UTF-8 methods since the implementation natively uses UTF-8.
+        /// </remarks>
+        public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return ReadFromSpanAsObject(json, jsonTypeInfo);
         }
 
         /// <summary>

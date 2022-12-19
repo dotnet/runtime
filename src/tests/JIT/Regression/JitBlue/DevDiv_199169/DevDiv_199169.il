@@ -5,7 +5,6 @@
 .assembly DevDiv_199169
 {
 }
-.module DevDiv_199169.exe
 
 .class public sequential ansi sealed beforefieldinit Blob
        extends [mscorlib]System.ValueType
