@@ -11561,7 +11561,7 @@ extern const BYTE genActualTypes[];
 // to TARGET_AMD64 only.
 extern regMaskTP rbmAllFloat;
 extern regMaskTP rbmFltCalleeTrash;
-extern unsigned  rbmCntCalleeTrashFloat;
+extern unsigned  cntCalleeTrashFloat;
 #endif // TARGET_AMD64
 
 /*****************************************************************************/

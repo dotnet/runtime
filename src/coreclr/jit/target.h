@@ -150,10 +150,10 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned __int64
+enum _regMask_enum : uint64_t
 {
     RBM_NONE    = 0,
-    RBM_LOWSIMD = 1ULL << 63,
+    RBM_LOWSIMD = UI64(1) << 63,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
