@@ -214,7 +214,7 @@
     <MicrosoftBuildFrameworkVersion>17.0.0-preview-21267-01</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>17.0.0-preview-21267-01</MicrosoftBuildUtilitiesCoreVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-alpha.1.22615.2</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-alpha.1.22619.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicVersion>2.1.1</MicrosoftNativeQuicMsQuicVersion>
     <SystemNetMsQuicTransportVersion>7.0.0-alpha.1.22406.1</SystemNetMsQuicTransportVersion>
