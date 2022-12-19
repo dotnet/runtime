@@ -64,7 +64,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 RuntimeFlavor.CoreClr,
                 RuntimeArchitecture.x64)
             {
-                TargetFramework = $"Environment{version.Major}.{version.Minor}",
+                TargetFramework = $"net{version.Major}.{version.Minor}",
                 ApplicationType = ApplicationType.Portable,
                 PublishApplicationBeforeDeployment = true,
                 StatusMessagesEnabled = false

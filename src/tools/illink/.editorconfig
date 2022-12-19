@@ -94,6 +94,9 @@ dotnet_diagnostic.IDE0059.severity = warning
 # IDE0060: Remove unused parameter
 dotnet_diagnostic.IDE0060.severity = warning
 
+# IDE0062: Local function can be made static
+dotnet_diagnostic.IDE0062.severity = none
+
 # IDE0065: Using directives to be placed outside the namespace
 dotnet_diagnostic.IDE0065.severity = warning
 
@@ -110,8 +113,20 @@ dotnet_diagnostic.IDE0082.severity = warning
 # IDE0083: Use is not pattern matching
 #dotnet_diagnostic.IDE0083.severity = warning // requires new C# for Mono
 
+# IDE0100: Remove redundant equality
+dotnet_diagnostic.IDE0100.severity = none
+
 # IDE0110: Remove unnecessary discard
 dotnet_diagnostic.IDE0110.severity = warning
+
+# IDE0170: Simplify property pattern
+dotnet_diagnostic.IDE0170.severity = none
+
+# IDE0071: Interpolation can be simplified
+dotnet_diagnostic.IDE0071.severity = none
+
+# IDE0200: Lambda expression can be removed
+dotnet_diagnostic.IDE0200.severity = none
 
 ## CA analyzer rules
 dotnet_analyzer_diagnostic.category-performance.severity = warning
@@ -137,6 +152,46 @@ dotnet_diagnostic.xUnit1004.severity = none
 
 # CA1805: Member is explicitly initialized to it's default value
 dotnet_diagnostic.CA1805.severity = none
+
+# CA1066: Implement IEquatable when overriding Equals
+dotnet_diagnostic.CA1066.severity = none
+
+# CA1067: Override Equals because it implements IEquatable
+dotnet_diagnostic.CA1067.severity = none
+
+# CA1311: Specify culture version
+dotnet_diagnostic.CA1311.severity = none
+
+# CA3075: Unsafe overload of method
+dotnet_diagnostic.CA3075.severity = none
+
+## SA analyzer rules
+
+# Access modifier must be declared
+dotnet_diagnostic.SA1400.severity = none
+
+dotnet_diagnostic.SA1129.severity = none
+
+# SA1518: File is required to end with newline character
+dotnet_diagnostic.SA1518.severity = none
+
+# SA1205: Partial elements should declare access modifier
+dotnet_diagnostic.SA1205.severity = none
+
+# SA1027: Tabs and spaces should be used correctly
+dotnet_diagnostic.SA1027.severity = none
+
+# SA1121: Use built-in type alias
+dotnet_diagnostic.SA1121.severity = none
+
+# SA1028: Code should not contain trailing whitespace
+dotnet_diagnostic.SA1028.severity = none
+
+# SA1212: A get accessor appears after a set accessor
+dotnet_diagnostic.SA1212.severity = none
+
+# SA1001: Commas should not be preceded by whitespace
+dotnet_diagnostic.SA1001.severity = none
 
 [src/linker/ref/**/*.cs]
 

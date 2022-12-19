@@ -35,7 +35,7 @@ internal class BrowserRunner : IAsyncDisposable
     public BrowserRunner(ITestOutputHelper testOutput) => _testOutput = testOutput;
 
     // FIXME: options
-    public async Task<IPage> RunAsync(ToolCommand cmd, string args, bool headless = true)
+    public async Task<IPage> RunAsync(ToolCommand cmd, string args, bool headless = true, Action<IConsoleMessage>? onConsoleMessage = null)
     {
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
@@ -90,6 +90,8 @@ internal class BrowserRunner : IAsyncDisposable
         });
 
         IPage page = await Browser.NewPageAsync();
+        if (onConsoleMessage is not null)
+            page.Console += (_, msg) => onConsoleMessage(msg);
         await page.GotoAsync(urlAvailable.Task.Result);
         RunTask = runTask;
         return page;

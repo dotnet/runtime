@@ -4,10 +4,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -762,6 +764,17 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         internal abstract JsonParameterInfoValues[] GetParameterInfoValues();
+
+        // Untyped, root-level serialization methods
+        internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue, bool isInvokedByPolymorphicConverter = false);
+        internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken, bool isInvokedByPolymorphicConverter = false);
+        internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue, bool isInvokedByPolymorphicConverter = false);
+
+        // Untyped, root-level deserialization methods
+        internal abstract object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state);
+        internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
+        internal abstract object? DeserializeAsObject(Stream utf8Json);
+        internal abstract IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken);
 
         internal void CacheMember(JsonPropertyInfo jsonPropertyInfo, JsonPropertyDictionary<JsonPropertyInfo> propertyCache, ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {

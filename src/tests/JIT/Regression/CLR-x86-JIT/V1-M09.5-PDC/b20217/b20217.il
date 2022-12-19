@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0x38eb1044 {}
+.assembly 'b20217' {}
 .class ILGEN_0x38eb1044 {
 
 .field static	unsigned int8 field_0x0
