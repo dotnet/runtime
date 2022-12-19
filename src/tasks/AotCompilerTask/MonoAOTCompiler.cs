@@ -374,6 +374,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(UseDirectIcalls)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
+        if (UseDirectPInvoke && (DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0))
+        {
+            Log.LogWarning($"'{nameof(UseDirectPInvoke)}' is enabled and will trump '{nameof(DirectPInvokes)}' and '{nameof(DirectPInvokeLists)}'.");
+        }
+
         if (UseDirectPInvoke || DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0)
         {
             if (!UseStaticLinking)

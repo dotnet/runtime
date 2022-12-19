@@ -6153,13 +6153,16 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 #endif
 
 /*
- * mono_aot_direct_pinvoke_enabled_for_method
+ * is_direct_pinvoke_specified_for_method
  *
  * Return whether the method is specified to be directly pinvoked
  */
 static gboolean
-mono_aot_direct_pinvoke_enabled_for_method (MonoAotCompile *acfg, MonoMethod *method)
+is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method)
 {
+	if (!acfg->aot_opts.direct_pinvokes && !acfg->aot_opts.direct_pinvoke_lists)
+		return FALSE;
+
 	const char *sym = get_pinvoke_import (acfg, method);
 	const char *module_name = acfg->image->module_name;
 	GHashTable *val;
@@ -6229,7 +6232,7 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 	} else if ((patch_info->type == MONO_PATCH_INFO_ICALL_ADDR_CALL && patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		if (acfg->aot_opts.direct_pinvoke)
 			return TRUE;
-		return mono_aot_direct_pinvoke_enabled_for_method (acfg, patch_info->data.method);
+		return is_direct_pinvoke_specified_for_method (acfg, patch_info->data.method);
 	} else if (patch_info->type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
 		if (acfg->aot_opts.direct_icalls)
 			return TRUE;
@@ -10177,7 +10180,7 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 			MonoMethod *method = (MonoMethod *)data;
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 				sym = lookup_icall_symbol_name_aot (method);
-			else if (llvm_acfg->aot_opts.direct_pinvoke || mono_aot_direct_pinvoke_enabled_for_method (llvm_acfg, method))
+			else if (llvm_acfg->aot_opts.direct_pinvoke || is_direct_pinvoke_specified_for_method (llvm_acfg, method))
 				sym = get_pinvoke_import (llvm_acfg, method);
 		} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 			MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
@@ -14162,7 +14165,7 @@ process_direct_pinvokes (MonoAotCompile *acfg, char *dpi)
 	if (!g_strstrip (direct_pinvoke))
 		goto early_exit;
 
-	char **direct_pinvoke_split = g_strsplit (direct_pinvoke, "!", -1);
+	char **direct_pinvoke_split = g_strsplit (direct_pinvoke, "!", 2);
 	if (!direct_pinvoke_split) {
 		processed = FALSE;
 		aot_printerrf (acfg, "Failed to split the provided 'direct_pinvoke' AOT option '%s' with delimiter '!'\n", dpi);
@@ -14178,12 +14181,6 @@ process_direct_pinvokes (MonoAotCompile *acfg, char *dpi)
 
 	if (!direct_pinvoke_split[1]) {
 		g_hash_table_insert (acfg->direct_pinvokes, library_name, NULL);
-		goto cleanup;
-	}
-
-	if (direct_pinvoke_split[2]) {
-		aot_printerrf (acfg, "The provided 'direct_pinvoke' AOT option '%s' shouldn't contain multiple '!'\n", dpi);
-		processed = FALSE;
 		goto cleanup;
 	}
 
@@ -14207,6 +14204,7 @@ process_direct_pinvokes (MonoAotCompile *acfg, char *dpi)
 
 cleanup:
 	g_strfreev (direct_pinvoke_split);
+	g_free (direct_pinvoke);
 
 early_exit:
 	return processed;
