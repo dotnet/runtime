@@ -14,7 +14,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class RequiredKeywordTests_SourceGen : RequiredKeywordTests
     {
         public RequiredKeywordTests_SourceGen()
-            : base(new StringSerializerWrapper(Context.Default))
+            : base(new StringSerializerWrapper(RequiredKeywordTestsContext.Default))
         {
         }
 
@@ -25,9 +25,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers))]
         [JsonSerializable(typeof(PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers))]
         [JsonSerializable(typeof(ClassWithInitOnlyRequiredProperty))]
+        [JsonSerializable(typeof(ClassWithRequiredField))]
         [JsonSerializable(typeof(ClassWithRequiredExtensionDataProperty))]
         [JsonSerializable(typeof(ClassWithRequiredKeywordAndJsonRequiredCustomAttribute))]
-        internal sealed partial class Context : JsonSerializerContext
+        internal sealed partial class RequiredKeywordTestsContext : JsonSerializerContext
         {
         }
     }

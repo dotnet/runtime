@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -17,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async void ClassWithRequiredKeywordDeserialization(bool ignoreNullValues)
+        public async Task ClassWithRequiredKeywordDeserialization(bool ignoreNullValues)
         {
             JsonSerializerOptions options = new()
             {
@@ -62,7 +63,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void RequiredPropertyOccuringTwiceInThePayloadWorksAsExpected()
+        public async Task RequiredPropertyOccuringTwiceInThePayloadWorksAsExpected()
         {
             string json = """{"FirstName":"foo","MiddleName":"","LastName":"bar","FirstName":"newfoo"}""";
             PersonWithRequiredMembers deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json);
@@ -81,7 +82,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async void ClassWithRequiredKeywordAndSmallParametrizedCtorFailsDeserialization(bool ignoreNullValues)
+        public async Task ClassWithRequiredKeywordAndSmallParametrizedCtorFailsDeserialization(bool ignoreNullValues)
         {
             JsonSerializerOptions options = new()
             {
@@ -164,7 +165,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async void ClassWithRequiredKeywordAndLargeParametrizedCtorFailsDeserialization(bool ignoreNullValues)
+        public async Task ClassWithRequiredKeywordAndLargeParametrizedCtorFailsDeserialization(bool ignoreNullValues)
         {
             JsonSerializerOptions options = new()
             {
@@ -285,7 +286,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void ClassWithRequiredKeywordAndSetsRequiredMembersOnCtorWorks()
+        public async Task ClassWithRequiredKeywordAndSetsRequiredMembersOnCtorWorks()
         {
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSetsRequiredMembers>(Serializer.DefaultOptions)
                 /* no required members */);
@@ -321,7 +322,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void ClassWithRequiredKeywordSmallParametrizedCtorAndSetsRequiredMembersOnCtorWorks()
+        public async Task ClassWithRequiredKeywordSmallParametrizedCtorAndSetsRequiredMembersOnCtorWorks()
         {
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers>(Serializer.DefaultOptions)
                 /* no required members */);
@@ -352,7 +353,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void ClassWithRequiredKeywordLargeParametrizedCtorAndSetsRequiredMembersOnCtorWorks()
+        public async Task ClassWithRequiredKeywordLargeParametrizedCtorAndSetsRequiredMembersOnCtorWorks()
         {
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers>(Serializer.DefaultOptions)
                 /* no required members */);
@@ -396,7 +397,27 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void RemovingPropertiesWithRequiredKeywordAllowsDeserialization()
+        public async Task ClassWithRequiredFieldWorksAsExpected()
+        {
+            var options = new JsonSerializerOptions(Serializer.DefaultOptions) { IncludeFields = true };
+            options.MakeReadOnly();
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassWithRequiredField));
+            Assert.Equal(1, typeInfo.Properties.Count);
+
+            JsonPropertyInfo jsonPropertyInfo = typeInfo.Properties[0];
+            Assert.True(jsonPropertyInfo.IsRequired);
+
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper("{}", typeInfo));
+        }
+
+        public class ClassWithRequiredField
+        {
+            public required int RequiredField;
+        }
+
+        [Fact]
+        public async Task RemovingPropertiesWithRequiredKeywordAllowsDeserialization()
         {
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static ti =>
             {
@@ -442,7 +463,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void ChangingPropertiesWithRequiredKeywordToNotBeRequiredAllowsDeserialization()
+        public async Task ChangingPropertiesWithRequiredKeywordToNotBeRequiredAllowsDeserialization()
         {
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static ti =>
             {
@@ -469,7 +490,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void RequiredNonDeserializablePropertyThrows()
+        public async Task RequiredNonDeserializablePropertyThrows()
         {
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static ti =>
             {
@@ -488,7 +509,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void RequiredInitOnlyPropertyDoesNotThrow()
+        public async Task RequiredInitOnlyPropertyDoesNotThrow()
         {
             string json = """{"Prop":"foo"}""";
             ClassWithInitOnlyRequiredProperty deserialized = await Serializer.DeserializeWrapper<ClassWithInitOnlyRequiredProperty>(json);
@@ -501,7 +522,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void RequiredExtensionDataPropertyThrows()
+        public async Task RequiredExtensionDataPropertyThrows()
         {
             string json = """{"Foo":"foo","Bar":"bar"}""";
             InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -516,7 +537,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void RequiredKeywordAndJsonRequiredCustomAttributeWorkCorrectlyTogether()
+        public async Task RequiredKeywordAndJsonRequiredCustomAttributeWorkCorrectlyTogether()
         {
             JsonSerializerOptions options = JsonSerializerOptions.Default;
             JsonTypeInfo typeInfo = GetTypeInfo<ClassWithRequiredKeywordAndJsonRequiredCustomAttribute>(options);
