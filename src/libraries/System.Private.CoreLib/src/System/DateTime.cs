@@ -209,7 +209,7 @@ namespace System
         public DateTime(DateOnly date, TimeOnly time, DateTimeKind kind)
         {
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
-            _dateData = (ulong)(date._dayNumber * TimeSpan.TicksPerDay + time.Ticks) | ((ulong)(uint)kind << KindShift);
+            _dateData = (ulong)(date.DayNumber * TimeSpan.TicksPerDay + time.Ticks) | ((ulong)(uint)kind << KindShift);
         }
 
         internal DateTime(long ticks, DateTimeKind kind, bool isAmbiguousDst)

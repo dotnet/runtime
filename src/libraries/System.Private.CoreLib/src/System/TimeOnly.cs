@@ -288,7 +288,8 @@ namespace System
         /// Deconstructed parameter for <see cref="Minute"/>.
         /// </param>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public void Deconstruct(out int hour, out int minute) {
+        public void Deconstruct(out int hour, out int minute)
+        {
             hour = Hour;
             minute = Minute;
         }

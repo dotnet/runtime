@@ -20,7 +20,7 @@ namespace System
           ISpanFormattable,
           ISpanParsable<DateOnly>
     {
-        internal readonly int _dayNumber;
+        private readonly int _dayNumber;
 
         // Maps to Jan 1st year 1
         private const int MinDayNumber = 0;
@@ -203,11 +203,7 @@ namespace System
         /// </param>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void Deconstruct(out int year, out int month, out int day)
-        {
-            year = Year;
-            month = Month;
-            day = Day;
-        }
+            => GetEquivalentDateTime().GetDate(out year, out month, out day);
 
         /// <summary>
         /// Returns a DateTime that is set to the date of this DateOnly instance and the time of specified input time.
