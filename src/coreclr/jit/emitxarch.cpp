@@ -11573,8 +11573,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
     // Emit the REX prefix if required
     // TODO-XARCH-AVX512 : Update this check once all paths have EVEX support.
-    // Explore moving IsWEvexOpcodeExtension() logic inside TakesRexWPrefix(). Not doind so currently
-    // since we cannot differentiate EVEX vs VEX without 'code' untill all paths have EVEX support.
+    // Explore moving IsWEvexOpcodeExtension() logic inside TakesRexWPrefix(). Not doing so currently
+    // since we cannot differentiate EVEX vs VEX without 'code' until all paths have EVEX support.
     if (TakesRexWPrefix(ins, size) || (codeEvexMigrationCheck(code) && IsWEvexOpcodeExtension(id)))
     {
         code = AddRexWPrefix(id, code);
