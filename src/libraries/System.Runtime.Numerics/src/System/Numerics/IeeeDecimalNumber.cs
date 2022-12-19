@@ -231,6 +231,8 @@ namespace System.Numerics
             return true;
         }
 
+        internal static bool SpanStartsWith(ReadOnlySpan<char> span, char c) => !span.IsEmpty && span[0] == c;
+
         internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> value, NumberStyles styles, ref IeeeDecimalNumberBuffer number, NumberFormatInfo info)
         {
             Debug.Assert(info != null);
@@ -248,6 +250,11 @@ namespace System.Numerics
             number.CheckConsistency();
             return true;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
+        private static bool TrailingZeros(ReadOnlySpan<char> value, int index) =>
+            // For compatibility, we need to allow trailing zeros at the end of a number string
+            value.Slice(index).IndexOfAnyExcept('\0') < 0;
 
         // This is almost a direct copy paste of the one in Number.Parsing.cs
         private static unsafe bool TryParseNumber(scoped ref char* str, char* strEnd, NumberStyles styles, ref IeeeDecimalNumberBuffer number, NumberFormatInfo info)
@@ -576,85 +583,6 @@ namespace System.Numerics
             }
 
             return number.IsNegative ? Decimal32.Negate(result) : result;
-        }
-
-        private static ushort NumberToDecimal32FloatingPointBits(ref IeeeDecimalNumberBuffer number, in FloatingPointInfo info)
-        {
-            Debug.Assert(info.DenormalMantissaBits == 10);
-
-            Debug.Assert(number.GetDigitsPointer()[0] != '0');
-
-            Debug.Assert(number.Scale <= FloatingPointMaxExponent);
-            Debug.Assert(number.Scale >= FloatingPointMinExponent);
-
-            Debug.Assert(number.DigitsCount != 0);
-
-            // The input is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
-            // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
-            // We decompose the mantissa into two parts: an integer part and a fractional
-            // part.  If the exponent is positive, then the integer part consists of the
-            // first 'exponent' digits, or all present digits if there are fewer digits.
-            // If the exponent is zero or negative, then the integer part is empty.  In
-            // either case, the remaining digits form the fractional part of the mantissa.
-
-            uint totalDigits = (uint)(number.DigitsCount);
-            uint positiveExponent = (uint)(Math.Max(0, number.Scale));
-
-            uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
-            uint fractionalDigitsPresent = totalDigits - integerDigitsPresent;
-
-            int exponent = (int)(number.Scale - integerDigitsPresent - fractionalDigitsPresent);
-            int fastExponent = Math.Abs(exponent);
-
-            // Above 19 digits, we rely on slow path
-            if (totalDigits <= 19)
-            {
-                byte* src = number.GetDigitsPointer();
-
-                // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
-                // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
-                // on floating-point arithmetic to compute the correct result. This is
-                // because each floating-point precision values allows us to exactly represent
-                // different whole integers and certain powers of 10, depending on the underlying
-                // formats exact range. Additionally, IEEE operations dictate that the result is
-                // computed to the infinitely precise result and then rounded, which means that
-                // we can rely on it to produce the correct result when both inputs are exact.
-                // This is known as Clinger's fast path
-
-                ulong mantissa = DigitsToUInt64(src, (int)(totalDigits));
-
-                if ((mantissa <= info.MaxMantissaFastPath) && (fastExponent <= info.MaxExponentFastPath))
-                {
-                    double mantissa_d = mantissa;
-                    double scale = s_Pow10DoubleTable[fastExponent];
-
-                    if (fractionalDigitsPresent != 0)
-                    {
-                        mantissa_d /= scale;
-                    }
-                    else
-                    {
-                        mantissa_d *= scale;
-                    }
-
-                    return BitConverter.HalfToUInt16Bits((Half)(mantissa_d));
-                }
-
-                // Number Parsing at a Gigabyte per Second, Software: Practice and Experience 51(8), 2021
-                // https://arxiv.org/abs/2101.11408
-                (int Exponent, ulong Mantissa) am = ComputeFloat(exponent, mantissa, info);
-
-                // If we called ComputeFloat and we have an invalid power of 2 (Exponent < 0),
-                // then we need to go the slow way around again. This is very uncommon.
-                if (am.Exponent > 0)
-                {
-                    ulong word = am.Mantissa;
-                    word |= (ulong)(uint)(am.Exponent) << info.DenormalMantissaBits;
-                    return (ushort)word;
-                }
-
-            }
-            return (ushort)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
         }
 
         internal enum ParsingStatus // No ParsingStatus.Overflow because these types can represent infinity
