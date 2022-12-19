@@ -154,6 +154,7 @@ namespace System.Collections.Generic
         }
     }
 
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public static partial class ComparerFactory
     {
         // Comparison using lexicographic ordering
@@ -188,7 +189,7 @@ namespace System.Collections.Generic
             {
                 if (!yEnumerator.MoveNext()) return 1; // x > y
 
-                var elementComparison = _elementComparer.Compare(xEnumerator.Current, yEnumerator.Current);
+                int elementComparison = _elementComparer.Compare(xEnumerator.Current, yEnumerator.Current);
                 if (elementComparison != 0)
                     return elementComparison;
             }
@@ -200,9 +201,12 @@ namespace System.Collections.Generic
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
-            obj != null && GetType() == obj.GetType();
+            obj is not null &&
+            obj is EnumerableComparer<TEnumerable, T> other &&
+            _elementComparer == other._elementComparer;
 
-        public override int GetHashCode() =>
-            GetType().GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(
+            GetType().GetHashCode(),
+            _elementComparer.GetHashCode());
     }
 }

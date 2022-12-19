@@ -261,6 +261,7 @@ namespace System.Collections.Generic
             GetType().GetHashCode();
     }
 
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public static class EqualityComparer
     {
         // Equality comparison using sequence equality
@@ -346,8 +347,13 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode([DisallowNull] TEnumerable obj) =>
-            obj?.GetHashCode() ?? 0;
+        public override int GetHashCode([DisallowNull] TEnumerable obj) => obj switch
+        {
+            IReadOnlySet<T> set => set.Count == 0 ? 1 : 2,
+            IReadOnlyCollection<T> collection => 1 + collection.Count,
+            null => 0,
+            _ => -1
+        };
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -411,8 +417,11 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode([DisallowNull] TSet obj) =>
-            obj?.GetHashCode() ?? 0;
+        public override int GetHashCode([DisallowNull] TSet obj) => obj switch
+        {
+            IReadOnlySet<T> set => set.Count == 0 ? 1 : 2,
+            null => 0
+        };
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -488,8 +497,11 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode([DisallowNull] TDictionary obj) =>
-            obj?.GetHashCode() ?? 0;
+        public override int GetHashCode([DisallowNull] TDictionary obj) => obj switch
+        {
+            IReadOnlyDictionary<TKey, TValue> dictionary => dictionary.Count == 0 ? 1 : 2,
+            null => 0
+        };
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>

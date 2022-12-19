@@ -342,5 +342,92 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(1, comparer.Compare(left, right));
             Assert.Equal(0, comparer.Compare(right, left));
         }
+
+        [Theory]
+        [MemberData(nameof(StringComparisonsData))]
+        public void Comparer_CreateEnumerableComparer(string left, string right, int expected)
+        {
+            var comparer = ComparerFactory.CreateEnumerableComparer<string, char>();
+            Assert.Equal(expected, comparer.Compare(left, right));
+        }
+
+        public static IEnumerable<object[]> StringComparisonsData()
+        {
+            var str = new string(""); // this needs to be cached into a local so we can pass the same ref in twice
+
+            var testCases = new[]
+            {
+                Tuple.Create(str, str, 0),
+                Tuple.Create(default(string), str, -1),
+                Tuple.Create("a", "a", 0),
+                Tuple.Create("", "a", -1),
+                Tuple.Create("a", "b", -1),
+                Tuple.Create("a", "ab", -1),
+                Tuple.Create("ab", "b", -1),
+                Tuple.Create("ab", "ba", -1),
+                Tuple.Create("ab", "a" + "b", 0)
+            };
+
+            foreach (var testCase in testCases)
+            {
+                yield return new object[] { testCase.Item1, testCase.Item2, testCase.Item3 };
+                yield return new object[] { testCase.Item2, testCase.Item1, -testCase.Item3 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StringComparisonsData_IgnoreCase))]
+        public void Comparer_CreateEnumerableComparer_IgnoreCase(string left, string right, int expected)
+        {
+            var comparer = ComparerFactory.CreateEnumerableComparer<string, char>(IgnoreCaseComparer());
+            Assert.Equal(expected, comparer.Compare(left, right));
+
+            static Comparer<char> IgnoreCaseComparer() => Comparer<char>.Create((x, y) => char.ToUpperInvariant(x).CompareTo(char.ToUpperInvariant(y)));
+        }
+
+        public static IEnumerable<object[]> StringComparisonsData_IgnoreCase()
+        {
+            foreach(var data in StringComparisonsData())
+            {
+                yield return data;
+            }
+
+            var testCases = new[]
+            {
+                Tuple.Create("a", "A", 0),
+                Tuple.Create("", "A", -1),
+                Tuple.Create("a", "B", -1),
+                Tuple.Create("a", "Ab", -1),
+                Tuple.Create("a", "AB", -1),
+                Tuple.Create("ab", "b", -1),
+                Tuple.Create("ab", "B", -1),
+                Tuple.Create("ab", "BA", -1),
+                Tuple.Create("ab", "Ba", -1),
+                Tuple.Create("ab", "bA", -1),
+                Tuple.Create("ab", "A" + "B", 0)
+            };
+
+            foreach (var testCase in testCases)
+            {
+                yield return new object[] { testCase.Item1, testCase.Item2, testCase.Item3 };
+                yield return new object[] { testCase.Item2, testCase.Item1, -testCase.Item3 };
+            }
+        }
+
+        [Fact]
+        public void Comparer_CreateEnumerableComparer_EqualsGetHashCodeOverridden()
+        {
+            var comparer = ComparerFactory.CreateEnumerableComparer<string, char>();
+            Assert.True(comparer.Equals(comparer));
+            Assert.Equal(comparer.GetHashCode(), comparer.GetHashCode());
+
+            var ec1 = Comparer<char>.Create((x, y) => x.CompareTo(y));
+            var ec2 = Comparer<char>.Create((x, y) => x.CompareTo(y));
+
+            Assert.True(ComparerFactory.CreateEnumerableComparer<string, char>(ec1).Equals(ComparerFactory.CreateEnumerableComparer<string, char>(ec1)));
+            Assert.True(ComparerFactory.CreateEnumerableComparer<string, char>(ec1).GetHashCode().Equals(ComparerFactory.CreateEnumerableComparer<string, char>(ec1).GetHashCode()));
+
+            Assert.False(ComparerFactory.CreateEnumerableComparer<string, char>(ec1).Equals(ComparerFactory.CreateEnumerableComparer<string, char>(ec2)));
+        }
     }
 }

@@ -129,24 +129,6 @@ namespace System.Collections.Generic
         public override int GetHashCode() { throw null; }
         public override int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj) { throw null; }
     }
-
-    public static class EqualityComparer
-    {
-        public static System.Collections.Generic.IEqualityComparer<TEnumerable> CreateEnumerableComparer<TEnumerable, T>(System.Collections.Generic.IEqualityComparer<T>? elementComparer = null) 
-            where TEnumerable : System.Collections.Generic.IEnumerable<T> { throw null; }
-
-        public static System.Collections.Generic.IEqualityComparer<TSet> CreateSetComparer<TSet, T>(System.Collections.Generic.IEqualityComparer<T>? elementComparer = null) 
-            where TSet : System.Collections.Generic.IReadOnlySet<T> { throw null; }
-
-        public static System.Collections.Generic.IEqualityComparer<TDictionary> CreateDictionaryComparer<TDictionary, TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer = null, System.Collections.Generic.IEqualityComparer<TValue>? valueComparer = null) 
-            where TDictionary : System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> { throw null; }
-    }
-
-    public static class ComparerFactory
-    {
-        public static System.Collections.Generic.IComparer<TEnumerable> CreateEnumerableComparer<TEnumerable, T>(System.Collections.Generic.IComparer<T>? elementComparer = null) 
-            where TEnumerable : System.Collections.Generic.IEnumerable<T> { throw null; }
-    }
 }
 namespace System.Diagnostics.Contracts
 {

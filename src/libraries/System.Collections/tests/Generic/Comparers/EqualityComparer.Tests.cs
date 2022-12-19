@@ -41,21 +41,17 @@ namespace System.Collections.Generic.Tests
         public void EqualsTest<T>(T left, T right, bool expected)
         {
             var comparer = EqualityComparer<T>.Default;
-            IEqualityComparer nonGenericComparer = comparer;
+            AssertEqualsGeneric(comparer, left, right, expected);
+            AssertEqualsNonGeneric(comparer, left, right, expected);
+        }
 
+        private void AssertEqualsGeneric<T>(IEqualityComparer<T> comparer, T left, T right, bool expected)
+        {
             Assert.Equal(expected, comparer.Equals(left, right));
             Assert.Equal(expected, comparer.Equals(right, left)); // Should be commutative.
 
             Assert.True(comparer.Equals(left, left)); // Should be reflexive.
             Assert.True(comparer.Equals(right, right));
-
-            // If both sides are Ts then the explicit implementation of
-            // IEqualityComparer.Equals should also succeed, with the same results
-            Assert.Equal(expected, nonGenericComparer.Equals(left, right));
-            Assert.Equal(expected, nonGenericComparer.Equals(right, left));
-
-            Assert.True(nonGenericComparer.Equals(left, left));
-            Assert.True(nonGenericComparer.Equals(right, right));
 
             // All comparers returned by EqualityComparer<T>.Default should be
             // able to handle nulls before dispatching to IEquatable<T>.Equals()
@@ -70,8 +66,35 @@ namespace System.Collections.Generic.Tests
 
                 Assert.Equal(right == null, comparer.Equals(right, nil));
                 Assert.Equal(right == null, comparer.Equals(nil, right));
+            }
 
-                // IEqualityComparer.Equals explicit implementation
+            // GetHashCode: If 2 objects are equal, then their hash code should be the same.
+
+            if (expected)
+            {
+                int hash = comparer.GetHashCode(left);
+
+                Assert.Equal(hash, comparer.GetHashCode(left)); // Should return the same result across multiple invocations
+                Assert.Equal(hash, comparer.GetHashCode(right));
+            }
+        }
+
+        private void AssertEqualsNonGeneric<T>(IEqualityComparer nonGenericComparer, T left, T right, bool expected)
+        {
+            // If both sides are Ts then the explicit implementation of
+            // IEqualityComparer.Equals should also succeed, with the same results
+            Assert.Equal(expected, nonGenericComparer.Equals(left, right));
+            Assert.Equal(expected, nonGenericComparer.Equals(right, left));
+
+            Assert.True(nonGenericComparer.Equals(left, left));
+            Assert.True(nonGenericComparer.Equals(right, right));
+
+            // All comparers returned by EqualityComparer<T>.Default should be
+            // able to handle nulls before dispatching to IEquatable<T>.Equals()
+            if (default(T) == null)
+            {
+                T nil = default(T);
+
                 Assert.True(nonGenericComparer.Equals(nil, nil));
 
                 Assert.Equal(left == null, nonGenericComparer.Equals(left, nil));
@@ -85,12 +108,9 @@ namespace System.Collections.Generic.Tests
 
             if (expected)
             {
-                int hash = comparer.GetHashCode(left);
+                int hash = nonGenericComparer.GetHashCode(left);
 
-                Assert.Equal(hash, comparer.GetHashCode(left)); // Should return the same result across multiple invocations
-                Assert.Equal(hash, comparer.GetHashCode(right));
-
-                Assert.Equal(hash, nonGenericComparer.GetHashCode(left));
+                Assert.Equal(hash, nonGenericComparer.GetHashCode(left)); // Should return the same result across multiple invocations
                 Assert.Equal(hash, nonGenericComparer.GetHashCode(right));
             }
         }
@@ -203,6 +223,22 @@ namespace System.Collections.Generic.Tests
                 { string.Empty, null, false },
                 { "bar", new string("bar".ToCharArray()), true },
                 { "foo", "bar", false }
+            };
+        }
+
+        public static EqualsData<string> StringData_IgnoreCase()
+        {
+            return new EqualsData<string>
+            {
+                { "foo", "foo", true },
+                { string.Empty, null, false },
+                { "bar", new string("bar".ToCharArray()), true },
+                { "foo", "bar", false },
+                { "foo", "Foo", true },
+                { "foo", "FOO", true },
+                { "foo", "Bar", false },
+                { "foo", "BAR", false },
+                { "bar", new string("BAR".ToCharArray()), true }
             };
         }
 
@@ -548,5 +584,136 @@ namespace System.Collections.Generic.Tests
             Assert.False(EqualityComparer<int>.Create(equals1, getHashCode1).Equals(EqualityComparer<int>.Create(equals1, getHashCode2)));
             Assert.False(EqualityComparer<int>.Create(equals1, getHashCode1).Equals(EqualityComparer<int>.Create(equals2, getHashCode1)));
         }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public void EqualityComparer_CreateEnumerableComparer_EqualsTest(string left, string right, bool expected)
+        {
+            var comparer = EqualityComparer.CreateEnumerableComparer<string, char>();
+            AssertEqualsGeneric(comparer, left, right, expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData_IgnoreCase))]
+        public void EqualityComparer_CreateEnumerableComparer_EqualsIgnoreCaseTest(string left, string right, bool expected)
+        {
+            var comparer = EqualityComparer.CreateEnumerableComparer<string, char>(IgnoreCaseEqualityComparer());
+            AssertEqualsGeneric(comparer, left, right, expected);
+        }
+
+        [Fact]
+        public void EqualityComparer_CreateEnumerableComparer_EqualsGetHashCodeOverridden()
+        {
+            var comparer = EqualityComparer.CreateEnumerableComparer<string, char>();
+            Assert.True(comparer.Equals(comparer));
+            Assert.Equal(comparer.GetHashCode(), comparer.GetHashCode());
+
+            var ec1 = EqualityComparer<char>.Create((x, y) => x == y);
+            var ec2 = EqualityComparer<char>.Create((x, y) => x == y);
+
+            Assert.True(EqualityComparer.CreateEnumerableComparer<string, char>(ec1).Equals(EqualityComparer.CreateEnumerableComparer<string, char>(ec1)));
+            Assert.True(EqualityComparer.CreateEnumerableComparer<string, char>(ec1).GetHashCode().Equals(EqualityComparer.CreateEnumerableComparer<string, char>(ec1).GetHashCode()));
+
+            Assert.False(EqualityComparer.CreateEnumerableComparer<string, char>(ec1).Equals(EqualityComparer.CreateEnumerableComparer<string, char>(ec2)));
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public void EqualityComparer_CreateSetComparer_EqualsTest(string left, string right, bool expected)
+        {
+            var comparer = EqualityComparer.CreateSetComparer<HashSet<char>, char>();
+            AssertEqualsGeneric(comparer, left?.ToHashSet(), right?.ToHashSet(), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public void EqualityComparer_CreateSetComparer_EqualsIgnoreCaseTest(string left, string right, bool expected)
+        {
+            var comparer = EqualityComparer.CreateSetComparer<HashSet<char>, char>(IgnoreCaseEqualityComparer());
+            AssertEqualsGeneric(comparer, left?.ToHashSet(), right?.ToHashSet(), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public void EqualityComparer_CreateSetComparer_SortedSet_EqualsTest(string left, string right, bool expected)
+        {
+            var comparer = EqualityComparer.CreateSetComparer<SortedSet<char>, char>();
+            AssertEqualsGeneric(comparer, ToSortedSet(left), ToSortedSet(right), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public void EqualityComparer_CreateSetComparer_SortedSet_EqualsIgnoreCaseTest(string left, string right, bool expected)
+        {
+            var comparer = EqualityComparer.CreateSetComparer<SortedSet<char>, char>(IgnoreCaseEqualityComparer());
+            AssertEqualsGeneric(comparer, ToSortedSet(left), ToSortedSet(right), expected);
+        }
+
+        [Fact]
+        public void EqualityComparer_CreateSetComparer_EqualsGetHashCodeOverridden()
+        {
+            var comparer = EqualityComparer.CreateSetComparer<HashSet<char>, char>();
+            Assert.True(comparer.Equals(comparer));
+            Assert.Equal(comparer.GetHashCode(), comparer.GetHashCode());
+
+            var ec1 = EqualityComparer<char>.Create((x, y) => x == y);
+            var ec2 = EqualityComparer<char>.Create((x, y) => x == y);
+
+            Assert.True(EqualityComparer.CreateSetComparer<HashSet<char>, char>(ec1).Equals(EqualityComparer.CreateSetComparer<HashSet<char>, char>(ec1)));
+            Assert.True(EqualityComparer.CreateSetComparer<HashSet<char>, char>(ec1).GetHashCode().Equals(EqualityComparer.CreateSetComparer<HashSet<char>, char>(ec1).GetHashCode()));
+
+            Assert.False(EqualityComparer.CreateSetComparer<HashSet<char>, char>(ec1).Equals(EqualityComparer.CreateSetComparer<HashSet<char>, char>(ec2)));
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public void EqualityComparer_CreateDictionaryComparer_EqualsTest(string left, string right, bool expected)
+        {
+            var comparer = EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>();
+            AssertEqualsGeneric(comparer, ToIndexedDictionary(left), ToIndexedDictionary(right), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(StringData))]
+        public void EqualityComparer_CreateDictionaryComparer_EqualsIgnoreCaseTest(string left, string right, bool expected)
+        {
+            var comparer = EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(valueComparer: IgnoreCaseEqualityComparer());
+            AssertEqualsGeneric(comparer, ToIndexedDictionary(left), ToIndexedDictionary(right), expected);
+        }
+
+        [Fact]
+        public void EqualityComparer_CreateDictionaryComparer_EqualsGetHashCodeOverridden()
+        {
+            var comparer = EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>();
+            Assert.True(comparer.Equals(comparer));
+            Assert.Equal(comparer.GetHashCode(), comparer.GetHashCode());
+
+            var ec11 = EqualityComparer<int>.Create((x, y) => x == y);
+            var ec12 = EqualityComparer<int>.Create((x, y) => x == y);
+            var ec21 = EqualityComparer<char>.Create((x, y) => x == y);
+            var ec22 = EqualityComparer<char>.Create((x, y) => x == y);
+
+            Assert.True(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11).Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11)));
+            Assert.True(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(null, ec21).Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(null, ec21)));
+            Assert.True(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11, ec21).Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11, ec21)));
+            Assert.True(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11).GetHashCode().Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11).GetHashCode()));
+            Assert.True(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(null, ec21).GetHashCode().Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(null, ec21).GetHashCode()));
+            Assert.True(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11, ec21).GetHashCode().Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11, ec21).GetHashCode()));
+
+            Assert.False(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11).Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec12)));
+            Assert.False(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(null, ec21).Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(null, ec22)));
+            Assert.False(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11, ec21).Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11, ec22)));
+            Assert.False(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11, ec21).Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec12, ec21)));
+            Assert.False(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec11, ec21).Equals(EqualityComparer.CreateDictionaryComparer<Dictionary<int, char>, int, char>(ec12, ec22)));
+        }
+
+        private SortedSet<char> ToSortedSet(string left) => left is not null ? new SortedSet<char>(left) : null;
+
+        private static Dictionary<int, char> ToIndexedDictionary(string value) => value?
+            .Select((value, index) => (value, index))
+            .ToDictionary(t => t.index, t => t.value);
+
+        private static EqualityComparer<char> IgnoreCaseEqualityComparer() =>
+            EqualityComparer<char>.Create((x, y) => char.ToUpperInvariant(x).Equals(char.ToUpperInvariant(y)));
     }
 }

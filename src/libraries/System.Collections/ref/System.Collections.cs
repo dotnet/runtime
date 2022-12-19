@@ -556,6 +556,25 @@ namespace System.Collections.Generic
         bool System.Collections.IEqualityComparer.Equals(object? x, object? y) { throw null; }
         int System.Collections.IEqualityComparer.GetHashCode(object obj) { throw null; }
     }
+
+    public static class EqualityComparer
+    {
+        public static System.Collections.Generic.IEqualityComparer<TEnumerable> CreateEnumerableComparer<TEnumerable, T>(System.Collections.Generic.IEqualityComparer<T>? elementComparer = null) 
+            where TEnumerable : System.Collections.Generic.IEnumerable<T> { throw null; }
+
+        public static System.Collections.Generic.IEqualityComparer<TSet> CreateSetComparer<TSet, T>(System.Collections.Generic.IEqualityComparer<T>? elementComparer = null) 
+            where TSet : System.Collections.Generic.IReadOnlySet<T> { throw null; }
+
+        public static System.Collections.Generic.IEqualityComparer<TDictionary> CreateDictionaryComparer<TDictionary, TKey, TValue>(System.Collections.Generic.IEqualityComparer<TKey>? keyComparer = null, System.Collections.Generic.IEqualityComparer<TValue>? valueComparer = null) 
+            where TDictionary : System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> { throw null; }
+    }
+
+    public static class ComparerFactory
+    {
+        public static System.Collections.Generic.IComparer<TEnumerable> CreateEnumerableComparer<TEnumerable, T>(System.Collections.Generic.IComparer<T>? elementComparer = null) 
+            where TEnumerable : System.Collections.Generic.IEnumerable<T> { throw null; }
+    }
+    
     public partial class HashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public HashSet() { }
