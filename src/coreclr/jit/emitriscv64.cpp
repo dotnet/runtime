@@ -516,6 +516,8 @@ void emitter::emitIns_R_R_I(
     id->idReg2(reg2);
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
