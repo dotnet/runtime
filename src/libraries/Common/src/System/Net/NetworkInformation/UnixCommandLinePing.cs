@@ -40,10 +40,8 @@ namespace System.Net.NetworkInformation
         {
             if (pingBinary != null)
             {
-                string? linkedName = Interop.Sys.ReadLink(pingBinary);
-
-                // If pingBinary is not link linkedName will be null
-                if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+                System.IO.FileSystemInfo? linkInfo = File.ResolveLinkTarget(pingBinary, returnFinalTarget: true);
+                if (linkInfo?.Name.EndsWith("busybox", StringComparison.Ordinal) == true)
                 {
                     return true;
                 }

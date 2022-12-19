@@ -2,9 +2,6 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants);DEBUG</DefineConstants>
   </PropertyGroup>
 
@@ -17,19 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Properties\" />
-    <Folder Include="TestCasesRunner\" />
-    <Folder Include="Extensions\" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
     <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
-    <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" />
-    <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
-    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="$(RepoRoot)\src\coreclr\tools\ILVerification\ILVerification.csproj" />
     <PackageReference Include="nunit" Version="3.12.0" />
@@ -38,6 +24,10 @@
          dependency of mscorlib. It is not actually required to build
          the tests. -->
     <PackageReference Include="System.Threading.AccessControl" Version="5.0.0" />
+
+    <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
 
   <Target Name="PrepareTools" BeforeTargets="Build">

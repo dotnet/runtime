@@ -346,10 +346,8 @@ namespace System
         {
             if (throwOnFailure)
             {
-                if ((parsedComponent = int.Parse(component, NumberStyles.Integer, CultureInfo.InvariantCulture)) < 0)
-                {
-                    throw new ArgumentOutOfRangeException(componentName, SR.ArgumentOutOfRange_Version);
-                }
+                parsedComponent = int.Parse(component, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
                 return true;
             }
 

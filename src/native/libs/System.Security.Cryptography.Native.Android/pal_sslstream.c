@@ -1039,6 +1039,25 @@ bool AndroidCryptoNative_SSLStreamVerifyHostname(SSLStream* sslStream, char* hos
     return ret;
 }
 
+bool AndroidCryptoNative_SSLStreamIsLocalCertificateUsed(SSLStream* sslStream)
+{
+    abort_if_invalid_pointer_argument(sslStream);
+    JNIEnv* env = GetJNIEnv();
+
+    bool ret = false;
+    INIT_LOCALS(loc, localCertificates);
+
+    // X509Certificate[] localCertificates = sslSession.getLocalCertificates();
+    loc[localCertificates] = (*env)->CallObjectMethod(env, sslStream->sslSession, g_SSLSessionGetLocalCertificates);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ret = loc[localCertificates] != NULL;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
 bool AndroidCryptoNative_SSLStreamShutdown(SSLStream* sslStream)
 {
     abort_if_invalid_pointer_argument (sslStream);

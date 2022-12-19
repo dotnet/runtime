@@ -9,13 +9,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="MaskLoad.Double.cs" />
-    <Compile Include="MaskLoad.Single.cs" />
-    <Compile Include="MaskStore.Double.cs" />
-    <Compile Include="MaskStore.Single.cs" />
-    <Compile Include="PermuteVar.Single.cs" />
-    <Compile Include="PermuteVar.Double.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="Program.Avx1_Vector128.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly switch1{}
+.assembly 'b41262'{}
 .class switch1 {
 .method static int32 main() {
 .entrypoint

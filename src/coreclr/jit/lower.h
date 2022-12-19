@@ -478,11 +478,7 @@ public:
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_HW_INTRINSICS)
-    // Tries to get a containable node for a given HWIntrinsic
-    bool TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
-                                        GenTree**           pNode,
-                                        bool*               supportsRegOptional,
-                                        GenTreeHWIntrinsic* transparentParentNode = nullptr);
+    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTree* childNode, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);

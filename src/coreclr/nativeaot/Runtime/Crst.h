@@ -18,6 +18,7 @@ enum CrstType
     CrstInterfaceDispatchGlobalLists,
     CrstStressLog,
     CrstRestrictedCallouts,
+    CrstObjectiveCMarshalCallouts,
     CrstGcStressControl,
     CrstSuspendEE,
     CrstCastCache,

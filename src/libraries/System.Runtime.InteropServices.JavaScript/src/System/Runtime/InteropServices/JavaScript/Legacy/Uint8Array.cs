@@ -36,7 +36,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static implicit operator Uint8Array(Span<byte> span) => From(span);
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public byte[] ToArray()
         {
             this.AssertNotDisposed();
@@ -48,7 +47,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return (byte[])res;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static unsafe Uint8Array From(ReadOnlySpan<byte> span)
         {
             // source has to be instantiated.
