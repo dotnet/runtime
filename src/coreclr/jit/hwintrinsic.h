@@ -158,7 +158,7 @@ enum HWIntrinsicFlag : unsigned int
     // contained
     HW_Flag_MaybeCommutative = 0x80000,
 
-    // The intrinsic has EVEX compatible form
+    // The intrinsic has no EVEX compatible form
     HW_Flag_NoEvexSemantics = 0x100000
 
 #elif defined(TARGET_ARM64)
