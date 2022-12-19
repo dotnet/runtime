@@ -6153,9 +6153,10 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 #endif
 
 /*
- * is_direct_pinvoke_specified_for_method
+ * is_direct_pinvoke_specified_for_method:
  *
- * Return whether the method is specified to be directly pinvoked
+ * Returns whether the method is specified to be directly pinvoked based on
+ * the direct_pinvoke HashTable populated in process_specified_direct_pinvokes.
  */
 static gboolean
 is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method)
@@ -14151,8 +14152,46 @@ init_options (MonoAotOptions *aot_opts)
 	aot_opts->clangxx = g_strdup ("clang++");
 }
 
+//---------------------------------------------------------------------------------------
+//
+// process_specified_direct_pinvokes processes the direct pinvokes and direct pinvoke lists
+// the user specifies in the direct-pinvokes and direct-pinvoke-lists options and adds the
+// entire module or module and set of entrypoints to the MonoAotCompile instance's
+// direct_pinvoke HashTable.
+//
+// Format of direct_pinvoke HashTable:
+// The direct_pinvoke HashTable keys are module names, and its values are HashTables
+// corresponding to entrypoint names within the module to be direct pinvoked.
+// A NULL value in the direct_pinvoke HashTable is understood to mean that all entrypoints
+// from the library are direct. It will overrule previously added HashTable of entrypoints,
+// and it will prevent new HashTable of entrypoints from being added.
+//
+// Processing:
+// The specified direct pinvoke, dpi, is ignored if it is empty or considered a comment.
+// It is then understood to be in the format of MODULE or MODULE!ENTRYPOINT.
+// A direct pinvoke in the form of MODULE is understood as enabling direct pinvoke for all
+// entrypoints within the particular module, and will override any previously added set
+// of entrypoint names.
+// A direct pinvoke in the form of MODULE!ENTRYPOINT is understood as enabling direct pinvoke
+// for the specific entrypoint in the module. It will not be added if the entire module
+// should be direct pinvoked, but otherwise will be added to a set of entrypoint names for
+// the particular module.
+//
+// Arguments:
+//  * acfg - the MonoAotCompiler instance
+//  * dpi (direct pinvoke) - the string passed in specifying a direct pinvoke
+//
+// Return Value:
+//  gboolean pertaining to whether or not the direct pinvoke was successfully processed
+//  processing is considered to have failed if it doesn't add a specified direct pinvoke
+//  to the MonoAotCompile instance's direct_pinvokes HashTable (excluding comments and
+//  empty values).
+//  Note - There are no extensive format checks, and is intended to behave akin to
+//  ConfigurablePInvokePolicy AddDirectPInvoke in NativeAOT
+//
+
 static gboolean
-process_direct_pinvokes (MonoAotCompile *acfg, char *dpi)
+process_specified_direct_pinvokes (MonoAotCompile *acfg, char *dpi)
 {
 	gboolean processed = TRUE;
 	char *direct_pinvoke = g_strdup (dpi);
@@ -14179,11 +14218,14 @@ process_direct_pinvokes (MonoAotCompile *acfg, char *dpi)
 		goto cleanup;
 	}
 
+	// MODULE
+	// All entrypoints from the library are direct
 	if (!direct_pinvoke_split[1]) {
 		g_hash_table_insert (acfg->direct_pinvokes, library_name, NULL);
 		goto cleanup;
 	}
 
+	// MODULE!ENTRYPOINT
 	char *entrypoint_name = g_strdup (direct_pinvoke_split[1]);
 	if (!entrypoint_name) {
 		processed = FALSE;
@@ -14193,8 +14235,10 @@ process_direct_pinvokes (MonoAotCompile *acfg, char *dpi)
 
 	GHashTable *val;
 	if (g_hash_table_lookup_extended (acfg->direct_pinvokes, library_name, NULL, (gpointer *)&val)) {
+		// All entrypoints from the library are direct
 		if (!val || g_hash_table_contains (val, entrypoint_name))
 			goto cleanup;
+
 		g_hash_table_insert (val, entrypoint_name, NULL);
 	} else {
 		val = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
@@ -14304,7 +14348,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		GList *l;
 
 		for (l = acfg->aot_opts.direct_pinvokes; l; l = l->next) {
-			added_direct_pinvoke = process_direct_pinvokes (acfg, (char*)l->data);
+			added_direct_pinvoke = process_specified_direct_pinvokes (acfg, (char*)l->data);
 			if (!added_direct_pinvoke)
 				return 1;
 		}
@@ -14323,7 +14367,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 			char *line = NULL;
 			size_t line_len = 0;
 			while (getline (&line, &line_len, direct_pinvoke_list_file) != -1 && added_direct_pinvoke) {
-				added_direct_pinvoke = process_direct_pinvokes (acfg, line);
+				added_direct_pinvoke = process_specified_direct_pinvokes (acfg, line);
 			}
 			fclose (direct_pinvoke_list_file);
 			if (!added_direct_pinvoke)
