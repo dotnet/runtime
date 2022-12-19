@@ -72,7 +72,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
-      buildArgs: -s mono+libs -c $(_BuildConfig)
+      buildArgs: -s mono+libs -c $(_BuildConfig) /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 240
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
