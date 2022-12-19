@@ -2892,7 +2892,6 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 #define INTERP_ENTRY_UPDATE_HIT_COUNT(_method)
 #endif
 
-
 #define INTERP_ENTRY_BASE(_method, _this_arg, _res) \
 	InterpEntryData data; \
 	(data).rmethod = (_method); \
