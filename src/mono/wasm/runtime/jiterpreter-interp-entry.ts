@@ -12,7 +12,8 @@ import cwraps from "./cwraps";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, counters, getRawCwrap, importDef,
-    getWasmFunctionTable, recordFailure, getOptions, JiterpreterOptions
+    getWasmFunctionTable, recordFailure, getOptions,
+    JiterpreterOptions, shortNameBase
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -266,7 +267,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
-            const wasmName = compress ? i.toString(36) : undefined;
+            const wasmName = compress ? i.toString(shortNameBase) : undefined;
             builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
         }
 

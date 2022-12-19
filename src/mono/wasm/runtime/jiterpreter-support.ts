@@ -8,7 +8,8 @@ import cwraps from "./cwraps";
 
 export const maxFailures = 2,
     maxMemsetSize = 64,
-    maxMemmoveSize = 64;
+    maxMemmoveSize = 64,
+    shortNameBase = 36;
 
 // uint16
 export declare interface MintOpcodePtr extends NativePointer {
@@ -243,7 +244,7 @@ export class WasmBuilder {
 
         for (let i = 0; i < this.constantSlots.length; i++) {
             this.appendName("c");
-            this.appendName(i.toString(36));
+            this.appendName(i.toString(shortNameBase));
             this.appendU8(0x03); // global
             this.appendU8(WasmValtype.i32); // all constants are pointers right now
             this.appendU8(0x00); // constant
@@ -481,7 +482,7 @@ export class WasmBuilder {
     getConstants () {
         const result : { [key: string]: number } = {};
         for (let i = 0; i < this.constantSlots.length; i++)
-            result[i.toString(36)] = this.constantSlots[i];
+            result[i.toString(shortNameBase)] = this.constantSlots[i];
         return result;
     }
 }

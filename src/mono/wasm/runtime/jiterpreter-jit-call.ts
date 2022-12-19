@@ -10,7 +10,8 @@ import {
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions, recordFailure
+    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
+    recordFailure, shortNameBase
 } from "./jiterpreter-support";
 import cwraps from "./cwraps";
 
@@ -302,7 +303,7 @@ export function mono_interp_flush_jitcall_queue () : void {
         const compress = true;
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(36) : undefined;
+            const wasmName = compress ? i.toString(shortNameBase) : undefined;
             builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
         }
         builder.generateImportSection();
@@ -355,7 +356,7 @@ export function mono_interp_flush_jitcall_queue () : void {
         };
         // Place our function imports into the import dictionary
         for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(36) : trampImports[i][0];
+            const wasmName = compress ? i.toString(shortNameBase) : trampImports[i][0];
             imports[wasmName] = trampImports[i][2];
         }
 

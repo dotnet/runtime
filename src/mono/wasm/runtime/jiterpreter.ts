@@ -16,7 +16,7 @@ import {
     copyIntoScratchBuffer, _now, elapsedTimes, append_memset_dest,
     append_memmove_dest_src, counters, getRawCwrap, importDef,
     JiterpreterOptions, getOptions, recordFailure, try_append_memset_fast,
-    try_append_memmove_fast
+    try_append_memmove_fast, shortNameBase
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -513,7 +513,7 @@ function generate_wasm (
         // Emit function imports
         for (let i = 0; i < traceImports.length; i++) {
             mono_assert(traceImports[i], () => `trace #${i} missing`);
-            const wasmName = compress ? i.toString(36) : undefined;
+            const wasmName = compress ? i.toString(shortNameBase) : undefined;
             builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], wasmName);
         }
 
@@ -595,7 +595,7 @@ function generate_wasm (
             const iname = traceImports[i][0];
             if (!ifn || (typeof (ifn) !== "function"))
                 throw new Error(`Import '${iname}' not found or not a function`);
-            const wasmName = compress ? i.toString(36) : iname;
+            const wasmName = compress ? i.toString(shortNameBase) : iname;
             imports[wasmName] = ifn;
         }
 
