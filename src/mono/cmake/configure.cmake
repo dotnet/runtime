@@ -93,7 +93,7 @@ else ()
 endif()
 
 if (HOST_WASI)
-  # sysctl is deprecated on Linux and doesn't work on Browser
+  # sysctl is deprecated on Linux and doesn't work on WASI
   set(HAVE_GETRUSAGE 0)
 endif()
 
