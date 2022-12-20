@@ -109,6 +109,8 @@ namespace ILCompiler
             {
             }
 
+            protected override bool ShouldProcessTypes => false;
+
             public static HashSet<string> GetSubstitutions(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
                 var rdr = new SubstitutionsReader(context, reader, module, featureSwitchValues);
