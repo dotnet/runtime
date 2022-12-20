@@ -114,5 +114,4 @@ if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
 
 set "PATH=%_SDK_DIR%;%PATH%"
 set "SDK_FOR_WORKLOAD_TESTING_PATH=%_SDK_DIR%"
-set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 EXIT /b 0

@@ -33,6 +33,7 @@ namespace System.Net
         CredentialsNeeded,
         Renegotiate,
         TryAgain,
+        HandshakeStarted,
 
         // Errors
         OutOfMemory,

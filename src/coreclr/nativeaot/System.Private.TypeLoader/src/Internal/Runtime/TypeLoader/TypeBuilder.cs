@@ -730,7 +730,6 @@ namespace Internal.Runtime.TypeLoader
             if (!state.HasStaticConstructor)
                 return;
 
-            Debug.Assert(state.ClassConstructorPointer.HasValue);
             IntPtr canonicalClassConstructorFunctionPointer = state.ClassConstructorPointer.Value;
 
             IntPtr generatedTypeStaticData = GetRuntimeTypeHandle(type).ToEETypePtr()->DynamicNonGcStaticsData;
@@ -852,8 +851,7 @@ namespace Internal.Runtime.TypeLoader
                         Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
                         state.HalfBakedRuntimeTypeHandle.SetParameterizedTypeShape(ParameterizedTypeShapeConstants.ByRef);
                         Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
-                        state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->Flags = EETypeBuilderHelpers.ComputeFlags(type);
-                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.ByRef);
+                        state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType = EETypeElementType.ByRef;
                     }
                 }
             }
