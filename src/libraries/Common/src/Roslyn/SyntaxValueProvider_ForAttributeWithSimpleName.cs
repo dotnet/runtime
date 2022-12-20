@@ -36,10 +36,10 @@ internal static partial class SyntaxValueProviderExtensions
             ContainsAttributeList = containsAttributeList;
         }
 
-        public bool Equals(SyntaxTreeInfo other)
+        public bool Equals(SyntaxTreeInfo? other)
             => Tree == other?.Tree;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
             => this.Equals(obj as SyntaxTreeInfo);
 
         public override int GetHashCode()
