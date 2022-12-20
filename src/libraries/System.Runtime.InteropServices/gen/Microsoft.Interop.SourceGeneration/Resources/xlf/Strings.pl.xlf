@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
         <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="new">All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</target>
+        <target state="translated">Wszystkie elementy organizujące dla wartości przekazywanych jako niezarządzana wartość zwracana muszą mieć ten sam typ niezarządzany.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
