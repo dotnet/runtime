@@ -733,31 +733,37 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 }
 
 bool
-CrashInfo::PageMappedToPhysicalMemory(uint64_t start) {
-    // https://www.kernel.org/doc/Documentation/vm/pagemap.txt
-    if (m_fdPagemap == -1)
-    {
-        // Weren't able to open pagemap file, so don't run this check
-        // Permission issues are expected on Linux kernels 4.0 and 4.1
+CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
+{
+    #ifdef __APPLE__
+        // this check has not been implemented yet for macos
         return true;
-    }
+    #else
+        // https://www.kernel.org/doc/Documentation/vm/pagemap.txt
+        if (m_fdPagemap == -1)
+        {
+            // Weren't able to open pagemap file, so don't run this check
+            // Permission issues are expected on Linux kernels 4.0 and 4.1
+            return true;
+        }
 
-    uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-    lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
-    uint64_t value;
-    size_t res = read(m_fdPagemap, (void*)&value, sizeof(value));
-    if (res == (size_t) -1)
-    {
-        int readErrno = errno;
-        TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
-        // still try to put this page in the dump file
-        return true;
-    }
+        uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
+        lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
+        uint64_t value;
+        size_t res = read(m_fdPagemap, (void*)&value, sizeof(value));
+        if (res == (size_t) -1)
+        {
+            int readErrno = errno;
+            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
+            // still try to put this page in the dump file
+            return true;
+        }
 
-    bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;
-    bool is_page_swapped = (value & ((uint64_t)1 << 62)) != 0;
-    TRACE_VERBOSE("Pagemap value for %" PRIA PRIx ", pagemap offset %" PRIA PRIx " is %" PRIA PRIx " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
-    return is_page_present || is_page_swapped;
+        bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;
+        bool is_page_swapped = (value & ((uint64_t)1 << 62)) != 0;
+        TRACE_VERBOSE("Pagemap value for %" PRIA PRIx ", pagemap offset %" PRIA PRIx " is %" PRIA PRIx " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
+        return is_page_present || is_page_swapped;
+    #endif
 }
 
 bool
