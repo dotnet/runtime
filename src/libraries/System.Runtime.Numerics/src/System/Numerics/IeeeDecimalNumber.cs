@@ -15,18 +15,23 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
-
-
-/*    // Extension of NumberFormatInfo to bring in internal helpers, if needed
-    internal static class NumberFormatInfoExtension
+/*    // Extension of ReadOnlySpan to bring in internal helpers, if needed
+    internal static partial class MemoryExtensions
     {
-        public static bool Extension_AllowHyphenDuringParsing(this NumberFormatInfo formatInfo)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
         {
-            return formatInfo.AllowHyphenDuringParsing;
+            if (span.Length != value.Length)
+                return false;
+            if (value.Length == 0)  // span.Length == value.Length == 0
+                return true;
+            return System.Globalization.Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), span.Length);
         }
+
+
     }*/
 
-    internal static class IeeeDecimalNumber
+    internal static partial class IeeeDecimalNumber
     {
         // IeeeDecimalNumberBuffer
 
@@ -176,15 +181,15 @@ namespace System.Numerics
                 // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
                 // that case so that we don't start parsing things like `++infini`.
 
-                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                if (valueTrim.Equals(info.PositiveInfinitySymbol, StringComparison.OrdinalIgnoreCase))
                 {
                     result = Decimal32.PositiveInfinity;
                 }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
+                else if (valueTrim.Equals(info.NegativeInfinitySymbol, StringComparison.OrdinalIgnoreCase))
                 {
                     result = Decimal32.NegativeInfinity;
                 }
-                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                else if (valueTrim.Equals(info.NaNSymbol, StringComparison.OrdinalIgnoreCase))
                 {
                     result = Decimal32.NaN;
                 }
@@ -192,11 +197,11 @@ namespace System.Numerics
                 {
                     valueTrim = valueTrim.Slice(info.PositiveSign.Length);
 
-                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.Equals(info.PositiveInfinitySymbol, StringComparison.OrdinalIgnoreCase))
                     {
                         result = Decimal32.PositiveInfinity;
                     }
-                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.Equals(info.NaNSymbol, StringComparison.OrdinalIgnoreCase))
                     {
                         result = Decimal32.NaN;
                     }
@@ -208,12 +213,12 @@ namespace System.Numerics
                 }
                 else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
                          !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                         valueTrim.Slice(info.NegativeSign.Length).Equals(info.NaNSymbol, StringComparison.OrdinalIgnoreCase))
                 {
                     result = Decimal32.NaN;
                 }
                 else if (info.AllowHyphenDuringParsing && SpanStartsWith(valueTrim, '-') && !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
-                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                         !info.NaNSymbol.StartsWith('-') && valueTrim.Slice(1).Equals(info.NaNSymbol, StringComparison.OrdinalIgnoreCase))
                 {
                     result = Decimal32.NaN;
                 }
@@ -352,10 +357,10 @@ namespace System.Numerics
                         if (digCount < maxDigCount)
                         {
                             number.Digits[digCount] = (byte)(ch);
-                            if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
-                            {
+                            //if ((ch != '0') || (number.Kind != NumberBufferKind.Integer)) // number.Kind will always not be Integer
+                            //{
                                 digEnd = digCount + 1;
-                            }
+                            //}
                         }
                         else if (ch != '0')
                         {
@@ -457,7 +462,7 @@ namespace System.Numerics
                     }
                 }
 
-                if (number.Kind == NumberBufferKind.FloatingPoint && !number.HasNonZeroTail)
+                if (/*number.Kind == NumberBufferKind.FloatingPoint && // <- this will always be true */!number.HasNonZeroTail)
                 {
                     // Adjust the number buffer for trailing zeros
                     int numberOfFractionalDigits = digEnd - number.Scale;
@@ -499,14 +504,15 @@ namespace System.Numerics
                 {
                     if ((state & StateNonZero) == 0)
                     {
-                        if (number.Kind != NumberBufferKind.Decimal)
+                        // Both of the below should always be false. I believe the first case is handling a specific edge case for System.Decimal that does not apply to the IEEE Decimals. TODO confirm this.
+/*                        if (number.Kind != NumberBufferKind.Decimal)
                         {
                             number.Scale = 0;
                         }
                         if ((number.Kind == NumberBufferKind.Integer) && (state & StateDecimal) == 0)
                         {
                             number.IsNegative = false;
-                        }
+                        }*/
                     }
                     str = p;
                     return true;
@@ -563,26 +569,73 @@ namespace System.Numerics
 
         private static bool IsDigit(int ch) => ((uint)ch - '0') <= 9;
 
-        internal static Decimal32 NumberToDecimal32(ref IeeeDecimalNumberBuffer number)
+        internal static unsafe Decimal32 NumberToDecimal32(ref IeeeDecimalNumberBuffer number)
         {
             number.CheckConsistency();
-            Decimal32 result;
+            //Decimal32 result;
+            return default; // TODO figure this out after formatting
 
-            if ((number.DigitsCount == 0) || (number.Scale < Decimal32.MinQExponent))
+            // The input value is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
+            // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
+            // We want to extract q (the exponent) and c (the significand) such that
+            // value = c * 10 ^ q
+            // Which means
+            // c = first N digits of Mantissa, where N is min(Decimal32.Precision, number.DigitsCount)
+            // - Note: If there are more than Decimal32.Precision digits in the number, we must round
+            // q = Exponent - N
+            // - Note: If Exponent - N cannot fit in q we need to adjust c and round
+
+            // Step 1: Adjust the exponent such that the value Mantissa.ExtraDigits x 10^Exponent
+/*            int q = number.Scale - 7;
+
+
+            if ((number.DigitsCount == 0) || ((q < Decimal32.MinQExponent) && number.DigitsCount))
             {
-                result = default;
+                result = default; // TODO are we sure this is the "right" zero to return in all these cases
             }
-            else if (number.Scale > Decimal32.MaxQExponent)
+            else if (q > Decimal32.MaxQExponent)
             {
                 result = Decimal32.PositiveInfinity;
             }
             else
             {
-                ushort bits = NumberToDecimal32FloatingPointBits(ref number, in FloatingPointInfo.Decimal32);
-                result = new Decimal32(bits);
-            }
 
-            return number.IsNegative ? Decimal32.Negate(result) : result;
+
+                // Step 1: Adjust 
+
+                byte* mantissa = number.GetDigitsPointer();
+                int exponent = number.Scale;
+                uint digit = *mantissa;
+
+
+                uint digitsToExtract;
+                bool needToRound;
+                if (number.DigitsCount > Decimal32.Precision)
+                {
+                    digitsToExtract = Decimal32.Precision;
+                    needToRound = true;
+                }
+                else
+                {
+                    digitsToExtract = (uint) number.DigitsCount;
+                    needToRound = false;
+                }
+
+
+                uint c = 0;
+                int q = number.Scale;
+                uint extractedDigits = 0;
+                while (true)
+                {
+                    if (
+                    c *= 10;
+                    q -= 1;
+                }
+
+
+                }
+
+                return number.IsNegative ? Decimal32.Negate(result) : result;*/
         }
 
         internal enum ParsingStatus // No ParsingStatus.Overflow because these types can represent infinity
