@@ -14220,20 +14220,30 @@ parsed_direct_pinvoke (MonoAotCompile *acfg, char *dpi, char **module_name_ptr, 
 	if (!g_strstrip (direct_pinvoke))
 		goto cleanup;
 
-	char **direct_pinvoke_split = g_strsplit(direct_pinvoke, "!", 2);
+	char **direct_pinvoke_split = g_strsplit (direct_pinvoke, "!", 2);
 	if (!direct_pinvoke_split) {
 		aot_printerrf (acfg, "Failed to split the provided 'direct_pinvoke' AOT option '%s' with delimiter '!'\n", direct_pinvoke);
 		res = DIRECT_PINVOKE_ERR;
 		goto cleanup;
 	}
 
-	*module_name_ptr = direct_pinvoke_split[0];
-	*entrypoint_name_ptr = direct_pinvoke_split[1];
 	res = DIRECT_PINVOKE_PARSED;
-	g_strfreev(direct_pinvoke_split);
+	*module_name_ptr = g_strdup (direct_pinvoke_split[0]);
+	if (!*module_name_ptr) {
+		aot_printerrf (acfg, "Failed to strdup the module name portion of direct pinvoke '%s'.\n", direct_pinvoke);
+		res = DIRECT_PINVOKE_ERR;
+	}
+	*entrypoint_name_ptr = g_strdup (direct_pinvoke_split[1]);
+	if (direct_pinvoke_split[1] && !*entrypoint_name_ptr) {
+		aot_printerrf (acfg, "Failed to strdup the entrypoint name portion of direct pinvoke '%s'.\n", direct_pinvoke);
+		res = DIRECT_PINVOKE_ERR;
+	}
+	g_strfreev (direct_pinvoke_split);
+	direct_pinvoke_split = NULL;
 
 cleanup:
 	g_free (direct_pinvoke);
+	direct_pinvoke = NULL;
 
 early_exit:
 	return res;
@@ -14286,8 +14296,12 @@ add_direct_pinvoke (MonoAotCompile *acfg, char **module_name_ptr, char **entrypo
 		g_hash_table_insert (acfg->direct_pinvokes, *module_name_ptr, entrypoints);
 	}
 
+	entrypoints = NULL;
 cleanup:
-	entrypoints,*module_name_ptr,*entrypoint_name_ptr = NULL;
+	g_free (*module_name_ptr);
+	g_free (*entrypoint_name_ptr);
+	*module_name_ptr, module_name_ptr = NULL;
+	*entrypoint_name_ptr, entrypoint_name_ptr = NULL;
 	return success;
 }
 
