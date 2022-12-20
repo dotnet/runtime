@@ -650,7 +650,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             foreach (var directPInvokeList in DirectPInvokeLists)
             {
-                aotArgs.Add($"direct-pinvoke-list={directPInvokeList}");
+                aotArgs.Add($"direct-pinvoke-lists={directPInvokeList}");
             }
         }
 

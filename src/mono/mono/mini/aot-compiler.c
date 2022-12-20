@@ -14212,13 +14212,18 @@ typedef enum {
 static DirectPInvokeParsedResult
 parsed_direct_pinvoke (MonoAotCompile *acfg, char *dpi, char **module_name_ptr, char **entrypoint_name_ptr)
 {
-	DirectPInvokeParsedResult res = DIRECT_PINVOKE_SKIP;
+	DirectPInvokeParsedResult res = DIRECT_PINVOKE_PARSED;
 	char *direct_pinvoke = g_strdup (dpi);
-	if (!direct_pinvoke)
+	if (!direct_pinvoke) {
+		aot_printerrf (acfg, "Failed to strdup the direct pinvoke '%s'.\n", dpi);
+		res = DIRECT_PINVOKE_ERR;
 		goto early_exit;
+	}
 
-	if (!g_strstrip (direct_pinvoke))
+	if (!g_strstrip (direct_pinvoke)) {
+		res = DIRECT_PINVOKE_SKIP;
 		goto cleanup;
+	}
 
 	char **direct_pinvoke_split = g_strsplit (direct_pinvoke, "!", 2);
 	if (!direct_pinvoke_split) {
@@ -14227,7 +14232,6 @@ parsed_direct_pinvoke (MonoAotCompile *acfg, char *dpi, char **module_name_ptr, 
 		goto cleanup;
 	}
 
-	res = DIRECT_PINVOKE_PARSED;
 	*module_name_ptr = g_strdup (direct_pinvoke_split[0]);
 	if (!*module_name_ptr) {
 		aot_printerrf (acfg, "Failed to strdup the module name portion of direct pinvoke '%s'.\n", direct_pinvoke);
