@@ -285,7 +285,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     case ConvKind.Identity:
                         if (cv2 == ConvKind.Identity)
                         {
-                            BinOpFullSig newsig = new BinOpFullSig(this, bos);
+                            BinOpFullSig newsig = new BinOpFullSig(bos);
                             if (newsig.Type1() != null && newsig.Type2() != null)
                             {
                                 // Exact match.
@@ -383,7 +383,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 else
                 {
                     // Record it as applicable and skip accordingly.
-                    rgbofs.Add(new BinOpFullSig(this, bos));
+                    rgbofs.Add(new BinOpFullSig(bos));
                     ibos += bos.cbosSkip;
                 }
             }
@@ -1046,8 +1046,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bt2 = WhichTypeIsBetter(bofs1.Type2(), bofs2.Type2(), type2);
             }
 
-            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt1));
-            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt2));
+            Debug.Assert(Enum.IsDefined(bt1));
+            Debug.Assert(Enum.IsDefined(bt2));
             int res = bt1 switch
             {
                 BetterType.Left => -1,
@@ -1462,7 +1462,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     case ConvKind.Identity:
                         {
-                            UnaOpFullSig result = new UnaOpFullSig(this, uos);
+                            UnaOpFullSig result = new UnaOpFullSig(uos);
                             if (result.GetType() != null)
                             {
                                 pSignatures.Add(result);
@@ -1498,7 +1498,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 else
                 {
                     // Record it as applicable and skip accordingly.
-                    UnaOpFullSig newResult = new UnaOpFullSig(this, uos);
+                    UnaOpFullSig newResult = new UnaOpFullSig(uos);
                     if (newResult.GetType() != null)
                     {
                         pSignatures.Add(newResult);
@@ -1550,7 +1550,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bt = WhichTypeIsBetter(uofs1.GetType(), uofs2.GetType(), typeArg);
             }
 
-            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt));
+            Debug.Assert(Enum.IsDefined(bt));
             return bt switch
             {
                 BetterType.Left => -1,

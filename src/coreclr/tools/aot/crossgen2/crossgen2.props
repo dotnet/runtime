@@ -7,6 +7,7 @@
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86;arm64;arm;loongarch64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
@@ -14,17 +15,13 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <EventSourceSupport>true</EventSourceSupport>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="Properties\Resources.resx">
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
-    </EmbeddedResource>
-
-    <EmbeddedResource Include="..\..\Common\CommandLine\Resources\Strings.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.CommandLine.Strings</ClassName>
     </EmbeddedResource>
   </ItemGroup>
 
@@ -39,7 +36,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -391,9 +391,9 @@ namespace DebuggerTests
                 return str + parm;
             }
 
-            public string CallMethodWithParmString_λ(string parm)
+            public string CallMethodWithParmString_\u03BB(string parm)
             {
-                return "λ_" + parm;
+                return "\u03BB_" + parm;
             }
 
             public string CallMethodWithParmBool(bool parm)
@@ -516,10 +516,19 @@ namespace DebuggerTests
             public List<List<int>> numListOfLists;
             public string[][] textArrayOfArrays;
             public List<List<string>> textListOfLists;
+            public Dictionary<string, bool> indexedByStr;
+            public Dictionary<char, string> indexedByChar;
+            public Dictionary<bool, string> indexedByBool;
             public int idx0;
             public int idx1;
 
+            // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
+            public string this[char key] => "res_" + key;
+            public string this[bool key] => key.ToString();
             public bool this[string key] => key.Length > 3;
+            public int this[double key] => (int)key;
+            public int this[float key] => (int)key;
+            public int this[decimal key] => (int)key;
 
             public void run()
             {
@@ -531,6 +540,9 @@ namespace DebuggerTests
                 numListOfLists = new List<List<int>> { numList, numList };
                 textArrayOfArrays = new string[][] { textArray, textArray };
                 textListOfLists = new List<List<string>> { textList, textList };
+                indexedByStr = new Dictionary<string, bool>() { { "1", true }, { "111", false }, { "true", true} };
+                indexedByChar = new Dictionary<char, string>() { { 'i', "I" }, { '5', "5" } };
+                indexedByBool = new Dictionary<bool, string>() { { true, "TRUE" }, { false, "FALSE" } };
                 idx0 = 0;
                 idx1 = 1;
             }
@@ -542,6 +554,13 @@ namespace DebuggerTests
             int j = 1;
             TestEvaluate f = new TestEvaluate();
             f.run();
+            string longString = "longString";
+            string shortString = "9";
+            char aChar = '9';
+            bool aBool = true;
+            float aFloat = 1.23f;
+            double aDouble = 2.34;
+            decimal aDecimal = 3.34m;
         }
     }
 
@@ -1914,7 +1933,7 @@ namespace DebuggerTests
 
             public bool GetBool(bool param = true) => param;
             public char GetChar(char param = 'T') => param;
-            public char GetUnicodeChar(char param = 'ą') => param;
+            public char GetUnicodeChar(char param = '\u0105') => param;
             public byte GetByte(byte param = 1) => param;
             public sbyte GetSByte(sbyte param = 1) => param;
             public short GetInt16(short param = 1) => param;
@@ -1926,7 +1945,7 @@ namespace DebuggerTests
             public float GetSingle(float param = 1.23f) => param;
             public double GetDouble(double param = 1.23) => param;
             public string GetString(string param = "1.23") => param;
-            public string GetUnicodeString(string param = "żółć") => param;
+            public string GetUnicodeString(string param = "\u017C\u00F3\u0142\u0107") => param;
 
 #nullable enable
             public bool? GetBoolNullable(bool? param = true) => param;

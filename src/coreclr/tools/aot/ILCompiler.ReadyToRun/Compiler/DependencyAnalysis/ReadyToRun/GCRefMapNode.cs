@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methods = new List<IMethodNode>();
         }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool IsShareable => false;
 

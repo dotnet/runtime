@@ -314,7 +314,6 @@ namespace System.Data
         }
 
         internal static Exception _Argument(string error) => TraceExceptionAsReturnValue(new ArgumentException(error));
-        internal static Exception _Argument(string paramName, string error) => TraceExceptionAsReturnValue(new ArgumentException(error));
         internal static Exception _Argument(string error, Exception? innerException) => TraceExceptionAsReturnValue(new ArgumentException(error, innerException));
         private static Exception _ArgumentNull(string paramName, string msg) => TraceExceptionAsReturnValue(new ArgumentNullException(paramName, msg));
         internal static Exception _ArgumentOutOfRange(string paramName, string msg) => TraceExceptionAsReturnValue(new ArgumentOutOfRangeException(paramName, msg));
@@ -349,7 +348,7 @@ namespace System.Data
         public static Exception ArgumentNull(string paramName) => _ArgumentNull(paramName, SR.Format(SR.Data_ArgumentNull, paramName));
         public static Exception ArgumentOutOfRange(string paramName) => _ArgumentOutOfRange(paramName, SR.Format(SR.Data_ArgumentOutOfRange, paramName));
         public static Exception BadObjectPropertyAccess(string error) => _InvalidOperation(SR.Format(SR.DataConstraint_BadObjectPropertyAccess, error));
-        public static Exception ArgumentContainsNull(string paramName) => _Argument(paramName, SR.Format(SR.Data_ArgumentContainsNull, paramName));
+        public static Exception ArgumentContainsNull(string paramName) => TraceExceptionAsReturnValue(new ArgumentException(SR.Data_ArgumentContainsNull, paramName));
         public static Exception TypeNotAllowed(Type type) => _InvalidOperation(SR.Format(SR.Data_TypeNotAllowed, type.AssemblyQualifiedName));
 
         //

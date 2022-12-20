@@ -5,8 +5,7 @@ parameters:
   archType: ''
   targetRid: ''
   crossBuild: false
-  crossrootfsDir: ''
-  framework: 'net7.0'
+  framework: 'net8.0'
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   runtimeVariant: ''
@@ -42,7 +41,6 @@ jobs:
       osSubgroup:  ${{ parameters.osSubgroup }}
       archType:  ${{ parameters.archType }}
       crossBuild: ${{ parameters.crossBuild }}
-      crossrootfsDir: ${{ parameters.crossrootfsDir }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
@@ -88,7 +86,7 @@ jobs:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
         - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
+          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
           - script: |

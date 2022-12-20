@@ -516,7 +516,7 @@ namespace System.Xml
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsPublicId(publicId);
-            if (pos != -1)
+            if (pos >= 0)
             {
                 throw CreateInvalidCharException(publicId, pos, ExceptionType.XmlException);
             }
@@ -572,7 +572,7 @@ namespace System.Xml
             return XmlCharType.IsHighSurrogate(highChar) && XmlCharType.IsLowSurrogate(lowChar);
         }
 
-        // Valid PUBLIC ID character - as defined in XML 1.0 spec (fifth edition) production [13] PublidChar
+        // Valid PUBLIC ID character - as defined in XML 1.0 spec (fifth edition) production [13] PubidChar
         public static bool IsPublicIdChar(char ch)
         {
             return XmlCharType.IsPubidChar(ch);
@@ -1352,25 +1352,6 @@ namespace System.Xml
             }
 
             return null;
-        }
-
-        // Compares the given character interval and string and returns true if the characters are identical
-        internal static bool StrEqual(char[]? chars, int strPos1, int strLen1, string str2)
-        {
-            if (strLen1 != str2.Length)
-            {
-                return false;
-            }
-
-            Debug.Assert(chars != null);
-
-            int i = 0;
-            while (i < strLen1 && chars[strPos1 + i] == str2[i])
-            {
-                i++;
-            }
-
-            return i == strLen1;
         }
 
         // XML whitespace characters, <spec>http://www.w3.org/TR/REC-xml#NT-S</spec>

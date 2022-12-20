@@ -3,7 +3,7 @@
 //
 
 /*
-set COMPlus_JITStress=1
+set DOTNET_JITStress=1
 */
 namespace Test
 {

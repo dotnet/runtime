@@ -5,19 +5,20 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
+using System.Linq;
 using System.Net.WebSockets;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WebAssembly.Diagnostics;
 
 #nullable enable
 
@@ -28,6 +29,7 @@ internal sealed class WebServerStartup
     private readonly IWebHostEnvironment _hostingEnvironment;
     private static readonly object LaunchLock = new object();
     private static string LaunchedDebugProxyUrl = "";
+    private ILogger? _logger;
     public WebServerStartup(IWebHostEnvironment hostingEnvironment) => _hostingEnvironment = hostingEnvironment;
 
     public static int StartDebugProxy(string devToolsHost)
@@ -36,7 +38,11 @@ internal sealed class WebServerStartup
         //on managed code will freeze because it will not be able to continue executing the BrowserDebugProxy to get the locals value
         var executablePath = Path.Combine(System.AppContext.BaseDirectory, "BrowserDebugHost.dll");
         var ownerPid = Environment.ProcessId;
-        var generateRandomPort = new Random().Next(5000, 5300);
+        // generate a random port in a given range, skipping the ports blocked by browsers: https://chromestatus.com/feature/5064283639513088
+        var generateRandomPort = GetNextRandomExcept(5000..5300,
+            5060, // SIP
+            5061 // SIPS
+        );
         var processStartInfo = new ProcessStartInfo
         {
             FileName = "dotnet" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : ""),
@@ -50,10 +56,26 @@ internal sealed class WebServerStartup
             throw new InvalidOperationException("Unable to start debug proxy process.");
         }
         return generateRandomPort;
+
+        static int GetNextRandomExcept(Range range, params int[] except)
+        {
+            int current;
+            do
+            {
+                current = Random.Shared.Next(range.Start.Value, range.End.Value);
+            } while (Array.IndexOf(except, current) > -1);
+
+            return current;
+        }
     }
 
-    public void Configure(IApplicationBuilder app, IOptions<WebServerOptions> optionsContainer)
+    public void Configure(IApplicationBuilder app,
+                          IOptions<WebServerOptions> optionsContainer,
+                          TaskCompletionSource<ServerURLs> realUrlsAvailableTcs,
+                          ILogger logger,
+                          IHostApplicationLifetime applicationLifetime)
     {
+        _logger = logger;
         var provider = new FileExtensionContentTypeProvider();
         provider.Mappings[".wasm"] = "application/wasm";
         provider.Mappings[".cjs"] = "text/javascript";
@@ -143,6 +165,44 @@ internal sealed class WebServerStartup
                 context.Response.Redirect("index.html", permanent: false);
                 return Task.CompletedTask;
             });
+        });
+
+
+        applicationLifetime.ApplicationStarted.Register(() =>
+        {
+            TaskCompletionSource<ServerURLs> tcs = realUrlsAvailableTcs;
+            try
+            {
+                ICollection<string>? addresses = app.ServerFeatures
+                                                    .Get<IServerAddressesFeature>()
+                                                    ?.Addresses;
+
+                string? ipAddress = null;
+                string? ipAddressSecure = null;
+                if (addresses is not null)
+                {
+                    ipAddress = GetHttpServerAddress(addresses, secure: false);
+                    ipAddressSecure = GetHttpServerAddress(addresses, secure: true);
+                }
+
+                if (ipAddress == null)
+                    tcs.SetException(new InvalidOperationException("Failed to determine web server's IP address or port"));
+                else
+                    tcs.SetResult(new ServerURLs(ipAddress, ipAddressSecure));
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError($"Failed to get urls for the webserver: {ex}");
+                tcs.TrySetException(ex);
+                throw;
+            }
+
+            static string? GetHttpServerAddress(ICollection<string> addresses, bool secure)
+                => addresses?
+                        .Where(a => a.StartsWith(secure ? "https:" : "http:", StringComparison.InvariantCultureIgnoreCase))
+                        .Select(a => new Uri(a))
+                        .Select(uri => uri.ToString())
+                        .FirstOrDefault();
         });
     }
 }

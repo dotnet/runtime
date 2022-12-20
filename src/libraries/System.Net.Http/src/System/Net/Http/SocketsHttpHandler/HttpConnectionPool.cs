@@ -621,7 +621,7 @@ namespace System.Net.Http
                 // We are done with the HTTP2 connection attempt, no point to cancel it.
                 Volatile.Write(ref waiter.ConnectionCancellationTokenSource, null);
 
-                // We don't care if this fails; that means the request was previously canceled or handeled by a different connection.
+                // We don't care if this fails; that means the request was previously canceled or handled by a different connection.
                 waiter.TrySetResult(null);
 
                 lock (SyncObj)
@@ -775,7 +775,7 @@ namespace System.Net.Http
             }
         }
 
-        private bool TryGetPooledHttp2Connection(HttpRequestMessage request, bool async, [NotNullWhen(true)] out Http2Connection? connection, out HttpConnectionWaiter<Http2Connection?>? waiter)
+        private bool TryGetPooledHttp2Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http2Connection? connection, out HttpConnectionWaiter<Http2Connection?>? waiter)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
 
@@ -1047,7 +1047,7 @@ namespace System.Net.Http
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                             (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure)) // prefer HTTP/1.1 if connection is not secured and downgrade is possible
                         {
-                            if (!TryGetPooledHttp2Connection(request, async, out Http2Connection? connection, out http2ConnectionWaiter) &&
+                            if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
                             {
                                 connection = await http2ConnectionWaiter.WaitForConnectionAsync(async, cancellationToken).ConfigureAwait(false);

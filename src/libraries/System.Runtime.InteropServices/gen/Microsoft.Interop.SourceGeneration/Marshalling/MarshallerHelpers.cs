@@ -300,5 +300,95 @@ namespace Microsoft.Interop
                 }
             }
         }
+
+        public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubCodeContext context)
+        {
+            (TargetFramework fmk, _) = context.GetTargetFramework();
+            if (info.ManagedType is not PointerTypeInfo
+                && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
+                && fmk is TargetFramework.Net)
+            {
+                // Use the Unsafe.SkipInit<T> API when available and
+                // managed type is usable as a generic parameter.
+                return ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                            IdentifierName("SkipInit")))
+                    .WithArgumentList(
+                        ArgumentList(SingletonSeparatedList(
+                            Argument(IdentifierName(info.InstanceIdentifier))
+                            .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))));
+            }
+            else
+            {
+                // Assign out params to default
+                return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(info.InstanceIdentifier),
+                        LiteralExpression(
+                            SyntaxKind.DefaultLiteralExpression,
+                            Token(SyntaxKind.DefaultKeyword))));
+            }
+        }
+
+        /// <summary>
+        /// Get the marshalling direction for a given <see cref="TypePositionInfo"/> in a given <see cref="StubCodeContext"/>.
+        /// For example, an out parameter is marshalled in the <see cref="MarshalDirection.UnmanagedToManaged"/> direction in a <see cref="MarshalDirection.ManagedToUnmanaged"/> stub,
+        /// but from <see cref="MarshalDirection.ManagedToUnmanaged"/> in a <see cref="MarshalDirection.UnmanagedToManaged"/> stub.
+        /// </summary>
+        /// <param name="info">The info for an element.</param>
+        /// <param name="context">The context for the stub.</param>
+        /// <returns>The direction the element is marshalled.</returns>
+        public static MarshalDirection GetMarshalDirection(TypePositionInfo info, StubCodeContext context)
+        {
+            if (context.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.UnmanagedToManaged))
+            {
+                throw new ArgumentException("Stub context direction must not be bidirectional.");
+            }
+
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+            {
+                if (info.IsManagedReturnPosition)
+                {
+                    return MarshalDirection.UnmanagedToManaged;
+                }
+                if (!info.IsByRef)
+                {
+                    return MarshalDirection.ManagedToUnmanaged;
+                }
+                switch (info.RefKind)
+                {
+                    case RefKind.In:
+                        return MarshalDirection.ManagedToUnmanaged;
+                    case RefKind.Ref:
+                        return MarshalDirection.Bidirectional;
+                    case RefKind.Out:
+                        return MarshalDirection.UnmanagedToManaged;
+                }
+                throw new UnreachableException("An element is either a return value or passed by value or by ref.");
+            }
+
+
+            if (info.IsNativeReturnPosition)
+            {
+                return MarshalDirection.ManagedToUnmanaged;
+            }
+            if (!info.IsByRef)
+            {
+                return MarshalDirection.UnmanagedToManaged;
+            }
+            switch (info.RefKind)
+            {
+                case RefKind.In:
+                    return MarshalDirection.UnmanagedToManaged;
+                case RefKind.Ref:
+                    return MarshalDirection.Bidirectional;
+                case RefKind.Out:
+                    return MarshalDirection.ManagedToUnmanaged;
+            }
+            throw new UnreachableException("An element is either a return value or passed by value or by ref.");
+        }
     }
 }

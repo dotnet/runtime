@@ -23,7 +23,6 @@ namespace System.Security.Cryptography
 
         public OpenSslCipherLite(
             IntPtr algorithm,
-            CipherMode cipherMode,
             int blockSizeInBytes,
             int paddingSizeInBytes,
             ReadOnlySpan<byte> key,

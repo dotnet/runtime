@@ -5,6 +5,7 @@
 #include "verbmerge.h"
 #include "simpletimer.h"
 #include "logging.h"
+#include <stdio.h>
 
 // Do reads/writes in large 256MB chunks.
 #define BUFFER_SIZE 0x10000000
@@ -348,7 +349,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
     {
         const _WIN32_FIND_DATAW& findData     = fileArray[i];
         LPWSTR                   fileFullPath = MergePathStrings(dir, findData.cFileName);
-
+#ifdef TARGET_WINDOWS
         if (wcslen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
         {
             if (wcscmp(dir, W(".")) == 0)
@@ -376,6 +377,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 
             fileFullPath = newBuffer;
         }
+#endif // TARGET_WINDOWS
 
         // Is it zero length? If so, skip it.
         if ((findData.nFileSizeLow == 0) && (findData.nFileSizeHigh == 0))
@@ -570,8 +572,8 @@ CLEAN_UP:
     if (result != 0)
     {
         // There was a failure. Delete the output file, to avoid leaving some half-created file.
-        BOOL ok = DeleteFileW(nameOfOutputFileAsWchar);
-        if (!ok)
+        int st = remove(nameOfOutputFile);
+        if (st != 0)
         {
             LogError("Failed to delete file after MCS /merge failed. GetLastError()=%u", GetLastError());
         }

@@ -11,7 +11,7 @@ namespace GitHub_20040
 {
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             var array = new byte[] {0x00, 0x01};
             var reader = new BinaryTokenStreamReader(array);

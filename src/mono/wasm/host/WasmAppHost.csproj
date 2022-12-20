@@ -6,6 +6,7 @@
     <NoWarn>$(NoWarn),CA2007</NoWarn>
     <Nullable>enable</Nullable>
     <UseAppHost>false</UseAppHost>
+    <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
 
   <ItemGroup>

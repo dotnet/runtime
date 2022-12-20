@@ -24,7 +24,7 @@ using ILCompiler.IBC;
 
 namespace ILCompiler
 {
-    internal class Program
+    internal sealed class Program
     {
         private readonly Crossgen2RootCommand _command;
 
@@ -39,8 +39,6 @@ namespace ILCompiler
         private readonly bool _singleFileCompilation;
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
-        private readonly TargetArchitecture _targetArchitecture;
-        private readonly TargetOS _targetOS;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -49,113 +47,12 @@ namespace ILCompiler
             _singleFileCompilation = Get(command.SingleFileCompilation);
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
-            _targetOS = Get(command.TargetOS);
-            _targetArchitecture = Get(command.TargetArchitecture);
 
-            if (command.Result.GetValueForOption(command.WaitForDebugger))
+            if (Get(command.WaitForDebugger))
             {
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
                 Console.ReadLine();
             }
-        }
-
-        private InstructionSetSupport ConfigureInstructionSetSupport()
-        {
-            InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
-
-            // Ready to run images are built with certain instruction set baselines
-            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
-            {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
-            }
-            else if (_targetArchitecture == TargetArchitecture.ARM64)
-            {
-                if (_targetOS == TargetOS.OSX)
-                {
-                    // For osx-arm64 we know that apple-m1 is a baseline
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
-                }
-                else
-                {
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
-                }
-            }
-
-            string instructionSetArg = Get(_command.InstructionSet);
-            if (instructionSetArg != null)
-            {
-                List<string> instructionSetParams = new List<string>();
-
-                // Normalize instruction set format to include implied +.
-                string[] instructionSetParamsInput = instructionSetArg.Split(",");
-                for (int i = 0; i < instructionSetParamsInput.Length; i++)
-                {
-                    string instructionSet = instructionSetParamsInput[i];
-
-                    if (String.IsNullOrEmpty(instructionSet))
-                        throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, ""));
-
-                    char firstChar = instructionSet[0];
-                    if ((firstChar != '+') && (firstChar != '-'))
-                    {
-                        instructionSet =  "+" + instructionSet;
-                    }
-                    instructionSetParams.Add(instructionSet);
-                }
-
-                Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
-                foreach (string instructionSetSpecifier in instructionSetParams)
-                {
-                    string instructionSet = instructionSetSpecifier.Substring(1);
-
-                    bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
-                    if (enabled)
-                    {
-                        if (!instructionSetSupportBuilder.AddSupportedInstructionSet(instructionSet))
-                            throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, instructionSet));
-                    }
-                    else
-                    {
-                        if (!instructionSetSupportBuilder.RemoveInstructionSetSupport(instructionSet))
-                            throw new CommandLineException(String.Format(SR.InstructionSetMustNotBe, instructionSet));
-                    }
-                }
-            }
-
-            instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
-                (string specifiedInstructionSet, string impliedInstructionSet) =>
-                    throw new CommandLineException(String.Format(SR.InstructionSetInvalidImplication, specifiedInstructionSet, impliedInstructionSet)));
-
-            InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
-
-            // Ready to run images are built with certain instruction sets that are optimistically assumed to be present
-            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
-            {
-                // For ReadyToRun we set these hardware features as enabled always, as most
-                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
-                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
-                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
-                // support AVX instructions. As the jit generates logic that depends on these features it will call
-                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
-                // code.
-                //
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
-            }
-
-            optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
-                (string specifiedInstructionSet, string impliedInstructionSet) => throw new NotSupportedException());
-            optimisticInstructionSet.Remove(unsupportedInstructionSet);
-            optimisticInstructionSet.Add(supportedInstructionSet);
-
-            return new InstructionSetSupport(supportedInstructionSet,
-                unsupportedInstructionSet,
-                optimisticInstructionSet,
-                InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
-                _targetArchitecture);
         }
 
         private void ConfigureImageBase(TargetDetails targetDetails)
@@ -177,16 +74,17 @@ namespace ILCompiler
             if (_singleFileCompilation && !_outNearInput)
                 throw new CommandLineException(SR.MissingOutNearInput);
 
-            InstructionSetSupport instructionSetSupport = ConfigureInstructionSetSupport();
-
+            TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
+            TargetOS targetOS = Get(_command.TargetOS);
+            InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), targetArchitecture, targetOS,
+                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
-
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 
             bool versionBubbleIncludesCoreLib = false;
-            Dictionary<string, string> inputFilePathsArg = _command.Result.GetValueForArgument(_command.InputFilePaths);
+            Dictionary<string, string> inputFilePathsArg = _command.Result.GetValue(_command.InputFilePaths);
             Dictionary<string, string> unrootedInputFilePathsArg = Get(_command.UnrootedInputFilePaths);
 
             if (_inputBubble)
@@ -346,7 +244,7 @@ namespace ILCompiler
 
             string systemModuleName = Get(_command.SystemModuleName) ?? Helpers.DefaultSystemModule;
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
-            CompilerTypeSystemContext typeSystemContext = _typeSystemContext;
+            ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
 
             if (_singleFileCompilation)
             {
@@ -394,7 +292,7 @@ namespace ILCompiler
             return 0;
         }
 
-        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, CompilerTypeSystemContext typeSystemContext)
+        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext)
         {
             //
             // Initialize output filename
@@ -572,6 +470,9 @@ namespace ILCompiler
                         compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(groupConfig);
                     }
 
+                    // R2R field layout needs compilation group information
+                    typeSystemContext.SetCompilationGroup(compilationGroup);
+
                     // Load any profiles generated by method call chain analyis
                     CallChainProfile jsonProfile = null;
                     string callChainProfileFile = Get(_command.CallChainProfileFile);
@@ -605,7 +506,8 @@ namespace ILCompiler
                         compilationGroup,
                         Get(_command.EmbedPgoData),
                         Get(_command.SupportIbc),
-                        crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
+                        crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable,
+                        Get(_command.SynthesizeRandomMibc));
 
                     bool partial = Get(_command.Partial);
                     compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, partial);
@@ -615,10 +517,24 @@ namespace ILCompiler
                         // For normal compilations add compilation roots.
                         foreach (var module in rootingModules)
                         {
-                            compilationRoots.Add(new ReadyToRunRootProvider(
-                                module,
-                                profileDataManager,
-                                profileDrivenPartialNGen: partial));
+                            compilationRoots.Add(new ReadyToRunProfilingRootProvider(module, profileDataManager));
+                            // If we're doing partial precompilation, only use profile data.
+                            if (!partial)
+                            {
+                                if (ReadyToRunVisibilityRootProvider.UseVisibilityBasedRootProvider(module))
+                                {
+                                    compilationRoots.Add(new ReadyToRunVisibilityRootProvider(module));
+
+                                    if (ReadyToRunXmlRootProvider.TryCreateRootProviderFromEmbeddedDescriptorFile(module, out ReadyToRunXmlRootProvider xmlProvider))
+                                    {
+                                        compilationRoots.Add(xmlProvider);
+                                    }
+                                }
+                                else
+                                {
+                                    compilationRoots.Add(new ReadyToRunLibraryRootProvider(module));
+                                }
+                            }
 
                             if (!_command.CompositeOrInputBubble)
                             {
@@ -679,6 +595,7 @@ namespace ILCompiler
                         .UseInstructionSetSupport(instructionSetSupport)
                         .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
                         .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
+                        .UseHotColdSplitting(Get(_command.HotColdSplitting))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
                         .UseILProvider(ilProvider)
@@ -793,8 +710,7 @@ namespace ILCompiler
             if (method == null)
                 throw new CommandLineException(string.Format(SR.MethodNotFoundOnType, singleMethodName, singleMethodTypeName));
 
-            if (method.HasInstantiation != (singleMethodGenericArgs != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != singleMethodGenericArgs.Length)))
+            if (method.Instantiation.Length != singleMethodGenericArgs.Length)
             {
                 throw new CommandLineException(
                     string.Format(SR.GenericArgCountMismatch, method.Instantiation.Length, singleMethodName, singleMethodTypeName));
@@ -970,11 +886,12 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new Crossgen2RootCommand(args))
-                .UseVersionOption("-v")
+                .UseTokenReplacer(Helpers.TryReadResponseFile)
+                .UseVersionOption("--version", "-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(Crossgen2RootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
                 .Build()

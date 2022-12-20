@@ -1030,14 +1030,7 @@ bool CodeGen::genCreateAddrMode(
 
     if (!addr->OperIs(GT_ADD))
     {
-#if TARGET_ARM64
-        if (!addr->OperIs(GT_ADDEX))
-        {
-            return false;
-        }
-#else
         return false;
-#endif
     }
 
     GenTree* rv1 = nullptr;
@@ -1063,23 +1056,6 @@ bool CodeGen::genCreateAddrMode(
         op1 = addr->AsOp()->gtOp1;
         op2 = addr->AsOp()->gtOp2;
     }
-
-#if TARGET_ARM64
-    if (addr->OperIs(GT_ADDEX))
-    {
-        if (op2->isContained() && op2->OperIs(GT_CAST))
-        {
-            *rv1Ptr = op1;
-            *rv2Ptr = op2;
-            *mulPtr = 1;
-            *cnsPtr = 0;
-            *revPtr = false; // op2 is never a gc type
-            assert(!varTypeIsGC(op2));
-            return true;
-        }
-        return false;
-    }
-#endif
 
     // Can't use indirect addressing mode as we need to check for overflow.
     // Also, can't use 'lea' as it doesn't set the flags.
@@ -1131,7 +1107,11 @@ AGAIN:
     if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
         // We should not be building address modes out of non-foldable constants
-        assert(op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()));
+        if (!op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()))
+        {
+            assert(compiler->opts.compReloc);
+            return false;
+        }
 
         /* We're adding a constant */
 
@@ -1902,16 +1882,13 @@ void CodeGen::genGenerateMachineCode()
 
     genFinalizeFrame();
 
-    unsigned maxTmpSize = regSet.tmpGetTotalSize(); // This is precise after LSRA has pre-allocated the temps.
-
     GetEmitter()->emitBegFN(isFramePointerUsed()
 #if defined(DEBUG)
                                 ,
                             (compiler->compCodeOpt() != Compiler::SMALL_CODE) &&
                                 !compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)
 #endif
-                                ,
-                            maxTmpSize);
+                                );
 
     /* Now generate code for the function */
     genCodeForBBlist();
@@ -2082,13 +2059,6 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     /* Finalize the Local Var info in terms of generated code */
 
     genSetScopeInfo();
-
-#if defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
-    if (compiler->verbose)
-    {
-        varLiveKeeper->dumpLvaVariableLiveRanges();
-    }
-#endif // defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
 
 #ifdef LATE_DISASM
     unsigned finalHotCodeSize;
@@ -4291,13 +4261,6 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-        // Initialization of OSR locals must be handled specially
-        if (compiler->lvaIsOSRLocal(varNum))
-        {
-            varDsc->lvMustInit = 0;
-            continue;
-        }
-
         if (compiler->fgVarIsNeverZeroInitializedInProlog(varNum))
         {
             varDsc->lvMustInit = 0;
@@ -5431,14 +5394,6 @@ void CodeGen::genFinalizeFrame()
 
     compiler->lvaAssignFrameOffsets(Compiler::FINAL_FRAME_LAYOUT);
 
-    /* We want to make sure that the prolog size calculated here is accurate
-       (that is instructions will not shrink because of conservative stack
-       frame approximations).  We do this by filling in the correct size
-       here (where we have committed to the final numbers for the frame offsets)
-       This will ensure that the prolog size is always correct
-    */
-    GetEmitter()->emitMaxTmpSize = regSet.tmpGetTotalSize();
-
 #ifdef DEBUG
     if (compiler->opts.dspCode || compiler->opts.disAsm || compiler->opts.disAsm2 || verbose)
     {
@@ -6363,8 +6318,6 @@ void CodeGen::genFnProlog()
 
     GetEmitter()->emitEndProlog();
     compiler->unwindEndProlog();
-
-    noway_assert(GetEmitter()->emitMaxTmpSize == regSet.tmpGetTotalSize());
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -6983,8 +6936,11 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
                 end++;
             }
 
-            genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
-            liveRangeIndex++;
+            if (start < end)
+            {
+                genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
+                liveRangeIndex++;
+            }
         };
 
         siVarLoc*      curLoc   = nullptr;
@@ -7576,9 +7532,12 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
         fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().EncodeSourceTypes());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
-        const char* className;
-        const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
-        fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        auto append = [&]() {
+            char        buffer[256];
+            const char* methodName = compiler->eeGetMethodName(context->GetCallee(), buffer, sizeof(buffer));
+            fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        };
+        append();
         fprintf(file, "\"Inlinees\":[");
         if (context->GetChild() != nullptr)
         {
@@ -7942,31 +7901,17 @@ void CodeGen::genReturn(GenTree* treeNode)
         // Since we are invalidating the assumption that we would slip into the epilog
         // right after the "return", we need to preserve the return reg's GC state
         // across the call until actual method return.
-        ReturnTypeDesc retTypeDesc;
-        unsigned       regCount = 0;
-        if (compiler->compMethodReturnsMultiRegRetType())
-        {
-            if (varTypeIsLong(compiler->info.compRetNativeType))
-            {
-                retTypeDesc.InitializeLongReturnType();
-            }
-            else // we must have a struct return type
-            {
-                CorInfoCallConvExtension callConv = compiler->info.compCallConv;
 
-                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
-                                                       callConv);
-            }
-            regCount = retTypeDesc.GetReturnRegCount();
-        }
+        ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+        unsigned       retRegCount = retTypeDesc.GetReturnRegCount();
 
-        if (varTypeIsGC(compiler->info.compRetNativeType))
+        if (compiler->compMethodReturnsRetBufAddr())
         {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
         }
-        else if (compiler->compMethodReturnsMultiRegRetType())
+        else
         {
-            for (unsigned i = 0; i < regCount; ++i)
+            for (unsigned i = 0; i < retRegCount; ++i)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
@@ -7974,30 +7919,22 @@ void CodeGen::genReturn(GenTree* treeNode)
                 }
             }
         }
-        else if (compiler->compMethodReturnsRetBufAddr())
-        {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-        }
 
         genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
 
-        if (varTypeIsGC(compiler->info.compRetNativeType))
+        if (compiler->compMethodReturnsRetBufAddr())
         {
             gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
         }
-        else if (compiler->compMethodReturnsMultiRegRetType())
+        else
         {
-            for (unsigned i = 0; i < regCount; ++i)
+            for (unsigned i = 0; i < retRegCount; ++i)
             {
                 if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
                 {
                     gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
                 }
             }
-        }
-        else if (compiler->compMethodReturnsRetBufAddr())
-        {
-            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
         }
     }
 #endif // PROFILING_SUPPORTED
@@ -8067,28 +8004,14 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
 void CodeGen::genStructReturn(GenTree* treeNode)
 {
     assert(treeNode->OperGet() == GT_RETURN);
-    GenTree* op1 = treeNode->gtGetOp1();
-    genConsumeRegs(op1);
-    GenTree* actualOp1 = op1;
-    if (op1->IsCopyOrReload())
-    {
-        actualOp1 = op1->gtGetOp1();
-    }
 
-    ReturnTypeDesc retTypeDesc;
-    LclVarDsc*     varDsc = nullptr;
-    if (actualOp1->OperIs(GT_LCL_VAR))
-    {
-        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(), compiler->info.compCallConv);
-        assert(varDsc->lvIsMultiRegRet);
-    }
-    else
-    {
-        assert(actualOp1->OperIs(GT_CALL));
-        retTypeDesc = *(actualOp1->AsCall()->GetReturnTypeDesc());
-    }
-    unsigned regCount = retTypeDesc.GetReturnRegCount();
+    genConsumeRegs(treeNode->gtGetOp1());
+
+    GenTree* op1       = treeNode->gtGetOp1();
+    GenTree* actualOp1 = op1->gtSkipReloadOrCopy();
+
+    ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+    const unsigned regCount    = retTypeDesc.GetReturnRegCount();
     assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
@@ -8101,6 +8024,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         assert(varTypeIsSIMD(varDsc->GetRegisterType()));
         assert(!lclVar->IsMultiReg());
 #endif // DEBUG
+
 #ifdef FEATURE_SIMD
         genSIMDSplitReturn(op1, &retTypeDesc);
 #endif // FEATURE_SIMD
@@ -8110,6 +8034,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
+
 #ifdef TARGET_LOONGARCH64
         // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
         // i. e. not include the padding for the first field, and so the general loop below won't work.
@@ -8157,10 +8082,11 @@ void CodeGen::genStructReturn(GenTree* treeNode)
                 // This is a spilled field of a multi-reg lclVar.
                 // We currently only mark a lclVar operand as RegOptional, since we don't have a way
                 // to mark a multi-reg tree node as used from spill (GTF_NOREG_AT_USE) on a per-reg basis.
-                assert(varDsc != nullptr);
+                LclVarDsc* varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar());
                 assert(varDsc->lvPromoted);
                 unsigned fieldVarNum = varDsc->lvFieldLclStart + i;
                 assert(compiler->lvaGetDesc(fieldVarNum)->lvOnFrame);
+
                 GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, fieldVarNum, 0);
             }
             else
@@ -8843,6 +8769,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endLiveRangeA
     // Using [close, open) ranges so as to not compute the size of the last instruction
     m_VariableLiveRanges->back().m_EndEmitLocation.CaptureLocation(emit);
 
+    JITDUMP("Closing debug range.\n");
     // No m_EndEmitLocation has to be Valid
     noway_assert(m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 }
@@ -9467,7 +9394,7 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 #else
             GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
             instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
-            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_2, size);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_2, size);
             genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
             // May kill REG_SCRATCH, so we need to reload it.
             hasPoisonImm = false;

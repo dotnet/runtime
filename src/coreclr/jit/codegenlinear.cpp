@@ -823,7 +823,12 @@ void CodeGen::genCodeForBBlist()
             // compJitAlignLoopBoundary.
             // For adaptive alignment, alignment instruction will always be of 15 bytes for xarch
             // and 16 bytes for arm64.
+
             assert(ShouldAlignLoops());
+            assert(!block->isBBCallAlwaysPairTail());
+#if FEATURE_EH_CALLFINALLY_THUNKS
+            assert(block->bbJumpKind != BBJ_CALLFINALLY);
+#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
             GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->bbJumpKind == BBJ_ALWAYS));
         }
@@ -1629,9 +1634,10 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
-        else if (tree->OperIsCmpCompare() || tree->OperIs(GT_AND))
+        else if (tree->OperIsCompare() || tree->OperIs(GT_AND))
         {
-            // Compares and ANDs may be contained in a conditional chain.
+            // Compares can be contained by a SELECT.
+            // ANDs and Cmp Compares may be contained in a chain.
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
@@ -1653,28 +1659,12 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 #ifdef FEATURE_HW_INTRINSICS
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
-            // Only load/store HW intrinsics can be contained (and the address may also be contained).
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->GetHWIntrinsicId());
-            assert((category == HW_Category_MemoryLoad) || (category == HW_Category_MemoryStore));
-            size_t numArgs = tree->AsHWIntrinsic()->GetOperandCount();
-            genConsumeAddress(tree->AsHWIntrinsic()->Op(1));
-            if (category == HW_Category_MemoryStore)
-            {
-                assert(numArgs == 2);
-
-                GenTree* op2 = tree->AsHWIntrinsic()->Op(2);
-                assert(op2->isContained());
-
-                genConsumeReg(op2);
-            }
-            else
-            {
-                assert(numArgs == 1);
-            }
+            GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+            genConsumeMultiOpOperands(hwintrinsic);
         }
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_XARCH
-        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_BSWAP, GT_BSWAP16))
+        else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_BSWAP, GT_BSWAP16))
         {
             genConsumeRegs(tree->gtGetOp1());
         }
@@ -1791,7 +1781,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 
     // If the op1 is already in the dstReg - nothing to do.
-    // Otherwise load the op1 (GT_ADDR) into the dstReg to copy the struct on the stack by value.
+    // Otherwise load the op1 (the address) into the dstReg to copy the struct on the stack by value.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
@@ -1932,7 +1922,8 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         if (!blkNode->OperIs(GT_STORE_DYN_BLK))
         {
             assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            instGen_Set_Reg_To_Imm(EA_4BYTE, sizeReg, blockSize);
+            // This can go via helper which takes the size as a native uint.
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blockSize);
         }
         else
         {
@@ -2599,32 +2590,17 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     assert(!varDsc->lvPromoted);
     GenTree* op1 = treeNode->AsOp()->gtOp1;
 
-    // A GT_LONG is always contained, so it cannot have RELOAD or COPY inserted between it and its consumer,
-    // but a MUL_LONG may.
-    noway_assert(op1->OperIs(GT_LONG) || op1->gtSkipReloadOrCopy()->OperIs(GT_MUL_LONG));
+    // A GT_LONG is always contained so it cannot have RELOAD or COPY inserted between it and its consumer.
+    noway_assert(op1->OperIs(GT_LONG));
     genConsumeRegs(op1);
 
-    if (op1->OperGet() == GT_LONG)
-    {
-        GenTree* loVal = op1->gtGetOp1();
-        GenTree* hiVal = op1->gtGetOp2();
+    GenTree* loVal = op1->gtGetOp1();
+    GenTree* hiVal = op1->gtGetOp2();
 
-        noway_assert((loVal->GetRegNum() != REG_NA) && (hiVal->GetRegNum() != REG_NA));
+    noway_assert((loVal->GetRegNum() != REG_NA) && (hiVal->GetRegNum() != REG_NA));
 
-        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->GetRegNum(), lclNum, 0);
-        emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->GetRegNum(), lclNum, genTypeSize(TYP_INT));
-    }
-    else
-    {
-        assert((op1->gtSkipReloadOrCopy()->gtFlags & GTF_MUL_64RSLT) != 0);
-        // This is either a multi-reg MUL_LONG, or a multi-reg reload or copy.
-        assert(op1->IsMultiRegNode() && (op1->GetMultiRegCount(compiler) == 2));
-
-        // Stack store
-        emit->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), op1->GetRegByIndex(0), lclNum, 0);
-        emit->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), op1->GetRegByIndex(1), lclNum,
-                          genTypeSize(TYP_INT));
-    }
+    emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->GetRegNum(), lclNum, 0);
+    emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->GetRegNum(), lclNum, genTypeSize(TYP_INT));
 }
 #endif // !defined(TARGET_64BIT)
 

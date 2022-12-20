@@ -110,6 +110,10 @@ export function throw0fn() {
     throw new Error('throw-0-msg');
 }
 
+export function returnError() {
+    return new Error('this-is-error');
+}
+
 export function catch1toString(message, functionName) {
     const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
     const fn = JavaScriptTestHelper[functionName];
@@ -269,6 +273,10 @@ export function invokeStructClassRecords(arg1) {
         dllExports.JavaScriptTestHelperRecordStructNoNamespace.NestedStruct.EchoString(arg1),
         dllExports.JavaScriptTestHelperRecordStructNoNamespace.NestedRecordStruct.EchoString(arg1),
     ];
+}
+
+export function echopromise(arg1) {
+    return new Promise(resolve => setTimeout(() => resolve(arg1), 0));
 }
 
 export async function awaitvoid(arg1) {

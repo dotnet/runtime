@@ -82,8 +82,13 @@ typedef struct _MonoClassMetadataUpdateProperty {
 
 typedef struct _MonoClassMetadataUpdateEvent {
 	MonoEvent evt;
-	uint32_t generatino; /* when this event was added */
+	uint32_t generation; /* when this event was added */
 	uint32_t token; /* the Event table token where this event was defined. */
 } MonoClassMetadataUpdateEvent;
+
+typedef struct _MonoMethodMetadataUpdateParamInfo {
+	uint32_t first_param_token; /* a Param token */
+	uint32_t param_count;
+} MonoMethodMetadataUpdateParamInfo;
 
 #endif/*_MONO_COMPONENT_HOT_RELOAD_INTERNALS_H*/

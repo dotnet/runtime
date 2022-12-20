@@ -136,30 +136,30 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
 void
 mono_set_assemblies_path (const char* path)
 {
-	char **splitted, **dest;
+	char **split, **dest;
 
-	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
+	split = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (assemblies_path)
 		g_strfreev (assemblies_path);
-	assemblies_path = dest = splitted;
-	while (*splitted) {
-		char *tmp = *splitted;
+	assemblies_path = dest = split;
+	while (*split) {
+		char *tmp = *split;
 		if (*tmp)
 			*dest++ = mono_path_canonicalize (tmp);
 		g_free (tmp);
-		splitted++;
+		split++;
 	}
-	*dest = *splitted;
+	*dest = *split;
 
 	if (g_hasenv ("MONO_DEBUG"))
 		return;
 
-	splitted = assemblies_path;
-	while (*splitted) {
-		if (**splitted && !g_file_test (*splitted, G_FILE_TEST_IS_DIR))
-			g_warning ("'%s' in MONO_PATH doesn't exist or has wrong permissions.", *splitted);
+	split = assemblies_path;
+	while (*split) {
+		if (**split && !g_file_test (*split, G_FILE_TEST_IS_DIR))
+			g_warning ("'%s' in MONO_PATH doesn't exist or has wrong permissions.", *split);
 
-		splitted++;
+		split++;
 	}
 }
 
@@ -268,7 +268,7 @@ mono_assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, MonoA
  * if \p r is a lower version than \p l, or zero if \p l and \p r are equal
  * versions (comparing upto \p maxcomps components).
  *
- * Components are \c major, \c minor, \c revision, and \c build. \p maxcomps 1 means just compare
+ * Components are \c major, \c minor, \c build, and \c revision. \p maxcomps 1 means just compare
  * majors. 2 means majors then minors. etc.
  */
 static int
@@ -284,9 +284,9 @@ assembly_names_compare_versions (MonoAssemblyName *l, MonoAssemblyName *r, int m
 	++i;
 	CMP (minor);
 	++i;
-	CMP (revision);
-	++i;
 	CMP (build);
+	++i;
+	CMP (revision);
 #undef CMP
 	return 0;
 }
@@ -641,7 +641,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 	if (aname->name == NULL || !(aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG))
 		return aname;
 
-	// Retargeting was mainly done on .NET Framework or Portable Class Libraries, remap to version 4.0.0.0 
+	// Retargeting was mainly done on .NET Framework or Portable Class Libraries, remap to version 4.0.0.0
 	// so the .NET Framework compatibility facades like mscorlib.dll can kick in
 	memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
 	dest_aname->major = 4;
@@ -2680,7 +2680,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoa
 }
 
 MonoAssembly*
-mono_assembly_load_corlib ()
+mono_assembly_load_corlib (void)
 {
 	MonoAssemblyName *aname;
 	MonoAssemblyOpenRequest req;

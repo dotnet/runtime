@@ -646,7 +646,7 @@ namespace System.Globalization
             return InternalIsLeapYear(year);
         }
 
-        private const int DefaultGregorianTwoDigitYearMax = 2029;
+        private const int DefaultGregorianTwoDigitYearMax = 2049;
 
         public override int TwoDigitYearMax
         {
@@ -676,13 +676,7 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(year),
-                    year,
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
 
             year = base.ToFourDigitYear(year);
             CheckYearRange(year, CurrentEra);
