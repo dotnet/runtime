@@ -57,7 +57,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 return _defaultContext.Options;
             }
 
-            if (options.TypeInfoResolver is null || options.TypeInfoResolver == JsonSerializerOptions.Default.TypeInfoResolver)
+            if (options.TypeInfoResolver is null or DefaultJsonTypeInfoResolver { Modifiers.Count: 0 })
             {
                 return new JsonSerializerOptions(options) { TypeInfoResolver = _defaultContext };
             }
@@ -125,7 +125,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 return _defaultContext.Options;
             }
 
-            if (options.TypeInfoResolver is null || options.TypeInfoResolver == JsonSerializerOptions.Default.TypeInfoResolver)
+            if (options.TypeInfoResolver is null or DefaultJsonTypeInfoResolver { Modifiers.Count: 0 })
             {
                 return new JsonSerializerOptions(options) { TypeInfoResolver = _defaultContext };
             }
