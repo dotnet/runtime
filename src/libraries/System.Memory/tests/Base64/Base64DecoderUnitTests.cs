@@ -661,7 +661,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ValidBase64Strings_WithCharsThatMustBeIgnored))]
-        public void BasicDecodingIgnoresCharsToBeIgnoredAsConvertToBase64Does(string utf8WithCharsToBeIgnored, byte[] expectedBytes)
+        public void BasicDecodingIgnoresCharsToBeIgnoredAsConvertToBase64Does(string utf8WithCharsToBeIgnored, byte[] expectedBytes, int expectedBytesConsumed)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithCharsToBeIgnored);
             byte[] resultBytes = new byte[5];
@@ -671,7 +671,7 @@ namespace System.Buffers.Text.Tests
             byte[] stringBytes = Convert.FromBase64String(utf8WithCharsToBeIgnored);
 
             Assert.Equal(OperationStatus.Done, result);
-            Assert.Equal(8, bytesConsumed);
+            Assert.Equal(expectedBytesConsumed, bytesConsumed);
             Assert.Equal(expectedBytes.Length, bytesWritten);
             Assert.True(expectedBytes.SequenceEqual(resultBytes));
             Assert.True(stringBytes.SequenceEqual(resultBytes));
@@ -679,8 +679,9 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ValidBase64Strings_WithCharsThatMustBeIgnored))]
-        public void DecodeInPlaceIgnoresCharsToBeIgnoredAsConvertToBase64Does(string utf8WithCharsToBeIgnored, byte[] expectedBytes)
+        public void DecodeInPlaceIgnoresCharsToBeIgnoredAsConvertToBase64Does(string utf8WithCharsToBeIgnored, byte[] expectedBytes, int expectedBytesConsumed)
         {
+            _ = expectedBytesConsumed;
             Span<byte> utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithCharsToBeIgnored);
             OperationStatus result = Base64.DecodeFromUtf8InPlace(utf8BytesWithByteToBeIgnored, out int bytesWritten);
             Span<byte> bytesOverwritten = utf8BytesWithByteToBeIgnored.Slice(0, bytesWritten);

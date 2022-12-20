@@ -46,7 +46,7 @@ namespace System.Buffers.Text
             fixed (byte* srcBytes = &MemoryMarshal.GetReference(utf8))
             fixed (byte* destBytes = &MemoryMarshal.GetReference(bytes))
             {
-                int srcLength = utf8.Length;  // only decode input up to the closest multiple of 4.
+                int srcLength = utf8.Length;
                 int destLength = bytes.Length;
                 int maxSrcLength = srcLength;
                 int decodedLength = GetMaxDecodedFromUtf8Length(srcLength);
@@ -67,10 +67,6 @@ namespace System.Buffers.Text
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
                 OperationStatus lastBlockStatus = OperationStatus.Done;
-                int totalBytesIgnored = 0;
-
-                // The next src increment is stored as it will be used if the dest has enough space
-                // or ignored in consumed operations if not.
                 int pendingSrcIncrement;
 
                 if (Avx2.IsSupported)
@@ -83,8 +79,14 @@ namespace System.Buffers.Text
                             break;
                         }
 
+                        isComplete = TryDecodeCurrentGroupIfWhitespaceIsSeparatingValidBytesInCommonLocation(utf8, ref src, ref dest, ref end, destLength, srcBytes, destBytes, 32);
+                        if (isComplete)
+                        {
+                            continue;
+                        }
+
                         // Process 4 bytes, until first set of invalid bytes are skipped.
-                        lastBlockStatus = IgnoreWhitespaceAndTryConsumeValidBytes(ref src, srcEnd, ref dest, destEnd, ref decodingMap, ref totalBytesIgnored, isFinalBlock, lastBlockStatus, true, out pendingSrcIncrement);
+                        lastBlockStatus = IgnoreWhitespaceAndConsumeValidBytesUntilInvalidBlock(ref src, srcEnd, ref dest, destEnd, ref decodingMap, isFinalBlock, lastBlockStatus, true, out pendingSrcIncrement);
                         if (lastBlockStatus != OperationStatus.Done)
                         {
                             break;
@@ -104,8 +106,14 @@ namespace System.Buffers.Text
                             break;
                         }
 
+                        isComplete = TryDecodeCurrentGroupIfWhitespaceIsSeparatingValidBytesInCommonLocation(utf8, ref src, ref dest, ref end, destLength, srcBytes, destBytes, 16);
+                        if (isComplete)
+                        {
+                            continue;
+                        }
+
                         // Process 4 bytes, until first set of invalid bytes are skipped.
-                        lastBlockStatus = IgnoreWhitespaceAndTryConsumeValidBytes(ref src, srcEnd, ref dest, destEnd, ref decodingMap, ref totalBytesIgnored, isFinalBlock, lastBlockStatus, true, out pendingSrcIncrement);
+                        lastBlockStatus = IgnoreWhitespaceAndConsumeValidBytesUntilInvalidBlock(ref src, srcEnd, ref dest, destEnd, ref decodingMap, isFinalBlock, lastBlockStatus, true, out pendingSrcIncrement);
                         if (lastBlockStatus != OperationStatus.Done)
                         {
                             break;
@@ -113,7 +121,7 @@ namespace System.Buffers.Text
                     }
                 }
 
-                lastBlockStatus = IgnoreWhitespaceAndTryConsumeValidBytes(ref src, srcEnd, ref dest, destEnd, ref decodingMap, ref totalBytesIgnored, isFinalBlock, lastBlockStatus, false, out pendingSrcIncrement);
+                lastBlockStatus = IgnoreWhitespaceAndConsumeValidBytesUntilInvalidBlock(ref src, srcEnd, ref dest, destEnd, ref decodingMap, isFinalBlock, lastBlockStatus, false, out pendingSrcIncrement);
 
                 // Assess the end block and bytes beyond it.
                 if (lastBlockStatus == OperationStatus.Done)
@@ -145,19 +153,19 @@ namespace System.Buffers.Text
                 switch (lastBlockStatus)
                 {
                     case OperationStatus.Done:
-                        bytesConsumed = ((int)(src - srcBytes)) - totalBytesIgnored;
+                        bytesConsumed = (int)(src - srcBytes);
                         bytesWritten = (int)(dest - destBytes);
                         break;
                     case OperationStatus.DestinationTooSmall:
-                        bytesConsumed = ((int)(src - srcBytes)) - totalBytesIgnored;
+                        bytesConsumed = (int)(src - srcBytes);
                         bytesWritten = (int)(dest - destBytes);
                         break;
                     case OperationStatus.NeedMoreData:
-                        bytesConsumed = ((int)(src - srcBytes)) - totalBytesIgnored;
+                        bytesConsumed = (int)(src - srcBytes);
                         bytesWritten = (int)(dest - destBytes);
                         break;
                     case OperationStatus.InvalidData:
-                        bytesConsumed = ((int)(src - srcBytes)) - totalBytesIgnored;
+                        bytesConsumed = (int)(src - srcBytes);
                         bytesWritten = (int)(dest - destBytes);
                         break;
                     default:
@@ -368,14 +376,14 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe OperationStatus IgnoreWhitespaceAndTryConsumeValidBytes(ref byte* src, byte* srcEnd, ref byte* dest, byte* destEnd, ref sbyte decodingMap, ref int totalBytesIgnored, bool isFinalBlock, OperationStatus lastBlockStatus, bool exitAfterFirstSkippedBytes, out int pendingSrcIncrement)
+        private static unsafe OperationStatus IgnoreWhitespaceAndConsumeValidBytesUntilInvalidBlock(ref byte* src, byte* srcEnd, ref byte* dest, byte* destEnd, ref sbyte decodingMap, bool isFinalBlock, OperationStatus lastBlockStatus, bool exitAfterFirstSkippedBytes, out int pendingSrcIncrement)
         {
             pendingSrcIncrement = 0;
 
             while (src <= srcEnd - 4)
             {
                 byte* srcBeforeProcessing = src;
-                lastBlockStatus = IgnoreWhitespaceAndTryConsumeNextValidBytesBlock(ref src, srcEnd, ref dest, destEnd, ref decodingMap, ref totalBytesIgnored, isFinalBlock, out pendingSrcIncrement);
+                lastBlockStatus = IgnoreWhitespaceAndTryConsumeNextValidBytesBlock(ref src, srcEnd, ref dest, destEnd, ref decodingMap, isFinalBlock, out pendingSrcIncrement);
 
                 if (lastBlockStatus != OperationStatus.Done
                     // The source was not increased because there were not enough valid bytes.
@@ -391,7 +399,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe OperationStatus IgnoreWhitespaceAndTryConsumeNextValidBytesBlock(ref byte* src, byte* srcEnd, ref byte* dest, byte* destEnd, ref sbyte decodingMap, ref int totalBytesIgnored, bool isFinalBlock, out int pendingSrcIncrement)
+        private static unsafe OperationStatus IgnoreWhitespaceAndTryConsumeNextValidBytesBlock(ref byte* src, byte* srcEnd, ref byte* dest, byte* destEnd, ref sbyte decodingMap, bool isFinalBlock, out int pendingSrcIncrement)
         {
             // The default increment will be 4 if no bytes that require ignoring are encountered.
             pendingSrcIncrement = 4;
@@ -415,7 +423,6 @@ namespace System.Buffers.Text
                                && IsByteToBeIgnored(src[validBytesSearchIndex]))
                         {
                             validBytesSearchIndex++;
-                            totalBytesIgnored++;
                         }
 
                         if (src >= srcEnd - validBytesSearchIndex)
@@ -486,7 +493,7 @@ namespace System.Buffers.Text
                         return OperationStatus.InvalidData;
                     }
 
-                    return TryProcessFinalBlockWithPadding(ref src, ref dest, destEnd, ref decodingMap, ref pendingSrcIncrement, b0, b1, b2);
+                    return TryWriteFinalUnevenBlock(ref src, ref dest, destEnd, ref decodingMap, ref pendingSrcIncrement, b0, b1, b2);
                 }
             }
 
@@ -505,7 +512,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe OperationStatus TryProcessFinalBlockWithPadding(ref byte* src, ref byte* dest, byte* destEnd, ref sbyte decodingMap, ref int pendingSrcIncrement, byte b0, byte b1, byte b2)
+        private static unsafe OperationStatus TryWriteFinalUnevenBlock(ref byte* src, ref byte* dest, byte* destEnd, ref sbyte decodingMap, ref int pendingSrcIncrement, byte b0, byte b1, byte b2)
         {
             int i0 = Unsafe.Add(ref decodingMap, (IntPtr)b0);
             int i1 = Unsafe.Add(ref decodingMap, (IntPtr)b1);
@@ -547,6 +554,69 @@ namespace System.Buffers.Text
             pendingSrcIncrement = 0;
 
             return OperationStatus.Done;
+        }
+
+        private static unsafe bool TryDecodeCurrentGroupIfWhitespaceIsSeparatingValidBytesInCommonLocation(ReadOnlySpan<byte> utf8, ref byte* src, ref byte* dest, ref byte* end, int destLength, byte* srcBytes, byte* destBytes, byte groupSize)
+        {
+            int consumed = (int)(src - srcBytes);
+            int numberOfWhiteSpaceBytesSkipped = (consumed / 76) * 2;
+
+            if (end < src + numberOfWhiteSpaceBytesSkipped)
+            {
+                // Max potential index is out of range.
+                return false;
+            }
+
+            int srcIndexInCurrent76CharsSequence = consumed % 76;
+            int potentialIndeOfFirstWhitespace = (76 - srcIndexInCurrent76CharsSequence + numberOfWhiteSpaceBytesSkipped) % 78;
+            if (potentialIndeOfFirstWhitespace > groupSize)
+            {
+                // The potential whitespace index should have existed in the group that just failed vectorized decoding.
+                return false;
+            }
+
+            byte firstWhiteSpace = src[potentialIndeOfFirstWhitespace];
+            byte secondWhiteSpace = src[potentialIndeOfFirstWhitespace + 1];
+            if (firstWhiteSpace != 13
+                || secondWhiteSpace != 10)
+            {
+                return false;
+            }
+
+            // The two slice and copy below avoids a loop that skips the whitespace indexes to fill the new span.
+            Span<byte> groupOfBlocksWithoutWhitespace = stackalloc byte[groupSize];
+            // Slice and copy next 34 bytes
+            utf8.Slice(consumed + 2, groupSize).CopyTo(groupOfBlocksWithoutWhitespace);
+            // Overwrite whitespace and valid bytes before
+            utf8.Slice(consumed, potentialIndeOfFirstWhitespace).CopyTo(groupOfBlocksWithoutWhitespace);
+
+            fixed (byte* groupOfBlocksWithoutWhitespaceSrcBytes = &MemoryMarshal.GetReference(utf8))
+            {
+                byte* groupOfBlocksWithoutWhitespaceSrcBytesOriginal = groupOfBlocksWithoutWhitespaceSrcBytes;
+                byte* groupOfBlocksWithoutWhitespaceSrc = groupOfBlocksWithoutWhitespaceSrcBytes;
+
+                // Note: Set srcEnd = start, so the while loop will fail during decoding, so that only one pass is possible.
+                bool isComplete;
+                if (groupSize == 32)
+                {
+                    isComplete = Avx2Decode(ref groupOfBlocksWithoutWhitespaceSrc, ref dest, groupOfBlocksWithoutWhitespaceSrcBytes, groupOfBlocksWithoutWhitespace.Length, destLength, groupOfBlocksWithoutWhitespaceSrcBytes, destBytes);
+                }
+                else
+                {
+                    isComplete = Vector128Decode(ref groupOfBlocksWithoutWhitespaceSrc, ref dest, groupOfBlocksWithoutWhitespaceSrcBytes, groupOfBlocksWithoutWhitespace.Length, destLength, groupOfBlocksWithoutWhitespaceSrcBytes, destBytes);
+                }
+
+                if (groupOfBlocksWithoutWhitespaceSrc == groupOfBlocksWithoutWhitespaceSrcBytesOriginal)
+                {
+                    // Decoding failed because there was more whitespace or invalid bytes.
+                    return false;
+                }
+
+                // + 2 for the 2 whitespace chars
+                src += groupSize + 2;
+
+                return true;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
