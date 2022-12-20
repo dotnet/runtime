@@ -14341,8 +14341,11 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		aot_printerrf (acfg, "The 'direct-pinvoke' flag, 'direct-pinvokes', and 'direct-pinvoke-lists' AOT options also require the 'static' AOT option.\n");
 		return 1;
 	}
-	if (acfg->aot_opts.direct_pinvoke && (acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists))
-		g_warning ("The 'direct-pinvoke' argument trumps specified 'direct-pinvokes' and 'direct-pinvoke-lists' arguments.\n");
+	if (acfg->aot_opts.direct_pinvoke && (acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists)) {
+		aot_printerrf (acfg, "The 'direct-pinvoke' flag trumps specified 'direct-pinvokes' and 'direct-pinvoke-lists' arguments. Unset either the flag or the specific direct pinvoke arguments.\n");
+		return 1;
+	}
+
 	gboolean added_direct_pinvoke = TRUE;
 	if (acfg->aot_opts.direct_pinvokes) {
 		GList *l;

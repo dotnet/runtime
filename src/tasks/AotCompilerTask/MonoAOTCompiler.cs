@@ -376,7 +376,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (UseDirectPInvoke && (DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0))
         {
-            Log.LogWarning($"'{nameof(UseDirectPInvoke)}' is enabled and will trump '{nameof(DirectPInvokes)}' and '{nameof(DirectPInvokeLists)}'.");
+            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' flag trumps specified '{nameof(DirectPInvokes)}' and '{nameof(DirectPInvokeLists)}' arguments. Unset either the flag or the specific direct pinvoke arguments.");
         }
 
         if (UseDirectPInvoke || DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0)
