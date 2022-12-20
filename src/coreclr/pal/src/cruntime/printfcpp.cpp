@@ -222,7 +222,7 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
         *Prefix = PFF_PREFIX_LONGLONG;
     }
 #endif
-    if ((*Fmt)[0] == 'I')
+    if ((*Fmt)[0] == 'I' || (*Fmt)[0] == 'z')
     {
         /* grab prefix of 'I64' for __int64 */
         if ((*Fmt)[1] == '6' && (*Fmt)[2] == '4')
@@ -359,8 +359,6 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
                 *Out++ = '1';
                 *Out++ = '6';
             }
-            /* native *printf does not support %I64p
-               (actually %llp), so we need to cheat a little bit */
             *Out++ = 'l';
             *Out++ = 'l';
         }

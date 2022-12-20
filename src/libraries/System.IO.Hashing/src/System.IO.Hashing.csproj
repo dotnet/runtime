@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides non-cryptographic hash algorithms, such as CRC-32.
@@ -15,10 +15,13 @@ System.IO.Hashing.XxHash32</PackageDescription>
     <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
     <Compile Include="System\IO\Hashing\Crc64.cs" />
     <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
+    <Compile Include="System\IO\Hashing\XxHash128.cs" />
+    <Compile Include="System\IO\Hashing\XxHash3.cs" />
     <Compile Include="System\IO\Hashing\XxHash32.cs" />
     <Compile Include="System\IO\Hashing\XxHash32.State.cs" />
     <Compile Include="System\IO\Hashing\XxHash64.cs" />
     <Compile Include="System\IO\Hashing\XxHash64.State.cs" />
+    <Compile Include="System\IO\Hashing\XxHashShared.cs" />
     <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Numerics\Crc32ReflectedTable.cs">
       <Link>Common\System\Numerics\Crc32ReflectedTable.cs</Link>

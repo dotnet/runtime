@@ -777,16 +777,21 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 	}
 
 	if (context) {
-		MonoMethodSignature *cached;
+		MonoMethodSignature *cached, *inflated;
 
 		/* This signature is not owned by a MonoMethod, so need to cache */
-		sig = inflate_generic_signature_checked (image, sig, context, error);
+		inflated = inflate_generic_signature_checked (image, sig, context, error);
 		if (!is_ok (error))
 			return NULL;
 
-		cached = mono_metadata_get_inflated_signature (sig, context);
-		if (cached != sig)
-			mono_metadata_free_inflated_signature (sig);
+		if (mono_metadata_signature_equal (sig, inflated)) {
+			mono_metadata_free_inflated_signature (inflated);
+			return sig;
+		}
+
+		cached = mono_metadata_get_inflated_signature (inflated, context);
+		if (cached != inflated)
+			mono_metadata_free_inflated_signature (inflated);
 		else
 			mono_atomic_fetch_add_i32 (&inflated_signatures_size, mono_metadata_signature_size (cached));
 		sig = cached;
@@ -1409,7 +1414,6 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 {
 	int i, lastp;
 	MonoClass *klass;
-	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 	MonoMethodSignature *signature;
 	guint32 idx;
@@ -1463,19 +1467,18 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		return;
 	}
 
-	methodt = &klass_image->tables [MONO_TABLE_METHOD];
 	paramt = &klass_image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
+
 		guint32 cols [MONO_PARAM_SIZE];
 		guint param_index;
 
-		param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
+		param_index = mono_metadata_get_method_params (klass_image, idx, (uint32_t*)&lastp);
 
-		if (idx < table_info_get_rows (methodt))
-			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
-		else
-			lastp = table_info_get_rows (paramt) + 1;
+		if (!param_index)
+			return;
+
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 			if (cols [MONO_PARAM_SEQUENCE] && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) /* skip return param spec and bounds check*/
@@ -1491,7 +1494,6 @@ guint32
 mono_method_get_param_token (MonoMethod *method, int index)
 {
 	MonoClass *klass = method->klass;
-	MonoTableInfo *methodt;
 	guint32 idx;
 
 	mono_class_init_internal (klass);
@@ -1499,11 +1501,10 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	MonoImage *klass_image = m_class_get_image (klass);
 	g_assert (!image_is_dynamic (klass_image));
 
-	methodt = &klass_image->tables [MONO_TABLE_METHOD];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
-		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
-
+		guint param_index = mono_metadata_get_method_params (klass_image, idx, NULL);
+		
 		if (index == -1)
 			/* Return value */
 			return mono_metadata_make_token (MONO_TABLE_PARAM, 0);
@@ -1522,7 +1523,6 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 {
 	int i, lastp;
 	MonoClass *klass = method->klass;
-	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 	MonoMethodSignature *signature;
 	guint32 idx;
@@ -1560,17 +1560,14 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	mono_class_init_internal (klass);
 
 	MonoImage *klass_image = m_class_get_image (klass);
-	methodt = &klass_image->tables [MONO_TABLE_METHOD];
 	paramt = &klass_image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
-		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
+		guint param_index = mono_metadata_get_method_params (klass_image, idx, (uint32_t*)&lastp);
 
-		if (idx < table_info_get_rows (methodt))
-			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
-		else
-			lastp = table_info_get_rows (paramt) + 1;
+		if (!param_index)
+			return;
 
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
@@ -1595,7 +1592,6 @@ mono_method_has_marshal_info (MonoMethod *method)
 {
 	int i, lastp;
 	MonoClass *klass = method->klass;
-	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 	guint32 idx;
 
@@ -1614,17 +1610,15 @@ mono_method_has_marshal_info (MonoMethod *method)
 
 	mono_class_init_internal (klass);
 
-	methodt = &m_class_get_image (klass)->tables [MONO_TABLE_METHOD];
-	paramt = &m_class_get_image (klass)->tables [MONO_TABLE_PARAM];
+	MonoImage *klass_image = m_class_get_image (klass);
+	paramt = &klass_image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
-		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
+		guint param_index = mono_metadata_get_method_params (klass_image, idx, (uint32_t*)&lastp);
 
-		if (idx + 1 < table_info_get_rows (methodt))
-			lastp = mono_metadata_decode_row_col (methodt, idx, MONO_METHOD_PARAMLIST);
-		else
-			lastp = table_info_get_rows (paramt) + 1;
+		if (!param_index)
+			return FALSE;
 
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);

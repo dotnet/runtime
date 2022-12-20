@@ -322,7 +322,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.MaxResponseDrainSize = 1;
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(1, handler.MaxResponseDrainSize);
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseDrainSize = 1);
             }
@@ -365,7 +365,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromSeconds(42), handler.ResponseDrainTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42));
             }
@@ -1175,7 +1175,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.ConnectTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -1222,7 +1222,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.Expect100ContinueTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -1283,6 +1283,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(TripleBoolValues))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77474", TestPlatforms.Android)]
         public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
         {
             Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
@@ -3680,8 +3681,16 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public async Task ResponseHeaders_ExtraWhitespace_Trimmed()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
+        [InlineData("foo ", "bar ")]
+        [InlineData("foo", " bar")]
+        [InlineData("foo", "bar\t")]
+        [InlineData("foo", "\tbar")]
+        [InlineData("foo ", " bar ")]
+        [InlineData("foo", "\tbar\t")]
+        [InlineData("foo", "\t bar \t")]
+        [InlineData("foo  ", " \t bar  \r\n ")]
+        public async Task ResponseHeaders_ExtraWhitespace_Trimmed(string name, string value)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -3689,12 +3698,12 @@ namespace System.Net.Http.Functional.Tests
 
                 using HttpResponseMessage response = await client.GetAsync(uri);
 
-                Assert.True(response.Headers.NonValidated.TryGetValues("foo", out HeaderStringValues value));
-                Assert.Equal("bar", Assert.Single(value));
+                Assert.True(response.Headers.NonValidated.TryGetValues("foo", out HeaderStringValues values));
+                Assert.Equal("bar", Assert.Single(values));
             },
             async server =>
             {
-                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("foo  ", " \t bar  \r\n ") });
+                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData(name, value) });
             });
         }
     }

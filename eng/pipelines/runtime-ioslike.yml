@@ -8,11 +8,13 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobs:
-    - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
-      parameters:
-        isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-        isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
-        isRollingBuild: ${{ variables.isRollingBuild }}
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}

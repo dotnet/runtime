@@ -8,7 +8,7 @@ class Program
 {
     private static int returnCode = 100;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         RunTestThrows(Tests.MulOutsideRange);
         RunTestThrows(Tests.MulOverflow);
@@ -52,7 +52,7 @@ public static class Tests
 {
     private static byte[] smallArr => new byte[10];
 
-    // RangeCheck analysis should eliminate the bounds check on 
+    // RangeCheck analysis should eliminate the bounds check on
     // smallArr.
     public static void MulInsideRange()
     {
@@ -62,7 +62,7 @@ public static class Tests
         }
     }
 
-    // RangeCheck analysis should keep the bounds check on 
+    // RangeCheck analysis should keep the bounds check on
     // smallArr.
     public static void MulOutsideRange()
     {
@@ -72,13 +72,13 @@ public static class Tests
         }
     }
 
-    private static byte[] bigArr => new byte[268435460]; 
+    private static byte[] bigArr => new byte[268435460];
 
     // RangeCheck analysis should detect that the multiplcation
     // overflows and keep all range checks for bigArr. bigArr
-    // size, and the bounds on the loop were carefully chosen to to 
-    // potentially spoof the RangeCheck analysis to eliminate a bound 
-    // check IF overflow detection on GT_MUL for RangeCheck is implemented 
+    // size, and the bounds on the loop were carefully chosen to
+    // potentially spoof the RangeCheck analysis to eliminate a bound
+    // check IF overflow detection on GT_MUL for RangeCheck is implemented
     // incorrectly.
     public static void MulOverflow()
     {
@@ -88,7 +88,7 @@ public static class Tests
         }
     }
 
-    // RangeCheck analysis should eliminate the bounds check on 
+    // RangeCheck analysis should eliminate the bounds check on
     // smallArr.
     public static void LshInsideRange()
     {
@@ -98,7 +98,7 @@ public static class Tests
         }
     }
 
-    // RangeCheck analysis should keep the bounds check on 
+    // RangeCheck analysis should keep the bounds check on
     // smallArr.
     public static void LshOutsideRange()
     {

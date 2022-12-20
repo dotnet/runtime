@@ -87,6 +87,8 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,       "Optimize Valnum CSEs",    
 CompPhaseNameMacro(PHASE_VN_COPY_PROP,               "VN based copy prop",             false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,          "Redundant branch opts",          false, -1, false)
 CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,        "Assertion prop",                 false, -1, false)
+CompPhaseNameMacro(PHASE_IF_CONVERSION,              "If conversion",                  false, -1, false)
+CompPhaseNameMacro(PHASE_VN_BASED_DEAD_STORE_REMOVAL,"VN-based dead store removal",    false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,      "Update flow graph opt pass",     false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS2,      "Compute edge weights (2, false)",false, -1, false)
 CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,            "Insert GC Polls",                false, -1, true)

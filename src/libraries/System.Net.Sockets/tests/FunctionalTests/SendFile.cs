@@ -250,7 +250,6 @@ namespace System.Net.Sockets.Tests
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
-            int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
@@ -270,9 +269,10 @@ namespace System.Net.Sockets.Tests
                         await SendFileAsync(socket1, tempFile.Path);
                     });
 
-                    // Wait a little so the operation is started.
-                    await Task.Delay(msDelay);
-                    msDelay *= 2;
+                    // read one byte to make sure SendFileAsync started
+                    byte[] buffer = new byte[1];
+                    socket2.Receive(buffer);
+
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
                     await Task.WhenAny(disposeTask, socketOperation).WaitAsync(TimeSpan.FromSeconds(30));

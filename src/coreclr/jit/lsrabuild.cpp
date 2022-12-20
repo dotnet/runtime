@@ -3221,15 +3221,15 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
             assert(hwintrinsic->Op(2)->IsCnsIntOrI());
         }
 
-        BuildUse(hwintrinsic->Op(1), candidates);
-        return 1;
+        return BuildOperandUses(hwintrinsic->Op(1), candidates);
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL) || node->OperIsCmpCompare() || node->OperIs(GT_AND))
+    if (node->OperIs(GT_MUL) || node->OperIsCompare() || node->OperIs(GT_AND))
     {
         // MUL can be contained for madd or msub on arm64.
-        // Compare and AND may be contained due to If Conversion.
+        // Compares can be contained by a SELECT.
+        // ANDs and Cmp Compares may be contained in a chain.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
     if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))

@@ -15,6 +15,7 @@ using Internal.TypeSystem;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
 #nullable enable
+#pragma warning disable IDE0060
 
 namespace ILCompiler.Dataflow
 {

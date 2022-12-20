@@ -373,7 +373,7 @@ namespace System.Security.Cryptography.Cng.Tests
         // in the Microsoft Software KSP
         internal static bool SupportsPersistedSymmetricKeys => PlatformDetection.IsWindows8xOrLater;
 
-        internal static bool IsAdministrator => PlatformDetection.IsWindowsAndElevated;
+        internal static bool IsAdministrator => PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess;
 
         internal static void AssertTransformsEqual(byte[] plainTextBytes, ICryptoTransform decryptor, byte[] encryptedBytes)
         {

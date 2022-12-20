@@ -1399,7 +1399,10 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
             case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
-            case CORINFO_HELP_READYTORUN_STATIC_BASE:
+            case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
 
                 // These may invoke static class constructors
@@ -1627,7 +1630,7 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(null
         }
 
         // Ignore lines starting with leading ";" "#" "//".
-        if ((0 == _strnicmp(buffer, ";", 1)) || (0 == _strnicmp(buffer, "#", 1)) || (0 == _strnicmp(buffer, "//", 2)))
+        if ((0 == strncmp(buffer, ";", 1)) || (0 == strncmp(buffer, "#", 1)) || (0 == strncmp(buffer, "//", 2)))
         {
             continue;
         }

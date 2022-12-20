@@ -198,7 +198,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
             var signature = JSHostImplementation.GetMethodSignature(signatures);
@@ -212,7 +211,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return signature;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe JSFunctionBinding BindManagedFunctionImpl(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
             var signature = JSHostImplementation.GetMethodSignature(signatures);

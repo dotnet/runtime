@@ -400,6 +400,7 @@ namespace System.Xml.Linq
                     ns = a.Name.Namespace;
                     string localName = a.Name.LocalName;
                     string namespaceName = ns.NamespaceName;
+                    cancellationToken.ThrowIfCancellationRequested();
                     await _writer.WriteAttributeStringAsync(GetPrefixOfNamespace(ns, false), localName, namespaceName.Length == 0 && localName == "xmlns" ? XNamespace.xmlnsPrefixNamespace : namespaceName, a.Value).ConfigureAwait(false);
                 } while (a != e.lastAttr);
             }

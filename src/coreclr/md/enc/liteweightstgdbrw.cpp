@@ -24,12 +24,6 @@
 
 #include <log.h>
 
-
-#ifndef TYPELIB_SIG
-#define TYPELIB_SIG_MSFT                    0x5446534D  // MSFT
-#define TYPELIB_SIG_SLTG                    0x47544C53  // SLTG
-#endif
-
 //*****************************************************************************
 // Checks the given storage object to see if it is an NT PE image.
 //*****************************************************************************
@@ -62,20 +56,6 @@ int _IsNTPEImage(                       // true if file is NT PE image.
         return (false);
 }
 
-BOOL _GetFileTypeForPathExt(StgIO * pStgIO, FILETYPE * piType)
-{
-    // Avoid confusion.
-    *piType = pStgIO->GetFileType();
-
-    // All file types except .obj have a signature built in.  You should
-    // not get to this code for those file types unless that file is corrupt,
-    // or someone has changed a format without updating this code.
-    _ASSERTE((*piType == FILETYPE_UNKNOWN) || (*piType == FILETYPE_NTOBJ) || (*piType == FILETYPE_TLB));
-
-    // If we found a type, then you're ok.
-    return (*piType != FILETYPE_UNKNOWN);
-}
-
 HRESULT _GetFileTypeForPath(StgIO *pStgIO, FILETYPE *piType)
 {
     ULONG       lSignature=0;
@@ -97,9 +77,7 @@ HRESULT _GetFileTypeForPath(StgIO *pStgIO, FILETYPE *piType)
             *piType = FILETYPE_CLB;
         else if ((WORD) lSignature ==IMAGE_DOS_SIGNATURE && _IsNTPEImage(pStgIO))
             *piType = FILETYPE_NTPE;
-        else if (lSignature == TYPELIB_SIG_MSFT || lSignature == TYPELIB_SIG_SLTG)
-            *piType = FILETYPE_TLB;
-        else if (!_GetFileTypeForPathExt(pStgIO, piType))
+        else
             return CLDB_E_FILE_CORRUPT;
     }
     return S_OK;
@@ -376,7 +354,7 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     }
     // PE/COFF executable/object format.  This requires us to find the .clb
     // inside the binary before doing the Init.
-    else if (m_eFileType == FILETYPE_NTPE || m_eFileType == FILETYPE_NTOBJ)
+    else if (m_eFileType == FILETYPE_NTPE)
     {
         //<TODO>@FUTURE: Ideally the FindImageMetaData function
         //@FUTURE:  would take the pStgIO and map only the part of the file where
@@ -389,61 +367,37 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
         IfFailGo( pStgIO->MapFileToMem(ptr, &cbSize) );
 
         // Find the .clb inside of the content.
-        if (m_eFileType == FILETYPE_NTPE)
-        {
-            m_pImage = ptr;
-            m_dwImageSize = cbSize;
-            hr = FindImageMetaData(ptr,
-                                   cbSize,
-                                   pStgIO->GetMemoryMappedType() == MTYPE_IMAGE,
-                                   &ptr,
-                                   &cbSize);
-        }
-        else
-        {
-            _ASSERTE(pStgIO->GetMemoryMappedType() != MTYPE_IMAGE);
-            hr = FindObjMetaData(ptr, cbSize, &ptr, &cbSize);
-        }
+        m_pImage = ptr;
+        m_dwImageSize = cbSize;
+        hr = FindImageMetaData(ptr,
+                               cbSize,
+                               pStgIO->GetMemoryMappedType() == MTYPE_IMAGE,
+                               &ptr,
+                               &cbSize);
+
         // Was the metadata found inside the PE file?
-        if (FAILED(hr))
+        IfFailGo(hr);
+
+        // Metadata was found inside the file.
+        // Now reset the base of the stg object so that all memory accesses
+        // are relative to the .clb content.
+        //
+        IfFailGo( pStgIO->SetBaseRange(ptr, cbSize) );
+
+        // If user wanted us to make a local copy of the data, do that now.
+        if (IsOfCopyMemory(dwFlags))
         {
-            if (hr == E_OUTOFMEMORY)
-                IfFailGo(E_OUTOFMEMORY);
-
-            // No clb in the PE, assume it is a type library.
-            m_eFileType = FILETYPE_TLB;
-
-            // Let the caller deal with a TypeLib.
-            IfFailGo(hr);
+            // Cache the PEKind, Machine.
+            GetPEKind(pStgIO->GetMemoryMappedType(), NULL, NULL);
+            // Copy the file into memory; releases the file.
+            IfFailGo(pStgIO->LoadFileToMemory());
+            // No longer have the image.
+            m_pImage = NULL;
+            m_dwImageSize = 0;
         }
-        else
-        {
-            // Metadata was found inside the file.
-            // Now reset the base of the stg object so that all memory accesses
-            // are relative to the .clb content.
-            //
-            IfFailGo( pStgIO->SetBaseRange(ptr, cbSize) );
 
-            // If user wanted us to make a local copy of the data, do that now.
-            if (IsOfCopyMemory(dwFlags))
-            {
-                // Cache the PEKind, Machine.
-                GetPEKind(pStgIO->GetMemoryMappedType(), NULL, NULL);
-                // Copy the file into memory; releases the file.
-                IfFailGo(pStgIO->LoadFileToMemory());
-                // No longer have the image.
-                m_pImage = NULL;
-                m_dwImageSize = 0;
-            }
-
-            // Defer to the normal lookup.
-            IfFailGo( InitFileForRead(pStgIO, IsOfRead(dwFlags)) );
-        }
-    }
-    else if (m_eFileType == FILETYPE_TLB)
-    {
-        // Let the caller deal with a TypeLib.
-        IfFailGo(CLDB_E_NO_DATA);
+        // Defer to the normal lookup.
+        IfFailGo( InitFileForRead(pStgIO, IsOfRead(dwFlags)) );
     }
     // This spells trouble, we need to handle all types we might find.
     else

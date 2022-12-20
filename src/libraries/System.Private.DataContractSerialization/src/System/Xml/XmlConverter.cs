@@ -14,7 +14,7 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-
+using System.Buffers;
 
 namespace System.Xml
 {
@@ -30,16 +30,9 @@ namespace System.Xml
         public const int MaxUInt64Chars = 32;
         public const int MaxPrimitiveChars = MaxDateTimeChars;
 
-        private static UTF8Encoding? s_utf8Encoding;
-        private static UnicodeEncoding? s_unicodeEncoding;
-
-        private static Base64Encoding? s_base64Encoding;
-
-        public static Base64Encoding Base64Encoding => s_base64Encoding ??= new Base64Encoding();
-
-        private static UTF8Encoding UTF8Encoding => s_utf8Encoding ??= new UTF8Encoding(false, true);
-
-        private static UnicodeEncoding UnicodeEncoding => s_unicodeEncoding ??= new UnicodeEncoding(false, false, true);
+        // Matches IsWhitespace below
+        private static readonly IndexOfAnyValues<char> s_whitespaceChars = IndexOfAnyValues.Create(" \t\r\n");
+        private static readonly IndexOfAnyValues<byte> s_whitespaceBytes = IndexOfAnyValues.Create(" \t\r\n"u8);
 
         public static bool ToBoolean(string value)
         {
@@ -343,7 +336,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetString(buffer, offset, count);
+                return DataContractSerializer.ValidatingUTF8.GetString(buffer, offset, count);
             }
             catch (DecoderFallbackException exception)
             {
@@ -355,7 +348,7 @@ namespace System.Xml
         {
             try
             {
-                return UnicodeEncoding.GetString(buffer, offset, count);
+                return DataContractSerializer.ValidatingUTF16.GetString(buffer, offset, count);
             }
             catch (DecoderFallbackException exception)
             {
@@ -368,7 +361,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetBytes(value);
+                return DataContractSerializer.ValidatingUTF8.GetBytes(value);
             }
             catch (DecoderFallbackException exception)
             {
@@ -380,7 +373,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetChars(buffer, offset, count, chars, charOffset);
+                return DataContractSerializer.ValidatingUTF8.GetChars(buffer, offset, count, chars, charOffset);
             }
             catch (DecoderFallbackException exception)
             {
@@ -1093,45 +1086,62 @@ namespace System.Xml
             return offset - offsetMin;
         }
 
-        public static bool IsWhitespace(string s)
-        {
-            for (int i = 0; i < s.Length; i++)
-            {
-                if (!IsWhitespace(s[i]))
-                    return false;
-            }
-            return true;
-        }
+        public static bool IsWhitespace(ReadOnlySpan<char> chars) =>
+            chars.IndexOfAnyExcept(s_whitespaceChars) < 0;
 
-        public static bool IsWhitespace(char ch)
+        public static bool IsWhitespace(ReadOnlySpan<byte> bytes) =>
+            bytes.IndexOfAnyExcept(s_whitespaceBytes) < 0;
+
+        public static bool IsWhitespace(char ch) =>
+            ch is <= ' ' and (' ' or '\t' or '\r' or '\n');
+
+        public static int StripWhitespace(Span<char> chars)
         {
-            return (ch <= ' ' && (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'));
+            int count = chars.IndexOfAny(s_whitespaceChars);
+            if (count < 0)
+            {
+                return chars.Length;
+            }
+
+            foreach (char c in chars.Slice(count + 1))
+            {
+                if (!IsWhitespace(c))
+                {
+                    chars[count++] = c;
+                }
+            }
+
+            return count;
         }
 
         public static string StripWhitespace(string s)
         {
-            int count = s.Length;
-            for (int i = 0; i < s.Length; i++)
+            int indexOfWhitespace = s.AsSpan().IndexOfAny(s_whitespaceChars);
+            if (indexOfWhitespace < 0)
             {
-                if (IsWhitespace(s[i]))
+                return s;
+            }
+
+            int count = s.Length - 1;
+            foreach (char c in s.AsSpan(indexOfWhitespace + 1))
+            {
+                if (IsWhitespace(c))
                 {
                     count--;
                 }
             }
-            if (count == s.Length)
-                return s;
 
-            return string.Create(count, s, (chars, s) =>
+            return string.Create(count, s, static (chars, s) =>
             {
                 int count = 0;
-                for (int i = 0; i < s.Length; i++)
+                foreach (char c in s)
                 {
-                    char ch = s[i];
-                    if (!IsWhitespace(ch))
+                    if (!IsWhitespace(c))
                     {
-                        chars[count++] = ch;
+                        chars[count++] = c;
                     }
                 }
+                Debug.Assert(count == chars.Length);
             });
         }
     }

@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
             {
                 System.Security.Cryptography.Pkcs.Asn1.Rfc3161Accuracy tmpAccuracy;
-                System.Security.Cryptography.Pkcs.Asn1.Rfc3161Accuracy.Decode(ref sequenceReader, rebind, out tmpAccuracy);
+                System.Security.Cryptography.Pkcs.Asn1.Rfc3161Accuracy.Decode(ref sequenceReader, out tmpAccuracy);
                 decoded.Accuracy = tmpAccuracy;
 
             }

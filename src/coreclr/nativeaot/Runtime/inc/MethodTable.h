@@ -11,7 +11,6 @@
 class MethodTable;
 class TypeManager;
 struct TypeManagerHandle;
-class DynamicModule;
 struct EETypeRef;
 
 #if !defined(USE_PORTABLE_HELPERS)
@@ -93,8 +92,6 @@ enum EETypeField
     ETF_OptionalFieldsPtr,
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
-    ETF_DynamicDispatchMap,
-    ETF_DynamicModule,
     ETF_GenericDefinition,
     ETF_GenericComposition,
     ETF_DynamicGcStatics,
@@ -197,6 +194,7 @@ private:
     {
         HasEagerFinalizerFlag = 0x0001,
         HasCriticalFinalizerFlag = 0x0002,
+        IsTrackedReferenceWithFinalizerFlag = 0x0004,
     };
 
 public:
@@ -272,9 +270,14 @@ public:
         return (m_uFlags & HasCriticalFinalizerFlag) && !HasComponentSize();
     }
 
+    bool IsTrackedReferenceWithFinalizer()
+    {
+        return (m_uFlags & IsTrackedReferenceWithFinalizerFlag) && !HasComponentSize();
+    }
+
     bool  HasComponentSize()
     {
-        static_assert(HasComponentSizeFlag == (1 << 31), "we assume that HasComponentSizeFlag matches the sign bit");
+        static_assert(HasComponentSizeFlag == (MethodTable::Flags)(1 << 31), "we assume that HasComponentSizeFlag matches the sign bit");
         // return (m_uFlags & HasComponentSizeFlag) != 0;
 
         return (int32_t)m_uFlags < 0;
@@ -339,8 +342,6 @@ public:
 
     bool IsGeneric()
         { return (m_uFlags & IsGenericFlag) != 0; }
-
-    DynamicModule* get_DynamicModule();
 
     TypeManagerHandle* GetTypeManagerPtr();
 

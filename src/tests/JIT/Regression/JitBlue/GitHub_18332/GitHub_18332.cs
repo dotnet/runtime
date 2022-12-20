@@ -41,7 +41,7 @@ class GitHub_18332
         return "wobble";
     }
     
-    public static int Main(string[] args)
+    public static int Main()
     {
         string expected = "wobble";
         string actual = Aargh();

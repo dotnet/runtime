@@ -177,7 +177,7 @@ namespace System.Text
 
             // JIT turns the below into constants
 
-            uint SizeOfVector128InBytes = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128InBytes = (uint)sizeof(Vector128<byte>);
             uint SizeOfVector128InChars = SizeOfVector128InBytes / sizeof(char);
 
             Debug.Assert(Sse2.IsSupported, "Should've been checked by caller.");
@@ -538,7 +538,7 @@ namespace System.Text
             {
                 Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2 is supported.");
 
-                if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
+                if (elementCount >= 2 * (uint)sizeof(Vector128<byte>))
                 {
                     // Since there's overhead to setting up the vectorized code path, we only want to
                     // call into it after a quick probe to ensure the next immediate characters really are Latin-1.
@@ -567,7 +567,7 @@ namespace System.Text
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
+                uint SizeOfVector = (uint)sizeof(Vector<byte>); // JIT will make this a const
 
                 // Only bother vectorizing if we have enough data to do so.
                 if (elementCount >= 2 * SizeOfVector)
@@ -757,7 +757,7 @@ namespace System.Text
 
             // JIT turns the below into constants
 
-            uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128 = (uint)sizeof(Vector128<byte>);
             nuint MaskOfAllBitsInVector128 = SizeOfVector128 - 1;
 
             // This method is written such that control generally flows top-to-bottom, avoiding
@@ -944,7 +944,7 @@ namespace System.Text
         {
             // JIT turns the below into constants
 
-            uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128 = (uint)sizeof(Vector128<byte>);
             nuint MaskOfAllBitsInVector128 = SizeOfVector128 - 1;
 
             Debug.Assert(Sse2.IsSupported);

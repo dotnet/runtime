@@ -12,6 +12,7 @@ let legacyExportTargetInt;
 let jsExportTargetInt;
 let legacyExportTargetString;
 let jsExportTargetString;
+let _jiterpreter_dump_stats;
 
 function runLegacyExportInt(count) {
     for (let i = 0; i < count; i++) {
@@ -59,8 +60,12 @@ function importTargetThrows(value) {
 }
 
 class MainApp {
-    async init({ getAssemblyExports, setModuleImports, BINDING }) {
+    async init({ getAssemblyExports, setModuleImports, BINDING, INTERNAL }) {
         const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
+        INTERNAL.jiterpreter_apply_options({
+            enableStats: true
+        });
+        _jiterpreter_dump_stats = INTERNAL.jiterpreter_dump_stats.bind(INTERNAL);
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
@@ -96,14 +101,23 @@ class MainApp {
         this.yieldBench();
     }
 
+    bootstraped = false;
 
     yieldBench() {
         let promise = runBenchmark();
         promise.then(ret => {
+            if (!this.bootstraped) {
+                fetch("/bootstrap.flag", {
+                    method: 'POST',
+                    body: "ok"
+                }).then(r => { console.log("bootstrap post request complete, response: ", r); });
+                this.bootstraped = true;
+            }
             document.getElementById("out").innerHTML += ret;
             if (ret.length > 0) {
                 setTimeout(() => { this.yieldBench(); }, 0);
             } else {
+                _jiterpreter_dump_stats();
                 document.getElementById("out").innerHTML += "Finished";
                 fetch("/results.json", {
                     method: 'POST',
@@ -166,6 +180,7 @@ try {
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
     const runtime = await dotnet
+        .withRuntimeOptions(["--jiterpreter-stats-enabled"])
         .withElementOnExit()
         .withExitCodeLogging()
         .create();

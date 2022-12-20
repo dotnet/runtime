@@ -102,7 +102,6 @@ void StgIO::CtorInit()
     m_rgBuff = 0;
     m_cbBuff = 0;
     m_rgPageMap = 0;
-    m_FileType = FILETYPE_UNKNOWN;
     m_cRef = 1;
     m_mtMappedType = MTYPE_NOMAPPING;
 }
@@ -310,20 +309,6 @@ ErrExit:
 
     // Save flags for later.
     m_fFlags = fFlags;
-    if ((szName != NULL) && (*szName != 0))
-    {
-        LPCWSTR ext;
-        size_t extSize;
-        SplitPathInterior(szName, NULL, 0, NULL, 0, NULL, 0, &ext, &extSize);
-        if (SString::_wcsicmp(ext, W(".obj")) == 0)
-        {
-            m_FileType = FILETYPE_NTOBJ;
-        }
-        else if (SString::_wcsicmp(ext, W(".tlb")) == 0)
-        {
-            m_FileType = FILETYPE_TLB;
-        }
-    }
 
     // For auto map case, map the view of the file as part of open.
     if (m_bAutoMap &&
@@ -1257,56 +1242,6 @@ HRESULT StgIO::ReadFromDisk(            // Return code.
     {
         return (m_pIStream->Read(pbBuff, cbBuff, pcbRead));
     }
-}
-
-
-//*****************************************************************************
-// Copy the contents of the file for this storage to the target path.
-//*****************************************************************************
-HRESULT StgIO::CopyFileInternal(        // Return code.
-    LPCWSTR     szTo,                   // Target save path for file.
-    int         bFailIfThere,           // true to fail if target exists.
-    int         bWriteThrough)          // Should copy be written through OS cache.
-{
-    DWORD       iCurrent;               // Save original location.
-    DWORD       cbRead;                 // Byte count for buffer.
-    DWORD       cbWrite;                // Check write of bytes.
-    const DWORD cbBuff = 4096;          // Size of buffer for copy (in bytes).
-    BYTE       *pBuff = (BYTE*)alloca(cbBuff); // Buffer for copy.
-    HANDLE      hFile;                  // Target file.
-    HRESULT     hr = S_OK;
-
-    // Create target file.
-    if ((hFile = ::WszCreateFile(szTo, GENERIC_WRITE, 0, 0,
-            (bFailIfThere) ? CREATE_NEW : CREATE_ALWAYS,
-            (bWriteThrough) ? FILE_FLAG_WRITE_THROUGH : 0,
-            0)) == INVALID_HANDLE_VALUE)
-    {
-        return (MapFileError(GetLastError()));
-    }
-
-    // Save current location and reset it later.
-    iCurrent = ::SetFilePointer(m_hFile, 0, 0, FILE_CURRENT);
-    ::SetFilePointer(m_hFile, 0, 0, FILE_BEGIN);
-
-    // Copy while there are bytes.
-    while (::ReadFile(m_hFile, pBuff, cbBuff, &cbRead, 0) && cbRead)
-    {
-        if (!::WriteFile(hFile, pBuff, cbRead, &cbWrite, 0) || cbWrite != cbRead)
-        {
-            hr = STG_E_WRITEFAULT;
-            break;
-        }
-    }
-
-    // Reset file offset.
-    ::SetFilePointer(m_hFile, iCurrent, 0, FILE_BEGIN);
-
-    // Close target.
-    if (!bWriteThrough)
-        VERIFY(::FlushFileBuffers(hFile));
-    ::CloseHandle(hFile);
-    return (hr);
 }
 
 

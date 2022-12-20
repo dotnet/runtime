@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly globals
+.assembly 'b49644'
 {
 }
 
@@ -95,7 +95,7 @@
   } 
 
 
-  .method public static int32  main(class System.String[] A_0) il managed
+  .method public static int32  main() il managed
   {
 		.entrypoint
 		.maxstack  8

@@ -381,10 +381,10 @@ namespace System.Formats.Tar
 
                 case TarEntryFormat.Unknown:
                 default:
-                    throw new InvalidDataException(string.Format(SR.TarInvalidFormat, archiveFormat));
+                    throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, archiveFormat));
             }
 
-            throw new ArgumentException(string.Format(SR.TarEntryTypeNotSupportedInFormat, entryType, archiveFormat), paramName);
+            throw new ArgumentException(SR.Format(SR.TarEntryTypeNotSupportedInFormat, entryType, archiveFormat), paramName);
         }
     }
 }

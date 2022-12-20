@@ -1,4 +1,14 @@
 <Project>
+  <!-- iOS/tvOS device + arm64 simulators need to AOT -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or (('$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator') And '$(TargetArchitecture)' == 'arm64')">
+    <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+  </PropertyGroup>
+
+  <!-- iOS/tvOS arm64 simulators do not support JIT, so force interpreter fallback, devices should FullAOT -->
+  <PropertyGroup Condition="('$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator') And '$(TargetArchitecture)' == 'arm64'">
+    <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
+  </PropertyGroup>
+
   <PropertyGroup>
     <RuntimeIdentifier>$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
     <UseMonoRuntime>true</UseMonoRuntime>
