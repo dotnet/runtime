@@ -412,9 +412,38 @@ namespace System.Reflection.Runtime.General
             if (info != null)
                 return info;
 
-            info = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo<TUnderlyingValue>(runtimeType.TypeHandle);
+            ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle, out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
+
+            // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
+            // That codepath would bring functionality to compare everything that was ever allocated in the program.
+            ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
+
+            // Only after we've sorted, create the underlying array.
+            var values = new TUnderlyingValue[unsortedValues.Length];
+            for (int i = 0; i < unsortedValues.Length; i++)
+                values[i] = (TUnderlyingValue)unsortedValues[i];
+
+            info = new EnumInfo<TUnderlyingValue>(type, values, unsortedNames, isFlags);
             runtimeType.GenericCache = info;
             return info;
+        }
+
+        private class EnumUnderlyingTypeComparer : IComparer<object>
+        {
+            public static EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
+
+            public int Compare(object? x, object? y)
+                => x switch
+                {
+                    byte b => b.CompareTo((byte)y!),
+                    sbyte sb => sb.CompareTo((sbyte)y!),
+                    short s => s.CompareTo((short)y!),
+                    ushort us => us.CompareTo((ushort)y!),
+                    int i => i.CompareTo((int)y!),
+                    uint ui => ui.CompareTo((uint)y!),
+                    long l => l.CompareTo((long)y!),
+                    _ => ((ulong)x!).CompareTo((ulong)y!),
+                };
         }
 
         public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
