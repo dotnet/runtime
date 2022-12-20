@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="CLR-x86-JIT/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="*/**/*_d.??proj" />
+    <MergedWrapperProjectReference Remove="*/**/*_do.??proj" />
+    <MergedWrapperProjectReference Remove="*/**/*_r.??proj" />
+    <MergedWrapperProjectReference Remove="*/**/*_ro.??proj" />
+    <ProjectReference Include="@(MergedWrapperProjectReference)" />
+  </ItemGroup>
+</Project>
