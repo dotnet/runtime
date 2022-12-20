@@ -19,3 +19,5 @@ build.cmd
 ```
 build.cmd -warnAsError 0
 ```
+
+**Tip:** You can use [dotnet format](https://learn.microsoft.com/dotnet/core/tools/dotnet-format) to fix analyzer warnings if the analyzer has an associated `CodeFixProvider`.
