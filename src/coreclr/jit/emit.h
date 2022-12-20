@@ -651,7 +651,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64)
         unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
-        unsigned    _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
+        unsigned    _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;

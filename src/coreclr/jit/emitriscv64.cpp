@@ -545,8 +545,61 @@ void emitter::emitIns_R_R_R(
             case INS_sra:
             case INS_or:
             case INS_and:
+
+            case INS_addw:
+            case INS_subw:
+            case INS_sllw:
+            case INS_srlw:
+            case INS_sraw:
+
+            case INS_mul:
+            case INS_mulh:
+            case INS_mulhsu:
+            case INS_mulhu:
+            case INS_div:
+            case INS_divu:
+            case INS_rem:
+            case INS_remu:
+
+            case INS_mulw:
+            case INS_divw:
+            case INS_divuw:
+            case INS_remw:
+            case INS_remuw:
+
+            case INS_fadd_s:
+            case INS_fsub_s:
+            case INS_fmul_s:
+            case INS_fdiv_s:
+            case INS_fsqrt_s:
+            case INS_fsgnj_s:
+            case INS_fsgnjn_s:
+            case INS_fsgnjx_s:
+            case INS_fmin_s:
+            case INS_fmax_s:
+
+            case INS_feq_s:
+            case INS_flt_s:
+            case INS_fle_s:
+
+            case INS_fadd_d:
+            case INS_fsub_d:
+            case INS_fmul_d:
+            case INS_fdiv_d:
+            case INS_fsqrt_d:
+            case INS_fsgnj_d:
+            case INS_fsgnjn_d:
+            case INS_fsgnjx_d:
+            case INS_fmin_d:
+            case INS_fmax_d:
+
+            case INS_feq_d:
+            case INS_flt_d:
+            case INS_fle_d:
+
+                break;
             default:
-                NYI_LOONGARCH64("illegal ins within emitIns_R_R_R --1!");
+                NYI_RISCV64("illegal ins within emitIns_R_R_R --1!");
         }
         assert(isGeneralRegister(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -1665,7 +1718,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             dstRW += 4;
 
-            emitRecordRelocation(dstRW - 8 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
+            emitRecordRelocation(dstRW - 8 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
 
             sz = sizeof(instrDesc);
         }
@@ -2168,7 +2221,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else
                 {
-                    assert(!"unimplemented on LOONGARCH yet");
+                    assert(!"unimplemented on RISCV64 yet");
                 }
 
                 *(code_t*)dstRW = code;
