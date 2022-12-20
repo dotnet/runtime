@@ -16,7 +16,7 @@ INTERMEDIATE_OUTPUT_PATH="$2"
 if [ -d "$SHIM_SOURCE_DIR" ]; then
     LOCAL_SHIM_DIR="$INTERMEDIATE_OUTPUT_PATH"/libs/System.Globalization.Native/build
 
-    if ! mkdir -p "$LOCAL_SHIM_DIR" && cd "$LOCAL_SHIM_DIR"; then
+    if ! { mkdir -p "$LOCAL_SHIM_DIR" && cd "$LOCAL_SHIM_DIR"; } 2>/dev/null; then
         echo "local_build.sh::ERROR: Cannot use local build directory"
         exit 1
     fi
