@@ -266,9 +266,8 @@ namespace System
         {
             if (count <= 0)
             {
-                if (count == 0)
-                    return Empty;
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                return Empty;
             }
 
             string result = FastAllocateString(count);
@@ -450,9 +449,8 @@ namespace System
 
             if (length <= 0)
             {
-                if (length == 0)
-                    return Array.Empty<char>();
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
+                ArgumentOutOfRangeException.ThrowIfNegative(length);
+                return Array.Empty<char>();
             }
 
             char[] chars = new char[length];

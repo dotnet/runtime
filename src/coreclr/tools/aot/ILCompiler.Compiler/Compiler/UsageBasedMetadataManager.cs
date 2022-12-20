@@ -743,6 +743,11 @@ namespace ILCompiler
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectableField(fieldToReport), reason);
             }
+
+            if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
+            {
+                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+            }
         }
 
         public override void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, MethodDesc calledMethod)

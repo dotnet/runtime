@@ -67,11 +67,11 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' == 'windows'">.exe</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' != 'windows'"></NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and $(NativeLib) == 'Shared'">.dll</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'OSX' and $(NativeLib) == 'Shared'">.dylib</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX' and $(NativeLib) == 'Shared'">.so</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Shared'">.dll</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'">.dylib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'">.so</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
     <NativeSymbolExt Condition="'$(TargetOS)' == 'OSX'">.dwarf</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(TargetOS)' == 'windows'">.pdb</NativeSymbolExt>
@@ -82,7 +82,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
-    <IlcExportUnmanagedEntrypoints Condition="$(NativeLib) == 'Shared'">true</IlcExportUnmanagedEntrypoints>
+    <IlcExportUnmanagedEntrypoints Condition="'$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(IlcExportUnmanagedEntrypoints) == 'true' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
     <IlcCompileOutput>$(NativeObject)</IlcCompileOutput>
@@ -225,7 +225,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--scandgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).scan.dgml.xml" />
       <IlcArg Include="@(RdXmlFile->'--rdxml:%(FullPath)')" />
       <IlcArg Include="@(TrimmerRootDescriptor->'--descriptor:%(FullPath)')" />
-      <IlcArg Condition="$(NativeLib) != ''" Include="--nativelib" />
+      <IlcArg Condition="'$(NativeLib)' != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(RuntimeHostConfigurationOption->'--appcontextswitch:%(Identity)=%(Value)')" />

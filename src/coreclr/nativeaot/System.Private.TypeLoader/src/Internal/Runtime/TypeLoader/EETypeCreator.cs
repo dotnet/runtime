@@ -217,14 +217,18 @@ namespace Internal.Runtime.TypeLoader
                 if (state.ThreadDataSize != 0)
                     rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
 
-                optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
+                if (rareFlags != 0)
+                    optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
 
                 // Dispatch map is fetched from template type
                 optionalFields.ClearField(EETypeOptionalFieldTag.DispatchMap);
 
                 // Compute size of optional fields encoding
                 cbOptionalFieldsSize = optionalFields.Encode();
-                Debug.Assert(cbOptionalFieldsSize > 0);
+
+                // Clear the optional fields flag. We'll set it if we set optional fields later in this method.
+                if (cbOptionalFieldsSize == 0)
+                    flags &= ~(uint)EETypeFlags.OptionalFieldsFlag;
 
                 // Note: The number of vtable slots on the MethodTable to create is not necessary equal to the number of
                 // vtable slots on the template type for universal generics (see ComputeVTableLayout)
@@ -243,7 +247,7 @@ namespace Internal.Runtime.TypeLoader
                         numVtableSlots,
                         runtimeInterfacesLength,
                         hasFinalizer,
-                        true,
+                        cbOptionalFieldsSize > 0,
                         (rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0,
                         isGeneric,
                         allocatedNonGCDataSize != 0,
@@ -278,10 +282,11 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(pEEType->HasGCPointers == (cbGCDesc != 0));
 
                     // Copy the encoded optional fields buffer to the newly allocated memory, and update the OptionalFields field on the MethodTable
-                    // It is important to set the optional fields first on the newly created MethodTable, because all other 'setters'
-                    // will assert that the type is dynamic, just to make sure we are not making any changes to statically compiled types
-                    pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
-                    optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
+                    if (cbOptionalFieldsSize > 0)
+                    {
+                        pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
+                        optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
+                    }
 
                     // Copy VTable entries from template type
                     IntPtr* pVtable = (IntPtr*)((byte*)pEEType + sizeof(MethodTable));
@@ -630,8 +635,7 @@ namespace Internal.Runtime.TypeLoader
 
             // We used a pointer as a template. We need to make this a byref.
             Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
-            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->Flags = EETypeBuilderHelpers.ComputeFlags(byRefType);
-            Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.ByRef);
+            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType = EETypeElementType.ByRef;
             Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
             state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape = ParameterizedTypeShapeConstants.ByRef;
 
@@ -657,14 +661,6 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeTypeHandle templateTypeHandle = typeof(void*).TypeHandle;
 
                 pTemplateEEType = templateTypeHandle.ToEETypePtr();
-            }
-            else if (type.IsMdArray || (type.IsSzArray && ((ArrayType)type).ElementType.IsPointer))
-            {
-                // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and
-                // we don't need to do much for them in terms of type building. We can pretty much just take
-                // the MethodTable for any of those, massage the bits that matter (GCDesc, element type,
-                // component size,...) to be of the right shape and we're done.
-                pTemplateEEType = typeof(object[,]).TypeHandle.ToEETypePtr();
             }
             else
             {

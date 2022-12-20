@@ -9,6 +9,8 @@ using Internal.Runtime.Augments;
 
 namespace Internal.TypeSystem
 {
+    public partial class CanonBaseType : DefType { }
+
     internal partial class CanonType
     {
         partial void Initialize()

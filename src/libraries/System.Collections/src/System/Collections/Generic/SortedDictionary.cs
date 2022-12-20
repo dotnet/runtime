@@ -562,10 +562,7 @@ namespace System.Collections.Generic
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < Count)
                 {
@@ -589,10 +586,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {
@@ -736,10 +730,7 @@ namespace System.Collections.Generic
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < Count)
                 {
@@ -763,10 +754,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {

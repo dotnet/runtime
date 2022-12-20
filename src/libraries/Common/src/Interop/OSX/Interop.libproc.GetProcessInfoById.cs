@@ -108,10 +108,7 @@ internal static partial class Interop
         internal static unsafe proc_taskallinfo? GetProcessInfoById(int pid)
         {
             // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             // Get the process information for the specified pid
             int size = sizeof(proc_taskallinfo);

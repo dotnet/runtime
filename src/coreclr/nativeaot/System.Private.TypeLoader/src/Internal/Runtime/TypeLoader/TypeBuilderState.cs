@@ -56,11 +56,22 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_templateComputed)
                 {
-                    // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and are special cases. They use
+                    // Multidimensional arrays don't implement generic interfaces and are special cases. They use
                     // typeof(object[,]) as their template.
-                    if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
+                    if (TypeBeingBuilt.IsMdArray)
                     {
                         _templateType = TypeBeingBuilt.Context.ResolveRuntimeTypeHandle(typeof(object[,]).TypeHandle);
+                        _templateTypeLoaderNativeLayout = false;
+                        _nativeLayoutComputed = _nativeLayoutTokenComputed = _templateComputed = true;
+
+                        return _templateType;
+                    }
+
+                    // Arrays of pointers don't implement generic interfaces and are special cases. They use
+                    // typeof(char*[]) as their template.
+                    if (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer)
+                    {
+                        _templateType = TypeBeingBuilt.Context.ResolveRuntimeTypeHandle(typeof(char*[]).TypeHandle);
                         _templateTypeLoaderNativeLayout = false;
                         _nativeLayoutComputed = _nativeLayoutTokenComputed = _templateComputed = true;
 
@@ -284,10 +295,7 @@ namespace Internal.Runtime.TypeLoader
         public int GcDataSize;
         public int ThreadDataSize;
 
-        public bool HasStaticConstructor
-        {
-            get { return TypeBeingBuilt.HasStaticConstructor; }
-        }
+        public bool HasStaticConstructor => ClassConstructorPointer.HasValue;
 
         public IntPtr? ClassConstructorPointer;
         public IntPtr GcStaticDesc;

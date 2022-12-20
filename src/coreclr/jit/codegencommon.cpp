@@ -8769,6 +8769,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endLiveRangeA
     // Using [close, open) ranges so as to not compute the size of the last instruction
     m_VariableLiveRanges->back().m_EndEmitLocation.CaptureLocation(emit);
 
+    JITDUMP("Closing debug range.\n");
     // No m_EndEmitLocation has to be Valid
     noway_assert(m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 }

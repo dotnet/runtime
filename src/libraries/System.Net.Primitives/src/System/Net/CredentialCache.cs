@@ -50,10 +50,7 @@ namespace System.Net
             ArgumentException.ThrowIfNullOrEmpty(host);
             ArgumentNullException.ThrowIfNull(authenticationType);
 
-            if (port < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(port);
 
             if ((credential is SystemNetworkCredential)
                 && !((string.Equals(authenticationType, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
@@ -170,10 +167,7 @@ namespace System.Net
         {
             ArgumentException.ThrowIfNullOrEmpty(host);
             ArgumentNullException.ThrowIfNull(authenticationType);
-            if (port < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(port));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(port);
 
             if (_cacheForHosts == null)
             {
