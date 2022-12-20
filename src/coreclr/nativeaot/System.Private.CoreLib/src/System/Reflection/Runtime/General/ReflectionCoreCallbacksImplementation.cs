@@ -423,7 +423,7 @@ namespace System.Reflection.Runtime.General
             for (int i = 0; i < unsortedValues.Length; i++)
                 values[i] = (TUnderlyingValue)unsortedValues[i];
 
-            info = new EnumInfo<TUnderlyingValue>(type, values, unsortedNames, isFlags);
+            info = new EnumInfo<TUnderlyingValue>(RuntimeAugments.GetEnumUnderlyingType(runtimeType.TypeHandle), values, unsortedNames, isFlags);
             runtimeType.GenericCache = info;
             return info;
         }
