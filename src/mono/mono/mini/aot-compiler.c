@@ -6161,6 +6161,9 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 static gboolean
 is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method)
 {
+	if (acfg->aot_opts.direct_pinvoke)
+		return TRUE;
+
 	if (!acfg->aot_opts.direct_pinvokes && !acfg->aot_opts.direct_pinvoke_lists)
 		return FALSE;
 
@@ -6231,8 +6234,6 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 		/* Cross assembly calls */
 		return method_is_externally_callable (acfg, patch_info->data.method);
 	} else if ((patch_info->type == MONO_PATCH_INFO_ICALL_ADDR_CALL && patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		if (acfg->aot_opts.direct_pinvoke)
-			return TRUE;
 		return is_direct_pinvoke_specified_for_method (acfg, patch_info->data.method);
 	} else if (patch_info->type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
 		if (acfg->aot_opts.direct_icalls)
@@ -10181,7 +10182,7 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 			MonoMethod *method = (MonoMethod *)data;
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 				sym = lookup_icall_symbol_name_aot (method);
-			else if (llvm_acfg->aot_opts.direct_pinvoke || is_direct_pinvoke_specified_for_method (llvm_acfg, method))
+			else if (is_direct_pinvoke_specified_for_method (llvm_acfg, method))
 				sym = get_pinvoke_import (llvm_acfg, method);
 		} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 			MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
