@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -35,7 +34,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CanReadAndWrite()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
 
             await _pipe.Writer.WriteAsync(bytes);
             ReadResult result = await _pipe.Reader.ReadAsync();
@@ -171,7 +170,7 @@ namespace System.IO.Pipelines.Tests
             var blockSize = _pipe.Writer.GetMemory().Length;
 
             byte[] paddingBytes = Enumerable.Repeat((byte)'a', blockSize - 5).ToArray();
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
 
             writeBuffer.Write(paddingBytes);
             writeBuffer.Write(bytes);
@@ -228,8 +227,6 @@ namespace System.IO.Pipelines.Tests
             invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Reader.ReadAsync());
             Assert.Equal("Writer exception", invalidOperationException.Message);
             Assert.Contains(nameof(ThrowTestException), invalidOperationException.StackTrace);
-
-            Assert.Single(Regex.Matches(invalidOperationException.StackTrace, "Pipe.GetReadResult"));
         }
 
         [Fact]
@@ -341,7 +338,7 @@ namespace System.IO.Pipelines.Tests
             await buffer.FlushAsync();
 
             // Write Hello to another pipeline and get the buffer
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello");
+            byte[] bytes = "Hello"u8.ToArray();
 
             var c2 = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
             await c2.Writer.WriteAsync(bytes);
@@ -519,7 +516,7 @@ namespace System.IO.Pipelines.Tests
         public async Task SyncReadThenAsyncRead()
         {
             PipeWriter buffer = _pipe.Writer;
-            buffer.Write(Encoding.ASCII.GetBytes("Hello World"));
+            buffer.Write("Hello World"u8.ToArray());
             await buffer.FlushAsync();
 
             bool gotData = _pipe.Reader.TryRead(out ReadResult result);
@@ -604,7 +601,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritingDataMakesDataReadableViaPipeline()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
 
             await _pipe.Writer.WriteAsync(bytes);
             ReadResult result = await _pipe.Reader.ReadAsync();

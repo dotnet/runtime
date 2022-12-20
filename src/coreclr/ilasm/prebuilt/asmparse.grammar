@@ -265,7 +265,9 @@ typarAttrib             : '+'
                         | '-' 
                         | 'class' 
                         | 'valuetype' 
+                        | 'byreflike' 
                         | '.ctor' 
+                        | 'flags' '(' int32 ')' 
                         ;
 
 typarAttribs            : /* EMPTY */ 

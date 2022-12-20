@@ -44,10 +44,7 @@ namespace System.Threading
         private static OpenExistingResult OpenExistingWorker(string name, out EventWaitHandle? result)
         {
 #if TARGET_WINDOWS
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             result = null;
             SafeWaitHandle myHandle = Interop.Kernel32.OpenEvent(AccessRights, false, name);
@@ -55,6 +52,8 @@ namespace System.Threading
             if (myHandle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastPInvokeError();
+
+                myHandle.Dispose();
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;

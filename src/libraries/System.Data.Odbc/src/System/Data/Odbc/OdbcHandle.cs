@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.Odbc
 {
     internal abstract class OdbcHandle : SafeHandle
@@ -167,32 +165,30 @@ namespace System.Data.Odbc
             // If we ended up getting released, then we have to release
             // our reference on our parent.
             OdbcHandle? parentHandle = _parentHandle;
-            _parentHandle = null;
-            if (null != parentHandle)
+            if (parentHandle != null)
             {
+                _parentHandle = null;
                 parentHandle.DangerousRelease();
-                parentHandle = null;
             }
             return true;
         }
 
         internal ODBC32.SQLRETURN GetDiagnosticField(out string sqlState)
         {
-            short cbActual;
             // ODBC (MSDN) documents it expects a buffer large enough to hold 5(+L'\0') unicode characters
-            StringBuilder sb = new StringBuilder(6);
+            char[] buffer = new char[6];
             ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagFieldW(
                 HandleType,
                 this,
                 (short)1,
                 ODBC32.SQL_DIAG_SQLSTATE,
-                sb,
-                checked((short)(2 * sb.Capacity)), // expects number of bytes, see \\kbinternal\kb\articles\294\1\69.HTM
-                out cbActual);
+                buffer,
+                checked((short)(2 * buffer.Length)), // expects number of bytes, see \\kbinternal\kb\articles\294\1\69.HTM
+                out _);
             ODBC.TraceODBC(3, "SQLGetDiagFieldW", retcode);
             if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
-                sqlState = sb.ToString();
+                sqlState = new string(buffer.AsSpan(0, buffer.AsSpan().IndexOf('\0')));
             }
             else
             {
@@ -201,21 +197,24 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        internal ODBC32.SQLRETURN GetDiagnosticRecord(short record, out string sqlState, StringBuilder message, out int nativeError, out short cchActual)
+        internal ODBC32.SQLRETURN GetDiagnosticRecord(short record, out string sqlState, StringBuilder messageBuilder, out int nativeError, out short cchActual)
         {
-            // ODBC (MSDN) documents it expects a buffer large enough to hold 4(+L'\0') unicode characters
-            StringBuilder sb = new StringBuilder(5);
-            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagRecW(HandleType, this, record, sb, out nativeError, message, checked((short)message.Capacity), out cchActual);
+            // SQLGetDiagRecW expects a buffer large enough to hold a five-character state code plus a null-terminator
+            // See https://docs.microsoft.com/sql/odbc/reference/syntax/sqlgetdiagrec-function
+            char[] buffer = new char[6];
+            char[] message = new char[1024];
+            ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagRecW(HandleType, this, record, buffer, out nativeError, message, checked((short)message.Length), out cchActual);
             ODBC.TraceODBC(3, "SQLGetDiagRecW", retcode);
 
             if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {
-                sqlState = sb.ToString();
+                sqlState = new string(buffer.AsSpan(0, buffer.AsSpan().IndexOf('\0')));
             }
             else
             {
                 sqlState = string.Empty;
             }
+            messageBuilder.Append(new string(message.AsSpan(0, message.AsSpan().IndexOf('\0'))));
             return retcode;
         }
     }

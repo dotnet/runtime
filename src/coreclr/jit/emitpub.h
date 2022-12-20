@@ -16,8 +16,7 @@ void emitBegFN(bool hasFramePtr
                ,
                bool checkAlign
 #endif
-               ,
-               unsigned maxTmpSize);
+               );
 
 void emitEndFN();
 
@@ -71,12 +70,6 @@ UNATIVE_OFFSET emitCodeOffset(void* blockPtr, unsigned codeOffs);
 #ifdef DEBUG
 const char* emitOffsetToLabel(unsigned offs);
 #endif // DEBUG
-
-/************************************************************************/
-/*                   Output target-independent instructions             */
-/************************************************************************/
-
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 
 /************************************************************************/
 /*                   Emit initialized data sections                     */
@@ -139,7 +132,7 @@ static void InitTranslator(PDBRewriter* pPDB, int* rgSecMap, IMAGE_SECTION_HEADE
 /*                   Interface for generating unwind information        */
 /************************************************************************/
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
 bool emitIsFuncEnd(emitLocation* emitLoc, emitLocation* emitLocNextFragment = NULL);
 
@@ -151,7 +144,7 @@ void emitSplit(emitLocation*         startLoc,
 
 void emitUnwindNopPadding(emitLocation* locFrom, Compiler* comp);
 
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_ARM)
 

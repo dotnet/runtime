@@ -243,7 +243,7 @@ namespace CorUnix
         //
         // The only other spot the refcount is touched is from within
         // CPalObjectBase::ReleaseReference -- incremented before the
-        // destructors for an ojbect are called, and decremented afterwords.
+        // destructors for an object are called, and decremented afterwords.
         // This permits the freeing of the thread structure to happen after
         // the freeing of the enclosing thread object has completed.
         //

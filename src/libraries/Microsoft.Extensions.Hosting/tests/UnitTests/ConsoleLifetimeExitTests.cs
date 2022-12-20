@@ -94,7 +94,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         // SIGTERM is only handled on net6.0+, so the workaround to "clobber" the exit code is still in place on NetFramework
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void EnsureEnvironmentExitCode()
         {
             using var remoteHandle = RemoteExecutor.Invoke(async () =>
@@ -105,11 +104,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                         services.AddHostedService<EnsureEnvironmentExitCodeWorker>();
                     })
                     .RunConsoleAsync();
-            });
-
-            remoteHandle.Process.WaitForExit();
-
-            Assert.Equal(124, remoteHandle.Process.ExitCode);
+            }, new RemoteInvokeOptions() { ExpectedExitCode = 124 });
         }
 
         private class EnsureEnvironmentExitCodeWorker : BackgroundService
@@ -127,9 +122,11 @@ namespace Microsoft.Extensions.Hosting.Tests
         /// Tests that calling Environment.Exit from the "main" thread doesn't hang the process forever.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void EnsureEnvironmentExitDoesntHang()
         {
+            // SIGTERM is only handled on net6.0+, so the workaround to "clobber" the exit code is still in place on .NET Framework
+            int expectedExitCode = PlatformDetection.IsNetFramework ? 0 : 125;
+
             using var remoteHandle = RemoteExecutor.Invoke(async () =>
             {
                 await Host.CreateDefaultBuilder()
@@ -139,13 +136,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                         services.AddHostedService<EnsureEnvironmentExitDoesntHangWorker>();
                     })
                     .RunConsoleAsync();
-            }, new RemoteInvokeOptions() { TimeOut = 30_000 }); // give a 30 second time out, so if this does hang, it doesn't hang for the full timeout
-
-            Assert.True(remoteHandle.Process.WaitForExit(30_000), "The hosted process should have exited within 30 seconds");
-
-            // SIGTERM is only handled on net6.0+, so the workaround to "clobber" the exit code is still in place on NetFramework
-            int expectedExitCode = PlatformDetection.IsNetFramework ? 0 : 125;
-            Assert.Equal(expectedExitCode, remoteHandle.Process.ExitCode);
+            }, new RemoteInvokeOptions() { TimeOut = 30_000, ExpectedExitCode = expectedExitCode }); // give a 30 second time out, so if this does hang, it doesn't hang for the full timeout
         }
 
         private class EnsureEnvironmentExitDoesntHangWorker : BackgroundService

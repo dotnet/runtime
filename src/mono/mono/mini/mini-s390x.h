@@ -129,8 +129,6 @@ struct SeqPointInfo {
 
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
 
-#define MONO_ARCH_USE_FPSTACK FALSE
-
 #define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'o') ? s390_r2 : 		\
 					((desc == 'g') ? s390_f0 : 		\
 					((desc == 'A') ? S390_FIRST_ARG_REG : -1)))
@@ -192,7 +190,7 @@ static void inline
 s390_patch_rel (guchar *code, guint64 target)
 {
 	guint32 *offset = (guint32 *) code;
-	
+
 	if (target != 0) {
 		*offset = (guint32) target;
 	}
@@ -212,7 +210,7 @@ static void inline
 s390_patch_addr (guchar *code, guint64 target)
 {
 	guint64 *offset = (guint64 *) code;
-	
+
 	if (target != 0) {
 		*offset = target;
 	}
@@ -350,4 +348,4 @@ s390_patch_addr (guchar *code, guint64 target)
 		*(guint32 *) p = lo;				\
 	} while (0)
 
-#endif /* __MONO_MINI_S390X_H__ */  
+#endif /* __MONO_MINI_S390X_H__ */

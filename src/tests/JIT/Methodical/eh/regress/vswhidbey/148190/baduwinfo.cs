@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class Test_baduwinfo
+public class Test_baduwinfo
 {
     private static TestUtil.TestLog testLog;
     static Test_baduwinfo()
@@ -113,7 +114,8 @@ class Test_baduwinfo
         }
         return ret;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         String s = "Test1";
 

@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if !BUILDING_INBOX_LIBRARY
+#if !NETCOREAPP
 using System.Runtime.InteropServices;
 #endif
 
@@ -89,6 +89,10 @@ namespace System.Text.Json
         /// </summary>
         public int CurrentDepth => _currentDepth & JsonConstants.RemoveFlagsBitMask;
 
+        private Utf8JsonWriter()
+        {
+        }
+
         /// <summary>
         /// Constructs a new <see cref="Utf8JsonWriter"/> instance with a specified <paramref name="bufferWriter"/>.
         /// </summary>
@@ -101,7 +105,12 @@ namespace System.Text.Json
         /// </exception>
         public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterOptions options = default)
         {
-            _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
+            if (bufferWriter is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(bufferWriter));
+            }
+
+            _output = bufferWriter;
             _options = options;
 
             if (_options.MaxDepth == 0)
@@ -122,8 +131,11 @@ namespace System.Text.Json
         /// </exception>
         public Utf8JsonWriter(Stream utf8Json, JsonWriterOptions options = default)
         {
-            if (utf8Json == null)
-                throw new ArgumentNullException(nameof(utf8Json));
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
             if (!utf8Json.CanWrite)
                 throw new ArgumentException(SR.StreamNotWritable);
 
@@ -218,6 +230,29 @@ namespace System.Text.Json
             ResetHelper();
         }
 
+        internal void ResetAllStateForCacheReuse()
+        {
+            ResetHelper();
+
+            _stream = null;
+            _arrayBufferWriter = null;
+            _output = null;
+        }
+
+        internal void Reset(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
+        {
+            Debug.Assert(_output is null && _stream is null && _arrayBufferWriter is null);
+
+            _output = bufferWriter;
+            _options = options;
+            if (_options.MaxDepth == 0)
+            {
+                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
+            }
+        }
+
+        internal static Utf8JsonWriter CreateEmptyInstanceForCaching() => new Utf8JsonWriter();
+
         private void ResetHelper()
         {
             BytesPending = default;
@@ -238,7 +273,7 @@ namespace System.Text.Json
                 // The conditions are ordered with stream first as that would be the most common mode
                 if (_output == null)
                 {
-                    throw new ObjectDisposedException(nameof(Utf8JsonWriter));
+                    ThrowHelper.ThrowObjectDisposedException_Utf8JsonWriter();
                 }
             }
         }
@@ -267,7 +302,7 @@ namespace System.Text.Json
                     _arrayBufferWriter.Advance(BytesPending);
                     BytesPending = 0;
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     _stream.Write(_arrayBufferWriter.WrittenSpan);
 #else
                     Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
@@ -381,7 +416,7 @@ namespace System.Text.Json
                     _arrayBufferWriter.Advance(BytesPending);
                     BytesPending = 0;
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                     await _stream.WriteAsync(_arrayBufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
 #else
                     Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
@@ -707,7 +742,13 @@ namespace System.Text.Json
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(string propertyName)
-            => WriteStartArray((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteStartArray(propertyName.AsSpan());
+        }
 
         /// <summary>
         /// Writes the beginning of a JSON object with a property name as the key.
@@ -727,7 +768,13 @@ namespace System.Text.Json
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(string propertyName)
-            => WriteStartObject((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteStartObject(propertyName.AsSpan());
+        }
 
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.

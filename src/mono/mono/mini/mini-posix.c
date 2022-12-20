@@ -78,6 +78,7 @@
 #include <mono/component/debugger-agent.h>
 #include "mini-runtime.h"
 #include "jit-icalls.h"
+#include <glib.h>
 
 #ifdef HOST_DARWIN
 #include <mach/mach.h>
@@ -176,7 +177,7 @@ save_old_signal_handler (int signo, struct sigaction *old_action)
 	}
 	handler_to_save->sa_mask = old_action->sa_mask;
 	handler_to_save->sa_flags = old_action->sa_flags;
-	
+
 	if (!mono_saved_signal_handlers)
 		mono_saved_signal_handlers = g_hash_table_new_full (NULL, NULL, NULL, g_free);
 	g_hash_table_insert (mono_saved_signal_handlers, GINT_TO_POINTER (signo), handler_to_save);
@@ -321,7 +322,7 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 #endif
 		sa.sa_flags |= SA_ONSTACK;
 
-		/* 
+		/*
 		 * libgc will crash when trying to do stack marking for threads which are on
 		 * an altstack, so delay the suspend signal after the signal handler has
 		 * executed.
@@ -331,11 +332,11 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 	}
 #endif
 	if (signo == SIGSEGV) {
-		/* 
+		/*
 		 * Delay abort signals while handling SIGSEGVs since they could go unnoticed.
 		 */
 		sigset_t block_mask;
-     
+
 		sigemptyset (&block_mask);
 	}
 #else
@@ -347,7 +348,7 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 
 	/* if there was already a handler in place for this signal, store it */
 	if (! (previous_sa.sa_flags & SA_SIGINFO) &&
-			(SIG_DFL == previous_sa.sa_handler)) { 
+			(SIG_DFL == previous_sa.sa_handler)) {
 		/* it there is no sa_sigaction function and the sa_handler is default, we can safely ignore this */
 	} else {
 		if (mono_do_signal_chaining)
@@ -484,7 +485,7 @@ clock_init_for_profiler (MonoProfilerSampleMode mode)
 		 * CLOCK_PROCESS_CPUTIME_ID clock but don't actually support it. For
 		 * those systems, we fall back to CLOCK_MONOTONIC if we get EINVAL.
 		 */
-		if (clock_nanosleep (CLOCK_PROCESS_CPUTIME_ID, TIMER_ABSTIME, &ts, NULL) != EINVAL) {
+		if (g_clock_nanosleep (CLOCK_PROCESS_CPUTIME_ID, TIMER_ABSTIME, &ts, NULL) != EINVAL) {
 			sampling_clock = CLOCK_PROCESS_CPUTIME_ID;
 			break;
 		}
@@ -508,7 +509,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 	then.tv_nsec = ns_abs % 1000000000;
 
 	do {
-		ret = clock_nanosleep (sampling_clock, TIMER_ABSTIME, &then, NULL);
+		ret = g_clock_nanosleep (sampling_clock, TIMER_ABSTIME, &then, NULL);
 
 		if (ret != 0 && ret != EINTR)
 			g_error ("%s: clock_nanosleep () returned %d", __func__, ret);
@@ -784,7 +785,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 	if (!double_faulted) {
 		g_assertion_disable_global (assert_printer_callback);
 	} else {
-		g_async_safe_printf ("\nAn error has occured in the native fault reporting. Some diagnostic information will be unavailable.\n");
+		g_async_safe_printf ("\nAn error has occurred in the native fault reporting. Some diagnostic information will be unavailable.\n");
 
 	}
 
@@ -810,7 +811,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		}
 	}
 
-#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && (defined(SYS_fork) || HAVE_FORK)
+#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && ((!defined(HOST_DARWIN) && defined(SYS_fork)) || HAVE_FORK)
 	pid_t crashed_pid = getpid ();
 
 	pid_t pid = crashed_pid; /* init to some >0 value */
@@ -958,7 +959,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	const char *argv [10];
 	memset (argv, 0, sizeof (char*) * 10);
 
-	char commands_filename [100]; 
+	char commands_filename [100];
 	commands_filename [0] = '\0';
 	g_snprintf (commands_filename, sizeof (commands_filename), "/tmp/mono-gdb-commands.%d", crashed_pid);
 

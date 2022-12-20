@@ -4,6 +4,8 @@
 #include "pal_ssl.h"
 #include <dlfcn.h>
 
+#include "coretls_structs.h"
+
 // 10.13.4 introduced public API but linking would fail on all prior versions.
 // For that reason we use function pointers instead of direct call.
 // This can be revisited after we drop support for 10.12 and iOS 10
@@ -48,7 +50,7 @@ static SSLProtocol PalSslProtocolToSslProtocol(PAL_SslProtocol palProtocolId)
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         case PAL_SslProtocol_Tls13:
             return kTLSProtocol13;
-        case PAL_SslProtocol_Tls12: 
+        case PAL_SslProtocol_Tls12:
             return kTLSProtocol12;
         case PAL_SslProtocol_Tls11:
             return kTLSProtocol11;
@@ -129,10 +131,10 @@ AppleCryptoNative_SslCopyCADistinguishedNames(SSLContextRef sslContext, CFArrayR
     return *pOSStatus == noErr;
 }
 
-static int32_t AppleCryptoNative_SslSetSessionOption(SSLContextRef sslContext,
-                                                     SSLSessionOption option,
-                                                     int32_t value,
-                                                     int32_t* pOSStatus)
+static int32_t SslSetSessionOption(SSLContextRef sslContext,
+                                   SSLSessionOption option,
+                                   int32_t value,
+                                   int32_t* pOSStatus)
 {
     if (sslContext == NULL)
         return -1;
@@ -152,7 +154,15 @@ int32_t AppleCryptoNative_SslSetBreakOnServerAuth(SSLContextRef sslContext, int3
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnServerAuth, setBreak, pOSStatus);
+    return SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnServerAuth, setBreak, pOSStatus);
+#pragma clang diagnostic pop
+}
+
+int32_t AppleCryptoNative_SslSetBreakOnCertRequested(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnCertRequested, setBreak, pOSStatus);
 #pragma clang diagnostic pop
 }
 
@@ -160,7 +170,15 @@ int32_t AppleCryptoNative_SslSetBreakOnClientAuth(SSLContextRef sslContext, int3
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    return AppleCryptoNative_SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnClientAuth, setBreak, pOSStatus);
+    return SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnClientAuth, setBreak, pOSStatus);
+#pragma clang diagnostic pop
+}
+
+int32_t AppleCryptoNative_SslSetBreakOnClientHello(SSLContextRef sslContext, int32_t setBreak, int32_t* pOSStatus)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return SslSetSessionOption(sslContext, kSSLSessionOptionBreakOnClientHello, setBreak, pOSStatus);
 #pragma clang diagnostic pop
 }
 
@@ -222,6 +240,58 @@ int32_t AppleCryptoNative_SSLSetALPNProtocols(SSLContextRef sslContext,
     return *pOSStatus == noErr;
 }
 
+int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* protocol, int length, int32_t* pOSStatus)
+{
+    if (sslContext == NULL || protocol == NULL || length <= 0 || pOSStatus == NULL)
+        return -1;
+
+    if (!SSLSetALPNProtocolsPtr)
+    {
+        // not available.
+        *pOSStatus = errSecNotAvailable;
+        return 1;
+    }
+
+    CFStringRef value = CFStringCreateWithBytes(NULL, protocol, length, kCFStringEncodingASCII, 0);
+    if (!value)
+    {
+        *pOSStatus = errSecMemoryError;
+        return -2;
+    }
+
+    CFArrayRef protocolList = CFArrayCreate(kCFAllocatorDefault, (const void **)&value, 1, &kCFTypeArrayCallBacks);
+    if (!protocolList)
+    {
+        CFRelease(value);
+        *pOSStatus = errSecMemoryError;
+        return -2;
+    }
+
+
+    *pOSStatus = (*SSLSetALPNProtocolsPtr)(sslContext, protocolList);
+    if  (*pOSStatus == 0)
+    {
+        struct SSLContext* ctx = (struct SSLContext*)sslContext;
+        tls_handshake_t tls = ctx->hdsk;
+
+        // This is extra consistency check to verify that the ALPN data appeared where we expect them
+        // before dereferencing sslContext
+        if (tls != NULL && tls->alpnOwnData.length == length + 1)
+        {
+            tls->alpn_announced = 1;
+            tls->alpn_received = 1 ;
+        }
+        else
+        {
+            *pOSStatus = errSecNotAvailable;
+        }
+    }
+
+    CFRelease(value);
+    CFRelease(protocolList);
+    return 1;
+}
+
 int32_t AppleCryptoNative_SslGetAlpnSelected(SSLContextRef sslContext, CFDataRef* protocol)
 {
     if (sslContext == NULL || protocol == NULL)
@@ -275,6 +345,10 @@ PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
             return PAL_TlsHandshakeState_WouldBlock;
         case errSSLServerAuthCompleted:
             return PAL_TlsHandshakeState_ServerAuthCompleted;
+        case errSSLClientCertRequested:
+            return PAL_TlsHandshakeState_ClientCertRequested;
+        case errSSLClientHelloReceived:
+           return PAL_TlsHandshakeState_ClientHelloReceived;
         default:
             return osStatus;
     }
@@ -603,7 +677,7 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         // macOS & MacCatalyst x64
         return SSLSetEnabledCiphers(sslContext, (const SSLCipherSuite *)cipherSuites, (size_t)numCipherSuites);
-#pragma clang diagnostic pop   
+#pragma clang diagnostic pop
     }
     else
 #endif
@@ -631,8 +705,28 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     }
 }
 
-__attribute__((constructor)) static void InitializeAppleCryptoSslShim()
+// This API is present on macOS 10.5 and newer only
+static OSStatus (*SSLSetCertificateAuthoritiesPtr)(SSLContextRef context, CFArrayRef certificates, int32_t replaceExisting) = NULL;
+
+PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef sslContext, CFArrayRef certificates, int32_t replaceExisting)
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // The underlying call handles NULL inputs, so just pass it through
+
+    if (!SSLSetCertificateAuthoritiesPtr)
+    {
+        // not available.
+        return 0;
+    }
+
+    return SSLSetCertificateAuthoritiesPtr(sslContext, certificates, replaceExisting);
+#pragma clang diagnostic pop
+}
+
+__attribute__((constructor)) static void InitializeAppleCryptoSslShim(void)
+{
+    SSLSetCertificateAuthoritiesPtr = (OSStatus(*)(SSLContextRef, CFArrayRef, int32_t))dlsym(RTLD_DEFAULT, "SSLSetCertificateAuthorities");
     SSLSetALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef))dlsym(RTLD_DEFAULT, "SSLSetALPNProtocols");
     SSLCopyALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef*))dlsym(RTLD_DEFAULT, "SSLCopyALPNProtocols");
 }

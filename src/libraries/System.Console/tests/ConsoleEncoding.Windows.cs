@@ -67,9 +67,9 @@ public partial class ConsoleEncoding
         }).Dispose();
     }
 
-    [DllImport("kernel32.dll")]
-    public static extern uint GetConsoleCP();
+    [LibraryImport("kernel32.dll")]
+    public static partial uint GetConsoleCP();
 
-    [DllImport("kernel32.dll")]
-    public static extern uint GetConsoleOutputCP();
+    [LibraryImport("kernel32.dll")]
+    public static partial uint GetConsoleOutputCP();
 }

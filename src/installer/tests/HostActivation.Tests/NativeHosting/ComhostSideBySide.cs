@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
+    [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
     public class ComhostSideBySide : IClassFixture<ComhostSideBySide.SharedTestState>
     {
         private readonly SharedTestState sharedState;
@@ -23,7 +24,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass()
         {
             string [] args = {
@@ -42,7 +42,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void LocateEmbeddedTlb()
         {
             string [] args = {
@@ -60,11 +59,36 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .And.HaveStdOutContaining("Located type library by typeid.");
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ManagedHost(bool selfContained)
+        {
+            string [] args = {
+                "comhost",
+                sharedState.ClsidString
+            };
+            TestProjectFixture fixture = selfContained ? sharedState.ManagedHostFixture_SelfContained : sharedState.ManagedHostFixture_FrameworkDependent;
+            CommandResult result = Command.Create(fixture.TestProject.AppExe, args)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(fixture.BuiltDotnet.BinPath)
+                .MultilevelLookup(false)
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdOutContaining("New instance of Server created")
+                .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
+                .And.HaveStdErrContaining($"Executing as a {(selfContained ? "self-contained" : "framework-dependent")} app");
+        }
+
         public class SharedTestState : Comhost.SharedTestState
         {
             public string TypeLibId { get; } = "{20151109-a0e8-46ae-b28e-8ff2c0e72166}";
 
             public string ComSxsPath { get; }
+
+            public TestProjectFixture ManagedHostFixture_FrameworkDependent { get; }
+            public TestProjectFixture ManagedHostFixture_SelfContained { get; }
 
             public SharedTestState()
             {
@@ -74,13 +98,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     return;
                 }
 
+                string comsxsDirectory = BaseDirectory;
+                string regFreeManifestName = $"{ ComLibraryFixture.TestProject.AssemblyName }.X.manifest";
+                string regFreeManifestPath = Path.Combine(comsxsDirectory, regFreeManifestName);
                 using (var assemblyStream = new FileStream(ComLibraryFixture.TestProject.AppDll, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.Read))
                 using (var peReader = new System.Reflection.PortableExecutable.PEReader(assemblyStream))
                 {
                     if (peReader.HasMetadata)
                     {
-                        string regFreeManifestPath = Path.Combine(BaseDirectory, $"{ ComLibraryFixture.TestProject.AssemblyName }.X.manifest");
-
                         MetadataReader reader = peReader.GetMetadataReader();
                         RegFreeComManifest.CreateManifestFromClsidmap(
                             ComLibraryFixture.TestProject.AssemblyName,
@@ -93,24 +118,43 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     }
                 }
 
-                string testDirectoryPath = Path.GetDirectoryName(NativeHostPath);
                 string comsxsName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("comsxs");
-                ComSxsPath = Path.Combine(testDirectoryPath, comsxsName);
+                ComSxsPath = Path.Combine(comsxsDirectory, comsxsName);
                 File.Copy(
                     Path.Combine(RepoDirectories.Artifacts, "corehost_test", comsxsName),
                     ComSxsPath);
-                File.Copy(
-                    ComHostPath,
-                    Path.Combine(testDirectoryPath, Path.GetFileName(ComHostPath)));
-                File.Copy(
+
+                ManagedHostFixture_FrameworkDependent = new TestProjectFixture("ManagedHost", RepoDirectories)
+                    .EnsureRestored()
+                    .PublishProject(selfContained: false, extraArgs: "/p:RegFreeCom=true");
+                File.Copy(regFreeManifestPath, Path.Combine(ManagedHostFixture_FrameworkDependent.TestProject.BuiltApp.Location, regFreeManifestName));
+
+                ManagedHostFixture_SelfContained = new TestProjectFixture("ManagedHost", RepoDirectories)
+                    .EnsureRestored()
+                    .PublishProject(selfContained: true, extraArgs: "/p:RegFreeCom=true");
+                File.Copy(regFreeManifestPath, Path.Combine(ManagedHostFixture_SelfContained.TestProject.BuiltApp.Location, regFreeManifestName));
+
+                // Copy the ComLibrary output and comhost to the ComSxS and ManagedHost directories
+                string[] toCopy = {
                     ComLibraryFixture.TestProject.AppDll,
-                    Path.Combine(testDirectoryPath, Path.GetFileName(ComLibraryFixture.TestProject.AppDll)));
-                File.Copy(
                     ComLibraryFixture.TestProject.DepsJson,
-                    Path.Combine(testDirectoryPath, Path.GetFileName(ComLibraryFixture.TestProject.DepsJson)));
-                File.Copy(
                     ComLibraryFixture.TestProject.RuntimeConfigJson,
-                    Path.Combine(testDirectoryPath, Path.GetFileName(ComLibraryFixture.TestProject.RuntimeConfigJson)));
+                    ComHostPath,
+                };
+                foreach (string filePath in toCopy)
+                {
+                    File.Copy(filePath, Path.Combine(comsxsDirectory, Path.GetFileName(filePath)));
+                    File.Copy(filePath, Path.Combine(ManagedHostFixture_FrameworkDependent.TestProject.BuiltApp.Location, Path.GetFileName(filePath)));
+                    File.Copy(filePath, Path.Combine(ManagedHostFixture_SelfContained.TestProject.BuiltApp.Location, Path.GetFileName(filePath)));
+                }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                ManagedHostFixture_FrameworkDependent.Dispose();
+                ManagedHostFixture_SelfContained.Dispose();
+
+                base.Dispose(disposing);
             }
         }
     }

@@ -35,15 +35,6 @@ namespace System.Data.Common
             return actualPtr;
         }
 
-        [GeneratedDllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static partial int ReleaseSemaphore(IntPtr handle, int releaseCount, IntPtr previousCount);
-
-        [GeneratedDllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static partial int WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
-
-        [GeneratedDllImport(Interop.Libraries.Kernel32/*, SetLastError=true*/)]
-        internal static partial int WaitForSingleObjectEx(IntPtr lpHandles, uint dwMilliseconds, bool bAlertable);
-
         internal sealed class Wrapper
         {
             private Wrapper() { }
@@ -51,7 +42,7 @@ namespace System.Data.Common
             // SxS: clearing error information is considered safe
             internal static void ClearErrorInfo()
             {
-                Interop.OleAut32.SetErrorInfo(0, ADP.PtrZero);
+                Interop.OleAut32.SetErrorInfo(0, IntPtr.Zero);
             }
         }
     }

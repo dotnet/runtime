@@ -3,7 +3,6 @@
 
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -185,7 +184,7 @@ namespace System.Linq.Expressions.Tests
             f.VerifyIL(
                 @".method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32)
                   {
-                    .maxstack 4
+                    .maxstack 2
                     .locals init (
                       [0] int32
                     )
@@ -385,15 +384,15 @@ namespace System.Linq.Expressions.Tests
 
         private static string Normalize(string s)
         {
+            var normalizeRegex = new Regex(@"lambda_method[0-9]*");
+
             Collections.Generic.IEnumerable<string> lines =
                 s
-                .Replace("\r\n", "\n")
-                .Split(new[] { '\n' })
-                .Select(line => line.Trim())
-                .Where(line => line != "" && !line.StartsWith("//"));
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(line => !line.StartsWith("//"))
+                .Select(beforeLambdaUniquifierRemoval => normalizeRegex.Replace(beforeLambdaUniquifierRemoval, "lambda_method"));
 
-            string beforeLambdaUniquifierRemoval = string.Join("\n", lines);
-            return Regex.Replace(beforeLambdaUniquifierRemoval, "lambda_method[0-9]*", "lambda_method");
+            return string.Join("\n", lines);
         }
 
         private static void VerifyEmitConstantsToIL<T>(T value)

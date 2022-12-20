@@ -23,7 +23,7 @@ namespace System.CodeDom.Compiler
             }
             else if (e is CodeComment)
             {
-                ValidateComment((CodeComment)e);
+                // do nothing
             }
             else if (e is CodeExpression)
             {
@@ -65,10 +65,8 @@ namespace System.CodeDom.Compiler
 
         private void ValidateTypeMember(CodeTypeMember e)
         {
-            ValidateCommentStatements(e.Comments);
             ValidateCodeDirectives(e.StartDirectives);
             ValidateCodeDirectives(e.EndDirectives);
-            if (e.LinePragma != null) ValidateLinePragmaStart(e.LinePragma);
 
             if (e is CodeMemberEvent)
             {
@@ -88,7 +86,7 @@ namespace System.CodeDom.Compiler
             }
             else if (e is CodeSnippetTypeMember)
             {
-                ValidateSnippetMember((CodeSnippetTypeMember)e);
+                // do nothing
             }
             else if (e is CodeTypeDeclaration)
             {
@@ -106,19 +104,13 @@ namespace System.CodeDom.Compiler
             ValidateCodeDirectives(e.EndDirectives);
             if (e is CodeSnippetCompileUnit)
             {
-                ValidateSnippetCompileUnit((CodeSnippetCompileUnit)e);
+                // do nothing
             }
             else
             {
                 ValidateCompileUnitStart(e);
                 ValidateNamespaces(e);
-                ValidateCompileUnitEnd(e);
             }
-        }
-
-        private void ValidateSnippetCompileUnit(CodeSnippetCompileUnit e)
-        {
-            if (e.LinePragma != null) ValidateLinePragmaStart(e.LinePragma);
         }
 
         private void ValidateCompileUnitStart(CodeCompileUnit e)
@@ -127,10 +119,6 @@ namespace System.CodeDom.Compiler
             {
                 ValidateAttributes(e.AssemblyCustomAttributes);
             }
-        }
-
-        private void ValidateCompileUnitEnd(CodeCompileUnit e)
-        {
         }
 
         private void ValidateNamespaces(CodeCompileUnit e)
@@ -143,7 +131,6 @@ namespace System.CodeDom.Compiler
 
         private void ValidateNamespace(CodeNamespace e)
         {
-            ValidateCommentStatements(e.Comments);
             ValidateNamespaceStart(e);
             ValidateNamespaceImports(e);
             ValidateTypes(e);
@@ -158,15 +145,10 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        private void ValidateNamespaceImports(CodeNamespace e)
+        private static void ValidateNamespaceImports(CodeNamespace e)
         {
             foreach (CodeNamespaceImport imp in e.Imports)
             {
-                if (imp.LinePragma != null)
-                {
-                    ValidateLinePragmaStart(imp.LinePragma);
-                }
-
                 ValidateNamespaceImport(imp);
             }
         }
@@ -333,9 +315,6 @@ namespace System.CodeDom.Compiler
 
         private void ValidateMemberMethod(CodeMemberMethod e)
         {
-            ValidateCommentStatements(e.Comments);
-            if (e.LinePragma != null) ValidateLinePragmaStart(e.LinePragma);
-
             ValidateTypeParameters(e.TypeParameters);
             ValidateTypeReferences(e.ImplementationTypes);
 
@@ -389,13 +368,8 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        private void ValidateSnippetMember(CodeSnippetTypeMember e)
-        {
-        }
-
         private void ValidateTypeStart(CodeTypeDeclaration e)
         {
-            ValidateCommentStatements(e.Comments);
             if (e.CustomAttributes.Count > 0)
             {
                 ValidateAttributes(e.CustomAttributes);
@@ -416,26 +390,9 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        private void ValidateCommentStatements(CodeCommentStatementCollection e)
-        {
-            foreach (CodeCommentStatement comment in e)
-            {
-                ValidateCommentStatement(comment);
-            }
-        }
-
-        private void ValidateCommentStatement(CodeCommentStatement e)
-        {
-            ValidateComment(e.Comment);
-        }
-
-        private void ValidateComment(CodeComment e)
-        {
-        }
-
         private void ValidateStatement(CodeStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -445,7 +402,7 @@ namespace System.CodeDom.Compiler
 
             if (e is CodeCommentStatement)
             {
-                ValidateCommentStatement((CodeCommentStatement)e);
+                // nothing
             }
             else if (e is CodeMethodReturnStatement)
             {
@@ -477,7 +434,7 @@ namespace System.CodeDom.Compiler
             }
             else if (e is CodeSnippetStatement)
             {
-                ValidateSnippetStatement((CodeSnippetStatement)e);
+                // do nothing
             }
             else if (e is CodeVariableDeclarationStatement)
             {
@@ -617,10 +574,6 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        private void ValidateLinePragmaStart(CodeLinePragma e)
-        {
-        }
-
         private void ValidateEvent(CodeMemberEvent e)
         {
             if (e.CustomAttributes.Count > 0)
@@ -642,10 +595,6 @@ namespace System.CodeDom.Compiler
             {
                 ValidateParameterDeclarationExpression(current);
             }
-        }
-
-        private void ValidateSnippetStatement(CodeSnippetStatement e)
-        {
         }
 
         private void ValidateExpressionList(CodeExpressionCollection expressions)
@@ -725,7 +674,7 @@ namespace System.CodeDom.Compiler
             }
             else if (e is CodeBaseReferenceExpression)
             {
-                ValidateBaseReferenceExpression((CodeBaseReferenceExpression)e);
+                // Nothing to validate
             }
             else if (e is CodeBinaryOperatorExpression)
             {
@@ -765,7 +714,7 @@ namespace System.CodeDom.Compiler
             }
             else if (e is CodeSnippetExpression)
             {
-                ValidateSnippetExpression((CodeSnippetExpression)e);
+                // do nothing
             }
             else if (e is CodeMethodInvokeExpression)
             {
@@ -797,7 +746,7 @@ namespace System.CodeDom.Compiler
             }
             else if (e is CodePrimitiveExpression)
             {
-                ValidatePrimitiveExpression((CodePrimitiveExpression)e);
+                // do nothing
             }
             else if (e is CodePropertyReferenceExpression)
             {
@@ -805,11 +754,11 @@ namespace System.CodeDom.Compiler
             }
             else if (e is CodePropertySetValueReferenceExpression)
             {
-                ValidatePropertySetValueReferenceExpression((CodePropertySetValueReferenceExpression)e);
+                // Do nothing
             }
             else if (e is CodeThisReferenceExpression)
             {
-                ValidateThisReferenceExpression((CodeThisReferenceExpression)e);
+                // Do nothing
             }
             else if (e is CodeTypeReferenceExpression)
             {
@@ -847,10 +796,6 @@ namespace System.CodeDom.Compiler
                     ValidateExpression(e.SizeExpression);
                 }
             }
-        }
-
-        private void ValidateBaseReferenceExpression(CodeBaseReferenceExpression e)
-        { // Nothing to validate
         }
 
         private void ValidateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
@@ -914,10 +859,6 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        private void ValidateSnippetExpression(CodeSnippetExpression e)
-        {
-        }
-
         private void ValidateMethodInvokeExpression(CodeMethodInvokeExpression e)
         {
             ValidateMethodReferenceExpression(e.Method);
@@ -974,10 +915,6 @@ namespace System.CodeDom.Compiler
             ValidateExpression(e.Expression);
         }
 
-        private void ValidatePrimitiveExpression(CodePrimitiveExpression e)
-        {
-        }
-
         private void ValidatePropertyReferenceExpression(CodePropertyReferenceExpression e)
         {
             if (e.TargetObject != null)
@@ -985,14 +922,6 @@ namespace System.CodeDom.Compiler
                 ValidateExpression(e.TargetObject);
             }
             ValidateIdentifier(e, nameof(e.PropertyName), e.PropertyName);
-        }
-
-        private void ValidatePropertySetValueReferenceExpression(CodePropertySetValueReferenceExpression e)
-        { // Do nothing
-        }
-
-        private void ValidateThisReferenceExpression(CodeThisReferenceExpression e)
-        {  // Do nothing
         }
 
         private static void ValidateTypeOfExpression(CodeTypeOfExpression e)

@@ -45,7 +45,7 @@ typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
     HMODULE hmodTargetCLR,
     IUnknown **ppCordb);
 
-HRESULT RunAndroidCmd(char* c_android_adb_path, LPCWSTR w_command_to_execute)
+static HRESULT RunAndroidCmd(char* c_android_adb_path, char const* c_command_to_execute)
 {
     PROCESS_INFORMATION processInfo;
     STARTUPINFOW startupInfo;
@@ -57,11 +57,11 @@ HRESULT RunAndroidCmd(char* c_android_adb_path, LPCWSTR w_command_to_execute)
     startupInfo.cb = sizeof(startupInfo);
 
     LPWSTR w_android_run_adb_command = (LPWSTR)malloc(2048 * sizeof(WCHAR));
-    LPWSTR w_android_adb_path = (LPWSTR)malloc(2048 * sizeof(WCHAR));
+    char* c_android_run_adb_command = (char*)malloc(2048 * sizeof(char));
 
-    MultiByteToWideChar(CP_UTF8, 0, c_android_adb_path, -1, w_android_adb_path, 2048);
+    sprintf_s(c_android_run_adb_command, 2048, "%s %s", c_android_adb_path, c_command_to_execute);
 
-    swprintf_s(w_android_run_adb_command, 2048, W("%ws %ws"), w_android_adb_path, w_command_to_execute);
+    MultiByteToWideChar(CP_UTF8, 0, c_android_run_adb_command, -1, w_android_run_adb_command, 2048);
     BOOL result = CreateProcessW(
         NULL,
         w_android_run_adb_command,
@@ -75,11 +75,11 @@ HRESULT RunAndroidCmd(char* c_android_adb_path, LPCWSTR w_command_to_execute)
         &processInfo);
 
     if (!result) {
+        free(c_android_run_adb_command);
         free(w_android_run_adb_command);
-        free(w_android_adb_path);
         return HRESULT_FROM_WIN32(GetLastError());
     }
-    free(w_android_adb_path);
+    free(c_android_run_adb_command);
     free(w_android_run_adb_command);
     return S_OK;
 }
@@ -92,12 +92,12 @@ HRESULT RunAndroidCmd(char* c_android_adb_path, LPCWSTR w_command_to_execute)
 //-----------------------------------------------------------------------------
 MONO_API HRESULT
 CreateProcessForLaunch(
-    __in LPWSTR lpCommandLine,
-    __in BOOL bSuspendProcess,
-    __in LPVOID lpEnvironment,
-    __in LPCWSTR lpCurrentDirectory,
-    __out PDWORD pProcessId,
-    __out HANDLE *pResumeHandle)
+    _In_ LPWSTR lpCommandLine,
+    _In_ BOOL bSuspendProcess,
+    _In_ LPVOID lpEnvironment,
+    _In_ LPCWSTR lpCurrentDirectory,
+    _Out_ PDWORD pProcessId,
+    _Out_ HANDLE *pResumeHandle)
 {
     PUBLIC_CONTRACT;
     PROCESS_INFORMATION processInfo;
@@ -111,7 +111,7 @@ CreateProcessForLaunch(
     char* c_android_adb_path = getenv("ANDROID_ADB_PATH");
 
     if (strlen(c_android_adb_path) > 0) {
-        HRESULT ret = RunAndroidCmd(c_android_adb_path, W("shell setprop debug.mono.extra \"debug=10.0.2.2:56000,loglevel=10,timeout=100000000000000\""));
+        HRESULT ret = RunAndroidCmd(c_android_adb_path, "shell setprop debug.mono.extra \"debug=10.0.2.2:56000,loglevel=10,timeout=100000000000000\"");
         if (ret != S_OK) {
             *pProcessId = 0;
             *pResumeHandle = NULL;
@@ -157,14 +157,14 @@ CreateProcessForLaunch(
 
 MONO_API HRESULT
 ResumeProcess(
-    __in HANDLE hResumeHandle)
+    _In_ HANDLE hResumeHandle)
 {
     return S_OK;
 }
 
 MONO_API HRESULT
 CloseResumeHandle(
-    __in HANDLE hResumeHandle)
+    _In_ HANDLE hResumeHandle)
 {
     return S_OK;
 }
@@ -191,29 +191,14 @@ HRESULT CreateCoreDbg(HMODULE hDBIModule, DWORD processId, int iDebuggerVersion,
     return hr;
 }
 
-char* convertC(const WCHAR * wString)
-{
-    int size;
-    char * MultiBuffer = NULL;
-
-    size = WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,0,NULL,NULL);
-    MultiBuffer = (char*) malloc(size);
-    if (MultiBuffer == NULL)
-    {
-        return NULL;
-    }
-    WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,size,NULL,NULL);
-    return MultiBuffer;
-}
-
 static IUnknown* pCordb = NULL;
 
 MONO_API HRESULT
 RegisterForRuntimeStartup(
-    __in DWORD dwProcessId,
-    __in PSTARTUP_CALLBACK pfnCallback,
-    __in PVOID parameter,
-    __out PVOID *ppUnregisterToken)
+    _In_ DWORD dwProcessId,
+    _In_ PSTARTUP_CALLBACK pfnCallback,
+    _In_ PVOID parameter,
+    _Out_ PVOID *ppUnregisterToken)
 {
     if (pCordb != NULL)
         return S_OK;
@@ -255,64 +240,64 @@ RegisterForRuntimeStartup(
 
 MONO_API HRESULT
 RegisterForRuntimeStartupEx(
-    __in DWORD dwProcessId,
-    __in LPCWSTR szApplicationGroupId,
-    __in PSTARTUP_CALLBACK pfnCallback,
-    __in PVOID parameter,
-    __out PVOID *ppUnregisterToken)
+    _In_ DWORD dwProcessId,
+    _In_ LPCWSTR szApplicationGroupId,
+    _In_ PSTARTUP_CALLBACK pfnCallback,
+    _In_ PVOID parameter,
+    _Out_ PVOID *ppUnregisterToken)
 {
     return S_OK;
 }
 
 MONO_API HRESULT
 UnregisterForRuntimeStartup(
-    __in PVOID pUnregisterToken)
+    _In_ PVOID pUnregisterToken)
 {
     return S_OK;
 }
 
 MONO_API HRESULT
 GetStartupNotificationEvent(
-    __in DWORD debuggeePID,
-    __out HANDLE* phStartupEvent)
+    _In_ DWORD debuggeePID,
+    _Out_ HANDLE* phStartupEvent)
 {
     return S_OK;
 }
 
 MONO_API HRESULT
 EnumerateCLRs(DWORD debuggeePID,
-    __out HANDLE** ppHandleArrayOut,
-    __out LPWSTR** ppStringArrayOut,
-    __out DWORD* pdwArrayLengthOut)
+    _Out_ HANDLE** ppHandleArrayOut,
+    _Out_ LPWSTR** ppStringArrayOut,
+    _Out_ DWORD* pdwArrayLengthOut)
 {
     return S_OK;
 }
 
 MONO_API HRESULT
 CloseCLREnumeration(
-    __in HANDLE* pHandleArray,
-    __in LPWSTR* pStringArray,
-    __in DWORD dwArrayLength)
+    _In_ HANDLE* pHandleArray,
+    _In_ LPWSTR* pStringArray,
+    _In_ DWORD dwArrayLength)
 {
     return S_OK;
 }
 
 MONO_API HRESULT
 CreateVersionStringFromModule(
-    __in DWORD pidDebuggee,
-    __in LPCWSTR szModuleName,
-    __out_ecount_part(cchBuffer, *pdwLength) LPWSTR pBuffer,
-    __in DWORD cchBuffer,
-    __out DWORD* pdwLength)
+    _In_ DWORD pidDebuggee,
+    _In_ LPCWSTR szModuleName,
+    _Out_writes_to_opt_(cchBuffer, *pdwLength) LPWSTR pBuffer,
+    _In_ DWORD cchBuffer,
+    _Out_ DWORD* pdwLength)
 {
     return S_OK;
 }
 
 MONO_API HRESULT
 CreateDebuggingInterfaceFromVersionEx(
-    __in int iDebuggerVersion,
-    __in LPCWSTR szDebuggeeVersion,
-    __out IUnknown ** ppCordb)
+    _In_ int iDebuggerVersion,
+    _In_ LPCWSTR szDebuggeeVersion,
+    _Out_ IUnknown ** ppCordb)
 {
     return S_OK;
 }
@@ -320,18 +305,18 @@ CreateDebuggingInterfaceFromVersionEx(
 MONO_API
 HRESULT
 CreateDebuggingInterfaceFromVersion2(
-    __in int iDebuggerVersion,
-    __in LPCWSTR szDebuggeeVersion,
-    __in LPCWSTR szApplicationGroupId,
-    __out IUnknown ** ppCordb)
+    _In_ int iDebuggerVersion,
+    _In_ LPCWSTR szDebuggeeVersion,
+    _In_ LPCWSTR szApplicationGroupId,
+    _Out_ IUnknown ** ppCordb)
 {
     return S_OK;
 }
 
 MONO_API HRESULT
 CreateDebuggingInterfaceFromVersion(
-    __in LPCWSTR szDebuggeeVersion,
-    __out IUnknown ** ppCordb)
+    _In_ LPCWSTR szDebuggeeVersion,
+    _Out_ IUnknown ** ppCordb)
 {
     return S_OK;
 }

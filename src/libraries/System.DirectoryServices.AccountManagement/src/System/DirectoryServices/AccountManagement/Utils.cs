@@ -115,8 +115,6 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static string ConvertSidToSDDL(byte[] sid)
         {
-            string sddlSid = null;
-
             // To put the byte[] SID into SDDL, we use ConvertSidToStringSid.
             // Calling that requires we first copy the SID into native memory.
             IntPtr pSid = IntPtr.Zero;
@@ -125,13 +123,13 @@ namespace System.DirectoryServices.AccountManagement
             {
                 pSid = ConvertByteArrayToIntPtr(sid);
 
-                if (Interop.Advapi32.ConvertSidToStringSid(pSid, ref sddlSid) != Interop.BOOL.FALSE)
+                if (Interop.Advapi32.ConvertSidToStringSid(pSid, out string sddlSid) != Interop.BOOL.FALSE)
                 {
                     return sddlSid;
                 }
                 else
                 {
-                    int lastErrorCode = Marshal.GetLastWin32Error();
+                    int lastErrorCode = Marshal.GetLastPInvokeError();
 
                     GlobalDebug.WriteLineIf(
                                       GlobalDebug.Warn,
@@ -314,7 +312,7 @@ namespace System.DirectoryServices.AccountManagement
                     bool success = Interop.Advapi32.EqualDomainSid(pCopyOfUserSid, pMachineDomainSid, ref sameDomain);
 
                     // Since both pCopyOfUserSid and pMachineDomainSid should always be account SIDs
-                    Debug.Assert(success == true);
+                    Debug.Assert(success);
 
                     // If user SID is the same domain as the machine domain, and the machine is not a DC then the user is a local (machine) user
                     return sameDomain ? !IsMachineDC(null) : false;
@@ -356,9 +354,10 @@ namespace System.DirectoryServices.AccountManagement
                                 out tokenHandle
                                 ))
                 {
-                    if ((error = Marshal.GetLastWin32Error()) == 1008) // ERROR_NO_TOKEN
+                    if ((error = Marshal.GetLastPInvokeError()) == 1008) // ERROR_NO_TOKEN
                     {
                         Debug.Assert(tokenHandle.IsInvalid);
+                        tokenHandle.Dispose();
 
                         // Current thread doesn't have a token, try the process
                         if (!Interop.Advapi32.OpenProcessToken(
@@ -367,7 +366,7 @@ namespace System.DirectoryServices.AccountManagement
                                         out tokenHandle
                                         ))
                         {
-                            int lastError = Marshal.GetLastWin32Error();
+                            int lastError = Marshal.GetLastPInvokeError();
                             GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetCurrentUserSid: OpenProcessToken failed, gle=" + lastError);
 
                             throw new PrincipalOperationException(SR.Format(SR.UnableToOpenToken, lastError));
@@ -395,7 +394,7 @@ namespace System.DirectoryServices.AccountManagement
                                         out neededBufferSize);
 
                 int getTokenInfoError = 0;
-                if ((getTokenInfoError = Marshal.GetLastWin32Error()) != 122) // ERROR_INSUFFICIENT_BUFFER
+                if ((getTokenInfoError = Marshal.GetLastPInvokeError()) != 122) // ERROR_INSUFFICIENT_BUFFER
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetCurrentUserSid: GetTokenInformation (1st try) failed, gle=" + getTokenInfoError);
 
@@ -417,7 +416,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     GlobalDebug.WriteLineIf(GlobalDebug.Error,
                                       "Utils",
                                       "GetCurrentUserSid: GetTokenInformation (2nd try) failed, neededBufferSize=" + neededBufferSize + ", gle=" + lastError);
@@ -438,7 +437,7 @@ namespace System.DirectoryServices.AccountManagement
                 success = Interop.Advapi32.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     GlobalDebug.WriteLineIf(GlobalDebug.Error,
                                       "Utils",
                                       "GetCurrentUserSid: CopySid failed, errorcode=" + lastError);
@@ -451,8 +450,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (tokenHandle != null)
-                    tokenHandle.Dispose();
+                tokenHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -502,15 +500,15 @@ namespace System.DirectoryServices.AccountManagement
                 UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO info = (UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO)
                                     Marshal.PtrToStructure(pBuffer, typeof(UnsafeNativeMethods.POLICY_ACCOUNT_DOMAIN_INFO));
 
-                Debug.Assert(Interop.Advapi32.IsValidSid(info.domainSid));
+                Debug.Assert(Interop.Advapi32.IsValidSid(info.DomainSid));
 
                 // Now we make a copy of the SID to return
-                int sidLength = Interop.Advapi32.GetLengthSid(info.domainSid);
+                int sidLength = Interop.Advapi32.GetLengthSid(info.DomainSid);
                 IntPtr pCopyOfSid = Marshal.AllocHGlobal(sidLength);
-                bool success = Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.domainSid);
+                bool success = Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.DomainSid);
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     GlobalDebug.WriteLineIf(GlobalDebug.Error,
                                       "Utils",
                                       "GetMachineDomainSid: CopySid failed, errorcode=" + lastError);
@@ -523,8 +521,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (policyHandle != null)
-                    policyHandle.Dispose();
+                policyHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Interop.Advapi32.LsaFreeMemory(pBuffer);
@@ -606,7 +603,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 int f = Interop.Advapi32.LookupAccountSid(serverName, sid, null, ref nameLength, null, ref domainNameLength, out accountUsage);
 
-                int lastErr = Marshal.GetLastWin32Error();
+                int lastErr = Marshal.GetLastPInvokeError();
                 if (lastErr != 122) // ERROR_INSUFFICIENT_BUFFER
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "LookupSid: LookupAccountSid (1st try) failed, gle=" + lastErr);
@@ -625,7 +622,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (f == 0)
                     {
-                        lastErr = Marshal.GetLastWin32Error();
+                        lastErr = Marshal.GetLastPInvokeError();
                         Debug.Assert(lastErr != 0);
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "LookupSid: LookupAccountSid (2nd try) failed, gle=" + lastErr);
@@ -658,8 +655,8 @@ namespace System.DirectoryServices.AccountManagement
                         "Utils",
                         "ConstructFakePrincipalFromSID: Build principal for SID={0}, server={1}, authority={2}",
                         Utils.ByteArrayToString(sid),
-                        (serverName != null ? serverName : "NULL"),
-                        (authorityName != null ? authorityName : "NULL"));
+                        serverName ?? "NULL",
+                        authorityName ?? "NULL");
 
             Debug.Assert(ClassifySID(sid) == SidType.FakeObject);
 
@@ -730,7 +727,7 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
 
-            // Retrive the parsed username which has had the domain removed because LogonUser
+            // Retrieve the parsed username which has had the domain removed because LogonUser
             // expects creds this way.
             string userName = credential.ParsedUserName;
             string password = credential.Password;
@@ -755,7 +752,7 @@ namespace System.DirectoryServices.AccountManagement
             // check the result
             if (result == 0)
             {
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "BeginImpersonation: LogonUser failed, gle=" + lastError);
 
                 throw new PrincipalOperationException(
@@ -765,7 +762,7 @@ namespace System.DirectoryServices.AccountManagement
             result = Interop.Advapi32.ImpersonateLoggedOnUser(hToken);
             if (result == 0)
             {
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "BeginImpersonation: ImpersonateLoggedOnUser failed, gle=" + lastError);
 
                 // Close the token the was created above....

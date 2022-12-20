@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Configuration
 {
     public static partial class FileConfigurationExtensions
     {
-        public static System.Action<Microsoft.Extensions.Configuration.FileLoadExceptionContext> GetFileLoadExceptionHandler(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
+        public static System.Action<Microsoft.Extensions.Configuration.FileLoadExceptionContext>? GetFileLoadExceptionHandler(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
         public static Microsoft.Extensions.FileProviders.IFileProvider GetFileProvider(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder SetBasePath(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder, string basePath) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder SetFileLoadExceptionHandler(this Microsoft.Extensions.Configuration.IConfigurationBuilder builder, System.Action<Microsoft.Extensions.Configuration.FileLoadExceptionContext> handler) { throw null; }
@@ -27,10 +27,11 @@ namespace Microsoft.Extensions.Configuration
     public abstract partial class FileConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         protected FileConfigurationSource() { }
-        public Microsoft.Extensions.FileProviders.IFileProvider FileProvider { get { throw null; } set { } }
-        public System.Action<Microsoft.Extensions.Configuration.FileLoadExceptionContext> OnLoadException { get { throw null; } set { } }
+        public Microsoft.Extensions.FileProviders.IFileProvider? FileProvider { get { throw null; } set { } }
+        public System.Action<Microsoft.Extensions.Configuration.FileLoadExceptionContext>? OnLoadException { get { throw null; } set { } }
         public bool Optional { get { throw null; } set { } }
-        public string Path { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public string? Path { get { throw null; } set { } }
         public int ReloadDelay { get { throw null; } set { } }
         public bool ReloadOnChange { get { throw null; } set { } }
         public abstract Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder);

@@ -57,7 +57,7 @@ namespace System.Reflection.PortableExecutable
         /// <param name="dataSerializer">Serializes data to a <see cref="BlobBuilder"/>.</param>
         public void AddEntry<TData>(DebugDirectoryEntryType type, uint version, uint stamp, TData data, Action<BlobBuilder, TData> dataSerializer)
         {
-            if (dataSerializer == null)
+            if (dataSerializer is null)
             {
                 Throw.ArgumentNull(nameof(dataSerializer));
             }
@@ -103,7 +103,7 @@ namespace System.Reflection.PortableExecutable
             ushort portablePdbVersion,
             int age)
         {
-            if (pdbPath == null)
+            if (pdbPath is null)
             {
                 Throw.ArgumentNull(nameof(pdbPath));
             }
@@ -170,7 +170,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentException"><paramref name="algorithmName"/> or <paramref name="checksum"/> is empty.</exception>
         public void AddPdbChecksumEntry(string algorithmName, ImmutableArray<byte> checksum)
         {
-            if (algorithmName == null)
+            if (algorithmName is null)
             {
                 Throw.ArgumentNull(nameof(algorithmName));
             }

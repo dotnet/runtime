@@ -4,7 +4,6 @@
 .assembly extern System.Runtime { }
 .assembly GitHub_24278 { }
 .assembly extern xunit.core {}
-.module GitHub_24278.exe
 
 // GitHub 24278: a bug is reproduced when
 // 1) a register is used in the prolog for initializing GSSecurityCookie (i.e. the register contains a random non-zero value) and
@@ -55,7 +54,7 @@
   } // end of method Program::MainMethod
 
   .method private hidebysig static int32
-          Main(string[] args) cil managed
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

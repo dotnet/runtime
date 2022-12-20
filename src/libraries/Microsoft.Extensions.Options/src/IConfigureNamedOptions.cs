@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Represents something that configures the <typeparamref name="TOptions"/> type.
     /// </summary>
-    /// <typeparam name="TOptions"></typeparam>
+    /// <typeparam name="TOptions">The options type being configured.</typeparam>
     public interface IConfigureNamedOptions<in TOptions> : IConfigureOptions<TOptions> where TOptions : class
     {
         /// <summary>
@@ -14,6 +14,6 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance being configured.</param>
         /// <param name="options">The options instance to configure.</param>
-        void Configure(string name, TOptions options);
+        void Configure(string? name, TOptions options);
     }
 }

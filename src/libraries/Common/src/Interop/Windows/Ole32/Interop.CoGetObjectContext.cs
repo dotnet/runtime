@@ -8,10 +8,16 @@ internal static partial class Interop
 {
     internal static partial class Ole32
     {
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
-        [DllImport(Libraries.Ole32)]
-        internal static extern int CoGetObjectContext([MarshalAs(UnmanagedType.LPStruct)] Guid riid, out IntPtr ppv);
-#pragma warning restore DLLIMPORTGENANALYZER015
+        internal static unsafe int CoGetObjectContext(in Guid riid, out IntPtr ppv)
+        {
+            fixed (Guid* riidPtr = &riid)
+            fixed (IntPtr* ppvPtr = &ppv)
+            {
+                return CoGetObjectContext(riidPtr, ppvPtr);
+            }
+        }
+
+        [LibraryImport(Libraries.Ole32)]
+        internal static unsafe partial int CoGetObjectContext(Guid* riid, IntPtr* ppv);
     }
 }

@@ -37,17 +37,8 @@ namespace System.Net.Mail
 
         public MailMessage(string from, string to)
         {
-            if (from == null)
-                throw new ArgumentNullException(nameof(from));
-
-            if (to == null)
-                throw new ArgumentNullException(nameof(to));
-
-            if (from.Length == 0)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(from)), nameof(from));
-
-            if (to.Length == 0)
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(to)), nameof(to));
+            ArgumentException.ThrowIfNullOrEmpty(from);
+            ArgumentException.ThrowIfNullOrEmpty(to);
 
             _message = new Message(from, to);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _message);
@@ -63,11 +54,8 @@ namespace System.Net.Mail
 
         public MailMessage(MailAddress from, MailAddress to)
         {
-            if (from == null)
-                throw new ArgumentNullException(nameof(from));
-
-            if (to == null)
-                throw new ArgumentNullException(nameof(to));
+            ArgumentNullException.ThrowIfNull(from);
+            ArgumentNullException.ThrowIfNull(to);
 
             _message = new Message(from, to);
         }
@@ -81,10 +69,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _message.From = value;
             }
         }
@@ -180,7 +165,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return (_message.Subject != null ? _message.Subject : string.Empty);
+                return _message.Subject ?? string.Empty;
             }
             set
             {
@@ -225,7 +210,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return (_body != null ? _body : string.Empty);
+                return _body ?? string.Empty;
             }
 
             set
@@ -314,18 +299,9 @@ namespace System.Net.Mail
             {
                 _disposed = true;
 
-                if (_views != null)
-                {
-                    _views.Dispose();
-                }
-                if (_attachments != null)
-                {
-                    _attachments.Dispose();
-                }
-                if (_bodyView != null)
-                {
-                    _bodyView.Dispose();
-                }
+                _views?.Dispose();
+                _attachments?.Dispose();
+                _bodyView?.Dispose();
             }
         }
 
@@ -377,7 +353,7 @@ namespace System.Net.Mail
             {
                 // we should not unnecessarily use Multipart/Mixed
                 // When there is no attachement and all the alternative views are of "Alternative" types.
-                MimeMultiPart? part = null;
+                MimeMultiPart? part;
                 MimeMultiPart viewsPart = new MimeMultiPart(MimeMultiPartType.Alternative);
 
                 if (!string.IsNullOrEmpty(_body))
@@ -455,11 +431,11 @@ namespace System.Net.Mail
             _message.Send(writer, sendEnvelope, allowUnicode);
         }
 
-        internal IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode,
+        internal IAsyncResult BeginSend(BaseWriter writer, bool allowUnicode,
             AsyncCallback? callback, object? state)
         {
             SetContent(allowUnicode);
-            return _message.BeginSend(writer, sendEnvelope, allowUnicode, callback, state);
+            return _message.BeginSend(writer, allowUnicode, callback, state);
         }
 
         internal void EndSend(IAsyncResult asyncResult)

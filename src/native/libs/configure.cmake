@@ -7,53 +7,30 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 include(CheckLibraryExists)
+include(CheckFunctionExists)
 
 # CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
 if(POLICY CMP0075)
     cmake_policy(SET CMP0075 NEW)
 endif()
 
-if (CLR_CMAKE_TARGET_ANDROID)
-    set(PAL_UNIX_NAME \"ANDROID\")
-elseif (CLR_CMAKE_TARGET_BROWSER)
-    set(PAL_UNIX_NAME \"BROWSER\")
-elseif (CLR_CMAKE_TARGET_LINUX)
-    set(PAL_UNIX_NAME \"LINUX\")
-elseif (CLR_CMAKE_TARGET_OSX)
-    set(PAL_UNIX_NAME \"OSX\")
-
+if (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    set(PAL_UNIX_NAME \"MACCATALYST\")
-elseif (CLR_CMAKE_TARGET_IOS)
-    set(PAL_UNIX_NAME \"IOS\")
-elseif (CLR_CMAKE_TARGET_TVOS)
-    set(PAL_UNIX_NAME \"TVOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
-    set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
-elseif (CLR_CMAKE_TARGET_NETBSD)
-    set(PAL_UNIX_NAME \"NETBSD\")
 elseif (CLR_CMAKE_TARGET_SUNOS)
-    if (CLR_CMAKE_TARGET_ILLUMOS)
-        set(PAL_UNIX_NAME \"ILLUMOS\")
-    else ()
-        set(PAL_UNIX_NAME \"SOLARIS\")
-    endif ()
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
-else ()
-    message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     # This variable can be set and used by the coreclr and installer builds.
     # Libraries doesn't need it, but not using it makes the build fail.  So
-    # just check and igore the variable.
+    # just check and ignore the variable.
 endif()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
@@ -61,6 +38,9 @@ endif()
 # which are not distinguished from the test failing. So no error for that one.
 # For clang-5.0 avoid errors like "unused variable 'err' [-Werror,-Wunused-variable]".
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
+if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-error=builtin-requires-header")
+endif()
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -156,9 +136,8 @@ check_symbol_exists(
     fcntl.h
     HAVE_F_FULLFSYNC)
 
-check_symbol_exists(
+check_function_exists(
     getifaddrs
-    ifaddrs.h
     HAVE_GETIFADDRS)
 
 check_symbol_exists(
@@ -212,16 +191,6 @@ check_symbol_exists(
     HAVE_STRCPY_S)
 
 check_symbol_exists(
-    strlcpy
-    string.h
-    HAVE_STRLCPY)
-
-check_symbol_exists(
-    strcat_s
-    string.h
-    HAVE_STRCAT_S)
-
-check_symbol_exists(
     strlcat
     string.h
     HAVE_STRLCAT)
@@ -262,9 +231,18 @@ check_symbol_exists(
     HAVE_SCHED_SETAFFINITY)
 
 check_symbol_exists(
+    sched_getcpu
+    "sched.h"
+    HAVE_SCHED_GETCPU)
+
+check_symbol_exists(
     pthread_setcancelstate
     "pthread.h"
     HAVE_PTHREAD_SETCANCELSTATE)
+
+check_include_files(
+    gnu/lib-names.h
+    HAVE_GNU_LIBNAMES_H)
 
 check_symbol_exists(
     arc4random_buf
@@ -275,6 +253,11 @@ check_symbol_exists(
     TIOCGWINSZ
     "sys/ioctl.h"
     HAVE_TIOCGWINSZ)
+
+check_symbol_exists(
+    TIOCSWINSZ
+    "sys/ioctl.h"
+    HAVE_TIOCSWINSZ)
 
 check_symbol_exists(
     tcgetattr
@@ -444,32 +427,35 @@ check_struct_has_member(
     "sys/select.h"
     HAVE_PRIVATE_FDS_BITS)
 
-check_c_source_compiles(
-    "
-    #include <sys/sendfile.h>
-    int main(void) { int i = sendfile(0, 0, 0, 0); return 0; }
-    "
-    HAVE_SENDFILE_4)
+# do not use sendfile() on iOS/tvOS, it causes SIGSYS at runtime on devices
+if(NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    check_c_source_compiles(
+        "
+        #include <sys/sendfile.h>
+        int main(void) { int i = sendfile(0, 0, 0, 0); return 0; }
+        "
+        HAVE_SENDFILE_4)
 
-check_c_source_compiles(
-    "
-    #include <stdlib.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <sys/uio.h>
-    int main(void) { int i = sendfile(0, 0, 0, NULL, NULL, 0); return 0; }
-    "
-    HAVE_SENDFILE_6)
+    check_c_source_compiles(
+        "
+        #include <stdlib.h>
+        #include <sys/types.h>
+        #include <sys/socket.h>
+        #include <sys/uio.h>
+        int main(void) { int i = sendfile(0, 0, 0, NULL, NULL, 0); return 0; }
+        "
+        HAVE_SENDFILE_6)
 
-check_c_source_compiles(
-    "
-    #include <stdlib.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <sys/uio.h>
-    int main(void) { int i = sendfile(0, 0, 0, 0, NULL, NULL, 0); return 0; }
-    "
-    HAVE_SENDFILE_7)
+    check_c_source_compiles(
+        "
+        #include <stdlib.h>
+        #include <sys/types.h>
+        #include <sys/socket.h>
+        #include <sys/uio.h>
+        int main(void) { int i = sendfile(0, 0, 0, 0, NULL, NULL, 0); return 0; }
+        "
+        HAVE_SENDFILE_7)
+endif()
 
 check_symbol_exists(
     fcopyfile
@@ -666,7 +652,16 @@ check_symbol_exists(
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
-check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
+check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
+
+if (HAVE_LIBPTHREAD)
+  set(PTHREAD_LIBRARY pthread)
+elseif (HAVE_PTHREAD_IN_LIBC)
+  set(PTHREAD_LIBRARY c)
+endif()
+
+check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_symbol_exists(
     futimes
@@ -884,8 +879,8 @@ if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS
     set(HAVE_IOS_NETINET_IP_VAR_H 1)
     set(HAVE_IOS_NETINET_ICMP_VAR_H 1)
     set(HAVE_IOS_NETINET_UDP_VAR_H 1)
-    set(CMAKE_EXTRA_INCLUDE_FILES 
-        sys/types.h 
+    set(CMAKE_EXTRA_INCLUDE_FILES
+        sys/types.h
         "${CMAKE_CURRENT_SOURCE_DIR}/System.Native/ios/net/route.h"
     )
 else()
@@ -1040,18 +1035,6 @@ else ()
         HAVE_GSS_SPNEGO_MECHANISM)
 endif ()
 
-if (HAVE_GSSFW_HEADERS)
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "GSS/GSS.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
-else ()
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "gssapi/gssapi_krb5.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
-endif ()
-
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 
@@ -1098,6 +1081,25 @@ check_c_source_compiles(
     }
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
+
+check_symbol_exists(
+    makedev
+    sys/file.h
+    HAVE_MAKEDEV_FILEH)
+
+check_symbol_exists(
+    makedev
+    sys/sysmacros.h
+    HAVE_MAKEDEV_SYSMACROSH)
+
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
+  message(FATAL_ERROR "Cannot find the makedev function on this platform.")
+endif()
+
+check_symbol_exists(
+    getgrgid_r
+    grp.h
+    HAVE_GETGRGID_R)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

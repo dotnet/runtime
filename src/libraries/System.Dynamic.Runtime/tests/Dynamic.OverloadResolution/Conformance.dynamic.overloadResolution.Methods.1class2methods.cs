@@ -501,8 +501,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.onedynamicparam004.onedynamicparam004
 {
-    using System;
-    
     // <Title> Tests overload resolution for 1 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -532,7 +530,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
     public class Test
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55117", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55117", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));

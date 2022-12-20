@@ -57,13 +57,13 @@ namespace System.Text.Json.Tests
             Action<byte[]> validate;
 
             validate = (data) => Assert.Equal(123456789, JsonSerializer.Deserialize<long>(data));
-            yield return new object[] { Encoding.UTF8.GetBytes("123456789"), validate };
+            yield return new object[] { "123456789"u8.ToArray(), validate };
 
             validate = (data) => Assert.Equal(1234.56789, JsonSerializer.Deserialize<double>(data));
-            yield return new object[] { Encoding.UTF8.GetBytes("1234.56789"), validate };
+            yield return new object[] { "1234.56789"u8.ToArray(), validate };
 
             validate = (data) => Assert.Equal(1234.56789, JsonSerializer.Deserialize<double>(data));
-            yield return new object[] { Encoding.UTF8.GetBytes(" 1234.56789 "), validate };
+            yield return new object[] { " 1234.56789 "u8.ToArray(), validate };
 
             validate = (data) => Assert.Equal(@"Hello", JsonSerializer.Deserialize<string>(data));
             yield return new object[] { Encoding.UTF8.GetBytes(@"""Hello"""), validate };
@@ -110,7 +110,7 @@ namespace System.Text.Json.Tests
             };
             yield return new object[] { json, validate };
 
-            json = Encoding.UTF8.GetBytes("[ 1, 1,1,1,1 ] ");
+            json = "[ 1, 1,1,1,1 ] "u8.ToArray();
             validate = (data) =>
             {
                 foreach (int val in JsonSerializer.Deserialize<int[]>(data))
@@ -333,7 +333,7 @@ namespace System.Text.Json.Tests
         /// Also see <see cref="WriteLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public void WriteRawLargeJsonToStreamWithoutFlushing()
         {
@@ -381,7 +381,7 @@ namespace System.Text.Json.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(JsonTokenType.String)]
         [InlineData(JsonTokenType.StartArray)]
@@ -471,7 +471,7 @@ namespace System.Text.Json.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [InlineData((int.MaxValue / 3) + 1)]
         [InlineData(int.MaxValue / 3 + 2)]
         [OuterLoop]
@@ -504,7 +504,7 @@ namespace System.Text.Json.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public static void WriteRawTranscodeFromUtf16ToUtf8TooLong()
         {
@@ -516,7 +516,7 @@ namespace System.Text.Json.Tests
 
             for (int i = 1; i < maxLength - 1; i++)
             {
-                sb.Append('的'); // Non-UTF-8 character than will expand during transcoding
+                sb.Append('\u7684'); // Non-UTF-8 character than will expand during transcoding
             }
 
             sb.Append('"');

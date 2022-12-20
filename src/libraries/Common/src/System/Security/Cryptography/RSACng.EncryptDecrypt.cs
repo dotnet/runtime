@@ -11,10 +11,6 @@ using BCRYPT_OAEP_PADDING_INFO = Interop.BCrypt.BCRYPT_OAEP_PADDING_INFO;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    internal static partial class RSAImplementation
-    {
-#endif
     public sealed partial class RSACng : RSA
     {
         private const int Pkcs1PaddingOverhead = 11;
@@ -40,14 +36,8 @@ namespace System.Security.Cryptography
         // array-based APIs invoke this common helper with the "encrypt" parameter determining whether encryption or decryption is done.
         private unsafe byte[] EncryptOrDecrypt(byte[] data, RSAEncryptionPadding padding, bool encrypt)
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(padding);
 
             int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
 
@@ -79,10 +69,7 @@ namespace System.Security.Cryptography
                         }
                         else if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
                         {
-                            RsaPaddingProcessor processor =
-                                RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-
-                            processor.PadOaep(data, paddedMessage);
+                            RsaPaddingProcessor.PadOaep(padding.OaepHashAlgorithm, data, paddedMessage);
                         }
                         else
                         {
@@ -132,10 +119,7 @@ namespace System.Security.Cryptography
         // span-based APIs invoke this common helper with the "encrypt" parameter determining whether encryption or decryption is done.
         private unsafe bool TryEncryptOrDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, bool encrypt, out int bytesWritten)
         {
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentNullException.ThrowIfNull(padding);
 
             int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
 
@@ -167,10 +151,7 @@ namespace System.Security.Cryptography
                         }
                         else if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
                         {
-                            RsaPaddingProcessor processor =
-                                RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-
-                            processor.PadOaep(data, paddedMessage);
+                            RsaPaddingProcessor.PadOaep(padding.OaepHashAlgorithm, data, paddedMessage);
                         }
                         else
                         {
@@ -271,7 +252,7 @@ namespace System.Security.Cryptography
         }
 
         // Now that the padding mode and information have been marshaled to their native counterparts, perform the encryption or decryption.
-        private unsafe bool TryEncryptOrDecrypt(SafeNCryptKeyHandle key, ReadOnlySpan<byte> input, Span<byte> output, AsymmetricPaddingMode paddingMode, void* paddingInfo, bool encrypt, out int bytesWritten)
+        private static unsafe bool TryEncryptOrDecrypt(SafeNCryptKeyHandle key, ReadOnlySpan<byte> input, Span<byte> output, AsymmetricPaddingMode paddingMode, void* paddingInfo, bool encrypt, out int bytesWritten)
         {
             for (int i = 0; i <= StatusUnsuccessfulRetryCount; i++)
             {
@@ -319,7 +300,4 @@ namespace System.Security.Cryptography
             return errorCode;
         }
     }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    }
-#endif
 }

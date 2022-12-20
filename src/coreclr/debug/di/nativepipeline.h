@@ -5,8 +5,7 @@
 //
 
 //
-// defines native pipeline abstraction, which includes debug-support
-// for event redirection.
+// defines native pipeline abstraction
 //*****************************************************************************
 
 
@@ -146,28 +145,6 @@ public:
 
     virtual BOOL TerminateProcess(UINT32 exitCode) = 0;
 
-    //
-    // Resume any suspended threads in the currend process.
-    // This decreases the suspend count of each thread by at most 1.
-    // Call multiple times until it returns S_FALSE if you want to really ensure
-    // all threads are running.
-    //
-    // Notes:
-    //    On Windows the OS may suspend threads when continuing a 2nd-chance exception.
-    //    Call this to get them resumed again.  On other platforms this
-    //    will typically be a no-op, so I provide a default implementation to avoid
-    //    everyone having to override this.
-    //
-    // Return Value:
-    //    S_OK if at least one thread was resumed from a suspended state
-    //    S_FALSE if nothing was done
-    //    An error code indicating why we were not able to attempt this
-
-    virtual HRESULT EnsureThreadsRunning()
-    {
-        return S_FALSE;
-    }
-
 #ifdef TARGET_UNIX
     // Used by debugger side (RS) to cleanup the target (LS) named pipes
     // and semaphores when the debugger detects the debuggee process  exited.
@@ -213,16 +190,6 @@ BOOL IsExceptionEvent(const DEBUG_EVENT * pEvent, BOOL * pfFirstChance, const EX
 // Returns:
 //    newly allocated pipeline object. Caller must call Dispose() on it.
 INativeEventPipeline * NewPipelineForThisPlatform();
-
-//-----------------------------------------------------------------------------
-// Allocate and return a pipeline object for this platform
-// Has debug checks (such as for event redirection)
-//
-// Returns:
-//    newly allocated pipeline object. Caller must call Dispose() on it.
-INativeEventPipeline * NewPipelineWithDebugChecks();
-
-
 
 #endif // _NATIVE_PIPELINE_H
 

@@ -24,18 +24,17 @@ namespace System.Data.Odbc
         {
             return ADP.Argument(SR.GetString(SR.Odbc_UnknownSQLType, sqltype.ToString()));
         }
-        internal static Exception ConnectionStringTooLong()
-        {
-            return ADP.Argument(SR.GetString(SR.OdbcConnection_ConnectionStringTooLong, ODBC32.MAX_CONNECTION_STRING_LENGTH));
-        }
+
         internal static ArgumentException GetSchemaRestrictionRequired()
         {
             return ADP.Argument(SR.GetString(SR.ODBC_GetSchemaRestrictionRequired));
         }
+
         internal static ArgumentOutOfRangeException NotSupportedEnumerationValue(Type type, int value)
         {
             return ADP.ArgumentOutOfRange(SR.GetString(SR.ODBC_NotSupportedEnumerationValue, type.Name, value.ToString(System.Globalization.CultureInfo.InvariantCulture)), type.Name);
         }
+
         internal static ArgumentOutOfRangeException NotSupportedCommandType(CommandType value)
         {
 #if DEBUG
@@ -112,6 +111,7 @@ namespace System.Data.Odbc
         }
         internal const string Pwd = "pwd";
 
+        [Conditional("DEBUG")]
         internal static void TraceODBC(int level, string method, ODBC32.SQLRETURN retcode)
         {
         }
@@ -404,7 +404,7 @@ namespace System.Data.Odbc
             NESTED = 0x00000008,    // SQL_OJ_NESTED
             NOT_ORDERED = 0x00000010,    // SQL_OJ_NOT_ORDERED
             INNER = 0x00000020,    // SQL_OJ_INNER
-            ALL_COMPARISON_OPS = 0x00000040,  //SQL_OJ_ALLCOMPARISION+OPS
+            ALL_COMPARISON_OPS = 0x00000040,  //SQL_OJ_ALLCOMPARISON+OPS
         }
 
         internal enum SQL_UPDATABLE
@@ -664,12 +664,6 @@ namespace System.Data.Odbc
             COMPLETE_REQUIRED = 3,
         }
 
-        // todo:move
-        // internal const. not odbc specific
-        //
-        // Connection string max length
-        internal const int MAX_CONNECTION_STRING_LENGTH = 1024;
-
         // Column set for SQLPrimaryKeys
         internal enum SQL_PRIMARYKEYS : short
         {
@@ -730,7 +724,7 @@ namespace System.Data.Odbc
             {
                 int NativeError;
                 short iRec = 0;
-                short cchActual = 0;
+                short cchActual;
 
                 StringBuilder message = new StringBuilder(1024);
                 string sqlState;
@@ -743,7 +737,7 @@ namespace System.Data.Odbc
                     if ((SQLRETURN.SUCCESS_WITH_INFO == retcode) && (message.Capacity - 1 < cchActual))
                     {
                         message.Capacity = cchActual + 1;
-                        retcode = hrHandle.GetDiagnosticRecord(iRec, out sqlState, message, out NativeError, out cchActual);
+                        retcode = hrHandle.GetDiagnosticRecord(iRec, out sqlState, message, out NativeError, out _);
                     }
 
                     //Note: SUCCESS_WITH_INFO from SQLGetDiagRec would be because
@@ -985,7 +979,7 @@ namespace System.Data.Odbc
         {
             // upgrade unsigned types to be able to hold data that has the highest bit set
             //
-            if (unsigned == true)
+            if (unsigned)
             {
                 return typeMap._dbType switch
                 {

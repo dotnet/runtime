@@ -48,13 +48,13 @@ public:
     HRESULT Init(
         ProfToEEInterfaceImpl * pProfToEE,
         const CLSID * pClsid,
-        __inout_z LPCWSTR wszClsid,
-        __in_z LPCWSTR wszProfileDLL,
+        __inout_z LPCSTR szClsid,
+        _In_z_ LPCWSTR wszProfileDLL,
         BOOL fLoadedViaAttach,
         DWORD dwConcurrentGCWaitTimeoutInMs);
 
     void SetProfilerInfo(ProfilerInfo *pProfilerInfo);
-    
+
     BOOL IsCallback3Supported();
     BOOL IsCallback4Supported();
     BOOL IsCallback5Supported();
@@ -144,7 +144,7 @@ public:
 
     HRESULT ThreadNameChanged(ThreadID managedThreadId,
                               ULONG cchName,
-                              __in_ecount_opt(cchName) WCHAR name[]);
+                              _In_reads_bytes_opt_(cchName) WCHAR name[]);
 
     //
     // Startup/Shutdown Events
@@ -611,8 +611,8 @@ private:
 
     HRESULT CreateProfiler(
         const CLSID * pClsid,
-        __in_z LPCWSTR wszClsid,
-        __in_z LPCWSTR wszProfileDLL);
+        _In_z_ LPCSTR szClsid,
+        _In_z_ LPCWSTR wszProfileDLL);
 
     HRESULT DetermineAndSetEnterLeaveFunctionHooksForJit();
 

@@ -4,12 +4,6 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.0.20528.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-
-
-// Metadata version: v4.0.20528
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -23,7 +17,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Variance1.exe
 // MVID: {DC3FB067-F52C-4120-BD62-DFA180241B4B}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -561,7 +554,7 @@
   } // end of method Program::Verification
 
   .method private hidebysig static int32 
-          Main(string[] args) cil managed
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

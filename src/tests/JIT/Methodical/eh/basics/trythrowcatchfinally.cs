@@ -3,8 +3,11 @@
 
 // try { throw } catch {} finally {}
 using System;
+using Xunit;
 
-class test
+namespace Test_trythrowcatchfinally_cs
+{
+public class test
 {
     private static TestUtil.TestLog testLog;
 
@@ -23,7 +26,8 @@ class test
         testLog = new TestUtil.TestLog(expectedOut);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();
@@ -51,4 +55,5 @@ class test
 
         return testLog.VerifyOutput();
     }
+}
 }

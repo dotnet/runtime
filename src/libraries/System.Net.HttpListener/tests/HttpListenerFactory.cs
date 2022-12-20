@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Net.Tests
@@ -24,7 +23,7 @@ namespace System.Net.Tests
         private readonly string _path;
         private readonly int _port;
 
-        internal HttpListenerFactory(string hostname = "localhost", string path = null)
+        internal HttpListenerFactory(string hostname = "localhost", string path = null, AuthenticationSchemes? authenticationSchemes = null)
         {
             // Find a URL prefix that is not in use on this machine *and* uses a port that's not in use.
             // Once we find this prefix, keep a listener on it for the duration of the process, so other processes
@@ -42,6 +41,12 @@ namespace System.Net.Tests
                 try
                 {
                     listener.Prefixes.Add(prefix);
+
+                    if (authenticationSchemes != null)
+                    {
+                        listener.AuthenticationSchemes = authenticationSchemes.Value;
+                    }
+
                     listener.Start();
 
                     _processPrefixListener = listener;

@@ -11,17 +11,13 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class procfs
+    internal static partial class @procfs
     {
         private const string ExeFileName = "/exe";
         private const string CmdLineFileName = "/cmdline";
         private const string StatFileName = "/stat";
         private const string FileDescriptorDirectoryName = "/fd/";
         private const string TaskDirectoryName = "/task/";
-
-        internal const string SelfExeFilePath = RootPath + "self" + ExeFileName;
-        internal const string SelfCmdLineFilePath = RootPath + "self" + CmdLineFileName;
-        internal const string ProcStatFilePath = RootPath + "stat";
 
         internal struct ParsedStat
         {

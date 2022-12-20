@@ -44,7 +44,7 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 #define _CVTBUFSIZE (309+40) /* # of digits in max. dp value + slop */
 
 //------------------------------------------------------------------------------
-// This code was taken from the 'ouput.c' file located in Visual Studio 8 (i.e. 2005)
+// This code was taken from the 'output.c' file located in Visual Studio 8 (i.e. 2005)
 // in the '\Microsoft Visual Studio 8\VC\crt\src' directory. It was moved into
 // this file to support only the '_output' function used by _vscprintf() in vsprintf.c
 // UNUSED / NON-RELEVANT PORTIONS OF THE CODE HAVE BEEN REMOVED - do not try and
@@ -311,7 +311,9 @@ const char __lookuptable[] = {
  /* 'u' */  0x08,
  /* 'v' */  0x00,
  /* 'w' */  0x07,
- /* 'x' */  0x08
+ /* 'x' */  0x08,
+ /* 'y' */  0x00,
+ /* 'z' */  0x37
 };
 
 #endif  /* defined (_UNICODE) || defined (CPRFLAG) */
@@ -322,7 +324,7 @@ const char __lookuptable[] = {
 #endif  /* FORMAT_VALIDATIONS */
 
 #define FIND_CHAR_CLASS(lookuptbl, c)      \
-        ((c) < _T(' ') || (c) > _T('x') ? \
+        ((c) < _T(' ') || (c) > _T('z') ? \
             CH_OTHER            \
             :               \
         (enum CHARTYPE)(lookuptbl[(c)-_T(' ')] & 0xF))
@@ -664,7 +666,7 @@ int __cdecl _output (
             break;
 
         case ST_PRECIS:
-            /* update precison value */
+            /* update precision value */
             if (ch == _T('*')) {
                 /* get precision from arg list */
                 precision = get_int_arg(&argptr);
@@ -696,6 +698,7 @@ int __cdecl _output (
                 }
                 break;
 
+            case _T('z'):
             case _T('I'):
                 /*
                  * In order to handle the I, I32, and I64 size modifiers, we

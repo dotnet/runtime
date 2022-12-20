@@ -84,9 +84,9 @@ mono_close_pipe (int p [2])
 
 #if defined(__APPLE__)
 #if defined (TARGET_OSX)
-/* Apple defines this in crt_externs.h but doesn't provide that header for 
+/* Apple defines this in crt_externs.h but doesn't provide that header for
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
- * in fact exist on all implementations (so far) 
+ * in fact exist on all implementations (so far)
  */
 G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
@@ -131,12 +131,12 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str, GError **ger
 	if (out_str) {
 		*out_str = NULL;
 		out = g_string_new ("");
-	}	
+	}
 
 	if (err_str) {
 		*err_str = NULL;
 		err = g_string_new ("");
-	}	
+	}
 
 	do {
 		if (out_closed && err_closed)
@@ -208,18 +208,18 @@ write_all (int fd, const void *vbuf, size_t n)
 	const char *buf = (const char *) vbuf;
 	size_t nwritten = 0;
 	int w;
-	
+
 	do {
 		do {
 			w = write (fd, buf + nwritten, n - nwritten);
 		} while (w == -1 && errno == EINTR);
-		
+
 		if (w == -1)
 			return -1;
-		
+
 		nwritten += w;
 	} while (nwritten < n);
-	
+
 	return nwritten;
 }
 
@@ -249,89 +249,6 @@ eg_getdtablesize (void)
 #endif
 
 #if HAVE_G_SPAWN
-
-gboolean
-g_spawn_command_line_sync (const gchar *command_line,
-				gchar **standard_output,
-				gchar **standard_error,
-				gint *exit_status,
-				GError **gerror)
-{
-	pid_t pid;
-	gchar **argv;
-	gint argc;
-	int stdout_pipe [2] = { -1, -1 };
-	int stderr_pipe [2] = { -1, -1 };
-	int status;
-	int res;
-	
-	if (!g_shell_parse_argv (command_line, &argc, &argv, gerror))
-		return FALSE;
-
-	if (standard_output && !create_pipe (stdout_pipe, gerror))
-		return FALSE;
-
-	if (standard_error && !create_pipe (stderr_pipe, gerror)) {
-		if (standard_output) {
-			mono_close_pipe (stdout_pipe);
-		}
-		return FALSE;
-	}
-
-	pid = fork ();
-	if (pid == 0) {
-		gint i;
-
-		if (standard_output) {
-			close (stdout_pipe [0]);
-			dup2 (stdout_pipe [1], STDOUT_FILENO);
-		}
-
-		if (standard_error) {
-			close (stderr_pipe [0]);
-			dup2 (stderr_pipe [1], STDERR_FILENO);
-		}
-		for (i = eg_getdtablesize () - 1; i >= 3; i--)
-			close (i);
-
-		/* G_SPAWN_SEARCH_PATH is always enabled for g_spawn_command_line_sync */
-		if (!g_path_is_absolute (argv [0])) {
-			gchar *arg0;
-
-			arg0 = g_find_program_in_path (argv [0]);
-			if (arg0 == NULL) {
-				exit (1);
-			}
-			//g_free (argv [0]);
-			argv [0] = arg0;
-		}
-		execv (argv [0], argv);
-		exit (1); /* TODO: What now? */
-	}
-
-	g_strfreev (argv);
-	if (standard_output)
-		close (stdout_pipe [1]);
-
-	if (standard_error)
-		close (stderr_pipe [1]);
-
-	if (standard_output || standard_error) {
-		res = read_pipes (stdout_pipe [0], standard_output, stderr_pipe [0], standard_error, gerror);
-		if (res) {
-			waitpid (pid, &status, WNOHANG); /* avoid zombie */
-			return FALSE;
-		}
-	}
-
-	NO_INTR (res, waitpid (pid, &status, 0));
-
-	/* TODO: What if error? */
-	if (WIFEXITED (status) && exit_status) {
-		*exit_status = WEXITSTATUS (status);
-	}
-	return TRUE;
-}
 
 /*
  * This is the only use we have in mono/metadata

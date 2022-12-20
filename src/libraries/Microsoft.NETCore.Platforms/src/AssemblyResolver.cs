@@ -36,9 +36,9 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             AssemblyName referenceName = new AssemblyName(AppDomain.CurrentDomain.ApplyPolicy(args.Name));
 
             string fileName = referenceName.Name + ".dll";
-            string assemblyPath = null;
-            string probingPath = null;
-            Assembly assm = null;
+            string assemblyPath;
+            string probingPath;
+            Assembly assm;
 
             // look next to requesting assembly
             assemblyPath = args.RequestingAssembly?.Location;

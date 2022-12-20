@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             try
             {
                 // Using default scheduler rather than picking up the current scheduler.
-                Task<R> task = Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                Task<R> task = Task.Factory.StartNew((Func<object?, R>)action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
                 // Avoid AsyncWaitHandle lazy allocation of ManualResetEvent in the rare case we finish quickly.
                 if (!task.IsCompleted)

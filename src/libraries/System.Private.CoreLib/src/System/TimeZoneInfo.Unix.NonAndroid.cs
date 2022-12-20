@@ -5,8 +5,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Text;
+using System.Runtime.InteropServices;
 using System.Security;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System
@@ -89,15 +90,15 @@ namespace System
                             // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
 
                             int firstTabIndex = zoneTabFileLine.IndexOf('\t');
-                            if (firstTabIndex != -1)
+                            if (firstTabIndex >= 0)
                             {
                                 int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
-                                if (secondTabIndex != -1)
+                                if (secondTabIndex >= 0)
                                 {
                                     string timeZoneId;
                                     int startIndex = secondTabIndex + 1;
                                     int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
-                                    if (thirdTabIndex != -1)
+                                    if (thirdTabIndex >= 0)
                                     {
                                         int length = thirdTabIndex - startIndex;
                                         timeZoneId = zoneTabFileLine.Substring(startIndex, length);
@@ -193,7 +194,7 @@ namespace System
                         IntPtr dirHandle = Interop.Sys.OpenDir(currentPath);
                         if (dirHandle == IntPtr.Zero)
                         {
-                            throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirectory: true);
+                            throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirError: true);
                         }
 
                         try
@@ -286,15 +287,13 @@ namespace System
                         {
                             int n = RandomAccess.Read(sfh, buffer.AsSpan(index, count), index);
                             if (n == 0)
-                                ThrowHelper.ThrowEndOfFileException();
-
-                            int end = index + n;
-                            for (; index < end; index++)
                             {
-                                if (buffer[index] != rawData[index])
-                                {
-                                    return false;
-                                }
+                                ThrowHelper.ThrowEndOfFileException();
+                            }
+
+                            if (!buffer.AsSpan(index, n).SequenceEqual(rawData.AsSpan(index, n)))
+                            {
+                                return false;
                             }
 
                             count -= n;
@@ -382,6 +381,13 @@ namespace System
 
         /// <summary>
         /// Gets the tzfile raw data for the current 'local' time zone using the following rules.
+        ///
+        /// On iOS / tvOS
+        /// 1. Read the TZ environment variable.  If it is set, use it.
+        /// 2. Get the default TZ from the device
+        /// 3. Use UTC if all else fails.
+        ///
+        /// On all other platforms
         /// 1. Read the TZ environment variable.  If it is set, use it.
         /// 2. Look for the data in /etc/localtime.
         /// 3. Look for the data in GetTimeZoneDirectory()/localtime.
@@ -393,16 +399,23 @@ namespace System
             id = null;
             string? tzVariable = GetTzEnvironmentVariable();
 
-            // If the env var is null, use the localtime file
+            // If the env var is null, on iOS/tvOS, grab the default tz from the device.
+            // On all other platforms, use the localtime file.
+#pragma warning disable IDE0074 // Use compound assignment
             if (tzVariable == null)
             {
+#if TARGET_IOS || TARGET_TVOS
+                tzVariable = Interop.Sys.GetDefaultTimeZone();
+#else
                 return
                     TryLoadTzFile("/etc/localtime", ref rawData, ref id) ||
                     TryLoadTzFile(Path.Combine(GetTimeZoneDirectory(), "localtime"), ref rawData, ref id);
+#endif
             }
+#pragma warning restore IDE0074
 
             // If it's empty, use UTC (TryGetLocalTzFile() should return false).
-            if (tzVariable.Length == 0)
+            if (string.IsNullOrEmpty(tzVariable))
             {
                 return false;
             }

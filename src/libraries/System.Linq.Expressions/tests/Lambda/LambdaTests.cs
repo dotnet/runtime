@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -268,9 +269,9 @@ namespace System.Linq.Expressions.Tests
                 double, double, double, double,
                 bool>), exp.Type);
 
-            // From this point on, the tests require IsLinqExpressionsBuiltWithIsInterpretingOnly (RefEmit) support as SLE needs to create delegate types on the fly.
+            // From this point on, the tests require Ref.Emit support as SLE needs to create delegate types on the fly.
             // You can't instantiate Func<> over 20 arguments or over byrefs.
-            if (PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly)
+            if (!RuntimeFeature.IsDynamicCodeSupported)
                 return;
 
             ParameterExpression[] paramList = Enumerable.Range(0, 20).Select(_ => Expression.Variable(typeof(int))).ToArray();
@@ -780,7 +781,7 @@ namespace System.Linq.Expressions.Tests
             Assert.DoesNotContain(Expression.Parameter(typeof(int)), parameters);
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)), ClassData(typeof(CompilationTypes))]
         public void AboveByteMaxArityArg(bool useInterpreter)
         {
             ParameterExpression[] pars = Enumerable.Range(0, 300).Select(_ => Expression.Parameter(typeof(int))).ToArray();
@@ -902,7 +903,7 @@ namespace System.Linq.Expressions.Tests
 ");
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)), ClassData(typeof(CompilationTypes))]
         public void ExcessiveArity(bool useInterpreter)
         {
             ParameterExpression[] pars = Enumerable.Range(0, ushort.MaxValue).Select(_ => Expression.Parameter(typeof(int))).ToArray();
@@ -924,8 +925,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty(), false, Enumerable.Empty<ParameterExpression>()));
         }
 
-        // When we don't have IsLinqExpressionsBuiltWithIsInterpretingOnly we don't have the Reflection.Emit used in the tests.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ClassData(typeof(CompilationTypes))]
         public void PrivateDelegate(bool useInterpreter)
         {
@@ -941,8 +941,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(42, del.DynamicInvoke());
         }
 
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void ValidateThatInterpreterWithSimpleTypeUsesNonDynamicThunk()
         {
             Expression<Action> action = () => Console.WriteLine("");
@@ -960,15 +959,14 @@ namespace System.Linq.Expressions.Tests
             Assert.True(func2.Compile(preferInterpretation:true).Method.GetType().Name == "RuntimeMethodInfo");
         }
 
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void ValidateThatInterpreterWithSimpleTypeUsesDynamicThunk()
         {
             Expression<Action<object,object,object>> complexaction = (object o1, object o2, object o3) => Console.WriteLine("");
-            Assert.True(complexaction.Compile(preferInterpretation:true).Method.GetType().Name == "RTDynamicMethod");
+            Assert.IsType<DynamicMethod>(complexaction.Compile(preferInterpretation:true).Method);
 
             Expression<Func<object, object, object,object>> complexfunc = (object o1, object o2, object o3) => null;
-            Assert.True(complexfunc.Compile(preferInterpretation:true).Method.GetType().Name == "RTDynamicMethod");
+            Assert.IsType<DynamicMethod>(complexfunc.Compile(preferInterpretation: true).Method);
         }
 
         private interface IInterface

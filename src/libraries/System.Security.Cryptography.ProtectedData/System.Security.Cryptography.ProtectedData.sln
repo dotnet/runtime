@@ -1,9 +1,9 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{21CC9F35-ACAA-4452-BE92-BBAE2E927B20}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj", "{179902DA-28E6-42F5-BA2D-905BEC68A32C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj", "{90042C2E-6AD9-4BFF-B7CA-8E6BF9B3D3C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{D3B40403-2973-45CE-A0A4-97C38CBE86FE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.ProtectedData", "ref\System.Security.Cryptography.ProtectedData.csproj", "{E40DBC0E-386A-4B32-8DCE-9FE13EAD47BE}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.ProtectedData.Tests", "tests\System.Security.Cryptography.ProtectedData.Tests.csproj", "{3A6C62D5-EFCA-4119-BC60-C917533848A8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E3C3C868-FBDB-4F07-A72E-F734016C0B3B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{6F1E3122-547E-4134-BB45-6E33B880DC34}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{AE1B6C0D-2991-4048-9B81-5683599B0CA4}"
 EndProject
@@ -27,14 +29,14 @@ Global
 		{21CC9F35-ACAA-4452-BE92-BBAE2E927B20}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21CC9F35-ACAA-4452-BE92-BBAE2E927B20}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21CC9F35-ACAA-4452-BE92-BBAE2E927B20}.Release|Any CPU.Build.0 = Release|Any CPU
-		{179902DA-28E6-42F5-BA2D-905BEC68A32C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{179902DA-28E6-42F5-BA2D-905BEC68A32C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{179902DA-28E6-42F5-BA2D-905BEC68A32C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{179902DA-28E6-42F5-BA2D-905BEC68A32C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{90042C2E-6AD9-4BFF-B7CA-8E6BF9B3D3C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{90042C2E-6AD9-4BFF-B7CA-8E6BF9B3D3C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{90042C2E-6AD9-4BFF-B7CA-8E6BF9B3D3C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{90042C2E-6AD9-4BFF-B7CA-8E6BF9B3D3C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3B40403-2973-45CE-A0A4-97C38CBE86FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3B40403-2973-45CE-A0A4-97C38CBE86FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3B40403-2973-45CE-A0A4-97C38CBE86FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3B40403-2973-45CE-A0A4-97C38CBE86FE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E40DBC0E-386A-4B32-8DCE-9FE13EAD47BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E40DBC0E-386A-4B32-8DCE-9FE13EAD47BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E40DBC0E-386A-4B32-8DCE-9FE13EAD47BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -54,9 +56,9 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{21CC9F35-ACAA-4452-BE92-BBAE2E927B20} = {E3C3C868-FBDB-4F07-A72E-F734016C0B3B}
 		{3A6C62D5-EFCA-4119-BC60-C917533848A8} = {E3C3C868-FBDB-4F07-A72E-F734016C0B3B}
-		{179902DA-28E6-42F5-BA2D-905BEC68A32C} = {AE1B6C0D-2991-4048-9B81-5683599B0CA4}
+		{324E33F0-53FB-4DFD-AEDF-64BCFB2F7821} = {6F1E3122-547E-4134-BB45-6E33B880DC34}
+		{D3B40403-2973-45CE-A0A4-97C38CBE86FE} = {6F1E3122-547E-4134-BB45-6E33B880DC34}
 		{E40DBC0E-386A-4B32-8DCE-9FE13EAD47BE} = {AE1B6C0D-2991-4048-9B81-5683599B0CA4}
-		{90042C2E-6AD9-4BFF-B7CA-8E6BF9B3D3C7} = {87D86F17-7CEB-48DB-99FB-55922ED2A7D1}
 		{7773DB7A-494F-4508-9471-F737FDC7661E} = {87D86F17-7CEB-48DB-99FB-55922ED2A7D1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

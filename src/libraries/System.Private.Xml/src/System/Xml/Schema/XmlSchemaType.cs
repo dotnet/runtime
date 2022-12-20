@@ -31,10 +31,7 @@ namespace System.Xml.Schema
         /// </devdoc>
         public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
         {
-            if (qualifiedName == null)
-            {
-                throw new ArgumentNullException(nameof(qualifiedName));
-            }
+            ArgumentNullException.ThrowIfNull(qualifiedName);
 
             return DatatypeImplementation.GetSimpleTypeFromXsdType(qualifiedName);
         }
@@ -65,10 +62,7 @@ namespace System.Xml.Schema
         /// </devdoc>
         public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName)
         {
-            if (qualifiedName == null)
-            {
-                throw new ArgumentNullException(nameof(qualifiedName));
-            }
+            ArgumentNullException.ThrowIfNull(qualifiedName);
 
             if (qualifiedName.Equals(XmlSchemaComplexType.AnyType.QualifiedName))
             {
@@ -209,7 +203,7 @@ namespace System.Xml.Schema
             }
         }
 
-        [return: NotNullIfNotNull("schemaSet")]
+        [return: NotNullIfNotNull(nameof(schemaSet))]
         internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)
@@ -333,7 +327,7 @@ namespace System.Xml.Schema
         }
 
 
-        internal static bool IsDerivedFromDatatype(XmlSchemaDatatype derivedDataType, XmlSchemaDatatype baseDataType, XmlSchemaDerivationMethod except)
+        internal static bool IsDerivedFromDatatype(XmlSchemaDatatype derivedDataType, XmlSchemaDatatype baseDataType)
         {
             if (DatatypeImplementation.AnySimpleType.Datatype == baseDataType)
             {

@@ -4,7 +4,7 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
-.assembly TestCase0 {}
+.assembly 'TestCase7' {}
 
 
 // =============== CLASS MEMBERS DECLARATION ===================

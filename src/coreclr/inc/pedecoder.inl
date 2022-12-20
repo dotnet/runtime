@@ -100,7 +100,6 @@ inline PEDecoder::PEDecoder(PTR_VOID mappedBase, bool fixedUp /*= FALSE*/)
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(mappedBase));
-        PRECONDITION(CheckAligned(mappedBase, GetOsPageSize()));
         PRECONDITION(PEDecoder(mappedBase,fixedUp).CheckNTHeaders());
         THROWS;
         GC_NOTRIGGER;
@@ -172,7 +171,6 @@ inline HRESULT PEDecoder::Init(void *mappedBase, bool fixedUp /*= FALSE*/)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(mappedBase));
-        PRECONDITION(CheckAligned(mappedBase, GetOsPageSize()));
         PRECONDITION(!HasContents());
     }
     CONTRACTL_END;
@@ -966,7 +964,7 @@ inline PTR_IMAGE_SECTION_HEADER PEDecoder::FindFirstSection(IMAGE_NT_HEADERS * p
 
     return dac_cast<PTR_IMAGE_SECTION_HEADER>(
         dac_cast<TADDR>(pNTHeaders) +
-        FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) +
+        offsetof(IMAGE_NT_HEADERS, OptionalHeader) +
         VAL16(pNTHeaders->FileHeader.SizeOfOptionalHeader));
 }
 

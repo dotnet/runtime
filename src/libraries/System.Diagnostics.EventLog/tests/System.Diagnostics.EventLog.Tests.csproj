@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EventInstanceTests.cs" />
@@ -23,9 +23,12 @@
     <Compile Include="System\Diagnostics\Reader\EventLogSessionTests.cs" />
     <Compile Include="System\Diagnostics\Reader\EventLogWatcherTests.cs" />
     <Compile Include="System\Diagnostics\Reader\ProviderMetadataTests.cs" />
+    <Compile Include="System\Diagnostics\Reader\EventBookmarkTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"/>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="EventLogMessagesTests.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
@@ -42,5 +45,6 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="..\src\System.Diagnostics.EventLog.csproj" />
     <ProjectReference Include="..\src\Messages\System.Diagnostics.EventLog.Messages.csproj" />
+    <TrimmerRootAssembly Include="System.Diagnostics.EventLog.Messages" />
   </ItemGroup>
 </Project>

@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections;
+using System.Globalization;
 using System.Collections.Specialized;
+using Microsoft.DotNet.RemoteExecutor;
 using System.Threading;
 using Xunit;
 
@@ -39,12 +41,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
         public static void PerformanceCounter_CreateCounter_ProcessorCounter()
         {
-            using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter("Processor", "Interrupts/sec", "0", ".")))
             {
-                Assert.Equal(0, Helpers.RetryOnAllPlatforms(() => counterSample.NextValue()));
+                Assert.Equal(0, Helpers.RetryOnAllPlatformsWithClosingResources(() => counterSample.NextValue()));
 
                 Assert.True(counterSample.RawValue > 0);
             }
@@ -59,12 +60,12 @@ namespace System.Diagnostics.Tests
 
             Helpers.CreateCategory(categoryName, counterName, PerformanceCounterCategoryType.MultiInstance);
 
-            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(categoryName, counterName, instanceName)))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter(categoryName, counterName, instanceName)))
             {
                 Assert.Equal(counterName, counterSample.CounterName);
                 Assert.Equal(categoryName, counterSample.CategoryName);
                 Assert.Equal(instanceName, counterSample.InstanceName);
-                Assert.Equal("counter description",  Helpers.RetryOnAllPlatforms(() => counterSample.CounterHelp));
+                Assert.Equal("counter description", Helpers.RetryOnAllPlatformsWithClosingResources(() => counterSample.CounterHelp));
                 Assert.True(counterSample.ReadOnly);
             }
 
@@ -79,7 +80,7 @@ namespace System.Diagnostics.Tests
 
             Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(categoryName, counterName)))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter(categoryName, counterName)))
             {
                 counterSample.ReadOnly = false;
 
@@ -155,14 +156,14 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60403", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounter_NextValue_ProcessorCounter()
         {
-            using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "_Total", "."))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter("Processor", "Interrupts/sec", "_Total", ".")))
             {
                 float val;
                 int counter = 0;
                 do
                 {
                     // Ensure we don't always return zero for a counter we know is not always zero
-                    val = Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
+                    val = Helpers.RetryOnAllPlatformsWithClosingResources(() => counterSample.NextValue());
                     if (val > 0f)
                     {
                         break;
@@ -179,7 +180,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void PerformanceCounter_BeginInit_ProcessorCounter()
         {
-            using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter("Processor", "Interrupts/sec", "0", ".")))
             {
                 counterSample.BeginInit();
 
@@ -188,10 +189,10 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounter_BeginInitEndInit_ProcessorCounter()
         {
-            using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter("Processor", "Interrupts/sec", "0", ".")))
             {
                 counterSample.BeginInit();
                 counterSample.EndInit();
@@ -270,7 +271,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60933", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public static void PerformanceCounter_Decrement_DecrementReadOnly()
         {
             string categoryName = nameof(PerformanceCounter_Decrement_DecrementReadOnly) + "_Category";
@@ -307,15 +308,41 @@ namespace System.Diagnostics.Tests
 
             Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.MultiInstance);
 
-            using (PerformanceCounter counterSample = new PerformanceCounter(categoryName, counterName, instanceName, readOnly:false))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter(categoryName, counterName, instanceName, readOnly: false)))
             {
                 counterSample.RawValue = 10;
-                Helpers.RetryOnAllPlatforms(() => counterSample.Decrement());
+                Helpers.RetryOnAllPlatformsWithClosingResources(() => counterSample.Decrement());
 
                 Assert.Equal(9, counterSample.RawValue);
             }
 
             Helpers.DeleteCategory(categoryName);
+        }
+
+        private static bool CanRunInInvariantMode => RemoteExecutor.IsSupported && !PlatformDetection.IsNetFramework;
+
+        [ConditionalTheory(nameof(CanRunInInvariantMode))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void RunWithGlobalizationInvariantModeTest(bool predefinedCultures)
+        {
+            ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", predefinedCultures ? "1" : "0");
+            RemoteExecutor.Invoke(() =>
+            {
+                // Ensure we are running inside the Globalization invariant mode.
+                Assert.Equal("", CultureInfo.CurrentCulture.Name);
+
+                // This test ensure creating PerformanceCounter object while we are running with Globalization Invariant Mode.
+                // PerformanceCounter used to create cultures using LCID's which fail in Globalization Invariant Mode.
+                // This test ensure no failure should be encountered in this case.
+                using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter("Processor", "Interrupts/sec", "0", ".")))
+                {
+                    Assert.Equal("Processor", counterSample.CategoryName);
+                }
+            }, new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
         }
 
         public static PerformanceCounter CreateCounterWithCategory(string categoryName, bool readOnly, PerformanceCounterCategoryType categoryType)
@@ -324,7 +351,7 @@ namespace System.Diagnostics.Tests
 
             string counterName = categoryName.Replace("_Category", "_Counter");
 
-            PerformanceCounter counterSample = Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(categoryName, counterName, readOnly));
+            PerformanceCounter counterSample = Helpers.RetryOnAllPlatformsWithClosingResources(() => new PerformanceCounter(categoryName, counterName, readOnly));
 
             return counterSample;
         }

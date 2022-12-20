@@ -133,13 +133,13 @@ try_again:
 Insert @value into @list.
 The nodes value, cur and prev are returned in @hp.
 Return true if @value was inserted by this call. If it returns FALSE, it's the caller
-resposibility to release memory.
+responsibility to release memory.
 */
 gboolean
 mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value)
 {
 	MonoLinkedListSetNode *cur, **prev;
-	/*We must do a store barrier before inserting 
+	/*We must do a store barrier before inserting
 	to make sure all values in @node are globally visible.*/
 	mono_memory_barrier ();
 

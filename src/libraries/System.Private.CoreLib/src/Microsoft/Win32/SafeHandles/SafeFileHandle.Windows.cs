@@ -4,15 +4,17 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Buffers;
 
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal const FileOptions NoBuffering = (FileOptions)0x20000000;
+        private long _length = -1; // negative means that hasn't been fetched.
+        private bool _lengthCanBeCached; // file has been opened for reading and not shared for writing.
         private volatile FileOptions _fileOptions = (FileOptions)(-1);
         private volatile int _fileType = -1;
 
@@ -22,12 +24,22 @@ namespace Microsoft.Win32.SafeHandles
 
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
+        internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
+
         internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
-        internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        internal bool TryGetCachedLength(out long cachedLength)
         {
+            cachedLength = _length;
+            return _lengthCanBeCached && cachedLength >= 0;
+        }
+
+        internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null)
+        {
+            Debug.Assert(!unixCreateMode.HasValue);
+
             using (DisableMediaInsertionPrompt.Create())
             {
                 // we don't use NtCreateFile as there is no public and reliable way
@@ -41,7 +53,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if ((options & FileOptions.Asynchronous) != 0)
                 {
-                    // the handle has not been exposed yet, so we don't need to aquire a lock
+                    // the handle has not been exposed yet, so we don't need to acquire a lock
                     fileHandle.InitThreadPoolBinding();
                 }
 
@@ -98,11 +110,13 @@ namespace Microsoft.Win32.SafeHandles
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
                 }
 
+                fileHandle.Dispose();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 
             fileHandle._path = fullPath;
             fileHandle._fileOptions = options;
+            fileHandle._lengthCanBeCached = (share & FileShare.Write) == 0 && (access & FileAccess.Write) == 0;
             return fileHandle;
         }
 
@@ -251,6 +265,66 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return fileType;
+        }
+
+        internal long GetFileLength()
+        {
+            if (!_lengthCanBeCached)
+            {
+                return GetFileLengthCore();
+            }
+
+            // On Windows, when the file is locked for writes we can cache file length
+            // in memory and avoid subsequent native calls which are expensive.
+            if (_length < 0)
+            {
+                _length = GetFileLengthCore();
+            }
+
+            return _length;
+
+            unsafe long GetFileLengthCore()
+            {
+                Interop.Kernel32.FILE_STANDARD_INFO info;
+
+                if (Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+                {
+                    return info.EndOfFile;
+                }
+
+                // In theory when GetFileInformationByHandleEx fails, then
+                // a) IsDevice can modify last error (not true today, but can be in the future),
+                // b) DeviceIoControl can succeed (last error set to ERROR_SUCCESS) but return fewer bytes than requested.
+                // The error is stored and in such cases exception for the first failure is going to be thrown.
+                int lastError = Marshal.GetLastPInvokeError();
+
+                if (Path is null || !PathInternal.IsDevice(Path))
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(lastError, Path);
+                }
+
+                Interop.Kernel32.STORAGE_READ_CAPACITY storageReadCapacity;
+                bool success = Interop.Kernel32.DeviceIoControl(
+                    this,
+                    dwIoControlCode: Interop.Kernel32.IOCTL_STORAGE_READ_CAPACITY,
+                    lpInBuffer: null,
+                    nInBufferSize: 0,
+                    lpOutBuffer: &storageReadCapacity,
+                    nOutBufferSize: (uint)sizeof(Interop.Kernel32.STORAGE_READ_CAPACITY),
+                    out uint bytesReturned,
+                    IntPtr.Zero);
+
+                if (!success)
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                }
+                else if (bytesReturned != sizeof(Interop.Kernel32.STORAGE_READ_CAPACITY))
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(lastError, Path);
+                }
+
+                return storageReadCapacity.DiskLength;
+            }
         }
     }
 }

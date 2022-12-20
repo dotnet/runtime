@@ -118,7 +118,7 @@ const DWORD kCurrentDbiVersionFormat = 1;
 //         Module::GetName should either return the name, or fail)
 //
 //         Cordb must neuter any Cordb objects that have any pre-existing handles to the object.
-//             After this point, gauranteed that nobody can discover the VMPTR any more:
+//             After this point, guaranteed that nobody can discover the VMPTR any more:
 //             - doesn't show up in enumerations (so can't be discoverered implicitly)
 //             - object should not be discoverable by other objects in VM.
 //             - any Cordb object that already had it would be neutered by Dbi.
@@ -201,10 +201,10 @@ public:
     //
     // Control DAC's checking of the target's consistency. Specifically, if this is disabled then
     // ASSERTs in VM code are ignored. The default is disabled, since DAC should do it's best to
-    // return results even with a corrupt or unsyncrhonized target. See
+    // return results even with a corrupt or unsynchronized target. See
     // code:ClrDataAccess::TargetConsistencyAssertsEnabled for more details.
     //
-    // When testing with a non-corrupt and properly syncrhonized target, this should be enabled to
+    // When testing with a non-corrupt and properly synchronized target, this should be enabled to
     // help catch bugs.
     //
     // Arguments:
@@ -244,7 +244,7 @@ public:
     //
     //
     // Return Value:
-    //    BOOL whether Left-side is intialized.
+    //    BOOL whether Left-side is initialized.
     //
     // Notes:
     //   If the Left-side is not yet started up, then data in the LS is not yet initialized enough
@@ -407,7 +407,7 @@ public:
     //   doesn't have a filename.
     //
     //   The simple name does not have any meaning. It is not a filename, does not necessarily have any
-    //   relationship to the filename, and it's not necesarily the metadata name.
+    //   relationship to the filename, and it's not necessarily the metadata name.
     //   Do not use the simple name for anything other than as a pretty string to give the an end user.
     //
     virtual
@@ -511,7 +511,7 @@ public:
     //    vmModule - target module to get metadata for.
     //    pTargetBuffer - Out parameter to get target-buffer for metadata. Gauranteed to be non-empty on
     //       return. This will throw CORDBG_E_MISSING_METADATA hr if the buffer is empty.
-    //       This does not gaurantee that the buffer is readable. For example, in a minidump, buffer's
+    //       This does not guarantee that the buffer is readable. For example, in a minidump, buffer's
     //       memory may not be present.
     //
     // Notes:
@@ -588,27 +588,27 @@ public:
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
-    //    See definition of DomainFileInfo for more details about what properties
+    //    See definition of DomainAssemblyInfo for more details about what properties
     //    this gives back.
     virtual
     void GetModuleData(VMPTR_Module vmModule, OUT ModuleInfo * pData) = 0;
 
 
     //
-    // Get properties for a DomainFile
+    // Get properties for a DomainAssembly
     //
     // Arguments:
-    //    vmDomainFile - vm handle to a DomainFile
+    //    vmDomainAssembly - vm handle to a DomainAssembly
     //    pData - required out parameter which will be filled out with module properties
     //
     // Notes:
-    //    See definition of DomainFileInfo for more details about what properties
+    //    See definition of DomainAssemblyInfo for more details about what properties
     //    this gives back.
     virtual
-    void GetDomainFileData(VMPTR_DomainFile vmDomainFile, OUT DomainFileInfo * pData) = 0;
+    void GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, OUT DomainAssemblyInfo * pData) = 0;
 
     virtual
-    void GetModuleForDomainFile(VMPTR_DomainFile vmDomainFile, OUT VMPTR_Module * pModule) = 0;
+    void GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule) = 0;
 
     //.........................................................................
     // These methods were the methods that DBI was calling from IXClrData in V2.
@@ -672,7 +672,7 @@ public:
     // Get the values of the JIT Optimization and EnC flags.
     //
     // Arguments:
-    //    vmDomainFile -   (input) VM DomainFile (module) for which we are retrieving flags
+    //    vmDomainAssembly -   (input) VM DomainAssembly (module) for which we are retrieving flags
     //    pfAllowJITOpts - (mandatory output) true iff this is not compiled for debug,
     //                      i.e., without optimization
     //    pfEnableEnc -    (mandatory output) true iff this module has EnC enabled
@@ -687,7 +687,7 @@ public:
 
     virtual
     void GetCompilerFlags(
-        VMPTR_DomainFile vmDomainFile,
+        VMPTR_DomainAssembly vmDomainAssembly,
         OUT BOOL * pfAllowJITOpts,
         OUT BOOL * pfEnableEnC) = 0;
 
@@ -695,7 +695,7 @@ public:
     // Set the values of the JIT optimization and EnC flags.
     //
     // Arguments:
-    //    vmDomainFile -   (input) VM DomainFile (module) for which we are retrieving flags
+    //    vmDomainAssembly -   (input) VM DomainAssembly (module) for which we are retrieving flags
     //    pfAllowJITOpts - (input) true iff this should not be compiled for debug,
     //                      i.e., without optimization
     //    pfEnableEnc -    (input) true iff this module should have EnC enabled. If this is
@@ -717,7 +717,7 @@ public:
     //.........................................................................
 
     virtual
-    HRESULT SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
+    HRESULT SetCompilerFlags(VMPTR_DomainAssembly vmDomainAssembly,
                           BOOL             fAllowJitOpts,
                           BOOL             fEnableEnC) = 0;
 
@@ -784,7 +784,7 @@ public:
     // Arguments:
     //    vmModule - new module from the enumeration
     //    pUserData - user data passed to EnumerateModulesInAssembly
-    typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_DomainFile vmModule, CALLBACK_DATA pUserData);
+    typedef void (*FP_MODULE_ENUMERATION_CALLBACK)(VMPTR_DomainAssembly vmModule, CALLBACK_DATA pUserData);
 
     //
     // Enumerates all the code Modules in an assembly.
@@ -1065,7 +1065,7 @@ public:
 
     virtual
     VMPTR_OBJECTHANDLE GetThreadObject(VMPTR_Thread vmThread) = 0;
-    
+
     //
     // Get the allocation info corresponding to the specified thread.
     //
@@ -1277,7 +1277,7 @@ public:
     //    The debugger can't duplicate this policy with 100% accuracy, and
     //    so we need DAC to lookup the assembly that was actually loaded.
     virtual
-    VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainFile vmScope, mdToken tkAssemblyRef) = 0;
+    VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef) = 0;
 
     //-----------------------------------------------------------------------------
     // Interface for initializing the native/IL sequence points and native var info
@@ -1707,13 +1707,13 @@ public:
     //
     // Arguments:
     //    Input:
-    //    vmDomainFile   - module containing metadata for the method
+    //    vmDomainAssembly   - module containing metadata for the method
     //    functionToken  - metadata token for the function
     //    Output (required):
     //    codeInfo       - start address and size of the IL
     //    pLocalSigToken - signature token for the method
     virtual
-    void GetILCodeAndSig(VMPTR_DomainFile vmDomainFile,
+    void GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly,
                          mdToken          functionToken,
                          OUT TargetBuffer *   pCodeInfo,
                          OUT mdToken *        pLocalSigToken) = 0;
@@ -1723,7 +1723,7 @@ public:
     //    and hot and cold region information.
     // Arguments:
     //    Input:
-    //        vmDomainFile  - module containing metadata for the method
+    //        vmDomainAssembly  - module containing metadata for the method
     //        functionToken - token for the function for which we need code info
     //    Output (required):
     //        pCodeInfo     - data structure describing the native code regions.
@@ -1733,7 +1733,7 @@ public:
     //        invalid (i.e., pCodeInfo->IsValid is false).
 
     virtual
-    void GetNativeCodeInfo(VMPTR_DomainFile         vmDomainFile,
+    void GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomainAssembly,
                            mdToken                  functionToken,
                            OUT NativeCodeFunctionData * pCodeInfo) = 0;
 
@@ -1798,7 +1798,7 @@ public:
     // get field information and object size for an instantiated generic
     //
     // Arguments:
-    //     input:  vmDomainFile  - module containing metadata for the type
+    //     input:  vmDomainAssembly  - module containing metadata for the type
     //             thExact       - exact type handle for type (may be NULL)
     //             thApprox      - approximate type handle for the type
     //     output:
@@ -1807,7 +1807,7 @@ public:
     //             pObjectSize   - size of the instantiated object
     //
     virtual
-    void GetInstantiationFieldInfo (VMPTR_DomainFile             vmDomainFile,
+    void GetInstantiationFieldInfo (VMPTR_DomainAssembly             vmDomainAssembly,
                                     VMPTR_TypeHandle             vmThExact,
                                     VMPTR_TypeHandle             vmThApprox,
                                     OUT DacDbiArrayList<FieldData> * pFieldList,
@@ -1992,12 +1992,12 @@ public:
     //     input:  vmAppDomain - Appdomain in which simpleType resides
     //             simpleType  - CorElementType value corresponding to a simple type
     //     output: pMetadataToken - the metadata token corresponding to simpleType,
-    //                              in the scope of vmDomainFile.
-    //             vmDomainFile   - the domainFile for simpleType
+    //                              in the scope of vmDomainAssembly.
+    //             vmDomainAssembly   - the domainAssembly for simpleType
     // Notes:
     //    This is inspection-only. If the type is not yet loaded, it will throw CORDBG_E_CLASS_NOT_LOADED.
     //    It will not try to load a type.
-    //    If the type has been loaded, vmDomainFile will be non-null unless the target is somehow corrupted.
+    //    If the type has been loaded, vmDomainAssembly will be non-null unless the target is somehow corrupted.
     //    In that case, we will throw CORDBG_E_TARGET_INCONSISTENT.
 
     virtual
@@ -2005,7 +2005,7 @@ public:
                        CorElementType     simpleType,
                        OUT mdTypeDef *        pMetadataToken,
                        OUT VMPTR_Module     * pVmModule,
-                       OUT VMPTR_DomainFile * pVmDomainFile) = 0;
+                       OUT VMPTR_DomainAssembly * pVmDomainAssembly) = 0;
 
     // for the specified object returns TRUE if the object derives from System.Exception
     virtual
@@ -2201,7 +2201,7 @@ public:
     // types of pregenerated code. With respect to debugging this is used to specify that
     // the NGEN image must be debuggable aka non-optimized code. Note that these flags
     // are merged with other sources of configuration so it is possible that the final
-    // result retrieved from GetDesiredNGENCompilerFlags does not match what was specfied
+    // result retrieved from GetDesiredNGENCompilerFlags does not match what was specified
     // in this call.
     //
     // If an NGEN image of the appropriate type isn't available then one of two things happens:
@@ -2274,7 +2274,7 @@ public:
     virtual
     HRESULT IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT) = 0;
 
-    // Determines the app domain id for the object refered to by a given VMPTR_OBJECTHANDLE
+    // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     //
     // Arguments:
     //     handle: the GC handle which refers to the object of interest
@@ -2459,7 +2459,7 @@ public:
     virtual
     bool GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp,
                                 OUT VMPTR_Module * pModule,
-                                OUT VMPTR_DomainFile * pDomainFile) = 0;
+                                OUT VMPTR_DomainAssembly * pDomainAssembly) = 0;
 
 
     //   Reference Walking.
@@ -2471,7 +2471,7 @@ public:
     //      walkFQ - in - whether or not to report references from the finalizer queue
     //      handleWalkMask - in - the types of handles report (see CorGCReferenceType, cordebug.idl)
     //  Returns:
-    //      An HRESULT indicating whether it succeded or failed.
+    //      An HRESULT indicating whether it succeeded or failed.
     //  Exceptions:
     //      Does not throw, but does not catch exceptions either.
     virtual
@@ -2660,7 +2660,7 @@ public:
         HRESULT GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode) = 0;
 
     // Retrieves the ILCodeVersionNode for a given NativeCodeVersionNode.
-    // This may return a NULL node if the native code belongs to the default IL version for this this method.
+    // This may return a NULL node if the native code belongs to the default IL version for this method.
     //
     //
     // Arguments:
@@ -2731,7 +2731,7 @@ public:
     HRESULT GetDelegateFunctionData(
         DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_DomainFile *ppFunctionDomainFile,
+        OUT VMPTR_DomainAssembly *ppFunctionDomainAssembly,
         OUT mdMethodDef *pMethodDef) = 0;
 
     virtual

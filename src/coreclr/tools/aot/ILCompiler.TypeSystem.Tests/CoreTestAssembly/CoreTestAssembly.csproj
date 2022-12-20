@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>CoreTestAssembly</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsCoreAssembly>true</IsCoreAssembly>
+    <SkipTestRun>true</SkipTestRun>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Don't add references to the netstandard platform since this is a core assembly -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <!-- CSC needs explicit metadata version when it has no core library to reference -->
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+</Project>

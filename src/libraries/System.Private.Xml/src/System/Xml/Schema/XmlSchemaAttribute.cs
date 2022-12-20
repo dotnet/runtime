@@ -60,14 +60,14 @@ namespace System.Xml.Schema
         public XmlQualifiedName RefName
         {
             get { return _refName; }
-            set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _refName = value ?? XmlQualifiedName.Empty; }
         }
 
         [XmlAttribute("type")]
         public XmlQualifiedName SchemaTypeName
         {
             get { return _typeName; }
-            set { _typeName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _typeName = value ?? XmlQualifiedName.Empty; }
         }
 
         [XmlElement("simpleType")]
@@ -113,7 +113,7 @@ namespace System.Xml.Schema
             get { return _attributeType; }
         }
 
-        [return: NotNullIfNotNull("schemaSet")]
+        [return: NotNullIfNotNull(nameof(schemaSet))]
         internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)

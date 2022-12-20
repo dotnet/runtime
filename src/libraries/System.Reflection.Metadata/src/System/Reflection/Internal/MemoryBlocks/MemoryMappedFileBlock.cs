@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace System.Reflection.Internal
 {
-    internal unsafe sealed class MemoryMappedFileBlock : AbstractMemoryBlock
+    internal sealed unsafe class MemoryMappedFileBlock : AbstractMemoryBlock
     {
         private sealed class DisposableData : CriticalDisposableObject
         {

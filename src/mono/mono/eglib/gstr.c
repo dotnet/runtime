@@ -38,9 +38,9 @@
 
 #include <errno.h>
 
-/* 
- * g_strndup and g_vasprintf need to allocate memory with g_malloc if 
- * ENABLE_OVERRIDABLE_ALLOCATORS is defined so that it can be safely freed with g_free 
+/*
+ * g_strndup and g_vasprintf need to allocate memory with g_malloc if
+ * ENABLE_OVERRIDABLE_ALLOCATORS is defined so that it can be safely freed with g_free
  * rather than free.
  */
 
@@ -71,7 +71,7 @@ gint g_vasprintf (gchar **ret, const gchar *fmt, va_list ap)
 	int len;
 	size_t buflen;
 	va_list ap2;
-	
+
 #if defined(_MSC_VER) || defined(__MINGW64_VERSION_MAJOR)
 	ap2 = ap;
 	len = _vscprintf(fmt, ap2); // NOTE MS specific extension ( :-( )
@@ -139,7 +139,7 @@ g_str_has_suffix(const gchar *str, const gchar *suffix)
 {
 	size_t str_length;
 	size_t suffix_length;
-	
+
 	g_return_val_if_fail(str != NULL, FALSE);
 	g_return_val_if_fail(suffix != NULL, FALSE);
 
@@ -156,7 +156,7 @@ g_str_has_prefix(const gchar *str, const gchar *prefix)
 {
 	size_t str_length;
 	size_t prefix_length;
-	
+
 	g_return_val_if_fail(str != NULL, FALSE);
 	g_return_val_if_fail(prefix != NULL, FALSE);
 
@@ -173,7 +173,7 @@ g_strdup_vprintf (const gchar *format, va_list args)
 {
 	int n;
 	char *ret;
-	
+
 	n = g_vasprintf (&ret, format, args);
 	if (n == -1)
 		return NULL;
@@ -301,7 +301,7 @@ g_strconcat (const gchar *first, ...)
 		len += strlen (s);
 	}
 	va_end (args);
-	
+
 	ret = (char*)g_malloc (len + 1);
 	if (ret == NULL)
 		return NULL;
@@ -323,24 +323,24 @@ g_strconcat (const gchar *first, ...)
 static void
 add_to_vector (gchar ***vector, int size, gchar *token)
 {
-	*vector = *vector == NULL ? 
+	*vector = *vector == NULL ?
 		(gchar **)g_malloc(2 * sizeof(*vector)) :
 		(gchar **)g_realloc(*vector, (size + 1) * sizeof(*vector));
-		
+
 	(*vector)[size - 1] = token;
 }
 
-gchar ** 
+gchar **
 g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 {
 	const gchar *c;
 	gchar *token, **vector;
 	gint size = 1;
-	
+
 	g_return_val_if_fail (string != NULL, NULL);
 	g_return_val_if_fail (delimiter != NULL, NULL);
 	g_return_val_if_fail (delimiter[0] != 0, NULL);
-	
+
 	if (strncmp (string, delimiter, strlen (delimiter)) == 0) {
 		vector = (gchar **)g_malloc (2 * sizeof(vector));
 		vector[0] = g_strdup ("");
@@ -375,7 +375,7 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 				token = g_strdup (c);
 			}
 		}
-			
+
 		add_to_vector (&vector, size, token);
 		size++;
 	}
@@ -389,14 +389,14 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 		}
 		size++;
 	}
-	
+
 	if (vector == NULL) {
 		vector = (gchar **) g_malloc (2 * sizeof (vector));
 		vector [0] = NULL;
 	} else if (size > 0) {
 		vector[size - 1] = NULL;
 	}
-	
+
 	return vector;
 }
 
@@ -409,21 +409,21 @@ charcmp (gchar testchar, const gchar *compare)
 		}
 		compare++;
 	}
-	
+
 	return FALSE;
 }
 
-gchar ** 
+gchar **
 g_strsplit_set (const gchar *string, const gchar *delimiter, gint max_tokens)
 {
 	const gchar *c;
 	gchar *token, **vector;
 	gint size = 1;
-	
+
 	g_return_val_if_fail (string != NULL, NULL);
 	g_return_val_if_fail (delimiter != NULL, NULL);
 	g_return_val_if_fail (delimiter[0] != 0, NULL);
-	
+
 	if (charcmp (*string, delimiter)) {
 		vector = (gchar **)g_malloc (2 * sizeof(vector));
 		vector[0] = g_strdup ("");
@@ -442,16 +442,16 @@ g_strsplit_set (const gchar *string, const gchar *delimiter, gint max_tokens)
 			} else {
 				token = g_strndup (c, toklen);
 			}
-			
+
 			c = string + 1;
-			
+
 			add_to_vector (&vector, size, token);
 			size++;
 		}
 
 		string++;
 	}
-	
+
 	if (max_tokens > 0 && size >= max_tokens) {
 		if (*string) {
 			/* Add the rest of the string as the last element */
@@ -471,14 +471,14 @@ g_strsplit_set (const gchar *string, const gchar *delimiter, gint max_tokens)
 			size++;
 		}
 	}
-	
+
 	if (vector == NULL) {
 		vector = (gchar **) g_malloc (2 * sizeof (vector));
 		vector [0] = NULL;
 	} else if (size > 0) {
 		vector[size - 1] = NULL;
 	}
-	
+
 	return vector;
 }
 
@@ -514,7 +514,7 @@ g_strjoin (const gchar *separator, ...)
 		slen = strlen (separator);
 	else
 		slen = 0;
-	
+
 	len = 0;
 	va_start (args, separator);
 	for (s = va_arg (args, char *); s != NULL; s = va_arg (args, char *)){
@@ -525,7 +525,7 @@ g_strjoin (const gchar *separator, ...)
 
 	if (len == 0)
 		return g_strdup ("");
-	
+
 	/* Remove the last separator */
 	if (slen > 0 && len > 0)
 		len -= slen;
@@ -549,12 +549,12 @@ g_strjoinv (const gchar *separator, gchar **str_array)
 {
 	char *res, *r;
 	size_t slen, len, i;
-	
+
 	if (separator != NULL)
 		slen = strlen (separator);
 	else
 		slen = 0;
-	
+
 	len = 0;
 	for (i = 0; str_array [i] != NULL; i++){
 		len += strlen (str_array [i]);
@@ -641,165 +641,12 @@ g_snprintf(gchar *string, gulong n, gchar const *format, ...)
 {
 	va_list args;
 	gint ret;
-	
+
 	va_start(args, format);
 	ret = vsnprintf(string, n, format, args);
 	va_end(args);
 
 	return ret;
-}
-
-static const char hx [] = { '0', '1', '2', '3', '4', '5', '6', '7',
-				  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
-static gboolean
-char_needs_encoding (char c)
-{
-	if (((unsigned char)c) >= 0x80)
-		return TRUE;
-	
-	if ((c >= '@' && c <= 'Z') ||
-	    (c >= 'a' && c <= 'z') ||
-	    (c >= '&' && c < 0x3b) ||
-	    (c == '!') || (c == '$') || (c == '_') || (c == '=') || (c == '~'))
-		return FALSE;
-	return TRUE;
-}
-
-gchar *
-g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **gerror)
-{
-	size_t n;
-	char *ret, *rp;
-	const char *p;
-#ifdef G_OS_WIN32
-	const char *uriPrefix = "file:///";
-#else
-	const char *uriPrefix = "file://";
-#endif
-	
-	g_return_val_if_fail (filename != NULL, NULL);
-
-	if (hostname != NULL)
-		g_warning ("%s", "eglib: g_filename_to_uri: hostname not handled");
-
-	if (!g_path_is_absolute (filename)){
-		if (gerror != NULL)
-			*gerror = g_error_new (NULL, 2, "Not an absolute filename");
-		
-		return NULL;
-	}
-	
-	n = strlen (uriPrefix) + 1;
-	for (p = filename; *p; p++){
-#ifdef G_OS_WIN32
-		if (*p == '\\') {
-			n++;
-			continue;
-		}
-#endif
-		if (char_needs_encoding (*p))
-			n += 3;
-		else
-			n++;
-	}
-	ret = g_malloc (n);
-	strcpy (ret, uriPrefix);
-	for (p = filename, rp = ret + strlen (ret); *p; p++){
-#ifdef G_OS_WIN32
-		if (*p == '\\') {
-			*rp++ = '/';
-			continue;
-		}
-#endif
-		if (char_needs_encoding (*p)){
-			*rp++ = '%';
-			*rp++ = hx [((unsigned char)(*p)) >> 4];
-			*rp++ = hx [((unsigned char)(*p)) & 0xf];
-		} else
-			*rp++ = *p;
-	}
-	*rp = 0;
-	return ret;
-}
-
-static int
-decode (char p)
-{
-	if (p >= '0' && p <= '9')
-		return p - '0';
-	if (p >= 'A' && p <= 'F')
-		return (p - 'A') + 10;
-	if (p >= 'a' && p <= 'f')
-		return (p - 'a') + 10;
-	g_assert_not_reached ();
-	return 0;
-}
-
-gchar *
-g_filename_from_uri (const gchar *uri, gchar **hostname, GError **gerror)
-{
-	const char *p;
-	char *r, *result;
-	int flen = 0;
-	
-	g_return_val_if_fail (uri != NULL, NULL);
-
-	if (hostname != NULL)
-		g_warning ("%s", "eglib: g_filename_from_uri: hostname not handled");
-
-	if (strncmp (uri, "file:///", 8) != 0){
-		if (gerror != NULL)
-			*gerror = g_error_new (NULL, 2, "URI does not start with the file: scheme");
-		return NULL;
-	}
-
-	for (p = uri + 8; *p; p++){
-		if (*p == '%'){
-			if (p [1] && p [2] && isxdigit (p [1]) && isxdigit (p [2])){
-				p += 2;
-			} else {
-				if (gerror != NULL)
-					*gerror = g_error_new (NULL, 2, "URI contains an invalid escape sequence");
-				return NULL;
-			}
-		} 
-		flen++;
-	}
-#ifndef G_OS_WIN32
-	flen++;
-#endif
-
-	result = g_malloc (flen + 1);
-	result [flen] = 0;
-
-#ifndef G_OS_WIN32
-	*result = '/';
-	r = result + 1;
-#else
-	r = result;
-#endif
-
-	for (p = uri + 8; *p; p++){
-		if (*p == '%'){
-			*r++ = (char)((decode (p [1]) << 4) | decode (p [2]));
-			p += 2;
-		} else
-			*r++ = *p;
-		flen++;
-	}
-	return result;
-}
-
-void
-g_strdown (gchar *string)
-{
-	g_return_if_fail (string != NULL);
-
-	while (*string){
-		*string = (gchar)tolower (*string);
-		string++;
-	}
 }
 
 gchar
@@ -822,16 +669,16 @@ gchar *
 g_ascii_strdown (const gchar *str, gssize len)
 {
 	char *ret;
-	
+
 	g_return_val_if_fail  (str != NULL, NULL);
 
 	if (len == -1)
 		len = strlen (str);
-	
+
 	ret = g_malloc (len + 1);
 	g_ascii_strdown_no_alloc (ret, str, len);
 	ret [len] = 0;
-	
+
 	return ret;
 }
 
@@ -846,17 +693,17 @@ g_ascii_strup (const gchar *str, gssize len)
 {
 	char *ret;
 	int i;
-	
+
 	g_return_val_if_fail  (str != NULL, NULL);
 
 	if (len == -1)
 		len = strlen (str);
-	
+
 	ret = g_malloc (len + 1);
 	for (i = 0; i < len; i++)
 		ret [i] = g_ascii_toupper (str [i]);
 	ret [i] = 0;
-	
+
 	return ret;
 }
 
@@ -899,7 +746,7 @@ g_ascii_strncasecmp (const gchar *s1, const gchar *s2, gsize n)
 		if (j)
 			return j;
 	}
-	
+
 	return 0;
 }
 
@@ -965,7 +812,7 @@ g_strdelimit (gchar *string, gchar delimiter, gchar new_delimiter)
 	}
 }
 
-gsize 
+gsize
 g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 {
 	g_assert (src);
@@ -1011,69 +858,11 @@ g_stpcpy (gchar *dest, const char *src)
 #else
 	while (*src)
 		*dest++ = *src++;
-	
+
 	*dest = '\0';
-	
+
 	return dest;
 #endif
-}
-
-static const gchar escaped_dflt [256] = {
-	1, 1, 1, 1, 1, 1, 1, 1, 'b', 't', 'n', 1, 'f', 'r', 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	0, 0, '"', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '\\', 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-};
-
-gchar *
-g_strescape (const gchar *source, const gchar *exceptions)
-{
-	gchar escaped [256];
-	const gchar *ptr;
-	gchar c;
-	gchar op;
-	gchar *result;
-	gchar *res_ptr;
-
-	g_return_val_if_fail (source != NULL, NULL);
-
-	memcpy (escaped, escaped_dflt, 256);
-	if (exceptions != NULL) {
-		for (ptr = exceptions; *ptr; ptr++)
-			escaped [(int) *ptr] = 0;
-	}
-	result = g_malloc (strlen (source) * 4 + 1); /* Worst case: everything octal. */
-	res_ptr = result;
-	for (ptr = source; *ptr; ptr++) {
-		c = *ptr;
-		op = escaped [(int) c];
-		if (op == 0) {
-			*res_ptr++ = c;
-		} else {
-			*res_ptr++ = '\\';
-			if (op != 1) {
-				*res_ptr++ = op;
-			} else {
-				*res_ptr++ = '0' + ((c >> 6) & 3);
-				*res_ptr++ = '0' + ((c >> 3) & 7);
-				*res_ptr++ = '0' + (c & 7);
-			}
-		}
-	}
-	*res_ptr = '\0';
-	return result;
 }
 
 gint
@@ -1128,9 +917,9 @@ g_str_from_file_region (int fd, guint64 offset, gsize size)
 	char *buffer;
 	off_t loc;
 	int status;
-	
+
 	do {
-		loc = lseek (fd, offset, SEEK_SET);
+		loc = lseek (fd, GUINT64_TO_LONG (offset), SEEK_SET);
 	} while (loc == -1 && errno == EINTR);
 	if (loc == -1)
 		return NULL;
@@ -1139,7 +928,7 @@ g_str_from_file_region (int fd, guint64 offset, gsize size)
 		return NULL;
 	buffer [size] = 0;
 	do {
-		status = read (fd, buffer, size);
+		status = g_read (fd, buffer, size);
 	} while (status == -1 && errno == EINTR);
 	if (status == -1){
 		g_free (buffer);

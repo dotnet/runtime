@@ -22,7 +22,7 @@ On the other hand, we can't use arm's weak model on targets such as x86 that hav
 a stronger model that requires much much less fencing.
 
 The idea of exposing each arch memory model is to avoid fencing whenever possible
-but at the same time make all required ordering explicit. 
+but at the same time make all required ordering explicit.
 
 There are four kinds of barriers, LoadLoad, LoadStore, StoreLoad and StoreStore.
 Each arch must define which ones needs fencing.
@@ -109,19 +109,19 @@ LDR R3, [R4, R0]
 
 #ifndef STORE_STORE_FENCE
 #define STORE_STORE_FENCE   mono_compiler_barrier ()
-#endif 
+#endif
 
 #ifndef LOAD_LOAD_FENCE
 #define LOAD_LOAD_FENCE     mono_compiler_barrier ()
-#endif 
+#endif
 
 #ifndef STORE_LOAD_FENCE
 #define STORE_LOAD_FENCE    mono_compiler_barrier ()
-#endif 
+#endif
 
 #ifndef LOAD_STORE_FENCE
 #define LOAD_STORE_FENCE    mono_compiler_barrier ()
-#endif 
+#endif
 
 #ifndef STORE_RELEASE_FENCE
 #define STORE_RELEASE_FENCE mono_compiler_barrier ()

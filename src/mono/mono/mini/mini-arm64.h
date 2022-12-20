@@ -56,8 +56,6 @@
 
 #define MONO_ARCH_CALLEE_XREGS MONO_ARCH_CALLEE_FREGS
 
-#define MONO_ARCH_USE_FPSTACK FALSE
-
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)
 
 #define MONO_ARCH_INST_FIXED_REG(desc) ((desc) == 'a' ? ARMREG_R0 : -1)
@@ -67,8 +65,6 @@
 #define MONO_ARCH_INST_IS_FLOAT(desc) ((desc) == 'f')
 
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
-
-#define MONO_ARCH_USE_FPSTACK FALSE
 
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
@@ -82,7 +78,7 @@
 #define MONO_ARCH_LMF_REG_SP 11
 
 struct MonoLMF {
-	/* 
+	/*
 	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
 	 */

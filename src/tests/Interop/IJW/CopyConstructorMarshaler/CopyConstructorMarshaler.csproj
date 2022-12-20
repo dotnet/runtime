@@ -1,13 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- IJW is Windows-only -->
-    <!-- Test unsupported outside of windows -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-    <!-- IJW is not supported on ARM64 -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>
-    <!-- Loading IJW assemblies into an unloadable context is not allowed -->
-    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <CopyDebugCRTDllsToOutputDirectory>true</CopyDebugCRTDllsToOutputDirectory>
@@ -16,7 +9,7 @@
     <Compile Include="CopyConstructorMarshaler.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
-    <ProjectReference Include="../ijwhostmock/CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="../ijwhostmock/CMakeLists.txt" />
   </ItemGroup>
 </Project>

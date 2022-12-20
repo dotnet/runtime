@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
-        internal static partial bool CryptGetUserKey(SafeProvHandle hProv, int dwKeySpec, out SafeKeyHandle phUserKey);
+        [LibraryImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool CryptGetUserKey(SafeProvHandle hProv, int dwKeySpec, out SafeCapiKeyHandle phUserKey);
     }
 }

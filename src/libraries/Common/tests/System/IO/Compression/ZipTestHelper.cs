@@ -64,6 +64,16 @@ namespace System.IO.Compression.Tests
                 bytesLeftToRead -= bytesRead;
             }
         }
+        public static async Task<int> ReadAllBytesAsync(Stream stream, byte[] buffer, int offset, int count)
+        {
+            int bytesRead;
+            int totalRead = 0;
+            while ((bytesRead = await stream.ReadAsync(buffer, offset + totalRead, count - totalRead)) != 0)
+            {
+                totalRead += bytesRead;
+            }
+            return totalRead;
+        }
 
         public static int ReadAllBytes(Stream stream, byte[] buffer, int offset, int count)
         {
@@ -100,6 +110,11 @@ namespace System.IO.Compression.Tests
             StreamsEqual(ast, bst, -1);
         }
 
+        public static async Task StreamsEqualAsync(Stream ast, Stream bst)
+        {
+            await StreamsEqualAsync(ast, bst, -1);
+        }
+
         public static void StreamsEqual(Stream ast, Stream bst, int blocksToRead)
         {
             if (ast.CanSeek)
@@ -133,7 +148,43 @@ namespace System.IO.Compression.Tests
                 Assert.True(ArraysEqual<byte>(ad, bd, ac), "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
 
                 blocksRead++;
-            } while (ac == 4096);
+            } while (ac == bufSize);
+        }
+
+        public static async Task StreamsEqualAsync(Stream ast, Stream bst, int blocksToRead)
+        {
+            if (ast.CanSeek)
+                ast.Seek(0, SeekOrigin.Begin);
+            if (bst.CanSeek)
+                bst.Seek(0, SeekOrigin.Begin);
+
+            const int bufSize = 4096;
+            byte[] ad = new byte[bufSize];
+            byte[] bd = new byte[bufSize];
+
+            int ac = 0;
+            int bc = 0;
+
+            int blocksRead = 0;
+
+            //assume read doesn't do weird things
+            do
+            {
+                if (blocksToRead != -1 && blocksRead >= blocksToRead)
+                    break;
+
+                ac = await ast.ReadAtLeastAsync(ad, 4096, throwOnEndOfStream: false);
+                bc = await bst.ReadAtLeastAsync(bd, 4096, throwOnEndOfStream: false);
+
+                if (ac != bc)
+                {
+                    bd = NormalizeLineEndings(bd);
+                }
+
+                AssertExtensions.SequenceEqual(ad.AsSpan(0, ac), bd.AsSpan(0, bc));
+
+                blocksRead++;
+            } while (ac == bufSize);
         }
 
         public static async Task IsZipSameAsDirAsync(string archiveFile, string directory, ZipArchiveMode mode)
@@ -215,16 +266,16 @@ namespace System.IO.Compression.Tests
                         if (entry == null) //entry not found
                         {
                             string entryNameOtherSlash = FlipSlashes(entryName);
-                            bool isEmtpy = !files.Any(
+                            bool isEmpty = !files.Any(
                                 f => f.IsFile &&
                                      (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
                                       f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
-                            if (requireExplicit || isEmtpy)
+                            if (requireExplicit || isEmpty)
                             {
                                 Assert.Contains("emptydir", entryName);
                             }
 
-                            if ((!requireExplicit && !isEmtpy) || entryName.Contains("emptydir"))
+                            if ((!requireExplicit && !isEmpty) || entryName.Contains("emptydir"))
                                 count--; //discount this entry
                         }
                         else
@@ -381,6 +432,71 @@ namespace System.IO.Compression.Tests
             using (StreamWriter w = new StreamWriter(e.Open()))
             {
                 w.WriteLine(contents);
+            }
+        }
+
+        protected const string Utf8SmileyEmoji = "\ud83d\ude04";
+        protected const string Utf8LowerCaseOUmlautChar = "\u00F6";
+        protected const string Utf8CopyrightChar = "\u00A9";
+        protected const string AsciiFileName = "file.txt";
+        protected const string UnicodeFileName = "\u4f60\u597D.txt";
+        // The o with umlaut is a character that exists in both latin1 and utf8
+        protected const string Utf8AndLatin1FileName = $"{Utf8LowerCaseOUmlautChar}.txt";
+        // emojis only make sense in utf8
+        protected const string Utf8FileName = $"{Utf8SmileyEmoji}.txt";
+        protected static readonly string ALettersUShortMaxValueMinusOne = new string('a', ushort.MaxValue - 1);
+        protected static readonly string ALettersUShortMaxValue = ALettersUShortMaxValueMinusOne + 'a';
+        protected static readonly string ALettersUShortMaxValueMinusOneAndCopyRightChar = ALettersUShortMaxValueMinusOne + Utf8CopyrightChar;
+        protected static readonly string ALettersUShortMaxValueMinusOneAndTwoCopyRightChars = ALettersUShortMaxValueMinusOneAndCopyRightChar + Utf8CopyrightChar;
+
+        // Returns pairs that are returned the same way by Utf8 and Latin1
+        // Returns: originalComment, expectedComment
+        private static IEnumerable<object[]> SharedComment_Data()
+        {
+            yield return new object[] { null, string.Empty };
+            yield return new object[] { string.Empty, string.Empty };
+            yield return new object[] { "a", "a" };
+            yield return new object[] { Utf8LowerCaseOUmlautChar, Utf8LowerCaseOUmlautChar };
+        }
+
+        // Returns pairs as expected by Utf8
+        // Returns: originalComment, expectedComment
+        public static IEnumerable<object[]> Utf8Comment_Data()
+        {
+            string asciiOriginalOverMaxLength = ALettersUShortMaxValue + "aaa";
+
+            // A smiley emoji code point consists of two characters,
+            // meaning the whole emoji should be fully truncated
+            string utf8OriginalALettersAndOneEmojiDoesNotFit = ALettersUShortMaxValueMinusOne + Utf8SmileyEmoji;
+
+            // A smiley emoji code point consists of two characters,
+            // so it should not be truncated if it's the last character and the total length is not over the limit.
+            string utf8OriginalALettersAndOneEmojiFits = "aaaaa" + Utf8SmileyEmoji;
+
+            yield return new object[] { asciiOriginalOverMaxLength, ALettersUShortMaxValue };
+            yield return new object[] { utf8OriginalALettersAndOneEmojiDoesNotFit, ALettersUShortMaxValueMinusOne };
+            yield return new object[] { utf8OriginalALettersAndOneEmojiFits, utf8OriginalALettersAndOneEmojiFits };
+
+            foreach (object[] e in SharedComment_Data())
+            {
+                yield return e;
+            }
+        }
+
+        // Returns pairs as expected by Latin1
+        // Returns: originalComment, expectedComment
+        public static IEnumerable<object[]> Latin1Comment_Data()
+        {
+            // In Latin1, all characters are exactly 1 byte
+
+            string latin1ExpectedALettersAndOneOUmlaut = ALettersUShortMaxValueMinusOne + Utf8LowerCaseOUmlautChar;
+            string latin1OriginalALettersAndTwoOUmlauts = latin1ExpectedALettersAndOneOUmlaut + Utf8LowerCaseOUmlautChar;
+
+            yield return new object[] { latin1OriginalALettersAndTwoOUmlauts, latin1ExpectedALettersAndOneOUmlaut };
+
+            foreach (object[] e in SharedComment_Data())
+            {
+                yield return e;
             }
         }
     }

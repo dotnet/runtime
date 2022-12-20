@@ -8,9 +8,8 @@
 }
 
 .assembly extern mscorlib {}
-.assembly test {}
+.assembly 'DevDiv_902271' {}
 .assembly extern xunit.core {}
-.module test.exe
 
 .class Repro
 {

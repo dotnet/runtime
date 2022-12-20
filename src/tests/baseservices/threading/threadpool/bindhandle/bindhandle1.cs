@@ -12,7 +12,7 @@ using Microsoft.Win32.SafeHandles;
 /// </summary>
 class BindHandle1
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         return (new BindHandle1().RunTest());
     }
@@ -45,7 +45,7 @@ class BindHandle1
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Unexpected exception: {0}", ex);
+                Console.WriteLine($"Unexpected exception - HResult: 0x{ex.HResult:x}, Exception: {ex}");
                 return (98);
             }
         }

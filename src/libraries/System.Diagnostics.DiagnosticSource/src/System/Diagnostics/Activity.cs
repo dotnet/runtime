@@ -15,6 +15,31 @@ using System.Threading;
 namespace System.Diagnostics
 {
     /// <summary>
+    /// Carries the <see cref="Activity.Current"/> changed event data.
+    /// </summary>
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+    [System.Security.SecuritySafeCriticalAttribute]
+#endif
+    public readonly struct ActivityChangedEventArgs
+    {
+        internal ActivityChangedEventArgs(Activity? previous, Activity? current)
+        {
+            Previous = previous;
+            Current = current;
+        }
+
+        /// <summary>
+        /// Gets <see cref="Activity"/> object before the event.
+        /// </summary>
+        public Activity? Previous { get; init; }
+
+        /// <summary>
+        /// Gets <see cref="Activity"/> object after the event.
+        /// </summary>
+        public Activity? Current { get; init; }
+    }
+
+    /// <summary>
     /// Activity represents operation with context to be used for logging.
     /// Activity has operation name, Id, start time and duration, tags and baggage.
     ///
@@ -45,12 +70,18 @@ namespace System.Diagnostics
         private const int RequestIdMaxLength = 1024;
 
         // Used to generate an ID it represents the machine and process we are in.
-        private static readonly string s_uniqSuffix = "-" + GetRandomNumber().ToString("x") + ".";
+        private static readonly string s_uniqSuffix = $"-{GetRandomNumber():x}.";
 
         // A unique number inside the appdomain, randomized between appdomains.
         // Int gives enough randomization and keeps hex-encoded s_currentRootId 8 chars long for most applications
         private static long s_currentRootId = (uint)GetRandomNumber();
         private static ActivityIdFormat s_defaultIdFormat;
+
+        /// <summary>
+        /// Event occur when the <see cref="Activity.Current"/> value changes.
+        /// </summary>
+        public static event EventHandler<ActivityChangedEventArgs>? CurrentChanged;
+
         /// <summary>
         /// Normally if the ParentID is defined, the format of that is used to determine the
         /// format used by the Activity. However if ForceDefaultFormat is set to true, the
@@ -98,6 +129,11 @@ namespace System.Diagnostics
         public string? StatusDescription => _statusDescription;
 
         /// <summary>
+        /// Gets whether the parent context was created from remote propagation.
+        /// </summary>
+        public bool HasRemoteParent { get; private set; }
+
+        /// <summary>
         /// Sets the status code and description on the current activity object.
         /// </summary>
         /// <param name="code">The status code</param>
@@ -105,7 +141,7 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <remarks>
         /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
-        /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
+        /// The description parameter will be respected only when passing ActivityStatusCode.Error value.
         /// </remarks>
         public Activity SetStatus(ActivityStatusCode code, string? description = null)
         {
@@ -172,7 +208,7 @@ namespace System.Diagnostics
         /// <see cref="Start"/> is called by appending suffix to Parent.Id
         /// or ParentId; Activity has no Id until it started
         /// <para/>
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
+        /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         /// <example>
         /// Id looks like '|a000b421-5d183ab6.1.8e2d4c28_1.':<para />
@@ -210,7 +246,7 @@ namespace System.Diagnostics
         /// from the parent).   This accessor fetches the parent ID if it exists at all.
         /// Note this can be null if this is a root Activity (it has no parent)
         /// <para/>
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
+        /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string? ParentId
         {
@@ -243,7 +279,7 @@ namespace System.Diagnostics
         /// Root Id is substring from Activity.Id (or ParentId) between '|' (or beginning) and first '.'.
         /// Filtering by root Id allows to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
+        /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string? RootId
         {
@@ -354,6 +390,24 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Enumerate the tags attached to this Activity object.
+        /// </summary>
+        /// <returns><see cref="Enumerator{T}"/>.</returns>
+        public Enumerator<KeyValuePair<string, object?>> EnumerateTagObjects() => new Enumerator<KeyValuePair<string, object?>>(_tags?.First);
+
+        /// <summary>
+        /// Enumerate the <see cref="ActivityEvent" /> objects attached to this Activity object.
+        /// </summary>
+        /// <returns><see cref="Enumerator{T}"/>.</returns>
+        public Enumerator<ActivityEvent> EnumerateEvents() => new Enumerator<ActivityEvent>(_events?.First);
+
+        /// <summary>
+        /// Enumerate the <see cref="ActivityLink" /> objects attached to this Activity object.
+        /// </summary>
+        /// <returns><see cref="Enumerator{T}"/>.</returns>
+        public Enumerator<ActivityLink> EnumerateLinks() => new Enumerator<ActivityLink>(_links?.First);
+
+        /// <summary>
         /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
         /// Returns null if that key does not exist.
         /// </summary>
@@ -383,7 +437,7 @@ namespace System.Diagnostics
         public Activity(string operationName)
         {
             Source = s_defaultSource;
-            // Allow data by default in the constructor to keep the compatability.
+            // Allow data by default in the constructor to keep the compatibility.
             IsAllDataRequested = true;
 
             if (string.IsNullOrEmpty(operationName))
@@ -391,7 +445,7 @@ namespace System.Diagnostics
                 NotifyError(new ArgumentException(SR.OperationNameInvalid));
             }
 
-            OperationName = operationName;
+            OperationName = operationName ?? string.Empty;
         }
 
         /// <summary>
@@ -684,9 +738,9 @@ namespace System.Diagnostics
                 return;
             }
 
-            if (!IsFinished)
+            if (!IsStopped)
             {
-                IsFinished = true;
+                IsStopped = true;
 
                 if (Duration == TimeSpan.Zero)
                 {
@@ -920,7 +974,7 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
-        internal static bool TryConvertIdToContext(string traceParent, string? traceState, out ActivityContext context)
+        internal static bool TryConvertIdToContext(string traceParent, string? traceState, bool isRemote, out ActivityContext context)
         {
             context = default;
             if (!IsW3CId(traceParent))
@@ -941,7 +995,8 @@ namespace System.Diagnostics
                             new ActivityTraceId(traceIdSpan.ToString()),
                             new ActivitySpanId(spanIdSpan.ToString()),
                             (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(traceParent[53], traceParent[54]),
-                            traceState);
+                            traceState,
+                            isRemote);
 
             return true;
         }
@@ -951,7 +1006,7 @@ namespace System.Diagnostics
         /// </summary>
         public void Dispose()
         {
-            if (!IsFinished)
+            if (!IsStopped)
             {
                 Stop();
             }
@@ -1016,13 +1071,14 @@ namespace System.Diagnostics
 
         internal static Activity Create(ActivitySource source, string name, ActivityKind kind, string? parentId, ActivityContext parentContext,
                                         IEnumerable<KeyValuePair<string, object?>>? tags, IEnumerable<ActivityLink>? links, DateTimeOffset startTime,
-                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat)
+                                        ActivityTagsCollection? samplerTags, ActivitySamplingResult request, bool startIt, ActivityIdFormat idFormat, string? traceState)
         {
             Activity activity = new Activity(name);
 
             activity.Source = source;
             activity.Kind = kind;
             activity.IdFormat = idFormat;
+            activity._traceState = traceState;
 
             if (links != null)
             {
@@ -1073,7 +1129,7 @@ namespace System.Diagnostics
 
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._parentTraceFlags = (byte) parentContext.TraceFlags;
-                activity._traceState = parentContext.TraceState;
+                activity.HasRemoteParent = parentContext.IsRemote;
             }
 
             activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
@@ -1194,6 +1250,7 @@ namespace System.Diagnostics
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
+#pragma warning disable CA1822
         private string AppendSuffix(string parentId, string suffix, char delimiter)
         {
 #if DEBUG
@@ -1220,6 +1277,8 @@ namespace System.Diagnostics
             string overflowSuffix = ((int)GetRandomNumber()).ToString("x8");
             return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
         }
+#pragma warning restore CA1822
+
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
@@ -1232,7 +1291,7 @@ namespace System.Diagnostics
 
         private static bool ValidateSetCurrent(Activity? activity)
         {
-            bool canSet = activity == null || (activity.Id != null && !activity.IsFinished);
+            bool canSet = activity == null || (activity.Id != null && !activity.IsStopped);
             if (!canSet)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityNotRunning));
@@ -1298,18 +1357,24 @@ namespace System.Diagnostics
             get => (_w3CIdFlags & ActivityTraceFlagsIsSet) != 0;
         }
 
-        private bool IsFinished
+        /// <summary>
+        /// Indicates whether this <see cref="Activity"/> object is stopped
+        /// </summary>
+        /// <remarks>
+        /// When subscribing to <see cref="Activity"/> stop event using <see cref="ActivityListener.ActivityStopped"/>, the received <see cref="Activity"/> object in the event callback will have <see cref="IsStopped"/> as true.
+        /// </remarks>
+        public bool IsStopped
         {
-            get => (_state & State.IsFinished) != 0;
-            set
+            get => (_state & State.IsStopped) != 0;
+            private set
             {
                 if (value)
                 {
-                    _state |= State.IsFinished;
+                    _state |= State.IsStopped;
                 }
                 else
                 {
-                    _state &= ~State.IsFinished;
+                    _state &= ~State.IsStopped;
                 }
             }
         }
@@ -1321,6 +1386,55 @@ namespace System.Diagnostics
         {
             get => (ActivityIdFormat)(_state & State.FormatFlags);
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
+        }
+
+        /// <summary>
+        /// Enumerates the data stored on an Activity object.
+        /// </summary>
+        /// <typeparam name="T">Type being enumerated.</typeparam>
+        public struct Enumerator<T>
+        {
+            private static readonly DiagNode<T> s_Empty = new DiagNode<T>(default!);
+
+            private DiagNode<T>? _nextNode;
+            private DiagNode<T> _currentNode;
+
+            internal Enumerator(DiagNode<T>? head)
+            {
+                _nextNode = head;
+                _currentNode = s_Empty;
+            }
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the data stored on an Activity object.
+            /// </summary>
+            /// <returns><see cref="Enumerator{T}"/>.</returns>
+            [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // Only here to make foreach work
+            public readonly Enumerator<T> GetEnumerator() => this;
+
+            /// <summary>
+            /// Gets the element at the current position of the enumerator.
+            /// </summary>
+            public readonly ref T Current => ref _currentNode.Value;
+
+            /// <summary>
+            /// Advances the enumerator to the next element of the data.
+            /// </summary>
+            /// <returns><see langword="true"/> if the enumerator was successfully advanced to the
+            /// next element; <see langword="false"/> if the enumerator has passed the end of the
+            /// collection.</returns>
+            public bool MoveNext()
+            {
+                if (_nextNode == null)
+                {
+                    _currentNode = s_Empty;
+                    return false;
+                }
+
+                _currentNode = _nextNode;
+                _nextNode = _nextNode.Next;
+                return true;
+            }
         }
 
         private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
@@ -1399,13 +1513,12 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
-            public Enumerator<KeyValuePair<string, string?>> GetEnumerator() => new Enumerator<KeyValuePair<string, string?>>(_first);
+            public DiagEnumerator<KeyValuePair<string, string?>> GetEnumerator() => new DiagEnumerator<KeyValuePair<string, string?>>(_first);
             IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        internal sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
             private DiagNode<KeyValuePair<string, object?>>? _first;
             private DiagNode<KeyValuePair<string, object?>>? _last;
@@ -1424,6 +1537,8 @@ namespace System.Diagnostics
                     _last = _last.Next;
                 }
             }
+
+            public DiagNode<KeyValuePair<string, object?>>? First => _first;
 
             public TagsLinkedList(IEnumerable<KeyValuePair<string, object?>> list) => Add(list);
 
@@ -1561,8 +1676,7 @@ namespace System.Diagnostics
                 }
             }
 
-            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
-            public Enumerator<KeyValuePair<string, object?>> GetEnumerator() => new Enumerator<KeyValuePair<string, object?>>(_first);
+            public DiagEnumerator<KeyValuePair<string, object?>> GetEnumerator() => new DiagEnumerator<KeyValuePair<string, object?>>(_first);
             IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -1623,7 +1737,7 @@ namespace System.Diagnostics
             FormatW3C = 0b_0_00000_10,
             FormatFlags = 0b_0_00000_11,
 
-            IsFinished = 0b_1_00000_00,
+            IsStopped = 0b_1_00000_00,
         }
     }
 
@@ -1643,7 +1757,7 @@ namespace System.Diagnostics
     public enum ActivityIdFormat
     {
         Unknown = 0,      // ID format is not known.
-        Hierarchical = 1, //|XXXX.XX.X_X ... see https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format
+        Hierarchical = 1, //|XXXX.XX.X_X ... see https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format
         W3C = 2,          // 00-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXX-XX see https://w3c.github.io/trace-context/
     };
 

@@ -40,10 +40,8 @@ namespace System.ComponentModel
         /// </summary>
         protected MemberDescriptor(string name, Attribute[]? attributes)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.InvalidMemberName, nameof(name));
@@ -67,10 +65,7 @@ namespace System.ComponentModel
         /// </summary>
         protected MemberDescriptor(MemberDescriptor descr)
         {
-            if (descr == null)
-            {
-                throw new ArgumentNullException(nameof(descr));
-            }
+            ArgumentNullException.ThrowIfNull(descr);
 
             _name = descr.Name;
             _displayName = _name;
@@ -91,10 +86,7 @@ namespace System.ComponentModel
         /// </summary>
         protected MemberDescriptor(MemberDescriptor oldMemberDescriptor, Attribute[]? newAttributes)
         {
-            if (oldMemberDescriptor == null)
-            {
-                throw new ArgumentNullException(nameof(oldMemberDescriptor));
-            }
+            ArgumentNullException.ThrowIfNull(oldMemberDescriptor);
 
             _name = oldMemberDescriptor.Name;
             _displayName = oldMemberDescriptor.DisplayName;
@@ -173,13 +165,12 @@ namespace System.ComponentModel
         /// Gets the name of the category that the member belongs to, as specified
         /// in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         /// </summary>
-        public virtual string Category => _category ?? (_category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]!).Category);
+        public virtual string Category => _category ??= ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]!).Category;
 
         /// <summary>
         /// Gets the description of the member as specified in the <see cref='System.ComponentModel.DescriptionAttribute'/>.
         /// </summary>
-        public virtual string Description => _description ??
-                                             (_description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]!).Description);
+        public virtual string Description => _description ??= ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]!).Description;
 
         /// <summary>
         /// Gets a value indicating whether the member is browsable as specified in the
@@ -318,10 +309,7 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual void FillAttributes(IList attributeList)
         {
-            if (attributeList == null)
-            {
-                throw new ArgumentNullException(nameof(attributeList));
-            }
+            ArgumentNullException.ThrowIfNull(attributeList);
 
             if (_originalAttributes != null)
             {
@@ -358,7 +346,7 @@ namespace System.ComponentModel
 
                 for (int i = 0; i < list.Count;)
                 {
-                    int savedIndex = -1;
+                    int savedIndex;
                     object? typeId = list[i]?.TypeId;
                     if (typeId == null)
                     {
@@ -412,12 +400,9 @@ namespace System.ComponentModel
             Type returnType,
             bool publicOnly)
         {
-            if (componentClass == null)
-            {
-                throw new ArgumentNullException(nameof(componentClass));
-            }
+            ArgumentNullException.ThrowIfNull(componentClass);
 
-            MethodInfo? result = null;
+            MethodInfo? result;
             if (publicOnly)
             {
                 result = componentClass.GetMethod(name, args);
@@ -447,15 +432,8 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual object? GetInvocationTarget(Type type, object instance)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(instance);
 
             return TypeDescriptor.GetAssociation(type, instance);
         }
@@ -468,16 +446,8 @@ namespace System.ComponentModel
         [Obsolete("MemberDescriptor.GetInvokee has been deprecated. Use GetInvocationTarget instead.")]
         protected static object GetInvokee(Type componentClass, object component)
         {
-
-            if (componentClass == null)
-            {
-                throw new ArgumentNullException(nameof(componentClass));
-            }
-
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
+            ArgumentNullException.ThrowIfNull(componentClass);
+            ArgumentNullException.ThrowIfNull(component);
 
             return TypeDescriptor.GetAssociation(componentClass, component);
         }

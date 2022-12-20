@@ -140,7 +140,7 @@ namespace System.Speech.Internal.Synthesis
         internal static byte[] ConvertLinear2ULaw(short[] data, int size)
         {
             byte[] newData = new byte[size];
-            s_uLawCompTableCached = s_uLawCompTableCached == null ? CalcLinear2ULawTable() : s_uLawCompTableCached;
+            s_uLawCompTableCached ??= CalcLinear2ULawTable();
 
             for (int i = 0; i < size; i++)
             {
@@ -221,7 +221,7 @@ namespace System.Speech.Internal.Synthesis
                     if (sample > uCLIP) sample = uCLIP;   // clip the magnitude
 
                     // Convert from 16 bit linear to ULaw.
-                    sample = sample + uBIAS;
+                    sample += uBIAS;
                     exponent = s_exp_lut_linear2ulaw[(sample >> 7) & 0xFF];
                     mantissa = (sample >> (exponent + 3)) & 0x0F;
 
@@ -252,7 +252,7 @@ namespace System.Speech.Internal.Synthesis
         internal static byte[] ConvertLinear2ALaw(short[] data, int size)
         {
             byte[] newData = new byte[size];
-            s_aLawCompTableCached = s_aLawCompTableCached == null ? CalcLinear2ALawTable() : s_aLawCompTableCached;
+            s_aLawCompTableCached ??= CalcLinear2ALawTable();
 
             for (int i = 0; i < size; i++)
             {
@@ -262,6 +262,7 @@ namespace System.Speech.Internal.Synthesis
                     newData[i] = s_aLawCompTableCached[(ushort)data[i] >> 2];
                 }
             }
+
             return newData;
         }
 

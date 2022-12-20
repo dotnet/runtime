@@ -1,15 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-#endif
-
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     // Represents the interface between EventProvider and an external logging mechanism.
     internal interface IEventProvider
@@ -35,7 +27,7 @@ namespace System.Diagnostics.Tracing
             EventProvider.EventData* userData);
 
         // Get or set the per-thread activity ID.
-        int EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId);
+        int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId);
 
         // Define an EventPipeEvent handle.
         unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,

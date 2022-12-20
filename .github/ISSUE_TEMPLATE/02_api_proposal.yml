@@ -25,13 +25,12 @@ body:
         You may find the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/framework-design-guidelines-digest.md) helpful.
       placeholder: API declaration (no method bodies)
       value: |
-        ```C#
-        namespace System.Collections.Generic
+        ```csharp
+        namespace System.Collections.Generic;
+
+        public class MyFancyCollection<T> : IEnumerable<T>
         {
-            public class MyFancyCollection<T> : IEnumerable<T>
-            {
-                public void Fancy(T item);
-            }
+            public void Fancy(T item);
         }
         ```
     validations:
@@ -44,7 +43,7 @@ body:
         Please provide code examples that highlight how the proposed API additions are meant to be consumed. This will help suggest whether the API has the right shape to be functional, performant and usable.
       placeholder: API usage
       value: |
-        ```C#
+        ```csharp
         // Fancy the value
         var c = new MyFancyCollection<int>();
         c.Fancy(42);

@@ -32,17 +32,18 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal AppBaseCompilationAssemblyResolver(IFileSystem fileSystem, string basePath, DependencyContextPaths dependencyContextPaths)
         {
-            _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-            _basePath = basePath ?? throw new ArgumentNullException(nameof(basePath));
-            _dependencyContextPaths = dependencyContextPaths ?? throw new ArgumentNullException(nameof(dependencyContextPaths));
+            ThrowHelper.ThrowIfNull(fileSystem);
+            ThrowHelper.ThrowIfNull(basePath);
+            ThrowHelper.ThrowIfNull(dependencyContextPaths);
+
+            _fileSystem = fileSystem;
+            _basePath = basePath;
+            _dependencyContextPaths = dependencyContextPaths;
         }
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
-            if (library is null)
-            {
-                throw new ArgumentNullException(nameof(library));
-            }
+            ThrowHelper.ThrowIfNull(library);
 
             bool isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(library.Type, "msbuildproject", StringComparison.OrdinalIgnoreCase);

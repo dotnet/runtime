@@ -22,7 +22,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module Test_HndIndex_10_Reordered.exe
 // MVID: {68AEE7ED-2AC8-4330-9EC7-4EBFD6BD74E0}
 .imagebase 0x00400000
 .file alignment 0x00000200

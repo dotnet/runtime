@@ -163,8 +163,7 @@ namespace System.Net
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
-                throw new ArgumentNullException(nameof(asyncResult));
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             if (asyncResult is HttpStreamAsyncResult r)
             {

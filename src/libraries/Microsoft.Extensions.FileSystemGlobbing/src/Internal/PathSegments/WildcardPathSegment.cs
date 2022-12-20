@@ -17,10 +17,18 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PathSegments
 
         public WildcardPathSegment(string beginsWith, List<string> contains, string endsWith, StringComparison comparisonType)
         {
-            BeginsWith = beginsWith ?? throw new ArgumentNullException(nameof(beginsWith));
-            Contains = contains ?? throw new ArgumentNullException(nameof(contains));
-            EndsWith = endsWith ?? throw new ArgumentNullException(nameof(endsWith));
-            _comparisonType = comparisonType;
+            ThrowHelper.ThrowIfNull(beginsWith);
+            ThrowHelper.ThrowIfNull(contains);
+            ThrowHelper.ThrowIfNull(endsWith);
+
+            _comparisonType = comparisonType switch
+            {
+                StringComparison.OrdinalIgnoreCase or StringComparison.Ordinal => comparisonType,
+                _ => throw new InvalidOperationException(SR.Format(SR.StringComparisonTypeShouldBeOrdinal, comparisonType)),
+            };
+            BeginsWith = beginsWith;
+            Contains = contains;
+            EndsWith = endsWith;
         }
 
         public bool CanProduceStem { get { return true; } }

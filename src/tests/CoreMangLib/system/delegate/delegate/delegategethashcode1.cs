@@ -13,7 +13,7 @@ namespace DelegateTest
     public class DelegateGetHashCode
     {
 
-       
+
         public static int Main()
         {
             DelegateGetHashCode DelegateGetHashCode = new DelegateGetHashCode();
@@ -67,7 +67,7 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("001", "HashCode is not excepted ");
                     retVal = false;
                 }
-               
+
                 workDelegate();
                 workDelegate1();
 
@@ -87,7 +87,7 @@ namespace DelegateTest
         public bool PosTest2()
         {
             bool retVal = true;
-            //Type,target, method, and invocation list 
+            //Type,target, method, and invocation list
             TestLibrary.TestFramework.BeginScenario("PosTest2: hash code of two different delegate object even though  they invoke the same function  is not equal ");
 
             try
@@ -132,7 +132,7 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("005", "HashCode is not excepted ");
                     retVal = false;
                 }
-               
+
                 workDelegate();
                 workDelegate1();
 
@@ -164,7 +164,7 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("007", "HashCode is not excepted ");
                     retVal = false;
                 }
-               
+
                 workDelegate();
                 workDelegate1();
 
@@ -191,7 +191,7 @@ namespace DelegateTest
                 DelegateGetHashCode delctor = new DelegateGetHashCode();
                 booldelegate workDelegate = new booldelegate(TestClass.Completed_Bool);
                 booldelegate workDelegate1 = new booldelegate(TestClass1.Completed_Bool);
-              
+
                 if (workDelegate.GetHashCode()!=workDelegate1.GetHashCode())
                 {
                     TestLibrary.TestFramework.LogError("011", "HashCode is not excepted");
@@ -250,7 +250,7 @@ namespace DelegateTest
         public bool PosTest8()
         {
             bool retVal = true;
-            //Type,target, method, and invocation list 
+            //Type,target, method, and invocation list
             TestLibrary.TestFramework.BeginScenario("PosTest8: hash code of two delegate object is not equal,the two delegate callback different function. ");
 
             try
@@ -278,7 +278,7 @@ namespace DelegateTest
         }
 
     }
-    //create testclass for provding test method and test target.
+    //create testclass for providing test method and test target.
     class TestClass
     {
         private int id;
@@ -306,7 +306,7 @@ namespace DelegateTest
         public void StartWork_Void()
         {
             TestLibrary.TestFramework.LogInformation("TestClass1's StartWork_Bool method  is running. id=" + this.id);
-            
+
         }
     }
     class TestClass1
@@ -318,7 +318,7 @@ namespace DelegateTest
             TestLibrary.TestFramework.LogInformation("TestClass1's StartWork_Bool method  is running. id="+ this.id  );
             return true;
         }
-       
+
         public static bool Working_Bool()
         {
             TestLibrary.TestFramework.LogInformation("TestClass1's Working_Bool method  is running .");

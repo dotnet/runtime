@@ -15,8 +15,5 @@ namespace System.Diagnostics.Tests
             File.WriteAllText(filename, $"exit {returnValue}");
             return filename;
         }
-
-        private static void ChMod(string filename, string mode)
-            => throw new PlatformNotSupportedException();
     }
 }

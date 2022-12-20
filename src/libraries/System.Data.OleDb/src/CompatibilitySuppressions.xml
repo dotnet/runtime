@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Data.OleDb.OleDbParameterCollection.Add(System.String,System.Object):[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Data.OleDb.dll</Left>
+    <Right>lib/net462/System.Data.OleDb.dll</Right>
+  </Suppression>
+</Suppressions>

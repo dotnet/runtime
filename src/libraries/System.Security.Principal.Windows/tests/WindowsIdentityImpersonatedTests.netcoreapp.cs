@@ -26,11 +26,11 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
         Assert.False(string.IsNullOrEmpty(_fixture.TestAccount.AccountName));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
     public async Task RunImpersonatedAsync_TaskAndTaskOfT()
     {
-        WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
+        using WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
 
         await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
         {
@@ -39,7 +39,10 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
             Asserts(currentWindowsIdentity);
         });
 
-        Assert.Equal(WindowsIdentity.GetCurrent().Name, currentWindowsIdentity.Name);
+        using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
+        {
+            Assert.Equal(currentIdentity.Name, currentWindowsIdentity.Name);
+        }
 
         int result = await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
         {
@@ -50,25 +53,32 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
         });
 
         Assert.Equal(42, result);
-        Assert.Equal(WindowsIdentity.GetCurrent().Name, currentWindowsIdentity.Name);
+        using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
+        {
+            Assert.Equal(currentIdentity.Name, currentWindowsIdentity.Name);
+        }
 
         // Assertions
         void Asserts(WindowsIdentity currentWindowsIdentity)
         {
-            Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
-            Assert.NotEqual(currentWindowsIdentity.Name, WindowsIdentity.GetCurrent().Name);
+            using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+            Assert.Equal(_fixture.TestAccount.AccountName, currentIdentity.Name);
+            Assert.NotEqual(currentWindowsIdentity.Name, currentIdentity.Name);
         }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
     public void RunImpersonated_NameResolution()
     {
-        WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
+        using WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
 
         WindowsIdentity.RunImpersonated(_fixture.TestAccount.AccountTokenHandle, () =>
         {
-            Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
+            using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
+            {
+                Assert.Equal(_fixture.TestAccount.AccountName, currentIdentity.Name);
+            }
 
             IPAddress[] a1 = Dns.GetHostAddressesAsync("").GetAwaiter().GetResult();
             IPAddress[] a2 = Dns.GetHostAddresses("");
@@ -78,18 +88,21 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
         });
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
     public async Task RunImpersonatedAsync_NameResolution()
     {
-        WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
+        using WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
 
         // make sure the assembly is loaded.
         _ = Dns.GetHostAddresses("");
 
         await WindowsIdentity.RunImpersonatedAsync(_fixture.TestAccount.AccountTokenHandle, async () =>
         {
-            Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
+            using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
+            {
+                Assert.Equal(_fixture.TestAccount.AccountName, currentIdentity.Name);
+            }
 
             IPAddress[] a1 = await Dns.GetHostAddressesAsync("");
             IPAddress[] a2 = Dns.GetHostAddresses("");

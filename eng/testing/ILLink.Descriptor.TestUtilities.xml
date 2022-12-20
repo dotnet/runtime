@@ -1,5 +1,7 @@
 <linker>
   <assembly fullname="TestUtilities">
     <namespace fullname="System" />
+    <!-- for TestUtilities.RandomTest*Orderer types -->
+    <namespace fullname="TestUtilities" />
   </assembly>
 </linker>

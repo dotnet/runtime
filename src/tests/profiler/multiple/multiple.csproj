@@ -10,6 +10,6 @@
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="../common/profiler_common.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
   </ItemGroup>
 </Project>

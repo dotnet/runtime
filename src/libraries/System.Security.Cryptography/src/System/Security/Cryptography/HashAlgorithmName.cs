@@ -123,10 +123,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static bool TryFromOid(string oidValue, out HashAlgorithmName value)
         {
-            if (oidValue is null)
-            {
-                throw new ArgumentNullException(nameof(oidValue));
-            }
+            ArgumentNullException.ThrowIfNull(oidValue);
 
             switch (oidValue)
             {

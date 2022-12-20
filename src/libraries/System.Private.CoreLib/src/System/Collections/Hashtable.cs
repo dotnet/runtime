@@ -123,14 +123,14 @@ namespace System.Collections
 
         // The hash table data.
         // This cannot be serialized
-        private struct bucket
+        private struct Bucket
         {
             public object? key;
             public object? val;
             public int hash_coll;   // Store hash code; sign bit means there was a collision.
         }
 
-        private bucket[] _buckets = null!;
+        private Bucket[] _buckets = null!;
 
         // The total number of entries in the hash table.
         private int _count;
@@ -223,7 +223,7 @@ namespace System.Collections
 
         // Note: this constructor is a bogus constructor that does nothing
         // and is for use only with SyncHashtable.
-        internal Hashtable(bool trash)
+        internal Hashtable(bool _)
         {
         }
 
@@ -257,10 +257,9 @@ namespace System.Collections
         //
         public Hashtable(int capacity, float loadFactor)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
-                throw new ArgumentOutOfRangeException(nameof(loadFactor), SR.Format(SR.ArgumentOutOfRange_HashtableLoadFactor, .1, 1.0));
+                throw new ArgumentOutOfRangeException(nameof(loadFactor), SR.ArgumentOutOfRange_HashtableLoadFactor);
 
             // Based on perf work, .72 is the optimal load factor for this table.
             _loadFactor = 0.72f * loadFactor;
@@ -271,7 +270,7 @@ namespace System.Collections
 
             // Avoid awfully small sizes
             int hashsize = (rawsize > InitialSize) ? HashHelpers.GetPrime((int)rawsize) : InitialSize;
-            _buckets = new bucket[hashsize];
+            _buckets = new Bucket[hashsize];
 
             _loadsize = (int)(_loadFactor * hashsize);
             _isWriterInProgress = false;
@@ -343,10 +342,9 @@ namespace System.Collections
 
         [Obsolete("This constructor has been deprecated. Use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
         public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
-            : this(d != null ? d.Count : 0, loadFactor, hcp, comparer)
+            : this(d?.Count ?? 0, loadFactor, hcp, comparer)
         {
-            if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
+            ArgumentNullException.ThrowIfNull(d);
 
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
@@ -354,10 +352,9 @@ namespace System.Collections
         }
 
         public Hashtable(IDictionary d, float loadFactor, IEqualityComparer? equalityComparer)
-            : this(d != null ? d.Count : 0, loadFactor, equalityComparer)
+            : this(d?.Count ?? 0, loadFactor, equalityComparer)
         {
-            if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
+            ArgumentNullException.ThrowIfNull(d);
 
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
@@ -443,7 +440,7 @@ namespace System.Collections
         // to those Objects.
         public virtual object Clone()
         {
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             Hashtable ht = new Hashtable(_count, _keycomparer);
             ht._version = _version;
             ht._loadFactor = _loadFactor;
@@ -474,17 +471,14 @@ namespace System.Collections
         //
         public virtual bool ContainsKey(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             // Take a snapshot of buckets, in case another thread resizes table
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             uint hashcode = InitHash(key, lbuckets.Length, out uint seed, out uint incr);
             int ntry = 0;
 
-            bucket b;
+            Bucket b;
             int bucketNumber = (int)(seed % (uint)lbuckets.Length);
             do
             {
@@ -537,7 +531,7 @@ namespace System.Collections
             Debug.Assert(array != null);
             Debug.Assert(array.Rank == 1);
 
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
@@ -556,7 +550,7 @@ namespace System.Collections
             Debug.Assert(array != null);
             Debug.Assert(array.Rank == 1);
 
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
@@ -572,12 +566,11 @@ namespace System.Collections
         // a given index.  Note that this only copies values, and not keys.
         public virtual void CopyTo(Array array, int arrayIndex)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
             if (array.Length - arrayIndex < Count)
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
 
@@ -592,7 +585,7 @@ namespace System.Collections
         {
             KeyValuePairs[] array = new KeyValuePairs[_count];
             int index = 0;
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
@@ -613,7 +606,7 @@ namespace System.Collections
             Debug.Assert(array != null);
             Debug.Assert(array.Rank == 1);
 
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
@@ -631,18 +624,14 @@ namespace System.Collections
         {
             get
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-                }
-
+                ArgumentNullException.ThrowIfNull(key);
 
                 // Take a snapshot of buckets, in case another thread does a resize
-                bucket[] lbuckets = _buckets;
+                Bucket[] lbuckets = _buckets;
                 uint hashcode = InitHash(key, lbuckets.Length, out uint seed, out uint incr);
                 int ntry = 0;
 
-                bucket b;
+                Bucket b;
                 int bucketNumber = (int)(seed % (uint)lbuckets.Length);
                 do
                 {
@@ -724,18 +713,18 @@ namespace System.Collections
             _occupancy = 0;
 
             // Don't replace any internal state until we've finished adding to the
-            // new bucket[].  This serves two purposes:
+            // new Bucket[].  This serves two purposes:
             //   1) Allow concurrent readers to see valid hashtable contents
             //      at all times
             //   2) Protect against an OutOfMemoryException while allocating this
-            //      new bucket[].
-            bucket[] newBuckets = new bucket[newsize];
+            //      new Bucket[].
+            Bucket[] newBuckets = new Bucket[newsize];
 
             // rehash table into new buckets
             int nb;
             for (nb = 0; nb < _buckets.Length; nb++)
             {
-                bucket oldb = _buckets[nb];
+                Bucket oldb = _buckets[nb];
                 if ((oldb.key != null) && (oldb.key != _buckets))
                 {
                     int hashcode = oldb.hash_coll & 0x7FFFFFFF;
@@ -743,7 +732,7 @@ namespace System.Collections
                 }
             }
 
-            // New bucket[] is good to go - replace buckets and other internal state.
+            // New Bucket[] is good to go - replace buckets and other internal state.
             _isWriterInProgress = true;
             _buckets = newBuckets;
             _loadsize = (int)(_loadFactor * newsize);
@@ -839,10 +828,7 @@ namespace System.Collections
         // exists in the hashtable, an exception is thrown.
         private void Insert(object key, object? nvalue, bool add)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (_count >= _loadsize)
             {
@@ -948,7 +934,7 @@ namespace System.Collections
             throw new InvalidOperationException(SR.InvalidOperation_HashInsertFailed);
         }
 
-        private void putEntry(bucket[] newBuckets, object key, object? nvalue, int hashcode)
+        private void putEntry(Bucket[] newBuckets, object key, object? nvalue, int hashcode)
         {
             Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
 
@@ -980,10 +966,7 @@ namespace System.Collections
         //
         public virtual void Remove(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             Debug.Assert(!_isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
 
@@ -991,7 +974,7 @@ namespace System.Collections
             uint hashcode = InitHash(key, _buckets.Length, out uint seed, out uint incr);
             int ntry = 0;
 
-            bucket b;
+            Bucket b;
             int bn = (int)(seed % (uint)_buckets.Length);  // bucketNumber
             do
             {
@@ -1031,17 +1014,14 @@ namespace System.Collections
         //
         public static Hashtable Synchronized(Hashtable table)
         {
-            if (table == null)
-                throw new ArgumentNullException(nameof(table));
+            ArgumentNullException.ThrowIfNull(table);
+
             return new SyncHashtable(table);
         }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             // This is imperfect - it only works well if all other writes are
             // also using our synchronized wrapper.  But it's still a good idea.
@@ -1164,7 +1144,7 @@ namespace System.Collections
                 _keycomparer = new CompatibleComparer(hcp, c);
             }
 
-            _buckets = new bucket[hashsize];
+            _buckets = new Bucket[hashsize];
 
             if (serKeys == null)
             {
@@ -1205,12 +1185,11 @@ namespace System.Collections
 
             public void CopyTo(Array array, int arrayIndex)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-                if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
                 if (array.Length - arrayIndex < _hashtable._count)
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyKeys(array, arrayIndex);
@@ -1241,12 +1220,11 @@ namespace System.Collections
 
             public void CopyTo(Array array, int arrayIndex)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-                if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
                 if (array.Length - arrayIndex < _hashtable._count)
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyValues(array, arrayIndex);
@@ -1329,10 +1307,8 @@ namespace System.Collections
 
             public override bool ContainsKey(object key)
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-                }
+                ArgumentNullException.ThrowIfNull(key);
+
                 return _table.ContainsKey(key);
             }
 
@@ -1525,10 +1501,7 @@ namespace System.Collections
 
             public HashtableDebugView(Hashtable hashtable)
             {
-                if (hashtable == null)
-                {
-                    throw new ArgumentNullException(nameof(hashtable));
-                }
+                ArgumentNullException.ThrowIfNull(hashtable);
 
                 _hashtable = hashtable;
             }

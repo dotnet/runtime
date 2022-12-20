@@ -37,7 +37,9 @@ namespace System.Reflection
         public sealed override MemberTypes MemberType => MemberTypes.TypeInfo;
 
         // Compositors
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType() => new SignatureArrayType(this, rank: 1, isMultiDim: false);
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType(int rank)
         {
             if (rank <= 0)
@@ -47,6 +49,7 @@ namespace System.Reflection
         public sealed override Type MakeByRefType() => new SignatureByRefType(this);
         public sealed override Type MakePointerType() => new SignaturePointerType(this);
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SignatureType); // There is no SignatureType for type definition types so it would never be legal to call this.
 
@@ -96,6 +99,7 @@ namespace System.Reflection
         public sealed override string GetEnumName(object value) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override string[] GetEnumNames() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type GetEnumUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
         public sealed override Array GetEnumValues() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Guid GUID => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override TypeCode GetTypeCodeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -171,8 +175,6 @@ namespace System.Reflection
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public sealed override Type GetInterface(string name, bool ignoreCase) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]

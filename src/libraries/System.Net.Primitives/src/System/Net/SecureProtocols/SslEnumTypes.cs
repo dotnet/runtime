@@ -10,12 +10,17 @@ namespace System.Security.Authentication
     public enum SslProtocols
     {
         None = 0,
+        [System.ObsoleteAttribute("SslProtocols.Ssl2 has been deprecated and is not supported.")]
         Ssl2 = Interop.SChannel.SP_PROT_SSL2,
+        [System.ObsoleteAttribute("SslProtocols.Ssl3 has been deprecated and is not supported.")]
         Ssl3 = Interop.SChannel.SP_PROT_SSL3,
+        [System.ObsoleteAttribute(Obsoletions.TlsVersion10and11Message, DiagnosticId = Obsoletions.TlsVersion10and11DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         Tls = Interop.SChannel.SP_PROT_TLS1_0,
+        [System.ObsoleteAttribute(Obsoletions.TlsVersion10and11Message, DiagnosticId = Obsoletions.TlsVersion10and11DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         Tls11 = Interop.SChannel.SP_PROT_TLS1_1,
         Tls12 = Interop.SChannel.SP_PROT_TLS1_2,
         Tls13 = Interop.SChannel.SP_PROT_TLS1_3,
+        [System.ObsoleteAttribute("SslProtocols.Default has been deprecated and is not supported.")]
         Default = Ssl3 | Tls
     }
 

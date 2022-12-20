@@ -13,11 +13,11 @@ void
 mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
 
 ICALL_EXPORT
-void 
+void
 mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
 
 ICALL_EXPORT
-void 
+void
 mono_trace_tail_method (MonoMethod *method, MonoJitInfo *ji, MonoMethod *target);
 
 void mono_trace_enable (gboolean enable);

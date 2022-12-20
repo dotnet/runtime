@@ -25,6 +25,7 @@ G_EXTERN_C gpointer mini_llvmonly_resolve_vcall_gsharedvt (MonoObject *this_obj,
 G_EXTERN_C gpointer mini_llvmonly_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg);
 G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *imt_method);
 G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *imt_method);
+G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_vcall_gsharedvt_fast (MonoObject *this_obj, int slot);
 G_EXTERN_C void mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info);
 G_EXTERN_C void mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 
@@ -35,8 +36,14 @@ G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
 
 G_EXTERN_C void mini_llvmonly_throw_aot_failed_exception (const char *name);
 
-G_EXTERN_C void mini_llvmonly_pop_lmf (MonoLMF *lmf);
+G_EXTERN_C void mini_llvmonly_interp_entry_gsharedvt (gpointer imethod, gpointer res, gpointer *args);
 
-G_EXTERN_C gpointer mini_llvmonly_get_interp_entry (MonoMethod *method);
+/* These are implemented in mini-exceptions.c */
+G_EXTERN_C void mini_llvmonly_throw_exception       (MonoObject *ex);
+G_EXTERN_C void mini_llvmonly_rethrow_exception     (MonoObject *ex);
+G_EXTERN_C void mini_llvmonly_throw_corlib_exception (guint32 ex_token_index);
+G_EXTERN_C void mini_llvmonly_resume_exception_il_state (MonoLMF *lmf, gpointer info);
+G_EXTERN_C MonoObject *mini_llvmonly_load_exception (void);
+G_EXTERN_C void mini_llvmonly_clear_exception       (void);
 
 #endif

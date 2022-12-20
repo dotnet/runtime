@@ -66,27 +66,19 @@ namespace System.IO.Pipes
 
             CheckReadOperations();
 
-            if (!_isAsync)
-            {
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
-            }
-
             if (count == 0)
             {
                 UpdateMessageCompletion(false);
                 return Task.FromResult(0);
             }
 
-            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return _isAsync ?
+                ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask() :
+                AsyncOverSyncRead(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!_isAsync)
-            {
-                return base.ReadAsync(buffer, cancellationToken);
-            }
-
             if (!CanRead)
             {
                 throw Error.GetReadNotSupported();
@@ -105,8 +97,14 @@ namespace System.IO.Pipes
                 return new ValueTask<int>(0);
             }
 
-            return ReadAsyncCore(buffer, cancellationToken);
+            return _isAsync ?
+                ReadAsyncCore(buffer, cancellationToken) :
+                AsyncOverSyncRead(buffer, cancellationToken);
         }
+
+        /// <summary>Initiates an async-over-sync read for a pipe opened for non-overlapped I/O.</summary>
+        private ValueTask<int> AsyncOverSyncRead(Memory<byte> buffer, CancellationToken cancellationToken) =>
+            AsyncOverSyncWithIoCancellation.InvokeAsync(static s => s.Stream.ReadCore(s.Buffer.Span), (Stream: this, Buffer: buffer), cancellationToken);
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -174,26 +172,14 @@ namespace System.IO.Pipes
 
             CheckWriteOperations();
 
-            if (!_isAsync)
-            {
-                return base.WriteAsync(buffer, offset, count, cancellationToken);
-            }
-
-            if (count == 0)
-            {
-                return Task.CompletedTask;
-            }
-
-            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            return
+                count == 0 ? Task.CompletedTask :
+                _isAsync ? WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask() :
+                AsyncOverSyncWrite(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!_isAsync)
-            {
-                return base.WriteAsync(buffer, cancellationToken);
-            }
-
             if (!CanWrite)
             {
                 throw Error.GetWriteNotSupported();
@@ -206,13 +192,15 @@ namespace System.IO.Pipes
 
             CheckWriteOperations();
 
-            if (buffer.Length == 0)
-            {
-                return default;
-            }
-
-            return WriteAsyncCore(buffer, cancellationToken);
+            return
+                buffer.Length == 0 ? default :
+                _isAsync ? WriteAsyncCore(buffer, cancellationToken) :
+                AsyncOverSyncWrite(buffer, cancellationToken);
         }
+
+        /// <summary>Initiates an async-over-sync write for a pipe opened for non-overlapped I/O.</summary>
+        private ValueTask AsyncOverSyncWrite(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
+            AsyncOverSyncWithIoCancellation.InvokeAsync(static s => s.Stream.WriteCore(s.Buffer.Span), (Stream: this, Buffer: buffer), cancellationToken);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
@@ -242,7 +230,7 @@ namespace System.IO.Pipes
 
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
-        internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
+        private protected static void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             // Check that this handle is infact a handle to a pipe.
             if (Interop.Kernel32.GetFileType(safePipeHandle) != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE)
@@ -457,7 +445,7 @@ namespace System.IO.Pipes
 
         // Gets the transmission mode for the pipe.  This is virtual so that subclassing types can
         // override this in cases where only one mode is legal (such as anonymous pipes)
-        public unsafe virtual PipeTransmissionMode TransmissionMode
+        public virtual unsafe PipeTransmissionMode TransmissionMode
         {
             get
             {
@@ -488,7 +476,7 @@ namespace System.IO.Pipes
 
         // Gets the buffer size in the inbound direction for the pipe. This checks if pipe has read
         // access. If that passes, call to GetNamedPipeInfo will succeed.
-        public unsafe virtual int InBufferSize
+        public virtual unsafe int InBufferSize
         {
             get
             {
@@ -512,7 +500,7 @@ namespace System.IO.Pipes
         // if it's an outbound only pipe because GetNamedPipeInfo requires read access to the pipe.
         // However, returning cached is good fallback, especially if user specified a value in
         // the ctor.
-        public unsafe virtual int OutBufferSize
+        public virtual unsafe int OutBufferSize
         {
             get
             {

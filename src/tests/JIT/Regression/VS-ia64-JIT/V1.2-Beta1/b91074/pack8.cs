@@ -6,7 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 
 [StructLayoutAttribute(LayoutKind.Sequential, Pack = 8)]
-sealed internal class tagDBPROPSET
+internal sealed class tagDBPROPSET
 {
     public IntPtr rgProperties;
     public Int32 cProperties;

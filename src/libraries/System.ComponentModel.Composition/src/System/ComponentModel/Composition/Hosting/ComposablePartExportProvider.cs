@@ -85,10 +85,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     finally
                     {
-                        if (importEngine != null)
-                        {
-                            importEngine.Dispose();
-                        }
+                        importEngine?.Dispose();
 
                         if (disposeLock)
                         {
@@ -170,10 +167,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
 
                     // if we have created an engine and didn't set it because of a race condition, we need to dispose of it
-                    if (importEngine != null)
-                    {
-                        importEngine.Dispose();
-                    }
+                    importEngine?.Dispose();
                 }
 
                 return _importEngine;
@@ -320,10 +314,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private List<ComposablePart> GetUpdatedPartsList(ref CompositionBatch batch)
         {
-            if (batch == null)
-            {
-                throw new ArgumentNullException(nameof(batch));
-            }
+            ArgumentNullException.ThrowIfNull(batch);
 
             // Copy the current list of parts - we are about to modify it
             // This is an OK thing to do as this is the only method that can modify the List AND Compose can
@@ -345,10 +336,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (parts.Remove(part))
                 {
-                    if (partsToRemove == null)
-                    {
-                        partsToRemove = new List<ComposablePart>();
-                    }
+                    partsToRemove ??= new List<ComposablePart>();
                     partsToRemove.Add(part);
                 }
             }
@@ -363,10 +351,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void Recompose(CompositionBatch batch, AtomicComposition atomicComposition)
         {
-            if (batch == null)
-            {
-                throw new ArgumentNullException(nameof(batch));
-            }
+            ArgumentNullException.ThrowIfNull(batch);
 
             // Unregister any removed component parts
             foreach (ComposablePart part in batch.PartsToRemove)

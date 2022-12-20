@@ -87,9 +87,6 @@
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>
-  <data name="net_OperationNotSupportedException" xml:space="preserve">
-    <value>This operation is not supported.</value>
-  </data>
   <data name="net_PropertyNotImplementedException" xml:space="preserve">
     <value>This property is not implemented by this class.</value>
   </data>

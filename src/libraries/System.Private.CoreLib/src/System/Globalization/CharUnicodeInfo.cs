@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -246,7 +245,7 @@ namespace System.Globalization
             {
                 ulong temp = Unsafe.ReadUnaligned<ulong>(ref refToValue);
                 temp = BinaryPrimitives.ReverseEndianness(temp);
-                return Unsafe.As<ulong, double>(ref temp);
+                return BitConverter.UInt64BitsToDouble(temp);
             }
         }
 

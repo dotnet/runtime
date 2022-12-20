@@ -7,8 +7,6 @@ parameters:
   helixType: '(unspecified)'
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
-  stagedBuild: false
   strategy: ''
   pool: ''
 
@@ -64,6 +62,10 @@ jobs:
       agentOs: MacOS
     ${{ if eq(parameters.osGroup, 'windows') }}:
       agentOs: windows
+
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      disableComponentGovernance: true
 
     # Setting this results in the arcade job template including a step
     # that gathers asset manifests and publishes them to pipeline

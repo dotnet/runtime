@@ -20,7 +20,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="portablePdbVersion"/> is smaller than 0x0100.</exception>
         public void AddEmbeddedPortablePdbEntry(BlobBuilder debugMetadata, ushort portablePdbVersion)
         {
-            if (debugMetadata == null)
+            if (debugMetadata is null)
             {
                 Throw.ArgumentNull(nameof(debugMetadata));
             }
@@ -58,8 +58,7 @@ namespace System.Reflection.PortableExecutable
                 }
             }
 
-            // TODO: avoid multiple copies:
-            builder.WriteBytes(compressed.ToArray());
+            builder.WriteBytes(compressed.GetBuffer(), 0, (int)compressed.Length);
 
             return builder.Count - start;
         }

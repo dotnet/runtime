@@ -5,8 +5,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -86,6 +86,30 @@ namespace System.Runtime.CompilerServices
                 }
 
                 CreateEntry(key, value);
+            }
+        }
+
+        /// <summary>Adds a key to the table if it doesn't already exist.</summary>
+        /// <param name="key">The key to add.</param>
+        /// <param name="value">The key's property value.</param>
+        /// <returns>true if the key/value pair was added; false if the table already contained the key.</returns>
+        public bool TryAdd(TKey key, TValue value)
+        {
+            if (key is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+            }
+
+            lock (_lock)
+            {
+                int entryIndex = _container.FindEntry(key, out _);
+                if (entryIndex != -1)
+                {
+                    return false;
+                }
+
+                CreateEntry(key, value);
+                return true;
             }
         }
 
@@ -180,13 +204,9 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         public TValue GetValue(TKey key, CreateValueCallback createValueCallback)
         {
+            ArgumentNullException.ThrowIfNull(createValueCallback);
+
             // key is validated by TryGetValue
-
-            if (createValueCallback is null)
-            {
-                throw new ArgumentNullException(nameof(createValueCallback));
-            }
-
             return TryGetValue(key, out TValue? existingValue) ?
                 existingValue :
                 GetValueLocked(key, createValueCallback);
@@ -383,8 +403,6 @@ namespace System.Runtime.CompilerServices
             c.CreateEntryNoResize(key, value);
         }
 
-        private static bool IsPowerOfTwo(int value) => (value > 0) && ((value & (value - 1)) == 0);
-
         //--------------------------------------------------------------------------------------------
         // Entry can be in one of four states:
         //
@@ -442,7 +460,7 @@ namespace System.Runtime.CompilerServices
             internal Container(ConditionalWeakTable<TKey, TValue> parent)
             {
                 Debug.Assert(parent != null);
-                Debug.Assert(IsPowerOfTwo(InitialCapacity));
+                Debug.Assert(BitOperations.IsPow2(InitialCapacity));
 
                 const int Size = InitialCapacity;
                 _buckets = new int[Size];
@@ -465,7 +483,7 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(buckets != null);
                 Debug.Assert(entries != null);
                 Debug.Assert(buckets.Length == entries.Length);
-                Debug.Assert(IsPowerOfTwo(buckets.Length));
+                Debug.Assert(BitOperations.IsPow2(buckets.Length));
 
                 _parent = parent;
                 _buckets = buckets;
@@ -658,7 +676,7 @@ namespace System.Runtime.CompilerServices
             internal Container Resize(int newSize)
             {
                 Debug.Assert(newSize >= _buckets.Length);
-                Debug.Assert(IsPowerOfTwo(newSize));
+                Debug.Assert(BitOperations.IsPow2(newSize));
 
                 // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.

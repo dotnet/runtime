@@ -224,9 +224,9 @@ namespace System.ComponentModel.Design.Tests
         public void AddService_ServiceInstanceNotInstanceOfType_ThrowsArgumentException()
         {
             var container = new ServiceContainer();
-            Assert.Throws<ArgumentException>(null, () => container.AddService(typeof(int), new object()));
-            Assert.Throws<ArgumentException>(null, () => container.AddService(typeof(int), new object(), true));
-            Assert.Throws<ArgumentException>(null, () => container.AddService(typeof(int), new object(), false));
+            AssertExtensions.Throws<ArgumentException>(null, () => container.AddService(typeof(int), new object()));
+            AssertExtensions.Throws<ArgumentException>(null, () => container.AddService(typeof(int), new object(), true));
+            AssertExtensions.Throws<ArgumentException>(null, () => container.AddService(typeof(int), new object(), false));
         }
 
         [Fact]
@@ -511,7 +511,7 @@ namespace System.ComponentModel.Design.Tests
             var container = new ServiceContainer();
             Assert.Same(container, container.GetService(serviceType));
 
-            // Should return the container even if overriden.
+            // Should return the container even if overridden.
             container.AddService(serviceType, new ServiceContainer());
             Assert.Same(container, container.GetService(serviceType));
         }

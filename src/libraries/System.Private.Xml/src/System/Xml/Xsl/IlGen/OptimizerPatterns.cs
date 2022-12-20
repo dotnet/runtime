@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.IlGen
     /// </summary>
     internal sealed class OptimizerPatterns : IQilAnnotation
     {
-        private static readonly int s_patternCount = Enum.GetValues(typeof(OptimizerPatternName)).Length;
+        private static readonly int s_patternCount = Enum.GetValues<OptimizerPatternName>().Length;
 
         private int _patterns;               // Set of patterns that the annotated Qil node and its subtree matches
         private bool _isReadOnly;            // True if setters are disabled in the case of singleton OptimizerPatterns
@@ -70,7 +70,7 @@ namespace System.Xml.Xsl.IlGen
         public static OptimizerPatterns Read(QilNode nd)
         {
             XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
-            OptimizerPatterns? optPatt = (ann != null) ? ann.Patterns : null;
+            OptimizerPatterns? optPatt = ann?.Patterns;
 
             if (optPatt == null)
             {
@@ -242,7 +242,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public void AddPattern(OptimizerPatternName pattern)
         {
-            Debug.Assert(Enum.IsDefined(typeof(OptimizerPatternName), pattern));
+            Debug.Assert(Enum.IsDefined(pattern));
             Debug.Assert((int)pattern < 32);
             Debug.Assert(!_isReadOnly, "This OptimizerPatterns instance is read-only.");
             _patterns |= (1 << (int)pattern);
@@ -253,7 +253,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public bool MatchesPattern(OptimizerPatternName pattern)
         {
-            Debug.Assert(Enum.IsDefined(typeof(OptimizerPatternName), pattern));
+            Debug.Assert(Enum.IsDefined(pattern));
             return (_patterns & (1 << (int)pattern)) != 0;
         }
 

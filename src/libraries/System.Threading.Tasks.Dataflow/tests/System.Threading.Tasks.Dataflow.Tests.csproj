@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
@@ -28,6 +28,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Compile Include="Dataflow\DataflowBlockExtensionTests.IAsyncEnumerable.cs" />
+    <Compile Include="Dataflow\DataflowTestHelper.IAsyncEnumerable.cs" />
+    <Compile Include="Dataflow\TransformManyBlockTests.IAsyncEnumerable.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj" />

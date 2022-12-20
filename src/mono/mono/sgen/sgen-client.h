@@ -47,6 +47,12 @@ gboolean sgen_client_object_is_array_fill (GCObject *o);
 gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
 
 /*
+ * Called when object is ready for finalization. Returns whether the object was finalized
+ * eagerly. Otherwise `sgen_client_object_queued_for_finalization` is called.
+ */
+gboolean sgen_client_object_finalize_eagerly (GCObject *obj);
+
+/*
  * Called after an object is enqueued for finalization.  This is a very low-level callback.
  * It should almost certainly be a NOP.
  *
@@ -250,7 +256,7 @@ gsize *sgen_client_get_weak_bitmap (GCVTable vt, int *nbits);
 /*
  * Scheduled @cv to be invoked later in the background.
  *
- * This function is idepotent WRT background execution. Meaning that calling it multiple times with the same funciton pointer before any bg execution happens will only call @cb once.
+ * This function is idepotent WRT background execution. Meaning that calling it multiple times with the same function pointer before any bg execution happens will only call @cb once.
  */
 void sgen_client_schedule_background_job (void (*cb)(void));
 

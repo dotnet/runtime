@@ -138,7 +138,7 @@ namespace System.Text.Json.Tests
             Assert.Null(byteArrayClass.NullByteArray);
         }
 
-        private static readonly byte[] s_testData = Encoding.UTF8.GetBytes("This is some test data!!!");
+        private static readonly byte[] s_testData = "This is some test data!!!"u8.ToArray();
 
         [Fact]
         public void AssertShouldSerializeTest()

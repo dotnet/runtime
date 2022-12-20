@@ -398,7 +398,7 @@ namespace Microsoft.NET.Build.Tasks
                             }
                             else
                             {
-                                // If previously compiled as R2R, treat as reference if this would be compiled seperately
+                                // If previously compiled as R2R, treat as reference if this would be compiled separately
                                 if (!compositeCompile || excludeFromComposite)
                                 {
                                     return Eligibility.CreateReferenceEligibility(excludeFromComposite);
@@ -417,7 +417,7 @@ namespace Microsoft.NET.Build.Tasks
                         }
 
                         // save these most expensive checks for last. We don't want to scan all references for IL code
-                        if (ReferencesWinMD(mdReader) || !HasILCode(pereader, mdReader))
+                        if (ReferencesWinMD(mdReader) || !HasILCode(mdReader))
                         {
                             // Forwarder assemblies are not separately compiled via R2R, but when performing composite compilation, they are included in the bundle
                             if (excludeFromComposite || !compositeCompile)
@@ -488,7 +488,7 @@ namespace Microsoft.NET.Build.Tasks
             return false;
         }
 
-        private static bool HasILCode(PEReader peReader, MetadataReader mdReader)
+        private static bool HasILCode(MetadataReader mdReader)
         {
             foreach (var methoddefHandle in mdReader.MethodDefinitions)
             {

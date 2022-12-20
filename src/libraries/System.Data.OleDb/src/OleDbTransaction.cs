@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.OleDb
 {
     public sealed class OleDbTransaction : DbTransaction
@@ -27,13 +25,12 @@ namespace System.Data.OleDb
 
             internal WrappedTransaction(UnsafeNativeMethods.ITransactionLocal transaction, int isolevel, out OleDbHResult hr) : base(transaction)
             {
-                int transactionLevel = 0;
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
                 {
-                    hr = transaction.StartTransaction(isolevel, 0, IntPtr.Zero, out transactionLevel);
+                    hr = transaction.StartTransaction(isolevel, 0, IntPtr.Zero, out _);
                     if (0 <= hr)
                     {
                         _mustComplete = true;
@@ -298,7 +295,7 @@ namespace System.Data.OleDb
 
         private void ProcessResults(OleDbHResult hr)
         {
-            Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection, this);
+            Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection);
             if (null != e)
             { throw e; }
         }

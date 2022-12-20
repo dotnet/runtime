@@ -21,6 +21,8 @@
 #define ELF_ARCH  EM_AARCH64
 #elif defined(__arm__)
 #define ELF_ARCH  EM_ARM
+#elif defined(__loongarch64)
+#define ELF_ARCH  EM_LOONGARCH
 #endif
 
 #define PH_HDR_CANARY 0xFFFF

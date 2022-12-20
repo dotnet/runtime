@@ -30,13 +30,21 @@ namespace System.Reflection.Emit
     }
     public sealed partial class DynamicMethod : System.Reflection.MethodInfo
     {
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Reflection.Module m, bool skipVisibility) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Type owner, bool skipVisibility) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, bool restrictedSkipVisibility) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, System.Reflection.Module m) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, System.Reflection.Module m, bool skipVisibility) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, System.Type owner) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, System.Type owner, bool skipVisibility) { }
         public override System.Reflection.MethodAttributes Attributes { get { throw null; } }
         public override System.Reflection.CallingConventions CallingConvention { get { throw null; } }

@@ -6,7 +6,6 @@
 #include <config.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/gc-internals.h>
-#include <mono/metadata/mono-config-dirs.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler-legacy.h>
 #include <mono/metadata/profiler-private.h>
@@ -23,27 +22,37 @@ typedef void (*MonoProfilerInitializer) (const char *);
 #define OLD_INITIALIZER_NAME "mono_profiler_startup"
 #define NEW_INITIALIZER_NAME "mono_profiler_init"
 
+#if defined(TARGET_BROWSER) && defined(MONO_CROSS_COMPILE)
+MONO_API void mono_profiler_init_browser (const char *desc);
+#endif
+
 static gboolean
 load_profiler (MonoDl *module, const char *name, const char *desc)
 {
 	g_assert (module);
 
-	char *err, *old_name = g_strdup_printf (OLD_INITIALIZER_NAME);
+	char *old_name = g_strdup_printf (OLD_INITIALIZER_NAME);
 	MonoProfilerInitializer func;
 
-	if (!(err = mono_dl_symbol (module, old_name, (gpointer*) &func))) {
+	ERROR_DECL (symbol_error);
+	func = (MonoProfilerInitializer)mono_dl_symbol (module, old_name, symbol_error);
+	mono_error_cleanup (symbol_error);
+
+	if (func) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Found old-style startup symbol '%s' for the '%s' profiler; it has not been migrated to the new API.", old_name, name);
 		g_free (old_name);
 		return FALSE;
 	}
 
-	g_free (err);
 	g_free (old_name);
 
 	char *new_name = g_strdup_printf (NEW_INITIALIZER_NAME "_%s", name);
 
-	if ((err = mono_dl_symbol (module, new_name, (gpointer *) &func))) {
-		g_free (err);
+	error_init_reuse (symbol_error);
+	func = (MonoProfilerInitializer)mono_dl_symbol (module, new_name, symbol_error);
+	mono_error_cleanup (symbol_error);
+
+	if (!func) {
 		g_free (new_name);
 		return FALSE;
 	}
@@ -58,7 +67,7 @@ load_profiler (MonoDl *module, const char *name, const char *desc)
 static gboolean
 load_profiler_from_executable (const char *name, const char *desc)
 {
-	char *err;
+	ERROR_DECL (load_error);
 
 	/*
 	 * Some profilers (such as ours) may need to call back into the runtime
@@ -68,35 +77,37 @@ load_profiler_from_executable (const char *name, const char *desc)
 	 * invoking the dynamic linker which is not async-signal-safe. Passing
 	 * MONO_DL_EAGER will ask the dynamic linker to resolve everything upfront.
 	 */
-	MonoDl *module = mono_dl_open (NULL, MONO_DL_EAGER, &err);
+	MonoDl *module = mono_dl_open (NULL, MONO_DL_EAGER, load_error);
 
 	if (!module) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open main executable: %s", err);
-		g_free (err);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open main executable: %s", mono_error_get_message_without_fields (load_error));
+		mono_error_cleanup (load_error);
 		return FALSE;
 	}
 
+	mono_error_assert_ok (load_error);
 	return load_profiler (module, name, desc);
 }
 
 static gboolean
 load_profiler_from_directory (const char *directory, const char *libname, const char *name, const char *desc)
 {
-	char *path, *err;
+	char *path;
 	void *iter = NULL;
 
 	while ((path = mono_dl_build_path (directory, libname, &iter))) {
-		MonoDl *module = mono_dl_open (path, MONO_DL_EAGER, &err);
+		ERROR_DECL (load_error);
+		MonoDl *module = mono_dl_open (path, MONO_DL_EAGER, load_error);
 
 		if (!module) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open from directory \"%s\": %s", path, err);
-			g_free (err);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open from directory \"%s\": %s", path, mono_error_get_message_without_fields (load_error));
+			mono_error_cleanup (load_error);
 			g_free (path);
 			continue;
 		}
+		mono_error_assert_ok (load_error);
 
 		g_free (path);
-
 		return load_profiler (module, name, desc);
 	}
 
@@ -106,15 +117,17 @@ load_profiler_from_directory (const char *directory, const char *libname, const 
 static gboolean
 load_profiler_from_installation (const char *libname, const char *name, const char *desc)
 {
-	char *err;
-	MonoDl *module = mono_dl_open_runtime_lib (libname, MONO_DL_EAGER, &err);
+	ERROR_DECL (load_error);
+
+	MonoDl *module = mono_dl_open_runtime_lib (libname, MONO_DL_EAGER, load_error);
 
 	if (!module) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open from installation: %s", err);
-		g_free (err);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Could not open from installation: %s", mono_error_get_message_without_fields (load_error));
+		mono_error_cleanup (load_error);
 		return FALSE;
 	}
 
+	mono_error_assert_ok (load_error);
 	return load_profiler (module, name, desc);
 }
 
@@ -139,6 +152,9 @@ load_profiler_from_installation (const char *libname, const char *name, const ch
  *
  * This function may \b only be called by embedders prior to running managed
  * code.
+ *
+ * This could could be triggered by \c MONO_PROFILE env variable in normal mono process or
+ * by \c --profile=foo argument to mono-aot-cross.exe command line.
  */
 void
 mono_profiler_load (const char *desc)
@@ -156,11 +172,20 @@ mono_profiler_load (const char *desc)
 #endif
 
 	if ((col = strchr (desc, ':')) != NULL) {
-		mname = (char *) g_memdup (desc, col - desc + 1);
+		mname = (char *) g_memdup (desc, GPTRDIFF_TO_UINT (col - desc + 1));
 		mname [col - desc] = 0;
 	} else {
 		mname = g_strdup (desc);
 	}
+
+#if defined(TARGET_BROWSER) && defined(MONO_CROSS_COMPILE)
+	// this code could be running as part of mono-aot-cross.exe
+	// in case of WASM we staticaly link in the browser.c profiler plugin
+	if(strcmp (mname, "browser") == 0) {
+		mono_profiler_init_browser (desc);
+		goto done;
+	}
+#endif
 
 	if (load_profiler_from_executable (mname, desc))
 		goto done;
@@ -168,9 +193,6 @@ mono_profiler_load (const char *desc)
 	libname = g_strdup_printf ("mono-profiler-%s", mname);
 
 	if (load_profiler_from_installation (libname, mname, desc))
-		goto done;
-
-	if (mono_config_get_assemblies_dir () && load_profiler_from_directory (mono_assembly_getrootdir (), libname, mname, desc))
 		goto done;
 
 	if (load_profiler_from_directory (NULL, libname, mname, desc))
@@ -382,7 +404,7 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 		guchar *cil_code = info->data [i].cil_code;
 
 		if (cil_code && cil_code >= start && cil_code < end) {
-			guint32 offset = cil_code - start;
+			guint32 offset = GPTRDIFF_TO_UINT32 (cil_code - start);
 
 			MonoProfilerCoverageData data;
 			memset (&data, 0, sizeof (data));

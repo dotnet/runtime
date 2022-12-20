@@ -48,7 +48,9 @@ namespace System.ComponentModel
         /// </summary>
         public ToolboxItemAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string toolboxItemTypeName)
         {
-            _toolboxItemTypeName = toolboxItemTypeName ?? throw new ArgumentNullException(nameof(toolboxItemTypeName));
+            ArgumentNullException.ThrowIfNull(toolboxItemTypeName);
+
+            _toolboxItemTypeName = toolboxItemTypeName;
         }
 
         /// <summary>
@@ -56,10 +58,7 @@ namespace System.ComponentModel
         /// </summary>
         public ToolboxItemAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type toolboxItemType)
         {
-            if (toolboxItemType == null)
-            {
-                throw new ArgumentNullException(nameof(toolboxItemType));
-            }
+            ArgumentNullException.ThrowIfNull(toolboxItemType);
 
             _toolboxItemType = toolboxItemType;
             _toolboxItemTypeName = toolboxItemType.AssemblyQualifiedName;

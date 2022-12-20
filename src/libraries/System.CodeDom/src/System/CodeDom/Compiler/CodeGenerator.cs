@@ -234,7 +234,7 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateTypes(CodeNamespace e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -400,10 +400,11 @@ namespace System.CodeDom.Compiler
 
         public virtual void GenerateCodeFromMember(CodeTypeMember member, TextWriter writer, CodeGeneratorOptions options)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
+
             if (_output != null)
             {
                 throw new InvalidOperationException(SR.CodeGenReentrance);
@@ -712,7 +713,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateSnippetCompileUnit(CodeSnippetCompileUnit e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -802,7 +803,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateNamespace(CodeNamespace e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -819,7 +820,7 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateNamespaceImports(CodeNamespace e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -876,7 +877,7 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateStatement(CodeStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -973,7 +974,7 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateStatements(CodeStatementCollection stmts)
         {
-            if (stmts == null)
+            if (stmts is null)
             {
                 throw new ArgumentNullException(nameof(stmts));
             }
@@ -986,10 +987,11 @@ namespace System.CodeDom.Compiler
 
         protected virtual void OutputAttributeDeclarations(CodeAttributeDeclarationCollection attributes)
         {
-            if (attributes == null)
+            if (attributes is null)
             {
                 throw new ArgumentNullException(nameof(attributes));
             }
+
             if (attributes.Count == 0)
             {
                 return;
@@ -1033,7 +1035,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void OutputAttributeArgument(CodeAttributeArgument arg)
         {
-            if (arg == null)
+            if (arg is null)
             {
                 throw new ArgumentNullException(nameof(arg));
             }
@@ -1289,7 +1291,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void OutputParameters(CodeParameterDeclarationExpressionCollection parameters)
         {
-            if (parameters == null)
+            if (parameters is null)
             {
                 throw new ArgumentNullException(nameof(parameters));
             }
@@ -1327,7 +1329,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1383,7 +1385,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateParameterDeclarationExpression(CodeParameterDeclarationExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1400,7 +1402,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateDirectionExpression(CodeDirectionExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1411,7 +1413,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GeneratePrimitiveExpression(CodePrimitiveExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1491,7 +1493,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateTypeReferenceExpression(CodeTypeReferenceExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1501,7 +1503,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateTypeOfExpression(CodeTypeOfExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1516,10 +1518,11 @@ namespace System.CodeDom.Compiler
         protected abstract void GenerateThrowExceptionStatement(CodeThrowExceptionStatement e);
         protected virtual void GenerateCommentStatement(CodeCommentStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
+
             if (e.Comment == null)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_NullComment, nameof(e)), nameof(e));
@@ -1529,7 +1532,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateCommentStatements(CodeCommentStatementCollection e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1552,7 +1555,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateSnippetStatement(CodeSnippetStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1576,7 +1579,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateCompileUnitStart(CodeCompileUnit e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1589,7 +1592,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateCompileUnitEnd(CodeCompileUnit e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }

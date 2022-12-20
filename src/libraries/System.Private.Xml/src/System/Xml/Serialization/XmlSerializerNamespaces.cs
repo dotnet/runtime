@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System.Collections;
+using System.IO;
+using System.Xml.Schema;
+using System;
+using System.Collections.Generic;
+using System.Xml;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System.Collections;
-    using System.IO;
-    using System.Xml.Schema;
-    using System;
-    using System.Collections.Generic;
-    using System.Xml.Extensions;
-    using System.Xml;
-    using System.Diagnostics.CodeAnalysis;
-
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
@@ -69,7 +68,7 @@ namespace System.Xml.Serialization
                 XmlConvert.VerifyNCName(prefix);
 
             if (ns != null && ns.Length > 0)
-                ExtensionMethods.ToUri(ns);
+                XmlConvert.ToUri(ns);
             AddInternal(prefix!, ns);
         }
 
@@ -101,15 +100,7 @@ namespace System.Xml.Serialization
 
         internal Dictionary<string, XmlQualifiedName>.ValueCollection Namespaces => NamespacesInternal.Values;
 
-        private Dictionary<string, XmlQualifiedName> NamespacesInternal
-        {
-            get
-            {
-                if (_namespaces == null)
-                    _namespaces = new Dictionary<string, XmlQualifiedName>();
-                return _namespaces;
-            }
-        }
+        private Dictionary<string, XmlQualifiedName> NamespacesInternal => _namespaces ??= new Dictionary<string, XmlQualifiedName>();
 
         internal ArrayList? NamespaceList
         {

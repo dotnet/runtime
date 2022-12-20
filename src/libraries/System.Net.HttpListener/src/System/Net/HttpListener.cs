@@ -59,10 +59,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _extendedProtectionSelectorDelegate = value;
             }
@@ -84,10 +81,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.CustomChannelBinding != null)
                 {
                     throw new ArgumentException(SR.net_listener_cannot_set_custom_cbt, nameof(value));
@@ -110,13 +104,11 @@ namespace System.Net
 
         internal void AddPrefix(string uriPrefix)
         {
-            string? registeredPrefix = null;
+            ArgumentNullException.ThrowIfNull(uriPrefix);
+
+            string? registeredPrefix;
             try
             {
-                if (uriPrefix == null)
-                {
-                    throw new ArgumentNullException(nameof(uriPrefix));
-                }
                 CheckDisposed();
                 int i;
                 if (string.Compare(uriPrefix, 0, "http://", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
@@ -154,7 +146,7 @@ namespace System.Net
                 {
                     throw new ArgumentException(SR.net_listener_host, nameof(uriPrefix));
                 }
-                if (uriPrefix[uriPrefix.Length - 1] != '/')
+                if (!uriPrefix.EndsWith('/'))
                 {
                     throw new ArgumentException(SR.net_listener_slash, nameof(uriPrefix));
                 }
@@ -197,10 +189,7 @@ namespace System.Net
             {
                 CheckDisposed();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"uriPrefix: {uriPrefix}");
-                if (uriPrefix == null)
-                {
-                    throw new ArgumentNullException(nameof(uriPrefix));
-                }
+                ArgumentNullException.ThrowIfNull(uriPrefix);
 
                 if (!_uriPrefixes.Contains(uriPrefix))
                 {

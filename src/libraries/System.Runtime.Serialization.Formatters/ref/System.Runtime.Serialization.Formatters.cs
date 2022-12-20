@@ -16,12 +16,13 @@ namespace System.Runtime.Serialization
         public abstract System.Runtime.Serialization.StreamingContext Context { get; set; }
         public abstract System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get; set; }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         public abstract object Deserialize(System.IO.Stream serializationStream);
         protected virtual object? GetNext(out long objID) { throw null; }
         protected virtual long Schedule(object? obj) { throw null; }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         public abstract void Serialize(System.IO.Stream serializationStream, object graph);
         protected abstract void WriteArray(object obj, string name, System.Type memberType);
         protected abstract void WriteBoolean(bool val, string name);
@@ -91,10 +92,11 @@ namespace System.Runtime.Serialization
         System.Runtime.Serialization.StreamingContext Context { get; set; }
         System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get; set; }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         object Deserialize(System.IO.Stream serializationStream);
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         void Serialize(System.IO.Stream serializationStream, object graph);
     }
     public partial interface ISerializationSurrogate
@@ -117,23 +119,23 @@ namespace System.Runtime.Serialization
     public partial class ObjectManager
     {
         public ObjectManager(System.Runtime.Serialization.ISurrogateSelector? selector, System.Runtime.Serialization.StreamingContext context) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public virtual void DoFixups() { }
         public virtual object? GetObject(long objectID) { throw null; }
         public virtual void RaiseDeserializationEvent() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RaiseOnDeserializingEvent(object obj) { }
         public virtual void RecordArrayElementFixup(long arrayToBeFixed, int index, long objectRequired) { }
         public virtual void RecordArrayElementFixup(long arrayToBeFixed, int[] indices, long objectRequired) { }
         public virtual void RecordDelayedFixup(long objectToBeFixed, string memberName, long objectRequired) { }
         public virtual void RecordFixup(long objectToBeFixed, System.Reflection.MemberInfo member, long objectRequired) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public virtual void RegisterObject(object obj, long objectID) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo info) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo? info, long idOfContainingObj, System.Reflection.MemberInfo? member) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj, long objectID, System.Runtime.Serialization.SerializationInfo? info, long idOfContainingObj, System.Reflection.MemberInfo? member, int[]? arrayIndex) { }
     }
     public abstract partial class SerializationBinder
@@ -146,7 +148,7 @@ namespace System.Runtime.Serialization
     {
         public SerializationObjectManager(System.Runtime.Serialization.StreamingContext context) { }
         public void RaiseOnSerializedEvent() { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("SerializationObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("SerializationObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj) { }
     }
     public partial class SurrogateSelector : System.Runtime.Serialization.ISurrogateSelector
@@ -196,10 +198,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
         public System.Runtime.Serialization.ISurrogateSelector? SurrogateSelector { get { throw null; } set { } }
         public System.Runtime.Serialization.Formatters.FormatterTypeStyle TypeFormat { get { throw null; } set { } }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("BinaryFormatter serialization uses dynamic code generation, the type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         public object Deserialize(System.IO.Stream serializationStream) { throw null; }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         public void Serialize(System.IO.Stream serializationStream, object graph) { }
     }
 }

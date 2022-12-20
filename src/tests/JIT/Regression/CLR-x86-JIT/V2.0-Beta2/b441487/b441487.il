@@ -22,7 +22,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module b441487.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -229,7 +228,7 @@ starg 0
 .class public abstract auto ansi sealed beforefieldinit Test_b441487.Program
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

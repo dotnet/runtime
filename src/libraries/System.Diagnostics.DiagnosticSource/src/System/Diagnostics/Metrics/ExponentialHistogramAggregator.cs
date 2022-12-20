@@ -126,7 +126,7 @@ namespace System.Diagnostics.Metrics
             return new HistogramStatistics(Array.Empty<QuantileValue>());
         }
 
-        private int GetInvalidCount(int[]?[] counters)
+        private static int GetInvalidCount(int[]?[] counters)
         {
             int[]? positiveInfAndNan = counters[ExponentArraySize / 2 - 1];
             int[]? negativeInfAndNan = counters[ExponentArraySize - 1];
@@ -209,7 +209,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        private int QuantileToRank(double quantile, int count)
+        private static int QuantileToRank(double quantile, int count)
         {
             return Math.Min(Math.Max(0, (int)(quantile * count)), count - 1);
         }

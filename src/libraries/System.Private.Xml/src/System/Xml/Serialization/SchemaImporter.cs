@@ -1,21 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.ComponentModel;
+using System.Configuration;
+#if DEBUG
+using System.Diagnostics;
+#endif
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Xml.Schema;
+using System.Xml.Serialization.Configuration;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Xml.Schema;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Configuration;
-    using System.Xml.Serialization.Configuration;
-
-#if DEBUG
-    using System.Diagnostics;
-#endif
-
     public abstract class SchemaImporter
     {
         private XmlSchemas _schemas;
@@ -46,15 +44,7 @@ namespace System.Xml.Serialization
             Schemas.SetCache(Context.Cache, Context.ShareTypes);
         }
 
-        internal ImportContext Context
-        {
-            get
-            {
-                if (_context == null)
-                    _context = new ImportContext();
-                return _context;
-            }
-        }
+        internal ImportContext Context => _context ??= new ImportContext();
 
         internal Hashtable ImportedElements
         {
@@ -71,45 +61,13 @@ namespace System.Xml.Serialization
             get { return Context.TypeIdentifiers; }
         }
 
-        internal XmlSchemas Schemas
-        {
-            get
-            {
-                if (_schemas == null)
-                    _schemas = new XmlSchemas();
-                return _schemas;
-            }
-        }
+        internal XmlSchemas Schemas => _schemas ??= new XmlSchemas();
 
-        internal TypeScope Scope
-        {
-            get
-            {
-                if (_scope == null)
-                    _scope = new TypeScope();
-                return _scope;
-            }
-        }
+        internal TypeScope Scope => _scope ??= new TypeScope();
 
-        internal NameTable GroupsInUse
-        {
-            get
-            {
-                if (_groupsInUse == null)
-                    _groupsInUse = new NameTable();
-                return _groupsInUse;
-            }
-        }
+        internal NameTable GroupsInUse => _groupsInUse ??= new NameTable();
 
-        internal NameTable TypesInUse
-        {
-            get
-            {
-                if (_typesInUse == null)
-                    _typesInUse = new NameTable();
-                return _typesInUse;
-            }
-        }
+        internal NameTable TypesInUse => _typesInUse ??= new NameTable();
 
         internal CodeGenerationOptions Options
         {
@@ -162,12 +120,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls CreateRootMapping")]
-        internal StructMapping GetRootMapping()
-        {
-            if (_root == null)
-                _root = CreateRootMapping();
-            return _root;
-        }
+        internal StructMapping GetRootMapping() => _root ??= CreateRootMapping();
 
         [RequiresUnreferencedCode("calls GetRootMapping")]
         internal StructMapping ImportRootMapping()
@@ -183,7 +136,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls ImportType")]
         internal abstract void ImportDerivedTypes(XmlQualifiedName baseName);
 
-        internal void AddReference(XmlQualifiedName name, NameTable references, string error)
+        internal static void AddReference(XmlQualifiedName name, NameTable references, string error)
         {
             if (name.Namespace == XmlSchema.Namespace)
                 return;
@@ -194,7 +147,7 @@ namespace System.Xml.Serialization
             references[name] = name;
         }
 
-        internal void RemoveReference(XmlQualifiedName name, NameTable references)
+        internal static void RemoveReference(XmlQualifiedName name, NameTable references)
         {
             references[name] = null;
         }

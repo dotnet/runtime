@@ -2988,10 +2988,89 @@ EXTERN_C const IID IID_ISOSDacInterface11;
 
 #endif  /* C style interface */
 
-
-
-
 #endif  /* __ISOSDacInterface11_INTERFACE_DEFINED__ */
+
+#ifndef __ISOSDacInterface12_INTERFACE_DEFINED__
+#define __ISOSDacInterface12_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface12 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface12;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("1b93bacc-8ca4-432d-943a-3e6e7ec0b0a3")
+    ISOSDacInterface12 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext( 
+            CLRDATA_ADDRESS *allocPtr,
+            CLRDATA_ADDRESS *allocLimit) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface12Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface12 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface12 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface12 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGlobalAllocationContext )( 
+            ISOSDacInterface12 * This,
+            CLRDATA_ADDRESS *allocPtr,
+            CLRDATA_ADDRESS *allocLimit);
+        
+        END_INTERFACE
+    } ISOSDacInterface12Vtbl;
+
+    interface ISOSDacInterface12
+    {
+        CONST_VTBL struct ISOSDacInterface12Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface12_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface12_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface12_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface12_GetGlobalAllocationContext(This,allocPtr,allocLimit)	\
+    ( (This)->lpVtbl -> GetGlobalAllocationContext(This,allocPtr,allocLimit) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface12_INTERFACE_DEFINED__ */
+
 
 /* Additional Prototypes for ALL interfaces */
 

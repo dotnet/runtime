@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Memory.Tests
 {
-    public class SequencePostionTests
+    public class SequencePositionTests
     {
         [Fact]
         public void ComparisonMembers_NotNullSegment()

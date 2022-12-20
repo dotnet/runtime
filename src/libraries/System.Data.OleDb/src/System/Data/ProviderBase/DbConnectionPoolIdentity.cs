@@ -19,7 +19,6 @@ namespace System.Data.ProviderBase
     {
         private const int E_NotImpersonationToken = unchecked((int)0x8007051D);
         private const int Win32_CheckTokenMembership = 1;
-        private const int Win32_CreateWellKnownSid = 5;
 
         public static readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(string.Empty, false, true);
 
@@ -39,23 +38,6 @@ namespace System.Data.ProviderBase
         internal bool IsRestricted
         {
             get { return _isRestricted; }
-        }
-
-        private static byte[] CreateWellKnownSid(WellKnownSidType sidType)
-        {
-            // Passing an array as big as it can ever be is a small price to pay for
-            // not having to P/Invoke twice (once to get the buffer, once to get the data)
-
-            uint length = (uint)SecurityIdentifier.MaxBinaryLength;
-            byte[] resultSid = new byte[length];
-
-            // NOTE - We copied this code from System.Security.Principal.Win32.CreateWellKnownSid...
-
-            if (0 == UnsafeNativeMethods.CreateWellKnownSid((int)sidType, null, out resultSid, ref length))
-            {
-                IntegratedSecurityError(Win32_CreateWellKnownSid);
-            }
-            return resultSid;
         }
 
         public override bool Equals(object? value)

@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Runtime.Versioning;
+
 namespace System.Transactions
 {
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
@@ -187,10 +189,11 @@ namespace System.Transactions
     }
     public static partial class TransactionManager
     {
-        public static System.TimeSpan DefaultTimeout { get { throw null; } }
+        public static System.TimeSpan DefaultTimeout { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public static System.Transactions.HostCurrentTransactionCallback? HostCurrentCallback { get { throw null; } set { } }
-        public static System.TimeSpan MaximumTimeout { get { throw null; } }
+        public static System.TimeSpan MaximumTimeout { get { throw null; } set { } }
+        public static bool ImplicitDistributedTransactions { get; [System.Runtime.Versioning.SupportedOSPlatform("windows")] [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Distributed transactions support may not be compatible with trimming. If your program creates a distributed transaction via System.Transactions, the correctness of the application cannot be guaranteed after trimming.")] set; }
         public static event System.Transactions.TransactionStartedEventHandler? DistributedTransactionStarted { add { } remove { } }
         public static void RecoveryComplete(System.Guid resourceManagerIdentifier) { }
         public static System.Transactions.Enlistment Reenlist(System.Guid resourceManagerIdentifier, byte[] recoveryInformation, System.Transactions.IEnlistmentNotification enlistmentNotification) { throw null; }
@@ -202,12 +205,13 @@ namespace System.Transactions
         public TransactionManagerCommunicationException(string? message) { }
         public TransactionManagerCommunicationException(string? message, System.Exception? innerException) { }
     }
-    public partial struct TransactionOptions
+    public partial struct TransactionOptions : System.IEquatable<System.Transactions.TransactionOptions>
     {
-        private int _dummyPrimitive;
+        private readonly int _dummyPrimitive;
         public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } set { } }
         public System.TimeSpan Timeout { get { throw null; } set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Transactions.TransactionOptions other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
         public static bool operator !=(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }

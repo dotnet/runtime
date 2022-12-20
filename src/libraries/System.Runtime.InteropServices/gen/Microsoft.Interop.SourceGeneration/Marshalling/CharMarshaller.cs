@@ -14,7 +14,7 @@ namespace Microsoft.Interop
 {
     public sealed class Utf16CharMarshaller : IMarshallingGenerator
     {
-        private static readonly PredefinedTypeSyntax s_nativeType = PredefinedType(Token(SyntaxKind.UShortKeyword));
+        private static readonly ManagedTypeInfo s_nativeType = new SpecialTypeInfo("ushort", "ushort", SpecialType.System_UInt16);
 
         public Utf16CharMarshaller()
         {
@@ -22,46 +22,29 @@ namespace Microsoft.Interop
 
         public bool IsSupported(TargetFramework target, Version version) => true;
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
-            (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             if (!info.IsByRef)
             {
-                // (ushort)<managedIdentifier>
-                return Argument(
-                    CastExpression(
-                        AsNativeType(info),
-                        IdentifierName(managedIdentifier)));
+                return ValueBoundaryBehavior.ManagedIdentifier;
             }
             else if (IsPinningPathSupported(info, context))
             {
-                // (ushort*)<pinned>
-                return Argument(
-                    CastExpression(
-                        PointerType(AsNativeType(info)),
-                        IdentifierName(PinnedIdentifier(info.InstanceIdentifier))));
+                return ValueBoundaryBehavior.NativeIdentifier;
             }
 
-            // &<nativeIdentifier>
-            return Argument(
-                PrefixUnaryExpression(
-                    SyntaxKind.AddressOfExpression,
-                    IdentifierName(nativeIdentifier)));
+            return ValueBoundaryBehavior.AddressOfNativeIdentifier;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Char));
             return s_nativeType;
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -85,29 +68,44 @@ namespace Microsoft.Interop
                                     ))
                             )
                         ),
-                        EmptyStatement()
+                        // ushort* <native> = (ushort*)<pinned>;
+                        LocalDeclarationStatement(
+                            VariableDeclaration(PointerType(AsNativeType(info).Syntax),
+                                SingletonSeparatedList(
+                                    VariableDeclarator(nativeIdentifier)
+                                        .WithInitializer(EqualsValueClause(
+                                            CastExpression(
+                                                PointerType(AsNativeType(info).Syntax),
+                                                IdentifierName(PinnedIdentifier(info.InstanceIdentifier))))))))
                     );
                 }
                 yield break;
             }
+
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
 
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if ((info.IsByRef && info.RefKind != RefKind.Out) || !context.SingleFrameSpansNativeContext)
+                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                     {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(nativeIdentifier),
-                                IdentifierName(managedIdentifier)));
+                        // There's an implicit conversion from char to ushort,
+                        // so we simplify the generated code to just pass the char value directly
+                        if (info.IsByRef)
+                        {
+                            yield return ExpressionStatement(
+                                AssignmentExpression(
+                                    SyntaxKind.SimpleAssignmentExpression,
+                                    IdentifierName(nativeIdentifier),
+                                    IdentifierName(managedIdentifier)));
+                        }
                     }
 
                     break;
                 case StubCodeContext.Stage.Unmarshal:
-                    if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+                    if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
                         yield return ExpressionStatement(
                             AssignmentExpression(
@@ -132,7 +130,7 @@ namespace Microsoft.Interop
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
 
-        private bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
+        private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext
                 && !info.IsManagedReturnPosition

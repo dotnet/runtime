@@ -17,7 +17,7 @@
 
 #ifdef ENABLE_CONTRACTS_IMPL
 
-inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum)
+inline void BaseContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_NOTHROW;
@@ -173,7 +173,7 @@ inline BOOL ClrDebugState::CheckOkayToThrowNoAssert()
     return TRUE;
 }
 
-inline void ClrDebugState::CheckOkayToThrow(__in_z const char *szFunction, __in_z const char *szFile, int lineNum)
+inline void ClrDebugState::CheckOkayToThrow(_In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_NOTHROW;
@@ -203,7 +203,7 @@ inline BOOL ClrDebugState::CheckOkayToLockNoAssert()
     return TRUE;
 }
 
-inline void ClrDebugState::CheckOkayToLock(__in_z const char *szFunction, __in_z const char *szFile, int lineNum)
+inline void ClrDebugState::CheckOkayToLock(_In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_NOTHROW;
@@ -226,8 +226,8 @@ inline void ClrDebugState::CheckOkayToLock(__in_z const char *szFunction, __in_z
 inline void ClrDebugState::LockTaken(DbgStateLockType dbgStateLockType,
                                      UINT cTakes,
                                      void * pvLock,
-                                     __in_z const char * szFunction,
-                                     __in_z const char * szFile,
+                                     _In_z_ const char * szFunction,
+                                     _In_z_ const char * szFile,
                                      int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
@@ -317,8 +317,8 @@ inline UINT ClrDebugState::GetCombinedLockCount()
 inline void DbgStateLockData::LockTaken(DbgStateLockType dbgStateLockType,
                                         UINT cTakes,      // # times we're taking this lock (usually 1)
                                         void * pvLock,
-                                        __in_z const char * szFunction,
-                                        __in_z const char * szFile,
+                                        _In_z_ const char * szFunction,
+                                        _In_z_ const char * szFile,
                                         int lineNum)
 {
     STATIC_CONTRACT_NOTHROW;

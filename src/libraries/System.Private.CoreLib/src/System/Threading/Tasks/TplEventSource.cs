@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -22,9 +21,7 @@ namespace System.Threading.Tasks
     [EventSourceAutoGenerate]
     internal sealed partial class TplEventSource : EventSource
     {
-#if !ES_BUILD_STANDALONE
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
-#endif
         /// Used to determine if tasks should generate Activity IDs for themselves
         internal bool TasksSetActivityIds;        // This keyword is set
         internal bool Debug;
@@ -193,10 +190,8 @@ namespace System.Threading.Tasks
         /// <param name="CreatingTaskID">The task ID</param>
         /// <param name="TaskCreationOptions">The options used to create the task.</param>
         /// <param name="appDomain">The ID for the current AppDomain.</param>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(TASKSCHEDULED_ID, Task = Tasks.TaskScheduled, Version = 1, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
         public void TaskScheduled(
@@ -265,10 +260,8 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         /// <param name="IsExceptional">Whether the task completed due to an error.</param>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(TASKCOMPLETED_ID, Version = 1,
          Level = EventLevel.Informational, Keywords = Keywords.TaskStops)]
         public void TaskCompleted(
@@ -311,10 +304,8 @@ namespace System.Threading.Tasks
         /// If known, if 'TaskID' has a 'continueWith' task, mention give its ID here.
         /// 0 means unknown.   This allows better visualization of the common sequential chaining case.
         /// </param>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(TASKWAITBEGIN_ID, Version = 3, Task = TplEventSource.Tasks.TaskWait, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
         public void TaskWaitBegin(
@@ -399,15 +390,13 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Fired when the an asynchronous continuation for a task is scheduled
+        /// Fired when an asynchronous continuation for a task is scheduled
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="ContinueWithTaskId">The ID of the continuation object.</param>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(AWAITTASKCONTINUATIONSCHEDULED_ID, Task = Tasks.AwaitTaskContinuationScheduled, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
         public void AwaitTaskContinuationScheduled(
@@ -439,10 +428,8 @@ namespace System.Threading.Tasks
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(TRACEOPERATIONSTART_ID, Version = 1,
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalityOperation)]
         public void TraceOperationBegin(int TaskID, string OperationName, long RelatedContext)
@@ -495,10 +482,8 @@ namespace System.Threading.Tasks
                 WriteEvent(TRACESYNCHRONOUSWORKSTART_ID, TaskID, (int)Work);               // optimized overload for this exists
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(TRACESYNCHRONOUSWORKSTOP_ID, Version = 1,
          Level = EventLevel.Informational, Keywords = Keywords.AsyncCausalitySynchronousWork)]
         public void TraceSynchronousWorkEnd(CausalitySynchronousWork Work)

@@ -42,10 +42,7 @@ namespace System.ComponentModel
                 {
                     lock (s_internalSyncObject)
                     {
-                        if (s_context == null)
-                        {
-                            s_context = new RuntimeLicenseContext();
-                        }
+                        s_context ??= new RuntimeLicenseContext();
                     }
                 }
                 return s_context;
@@ -207,11 +204,7 @@ namespace System.ComponentModel
         {
             Debug.Assert(type != null, "IsValid Type cannot ever be null");
             bool value = ValidateInternal(type, null, false, out License? license);
-            if (license != null)
-            {
-                license.Dispose();
-                license = null;
-            }
+            license?.Dispose();
             return value;
         }
 
@@ -222,11 +215,7 @@ namespace System.ComponentModel
         {
             Debug.Assert(type != null, "IsValid Type cannot ever be null");
             bool value = ValidateInternal(type, null, false, out License? license);
-            if (license != null)
-            {
-                license.Dispose();
-                license = null;
-            }
+            license?.Dispose();
             return value;
         }
 
@@ -273,7 +262,7 @@ namespace System.ComponentModel
                                              instance,
                                              allowExceptions,
                                              out license,
-                                             out string? licenseKey);
+                                             out _);
         }
 
 
@@ -318,7 +307,7 @@ namespace System.ComponentModel
                 }
             }
 
-            // When looking only at a type, we need to recurse up the inheritence
+            // When looking only at a type, we need to recurse up the inheritance
             // chain, however, we can't give out the license, since this may be
             // from more than one provider.
             if (isValid && instance == null)
@@ -329,10 +318,11 @@ namespace System.ComponentModel
                     if (license != null)
                     {
                         license.Dispose();
+#pragma warning disable IDE0059 // ValidateInternalRecursive does not null licence all the time (https://github.com/dotnet/roslyn/issues/42761)
                         license = null;
+#pragma warning restore IDE0059
                     }
-                    string? temp;
-                    isValid = ValidateInternalRecursive(context, baseType, null, allowExceptions, out license, out temp);
+                    isValid = ValidateInternalRecursive(context, baseType, null, allowExceptions, out license, out _);
                     if (license != null)
                     {
                         license.Dispose();
@@ -355,11 +345,7 @@ namespace System.ComponentModel
                 throw new LicenseException(type);
             }
 
-            if (lic != null)
-            {
-                lic.Dispose();
-                lic = null;
-            }
+            lic?.Dispose();
         }
 
 

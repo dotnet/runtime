@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -155,7 +154,7 @@ namespace Internal.TypeSystem
         public static MethodDesc ReplaceTypesInConstructionOfMethod(this MethodDesc method, TypeDesc[] typesToReplace, TypeDesc[] replacementTypes)
         {
             TypeDesc newOwningType = method.OwningType.ReplaceTypesInConstructionOfType(typesToReplace, replacementTypes);
-            MethodDesc methodOnOwningType = null;
+            MethodDesc methodOnOwningType;
             bool owningTypeChanged = false;
             if (newOwningType == method.OwningType)
             {

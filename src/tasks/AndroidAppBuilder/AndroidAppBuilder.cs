@@ -29,9 +29,19 @@ public class AndroidAppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// The set of environment variables to provide to the native embedded application
+    /// </summary>
+    public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Prefer FullAOT mode for Emulator over JIT
     /// </summary>
     public bool ForceAOT { get; set; }
+
+    /// <summary>
+    /// Indicates if we want to AOT all assemblies or not
+    /// </summary>
+    public bool ForceFullAOT { get; set; }
 
     /// <summary>
     /// Static linked runtime
@@ -75,6 +85,8 @@ public class AndroidAppBuilderTask : Task
     /// </summary>
     public string? NativeMainSource { get; set; }
 
+    public bool IncludeNetworkSecurityConfig { get; set; }
+
     public string? KeyStorePath { get; set; }
 
     public bool ForceInterpreter { get; set; }
@@ -100,9 +112,12 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
         apkBuilder.NativeMainSource = NativeMainSource;
+        apkBuilder.IncludeNetworkSecurityConfig = IncludeNetworkSecurityConfig;
         apkBuilder.KeyStorePath = KeyStorePath;
         apkBuilder.ForceInterpreter = ForceInterpreter;
         apkBuilder.ForceAOT = ForceAOT;
+        apkBuilder.ForceFullAOT = ForceFullAOT;
+        apkBuilder.EnvironmentVariables = EnvironmentVariables;
         apkBuilder.StaticLinkedRuntime = StaticLinkedRuntime;
         apkBuilder.RuntimeComponents = RuntimeComponents;
         apkBuilder.DiagnosticPorts = DiagnosticPorts;

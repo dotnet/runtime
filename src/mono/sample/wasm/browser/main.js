@@ -1,19 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-"use strict";
+import { dotnet, exit } from './dotnet.js'
 
-var Module = {
-    configSrc: "./mono-config.json",
-    onDotNetReady: () => {
-        try {
-            App.init();
-        } catch (error) {
-            set_exit_code(1, error);
-            throw (error);
+function displayMeaning(meaning) {
+    document.getElementById("out").innerHTML = `${meaning}`;
+}
+
+try {
+    const { setModuleImports } = await dotnet
+        .withElementOnExit()
+        .create();
+
+    setModuleImports("main.js", {
+        Sample: {
+            Test: {
+                displayMeaning
+            }
         }
-    },
-    onAbort: (error) => {
-        set_exit_code(1, error);
-    },
-};
+    });
+
+    await dotnet.run();
+}
+catch (err) {
+    exit(2, err);
+}

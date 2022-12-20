@@ -14,13 +14,10 @@
 #include "eventtrace.h"
 #include "dbginterface.h"
 #include "peimagelayout.inl"
-#include "dlwrap.h"
 #include "invokeutil.h"
 #include "strongnameinternal.h"
 
 #include "../binder/inc/applicationcontext.hpp"
-
-#include "assemblybinderutil.h"
 #include "../binder/inc/assemblybindercommon.hpp"
 
 #include "sha1.h"
@@ -77,16 +74,18 @@ void PEAssembly::EnsureLoaded()
     }
     CONTRACT_END;
 
-    // Catch attempts to load x64 assemblies on x86, etc.
-    ValidatePEFileMachineType(this);
-
-    // See if we do not have anything to load or have already loaded it.
-    if (IsLoaded())
-    {
+    if (IsDynamic())
         RETURN;
+
+    // Ensure that loaded layout is available.
+    PEImageLayout* pLayout = GetPEImage()->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
+    if (pLayout == NULL)
+    {
+        EEFileLoadException::Throw(this, COR_E_BADIMAGEFORMAT, NULL);
     }
 
-    // Note that we may be racing other threads here, in the case of domain neutral files
+    // Catch attempts to load x64 assemblies on x86, etc.
+    ValidatePEFileMachineType(this);
 
 #if !defined(TARGET_64BIT)
     if (!GetPEImage()->Has32BitNTHeaders())
@@ -95,35 +94,6 @@ void PEAssembly::EnsureLoaded()
         EEFileLoadException::Throw(this, COR_E_BADIMAGEFORMAT, NULL);
     }
 #endif
-
-    // Since we couldn't call LoadLibrary, we must be an IL only image
-    // or the image may still contain unfixed up stuff
-    if (!GetPEImage()->IsILOnly())
-    {
-        if (!GetPEImage()->HasV1Metadata())
-            ThrowHR(COR_E_FIXUPSINEXE); // <TODO>@todo: better error</TODO>
-    }
-
-    if (GetPEImage()->IsFile())
-    {
-#ifdef TARGET_UNIX
-        bool loadILImage = GetPEImage()->IsILOnly();
-#else // TARGET_UNIX
-        bool loadILImage = GetPEImage()->IsILOnly() && GetPEImage()->IsInBundle();
-#endif // TARGET_UNIX
-        if (loadILImage)
-        {
-            GetPEImage()->Load();
-        }
-        else
-        {
-            GetPEImage()->LoadFromMapped();
-        }
-    }
-    else
-    {
-        GetPEImage()->LoadNoFile();
-    }
 
     RETURN;
 }
@@ -334,7 +304,7 @@ void PEAssembly::OpenImporter()
                                                        (void **)&pIMDImport));
 
     // Atomically swap it into the field (release it if we lose the race)
-    if (FastInterlockCompareExchangePointer(&m_pImporter, pIMDImport, NULL) != NULL)
+    if (InterlockedCompareExchangeT(&m_pImporter, pIMDImport, NULL) != NULL)
         pIMDImport->Release();
 }
 
@@ -389,7 +359,7 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     // Swap the pointers in a thread safe manner.  If the contents of *ppImport
     //  equals pOld then no other thread got here first, and the old contents are
     //  replaced with pNew.  The old contents are returned.
-    if (FastInterlockCompareExchangePointer(&m_pMDImport, pNew, pOld) == pOld)
+    if (InterlockedCompareExchangeT(&m_pMDImport, pNew, pOld) == pOld)
     {
         //if the debugger queries, it will now see that we have RW metadata
         m_MDImportIsRW_Debugger_Use_Only = TRUE;
@@ -455,7 +425,7 @@ void PEAssembly::OpenEmitter()
                                                        (void **)&pIMDEmit));
 
     // Atomically swap it into the field (release it if we lose the race)
-    if (FastInterlockCompareExchangePointer(&m_pEmitter, pIMDEmit, NULL) != NULL)
+    if (InterlockedCompareExchangeT(&m_pEmitter, pIMDEmit, NULL) != NULL)
         pIMDEmit->Release();
 }
 
@@ -488,12 +458,7 @@ void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *p
     }
     CONTRACTL_END;
 
-    // NOTE: it's not clear whether to load this from m_image or m_loadedImage.
-    // m_loadedImage is probably preferable, but this may be called by security
-    // before the image is loaded.
-
     PEImage* image = GetPEImage();
-
     PEImageLayout* theImage = image->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
     if (!theImage->CheckResource(dwOffset))
         ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -584,7 +549,7 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
         pDomainAssembly = pAssembly->GetDomainAssembly();
         pPEAssembly = pDomainAssembly->GetPEAssembly();
 
-        if (FAILED(pAssembly->GetManifestImport()->FindManifestResourceByName(
+        if (FAILED(pAssembly->GetMDImport()->FindManifestResourceByName(
             szName,
             &mdResource)))
         {
@@ -690,7 +655,6 @@ ULONG PEAssembly::GetPEImageTimeDateStamp()
 PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
-                PEAssembly *creator,
                 BOOL isSystem,
                 PEImage * pPEImage /*= NULL*/,
                 BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
@@ -699,13 +663,11 @@ PEAssembly::PEAssembly(
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
-        PRECONDITION(CheckPointer(creator, NULL_OK));
         PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL);
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
-    m_creator = clr::SafeAddRef(creator);
 #if _DEBUG
     m_pDebugName = NULL;
 #endif
@@ -724,8 +686,8 @@ PEAssembly::PEAssembly(
     {
         _ASSERTE(pPEImage->CheckUniqueInstance());
         pPEImage->AddRef();
-
-        // We require a mapping for the file.
+        // We require an open layout for the file.
+        // Most likely we have one already, just make sure we have one.
         pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
         m_PEImage = pPEImage;
     }
@@ -779,7 +741,6 @@ PEAssembly::PEAssembly(
 
 
 PEAssembly *PEAssembly::Open(
-    PEAssembly *       pParent,
     PEImage *          pPEImageIL,
     BINDER_SPACE::Assembly * pHostAssembly)
 {
@@ -788,7 +749,6 @@ PEAssembly *PEAssembly::Open(
     PEAssembly * pPEAssembly = new PEAssembly(
         nullptr,        // BindResult
         nullptr,        // IMetaDataEmit
-        pParent,        // PEAssembly creator
         FALSE,          // isSystem
         pPEImageIL,
         pHostAssembly);
@@ -809,8 +769,6 @@ PEAssembly::~PEAssembly()
     CONTRACTL_END;
 
     GCX_PREEMP();
-    if (m_creator != NULL)
-        m_creator->Release();
 
     if (m_pImporter != NULL)
     {
@@ -876,21 +834,19 @@ PEAssembly *PEAssembly::DoOpenSystem()
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    RETURN new PEAssembly(pBoundAssembly, NULL, NULL, TRUE);
+    RETURN new PEAssembly(pBoundAssembly, NULL, TRUE);
 }
 
 PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
 {
-    return new PEAssembly(pBindResult,NULL,NULL, /*isSystem*/ false);
+    return new PEAssembly(pBindResult,NULL,/*isSystem*/ false);
 };
 
 /* static */
-PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
-                               IMetaDataAssemblyEmit *pAssemblyEmit)
+PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
 {
     CONTRACT(PEAssembly *)
     {
-        PRECONDITION(CheckPointer(pParentAssembly));
         PRECONDITION(CheckPointer(pAssemblyEmit));
         STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
@@ -901,7 +857,7 @@ PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
     // we have.)
     SafeComHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    RETURN new PEAssembly(NULL, pEmit, pParentAssembly, FALSE);
+    RETURN new PEAssembly(NULL, pEmit, FALSE);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -909,41 +865,7 @@ PEAssembly *PEAssembly::Create(PEAssembly *pParentAssembly,
 
 #ifndef DACCESS_COMPILE
 
-// ------------------------------------------------------------
-// Descriptive strings
-// ------------------------------------------------------------
-
-// Effective path is the path of nearest parent (creator) assembly which has a nonempty path.
-
-const SString &PEAssembly::GetEffectivePath()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PEAssembly* pPEAssembly = this;
-
-    while (pPEAssembly->m_PEImage == NULL
-        || pPEAssembly->m_PEImage->GetPath().IsEmpty())
-    {
-        if (pPEAssembly->m_creator)
-            pPEAssembly = pPEAssembly->m_creator;
-        else // Unmanaged exe which loads byte[]/IStream assemblies
-            return SString::Empty();
-    }
-
-    return pPEAssembly->m_PEImage->GetPath();
-}
-
-
-// Codebase is the fusion codebase or path for the assembly.  It is in URL format.
-// Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
-// assembly.
+// Supports implementation of the legacy Assembly.CodeBase property.
 // Returns false if the assembly was loaded from a bundle, true otherwise
 BOOL PEAssembly::GetCodeBase(SString &result)
 {
@@ -958,10 +880,10 @@ BOOL PEAssembly::GetCodeBase(SString &result)
     CONTRACTL_END;
 
     PEImage* ilImage = GetPEImage();
-    if (ilImage == NULL || !ilImage->IsInBundle())
+    if (ilImage != NULL && !ilImage->IsInBundle())
     {
         // All other cases use the file path.
-        result.Set(GetEffectivePath());
+        result.Set(ilImage->GetPath());
         if (!result.IsEmpty())
             PathToUrl(result);
 
@@ -1004,7 +926,7 @@ void PEAssembly::PathToUrl(SString &string)
     }
 #else
     // Unix doesn't have a distinction between a network or a local path
-    _ASSERTE( i[0] == W('\\') || i[0] == W('/'));
+    _ASSERTE(i[0] == W('/'));
     SString sss(SString::Literal, W("file://"));
     string.Insert(i, sss);
     string.Skip(i, sss);
@@ -1037,33 +959,19 @@ void PEAssembly::UrlToPath(SString &string)
     if (string.MatchCaseInsensitive(i, sss2))
         string.Delete(i, 7);
 
+#if !defined(TARGET_UNIX)
     while (string.Find(i, W('/')))
     {
         string.Replace(i, W('\\'));
     }
+#endif
 
     RETURN;
 }
 
 BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
 {
-#ifdef TARGET_UNIX
-    SString::Iterator slash = i;
-    SString::Iterator backSlash = i;
-    BOOL foundSlash = path.FindBack(slash, '/');
-    BOOL foundBackSlash = path.FindBack(backSlash, '\\');
-    if (!foundSlash && !foundBackSlash)
-        return FALSE;
-    else if (foundSlash && !foundBackSlash)
-        i = slash;
-    else if (!foundSlash && foundBackSlash)
-        i = backSlash;
-    else
-        i = (backSlash > slash) ? backSlash : slash;
-    return TRUE;
-#else
-    return path.FindBack(i, '\\');
-#endif //TARGET_UNIX
+    return path.FindBack(i, DIRECTORY_SEPARATOR_CHAR_A);
 }
 
 // ------------------------------------------------------------
@@ -1112,7 +1020,7 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    DAC_ENUM_VTHIS();
+    DAC_ENUM_DTHIS();
     EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
 
 #ifdef _DEBUG
@@ -1123,11 +1031,6 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     if (m_PEImage.IsValid())
     {
         m_PEImage->EnumMemoryRegions(flags);
-    }
-
-    if (m_creator.IsValid())
-    {
-        m_creator->EnumMemoryRegions(flags);
     }
 }
 
@@ -1194,10 +1097,10 @@ PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
 
     PTR_AssemblyBinder pBinder = NULL;
 
-    BINDER_SPACE::Assembly* pHostAssembly = GetHostAssembly();
+    PTR_BINDER_SPACE_Assembly pHostAssembly = GetHostAssembly();
     if (pHostAssembly)
     {
-        pBinder = dac_cast<PTR_AssemblyBinder>(pHostAssembly->GetBinder());
+        pBinder = pHostAssembly->GetBinder();
     }
     else
     {

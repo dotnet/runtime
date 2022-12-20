@@ -12,7 +12,7 @@ namespace System.Diagnostics
         /// not an absolute level, but instead contributes to the actual thread priority by
         /// considering the priority class of the process.
         /// </summary>
-        private ThreadPriorityLevel PriorityLevelCore
+        private static ThreadPriorityLevel PriorityLevelCore
         {
             get { throw new PlatformNotSupportedException(); }
             set { throw new PlatformNotSupportedException(); }
@@ -24,12 +24,13 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
         }
 
-        private DateTime GetStartTime() => throw new PlatformNotSupportedException();
+        private static DateTime GetStartTime() => throw new PlatformNotSupportedException();
         /// <summary>
         /// Returns the amount of time the associated thread has spent utilizing the CPU.
         /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
@@ -37,6 +38,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -48,6 +50,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }

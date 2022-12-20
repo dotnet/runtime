@@ -60,7 +60,7 @@ protected:
     void LogImage(PEAssembly * pPEAssembly);
 
     // Get the image signature and store it as a string.
-    static void GetNativeImageSignature(PEAssembly * pPEAssembly, WCHAR * pwszSig, unsigned int nSigSize);
+    static void GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, unsigned int nSigSize);
 
 public:
     // Initialize the map for the current process.

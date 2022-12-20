@@ -9,7 +9,7 @@ using System.Text;
 namespace System
 {
     [Serializable]
-    public struct RuntimeMethodHandle : ISerializable
+    public struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         private readonly IntPtr value;
 
@@ -56,6 +56,10 @@ namespace System
             return value.GetHashCode();
         }
 
+        public static RuntimeMethodHandle FromIntPtr(IntPtr value) => new RuntimeMethodHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeMethodHandle value) => value.Value;
+
         public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right)
         {
             return left.Equals(right);
@@ -66,7 +70,7 @@ namespace System
             return !left.Equals(right);
         }
 
-        internal static string ConstructInstantiation(RuntimeMethodInfo method, TypeNameFormatFlags format)
+        internal static string ConstructInstantiation(RuntimeMethodInfo method)
         {
             var sb = new StringBuilder();
             Type[]? gen_params = method.GetGenericArguments();
@@ -84,6 +88,26 @@ namespace System
         internal bool IsNullHandle()
         {
             return value == IntPtr.Zero;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void ReboxFromNullable (object? src, ObjectHandleOnStack res);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void ReboxToNullable (object? src, QCallTypeHandle destNullableType, ObjectHandleOnStack res);
+
+        internal static object ReboxFromNullable(object? src)
+        {
+            object? res = null;
+            ReboxFromNullable(src, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
+
+        internal static object ReboxToNullable(object? src, RuntimeType destNullableType)
+        {
+            object? res = null;
+            ReboxToNullable(src, new QCallTypeHandle(ref destNullableType), ObjectHandleOnStack.Create(ref res));
+            return res!;
         }
     }
 }

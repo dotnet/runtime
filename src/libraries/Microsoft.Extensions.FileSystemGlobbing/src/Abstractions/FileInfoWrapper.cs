@@ -19,7 +19,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <param name="fileInfo">The <see cref="System.IO.FileInfo" /></param>
         public FileInfoWrapper(FileInfo fileInfo)
         {
-            _fileInfo = fileInfo ?? throw new ArgumentNullException(nameof(fileInfo));
+            ThrowHelper.ThrowIfNull(fileInfo);
+
+            _fileInfo = fileInfo;
         }
 
         /// <summary>

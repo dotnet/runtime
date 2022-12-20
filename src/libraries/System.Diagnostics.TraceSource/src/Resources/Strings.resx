@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -57,6 +58,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AttributeNotSupported" xml:space="preserve">
+    <value>'{0}' is not a valid attribute for type '{1}'.</value>
+  </data>
   <data name="ExceptionOccurred" xml:space="preserve">
     <value>An exception occurred while writing to the log file {0}: {1}.</value>
   </data>
@@ -86,8 +90,5 @@
   </data>
   <data name="TraceSwitchLevelTooHigh" xml:space="preserve">
     <value>Attempted to set {0} to a value that is too high.  Setting level to TraceLevel.Verbose</value>
-  </data>
-  <data name="InvalidNullEmptyArgument" xml:space="preserve">
-    <value>Argument {0} cannot be null or zero-length.</value>
   </data>
 </root>

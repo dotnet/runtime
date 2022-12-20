@@ -49,10 +49,9 @@ namespace System.Security.Cryptography
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
-            // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
+            ArgumentNullException.ThrowIfNull(rgbKey);
 
-            if (rgbKey == null)
-                throw new ArgumentNullException(nameof(rgbKey));
+            // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
 
             long keySize = rgbKey.Length * (long)BitsPerByte;
             if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(LegalKeySizes))
@@ -99,7 +98,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: default,
                 blockSize: BlockSize / BitsPerByte,
@@ -121,7 +119,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: default,
                 blockSize: BlockSize / BitsPerByte,
@@ -144,7 +141,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -167,7 +163,6 @@ namespace System.Security.Cryptography
         {
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -193,7 +188,6 @@ namespace System.Security.Cryptography
 
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CFB,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -219,7 +213,6 @@ namespace System.Security.Cryptography
 
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CFB,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
@@ -238,7 +231,7 @@ namespace System.Security.Cryptography
             // only 8bits/64bits feedback would be valid.
             if (feedback != 8 && feedback != 64)
             {
-                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+                throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
             }
         }
     }

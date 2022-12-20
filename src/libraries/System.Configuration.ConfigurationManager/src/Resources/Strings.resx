@@ -93,7 +93,7 @@
   </data>
   <!--
     other exceptions
-  -->  
+  -->
   <data name="Config_add_configurationsection_already_added" xml:space="preserve">
     <value>Cannot add a ConfigurationSection that already belongs to the Configuration.</value>
   </data>
@@ -363,9 +363,6 @@
   </data>
   <data name="Config_source_invalid_format" xml:space="preserve">
     <value>The configSource attribute must be a relative physical path.</value>
-  </data>
-  <data name="Config_source_invalid_chars" xml:space="preserve">
-    <value>The configSource attribute must be a relative physical path, so the '/' character is not allowed.</value>
   </data>
   <data name="Config_source_requires_file" xml:space="preserve">
     <value>The 'configSource' property may not be set in a configuration that has no associated file.</value>
@@ -666,5 +663,35 @@
   </data>
   <data name="DuplicateFileName" xml:space="preserve">
     <value>The file name '{0}' was already in the collection.</value>
+  </data>
+  <data name="Could_not_create_listener" xml:space="preserve">
+    <value>Could not create listener '{0}'.</value>
+  </data>
+  <data name="Could_not_create_type_instance" xml:space="preserve">
+    <value>Could not create {0}.</value>
+  </data>
+  <data name="Could_not_find_type" xml:space="preserve">
+    <value>Could not find type for class {0}.</value>
+  </data>
+  <data name="Could_not_get_constructor" xml:space="preserve">
+    <value>Could not find constructor for class {0}.</value>
+  </data>
+  <data name="EmptyTypeName_NotAllowed" xml:space="preserve">
+    <value>switchType needs to be a valid class name. It can't be empty.</value>
+  </data>
+  <data name="Incorrect_base_type" xml:space="preserve">
+    <value>The specified type, '{0}' is not derived from the appropriate base type, '{1}'.</value>
+  </data>
+  <data name="Only_specify_one" xml:space="preserve">
+    <value>'switchValue' and 'switchName' cannot both be specified on source '{0}'.</value>
+  </data>
+  <data name="Reference_listener_cant_have_properties" xml:space="preserve">
+    <value>A listener with no type name specified references the sharedListeners section and cannot have any attributes other than 'Name'.  Listener: '{0}'.</value>
+  </data>
+  <data name="Reference_to_nonexistent_listener" xml:space="preserve">
+    <value>Listener '{0}' does not exist in the sharedListeners section.</value>
+  </data>
+  <data name="TL_InitializeData_NotSpecified" xml:space="preserve">
+    <value>initializeData needs to be valid for this TraceListener.</value>
   </data>
 </root>

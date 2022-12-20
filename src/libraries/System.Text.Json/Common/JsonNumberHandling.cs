@@ -5,6 +5,9 @@ namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// Determines how <see cref="JsonSerializer"/> handles numbers when serializing and deserializing.
+    /// <remarks>
+    /// The behavior of <see cref="WriteAsString"/> and <see cref="AllowNamedFloatingPointLiterals"/> is not defined by the JSON specification. Altering the default number handling can potentially produce JSON that cannot be parsed by other JSON implementations.
+    /// </remarks>
     /// </summary>
     [Flags]
 #if BUILDING_SOURCE_GENERATOR
@@ -29,6 +32,9 @@ namespace System.Text.Json.Serialization
 
         /// <summary>
         /// Numbers will be written as JSON strings (with quotes), not as JSON numbers.
+        /// <remarks>
+        /// This behavior is not defined by the JSON specification. Altering the default number handling can potentially produce JSON that cannot be parsed by other JSON implementations.
+        /// </remarks>
         /// </summary>
         WriteAsString = 0x2,
 
@@ -39,6 +45,9 @@ namespace System.Text.Json.Serialization
         /// will be written as their corresponding JSON string representations.
         /// Strings that have escaped characters will be unescaped before reading.
         /// Leading or trailing trivia within the string token, including whitespace, is not allowed.
+        /// <remarks>
+        /// This behavior is not defined by the JSON specification. Altering the default number handling can potentially produce JSON that cannot be parsed by other JSON implementations.
+        /// </remarks>
         /// </summary>
         AllowNamedFloatingPointLiterals = 0x4
     }

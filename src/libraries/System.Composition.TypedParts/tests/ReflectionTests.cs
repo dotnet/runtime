@@ -13,7 +13,7 @@ namespace System.Composition.TypedParts.Tests
     /// </summary>
     public class ReflectionTests
     {
-        public static bool HasMultiplerProcessors { get; } = Environment.ProcessorCount > 1;
+        public static bool HasMultiplierProcessors { get; } = Environment.ProcessorCount > 1;
 
         /// <summary>
         /// Regression test for https://github.com/dotnet/runtime/issues/16683
@@ -26,8 +26,8 @@ namespace System.Composition.TypedParts.Tests
         /// This can cause arguments to an export's constructor to incorrectly
         /// revert to a default value during GetExport.
         /// </remarks>
-        [ConditionalFact(nameof(HasMultiplerProcessors))]
-        public void MultiThreadedGetExportsWorkWithImportingConstuctor()
+        [ConditionalFact(nameof(HasMultiplierProcessors))]
+        public void MultiThreadedGetExportsWorkWithImportingConstructor()
         {
             var errors = new ConcurrentBag<Exception>();
 

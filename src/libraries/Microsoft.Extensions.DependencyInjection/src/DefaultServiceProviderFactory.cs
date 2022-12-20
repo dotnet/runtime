@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
     /// Default implementation of <see cref="IServiceProviderFactory{TContainerBuilder}"/>.
     /// </summary>
+    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     public class DefaultServiceProviderFactory : IServiceProviderFactory<IServiceCollection>
     {
         private readonly ServiceProviderOptions _options;
@@ -28,12 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="options">The options to use for this instance.</param>
         public DefaultServiceProviderFactory(ServiceProviderOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         /// <inheritdoc />

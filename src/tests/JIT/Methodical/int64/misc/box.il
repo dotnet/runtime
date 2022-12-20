@@ -17,14 +17,13 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'box.exe'
 // MVID: {8CBD3D83-F5B6-41AC-9D7A-099A59884AC4}
-.namespace JitTest
+.namespace JitTest_box_misc_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -121,6 +120,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_box_misc_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

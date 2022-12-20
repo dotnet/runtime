@@ -2,19 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace KnightMove
+namespace KnightMove_knight_cs
 {
     internal struct MV
     {
         public int x, y;
         public int v;
     }
-    internal struct SQ
+    public struct SQ
     {
         public int visited;
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             const int SIZE = 5;
             const int VARNUM = 8;

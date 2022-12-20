@@ -18,14 +18,6 @@ namespace System
     {
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double Abs(double value);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float Abs(float value);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Acos(double d);
 
         [Intrinsic]

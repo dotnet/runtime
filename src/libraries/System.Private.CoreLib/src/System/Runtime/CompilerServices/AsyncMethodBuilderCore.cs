@@ -72,7 +72,7 @@ namespace System.Runtime.CompilerServices
             Debug.Fail("SetStateMachine should not be used.");
         }
 
-#if !CORERT
+#if !NATIVEAOT
         /// <summary>Gets whether we should be tracking async method completions for eventing.</summary>
         internal static bool TrackAsyncMethodCompletion
         {

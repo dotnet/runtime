@@ -253,16 +253,14 @@ namespace System.Reflection.Emit
             if (!base_method.IsGenericMethodDefinition || (method_arguments != null))
                 throw new InvalidOperationException("Method is not a generic method definition");
 
-            if (methodInstantiation == null)
-                throw new ArgumentNullException(nameof(methodInstantiation));
+            ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (base_method.GetGenericArguments().Length != methodInstantiation.Length)
                 throw new ArgumentException("Incorrect length", nameof(methodInstantiation));
 
             foreach (Type type in methodInstantiation)
             {
-                if (type == null)
-                    throw new ArgumentNullException(nameof(methodInstantiation));
+                ArgumentNullException.ThrowIfNull(type, nameof(methodInstantiation));
             }
 
             return new MethodOnTypeBuilderInst(this, methodInstantiation);

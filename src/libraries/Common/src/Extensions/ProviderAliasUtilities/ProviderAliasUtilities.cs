@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging
     {
         private const string AliasAttributeTypeFullName = "Microsoft.Extensions.Logging.ProviderAliasAttribute";
 
-        internal static string GetAlias(Type providerType)
+        internal static string? GetAlias(Type providerType)
         {
             IList<CustomAttributeData> attributes = CustomAttributeData.GetCustomAttributes(providerType);
 

@@ -11,7 +11,7 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
@@ -95,14 +95,15 @@ namespace System.Runtime.Caching
 
         void IFileChangeNotificationSystem.StartMonitoring(string filePath, OnChangedCallback onChangedCallback, out object state, out DateTimeOffset lastWriteTime, out long fileSize)
         {
-            if (filePath == null)
+            if (filePath is null)
             {
                 throw new ArgumentNullException(nameof(filePath));
             }
-            if (onChangedCallback == null)
+            if (onChangedCallback is null)
             {
                 throw new ArgumentNullException(nameof(onChangedCallback));
             }
+
             FileInfo fileInfo = new FileInfo(filePath);
             string dir = Path.GetDirectoryName(filePath);
             DirectoryMonitor dirMon = _dirMonitors[dir] as DirectoryMonitor;
@@ -145,14 +146,15 @@ namespace System.Runtime.Caching
 
         void IFileChangeNotificationSystem.StopMonitoring(string filePath, object state)
         {
-            if (filePath == null)
+            if (filePath is null)
             {
                 throw new ArgumentNullException(nameof(filePath));
             }
-            if (state == null)
+            if (state is null)
             {
                 throw new ArgumentNullException(nameof(state));
             }
+
             FileChangeEventTarget target = state as FileChangeEventTarget;
             if (target == null)
             {

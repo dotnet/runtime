@@ -240,10 +240,7 @@ comparand: null
 
         private static void RequiresCanWrite(Expression expression, string paramName)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
+            ArgumentNullException.ThrowIfNull(expression, paramName);
 
             switch (expression.NodeType)
             {

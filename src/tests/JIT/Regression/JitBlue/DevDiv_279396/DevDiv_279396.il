@@ -4,7 +4,6 @@
 .assembly extern mscorlib {}
 .assembly DevDiv_279396 {}
 .assembly extern xunit.core {}
-.module DevDiv_279396.exe
 
 // This test originally triggered an assertion in the emitter that ensured that no lclVar or lclFld access exceeded the
 // bounds of its containing method's frame. The problematic access was created during morphing by folding

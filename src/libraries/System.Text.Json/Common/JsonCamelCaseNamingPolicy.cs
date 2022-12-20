@@ -12,11 +12,11 @@ namespace System.Text.Json
                 return name;
             }
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return string.Create(name.Length, name, (chars, name) =>
             {
                 name
-#if !NET6_0_OR_GREATER
+#if !NETCOREAPP
                 .AsSpan()
 #endif
                 .CopyTo(chars);

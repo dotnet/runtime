@@ -28,10 +28,7 @@ namespace System.Net.Http.Headers
 
         public RangeConditionHeaderValue(EntityTagHeaderValue entityTag)
         {
-            if (entityTag == null)
-            {
-                throw new ArgumentNullException(nameof(entityTag));
-            }
+            ArgumentNullException.ThrowIfNull(entityTag);
 
             _entityTag = entityTag;
         }
@@ -54,8 +51,9 @@ namespace System.Net.Http.Headers
             if (_entityTag == null)
             {
                 Debug.Assert(_date != null);
-                return HttpDateParser.DateToString(_date.Value);
+                return _date.GetValueOrDefault().ToString("r");
             }
+
             return _entityTag.ToString();
         }
 
@@ -141,7 +139,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                current = current + entityTagLength;
+                current += entityTagLength;
 
                 // RangeConditionHeaderValue only allows 1 value. There must be no delimiter/other chars after an
                 // entity tag.

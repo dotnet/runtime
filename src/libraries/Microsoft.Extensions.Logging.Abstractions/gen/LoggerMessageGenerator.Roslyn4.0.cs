@@ -7,6 +7,9 @@ using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+#if !ROSLYN4_4_OR_GREATER
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+#endif
 using Microsoft.CodeAnalysis.Text;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
@@ -19,7 +22,13 @@ namespace Microsoft.Extensions.Logging.Generators
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (ctx, _) => Parser.GetSemanticTargetForGeneration(ctx))
+                .ForAttributeWithMetadataName(
+#if !ROSLYN4_4_OR_GREATER
+                    context,
+#endif
+                    Parser.LoggerMessageAttribute,
+                    (node, _) => node is MethodDeclarationSyntax,
+                    (context, _) => context.TargetNode.Parent as ClassDeclarationSyntax)
                 .Where(static m => m is not null);
 
             IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =

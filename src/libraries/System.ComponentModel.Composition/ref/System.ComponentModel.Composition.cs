@@ -608,7 +608,7 @@ namespace System.ComponentModel.Composition.Primitives
 }
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    public partial struct LazyMemberInfo
+    public partial struct LazyMemberInfo : System.IEquatable<System.ComponentModel.Composition.ReflectionModel.LazyMemberInfo>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -616,6 +616,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public LazyMemberInfo(System.Reflection.MemberTypes memberType, System.Func<System.Reflection.MemberInfo[]> accessorsCreator) { throw null; }
         public LazyMemberInfo(System.Reflection.MemberTypes memberType, params System.Reflection.MemberInfo[] accessors) { throw null; }
         public System.Reflection.MemberTypes MemberType { get { throw null; } }
+        public bool Equals(System.ComponentModel.Composition.ReflectionModel.LazyMemberInfo other) { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public System.Reflection.MemberInfo[] GetAccessors() { throw null; }
         public override int GetHashCode() { throw null; }

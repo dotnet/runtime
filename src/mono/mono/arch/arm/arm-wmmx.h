@@ -21,7 +21,7 @@
 #if defined(ARM_EMIT)
 #	define WM_EMIT(p, i) ARM_EMIT(p, i)
 #else
-#	define WM_EMIT(p, i) 
+#	define WM_EMIT(p, i)
 #endif
 
 enum {

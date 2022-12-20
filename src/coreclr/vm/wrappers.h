@@ -169,6 +169,7 @@ public:
     }
 };
 
+#ifdef FEATURE_COMINTEROP
 //-----------------------------------------------------------------------------
 // SafeArrayPtrHolder : SafeArray holder, Calls SafeArrayDestroy on scope exit.
 // In cooperative mode this holder should be used instead of code:SafeArrayHolder.
@@ -209,6 +210,8 @@ public:
         Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, NULL>::operator=(p);
     }
 };
+
+#endif // FEATURE_COMINTEROP
 
 //-----------------------------------------------------------------------------
 // ZeroHolder : Sets value to zero on context exit.

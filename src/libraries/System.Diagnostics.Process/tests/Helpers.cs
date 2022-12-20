@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.ComponentModel;
+using System.Security.Principal;
 using System.Threading.Tasks;
 using Xunit.Sdk;
 
@@ -46,6 +46,28 @@ namespace System.Diagnostics.Tests
                 Console.WriteLine("{0,8} {1}", p.Id, p.ProcessName);
                 p.Dispose();
             }
+        }
+
+        public static string? GetProcessUserName(Process p)
+        {
+            try
+            {
+                if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out var handle))
+                {
+                    if (Interop.ProcessTokenToSid(handle, out var sid))
+                    {
+                        string userName = sid.Translate(typeof(NTAccount)).ToString();
+                        int indexOfDomain = userName.IndexOf('\\');
+                        if (indexOfDomain != -1)
+                            userName = userName.Substring(indexOfDomain + 1);
+
+                        return userName;
+                    }
+                }
+            }
+            catch (Win32Exception) { } // Process.SafeHandle can throw unauthorized since it uses OpenProcess with PROCESS_ALL_ACCESS.
+
+            return null;
         }
     }
 }

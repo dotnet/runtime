@@ -17,10 +17,7 @@ namespace System.Net.Http
         /// <returns>An <see cref="HttpMessageHandler"/> configured using the default configuration.</returns>
         public static HttpMessageHandler CreateHandler(this IHttpMessageHandlerFactory factory)
         {
-            if (factory == null)
-            {
-                throw new ArgumentNullException(nameof(factory));
-            }
+            ThrowHelper.ThrowIfNull(factory);
 
             return factory.CreateHandler(Options.DefaultName);
         }

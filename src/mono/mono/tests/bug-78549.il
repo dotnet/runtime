@@ -20,8 +20,8 @@ extends [mscorlib]System.Object
 {
 
 	// method line 1
-	.method public static  hidebysig 
-	default int32 Main ()  cil managed 
+	.method public static  hidebysig
+	default int32 Main ()  cil managed
 	{
 		// Method begins at RVA 0x20ec
 		.entrypoint
@@ -35,23 +35,23 @@ extends [mscorlib]System.Object
 			int32   V_4)
 		.try { // 0
 		ldstr "output"
-		stloc.0 
-		ldnull 
+		stloc.0
+		ldnull
 		callvirt instance int32 string::get_Length()
-		stloc.1 
+		stloc.1
 		ldstr "!!"
-		stloc.2 
+		stloc.2
 		ldstr "this "
 		call void class [mscorlib]System.Console::Write(string)
-		ldloc.0 
+		ldloc.0
 		call void class [mscorlib]System.Console::Write(string)
 		ldstr " will be "
 		call void class [mscorlib]System.Console::Write(string)
-		ldloc.1 
+		ldloc.1
 		call void class [mscorlib]System.Console::Write(int32)
 		ldstr " interrupted "
 		call void class [mscorlib]System.Console::Write(string)
-		ldloc.2 
+		ldloc.2
 		call void class [mscorlib]System.Console::Write(string)
 		ldstr "\n"
 		call void class [mscorlib]System.Console::Write(string)
@@ -62,7 +62,7 @@ extends [mscorlib]System.Object
 		} // end .try 0
 		catch [mscorlib]System.NullReferenceException { // 0
 		stloc.3
-		ldstr "ok-catched\n"
+		ldstr "ok-caught\n"
 		call void class [mscorlib]System.Console::Write(string)
 		ldc.i4 0
 		stloc 4
@@ -70,7 +70,7 @@ extends [mscorlib]System.Object
 		} // end handler 0
 		END:  ldloc 4
 		ret
-	} // end of method M::default void Main () 
+	} // end of method M::default void Main ()
 
 } // end of class M
 

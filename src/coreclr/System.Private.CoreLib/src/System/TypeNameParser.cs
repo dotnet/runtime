@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -14,11 +15,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
-    internal sealed class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed partial class SafeTypeNameParserHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region QCalls
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_ReleaseTypeNameParser")]
-        private static extern void Release(IntPtr pTypeNameParser);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_ReleaseTypeNameParser")]
+        private static partial void Release(IntPtr pTypeNameParser);
         #endregion
 
         public SafeTypeNameParserHandle()
@@ -34,23 +35,23 @@ namespace System
         }
     }
 
-    internal sealed class TypeNameParser : IDisposable
+    internal sealed partial class TypeNameParser : IDisposable
     {
         #region QCalls
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_CreateTypeNameParser", CharSet = CharSet.Unicode)]
-        private static extern void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, bool throwOnError);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_CreateTypeNameParser", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void _CreateTypeNameParser(string typeName, ObjectHandleOnStack retHandle, [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetNames")]
-        private static extern void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetNames")]
+        private static partial void _GetNames(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetTypeArguments")]
-        private static extern void _GetTypeArguments(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetTypeArguments")]
+        private static partial void _GetTypeArguments(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetModifiers")]
-        private static extern void _GetModifiers(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetModifiers")]
+        private static partial void _GetModifiers(SafeTypeNameParserHandle pTypeNameParser, ObjectHandleOnStack retArray);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetAssemblyName")]
-        private static extern void _GetAssemblyName(SafeTypeNameParserHandle pTypeNameParser, StringHandleOnStack retString);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeName_GetAssemblyName")]
+        private static partial void _GetAssemblyName(SafeTypeNameParserHandle pTypeNameParser, StringHandleOnStack retString);
         #endregion
 
         #region Static Members
@@ -63,8 +64,8 @@ namespace System
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
+
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
@@ -88,7 +89,7 @@ namespace System
 
         #region Private Data Members
         private readonly SafeTypeNameParserHandle m_NativeParser;
-        private static readonly char[] SPECIAL_CHARS = { ',', '[', ']', '&', '*', '+', '\\' }; /* see typeparse.h */
+        private static readonly IndexOfAnyValues<char> s_specialChars = IndexOfAnyValues.Create(",[]&*+\\"); // see typeparse.h
         #endregion
 
         #region Constructor and Disposer
@@ -174,12 +175,7 @@ namespace System
             }
 
             int[]? modifiers = GetModifiers();
-
-            fixed (int* ptr = modifiers)
-            {
-                IntPtr intPtr = new IntPtr(ptr);
-                return RuntimeTypeHandle.GetTypeHelper(baseType, types!, intPtr, modifiers == null ? 0 : modifiers.Length);
-            }
+            return RuntimeTypeHandle.GetTypeHelper(baseType, types!, modifiers);
         }
 
         private static Assembly? ResolveAssembly(string asmName, Func<AssemblyName, Assembly?>? assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)
@@ -281,13 +277,18 @@ namespace System
 
         private static string EscapeTypeName(string name)
         {
-            if (name.IndexOfAny(SPECIAL_CHARS) < 0)
+            int specialCharIndex = name.AsSpan().IndexOfAny(s_specialChars);
+            if (specialCharIndex < 0)
+            {
                 return name;
+            }
 
             var sb = new ValueStringBuilder(stackalloc char[64]);
-            foreach (char c in name)
+            sb.Append(name.AsSpan(0, specialCharIndex));
+
+            foreach (char c in name.AsSpan(specialCharIndex))
             {
-                if (Array.IndexOf<char>(SPECIAL_CHARS, c) >= 0)
+                if (s_specialChars.Contains(c))
                     sb.Append('\\');
 
                 sb.Append(c);

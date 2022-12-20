@@ -20,35 +20,48 @@
 #include "ssabuilder.h"
 #include "treelifeupdater.h"
 
-/**************************************************************************************
- *
- * Corresponding to the live definition pushes, pop the stack as we finish a sub-paths
- * of the graph originating from the block. Refer SSA renaming for any additional info.
- * "curSsaName" tracks the currently live definitions.
- */
-void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName)
+//------------------------------------------------------------------------------
+// optBlockCopyPropPopStacks: pop copy prop stack
+//
+// Notes:
+//    Corresponding to the live definition pushes, pop the stack as we finish a sub-paths
+//    of the graph originating from the block. Refer SSA renaming for any additional info.
+//    "curSsaName" tracks the currently live definitions.
+//
+void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName)
 {
+    auto popDef = [=](unsigned defLclNum, unsigned defSsaNum) {
+        CopyPropSsaDefStack* stack = nullptr;
+        if ((defSsaNum != SsaConfig::RESERVED_SSA_NUM) && curSsaName->Lookup(defLclNum, &stack))
+        {
+            stack->Pop();
+            if (stack->Empty())
+            {
+                curSsaName->Remove(defLclNum);
+            }
+        }
+    };
+
     for (Statement* const stmt : block->Statements())
     {
         for (GenTree* const tree : stmt->TreeList())
         {
-            if (!tree->IsLocal())
+            GenTreeLclVarCommon* lclDefNode = nullptr;
+            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
             {
-                continue;
-            }
-            const unsigned lclNum = optIsSsaLocal(tree);
-            if (lclNum == BAD_VAR_NUM)
-            {
-                continue;
-            }
-            if (tree->gtFlags & GTF_VAR_DEF)
-            {
-                GenTreePtrStack* stack = nullptr;
-                curSsaName->Lookup(lclNum, &stack);
-                stack->Pop();
-                if (stack->Empty())
+                if (lclDefNode->HasCompositeSsaName())
                 {
-                    curSsaName->Remove(lclNum);
+                    LclVarDsc* varDsc = lvaGetDesc(lclDefNode);
+                    assert(varDsc->lvPromoted);
+
+                    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+                    {
+                        popDef(varDsc->lvFieldLclStart + index, lclDefNode->GetSsaNum(this, index));
+                    }
+                }
+                else
+                {
+                    popDef(lclDefNode->GetLclNum(), lclDefNode->GetSsaNum());
                 }
             }
         }
@@ -56,34 +69,44 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrSt
 }
 
 #ifdef DEBUG
-void Compiler::optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName)
+//------------------------------------------------------------------------------
+// optDumpCopyPropStacks: dump copy prop stack
+//
+void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
 {
     JITDUMP("{ ");
-    for (LclNumToGenTreePtrStack::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
     {
-        GenTreeLclVarCommon* lclVar    = iter.GetValue()->Top()->AsLclVarCommon();
-        unsigned             ssaLclNum = optIsSsaLocal(lclVar);
-        assert(ssaLclNum != BAD_VAR_NUM);
+        unsigned             defLclNum  = iter.Get();
+        GenTreeLclVarCommon* lclDefNode = iter.GetValue()->Top().GetDefNode()->AsLclVarCommon();
+        LclSsaVarDsc*        ssaDef     = iter.GetValue()->Top().GetSsaDef();
 
-        if (ssaLclNum == lclVar->GetLclNum())
+        if (ssaDef != nullptr)
         {
-            JITDUMP("%d-[%06d]:V%02u ", iter.Get(), dspTreeID(lclVar), ssaLclNum);
+            unsigned defSsaNum = lvaGetDesc(defLclNum)->GetSsaNumForSsaDef(ssaDef);
+            JITDUMP("[%06d]:V%02u/%u ", dspTreeID(lclDefNode), defLclNum, defSsaNum);
         }
         else
         {
-            // A promoted field was asigned using the parent struct, print `ssa field lclNum(parent lclNum)`.
-            JITDUMP("%d-[%06d]:V%02u(V%02u) ", iter.Get(), dspTreeID(lclVar), ssaLclNum, lclVar->GetLclNum());
+            JITDUMP("[%06d]:V%02u/NA ", dspTreeID(lclDefNode), defLclNum);
         }
     }
     JITDUMP("}\n\n");
 }
 #endif
-/*******************************************************************************************************
- *
- * Given the "lclVar" and "copyVar" compute if the copy prop will be beneficial.
- *
- */
-int Compiler::optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc, bool preferOp2)
+//------------------------------------------------------------------------------
+// optCopyProp_LclVarScore: compute if the copy prop will be beneficial
+//
+// Arguments:
+//    lclVarDsc  - variable that is target of a potential copy prop
+//    copyVarDsc - variable that is source of a potential copy prop
+//    preferOp2  - true if ...??
+//
+// Returns:
+//    "score" indicating relative profitability of the copy
+//      (non-negative: favorable)
+//
+int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2)
 {
     int score = 0;
 
@@ -123,49 +146,28 @@ int Compiler::optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDs
 //               definitions share the same value number. If so, then we can make the replacement.
 //
 // Arguments:
-//    block       -  Block the tree belongs to
+//    block       -  BasicBlock containing stmt
 //    stmt        -  Statement the tree belongs to
-//    tree        -  The tree to perform copy propagation on
+//    tree        -  The local tree to perform copy propagation on
+//    lclNum      -  Number of the local "tree" refers to
 //    curSsaName  -  The map from lclNum to its recently live definitions as a stack
-
-void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, LclNumToGenTreePtrStack* curSsaName)
+//
+// Returns:
+//    Whether any changes were made.
+//
+bool Compiler::optCopyProp(
+    BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName)
 {
-    // TODO-Review: EH successor/predecessor iteration seems broken.
-    if (block->bbCatchTyp == BBCT_FINALLY || block->bbCatchTyp == BBCT_FAULT)
-    {
-        return;
-    }
+    assert(((tree->gtFlags & GTF_VAR_DEF) == 0) && (tree->GetLclNum() == lclNum) && tree->gtVNPair.BothDefined());
 
-    // If not local nothing to do.
-    if (!tree->IsLocal())
-    {
-        return;
-    }
-    if (tree->OperGet() == GT_PHI_ARG || tree->OperGet() == GT_LCL_FLD)
-    {
-        return;
-    }
+    bool       madeChanges = false;
+    LclVarDsc* varDsc      = lvaGetDesc(lclNum);
+    ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
+    assert(lclDefVN != ValueNumStore::NoVN);
 
-    // Propagate only on uses.
-    if (tree->gtFlags & GTF_VAR_DEF)
-    {
-        return;
-    }
-    const unsigned lclNum = optIsSsaLocal(tree);
-
-    // Skip non-SSA variables.
-    if (lclNum == BAD_VAR_NUM)
-    {
-        return;
-    }
-
-    assert(tree->gtVNPair.GetConservative() != ValueNumStore::NoVN);
-
-    for (LclNumToGenTreePtrStack::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
     {
         unsigned newLclNum = iter.Get();
-
-        GenTree* op = iter.GetValue()->Top();
 
         // Nothing to do if same.
         if (lclNum == newLclNum)
@@ -173,9 +175,19 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
             continue;
         }
 
-        // Skip variables with assignments embedded in the statement (i.e., with a comma). Because we
-        // are not currently updating their SSA names as live in the copy-prop pass of the stmt.
-        if (VarSetOps::IsMember(this, optCopyPropKillSet, lvaTable[newLclNum].lvVarIndex))
+        CopyPropSsaDef      newLclDef    = iter.GetValue()->Top();
+        LclSsaVarDsc* const newLclSsaDef = newLclDef.GetSsaDef();
+
+        // Likewise, nothing to do if the most recent def is not available.
+        if (newLclSsaDef == nullptr)
+        {
+            continue;
+        }
+
+        ValueNum newLclDefVN = newLclSsaDef->m_vnPair.GetConservative();
+        assert(newLclDefVN != ValueNumStore::NoVN);
+
+        if (newLclDefVN != lclDefVN)
         {
             continue;
         }
@@ -185,38 +197,17 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         // is not marked 'lvDoNotEnregister'.
         // However, in addition, it may not be profitable to propagate a 'doNotEnregister' lclVar to an
         // existing use of an enregisterable lclVar.
-
-        if (lvaTable[lclNum].lvDoNotEnregister != lvaTable[newLclNum].lvDoNotEnregister)
+        LclVarDsc* const newLclVarDsc = lvaGetDesc(newLclNum);
+        if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
         {
             continue;
         }
 
-        if (op->gtFlags & GTF_VAR_CAST)
+        if (optCopyProp_LclVarScore(varDsc, newLclVarDsc, true) <= 0)
         {
             continue;
         }
-        if (gsShadowVarInfo != nullptr && lvaTable[newLclNum].lvIsParam &&
-            gsShadowVarInfo[newLclNum].shadowCopy == lclNum)
-        {
-            continue;
-        }
-        ValueNum opVN = GetUseAsgDefVNOrTreeVN(op);
-        if (opVN == ValueNumStore::NoVN)
-        {
-            continue;
-        }
-        if (op->TypeGet() != tree->TypeGet())
-        {
-            continue;
-        }
-        if (opVN != tree->gtVNPair.GetConservative())
-        {
-            continue;
-        }
-        if (optCopyProp_LclVarScore(lvaGetDesc(lclNum), lvaGetDesc(newLclNum), true) <= 0)
-        {
-            continue;
-        }
+
         // Check whether the newLclNum is live before being substituted. Otherwise, we could end
         // up in a situation where there must've been a phi node that got pruned because the variable
         // is not live anymore. For example,
@@ -230,39 +221,29 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         // node x2 = phi(x0, x1) which can then be used to substitute 'c' with. But because of pruning
         // there would be no such phi node. To solve this we'll check if 'x' is live, before replacing
         // 'c' with 'x.'
-        if (!lvaTable[newLclNum].lvVerTypeInfo.IsThisPtr())
-        {
-            if (lvaTable[newLclNum].IsAddressExposed())
-            {
-                continue;
-            }
 
-            // We compute liveness only on tracked variables. So skip untracked locals.
-            if (!lvaTable[newLclNum].lvTracked)
-            {
-                continue;
-            }
+        // We compute liveness only on tracked variables. And all SSA locals are tracked.
+        assert(newLclVarDsc->lvTracked);
 
-            // Because of this dependence on live variable analysis, CopyProp phase is immediately
-            // after Liveness, SSA and VN.
-            if (!VarSetOps::IsMember(this, compCurLife, lvaTable[newLclNum].lvVarIndex))
-            {
-                continue;
-            }
-        }
-        unsigned newSsaNum = SsaConfig::RESERVED_SSA_NUM;
-        if (op->gtFlags & GTF_VAR_DEF)
-        {
-            newSsaNum = GetSsaNumForLocalVarDef(op);
-        }
-        else // parameters, this pointer etc.
-        {
-            newSsaNum = op->AsLclVarCommon()->GetSsaNum();
-        }
-
-        if (newSsaNum == SsaConfig::RESERVED_SSA_NUM)
+        // Because of this dependence on live variable analysis, CopyProp phase is immediately
+        // after Liveness, SSA and VN.
+        if ((newLclNum != info.compThisArg) && !VarSetOps::IsMember(this, compCurLife, newLclVarDsc->lvVarIndex))
         {
             continue;
+        }
+
+        if (tree->OperIs(GT_LCL_VAR))
+        {
+            var_types newLclType = newLclVarDsc->TypeGet();
+            if (!newLclVarDsc->lvNormalizeOnLoad())
+            {
+                newLclType = genActualType(newLclType);
+            }
+
+            if (newLclType != tree->TypeGet())
+            {
+                continue;
+            }
         }
 
 #ifdef DEBUG
@@ -270,61 +251,101 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         {
             JITDUMP("VN based copy assertion for ");
             printTreeID(tree);
-            printf(" V%02d " FMT_VN " by ", lclNum, tree->GetVN(VNK_Conservative));
-            printTreeID(op);
-            printf(" V%02d " FMT_VN ".\n", newLclNum, op->GetVN(VNK_Conservative));
-            gtDispTree(tree, nullptr, nullptr, true);
+            printf(" V%02d " FMT_VN " by ", lclNum, lclDefVN);
+            printTreeID(newLclDef.GetDefNode());
+            printf(" V%02d " FMT_VN ".\n", newLclNum, newLclDefVN);
+            DISPNODE(tree);
         }
 #endif
+
+        unsigned newSsaNum = newLclVarDsc->GetSsaNumForSsaDef(newLclSsaDef);
+        assert(newSsaNum != SsaConfig::RESERVED_SSA_NUM);
 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
         gtUpdateSideEffects(stmt, tree);
+        newLclSsaDef->AddUse(block);
+
 #ifdef DEBUG
         if (verbose)
         {
             printf("copy propagated to:\n");
-            gtDispTree(tree, nullptr, nullptr, true);
+            DISPNODE(tree);
         }
 #endif
+
+        madeChanges = true;
         break;
     }
-    return;
+
+    return madeChanges;
 }
 
 //------------------------------------------------------------------------------
-// optIsSsaLocal : helper to check if the tree is a local that participates in SSA numbering.
+// optCopyPropPushDef: Push the new live SSA def on the stack for "lclNode".
 //
 // Arguments:
-//    tree        -  The tree to perform the check on;
+//    defNode    - The definition node for this def (GT_ASG/GT_CALL) (will be "nullptr" for "use" defs)
+//    lclNode    - The local tree representing "the def" (that can actually be a use)
+//    curSsaName - The map of local numbers to stacks of their defs
 //
-// Returns:
-//    - lclNum if the local is participating in SSA;
-//    - fieldLclNum if the parent local can be replaced by its only field;
-//    - BAD_VAR_NUM otherwise.
-//
-unsigned Compiler::optIsSsaLocal(GenTree* tree)
+void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
 {
-    if (!tree->IsLocal())
+    unsigned lclNum = lclNode->GetLclNum();
+
+    // Shadowed parameters are special: they will (at most) have one use, that is one on the RHS of an
+    // assignment to their shadow, and we must not substitute them anywhere. So we'll not push any defs.
+    if ((gsShadowVarInfo != nullptr) && lvaGetDesc(lclNum)->lvIsParam &&
+        (gsShadowVarInfo[lclNum].shadowCopy != BAD_VAR_NUM))
     {
-        return BAD_VAR_NUM;
+        assert(!curSsaName->Lookup(lclNum));
+        return;
     }
 
-    GenTreeLclVarCommon* lclNode = tree->AsLclVarCommon();
-    unsigned             lclNum  = lclNode->GetLclNum();
-    LclVarDsc*           varDsc  = lvaGetDesc(lclNum);
+    auto pushDef = [=](unsigned defLclNum, unsigned defSsaNum) {
+        // The default is "not available".
+        LclSsaVarDsc* ssaDef = nullptr;
 
-    if (!lvaInSsa(lclNum) && varDsc->CanBeReplacedWithItsField(this))
+        if (defSsaNum != SsaConfig::RESERVED_SSA_NUM)
+        {
+            ssaDef = lvaGetDesc(defLclNum)->GetPerSsaData(defSsaNum);
+        }
+
+        CopyPropSsaDefStack* defStack;
+        if (!curSsaName->Lookup(defLclNum, &defStack))
+        {
+            defStack = new (curSsaName->GetAllocator()) CopyPropSsaDefStack(curSsaName->GetAllocator());
+            curSsaName->Set(defLclNum, defStack);
+        }
+
+        defStack->Push(CopyPropSsaDef(ssaDef, lclNode));
+    };
+
+    if (lclNode->HasCompositeSsaName())
     {
-        lclNum = varDsc->lvFieldLclStart;
-    }
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        assert(varDsc->lvPromoted);
 
-    if (!lvaInSsa(lclNum))
+        for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+        {
+            unsigned ssaNum = lclNode->GetSsaNum(this, index);
+            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+            {
+                pushDef(varDsc->lvFieldLclStart + index, ssaNum);
+            }
+        }
+    }
+    else if (lclNode->HasSsaName())
     {
-        return BAD_VAR_NUM;
-    }
+        unsigned ssaNum = lclNode->GetSsaNum();
+        if ((defNode != nullptr) && defNode->IsPhiDefn())
+        {
+            // TODO-CQ: design better heuristics for propagation and remove this.
+            ssaNum = SsaConfig::RESERVED_SSA_NUM;
+        }
 
-    return lclNum;
+        pushDef(lclNum, ssaNum);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -335,8 +356,11 @@ unsigned Compiler::optIsSsaLocal(GenTree* tree)
 // Arguments:
 //    block       -  Block the tree belongs to
 //    curSsaName  -  The map from lclNum to its recently live definitions as a stack
-
-void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName)
+//
+// Returns:
+//    true if any copy prop was done
+//
+bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName)
 {
 #ifdef DEBUG
     JITDUMP("Copy Assertion for " FMT_BB "\n", block->bbNum);
@@ -349,136 +373,113 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
 
     // We are not generating code so we don't need to deal with liveness change
     TreeLifeUpdater<false> treeLifeUpdater(this);
+    bool                   madeChanges = false;
 
     // There are no definitions at the start of the block. So clear it.
     compCurLifeTree = nullptr;
     VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
     for (Statement* const stmt : block->Statements())
     {
-        VarSetOps::ClearD(this, optCopyPropKillSet);
-
         // Walk the tree to find if any local variable can be replaced with current live definitions.
+        // Simultaneously, push live definitions on the stack - that logic must be in sync with the
+        // SSA renaming process.
         for (GenTree* const tree : stmt->TreeList())
         {
             treeLifeUpdater.UpdateLife(tree);
 
-            optCopyProp(block, stmt, tree, curSsaName);
-
-            // TODO-Review: Merge this loop with the following loop to correctly update the
-            // live SSA num while also propagating copies.
-            //
-            // 1. This loop performs copy prop with currently live (on-top-of-stack) SSA num.
-            // 2. The subsequent loop maintains a stack for each lclNum with
-            //    currently active SSA numbers when definitions are encountered.
-            //
-            // If there is an embedded definition using a "comma" in a stmt, then the currently
-            // live SSA number will get updated only in the next loop (2). However, this new
-            // definition is now supposed to be live (on tos). If we did not update the stacks
-            // using (2), copy prop (1) will use a SSA num defined outside the stmt ignoring the
-            // embedded update. Killing the variable is a simplification to produce 0 ASM diffs
-            // for an update release.
-            //
-            const unsigned lclNum = optIsSsaLocal(tree);
-            if ((lclNum != BAD_VAR_NUM) && (tree->gtFlags & GTF_VAR_DEF))
+            GenTreeLclVarCommon* lclDefNode = nullptr;
+            if (tree->OperIsSsaDef() && tree->DefinesLocal(this, &lclDefNode))
             {
-                VarSetOps::AddElemD(this, optCopyPropKillSet, lvaTable[lclNum].lvVarIndex);
+                optCopyPropPushDef(tree, lclDefNode, curSsaName);
             }
-        }
-
-        // This logic must be in sync with SSA renaming process.
-        for (GenTree* const tree : stmt->TreeList())
-        {
-            const unsigned lclNum = optIsSsaLocal(tree);
-            if (lclNum == BAD_VAR_NUM)
+            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && ((tree->gtFlags & GTF_VAR_DEF) == 0) &&
+                     tree->AsLclVarCommon()->HasSsaName())
             {
-                continue;
-            }
+                unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
-            // As we encounter a definition add it to the stack as a live definition.
-            if (tree->gtFlags & GTF_VAR_DEF)
-            {
-                GenTreePtrStack* stack;
-                if (!curSsaName->Lookup(lclNum, &stack))
+                // If we encounter first use of a param or this pointer add it as a
+                // live definition. Since they are always live, we'll do it only once.
+                if ((lvaGetDesc(lclNum)->lvIsParam || (lclNum == info.compThisArg)) && !curSsaName->Lookup(lclNum))
                 {
-                    stack = new (curSsaName->GetAllocator()) GenTreePtrStack(curSsaName->GetAllocator());
+                    optCopyPropPushDef(nullptr, tree->AsLclVarCommon(), curSsaName);
                 }
-                stack->Push(tree);
-                curSsaName->Set(lclNum, stack, LclNumToGenTreePtrStack::Overwrite);
-            }
-            // If we encounter first use of a param or this pointer add it as a live definition.
-            // Since they are always live, do it only once.
-            else if ((tree->gtOper == GT_LCL_VAR) && !(tree->gtFlags & GTF_VAR_USEASG) &&
-                     (lvaTable[lclNum].lvIsParam || lvaTable[lclNum].lvVerTypeInfo.IsThisPtr()))
-            {
-                GenTreePtrStack* stack;
-                if (!curSsaName->Lookup(lclNum, &stack))
+
+                // TODO-Review: EH successor/predecessor iteration seems broken.
+                if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
                 {
-                    stack = new (curSsaName->GetAllocator()) GenTreePtrStack(curSsaName->GetAllocator());
-                    stack->Push(tree);
-                    curSsaName->Set(lclNum, stack);
+                    continue;
                 }
+
+                madeChanges |= optCopyProp(block, stmt, tree->AsLclVarCommon(), lclNum, curSsaName);
             }
         }
     }
+
+    return madeChanges;
 }
 
-/**************************************************************************************
- *
- * This stage performs value numbering based copy propagation. Since copy propagation
- * is about data flow, we cannot find them in assertion prop phase. In assertion prop
- * we can identify copies that like so: if (a == b) else, i.e., control flow assertions.
- *
- * To identify data flow copies, we follow a similar approach to SSA renaming. We walk
- * each path in the graph keeping track of every live definition. Thus when we see a
- * variable that shares the VN with a live definition, we'd replace this variable with
- * the variable in the live definition.
- *
- * We do this to be in conventional SSA form. This can very well be changed later.
- *
- * For example, on some path in the graph:
- *    a0 = x0
- *    :            <- other blocks
- *    :
- *    a1 = y0
- *    :
- *    :            <- other blocks
- *    b0 = x0, we cannot substitute x0 with a0, because currently our backend doesn't
- * treat lclNum and ssaNum together as a variable, but just looks at lclNum. If we
- * substituted x0 with a0, then we'd be in general SSA form.
- *
- */
-void Compiler::optVnCopyProp()
+//------------------------------------------------------------------------------
+// optVnCopyProp: value numbering based copy propagation
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//
+//   This phase performs value numbering based copy propagation. Since copy propagation
+//   is about data flow, we cannot find them in assertion prop phase. In assertion prop
+//   we can identify copies that like so: if (a == b) else, i.e., control flow assertions.
+//
+//   To identify data flow copies, we follow a similar approach to SSA renaming. We walk
+//   each path in the graph keeping track of every live definition. Thus when we see a
+//   variable that shares the VN with a live definition, we'd replace this variable with
+//   the variable in the live definition.
+//
+//   We do this to be in conventional SSA form. This can very well be changed later.
+//
+//   For example, on some path in the graph:
+//      a0 = x0
+//      :            <- other blocks
+//      :
+//      a1 = y0
+//      :
+//      :            <- other blocks
+//      b0 = x0, we cannot substitute x0 with a0, because currently our backend doesn't
+//   treat lclNum and ssaNum together as a variable, but just looks at lclNum. If we
+//   substituted x0 with a0, then we'd be in general SSA form.
+//
+PhaseStatus Compiler::optVnCopyProp()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optVnCopyProp()\n");
-    }
-#endif
-
     if (fgSsaPassesCompleted == 0)
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
-    VarSetOps::AssignNoCopy(this, optCopyPropKillSet, VarSetOps::MakeEmpty(this));
 
     class CopyPropDomTreeVisitor : public DomTreeVisitor<CopyPropDomTreeVisitor>
     {
         // The map from lclNum to its recently live definitions as a stack.
-        LclNumToGenTreePtrStack m_curSsaName;
+        LclNumToLiveDefsMap m_curSsaName;
+        bool                m_madeChanges = false;
 
     public:
         CopyPropDomTreeVisitor(Compiler* compiler)
-            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_curSsaName(compiler->getAllocator(CMK_CopyProp))
+            : DomTreeVisitor(compiler, compiler->fgSsaDomTree)
+            , m_curSsaName(compiler->getAllocator(CMK_CopyProp))
+            , m_madeChanges(false)
         {
+        }
+
+        bool MadeChanges() const
+        {
+            return m_madeChanges;
         }
 
         void PreOrderVisit(BasicBlock* block)
         {
             // TODO-Cleanup: Move this function from Compiler to this class.
-            m_compiler->optBlockCopyProp(block, &m_curSsaName);
+            m_madeChanges |= m_compiler->optBlockCopyProp(block, &m_curSsaName);
         }
 
         void PostOrderVisit(BasicBlock* block)
@@ -486,12 +487,31 @@ void Compiler::optVnCopyProp()
             // TODO-Cleanup: Move this function from Compiler to this class.
             m_compiler->optBlockCopyPropPopStacks(block, &m_curSsaName);
         }
+
+        void PropagateCopies()
+        {
+            WalkTree();
+
+#ifdef DEBUG
+            // Verify the definitions remaining are only those we pushed for parameters.
+            for (LclNumToLiveDefsMap::KeyIterator iter = m_curSsaName.Begin(); !iter.Equal(m_curSsaName.End()); ++iter)
+            {
+                unsigned lclNum = iter.Get();
+                assert(m_compiler->lvaGetDesc(lclNum)->lvIsParam || (lclNum == m_compiler->info.compThisArg));
+
+                CopyPropSsaDefStack* defStack = iter.GetValue();
+                assert(defStack->Height() == 1);
+            }
+#endif // DEBUG
+        }
     };
 
     CopyPropDomTreeVisitor visitor(this);
-    visitor.WalkTree();
+    visitor.PropagateCopies();
 
     // Tracked variable count increases after CopyProp, so don't keep a shorter array around.
     // Destroy (release) the varset.
     VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::UninitVal());
+
+    return visitor.MadeChanges() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

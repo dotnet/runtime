@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="categoryName">The category name to use in this filter rule.</param>
         /// <param name="logLevel">The <see cref="LogLevel"/> to use in this filter rule.</param>
         /// <param name="filter">The filter to apply.</param>
-        public LoggerFilterRule(string providerName, string categoryName, LogLevel? logLevel, Func<string, string, LogLevel, bool> filter)
+        public LoggerFilterRule(string? providerName, string? categoryName, LogLevel? logLevel, Func<string?, string?, LogLevel, bool>? filter)
         {
             ProviderName = providerName;
             CategoryName = categoryName;
@@ -28,12 +28,12 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Gets the logger provider type or alias this rule applies to.
         /// </summary>
-        public string ProviderName { get; }
+        public string? ProviderName { get; }
 
         /// <summary>
         /// Gets the logger category this rule applies to.
         /// </summary>
-        public string CategoryName { get; }
+        public string? CategoryName { get; }
 
         /// <summary>
         /// Gets the minimum <see cref="LogLevel"/> of messages.
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Gets the filter delegate that would be applied to messages that passed the <see cref="LogLevel"/>.
         /// </summary>
-        public Func<string, string, LogLevel, bool> Filter { get; }
+        public Func<string?, string?, LogLevel, bool>? Filter { get; }
 
         /// <inheritdoc/>
         public override string ToString()

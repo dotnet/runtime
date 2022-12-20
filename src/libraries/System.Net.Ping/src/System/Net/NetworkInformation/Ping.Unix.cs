@@ -15,7 +15,7 @@ namespace System.Net.NetworkInformation
 {
     public partial class Ping
     {
-        private static bool SendIpHeader => false;
+        private static bool SendIpHeader => OperatingSystem.IsFreeBSD();
         private static bool NeedsConnect => OperatingSystem.IsLinux();
         private static bool SupportsDualMode => true;
 
@@ -27,20 +27,11 @@ namespace System.Net.NetworkInformation
             return reply;
         }
 
-        private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            Task<PingReply> t = RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
+            return RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
                     SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options) :
                     SendWithPingUtilityAsync(address, buffer, timeout, options);
-
-            PingReply reply = await t.ConfigureAwait(false);
-
-            if (_canceled)
-            {
-                throw new OperationCanceledException();
-            }
-
-            return reply;
         }
     }
 }

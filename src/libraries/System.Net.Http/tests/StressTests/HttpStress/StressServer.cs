@@ -27,6 +27,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Serilog;
+using Microsoft.Extensions.ObjectPool;
 
 namespace HttpStress
 {
@@ -36,6 +37,7 @@ namespace HttpStress
         public const string ExpectedResponseContentLength = "Expected-Response-Content-Length";
 
         private readonly IWebHost _webHost;
+        private readonly LogQuicEventListener? _listener;
 
         public string ServerUri { get; }
 
@@ -118,9 +120,9 @@ namespace HttpStress
                         else
                         {
                             listenOptions.Protocols =
-                                configuration.HttpVersion ==  HttpVersion.Version20 ?
+                                configuration.HttpVersion == HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
-                                HttpProtocols.Http1 ;
+                                HttpProtocols.Http1;
                         }
                     }
                 });
@@ -139,7 +141,8 @@ namespace HttpStress
                     try
                     {
                         File.Delete(filename);
-                    } catch {}
+                    }
+                    catch { }
                 }
 
                 loggerConfiguration = loggerConfiguration
@@ -154,6 +157,10 @@ namespace HttpStress
                     .WriteTo.Console(Serilog.Events.LogEventLevel.Warning);
             }
             Log.Logger = loggerConfiguration.CreateLogger();
+            if (configuration.Trace)
+            {
+                _listener = new LogQuicEventListener(Log.Logger);
+            }
 
             host = host
                 .UseSerilog()
@@ -332,6 +339,7 @@ namespace HttpStress
         public void Dispose()
         {
             _webHost.Dispose();
+            _listener?.Dispose();
         }
 
         private static (string scheme, string hostname, int port) ParseServerUri(string serverUri)
@@ -394,6 +402,53 @@ namespace HttpStress
             }
 
             return true;
+        }
+    }
+
+    public class LogQuicEventListener : EventListener
+    {
+        private DefaultObjectPool<StringBuilder> _stringBuilderPool = new DefaultObjectPool<StringBuilder>(new StringBuilderPooledObjectPolicy());
+        private readonly Serilog.ILogger _logger;
+
+        public LogQuicEventListener(Serilog.ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
+            {
+                EnableEvents(eventSource, EventLevel.LogAlways);
+            }
+        }
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            StringBuilder sb = _stringBuilderPool.Get();
+            sb.Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
+            for (int i = 0; i < eventData.Payload?.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sb.Append(", ");
+                }
+                sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+            }
+            if (eventData.Level > EventLevel.Error)
+            {
+                _logger.Debug(sb.ToString());
+            }
+            else
+            {
+                _logger.Error(sb.ToString());
+            }
+            _stringBuilderPool.Return(sb);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
         }
     }
 }

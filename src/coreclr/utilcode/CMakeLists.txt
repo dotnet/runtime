@@ -27,7 +27,6 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
-  iallocator.cpp
   loaderheap.cpp
   outstring.cpp
   ilformatter.cpp
@@ -40,7 +39,6 @@ set(UTILCODE_COMMON_SOURCES
   sigparser.cpp
   sstring.cpp
   util_nodependencies.cpp
-  utilmessagebox.cpp
   safewrap.cpp
   clrhost.cpp
   cycletimer.cpp
@@ -61,8 +59,6 @@ if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND UTILCODE_COMMON_SOURCES
     dacutil.cpp
     dlwrap.cpp
-    securitywrapper.cpp
-    securityutil.cpp
     stacktrace.cpp
   )
 endif(CLR_CMAKE_TARGET_WIN32)

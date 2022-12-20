@@ -77,11 +77,7 @@ ADVANCE_ASSEMBLY:
     dbg_m_pDomainAssembly = *pDomainAssemblyHolder;
 #endif //_DEBUG
 
-    m_moduleIterator = (*pDomainAssemblyHolder)->IterateModules(m_moduleIterationFlags);
-
-ADVANCE_MODULE:
-    if  (!m_moduleIterator.Next())
-        goto ADVANCE_ASSEMBLY;
+    m_currentModule = (*pDomainAssemblyHolder)->GetModule();
 
     if (m_mainMD->HasClassInstantiation())
     {
@@ -96,9 +92,7 @@ ADVANCE_TYPE:
     if (m_mainMD->HasClassInstantiation())
     {
         if (!GetCurrentModule()->GetAvailableParamTypes()->FindNext(&m_typeIterator, &m_typeIteratorEntry))
-            goto ADVANCE_MODULE;
-        if (CORCOMPILE_IS_POINTER_TAGGED(m_typeIteratorEntry->GetTypeHandle().AsTAddr()))
-            goto ADVANCE_TYPE;
+            goto ADVANCE_ASSEMBLY;
 
         //if (m_typeIteratorEntry->data != TypeHandle(m_mainMD->GetMethodTable()))
         //    goto ADVANCE_TYPE;
@@ -108,9 +102,6 @@ ADVANCE_TYPE:
         // Similar logic occurs in the Lookup function for that table.  We will clean this
         // up in Whidbey Beta2.
         TypeHandle th = m_typeIteratorEntry->GetTypeHandle();
-
-        if (th.IsEncodedFixup())
-            goto ADVANCE_TYPE;
 
         if (th.IsTypeDesc())
             goto ADVANCE_TYPE;
@@ -130,7 +121,7 @@ ADVANCE_TYPE:
     }
     else if (m_startedNonGenericType)
     {
-        goto ADVANCE_MODULE;
+        goto ADVANCE_ASSEMBLY;
     }
     else
     {
@@ -151,8 +142,6 @@ ADVANCE_METHOD:
     {
         if (!GetCurrentModule()->GetInstMethodHashTable()->FindNext(&m_methodIterator, &m_methodIteratorEntry))
             goto ADVANCE_TYPE;
-        if (CORCOMPILE_IS_POINTER_TAGGED(dac_cast<TADDR>(m_methodIteratorEntry->GetMethod())))
-            goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetModule() != m_module)
             goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetMemberDef() != m_md)
@@ -188,7 +177,7 @@ Module * LoadedMethodDescIterator::GetCurrentModule()
     }
     CONTRACTL_END
 
-    return m_moduleIterator.GetLoadedModule();
+    return m_currentModule;
 }
 
 MethodDesc *LoadedMethodDescIterator::Current()
@@ -228,8 +217,7 @@ LoadedMethodDescIterator::Start(
     AppDomain * pAppDomain,
     Module *pModule,
     mdMethodDef md,
-    AssemblyIterationFlags assemblyIterationFlags,
-    ModuleIterationOption moduleIterationFlags)
+    AssemblyIterationFlags assemblyIterationFlags)
 {
     CONTRACTL
     {
@@ -241,7 +229,6 @@ LoadedMethodDescIterator::Start(
     CONTRACTL_END;
 
     m_assemIterationFlags = assemblyIterationFlags;
-    m_moduleIterationFlags = moduleIterationFlags;
     m_mainMD = NULL;
     m_module = pModule;
     m_md = md;

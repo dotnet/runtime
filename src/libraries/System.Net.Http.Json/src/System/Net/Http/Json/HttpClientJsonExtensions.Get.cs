@@ -16,9 +16,10 @@ namespace System.Net.Http.Json
     public static partial class HttpClientJsonExtensions
     {
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -28,9 +29,10 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -40,9 +42,10 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -52,9 +55,10 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -63,9 +67,9 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
 
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -76,7 +80,7 @@ namespace System.Net.Http.Json
 
         public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -85,9 +89,9 @@ namespace System.Net.Http.Json
             return GetFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
         }
 
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -98,7 +102,7 @@ namespace System.Net.Http.Json
 
         public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -108,22 +112,27 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, CancellationToken cancellationToken = default)
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, CancellationToken cancellationToken = default)
             => client.GetFromJsonAsync(requestUri, type, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, CancellationToken cancellationToken = default)
             => client.GetFromJsonAsync(requestUri, type, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, CancellationToken cancellationToken = default)
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken = default)
             => client.GetFromJsonAsync<TValue>(requestUri, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, CancellationToken cancellationToken = default)
             => client.GetFromJsonAsync<TValue>(requestUri, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         private static async Task<object?> GetFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
@@ -132,20 +141,12 @@ namespace System.Net.Http.Json
                 // Nullable forgiving reason:
                 // GetAsync will usually return Content as not-null.
                 // If Content happens to be null, the extension will throw.
-                return await ReadFromJsonAsyncHelper(response.Content!, type, options, cancellationToken).ConfigureAwait(false);
+                return await response.Content!.ReadFromJsonAsync(type, options, cancellationToken).ConfigureAwait(false);
             }
-
-            // Workaround for https://github.com/mono/linker/issues/1416, extracting the offending call into a separate method
-            // which can be annotated with suppressions.
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            static Task<object?> ReadFromJsonAsyncHelper(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
-                => content.ReadFromJsonAsync(type, options, cancellationToken);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         private static async Task<T?> GetFromJsonAsyncCore<T>(Task<HttpResponseMessage> taskResponse, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
@@ -154,21 +155,9 @@ namespace System.Net.Http.Json
                 // Nullable forgiving reason:
                 // GetAsync will usually return Content as not-null.
                 // If Content happens to be null, the extension will throw.
-                return await ReadFromJsonAsyncHelper<T>(response.Content!, options, cancellationToken).ConfigureAwait(false);
+                return await response.Content!.ReadFromJsonAsync<T>(options, cancellationToken).ConfigureAwait(false);
             }
         }
-
-        // Workaround for https://github.com/mono/linker/issues/1416, extracting the offending call into a separate method
-        // which can be annotated with suppressions.
-        // Note that in this case it can't be a local function since that inherits a generic parameter from the parent method
-        // which causes a trimmer warning coming from compiler generated code, which is very hard to suppress.
-        // Avoid that by declaring it a normal method which fully defines its own generic parameters.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
-            Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-        private static Task<T?> ReadFromJsonAsyncHelper<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
-            => content.ReadFromJsonAsync<T>(options, cancellationToken);
 
         private static async Task<object?> GetFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerContext context, CancellationToken cancellationToken)
         {

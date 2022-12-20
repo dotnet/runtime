@@ -336,11 +336,10 @@ namespace System.Data
             if ((null != name) && (0 < name.Length))
             {
                 int count = List.Count;
-                int result = 0;
                 for (int i = 0; i < count; i++)
                 {
                     DataRelation relation = (DataRelation)List[i]!;
-                    result = NamesEqual(relation.RelationName, name, false, GetDataSet().Locale);
+                    int result = NamesEqual(relation.RelationName, name, false, GetDataSet().Locale);
                     if (result == 1)
                     {
                         return i;
@@ -363,7 +362,7 @@ namespace System.Data
         /// <summary>
         /// Makes a default name with the given index.  e.g. Relation1, Relation2, ... Relationi
         /// </summary>
-        private string MakeName(int index) => index == 1 ?
+        private static string MakeName(int index) => index == 1 ?
             "Relation1" :
             "Relation" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

@@ -134,7 +134,7 @@ namespace System.Net
                 }
             }
 
-            Dictionary<int, HttpEndPointListener>? p = null;
+            Dictionary<int, HttpEndPointListener>? p;
             if (s_ipEndPoints.ContainsKey(addr))
             {
                 p = s_ipEndPoints[addr];
@@ -145,7 +145,7 @@ namespace System.Net
                 s_ipEndPoints[addr] = p;
             }
 
-            HttpEndPointListener? epl = null;
+            HttpEndPointListener? epl;
             if (p.ContainsKey(port))
             {
                 epl = p[port];
@@ -210,7 +210,7 @@ namespace System.Net
                 return;
 
             HttpEndPointListener epl = GetEPListener(lp.Host!, lp.Port, listener, lp.Secure);
-            epl.RemovePrefix(lp, listener);
+            epl.RemovePrefix(lp);
         }
     }
 }

@@ -50,7 +50,6 @@ struct ECFunc {
     bool                IsEndOfArray()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_EndOfArray); }
     bool                HasSignature()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_HasSignature); }
     bool                IsUnreferenced(){ LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_Unreferenced); }
-    CorInfoIntrinsics   IntrinsicID()   { LIMITED_METHOD_CONTRACT; return (CorInfoIntrinsics)((INT8)(m_dwFlags >> 16)); }
     int                 DynamicID()     { LIMITED_METHOD_CONTRACT; return (int)              ((INT8)(m_dwFlags >> 24)); }
 
     ECFunc*             NextInArray()
@@ -83,7 +82,6 @@ class ECall
         static PCODE GetFCallImpl(MethodDesc* pMD, BOOL * pfSharedOrDynamicFCallImpl = NULL);
         static MethodDesc* MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoint = NULL);
         static DWORD GetIDForMethod(MethodDesc *pMD);
-        static CorInfoIntrinsics GetIntrinsicID(MethodDesc *pMD);
 
         // Some fcalls (delegate ctors and tlbimpl ctors) shared one implementation.
         // We should never patch vtable for these since they have 1:N mapping between
@@ -130,5 +128,12 @@ class ECall
 };
 
 extern "C" FCDECL1(VOID, FCComCtor, LPVOID pV);
+
+class GCReporting final
+{
+public:
+    static FCDECL1(void, Register, GCFrame*);
+    static FCDECL1(void, Unregister, GCFrame*);
+};
 
 #endif // _ECALL_H_

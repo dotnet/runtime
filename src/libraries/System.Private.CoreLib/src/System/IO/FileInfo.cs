@@ -14,21 +14,22 @@ namespace System.IO
         private FileInfo() { }
 
         public FileInfo(string fileName)
-            : this(fileName, isNormalized: false)
+            : this(fileName ?? throw new ArgumentNullException(nameof(fileName)), isNormalized: false)
         {
         }
 
         internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            // Want to throw the original argument name
-            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(fileName));
+            OriginalPath = originalPath;
 
-            fullPath = fullPath ?? originalPath;
+            fullPath ??= originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
-            _name = fileName ?? Path.GetFileName(originalPath);
+            _name = fileName;
         }
+
+        public override string Name => _name ??= Path.GetFileName(OriginalPath);
 
         public long Length
         {
@@ -80,19 +81,16 @@ namespace System.IO
             => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
         public StreamWriter CreateText()
-            => new StreamWriter(NormalizedPath, append: false);
+            => CreateStreamWriter(append: false);
 
         public StreamWriter AppendText()
-            => new StreamWriter(NormalizedPath, append: true);
+            => CreateStreamWriter(append: true);
 
         public FileInfo CopyTo(string destFileName) => CopyTo(destFileName, overwrite: false);
 
         public FileInfo CopyTo(string destFileName, bool overwrite)
         {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string destinationPath = Path.GetFullPath(destFileName);
             FileSystem.CopyFile(FullPath, destinationPath, overwrite);
@@ -110,6 +108,21 @@ namespace System.IO
         {
             FileSystem.DeleteFile(FullPath);
             Invalidate();
+        }
+
+        public override bool Exists
+        {
+            get
+            {
+                try
+                {
+                    return ExistsCore;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
         }
 
         public FileStream Open(FileMode mode)
@@ -139,10 +152,7 @@ namespace System.IO
         // This method does work across volumes.
         public void MoveTo(string destFileName, bool overwrite)
         {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string fullDestFileName = Path.GetFullPath(destFileName);
 
@@ -171,8 +181,7 @@ namespace System.IO
 
         public FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
+            ArgumentNullException.ThrowIfNull(destinationFileName);
 
             FileSystem.ReplaceFile(
                 FullPath,
@@ -188,5 +197,12 @@ namespace System.IO
 
         [SupportedOSPlatform("windows")]
         public void Encrypt() => File.Encrypt(FullPath);
+
+        private StreamWriter CreateStreamWriter(bool append)
+        {
+            StreamWriter streamWriter = new StreamWriter(NormalizedPath, append);
+            Invalidate();
+            return streamWriter;
+        }
     }
 }

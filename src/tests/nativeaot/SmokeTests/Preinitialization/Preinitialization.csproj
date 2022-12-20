@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+
+    <!--
+      We rely on reflection metadata for .cctor to detect if a type was preinitialized
+      and this only works if presence of code implies presence of reflection metadata.
+    -->
+    <IlcTrimMetadata>false</IlcTrimMetadata>
+
+    <!--
+      By default, we link libstdc++compat.a, This property is set to exercise code
+      with system C++ runtime library (-lstdc++).
+    -->
+    <LinkStandardCPlusPlusLibrary>true</LinkStandardCPlusPlusLibrary>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--preinitstatics" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Preinitialization.cs" />
+  </ItemGroup>
+</Project>

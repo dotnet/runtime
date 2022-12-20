@@ -48,6 +48,10 @@ For example:
 ```
 ./build.sh libs.tests -os iOS -arch x64 -test /p:DevTeamProvisioning=H1A2B3C4D5
 ```
+Other possible options are:
+- to sign with an adhoc key by setting `/p:DevTeamProvisioning=adhoc`
+- to skip signing all together by setting `/p:DevTeamProvisioning=-` .
+
 [AppleAppBuilder](https://github.com/dotnet/runtime/blob/main/src/tasks/AppleAppBuilder/AppleAppBuilder.cs) generates temp Xcode projects you can manually open and resolve provisioning issues there using native UI and deploy to your devices.
 
 ### Running individual test suites
@@ -107,6 +111,10 @@ To build for AOT only mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpre
 3. AOT-LLVM
 
 To build for AOT-LLVM mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpreter=false /p:MonoEnableLLVM=true` to a build command.
+
+4. App Sandbox
+
+To build the test app bundle with the App Sandbox entitlement, add `/p:EnableAppSandbox=true` to a build command.
 
 ### Test App Design
 iOS/tvOS `*.app` (or `*.ipa`) is basically a simple [ObjC app](https://github.com/dotnet/runtime/blob/main/src/tasks/AppleAppBuilder/Templates/main-console.m) that inits the Mono Runtime. This Mono Runtime starts a simple xunit test

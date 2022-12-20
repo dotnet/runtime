@@ -116,6 +116,8 @@ EP_RT_DEFINE_THREAD_FUNC (server_thread)
 {
 	EP_ASSERT (server_volatile_load_shutting_down_state () || ds_ipc_stream_factory_has_active_ports ());
 
+	ep_rt_set_server_name();
+
 	if (!ds_ipc_stream_factory_has_active_ports ()) {
 #ifndef DS_IPC_DISABLE_LISTEN_PORTS
 		DS_LOG_ERROR_0 ("Diagnostics IPC listener was undefined");
@@ -200,7 +202,7 @@ ds_server_init (void)
 		ep_raise_error ();
 	}
 
-	// Initialize the RuntimeIndentifier before use
+	// Initialize the RuntimeIdentifier before use
 	ds_ipc_advertise_cookie_v1_init ();
 
 	// Ports can fail to be configured
@@ -256,7 +258,7 @@ ds_server_shutdown (void)
 void
 ds_server_pause_for_diagnostics_monitor (void)
 {
-    _is_paused_for_startup = true;
+	_is_paused_for_startup = true;
 
 	if (ds_ipc_stream_factory_any_suspended_ports ()) {
 		EP_ASSERT (ep_rt_wait_event_is_valid (&_server_resume_runtime_startup_event));
@@ -278,7 +280,7 @@ ds_server_resume_runtime_startup (void)
 	ds_ipc_stream_factory_resume_current_port ();
 	if (!ds_ipc_stream_factory_any_suspended_ports () && ep_rt_wait_event_is_valid (&_server_resume_runtime_startup_event)) {
 		ep_rt_wait_event_set (&_server_resume_runtime_startup_event);
-        _is_paused_for_startup = false;
+		_is_paused_for_startup = false;
 	}
 }
 
@@ -291,7 +293,7 @@ ds_server_is_paused_in_startup (void)
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_server;
 const char quiet_linker_empty_file_warning_diagnostics_server = 0;
 #endif

@@ -1744,7 +1744,7 @@ namespace System.Data.Tests
             // check Indentity column - DefaultValue
             Assert.Equal(DBNull.Value, dsTarget.Tables["Child"].Columns["String1"].DefaultValue);
 
-            // check remove colum
+            // check remove column
             Assert.True(dsTarget.Tables["Child"].Columns.Contains("String2"));
         }
 
@@ -1795,7 +1795,7 @@ namespace System.Data.Tests
             // check Indentity column - DefaultValue
             Assert.Equal(DBNull.Value, dsTarget.Tables["Child"].Columns["String1"].DefaultValue);
 
-            // check remove colum
+            // check remove column
             Assert.True(dsTarget.Tables["Child"].Columns.Contains("String2"));
             // Check Relation.Nested value
             DataSet orig = new DataSet();
@@ -2018,7 +2018,7 @@ namespace System.Data.Tests
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, ds2.Tables[1].Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), ds2.Tables[0].Columns[0].GetType());
 
@@ -2060,7 +2060,7 @@ namespace System.Data.Tests
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, ds2.Tables[1].Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), ds2.Tables[0].Columns[0].GetType());
 
@@ -2104,7 +2104,7 @@ namespace System.Data.Tests
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, ds2.Tables[1].Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), ds2.Tables[0].Columns[0].GetType());
 
@@ -2149,7 +2149,7 @@ namespace System.Data.Tests
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, ds2.Tables[1].Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), ds2.Tables[0].Columns[0].GetType());
 
@@ -2922,7 +2922,7 @@ namespace System.Data.Tests
             // Checking get table by name
             Assert.Equal(dt4, ds.Tables[dt4.TableName]);
 
-            // Checking get table by name with diferent case, ArgumentException
+            // Checking get table by name with different case, ArgumentException
             AssertExtensions.Throws<ArgumentException>(null, () => ds.Tables[dt4.TableName.ToLower()]);
         }
 

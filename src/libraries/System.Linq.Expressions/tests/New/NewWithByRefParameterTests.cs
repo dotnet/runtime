@@ -70,7 +70,8 @@ namespace System.Linq.Expressions.Tests
             CreateByRefAliasing(useInterpreter: true);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/19286", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Fact]
         public void CreateByRefAliasingCompiled()
         {
             CreateByRefAliasing(useInterpreter: false);

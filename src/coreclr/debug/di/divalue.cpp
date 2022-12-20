@@ -1052,7 +1052,7 @@ HRESULT CordbReferenceValue::Dereference(ICorDebugValue **ppValue)
 //-----------------------------------------------------------------------------
 // Common helper to dereferefence.
 // Parameters:
-//     pAppDomain, pType, pInfo - necessary paramters to create the value
+//     pAppDomain, pType, pInfo - necessary parameters to create the value
 //     pRealTypeOfTypedByref - type for a potential TypedByRef. Can be NULL if we know
 //        that we're not a typed-byref (this is true if we're definitely an object handle)
 //     ppValue - outparameter for newly created value. This will get an Ext AddRef.
@@ -2320,7 +2320,7 @@ HRESULT CordbObjectValue::GetLength(ULONG32 *pcchString)
 // Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure
 HRESULT CordbObjectValue::GetString(ULONG32 cchString,
                                     ULONG32 *pcchString,
-                                    __out_ecount_opt(cchString) WCHAR szString[])
+                                    _Out_writes_bytes_opt_(cchString) WCHAR szString[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -2464,7 +2464,7 @@ HRESULT CordbObjectValue::EnumerateExceptionCallStack(ICorDebugExceptionObjectCa
             CorDebugExceptionObjectStackFrame& currentStackFrame = pStackFrames[index];
 
             CordbAppDomain* pAppDomain = GetProcess()->LookupOrCreateAppDomain(currentDacFrame.vmAppDomain);
-            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainFile);
+            CordbModule* pModule = pAppDomain->LookupOrCreateModule(currentDacFrame.vmDomainAssembly);
 
             hr = pModule->QueryInterface(IID_ICorDebugModule, reinterpret_cast<void**>(&currentStackFrame.pModule));
             _ASSERTE(SUCCEEDED(hr));
@@ -2653,18 +2653,18 @@ HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
         return hr;
 
     mdMethodDef functionMethodDef = 0;
-    VMPTR_DomainFile functionDomainFile;
+    VMPTR_DomainAssembly functionDomainAssembly;
     NativeCodeFunctionData nativeCodeForDelFunc;
 
-    hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainFile, &functionMethodDef);
+    hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainAssembly, &functionMethodDef);
     if (hr != S_OK)
         return hr;
 
     // TODO: How to ensure results are sanitized?
     // Also, this is expensive. Do we really care that much about this?
-    pDAC->GetNativeCodeInfo(functionDomainFile, functionMethodDef, &nativeCodeForDelFunc);
+    pDAC->GetNativeCodeInfo(functionDomainAssembly, functionMethodDef, &nativeCodeForDelFunc);
 
-    RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainFile));
+    RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainAssembly));
     RSSmartPtr<CordbFunction> func;
     {
         RSLockHolder lockHolder(GetProcess()->GetProcessLock());
@@ -3529,7 +3529,7 @@ HRESULT CordbBoxValue::GetMonitorEventWaitList(ICorDebugThreadEnum **ppThreadEnu
     #define ARRAY_CACHE_SIZE (1000)
 #else
 // For release, guess 4 pages should be enough. Subtract some bytes to store
-// the header so that that doesn't push us onto another page. (We guess a reasonable
+// the header so that it doesn't push us onto another page. (We guess a reasonable
 // header size, but it's ok if it's larger).
     #define ARRAY_CACHE_SIZE (4 * 4096 - 24)
 #endif
@@ -3707,15 +3707,15 @@ HRESULT CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 dims[])
 //
 // indicates whether the array has base indices
 // Arguments:
-//     output: pbHasBaseIndices - true iff the array has more than one dimension and pbHasBaseIndices is not null
-// Return Value: S_OK on success or E_INVALIDARG if pbHasBaseIndices is null
-HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndices)
+//     output: pbHasBaseIndicies - true iff the array has more than one dimension and pbHasBaseIndicies is not null
+// Return Value: S_OK on success or E_INVALIDARG if pbHasBaseIndicies is null
+HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndicies)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    VALIDATE_POINTER_TO_OBJECT(pbHasBaseIndices, BOOL *);
+    VALIDATE_POINTER_TO_OBJECT(pbHasBaseIndicies, BOOL *);
 
-    *pbHasBaseIndices = m_info.arrayInfo.offsetToLowerBounds != 0;
+    *pbHasBaseIndicies = m_info.arrayInfo.offsetToLowerBounds != 0;
     return S_OK;
 } // CordbArrayValue::HasBaseIndicies
 

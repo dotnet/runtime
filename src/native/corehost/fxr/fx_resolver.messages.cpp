@@ -93,51 +93,57 @@ void fx_resolver_t::display_missing_framework_error(
     const pal::string_t& fx_name,
     const pal::string_t& fx_version,
     const pal::string_t& fx_dir,
-    const pal::string_t& dotnet_root)
+    const pal::string_t& dotnet_root,
+    bool disable_multilevel_lookup)
 {
     std::vector<framework_info> framework_infos;
     pal::string_t fx_ver_dirs;
     if (fx_dir.length())
     {
         fx_ver_dirs = fx_dir;
-        framework_info::get_all_framework_infos(get_directory(fx_dir), fx_name, &framework_infos);
+        framework_info::get_all_framework_infos(get_directory(fx_dir), fx_name, disable_multilevel_lookup, &framework_infos);
     }
     else
     {
         fx_ver_dirs = dotnet_root;
     }
 
-    framework_info::get_all_framework_infos(dotnet_root, fx_name, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_root, fx_name, disable_multilevel_lookup, &framework_infos);
 
     // Display the error message about missing FX.
     if (fx_version.length())
     {
-        trace::error(_X("The framework '%s', version '%s' (%s) was not found."), fx_name.c_str(), fx_version.c_str(), get_arch());
+        trace::error(_X("Framework: '%s', version '%s' (%s)"), fx_name.c_str(), fx_version.c_str(), get_current_arch_name());
     }
     else
     {
-        trace::error(_X("The framework '%s' (%s) was not found."), fx_name.c_str(), get_arch());
+        trace::error(_X("Framework: '%s', (%s)"), fx_name.c_str(), get_current_arch_name());
     }
+
+    trace::error(_X(".NET location: %s\n"), dotnet_root.c_str());
 
     if (framework_infos.size())
     {
-        trace::error(_X("  - The following frameworks were found:"));
+        trace::error(_X("The following frameworks were found:"));
         for (const framework_info& info : framework_infos)
         {
-            trace::error(_X("      %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
+            trace::error(_X("  %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
         }
     }
     else
     {
-        trace::error(_X("  - No frameworks were found."));
+        trace::error(_X("No frameworks were found."));
     }
 
     pal::string_t url = get_download_url(fx_name.c_str(), fx_version.c_str());
-    trace::error(_X(""));
-    trace::error(_X("You can resolve the problem by installing the specified framework and/or SDK."));
-    trace::error(_X(""));
-    trace::error(_X("The specified framework can be found at:"));
-    trace::error(_X("  - %s"), url.c_str());
+    trace::error(
+        _X("\n")
+        _X("Learn about framework resolution:\n")
+        DOTNET_APP_LAUNCH_FAILED_URL
+        _X("\n\n")
+        _X("To install missing framework, download:\n")
+        _X("%s"),
+        url.c_str());
 }
 
 void fx_resolver_t::display_incompatible_loaded_framework_error(

@@ -10,7 +10,7 @@ namespace System.Net
         private TimeSpan _drainEntityBody = TimeSpan.Zero;
         private TimeSpan _idleConnection = TimeSpan.Zero;
 
-        internal HttpListenerTimeoutManager(HttpListener listener) { }
+        internal HttpListenerTimeoutManager(HttpListener _) { }
 
         public TimeSpan DrainEntityBody
         {
@@ -83,7 +83,7 @@ namespace System.Net
             }
         }
 
-        private void ValidateTimeout(TimeSpan value)
+        private static void ValidateTimeout(TimeSpan value)
         {
             long timeoutValue = Convert.ToInt64(value.TotalSeconds);
             if (timeoutValue < 0 || timeoutValue > ushort.MaxValue)

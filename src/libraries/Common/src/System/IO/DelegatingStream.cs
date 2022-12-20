@@ -122,6 +122,16 @@ namespace System.IO
             return _innerStream.EndRead(asyncResult);
         }
 
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            _innerStream.CopyTo(destination, bufferSize);
+        }
+
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return _innerStream.CopyToAsync(destination, bufferSize, cancellationToken);
+        }
+
         #endregion Read
 
         #region Write
@@ -174,11 +184,6 @@ namespace System.IO
         public override void EndWrite(IAsyncResult asyncResult)
         {
             _innerStream.EndWrite(asyncResult);
-        }
-
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-        {
-            return _innerStream.CopyToAsync(destination, bufferSize, cancellationToken);
         }
         #endregion Write
     }

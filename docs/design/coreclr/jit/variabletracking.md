@@ -45,7 +45,7 @@ Given a native offset, no two variables should share the same location.
 Context
 --------
 
-We generate variables debug info while we generate the assembly intructions of the code. This is happening in `genCodeForBBList()` and `genFnProlog()`.
+We generate variables debug info while we generate the assembly instruction of the code. This is happening in `genCodeForBBList()` and `genFnProlog()`.
 
 If we are jitting release code, information about variable liveness will be included in `GenTree`s and `BasicBlock` when `genCodeForBBList` is reached.
 For each `BasicBlock`:
@@ -198,7 +198,7 @@ On `BasicBlock` boundaries:
         This is handled in `LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)`.
 
     -   If a variable doesn't have an open `VariableLiveRange` and is in `bbLiveIn`, we open one.
-        This is done in `genUpdateLife` immediately after the the previous method is called.
+        This is done in `genUpdateLife` immediately after the previous method is called.
 
     -   If a variable has an open `VariableLiveRange` and is not in `bbLiveIn`, we close it.
         This is handled in `genUpdateLife` too.
@@ -224,10 +224,10 @@ We are not reporting the cases where a variable liveness is being modified and a
     So a `VariableLiveRange` with exactly the same native offset for both would represent an empty live range and will not been found by the debugger.
 
 -   Each C# line commonly end being more than one assembly instruction, if it exist on the assembly code.
-    When you put a breakpoint in one C# line, you are stoping at the first of this group of instruction.
+    When you put a breakpoint in one C# line, you are stopping at the first of this group of instruction.
     A `VariableLiveRange` of just on assembly instruction seems unlikely to affect user debugging experience.
 
--   Less memory used to save VariabeLiveRanges
+-   Less memory used to save VariableLiveRanges
 
 -   We are just changing the variable location.
     We are not changing the variable value and the "old" variable location is not being modified.
@@ -241,7 +241,7 @@ The death of a variable is handled at the end of the last `BasicBlock` as variab
 
 ### Reporting Information
 
-We just iterate throught all the `VariableLiveRange`s of all the variables that are tracked in `CodeGen::genSetScopeInfoUsingVariableRanges()`.
+We just iterate through all the `VariableLiveRange`s of all the variables that are tracked in `CodeGen::genSetScopeInfoUsingVariableRanges()`.
 
 Turning On Debug Info
 --------
@@ -255,7 +255,7 @@ In case only one of them is defined, that one will be sent to the debugger.
 If both are defined, Scope info is sent to the debugger.
 If none is defined, no info is sent to the debugger.
 
-Both flags can be found at the beginnig of `codegeninterface.h`
+Both flags can be found at the beginning of `codegeninterface.h`
 
 Dumps and Debugging Support
 --------

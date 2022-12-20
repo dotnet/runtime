@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_array1_refany_cs
 {
-    internal class Test
+    public class Test
     {
         private static void TestRef(TypedReference _ref)
         {
@@ -41,7 +42,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Array genericArray = Array.CreateInstance(typeof(Test), 16);
             TestRef(__makeref(genericArray));

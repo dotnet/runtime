@@ -4,7 +4,7 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 .assembly extern mscorlib { } 
-.assembly typeload { } 
+.assembly 't2' { } 
 .class sequential sealed public NumberNode 
        extends [mscorlib]System.ValueType 
 { 

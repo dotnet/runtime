@@ -43,6 +43,9 @@ namespace System.Timers
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Timers.Timer'/> class, setting the <see cref='System.Timers.Timer.Interval'/> property to the specified period.
         /// </summary>
+        /// <param name="interval">
+        /// The time, in milliseconds, between events. The value must be greater than zero and less than or equal to <see cref="int.MaxValue"/>.
+        /// </param>
         public Timer(double interval) : this()
         {
             if (interval <= 0)
@@ -57,6 +60,16 @@ namespace System.Timers
             }
 
             _interval = (int)roundedInterval;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Timer'/> class, setting the <see cref='Interval'/> property to the specified period.
+        /// </summary>
+        /// <param name="interval">
+        /// The time between events. The value in milliseconds must be greater than zero and less than or equal to <see cref="int.MaxValue"/>.
+        /// </param>
+        public Timer(TimeSpan interval) : this(interval.TotalMilliseconds)
+        {
         }
 
         /// <summary>

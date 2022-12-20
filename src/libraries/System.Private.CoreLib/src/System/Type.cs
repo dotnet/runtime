@@ -51,7 +51,7 @@ namespace System
         public virtual bool IsSZArray => throw NotImplemented.ByDesign;
         public virtual bool IsVariableBoundArray => IsArray && !IsSZArray;
 
-        public virtual bool IsByRefLike => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        public virtual bool IsByRefLike { [Intrinsic] get => throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
         public bool HasElementType => HasElementTypeImpl();
         protected abstract bool HasElementTypeImpl();
@@ -104,16 +104,16 @@ namespace System
         public bool IsContextful => IsContextfulImpl();
         protected virtual bool IsContextfulImpl() => false;
 
-        public virtual bool IsEnum => IsSubclassOf(typeof(Enum));
+        public virtual bool IsEnum { [Intrinsic] get => IsSubclassOf(typeof(Enum)); }
         public bool IsMarshalByRef => IsMarshalByRefImpl();
         protected virtual bool IsMarshalByRefImpl() => false;
         public bool IsPrimitive => IsPrimitiveImpl();
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
+        protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         [Intrinsic]
         public bool IsAssignableTo([NotNullWhen(true)] Type? targetType) => targetType?.IsAssignableFrom(this) ?? false;
-        protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         public virtual bool IsSignatureType => false;
 
@@ -159,12 +159,11 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -241,7 +240,7 @@ namespace System
                             "exists and wasn't trimmed, then the current Type's MemberInfo couldn't have been trimmed.")]
         public virtual MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
-            if (member is null) throw new ArgumentNullException(nameof(member));
+            ArgumentNullException.ThrowIfNull(member);
 
             const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             foreach (MemberInfo myMemberInfo in GetMembers(all))
@@ -267,8 +266,8 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetMethodImpl(name, bindingAttr, null, CallingConventions.Any, null, null);
         }
 
@@ -302,14 +301,12 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -329,16 +326,12 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (genericParameterCount < 0)
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(genericParameterCount));
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentOutOfRangeException.ThrowIfNegative(genericParameterCount);
+            ArgumentNullException.ThrowIfNull(types);
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -370,8 +363,8 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public PropertyInfo? GetProperty(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetPropertyImpl(name, bindingAttr, null, null, null, null);
         }
 
@@ -380,8 +373,8 @@ namespace System
             Justification = "Linker doesn't recognize GetPropertyImpl(BindingFlags.Public) but this is what the body is doing")]
         public PropertyInfo? GetProperty(string name, Type? returnType)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetPropertyImpl(name, Type.DefaultLookup, null, returnType, null, null);
         }
 
@@ -397,10 +390,9 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public PropertyInfo? GetProperty(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             return GetPropertyImpl(name, bindingAttr, binder, returnType, types, modifiers);
         }
 
@@ -425,16 +417,14 @@ namespace System
         public virtual RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public static RuntimeTypeHandle GetTypeHandle(object o)
         {
-            if (o == null)
-                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
-            Type type = o.GetType();
-            return type.TypeHandle;
+            ArgumentNullException.ThrowIfNull(o);
+
+            return o.GetType().TypeHandle;
         }
 
         public static Type[] GetTypeArray(object[] args)
         {
-            if (args == null)
-                throw new ArgumentNullException(nameof(args));
+            ArgumentNullException.ThrowIfNull(args);
 
             Type[] cls = new Type[args.Length];
             for (int i = 0; i < cls.Length; i++)
@@ -446,9 +436,57 @@ namespace System
             return cls;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TypeCode GetTypeCode(Type? type)
         {
+            if (RuntimeHelpers.IsKnownConstant(type) && type is RuntimeType)
+            {
+                return GetRuntimeTypeCode((RuntimeType)type);
+            }
             return type?.GetTypeCodeImpl() ?? TypeCode.Empty;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static TypeCode GetRuntimeTypeCode(RuntimeType type)
+        {
+            RuntimeType underlyingType = type;
+            if (type.IsActualEnum)
+                underlyingType = (RuntimeType)type.GetEnumUnderlyingType();
+
+            if (underlyingType == typeof(sbyte))
+                return TypeCode.SByte;
+            else if (underlyingType == typeof(byte))
+                return TypeCode.Byte;
+            else if (underlyingType == typeof(short))
+                return TypeCode.Int16;
+            else if (underlyingType == typeof(ushort))
+                return TypeCode.UInt16;
+            else if (underlyingType == typeof(int))
+                return TypeCode.Int32;
+            else if (underlyingType == typeof(uint))
+                return TypeCode.UInt32;
+            else if (underlyingType == typeof(long))
+                return TypeCode.Int64;
+            else if (underlyingType == typeof(ulong))
+                return TypeCode.UInt64;
+            else if (underlyingType == typeof(bool))
+                return TypeCode.Boolean;
+            else if (underlyingType == typeof(char))
+                return TypeCode.Char;
+            else if (underlyingType == typeof(float))
+                return TypeCode.Single;
+            else if (underlyingType == typeof(double))
+                return TypeCode.Double;
+            else if (underlyingType == typeof(decimal))
+                return TypeCode.Decimal;
+            else if (underlyingType == typeof(DateTime))
+                return TypeCode.DateTime;
+            else if (underlyingType == typeof(string))
+                return TypeCode.String;
+            else if (underlyingType == typeof(DBNull))
+                return TypeCode.DBNull;
+            else
+                return TypeCode.Object;
         }
 
         protected virtual TypeCode GetTypeCodeImpl()
@@ -511,6 +549,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "The single instance field on enum types is never trimmed")]
+        [Intrinsic]
         public virtual Type GetEnumUnderlyingType()
         {
             if (!IsEnum)
@@ -522,6 +561,8 @@ namespace System
 
             return fields[0].FieldType;
         }
+
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
         public virtual Array GetEnumValues()
         {
             if (!IsEnum)
@@ -532,10 +573,24 @@ namespace System
             throw NotImplemented.ByDesign;
         }
 
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants of this enumeration type.
+        /// </summary>
+        /// <remarks>
+        /// You can use this method to get enumeration values when it's hard to create an array of the enumeration type.
+        /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in this enumeration type.</returns>
+        /// <exception cref="T:System.ArgumentException">This type is not an enumeration type.</exception>
+        public virtual Array GetEnumValuesAsUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual Type MakeArrayType() => throw new NotSupportedException();
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual Type MakeArrayType(int rank) => throw new NotSupportedException();
         public virtual Type MakeByRefType() => throw new NotSupportedException();
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
@@ -545,8 +600,7 @@ namespace System
 
         public static Type MakeGenericMethodParameter(int position)
         {
-            if (position < 0)
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(position));
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
             return new SignatureGenericMethodParameterType(position);
         }
 

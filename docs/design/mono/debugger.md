@@ -18,4 +18,11 @@ Web Assembly Debugger supports usage of following attributes:
   - Stepping In/Over: results in an additional stepping need to proceed to the next line.<br><br>
 - __System.Diagnostics.DebuggerDisplay__
 - __System.Diagnostics.DebuggerTypeProxy__
-- ...
+- __System.Diagnostics.DebuggerBrowsable__ ([doc](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.debuggerbrowsableattribute?view=net-6.0))
+   - Collapsed - displayed normally.
+   - RootHidden:
+      - Simple type - not displayed in the debugger window.
+      - Collection / Array - the values of a collection are displayed in a flat view, using  the naming convention: *rootName[idx]*.
+
+   - Never - not displayed in the debugger window.
+

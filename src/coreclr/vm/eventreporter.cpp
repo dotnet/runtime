@@ -110,7 +110,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     case ERT_ManagedFailFast:
         if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_MANAGEDFAILFAST))
-            m_Description.Append(W("Description: The application requested process termination through Environment.FailFast."));
+            m_Description.Append(W("Description: The application requested process termination through System.Environment.FailFast."));
         else
         {
             m_Description.Append(ssMessage);
@@ -120,7 +120,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     case ERT_UnmanagedFailFast:
         if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFAST))
-            m_Description.Append(W("Description: The process was terminated due to an internal error in the .NET Runtime."));
+            m_Description.Append(W("Description: The process was terminated due to an internal error in the .NET Runtime "));
         else
         {
             m_Description.Append(ssMessage);
@@ -165,7 +165,7 @@ EventReporter::EventReporter(EventReporterType type)
 // Return Value:
 //    None.
 //
-void EventReporter::AddDescription(__in WCHAR *pString)
+void EventReporter::AddDescription(_In_ WCHAR *pString)
 {
     CONTRACTL
     {
@@ -303,7 +303,7 @@ void EventReporter::AddStackTrace(SString& s)
             COUNT_T truncCount = truncate.GetCount();
 
             // Go back "truncCount" characters from the end of the string.
-            // The "-1" in end is to accomodate null termination.
+            // The "-1" in end is to accommodate null termination.
             ext = m_Description.Begin() + dwMaxSizeLimit - truncCount - 1;
 
             // Now look for a "\n" from the last position we got
@@ -478,7 +478,7 @@ BOOL ShouldLogInEventLog()
     }
 
     static LONG fOnce = 0;
-    if (fOnce == 1 || FastInterlockExchange(&fOnce, 1) == 1)
+    if (fOnce == 1 || InterlockedExchange(&fOnce, 1) == 1)
     {
         return FALSE;
     }
@@ -606,9 +606,9 @@ void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallS
         EXCEPTIONREF ex;
         STRINGREF remoteStackTraceString;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
     gc.exObj = exObj;
     gc.ex = (EXCEPTIONREF)exObj;
+    gc.remoteStackTraceString = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -672,22 +672,21 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         EventReporter reporter(EventReporter::ERT_UnhandledException);
         EX_TRY
         {
+            WCHAR exceptionCodeString[MaxIntegerDecHexString + 1];
+            FormatInteger(exceptionCodeString, ARRAY_SIZE(exceptionCodeString), "%x", pExceptionInfo->ExceptionRecord->ExceptionCode);
+
+            WCHAR addressString[MaxIntegerDecHexString + 1];
+            FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress);
+
             StackSString s;
-        InlineSString<80> ssErrorFormat;
-        if (!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTIONINFO))
-            ssErrorFormat.Set(W("exception code %1, exception address %2"));
-        SmallStackSString exceptionCodeString;
-        exceptionCodeString.Printf(W("%x"), pExceptionInfo->ExceptionRecord->ExceptionCode);
-        SmallStackSString addressString;
-        addressString.Printf(W("%p"), (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress);
-        s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)ssErrorFormat, 0, 0, exceptionCodeString, addressString);
-        reporter.AddDescription(s);
-        if (pThread)
-        {
-            LogCallstackForEventReporter(reporter);
+            s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("exception code %1, exception address %2"), 0, 0, exceptionCodeString, addressString);
+            reporter.AddDescription(s);
+            if (pThread)
+            {
+                LogCallstackForEventReporter(reporter);
+            }
         }
-        }
-            EX_CATCH
+        EX_CATCH
         {
             // We are reporting an exception.  If we throw while working on this, it is not fatal.
         }

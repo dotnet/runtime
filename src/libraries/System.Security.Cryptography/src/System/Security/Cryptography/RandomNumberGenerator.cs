@@ -13,6 +13,7 @@ namespace System.Security.Cryptography
 
         public static RandomNumberGenerator Create() => RandomNumberGeneratorImplementation.s_singleton;
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static RandomNumberGenerator? Create(string rngName)
         {
@@ -122,13 +123,14 @@ namespace System.Security.Cryptography
             mask |= mask >> 8;
             mask |= mask >> 16;
 
-            Span<uint> resultSpan = stackalloc uint[1];
+            uint oneUint = 0;
+            Span<byte> oneUintBytes = MemoryMarshal.AsBytes(new Span<uint>(ref oneUint));
             uint result;
 
             do
             {
-                RandomNumberGeneratorImplementation.FillSpan(MemoryMarshal.AsBytes(resultSpan));
-                result = mask & resultSpan[0];
+                RandomNumberGeneratorImplementation.FillSpan(oneUintBytes);
+                result = mask & oneUint;
             }
             while (result > range);
 
@@ -137,8 +139,7 @@ namespace System.Security.Cryptography
 
         public static int GetInt32(int toExclusive)
         {
-            if (toExclusive <= 0)
-                throw new ArgumentOutOfRangeException(nameof(toExclusive), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(toExclusive);
 
             return GetInt32(0, toExclusive);
         }
@@ -155,22 +156,19 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] GetBytes(int count)
         {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             byte[] ret = new byte[count];
             RandomNumberGeneratorImplementation.FillSpan(ret);
             return ret;
         }
 
-        internal void VerifyGetBytes(byte[] data, int offset, int count)
+        internal static void VerifyGetBytes(byte[] data, int offset, int count)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(data);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > data.Length - offset)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
         }

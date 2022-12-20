@@ -9,7 +9,7 @@ namespace System.Net
 {
     internal static class SecurityStatusAdapterPal
     {
-        private const int StatusDictionarySize = 43;
+        private const int StatusDictionarySize = 45;
 
 #if DEBUG
         static SecurityStatusAdapterPal()
@@ -31,6 +31,7 @@ namespace System.Net
             { Interop.SECURITY_STATUS.CompAndContinue, SecurityStatusPalErrorCode.CompAndContinue },
             { Interop.SECURITY_STATUS.CompleteNeeded, SecurityStatusPalErrorCode.CompleteNeeded },
             { Interop.SECURITY_STATUS.ContextExpired, SecurityStatusPalErrorCode.ContextExpired },
+            { Interop.SECURITY_STATUS.ContextExpiredError, SecurityStatusPalErrorCode.ContextExpiredError },
             { Interop.SECURITY_STATUS.ContinueNeeded, SecurityStatusPalErrorCode.ContinueNeeded },
             { Interop.SECURITY_STATUS.CredentialsNeeded, SecurityStatusPalErrorCode.CredentialsNeeded },
             { Interop.SECURITY_STATUS.DecryptFailure, SecurityStatusPalErrorCode.DecryptFailure },
@@ -62,7 +63,8 @@ namespace System.Net
             { Interop.SECURITY_STATUS.Unsupported, SecurityStatusPalErrorCode.Unsupported },
             { Interop.SECURITY_STATUS.UntrustedRoot, SecurityStatusPalErrorCode.UntrustedRoot },
             { Interop.SECURITY_STATUS.WrongPrincipal, SecurityStatusPalErrorCode.WrongPrincipal },
-            { Interop.SECURITY_STATUS.NoRenegotiation, SecurityStatusPalErrorCode.NoRenegotiation }
+            { Interop.SECURITY_STATUS.NoRenegotiation, SecurityStatusPalErrorCode.NoRenegotiation },
+            { Interop.SECURITY_STATUS.KeySetDoesNotExist, SecurityStatusPalErrorCode.KeySetDoesNotExist }
         };
 
         internal static SecurityStatusPal GetSecurityStatusPalFromNativeInt(int win32SecurityStatus)

@@ -13,7 +13,6 @@
 
 #include "corerror.h"
 #include <posterror.h>
-#include <shlwapi.h>
 
 // The following block contains a template for the default entry point stubs of a COM+
 // IL only program.  One can emit these stubs (with some fix-ups) and make
@@ -487,7 +486,7 @@ ErrExit:
     return hr;
 } // HRESULT CeeFileGenWriter::generateImage()
 
-HRESULT CeeFileGenWriter::setOutputFileName(__in LPWSTR fileName)
+HRESULT CeeFileGenWriter::setOutputFileName(_In_ LPWSTR fileName)
 {
     if (m_outputFileName)
         delete[] m_outputFileName;
@@ -498,7 +497,7 @@ HRESULT CeeFileGenWriter::setOutputFileName(__in LPWSTR fileName)
     return S_OK;
 } // HRESULT CeeFileGenWriter::setOutputFileName()
 
-HRESULT CeeFileGenWriter::setResourceFileName(__in LPWSTR fileName)
+HRESULT CeeFileGenWriter::setResourceFileName(_In_ LPWSTR fileName)
 {
     if (m_resourceFileName)
         delete[] m_resourceFileName;
@@ -591,7 +590,7 @@ HRESULT CeeFileGenWriter::addAddrReloc(CeeSection &thisSection, UCHAR *instrAddr
 //      // import lookup table: a set of entries for the methods of each DLL,
 //      // terminating each set with NULL
 //      IMAGE_THUNK_DATA32/64 ilt[];
-//      // hint/name table: an set of entries for each method of each DLL wiht
+//      // hint/name table: an set of entries for each method of each DLL with
 //      // no terminating entry
 //      struct {
 //          WORD Hint;
@@ -1219,7 +1218,7 @@ lDone: ;
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        //dbprintf("Exception occured manipulating .res file %S\n", szResFileName);
+        //dbprintf("Exception occurred manipulating .res file %S\n", szResFileName);
         param.hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
     }
     PAL_ENDTRY
@@ -1294,7 +1293,7 @@ HRESULT CeeFileGenWriter::setVTableEntry(ULONG size, ULONG offset)
     return setVTableEntry64(size,(void*)(ULONG_PTR)offset);
 } // HRESULT CeeFileGenWriter::setVTableEntry()
 
-HRESULT CeeFileGenWriter::computeSectionOffset(CeeSection &section, __in char *ptr,
+HRESULT CeeFileGenWriter::computeSectionOffset(CeeSection &section, _In_ char *ptr,
                                                unsigned *offset)
 {
     *offset = section.computeOffset(ptr);
@@ -1302,7 +1301,7 @@ HRESULT CeeFileGenWriter::computeSectionOffset(CeeSection &section, __in char *p
     return S_OK;
 } // HRESULT CeeFileGenWriter::computeSectionOffset()
 
-HRESULT CeeFileGenWriter::computeOffset(__in char *ptr,
+HRESULT CeeFileGenWriter::computeOffset(_In_ char *ptr,
                                         CeeSection **pSection, unsigned *offset)
 {
     TESTANDRETURNPOINTER(pSection);

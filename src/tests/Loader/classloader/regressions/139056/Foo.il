@@ -4,12 +4,6 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.2.30612.00
-//  Copyright (C) Microsoft Corporation 1998-2003. All rights reserved.
-
-
-
-// Metadata version: v1.2.30612
 .assembly extern legacy library mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -27,7 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Foo.exe
 // MVID: {E2294DFD-8443-4AA7-9104-BC680C3B8133}
 .imagebase 0x00400000
 .file alignment 0x00000200

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    // Mutable static comparision in the implementation
+    // Mutable static comparison in the implementation
     [Collection(nameof(DisableParallelization))]
     public class MemberDescriptorTests
     {

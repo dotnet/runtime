@@ -57,7 +57,7 @@ namespace System.Formats.Cbor
         /// <summary>Initializes a new instance of <see cref="CborWriter" /> class using the specified configuration.</summary>
         /// <param name="conformanceMode">One of the enumeration values that specifies the guidance on the conformance checks performed on the encoded data.
         /// Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.</param>
-        /// <param name="convertIndefiniteLengthEncodings"><see langword="true" /> to enable automatically converting indefinite-length encodings into definite-length equivalents and allow use of indefinite-length write APIs in conformance modes that otherwise do not permit it; otherwise, <see langword="false" /></param>
+        /// <param name="convertIndefiniteLengthEncodings"><see langword="true" /> to enable automatically converting indefinite-length encodings into definite-length equivalents and allow use of indefinite-length write APIs in conformance modes that otherwise do not permit it; otherwise, <see langword="false" />.</param>
         /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to allow multiple root-level values to be written by the writer; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not a defined <see cref="CborConformanceMode" />.</exception>
         public CborWriter(CborConformanceMode conformanceMode = CborConformanceMode.Strict, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
@@ -95,9 +95,9 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a single CBOR data item which has already been encoded.</summary>
         /// <param name="encodedValue">The encoded value to write.</param>
-        /// <exception cref="ArgumentException"><paramref name="encodedValue" /> is not a well-formed CBOR encoding.
-        /// -or-
-        /// <paramref name="encodedValue" /> is not valid under the current conformance mode.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="encodedValue" /> is not a well-formed CBOR encoding.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="encodedValue" /> is not valid under the current conformance mode.</para></exception>
         public void WriteEncodedValue(ReadOnlySpan<byte> encodedValue)
         {
             ValidateEncoding(encodedValue, ConformanceMode);

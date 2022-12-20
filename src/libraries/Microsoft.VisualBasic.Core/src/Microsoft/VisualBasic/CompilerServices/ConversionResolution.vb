@@ -1040,7 +1040,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End Sub
 
                 Friend Sub New(ByVal size As Integer)
-                    'Populate the cache list with the maximum number of entires.
+                    'Populate the cache list with the maximum number of entries.
                     'This simplifies the insertion code for a small upfront cost.
                     _size = size
 
@@ -1122,7 +1122,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             End Class
 
-            Friend NotInheritable Class FixedExistanceList
+            Friend NotInheritable Class FixedExistenceList
 
                 Private Structure Entry
                     Friend Type As Type
@@ -1143,7 +1143,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 End Sub
 
                 Friend Sub New(ByVal size As Integer)
-                    'Populate the list with the maximum number of entires.
+                    'Populate the list with the maximum number of entries.
                     'This simplifies the insertion code for a small upfront cost.
                     _size = size
 
@@ -1211,7 +1211,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Class
 
             Friend Shared ReadOnly ConversionCache As FixedList = New FixedList
-            Friend Shared ReadOnly UnconvertibleTypeCache As FixedExistanceList = New FixedExistanceList
+            Friend Shared ReadOnly UnconvertibleTypeCache As FixedExistenceList = New FixedExistenceList
 
         End Class
     End Class

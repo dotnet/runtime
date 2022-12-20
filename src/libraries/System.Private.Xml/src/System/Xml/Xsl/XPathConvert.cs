@@ -428,7 +428,7 @@ namespace System.Xml.Xsl
                     w2 = 32 - w1;
                     _u2 = (_u2 << w1) | (_u1 >> w2);
                     _u1 = (_u1 << w1) | (_u0 >> w2);
-                    _u0 = (_u0 << w1);
+                    _u0 <<= w1;
                     _exp -= w1;
                 }
             }
@@ -2593,7 +2593,7 @@ namespace System.Xml.Xsl
                 // This assert was removed because it would fire on VERY rare occasions. Not
                 // repro on all machines and very hard to repro even on machines that could repro it.
                 // The numbers (dblLowPrec and dbl) were different in their two least sig bits only
-                // which is _probably_ within expected errror. I did not take the time to fully
+                // which is _probably_ within expected error. I did not take the time to fully
                 // investigate whether this really does meet the ECMA spec...
                 //
                 Debug.Assert(double.IsNaN(dblLowPrec) || dblLowPrec == dbl);
@@ -2612,7 +2612,7 @@ namespace System.Xml.Xsl
                 N * M * 2^n to N * D * 10^e (at full precision). If the binary value is
                 greater, we adjust it to be exactly half way to the next value that can
                 come from a double. We then compare again to decided whether to bump the
-                double up to the next value. Similary if the binary value is smaller,
+                double up to the next value. Similarly if the binary value is smaller,
                 we adjust it to be exactly half way to the previous representable value
                 and recompare.
             */

@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib { }
-.assembly 'ldfld' { }
+.assembly 'b75988' { }
 .assembly extern xunit.core {}
 .class public auto ansi beforefieldinit Test_b75988
        extends [mscorlib]System.Object

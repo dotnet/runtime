@@ -56,8 +56,10 @@ namespace System.Web
         public static byte[]? UrlEncodeToBytes(string? str) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("str")]
         public static byte[]? UrlEncodeToBytes(string? str, System.Text.Encoding e) { throw null; }
+        [System.ObsoleteAttribute("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(String).")]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("str")]
         public static string? UrlEncodeUnicode(string? str) { throw null; }
+        [System.ObsoleteAttribute("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncodeToBytes(String).")]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("str")]
         public static byte[]? UrlEncodeUnicodeToBytes(string? str) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("str")]

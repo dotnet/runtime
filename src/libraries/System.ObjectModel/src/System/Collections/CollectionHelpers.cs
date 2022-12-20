@@ -9,10 +9,7 @@ namespace System.Collections
     {
         internal static void ValidateCopyToArguments(int sourceCount, Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -24,10 +21,8 @@ namespace System.Collections
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-            if (index < 0 || index > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, array.Length);
 
             if (array.Length - index < sourceCount)
             {

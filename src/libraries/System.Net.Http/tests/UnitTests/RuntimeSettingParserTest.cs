@@ -36,7 +36,7 @@ namespace System.Net.Http.Tests
             }
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "true";
-            
+
             RemoteExecutor.Invoke(RunTest, options).Dispose();
         }
 
@@ -61,6 +61,65 @@ namespace System.Net.Http.Tests
             {
                 bool actual = RuntimeSettingParser.QueryRuntimeSettingSwitch("Foo.Bar", "FOO_BAR", true);
                 Assert.True(actual);
+            }
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["FOO_BAR"] = "cheese";
+
+            RemoteExecutor.Invoke(RunTest, options).Dispose();
+        }
+
+        [ConditionalTheory(nameof(SupportsRemoteExecutor))]
+        [InlineData(0)]
+        [InlineData(42)]
+        public void QueryRuntimeSettingInt32_WhenNotSet_DefaultIsUsed(int defaultValue)
+        {
+            static void RunTest(string defaultValueStr)
+            {
+                int expected = int.Parse(defaultValueStr);
+                int actual = RuntimeSettingParser.QueryRuntimeSettingInt32("Foo.Bar", "FOO_BAR", expected);
+                Assert.Equal(expected, actual);
+            }
+
+            RemoteExecutor.Invoke(RunTest, defaultValue.ToString()).Dispose();
+        }
+
+        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        public void QueryRuntimeSettingInt32_AppContextHasPriority()
+        {
+            static void RunTest()
+            {
+                AppContext.SetData("Foo.Bar", 1);
+                int actual = RuntimeSettingParser.QueryRuntimeSettingInt32("Foo.Bar", "FOO_BAR", 2);
+                Assert.Equal(1, actual);
+            }
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["FOO_BAR"] = "3";
+
+            RemoteExecutor.Invoke(RunTest, options).Dispose();
+        }
+
+        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        public void QueryRuntimeSettingInt32_EnvironmentVariable()
+        {
+            static void RunTest()
+            {
+                int actual = RuntimeSettingParser.QueryRuntimeSettingInt32("Foo.Bar", "FOO_BAR", 2);
+                Assert.Equal(1, actual);
+            }
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["FOO_BAR"] = "1";
+
+            RemoteExecutor.Invoke(RunTest, options).Dispose();
+        }
+
+
+        [ConditionalFact(nameof(SupportsRemoteExecutor))]
+        public void QueryRuntimeSettingInt32_InvalidValue_FallbackToDefault()
+        {
+            static void RunTest()
+            {
+                int actual = RuntimeSettingParser.QueryRuntimeSettingInt32("Foo.Bar", "FOO_BAR", 1);
+                Assert.Equal(1, actual);
             }
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "cheese";

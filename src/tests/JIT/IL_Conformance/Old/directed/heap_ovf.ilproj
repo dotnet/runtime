@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
-    <IlasmRoundTrip>true</IlasmRoundTrip>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>

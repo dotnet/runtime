@@ -13,10 +13,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal WriterOutput(Processor processor, XmlWriter writer)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             _writer = writer;
             _processor = processor;

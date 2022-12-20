@@ -649,11 +649,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSites == null)
-                {
-                    _cachedSites = new ReadOnlySiteCollection(GetSites());
-                }
-                return _cachedSites;
+                return _cachedSites ??= new ReadOnlySiteCollection(GetSites());
             }
         }
 
@@ -662,11 +658,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedDomains == null)
-                {
-                    _cachedDomains = new DomainCollection(GetDomains());
-                }
-                return _cachedDomains;
+                return _cachedDomains ??= new DomainCollection(GetDomains());
             }
         }
 
@@ -675,11 +667,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedGlobalCatalogs == null)
-                {
-                    _cachedGlobalCatalogs = FindAllGlobalCatalogs();
-                }
-                return _cachedGlobalCatalogs;
+                return _cachedGlobalCatalogs ??= FindAllGlobalCatalogs();
             }
         }
 
@@ -688,11 +676,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedApplicationPartitions == null)
-                {
-                    _cachedApplicationPartitions = new ApplicationPartitionCollection(GetApplicationPartitions());
-                }
-                return _cachedApplicationPartitions;
+                return _cachedApplicationPartitions ??= new ApplicationPartitionCollection(GetApplicationPartitions());
             }
         }
 
@@ -765,11 +749,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSchemaRoleOwner == null)
-                {
-                    _cachedSchemaRoleOwner = GetRoleOwner(ActiveDirectoryRole.SchemaRole);
-                }
-                return _cachedSchemaRoleOwner;
+                return _cachedSchemaRoleOwner ??= GetRoleOwner(ActiveDirectoryRole.SchemaRole);
             }
         }
 
@@ -778,11 +758,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedNamingRoleOwner == null)
-                {
-                    _cachedNamingRoleOwner = GetRoleOwner(ActiveDirectoryRole.NamingRole);
-                }
-                return _cachedNamingRoleOwner;
+                return _cachedNamingRoleOwner ??= GetRoleOwner(ActiveDirectoryRole.NamingRole);
             }
         }
 
@@ -857,10 +833,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
-                {
-                    entry.Dispose();
-                }
+                entry?.Dispose();
             }
 
             // create a new context object for the domain controller passing on  the
@@ -869,7 +842,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return new DomainController(dcContext, dcName);
         }
 
-        private ArrayList GetSites()
+        private unsafe ArrayList GetSites()
         {
             ArrayList sites = new ArrayList();
             int result = 0;
@@ -884,14 +857,17 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // Get the sites within the forest
                 // call DsListSites
-                IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
-                if (functionPtr == (IntPtr)0)
+                /*DWORD DsListSites(
+                    HANDLE hDs,
+                    PDS_NAME_RESULT* ppSites
+                    );*/
+                var dsListSites = (delegate* unmanaged<IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListSitesW");
+                if (dsListSites == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
-                NativeMethods.DsListSites dsListSites = (NativeMethods.DsListSites)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsListSites));
 
-                result = dsListSites(dsHandle, out sitesPtr);
+                result = dsListSites(dsHandle, &sitesPtr);
                 if (result == 0)
                 {
                     try
@@ -921,12 +897,11 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (sitesPtr != IntPtr.Zero)
                         {
                             // call DsFreeNameResultW
-                            functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
-                            if (functionPtr == (IntPtr)0)
+                            var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                            if (dsFreeNameResultW == null)
                             {
-                                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                             }
-                            UnsafeNativeMethods.DsFreeNameResultW dsFreeNameResultW = (UnsafeNativeMethods.DsFreeNameResultW)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(UnsafeNativeMethods.DsFreeNameResultW));
                             dsFreeNameResultW(sitesPtr);
                         }
                     }
@@ -1016,10 +991,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    resCol.Dispose();
-                }
+                resCol?.Dispose();
                 partitionsEntry.Dispose();
             }
             return appNCs;
@@ -1073,10 +1045,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    resCol.Dispose();
-                }
+                resCol?.Dispose();
                 partitionsEntry.Dispose();
             }
             return domains;

@@ -127,8 +127,7 @@ namespace System.Threading
 
         public static bool IsEntered(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             return IsEnteredNative(obj);
         }
@@ -151,10 +150,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            if (obj == null)
-                throw (new ArgumentNullException(nameof(obj)));
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return ObjWait(millisecondsTimeout, obj);
         }
@@ -169,10 +166,7 @@ namespace System.Threading
 
         public static void Pulse(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             ObjPulse(obj);
         }
@@ -184,10 +178,7 @@ namespace System.Threading
 
         public static void PulseAll(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             ObjPulseAll(obj);
         }
@@ -197,7 +188,7 @@ namespace System.Threading
         /// </summary>
         public static long LockContentionCount => GetLockContentionCount();
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
-        private static extern long GetLockContentionCount();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
+        private static partial long GetLockContentionCount();
     }
 }

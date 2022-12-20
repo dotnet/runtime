@@ -159,7 +159,7 @@ namespace ILCompiler.IBC
                 }
             }
 
-            return new IBCProfileData(parsedData.PartialNGen, methodProfileData);
+            return new IBCProfileData(null, parsedData.PartialNGen, methodProfileData);
         }
 
         public struct IBCBlobKey : IEquatable<IBCBlobKey>

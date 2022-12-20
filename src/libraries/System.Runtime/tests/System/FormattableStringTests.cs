@@ -50,7 +50,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CurrentCulture_ImplicityAndExplicitMethodsReturnSameString()
+        public static void CurrentCulture_ImplicitlyAndExplicitMethodsReturnSameString()
         {
             double d = 123.456;
             string text1 = $"This will be formatted using current culture {d}";

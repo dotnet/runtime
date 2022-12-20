@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Reflection;
@@ -20,9 +19,9 @@ using System.Reflection.PortableExecutable;
 
 namespace ILCompiler.IBC
 {
-    static class MIbcProfileParser
+    public static class MIbcProfileParser
     {
-        private class MetadataLoaderForPgoData : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown>
+        private sealed class MetadataLoaderForPgoData : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
         {
             private readonly EcmaMethodIL _ilBody;
 
@@ -30,12 +29,12 @@ namespace ILCompiler.IBC
             {
                 _ilBody = ilBody;
             }
-            TypeSystemEntityOrUnknown IPgoSchemaDataLoader<TypeSystemEntityOrUnknown>.TypeFromLong(long token)
+            TypeSystemEntityOrUnknown IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>.TypeFromLong(long token)
             {
                 try
                 {
                     if (token == 0)
-                        return new TypeSystemEntityOrUnknown(null);
+                        return new TypeSystemEntityOrUnknown((TypeDesc)null);
                     if ((token & 0xFF000000) == 0)
                     {
                         // token type is 0, therefore it can't be a type
@@ -47,6 +46,29 @@ namespace ILCompiler.IBC
                         return new TypeSystemEntityOrUnknown((int)token & 0x00FFFFFF);
                     }
                     return new TypeSystemEntityOrUnknown(foundType);
+                }
+                catch
+                {
+                    return new TypeSystemEntityOrUnknown((int)token);
+                }
+            }
+            TypeSystemEntityOrUnknown IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>.MethodFromLong(long token)
+            {
+                try
+                {
+                    if (token == 0)
+                        return new TypeSystemEntityOrUnknown((MethodDesc)null);
+                    if ((token & 0xFF000000) == 0)
+                    {
+                        // token type is 0, therefore it can't be a method
+                        return new TypeSystemEntityOrUnknown((int)token);
+                    }
+                    MethodDesc foundMethod = _ilBody.GetObject((int)token, NotFoundBehavior.ReturnNull) as MethodDesc;
+                    if (foundMethod == null)
+                    {
+                        return new TypeSystemEntityOrUnknown((int)token & 0x00FFFFFF);
+                    }
+                    return new TypeSystemEntityOrUnknown(foundMethod);
                 }
                 catch
                 {
@@ -125,11 +147,29 @@ namespace ILCompiler.IBC
         /// See comment above ReadMIbcGroup for details of the group format
         ///
         /// The mibcGroupName is in the following format "Assembly_{definingAssemblyName};{OtherAssemblyName};{OtherAssemblyName};...; (OtherAssemblyName is ; delimited)
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
-        public static ProfileData ParseMIbcFile(TypeSystemContext tsc, PEReader peReader, HashSet<string> assemblyNamesInVersionBubble, string onlyDefinedInAssembly)
+        public enum MibcGroupParseRules
         {
+            AllGroups, // All groups regardless of bubble details are included in the parse
+            VersionBubble, // Groups that include only modules that are either in the version bubble list
+            VersionBubbleWithCrossModule1, // Groups that include at least one module in the bubble and the rest of the modules are either in the version bubble list, or in the cross module list
+            VersionBubbleWithCrossModule2, // Groups that include only modules that are either in the version bubble list, or in the cross module list
+        }
+
+        private static HashSet<string> s_EmptyHash = new HashSet<string>();
+
+        public static ProfileData ParseMIbcFile(TypeSystemContext tsc, PEReader peReader, HashSet<string> assemblyNamesInVersionBubble, string onlyDefinedInAssembly, MibcGroupParseRules parseRule = MibcGroupParseRules.VersionBubble, HashSet<string> crossModuleInlineModules = null)
+        {
+            if (parseRule == MibcGroupParseRules.VersionBubble)
+                crossModuleInlineModules = s_EmptyHash;
+
+            if (parseRule == MibcGroupParseRules.AllGroups)
+                assemblyNamesInVersionBubble = null;
+
+            crossModuleInlineModules ??= s_EmptyHash;
+
             var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
 
             var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
@@ -156,7 +196,7 @@ namespace ILCompiler.IBC
                     case ILOpcode.ldtoken:
                         int token = ilReader.ReadILToken();
 
-                        if (String.IsNullOrEmpty(mibcGroupName))
+                        if (string.IsNullOrEmpty(mibcGroupName))
                             break;
 
                         string[] assembliesByName = mibcGroupName.Split(';');
@@ -164,28 +204,40 @@ namespace ILCompiler.IBC
                         bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
 
                         if (!hasMatchingDefinition)
+                        {
                             break;
+                        }
 
                         if (assemblyNamesInVersionBubble != null)
                         {
-                            bool areAllEntriesInVersionBubble = true;
+                            bool mibcGroupUseable = true;
+                            bool someEntryInVersionBubble = false;
                             foreach (string s in assembliesByName)
                             {
                                 if (string.IsNullOrEmpty(s))
                                     continue;
 
-                                if (!assemblyNamesInVersionBubble.Contains(s))
+                                bool entryInVersionBubble = assemblyNamesInVersionBubble.Contains(s);
+                                someEntryInVersionBubble = someEntryInVersionBubble || entryInVersionBubble;
+
+                                if (!entryInVersionBubble && !crossModuleInlineModules.Contains(s))
                                 {
-                                    areAllEntriesInVersionBubble = false;
+                                    // If the group references a module that isn't in the version bubble and isn't cross module inlineable, its not useful.
+                                    mibcGroupUseable = false;
                                     break;
                                 }
                             }
 
-                            if (!areAllEntriesInVersionBubble)
+                            if (!someEntryInVersionBubble && (parseRule == MibcGroupParseRules.VersionBubbleWithCrossModule1))
+                                mibcGroupUseable = false;
+
+                            if (!mibcGroupUseable)
+                            {
                                 break;
+                            }
                         }
 
-                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token)));
+                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup((EcmaMethod)ilBody.GetObject(token)));
                         break;
                     case ILOpcode.pop:
                         mibcGroupName = "";
@@ -196,10 +248,65 @@ namespace ILCompiler.IBC
                 }
             }
 
-            return new IBCProfileData(false, loadedMethodProfileData);
+            return new IBCProfileData(ParseMibcConfig(tsc, peReader), false, loadedMethodProfileData);
         }
 
-        enum MibcGroupParseState
+        public static MibcConfig ParseMibcConfig(TypeSystemContext tsc, PEReader pEReader)
+        {
+            EcmaModule mibcModule = EcmaModule.Create(tsc, pEReader, null);
+            EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod(nameof(MibcConfig), null);
+
+            if (mibcConfigMth == null)
+                return null;
+
+            var ilBody = EcmaMethodIL.Create(mibcConfigMth);
+            var ilReader = new ILReader(ilBody.GetILBytes());
+
+            // Parse:
+            //
+            //   ldstr "key1"
+            //   ldstr "value1"
+            //   pop
+            //   pop
+            //   ldstr "key2"
+            //   ldstr "value2"
+            //   pop
+            //   pop
+            //   ...
+            //   ret
+            string fieldName = null;
+            Dictionary<string, string> keyValue = new();
+            while (ilReader.HasNext)
+            {
+                ILOpcode opcode = ilReader.ReadILOpcode();
+                switch (opcode)
+                {
+                    case ILOpcode.ldstr:
+                        var ldStrValue = (string)ilBody.GetObject(ilReader.ReadILToken());
+                        if (fieldName != null)
+                        {
+                            keyValue[fieldName] = ldStrValue;
+                        }
+                        else
+                        {
+                            fieldName = ldStrValue;
+                        }
+                        break;
+
+                    case ILOpcode.ret:
+                    case ILOpcode.pop:
+                        fieldName = null;
+                        break;
+
+                    default:
+                        throw new InvalidOperationException($"Unexpected opcode: {opcode}");
+                }
+            }
+
+            return MibcConfig.FromKeyValueMap(keyValue);
+        }
+
+        private enum MibcGroupParseState
         {
             LookingForNextMethod,
             LookingForOptionalData,
@@ -234,7 +341,7 @@ namespace ILCompiler.IBC
         ///
         /// This format is designed to be extensible to hold more data as we add new per method profile data without breaking existing parsers.
         /// </summary>
-        static IEnumerable<MethodProfileData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
+        private static IEnumerable<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
             MetadataLoaderForPgoData metadataLoader = new MetadataLoaderForPgoData(ilBody);
@@ -248,14 +355,13 @@ namespace ILCompiler.IBC
             int profileEntryFound = 0;
             double exclusiveWeight = 0;
             Dictionary<MethodDesc, int> weights = null;
-            bool processIntValue = false;
             List<long> instrumentationDataLongs = null;
             PgoSchemaElem[] pgoSchemaData = null;
 
             while (ilReader.HasNext)
             {
                 ILOpcode opcode = ilReader.ReadILOpcode();
-                processIntValue = false;
+                bool processIntValue = false;
                 switch (opcode)
                 {
                     case ILOpcode.ldtoken:
@@ -267,12 +373,10 @@ namespace ILCompiler.IBC
                             }
                             else
                             {
-                                metadataObject = null;
                                 try
                                 {
                                     metadataObject = ilBody.GetObject(token, NotFoundBehavior.ReturnNull);
-                                    if (metadataObject == null)
-                                        metadataObject = metadataNotResolvable;
+                                    metadataObject ??= metadataNotResolvable;
                                 }
                                 catch (TypeSystemException)
                                 {
@@ -413,7 +517,7 @@ namespace ILCompiler.IBC
                                     {
                                         instrumentationDataLongs.Add(2); // MarshalMask 2 (Type)
                                         instrumentationDataLongs.Add(0); // PgoInstrumentationKind.Done (0)
-                                        pgoSchemaData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(metadataLoader, instrumentationDataLongs, false).ToArray();
+                                        pgoSchemaData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>(metadataLoader, instrumentationDataLongs, false).ToArray();
                                     }
                                     state = MibcGroupParseState.LookingForOptionalData;
                                     break;
@@ -498,9 +602,9 @@ namespace ILCompiler.IBC
         /// Use this implementation of IModuleResolver to provide a module resolver which overrides resolution of System.Private.Canon module to point to a module
         /// that can resolve the CanonTypes out of the core library as CanonType.
         /// </summary>
-        class CustomCanonResolver : IModuleResolver
+        private sealed class CustomCanonResolver : IModuleResolver
         {
-            private class CanonModule : ModuleDesc, IAssemblyDesc
+            private sealed class CanonModule : ModuleDesc, IAssemblyDesc
             {
                 public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
                 {
@@ -544,9 +648,9 @@ namespace ILCompiler.IBC
                 }
             }
 
-            CanonModule _canonModule;
-            AssemblyName _canonModuleName;
-            IModuleResolver _wrappedResolver;
+            private CanonModule _canonModule;
+            private AssemblyName _canonModuleName;
+            private IModuleResolver _wrappedResolver;
 
             public CustomCanonResolver(TypeSystemContext wrappedContext)
             {

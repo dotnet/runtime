@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class MethodInfoWrapper : MethodInfo
+    internal sealed class MethodInfoWrapper : MethodInfo
     {
         private readonly IMethodSymbol _method;
         private readonly MetadataLoadContextInternal _metadataLoadContext;
@@ -89,7 +89,7 @@ namespace System.Text.Json.Reflection
             return parameters.ToArray();
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }

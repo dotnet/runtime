@@ -45,14 +45,8 @@ namespace System.Globalization
         /// </summary>
         public static int Compare(SortKey sortkey1, SortKey sortkey2)
         {
-            if (sortkey1 == null)
-            {
-                throw new ArgumentNullException(nameof(sortkey1));
-            }
-            if (sortkey2 == null)
-            {
-                throw new ArgumentNullException(nameof(sortkey2));
-            }
+            ArgumentNullException.ThrowIfNull(sortkey1);
+            ArgumentNullException.ThrowIfNull(sortkey2);
 
             byte[] key1Data = sortkey1._keyData;
             byte[] key2Data = sortkey2._keyData;

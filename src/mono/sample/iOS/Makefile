@@ -5,6 +5,7 @@ USE_LLVM=true
 AOT?=false
 TARGET?=iOSSimulator
 DEPLOY_AND_RUN?=true
+APP_SANDBOX?=false
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
@@ -19,6 +20,7 @@ all: runtimepack run
 TOOLS_DIR=../../../tasks
 appbuilder:
 	$(DOTNET) build -c Debug $(TOOLS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
+	$(DOTNET) build -c Debug $(TOOLS_DIR)/MonoTargetsTasks/MonoTargetsTasks.csproj
 	$(DOTNET) build -c Debug $(TOOLS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
 
 runtimepack:
@@ -58,7 +60,8 @@ run-catalyst:
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	/p:UseLLVM=False \
-	/p:ForceAOT=True
+	/p:ForceAOT=True \
+	/p:EnableAppSandbox=$(APP_SANDBOX)
 
 run-sim-interp: clean appbuilder
 	$(DOTNET) publish \
@@ -80,6 +83,7 @@ run-catalyst-interp:
 	/p:UseLLVM=False \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	/p:ForceAOT=True \
+	/p:EnableAppSandbox=$(APP_SANDBOX) \
 	/p:MonoForceInterpreter=true
 
 clean:

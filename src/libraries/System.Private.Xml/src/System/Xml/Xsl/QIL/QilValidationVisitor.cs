@@ -26,10 +26,6 @@ namespace System.Xml.Xsl.Qil
     ///
     internal sealed class QilValidationVisitor : QilScopedVisitor
     {
-#if DEBUG
-        private readonly QilTypeChecker _typeCheck = new QilTypeChecker();
-#endif
-
         //-----------------------------------------------
         // Entry
         //-----------------------------------------------
@@ -68,7 +64,7 @@ namespace System.Xml.Xsl.Qil
                 }
                 else
                 {
-                    XmlQueryType type = _typeCheck.Check(parent);
+                    XmlQueryType type = QilTypeChecker.Check(parent);
 
                     // BUGBUG: Hack to account for Xslt compiler type fixups
                     if (!type.IsSubtypeOf(parent.XmlType))
@@ -179,7 +175,7 @@ namespace System.Xml.Xsl.Qil
             message = SR.Format(SR.Qil_Validation, message);
 
 #if QIL_TRACE_NODE_CREATION
-            message += " ["+ n.NodeId + " (" + n.NodeType.ToString("G") + ")]";
+            message = "{message} [{n.NodeId} ({n.NodeType:G})]";
 #endif
             if (n.Annotation is string s)
             {

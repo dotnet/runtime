@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _callSiteChain.Remove(serviceType);
         }
 
-        public void Add(Type serviceType, Type implementationType = null)
+        public void Add(Type serviceType, Type? implementationType = null)
         {
             _callSiteChain[serviceType] = new ChainItemInfo(_callSiteChain.Count, implementationType);
         }
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             foreach (KeyValuePair<Type, ChainItemInfo> pair in ordered)
             {
                 Type serviceType = pair.Key;
-                Type implementationType = pair.Value.ImplementationType;
+                Type? implementationType = pair.Value.ImplementationType;
                 if (implementationType == null || serviceType == implementationType)
                 {
                     builder.Append(TypeNameHelper.GetTypeDisplayName(serviceType));
@@ -76,9 +76,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private readonly struct ChainItemInfo
         {
             public int Order { get; }
-            public Type ImplementationType { get; }
+            public Type? ImplementationType { get; }
 
-            public ChainItemInfo(int order, Type implementationType)
+            public ChainItemInfo(int order, Type? implementationType)
             {
                 Order = order;
                 ImplementationType = implementationType;

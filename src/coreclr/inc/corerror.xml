@@ -28,7 +28,7 @@
 <!--                                          -->
 <!--     IMPORTANT***IMPORTANT***IMPORTANT    -->
 <!--                                          -->
-<!--     All CLR errror codes should be in     -->
+<!--     All CLR error codes should be in     -->
 <!--     HRESULT NumericValue="0x......" format -->
 <!--                                          -->
 <!-- These HRESULTs are used for mapping managed exceptions to COM error codes -->
@@ -112,12 +112,6 @@
 	<Comment> Not all bits specified were successfully applied </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131001">
-	<SymbolicName>CEE_E_CVTRES_NOT_FOUND</SymbolicName>
-	<Message>"cvtres.exe not found."</Message>
-	<Comment> cannot find cvtres.exe </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131013">
 	<SymbolicName>COR_E_TYPEUNLOADED</SymbolicName>
 	<Message>"Type has been unloaded."</Message>
@@ -148,12 +142,6 @@
 	<Comment> The module was expected to contain an assembly manifest.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131019">
-	<SymbolicName>COR_E_FIXUPSINEXE</SymbolicName>
-	<Message>"Attempt to load an unverifiable executable with fixups (IAT with more than 2 sections or a TLS section.)"</Message>
-	<Comment> Attempt to load an unverifiable exe with fixups (IAT with more than 2 sections or a TLS section) </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013101b">
 	<SymbolicName>COR_E_NEWER_RUNTIME</SymbolicName>
 	<Message>"This assembly is built by a runtime newer than the currently loaded runtime and cannot be loaded."</Message>
@@ -164,12 +152,6 @@
 	<SymbolicName>COR_E_MULTIMODULEASSEMBLIESDIALLOWED</SymbolicName>
 	<Message>"The module cannot be loaded because only single file assemblies are supported."</Message>
 	<Comment> The module cannot be loaded because only single file assemblies are supported. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131020">
-	<SymbolicName>HOST_E_DEADLOCK</SymbolicName>
-	<Message>"Host detected a deadlock on a blocking operation."</Message>
-	<Comment> Host detects deadlock on a blocking operation </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131022">
@@ -184,52 +166,10 @@
 	<Comment> CLR has been disabled due to unrecoverable error </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131027">
-	<SymbolicName>HOST_E_EXITPROCESS_THREADABORT</SymbolicName>
-	<Message>"Process exited due to ThreadAbort escalation."</Message>
-	<Comment> ExitProcess due to ThreadAbort escalation </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131028">
-	<SymbolicName>HOST_E_EXITPROCESS_ADUNLOAD</SymbolicName>
-	<Message>"Process exited due to AD Unload escalation."</Message>
-	<Comment> ExitProcess due to AD Unload escalation </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131029">
-	<SymbolicName>HOST_E_EXITPROCESS_TIMEOUT</SymbolicName>
-	<Message>"Process exited due to Timeout escalation."</Message>
-	<Comment> ExitProcess due to Timeout escalation </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013102a">
-	<SymbolicName>HOST_E_EXITPROCESS_OUTOFMEMORY</SymbolicName>
-	<Message>"Process exited due to OutOfMemory escalation."</Message>
-	<Comment> ExitProcess due to OutOfMemory escalation </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131039">
-	<SymbolicName>COR_E_MODULE_HASH_CHECK_FAILED</SymbolicName>
-	<Message>"The check of the module's hash failed."</Message>
-	<Comment> The check of the module's hash failed. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131040">
 	<SymbolicName>FUSION_E_REF_DEF_MISMATCH</SymbolicName>
 	<Message>"The located assembly's manifest definition does not match the assembly reference."</Message>
 	<Comment> The located assembly's manifest definition does not match the assembly reference. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131041">
-	<SymbolicName>FUSION_E_INVALID_PRIVATE_ASM_LOCATION</SymbolicName>
-	<Message>"The private assembly was located outside the appbase directory."</Message>
-	<Comment> The private assembly was located outside the appbase directory. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131042">
-	<SymbolicName>FUSION_E_ASM_MODULE_MISSING</SymbolicName>
-	<Message>"A module specified in the manifest was not found."</Message>
-	<Comment> A module specified in the manifest was not found. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131044">
@@ -238,34 +178,10 @@
 	<Comment> A strongly-named assembly is required. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131045">
-	<SymbolicName>FUSION_E_SIGNATURE_CHECK_FAILED</SymbolicName>
-	<Message>"Strong name signature could not be verified.  The assembly may have been tampered with, or it was delay signed but not fully signed with the correct private key."</Message>
-	<Comment> The check of the signature failed. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131047">
 	<SymbolicName>FUSION_E_INVALID_NAME</SymbolicName>
-	<Message>"The given assembly name or codebase was invalid."</Message>
-	<Comment> The given assembly name or codebase was invalid. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131048">
-	<SymbolicName>FUSION_E_CODE_DOWNLOAD_DISABLED</SymbolicName>
-	<Message>"HTTP download of assemblies has been disabled for this appdomain."</Message>
-	<Comment> HTTP download of assemblies has been disabled for this appdomain. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131050">
-	<SymbolicName>FUSION_E_HOST_GAC_ASM_MISMATCH</SymbolicName>
-	<Message>"Assembly in host store has a different signature than assembly in GAC."</Message>
-	<Comment> Assembly in host store has a different signature than assembly in GAC </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131051">
-	<SymbolicName>FUSION_E_LOADFROM_BLOCKED</SymbolicName>
-	<Message>"LoadFrom(), LoadFile(), Load(byte[]) and LoadModule() have been disabled by the host."</Message>
-	<Comment> Hosted environment doesn't permit loading by location </Comment>
+	<Message>"The given assembly name was invalid."</Message>
+	<Comment> The given assembly name was invalid. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131052">
@@ -280,34 +196,10 @@
 	<Comment> The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131054">
-	<SymbolicName>FUSION_E_CONFIGURATION_ERROR</SymbolicName>
-	<Message>"The requested assembly name was neither found in the GAC nor in the manifest or the manifest's specified location is wrong."</Message>
-	<Comment> The requested assembly name was neither found in the GAC nor in the manifest or the manifest's specified location is wrong </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131055">
-	<SymbolicName>FUSION_E_MANIFEST_PARSE_ERROR</SymbolicName>
-	<Message>"Unexpected error while parsing the specified manifest."</Message>
-	<Comment> Unexpected error while parsing the specified manifest </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131058">
 	<SymbolicName>COR_E_LOADING_REFERENCE_ASSEMBLY</SymbolicName>
-	<Message>"Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context."</Message>
-	<Comment> Reference assemblies should not be loaded for execution.  They can only be loaded in the Reflection-only loader context. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131059">
-  <SymbolicName>COR_E_NI_AND_RUNTIME_VERSION_MISMATCH</SymbolicName>
-  <Message>"The native image could not be loaded, because it was generated for use by a different version of the runtime."</Message>
-  <Comment> The native image could not be loaded, because it was generated for use by a different version of the runtime. </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131069">
-  <SymbolicName>COR_E_LOADING_WINMD_REFERENCE_ASSEMBLY</SymbolicName>
-  <Message>"Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies."</Message>
-  <Comment> Contract Windows Runtime assemblies cannot be loaded for execution.  Make sure your application only contains non-contract Windows Runtime assemblies </Comment>
+	<Message>"Reference assemblies cannot not be loaded for execution."</Message>
+	<Comment> Reference assemblies cannot not be loaded for execution.  </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013106A">
@@ -974,7 +866,7 @@
 <HRESULT NumericValue="0x80131342">
 	<SymbolicName>CORDBG_E_ENC_HANGING_FIELD</SymbolicName>
 	<Message>"The field was added via Edit and Continue after the class was loaded."</Message>
-	<Comment> The field was added via EnC after the class was loaded, and so instead of the the field being contiguous with the other fields, it's 'hanging' off the instance or type.  This error is used to indicate that either the storage for this field is not yet available and so the field value cannot be read, or the debugger needs to use an EnC specific code path to get the value.</Comment>
+	<Comment> The field was added via EnC after the class was loaded, and so instead of the field being contiguous with the other fields, it's 'hanging' off the instance or type.  This error is used to indicate that either the storage for this field is not yet available and so the field value cannot be read, or the debugger needs to use an EnC specific code path to get the value.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131343">
@@ -1290,24 +1182,6 @@
     <Comment> The runtime cannot be suspened since a suspension is already in progress. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131401">
-	<SymbolicName>SECURITY_E_INCOMPATIBLE_SHARE</SymbolicName>
-	<Message>"Loading this assembly would produce a different grant set from other instances."</Message>
-	<Comment> Loading this assembly would produce a different grant set from other instances </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131402">
-	<SymbolicName>SECURITY_E_UNVERIFIABLE</SymbolicName>
-	<Message>"Unverifiable code failed policy check."</Message>
-	<Comment> Unverifable code failed policy check </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131403">
-	<SymbolicName>SECURITY_E_INCOMPATIBLE_EVIDENCE</SymbolicName>
-	<Message>"Assembly already loaded without additional security evidence."</Message>
-	<Comment> Assembly already loaded without additional security evidence. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131416">
 	<SymbolicName>CORSEC_E_POLICY_EXCEPTION</SymbolicName>
 	<Message>"PolicyException thrown."</Message>
@@ -1338,12 +1212,6 @@
 	<Comment> Strong name validation failed </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x8013141b">
-	<SymbolicName>CORSEC_E_MISSING_STRONGNAME</SymbolicName>
-	<Message>"Assembly is not strong named."</Message>
-	<Comment> Assembly is not strong named </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x8013141d">
 	<SymbolicName>CORSEC_E_INVALID_IMAGE_FORMAT</SymbolicName>
 	<Message>"Invalid assembly file format."</Message>
@@ -1372,12 +1240,6 @@
 	<SymbolicName>CORSEC_E_CRYPTO_UNEX_OPER</SymbolicName>
 	<Message>"Unexpected Cryptographic operation."</Message>
 	<Comment> generic CryptographicUnexpectedOperationException </Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80131442">
-	<SymbolicName>CORSECATTR_E_BAD_ACTION</SymbolicName>
-	<Message>"Invalid security action code."</Message>
-	<Comment> Invalid security action code </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131500">
@@ -2015,7 +1877,7 @@
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c30">
-	<SymbolicName>CORDBG_E_UNCOMPATIBLE_PLATFORMS</SymbolicName>
+	<SymbolicName>CORDBG_E_INCOMPATIBLE_PLATFORMS</SymbolicName>
 	<Message>"The operation failed because debuggee and debugger are on incompatible platforms."</Message>
 	<Comment> The operation failed because debuggee and debugger are on incompatible platform </Comment>
 </HRESULT>
@@ -2177,12 +2039,6 @@
   <Comment>Failure when calling a data target method.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131c64">
-  <SymbolicName>CORDBG_E_NO_IMAGE_AVAILABLE</SymbolicName>
-  <Message>"Couldn't find a native image."</Message>
-  <Comment>Couldn't find a native image.</Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131c68">
   <SymbolicName>CORDBG_E_UNSUPPORTED_DELEGATE</SymbolicName>
   <Message>"The delegate contains a delegate currently not supported by the API."</Message>
@@ -2247,24 +2103,6 @@
 	<Comment>Returned by binders that bind based on type identity.</Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80132006">
-	<SymbolicName>CLR_E_BIND_SYS_ASM_NI_MISSING</SymbolicName>
-	<Message>"Could not use native image because System.Private.CoreLib.dll is missing a native image"</Message>
-	<Comment>Returned when loading an assembly that only has a native image and no IL and cannot hardbind to System.Private.CoreLib.ni.dll.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80132007">
-	<SymbolicName>CLR_E_BIND_NI_SECURITY_FAILURE</SymbolicName>
-	<Message>"Native image was generated in a different trust level than present at runtime"</Message>
-	<Comment>Returned when an assembly is NGened in full trust and then used in partial trust or vice versa.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x80132008">
-	<SymbolicName>CLR_E_BIND_NI_DEP_IDENTITY_MISMATCH</SymbolicName>
-	<Message>"Native image identity mismatch with respect to its dependencies"</Message>
-	<Comment>Returned when an assembly's identities have changed so the native image is no longer valid.</Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80132009">
 	<SymbolicName>CLR_E_GC_OOM</SymbolicName>
 	<Message>"Failfast due to an OOM during a GC"</Message>
@@ -2281,12 +2119,6 @@
 	<SymbolicName>CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT</SymbolicName>
 	<Message>"GCHeapAffinitizeRanges configuration string has invalid format."</Message>
 	<Comment>During a GC initialization, the GCHeapAffinitizeRanges config couldn't be parsed due to its invalid format.</Comment>
-</HRESULT>
-
-<HRESULT NumericValue="0x8013200C">
-	<SymbolicName>CLR_E_CROSSGEN_NO_IBC_DATA_FOUND</SymbolicName>
-	<Message>"Cannot compile using the PartialNgen flag because no IBC data was found."</Message>
-	<Comment>During crossgen compilation, the PartialNgen flag was set, but no IBC data was found in the resources section of the input image, and no IBC file was externally provided.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013200D">

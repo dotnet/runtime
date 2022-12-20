@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
     public class DataBits_Property : PortsTest
     {
         //The default number of bytes to read/write to verify the speed of the port
-        //and that the bytes were transfered successfully
+        //and that the bytes were transferred successfully
         private const int DEFAULT_BYTE_SIZE = 512;
 
         //If the percentage difference between the expected time to transfer with the specified dataBits
@@ -269,8 +269,8 @@ namespace System.IO.Ports.Tests
                 int numBytes = 0;
                 byte shiftMask = 0xFF;
 
-                //Create a mask that when logicaly and'd with the transmitted byte will
-                //will result in the byte recievied due to the leading bits being chopped
+                //Create a mask that when logically and'd with the transmitted byte will
+                //will result in the byte received due to the leading bits being chopped
                 //off due to DataBits less then 8
                 shiftMask >>= 8 - com1.DataBits;
 

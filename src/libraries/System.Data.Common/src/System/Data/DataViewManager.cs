@@ -132,7 +132,7 @@ namespace System.Data
                     }
                     if (r.MoveToAttribute("RowStateFilter"))
                     {
-                        _dataViewSettingsCollection[table]!.RowStateFilter = (DataViewRowState)Enum.Parse(typeof(DataViewRowState), r.Value);
+                        _dataViewSettingsCollection[table]!.RowStateFilter = Enum.Parse<DataViewRowState>(r.Value);
                     }
                 }
             }
@@ -296,7 +296,7 @@ namespace System.Data
                 DataTable? table = dataSet.FindTable(null, listAccessors, 0);
                 if (table != null)
                 {
-                    return table.GetPropertyDescriptorCollection(null);
+                    return table.GetPropertyDescriptorCollection();
                 }
             }
             return new PropertyDescriptorCollection(null);

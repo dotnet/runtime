@@ -133,7 +133,7 @@ mono_value_hash_table_new (GHashFunc hash_func, GEqualFunc key_equal_func, MonoV
 
 	mono_value_hash_table_set_shift (hash, HASH_TABLE_MIN_SHIFT);
 	hash->table = g_new0 (Slot, hash->table_size);
-	
+
 	return hash;
 }
 
@@ -146,10 +146,10 @@ mono_value_hash_table_new_full (GHashFunc hash_func, GEqualFunc key_equal_func,
 	MonoValueHashTable *hash = mono_value_hash_table_new (hash_func, key_equal_func);
 	if (hash == NULL)
 		return NULL;
-	
+
 	hash->key_destroy_func = key_destroy_func;
 	hash->value_destroy_func = value_destroy_func;
-	
+
 	return hash;
 }
 
@@ -169,7 +169,7 @@ do_rehash (MonoValueHashTable *hash)
 
 	/* printf ("New size: %d\n", hash->table_size); */
 	hash->table = g_new0 (Slot, hash->table_size);
-	
+
 	for (i = 0; i < old_size; i++){
 		Slot *s = &old_table [i];
 		Slot *new_s;
@@ -222,7 +222,7 @@ mono_value_hash_table_insert_replace (MonoValueHashTable *hash, gpointer key, gp
 
 	g_assert (value);
 	g_assert (hash->key_extract_func (value) == key);
-	
+
 	g_return_if_fail (hash != NULL);
 
 	hashcode = HASH (hash, key);
@@ -282,7 +282,7 @@ lookup_internal (MonoValueHashTable *hash, gconstpointer key)
 	guint hashcode;
 	guint s_index;
 	guint step = 0;
-	
+
 	hashcode = HASH (hash, key);
 
 	s_index = hashcode & hash->table_mask;
@@ -321,7 +321,7 @@ void
 mono_value_hash_table_destroy (MonoValueHashTable *hash)
 {
 	int i;
-	
+
 	g_return_if_fail (hash != NULL);
 
 	for (i = 0; i < hash->table_size; i++){
@@ -335,6 +335,6 @@ mono_value_hash_table_destroy (MonoValueHashTable *hash)
 		}
 	}
 	g_free (hash->table);
-	
+
 	g_free (hash);
 }

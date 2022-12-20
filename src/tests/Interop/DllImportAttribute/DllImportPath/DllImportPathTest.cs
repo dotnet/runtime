@@ -18,7 +18,7 @@ class Test
     private const string RelativePath1Unix =  @"./RelativeNative/../libDllImportPath_Relative";
     private const string RelativePath3Unix = @"../DllImportPathTest/libDllImportPath_Relative";
 
-    private const string UnicodeFileName = "DllImportPath_Unicode✔";
+    private const string UnicodeFileName = "DllImportPath_Unicode\u2714";
 
     [DllImport(@"DllImportPath_Local", EntryPoint = "GetZero")]
     private static extern int GetZero_Local1();
@@ -52,7 +52,7 @@ class Test
 
     [DllImport(UnicodeFileName, EntryPoint = "GetZero")]
     private static extern int GetZero_Unicode();
-    
+
     [DllImport(PathEnvFileName, EntryPoint = "GetZero")]
     private static extern int GetZero_PathEnv();
 
@@ -83,7 +83,7 @@ class Test
         bool isWindows = OperatingSystem.IsWindows();
 
         if (!isWindows) // We need to ensure that the subdirectory exists for off-Windows.
-        {        
+        {
             var currentDirectory = Directory.GetCurrentDirectory();
             var info = new DirectoryInfo(currentDirectory);
             info.CreateSubdirectory(RelativeSubdirectoryName);
@@ -97,12 +97,12 @@ class Test
         {
             GetZero_Relative1Unix();
         }
-        
+
         if (OperatingSystem.IsWindows())
         {
             GetZero_Relative2();
         }
-        
+
         if (isWindows)
         {
             GetZero_Relative3Windows();
@@ -150,7 +150,7 @@ class Test
                             localFile.Extension == ".dll"
                             || localFile.Extension == ".so"
                             || localFile.Extension == ".dylib");
-        
+
         var unicodeFileLocation = file.FullName.Replace("DllImportPath_Local", UnicodeFileName);
 
         file.CopyTo(unicodeFileLocation, true);
@@ -168,7 +168,7 @@ class Test
         GetZero_Exe();
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {
@@ -178,7 +178,11 @@ class Test
             {
                 TestNativeLibraryProbingUnicode();
             }
-            TestNativeLibraryProbingOnPathEnv();
+            // Setting LD_LIBRARY_PATH/DYLD_LIBRARY_PATH may not be allowed on Mac
+            if (!OperatingSystem.IsMacOS())
+            {
+                TestNativeLibraryProbingOnPathEnv();
+            }
             if (OperatingSystem.IsWindows())
             {
                 TestNativeExeProbing();

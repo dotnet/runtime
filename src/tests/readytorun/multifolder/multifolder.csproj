@@ -40,6 +40,8 @@ $(CLRTestBatchPreCommands)
     echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
 
     REM Suppress GC stand alone mode for the duration of Crossgen2 execution
+    set __gcStandaloneModeToRestore=!DOTNET_GCName!
+    set DOTNET_GCName=
     set __gcStandaloneModeToRestore=!COMPlus_GCName!
     set COMPlus_GCName=
 
@@ -53,6 +55,10 @@ $(CLRTestBatchPreCommands)
     set __Command=%__Command% "%CORE_ROOT%\crossgen2\crossgen2.dll"
     set __Command=%__Command% @"%__ResponseFile%"
 
+    REM work around problems in 6.0 OSR
+    set "DOTNET_TC_OnStackReplacement="
+    set "DOTNET_TC_PartialCompilation="
+
     echo Response file: %__ResponseFile%
     type %__ResponseFile%
     echo ------------------
@@ -63,12 +69,12 @@ $(CLRTestBatchPreCommands)
     dir %scriptPath%\multifolder
 
     set ExePath=multifolder\multifolder.dll
-    set COMPlus_NativeImageSearchPaths=%scriptPath%
-    set COMPlus_GCName=!__gcStandaloneModeToRestore!
+    set DOTNET_NativeImageSearchPaths=%scriptPath%
+    set DOTNET_GCName=!__gcStandaloneModeToRestore!
 
 ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 
     __OutputDir=$PWD
     __ResponseFile=$__OutputDir/multifolder.rsp
@@ -85,9 +91,9 @@ $(BashCLRTestPreCommands)
     echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
 
-    # Suppress GC standalone mode for the duration of Crossgen2 execution
-    local gcstandaloneModeToRestore=$COMPlus_GCName;
-    unset COMPlus_GCName
+    # Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+    export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
+    export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
 
     __Command=$_DebuggerFullPath
     # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -105,10 +111,11 @@ $(BashCLRTestPreCommands)
     echo Running crossgen2: $__Command
     $__Command
 
-    ExePath=multifolder/multifolder.dll
-    export COMPlus_NativeImageSearchPaths=$__OutputDir
-    export COMPlus_GCName=$gcstandaloneModeToRestore
+    export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
-]]></BashCLRTestPreCommands>
+    ExePath=multifolder/multifolder.dll
+    export DOTNET_NativeImageSearchPaths=$__OutputDir
+
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 </Project>

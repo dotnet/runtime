@@ -54,10 +54,7 @@ namespace System
         public AggregateException(string? message, Exception innerException)
             : base(message, innerException)
         {
-            if (innerException == null)
-            {
-                throw new ArgumentNullException(nameof(innerException));
-            }
+            ArgumentNullException.ThrowIfNull(innerException);
 
             _innerExceptions = new[] { innerException };
         }
@@ -72,7 +69,7 @@ namespace System
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(IEnumerable<Exception> innerExceptions) :
-            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions)
+            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)))
         {
         }
 
@@ -86,7 +83,7 @@ namespace System
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(params Exception[] innerExceptions) :
-            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions)
+            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)))
         {
         }
 
@@ -101,7 +98,7 @@ namespace System
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(string? message, IEnumerable<Exception> innerExceptions)
-            : this(message, innerExceptions == null ? null : new List<Exception>(innerExceptions).ToArray(), cloneExceptions: false)
+            : this(message, new List<Exception>(innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions))).ToArray(), cloneExceptions: false)
         {
         }
 
@@ -116,18 +113,13 @@ namespace System
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(string? message, params Exception[] innerExceptions) :
-            this(message, innerExceptions, cloneExceptions: true)
+            this(message, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)), cloneExceptions: true)
         {
         }
 
-        private AggregateException(string? message, Exception[]? innerExceptions, bool cloneExceptions) :
-            base(message, innerExceptions?.Length > 0 ? innerExceptions[0] : null)
+        private AggregateException(string? message, Exception[] innerExceptions, bool cloneExceptions) :
+            base(message, innerExceptions.Length > 0 ? innerExceptions[0] : null)
         {
-            if (innerExceptions == null)
-            {
-                throw new ArgumentNullException(nameof(innerExceptions));
-            }
-
             _innerExceptions = cloneExceptions ? new Exception[innerExceptions.Length] : innerExceptions;
 
             for (int i = 0; i < _innerExceptions.Length; i++)
@@ -265,10 +257,7 @@ namespace System
         /// null.</exception>
         public void Handle(Func<Exception, bool> predicate)
         {
-            if (predicate == null)
-            {
-                throw new ArgumentNullException(nameof(predicate));
-            }
+            ArgumentNullException.ThrowIfNull(predicate);
 
             List<Exception>? unhandledExceptions = null;
             for (int i = 0; i < _innerExceptions.Length; i++)
@@ -352,7 +341,7 @@ namespace System
                     return base.Message;
                 }
 
-                StringBuilder sb = StringBuilderCache.Acquire();
+                var sb = new ValueStringBuilder(stackalloc char[256]);
                 sb.Append(base.Message);
                 sb.Append(' ');
                 for (int i = 0; i < _innerExceptions.Length; i++)
@@ -362,7 +351,7 @@ namespace System
                     sb.Append(") ");
                 }
                 sb.Length--;
-                return StringBuilderCache.GetStringAndRelease(sb);
+                return sb.ToString();
             }
         }
 

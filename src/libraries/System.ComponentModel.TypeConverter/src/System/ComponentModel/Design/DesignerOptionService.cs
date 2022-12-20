@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerOptionCollection Options
         {
-            get => _options ?? (_options = new DesignerOptionCollection(this, null, string.Empty, null));
+            get => _options ??= new DesignerOptionCollection(this, null, string.Empty, null);
         }
 
         /// <summary>
@@ -34,15 +34,8 @@ namespace System.ComponentModel.Design
         /// </summary>
         protected DesignerOptionCollection CreateOptionCollection(DesignerOptionCollection parent, string name, object value)
         {
-            if (parent == null)
-            {
-                throw new ArgumentNullException(nameof(parent));
-            }
-
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(parent);
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -59,15 +52,8 @@ namespace System.ComponentModel.Design
         [RequiresUnreferencedCode("The Type of DesignerOptionCollection's value cannot be statically discovered.")]
         private PropertyDescriptor? GetOptionProperty(string pageName, string valueName)
         {
-            if (pageName == null)
-            {
-                throw new ArgumentNullException(nameof(pageName));
-            }
-
-            if (valueName == null)
-            {
-                throw new ArgumentNullException(nameof(valueName));
-            }
+            ArgumentNullException.ThrowIfNull(pageName);
+            ArgumentNullException.ThrowIfNull(valueName);
 
             string[] optionNames = pageName.Split('\\');
 
@@ -146,10 +132,7 @@ namespace System.ComponentModel.Design
                 if (Parent != null)
                 {
                     parent!._properties = null;
-                    if (Parent._children == null)
-                    {
-                        Parent._children = new ArrayList(1);
-                    }
+                    Parent._children ??= new ArrayList(1);
                     Parent._children.Add(this);
                 }
             }
@@ -278,10 +261,7 @@ namespace System.ComponentModel.Design
                 if (_children == null)
                 {
                     _service.PopulateOptionCollection(this);
-                    if (_children == null)
-                    {
-                        _children = new ArrayList(1);
-                    }
+                    _children ??= new ArrayList(1);
                 }
             }
 
@@ -481,7 +461,7 @@ namespace System.ComponentModel.Design
             {
                 if (destinationType == typeof(string))
                 {
-                    return SR.CollectionConverterText;
+                    return SR.GetResourceString(nameof(SR.CollectionConverterText), "(Collection)");
                 }
                 return base.ConvertTo(cxt, culture, value, destinationType);
             }

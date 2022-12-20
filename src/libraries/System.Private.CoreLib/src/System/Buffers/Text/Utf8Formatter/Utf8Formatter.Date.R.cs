@@ -13,9 +13,7 @@ namespace System.Buffers.Text
         //
         private static bool TryFormatDateTimeR(DateTime value, Span<byte> destination, out int bytesWritten)
         {
-            // Writing the check in this fashion elides all bounds checks on 'buffer'
-            // for the remainder of the method.
-            if ((uint)28 >= (uint)destination.Length)
+            if (destination.Length <= 28)
             {
                 bytesWritten = 0;
                 return false;
@@ -24,26 +22,13 @@ namespace System.Buffers.Text
             value.GetDate(out int year, out int month, out int day);
             value.GetTime(out int hour, out int minute, out int second);
 
-            uint dayAbbrev = s_dayAbbreviations[(int)value.DayOfWeek];
-
-            destination[0] = (byte)dayAbbrev;
-            dayAbbrev >>= 8;
-            destination[1] = (byte)dayAbbrev;
-            dayAbbrev >>= 8;
-            destination[2] = (byte)dayAbbrev;
-            destination[3] = Utf8Constants.Comma;
+            FormattingHelpers.CopyFourBytes("Sun,Mon,Tue,Wed,Thu,Fri,Sat,"u8.Slice(4 * (int)value.DayOfWeek), destination);
             destination[4] = Utf8Constants.Space;
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 5);
             destination[7] = Utf8Constants.Space;
 
-            uint monthAbbrev = s_monthAbbreviations[month - 1];
-            destination[8] = (byte)monthAbbrev;
-            monthAbbrev >>= 8;
-            destination[9] = (byte)monthAbbrev;
-            monthAbbrev >>= 8;
-            destination[10] = (byte)monthAbbrev;
-            destination[11] = Utf8Constants.Space;
+            FormattingHelpers.CopyFourBytes("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec "u8.Slice(4 * (month - 1)), destination.Slice(8));
 
             FormattingHelpers.WriteFourDecimalDigits((uint)year, destination, 12);
             destination[16] = Utf8Constants.Space;
@@ -55,11 +40,8 @@ namespace System.Buffers.Text
             destination[22] = Utf8Constants.Colon;
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)second, destination, 23);
-            destination[25] = Utf8Constants.Space;
 
-            destination[26] = GMT1;
-            destination[27] = GMT2;
-            destination[28] = GMT3;
+            FormattingHelpers.CopyFourBytes(" GMT"u8, destination.Slice(25));
 
             bytesWritten = 29;
             return true;

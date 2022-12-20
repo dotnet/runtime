@@ -41,7 +41,7 @@ size_t GcInfoDumper::GetGCInfoSize()
 //static*
 void GcInfoDumper::LivePointerCallback (
         LPVOID          hCallback,      // callback data
-        OBJECTREF*      pObject,        // address of obect-reference we are reporting
+        OBJECTREF*      pObject,        // address of object-reference we are reporting
         uint32_t        flags           // is this a pinned and/or interior pointer
         DAC_ARG(DacSlotLocation loc))   // the location of the slot
 {
@@ -108,7 +108,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
     };
 
     static RegisterInfo rgRegisters[] = {
-#define REG(reg, field) { FIELD_OFFSET(T_CONTEXT, field) }
+#define REG(reg, field) { offsetof(T_CONTEXT, field) }
 
 #ifdef TARGET_AMD64
         REG(rax, Rax),
@@ -129,13 +129,13 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(r15, R15),
 #elif defined(TARGET_ARM)
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(ArmVolatileContextPointer, field) }
+#define REG(reg, field) { offsetof(ArmVolatileContextPointer, field) }
         REG(r0, R0),
         REG(r1, R1),
         REG(r2, R2),
         REG(r3, R3),
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
+#define REG(reg, field) { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
         REG(r4, R4),
         REG(r5, R5),
         REG(r6, R6),
@@ -144,14 +144,14 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(r9, R9),
         REG(r10, R10),
         REG(r11, R11),
-        { FIELD_OFFSET(ArmVolatileContextPointer, R12) },
-        { FIELD_OFFSET(T_CONTEXT, Sp) },
-        { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, Lr) },
-        { FIELD_OFFSET(T_CONTEXT, Sp) },
-        { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, R7) },
+        { offsetof(ArmVolatileContextPointer, R12) },
+        { offsetof(T_CONTEXT, Sp) },
+        { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, Lr) },
+        { offsetof(T_CONTEXT, Sp) },
+        { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, R7) },
 #elif defined(TARGET_ARM64)
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(Arm64VolatileContextPointer, field) }
+#define REG(reg, field) { offsetof(Arm64VolatileContextPointer, field) }
         REG(x0, X0),
         REG(x1, X1),
         REG(x2, X2),
@@ -171,7 +171,7 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(x16, X16),
         REG(x17, X17),
 #undef REG
-#define REG(reg, field) { FIELD_OFFSET(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
+#define REG(reg, field) { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
         REG(x19, X19),
         REG(x20, X20),
         REG(x21, X21),
@@ -184,7 +184,45 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(x28, X28),
         REG(Fp,  Fp),
         REG(Lr,  Lr),
-        { FIELD_OFFSET(T_CONTEXT, Sp) },
+        { offsetof(T_CONTEXT, Sp) },
+#undef REG
+#elif defined(TARGET_LOONGARCH64)
+#undef REG
+#define REG(reg, field) { offsetof(Loongarch64VolatileContextPointer, field) }
+        REG(zero, R0),
+        REG(a0, A0),
+        REG(a1, A1),
+        REG(a2, A2),
+        REG(a3, A3),
+        REG(a4, A4),
+        REG(a5, A5),
+        REG(a6, A6),
+        REG(a7, A7),
+        REG(t0, T0),
+        REG(t1, T1),
+        REG(t2, T2),
+        REG(t3, T3),
+        REG(t4, T4),
+        REG(t5, T5),
+        REG(t6, T6),
+        REG(t7, T7),
+        REG(t8, T8),
+        REG(x0, X0),
+#undef REG
+#define REG(reg, field) { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
+        REG(s0, S0),
+        REG(s1, S1),
+        REG(s2, S2),
+        REG(s3, S3),
+        REG(s4, S4),
+        REG(s5, S5),
+        REG(s6, S6),
+        REG(s7, S7),
+        REG(s8, S8),
+        REG(tp, Tp),
+        REG(fp, Fp),
+        REG(ra, Ra),
+        { offsetof(T_CONTEXT, Sp) },
 #undef REG
 #else
 PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this platform.")
@@ -201,16 +239,22 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
     iFirstRegister = 0;
     nRegisters = nCONTEXTRegisters;
 #ifdef TARGET_AMD64
-    iSPRegister = (FIELD_OFFSET(CONTEXT, Rsp) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONGLONG);
+    iSPRegister = (offsetof(CONTEXT, Rsp) - offsetof(CONTEXT, Rax)) / sizeof(ULONGLONG);
 #elif defined(TARGET_ARM64)
-    iSPRegister = (FIELD_OFFSET(T_CONTEXT, Sp) - FIELD_OFFSET(T_CONTEXT, X0)) / sizeof(ULONGLONG);
+    iSPRegister = (offsetof(T_CONTEXT, Sp) - offsetof(T_CONTEXT, X0)) / sizeof(ULONGLONG);
 #elif defined(TARGET_ARM)
-    iSPRegister = (FIELD_OFFSET(T_CONTEXT, Sp) - FIELD_OFFSET(T_CONTEXT, R0)) / sizeof(ULONG);
+    iSPRegister = (offsetof(T_CONTEXT, Sp) - offsetof(T_CONTEXT, R0)) / sizeof(ULONG);
     UINT iBFRegister = m_StackBaseRegister;
+#elif defined(TARGET_LOONGARCH64)
+    assert(!"unimplemented on LOONGARCH yet");
+    iSPRegister = 0;
 #endif
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     BYTE* pContext = (BYTE*)&(pRD->volatileCurrContextPointers);
+#elif defined(TARGET_LOONGARCH64)
+    assert(!"unimplemented on LOONGARCH yet");
+    BYTE* pContext = (BYTE*)pRD->pCurrentContext;
 #else
     BYTE* pContext = (BYTE*)pRD->pCurrentContext;
 #endif
@@ -277,6 +321,8 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
             {
                 break;
             }
+#elif defined(TARGET_LOONGARCH64)
+    assert(!"unimplemented on LOONGARCH yet");
 #endif
             {
                 _ASSERTE(iReg < nCONTEXTRegisters);
@@ -301,6 +347,9 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                 {
                     pReg = (SIZE_T*)((BYTE*)pRD->pCurrentContext + rgRegisters[iReg].cbContextOffset);
                 }
+#elif defined(TARGET_LOONGARCH64)
+    assert(!"unimplemented on LOONGARCH yet");
+                pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
 #else
                 pReg = (SIZE_T*)(pContext + rgRegisters[iReg].cbContextOffset);
 #endif
@@ -370,6 +419,10 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
                 {
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
                     base = GC_SP_REL;
+#elif defined(TARGET_LOONGARCH64)
+                    assert(!"unimplemented on LOONGARCH yet");
+                    //TODO: should confirm ?
+                    base = GC_SP_REL;
 #else
                     if (0 == ctx)
                         base = GC_SP_REL;
@@ -399,6 +452,8 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
         pContext = (BYTE*)pRD->pCurrentContextPointers;
+#elif defined(TARGET_LOONGARCH64)
+    assert(!"unimplemented on LOONGARCH yet");
 #else
         pContext = (BYTE*)pRD->pCallerContext;
 #endif
@@ -602,6 +657,9 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
     {
         *(ppVolatileReg+iReg) = &regdisp.pCurrentContext->X0 + iReg;
     }
+#elif defined(TARGET_LOONGARCH64)
+#pragma message("Unimplemented for LOONGARCH64 yet.")
+    assert(!"unimplemented on LOONGARCH yet");
 #else
 PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on this platform.")
 #endif
@@ -649,9 +707,9 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
                                (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                     | DECODE_CODE_LENGTH
                                                     | DECODE_VARARG
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
                                                     | DECODE_HAS_TAILCALLS
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
                                                     | DECODE_INTERRUPTIBILITY),
                                offset);
@@ -672,6 +730,9 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
         UINT32 safePointOffset = offset;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
         safePointOffset++;
+#elif defined(TARGET_LOONGARCH64)
+#pragma message("Unimplemented for LOONGARCH64 yet.")
+    assert(!"unimplemented on LOONGARCH yet");
 #endif
         if(safePointDecoder.IsSafePoint(safePointOffset))
         {

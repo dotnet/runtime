@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Options
         private readonly IOptionsMonitorCache<TOptions> _cache;
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly List<IDisposable> _registrations = new List<IDisposable>();
-        internal event Action<TOptions, string> _onChange;
+        internal event Action<TOptions, string>? _onChange;
 
         /// <summary>
         /// Constructor.
@@ -36,8 +36,8 @@ namespace Microsoft.Extensions.Options
             void RegisterSource(IOptionsChangeTokenSource<TOptions> source)
             {
                 IDisposable registration = ChangeToken.OnChange(
-                          () => source.GetChangeToken(),
-                          (name) => InvokeChanged(name),
+                          source.GetChangeToken,
+                          InvokeChanged,
                           source.Name);
 
                 _registrations.Add(registration);
@@ -61,20 +61,19 @@ namespace Microsoft.Extensions.Options
             }
         }
 
-        private void InvokeChanged(string name)
+        private void InvokeChanged(string? name)
         {
-            name = name ?? Options.DefaultName;
+            name ??= Options.DefaultName;
             _cache.TryRemove(name);
             TOptions options = Get(name);
-            if (_onChange != null)
-            {
-                _onChange.Invoke(options, name);
-            }
+            _onChange?.Invoke(options, name);
         }
 
         /// <summary>
-        /// The present value of the options.
+        /// The present value of the options, equivalent to <c>Get(Options.DefaultName)</c>.
         /// </summary>
+        /// <exception cref="OptionsValidationException">One or more <see cref="IValidateOptions{TOptions}"/> return failed <see cref="ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance been created.</exception>
+        /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions CurrentValue
         {
             get => Get(Options.DefaultName);
@@ -83,10 +82,23 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        public virtual TOptions Get(string name)
+        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance, if <see langword="null"/> <see cref="Options.DefaultName"/> is used.</param>
+        /// <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
+        /// <exception cref="OptionsValidationException">One or more <see cref="IValidateOptions{TOptions}"/> return failed <see cref="ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance been created.</exception>
+        /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
+        public virtual TOptions Get(string? name)
         {
-            name = name ?? Options.DefaultName;
-            return _cache.GetOrAdd(name, () => _factory.Create(name));
+            if (_cache is not OptionsCache<TOptions> optionsCache)
+            {
+                // copying captured variables to locals avoids allocating a closure if we don't enter the if
+                string localName = name ?? Options.DefaultName;
+                IOptionsFactory<TOptions> localFactory = _factory;
+                return _cache.GetOrAdd(localName, () => localFactory.Create(localName));
+            }
+
+            // non-allocating fast path
+            return optionsCache.GetOrAdd(name, static (name, factory) => factory.Create(name), _factory);
+
         }
 
         /// <summary>

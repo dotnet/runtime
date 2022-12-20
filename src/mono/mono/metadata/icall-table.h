@@ -12,11 +12,11 @@
 #include "marshal.h"
 #include "icalls.h"
 
-#define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
+#define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
 
 typedef struct {
 	int version;
-	gpointer (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, gboolean *uses_handles);
+	gpointer (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, MonoInternalCallFlags *out_flags);
 	const char* (*lookup_icall_symbol) (gpointer func);
 } MonoIcallTableCallbacks;
 
@@ -151,6 +151,8 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoProperty_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_size_t			ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoVTable_ptr		ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_MonoQCallTypeHandle	ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_MonoQCallAssemblyHandle	ICALL_HANDLES_WRAP_NONE
 
 #define MONO_HANDLE_TYPE_WRAP_MonoAssemblyName_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoBoolean_ref 		ICALL_HANDLES_WRAP_VALUETYPE_REF
@@ -191,6 +193,7 @@ typedef MonoStringHandle MonoStringOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_gint32_ptr   		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gpointer_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_PROCESS_HANDLE		ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_MonoObjectHandleOnStack  		ICALL_HANDLES_WRAP_NONE
 
 // Please keep this sorted (grep ICALL_HANDLES_WRAP_OBJ$ | sort)
 #define MONO_HANDLE_TYPE_WRAP_MonoAppContext 			ICALL_HANDLES_WRAP_OBJ

@@ -279,7 +279,7 @@ HRESULT TrackerObjectManager::OnIReferenceTrackerFound(_In_ IReferenceTracker* o
     // Attempt to set the tracker instance.
     if (InterlockedCompareExchangePointer((void**)&s_TrackerManager, trackerManager.p, nullptr) == nullptr)
     {
-        (void)trackerManager.Detach(); // Ownership has been transfered
+        (void)trackerManager.Detach(); // Ownership has been transferred
         RETURN_IF_FAILED(s_TrackerManager->SetReferenceTrackerHost(hostServices));
     }
 

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
 namespace System.Formats.Cbor
@@ -10,33 +9,17 @@ namespace System.Formats.Cbor
     {
         // Implements major type 7 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
-        /// <summary>Writes a half-precision floating point number (major type 7).</summary>
-        /// <param name="value">The value to write.</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
-        public void WriteHalf(Half value)
-        {
-            EnsureWriteCapacity(1 + HalfHelpers.SizeOfHalf);
-            WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional16BitData));
-            HalfHelpers.WriteHalfBigEndian(_buffer.AsSpan(_offset), value);
-            _offset += HalfHelpers.SizeOfHalf;
-            AdvanceDataItemCounters();
-        }
-
         /// <summary>Writes a single-precision floating point number (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteSingle(float value)
         {
             if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
-                 FloatSerializationHelpers.TryConvertSingleToHalf(value, out Half half))
+                 TryConvertSingleToHalf(value, out var half))
             {
                 WriteHalf(half);
             }
@@ -48,17 +31,17 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a double-precision floating point number (major type 7).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteDouble(double value)
         {
             if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
-                 FloatSerializationHelpers.TryConvertDoubleToSingle(value, out float single))
+                 TryConvertDoubleToSingle(value, out float single))
             {
-                if (FloatSerializationHelpers.TryConvertSingleToHalf(single, out Half half))
+                if (TryConvertSingleToHalf(single, out var half))
                 {
                     WriteHalf(half);
                 }
@@ -72,12 +55,11 @@ namespace System.Formats.Cbor
                 WriteDoubleCore(value);
             }
         }
-
         private void WriteSingleCore(float value)
         {
             EnsureWriteCapacity(1 + sizeof(float));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional32BitData));
-            BinaryPrimitives.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
+            CborHelpers.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += sizeof(float);
             AdvanceDataItemCounters();
         }
@@ -86,7 +68,7 @@ namespace System.Formats.Cbor
         {
             EnsureWriteCapacity(1 + sizeof(double));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));
-            BinaryPrimitives.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
+            CborHelpers.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
             _offset += sizeof(double);
             AdvanceDataItemCounters();
         }
@@ -144,21 +126,11 @@ namespace System.Formats.Cbor
             AdvanceDataItemCounters();
         }
 
-        private static class FloatSerializationHelpers
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertDoubleToSingle(double value, out float result)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryConvertDoubleToSingle(double value, out float result)
-            {
-                result = (float)value;
-                return BitConverter.DoubleToInt64Bits(result) == BitConverter.DoubleToInt64Bits(value);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool TryConvertSingleToHalf(float value, out Half result)
-            {
-                result = (Half)value;
-                return BitConverter.SingleToInt32Bits((float)result) == BitConverter.SingleToInt32Bits(value);
-            }
+            result = (float)value;
+            return BitConverter.DoubleToInt64Bits(result) == BitConverter.DoubleToInt64Bits(value);
         }
     }
 }

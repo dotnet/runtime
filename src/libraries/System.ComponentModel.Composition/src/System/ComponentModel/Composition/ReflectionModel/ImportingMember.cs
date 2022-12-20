@@ -19,10 +19,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public ImportingMember(ContractBasedImportDefinition definition, ReflectionWritableMember member, ImportType importType)
             : base(definition, importType)
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
+            ArgumentNullException.ThrowIfNull(member);
 
             _member = member;
         }
@@ -107,10 +104,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private void SetCollectionMemberValue(object? instance, IEnumerable values)
         {
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
+            ArgumentNullException.ThrowIfNull(values);
 
             ICollection<object>? collection = null;
             Type? itemType = CollectionServices.GetCollectionElementType(ImportType.ActualType);
@@ -125,10 +119,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private ICollection<object> GetNormalizedCollection(Type itemType, object? instance)
         {
-            if (itemType == null)
-            {
-                throw new ArgumentNullException(nameof(itemType));
-            }
+            ArgumentNullException.ThrowIfNull(itemType);
 
             object? collectionObject = null;
 
@@ -221,15 +212,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private void PopulateCollection(ICollection<object?> collection, IEnumerable values)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
-
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(values);
 
             try
             {

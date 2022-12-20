@@ -19,7 +19,7 @@ namespace System.IO.Tests
     {
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
             var server = new NamedPipeServerStream(pipeName, PipeDirection.In);
@@ -42,7 +42,6 @@ namespace System.IO.Tests
     }
 
     [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class SeekableDeviceFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
     {
         protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
@@ -76,7 +75,7 @@ namespace System.IO.Tests
         private static extern bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
     }
 
-    [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
+    [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specific
     [Collection(nameof(DisableParallelization))] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
     [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(CanShareFiles))]
@@ -86,15 +85,23 @@ namespace System.IO.Tests
 
         private static Lazy<bool> _canShareFiles = new Lazy<bool>(() =>
         {
-            if (!PlatformDetection.IsWindowsAndElevated || PlatformDetection.IsWindowsNanoServer)
+            if (!PlatformDetection.IsPrivilegedProcess)
             {
                 return false;
             }
 
-            // the "Server Service" allows for file sharing. It can be disabled on some of our CI machines.
-            using (ServiceController sharingService = new ServiceController("Server"))
+            try
             {
-                return sharingService.Status == ServiceControllerStatus.Running;
+                // the "Server Service" allows for file sharing. It can be disabled on some machines.
+                using (ServiceController sharingService = new ServiceController("Server"))
+                {
+                    return sharingService.Status == ServiceControllerStatus.Running;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // The service is not installed.
+                return false;
             }
         });
 
@@ -181,7 +188,6 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
     [OuterLoop("Has a very complex setup logic that in theory might have some side-effects")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class DeviceInterfaceTests
     {
         [Fact]
@@ -233,7 +239,7 @@ namespace System.IO.Tests
                 uint deviceIndex = 0;
                 while (SetupDiEnumDeviceInfo(deviceInfoSet, deviceIndex++, ref deviceInfoData))
                 {
-                    if (Marshal.GetLastWin32Error() == ERROR_NO_MORE_ITEMS)
+                    if (Marshal.GetLastPInvokeError() == ERROR_NO_MORE_ITEMS)
                     {
                         break;
                     }

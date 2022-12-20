@@ -233,8 +233,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "ms-MY", new [] { "ms-MY" } };
             yield return new object[] { "mt", new [] { "mt" }, true };
             yield return new object[] { "mt-MT", new [] { "mt-MT" }, true };
-            yield return new object[] { "nb", new [] { "nb" }, true };
-            yield return new object[] { "nb-NO", new [] { "nb-NO" }, true };
+            yield return new object[] { "nb", new [] { "nb" } };
+            yield return new object[] { "nb-NO", new [] { "nb-NO" } };
             yield return new object[] { "ne", new [] { "ne" }, true };
             yield return new object[] { "ne-NP", new [] { "ne-NP" }, true };
             yield return new object[] { "nl", new [] { "nl" } };
@@ -438,6 +438,15 @@ namespace System.Globalization.Tests
             // for the valid language-script-region tags.
 
             Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
+        }
+
+        [InlineData("zh-TW-u-co-zhuyin")]
+        [InlineData("de-DE-u-co-phoneb")]
+        [InlineData("de-u-co-phonebk")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void TestCreationWithMangledSortName(string cultureName)
+        {
+            Assert.True(CultureInfo.GetCultureInfo(cultureName).CompareInfo.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

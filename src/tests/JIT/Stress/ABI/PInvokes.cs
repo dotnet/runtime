@@ -16,7 +16,7 @@ namespace ABIStress
         private static bool DoPInvokes(int callerIndex)
         {
             string callerName = Config.PInvokerPrefix + callerIndex;
-            Random rand = new Random(Seed);
+            Random rand = new Random(GetSeed(callerName));
             List<TypeEx> pms = RandomParameters(s_allTypes, rand);
 
             int calleeIndex = rand.Next(0, Config.NumCallees);

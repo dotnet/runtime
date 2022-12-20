@@ -16,7 +16,7 @@
 #include <netdb.h>
 #endif
 
-#if !defined (HAVE_GETADDRINFO) 
+#if !defined (HAVE_GETADDRINFO)
 
 #if defined (HAVE_GETHOSTBYNAME) || defined (HAVE_GETHOSTBYNAME2)
 
@@ -71,7 +71,7 @@ mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInf
 	if (!addr_info->entries) {
 		*result = NULL;
 		mono_free_address_info (addr_info);
-		return 1;		
+		return 1;
 	}
 
 	*result = addr_info;

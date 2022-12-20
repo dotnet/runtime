@@ -81,7 +81,6 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_fFloatStateValid(false),
     m_floatStackTop(0),
     m_fException(false),
-    m_fCreationEventQueued(false),
     m_EnCRemapFunctionIP(NULL),
     m_userState(kInvalidUserState),
     m_hCachedThread(INVALID_HANDLE_VALUE),
@@ -1630,8 +1629,8 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    VMPTR_DomainFile vmDomainFile = pNativeCode->GetModule()->m_vmDomainFile;
-    _ASSERTE(!vmDomainFile.IsNull());
+    VMPTR_DomainAssembly vmDomainAssembly = pNativeCode->GetModule()->m_vmDomainAssembly;
+    _ASSERTE(!vmDomainAssembly.IsNull());
 
     // If this thread is stopped due to an exception, never allow SetIP
     if (HasException())
@@ -1643,7 +1642,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     GetProcess()->InitIPCEvent(&event, DB_IPCE_SET_IP, true, GetAppDomain()->GetADToken());
     event.SetIP.fCanSetIPOnly = fCanSetIPOnly;
     event.SetIP.vmThreadToken = m_vmThreadToken;
-    event.SetIP.vmDomainFile = vmDomainFile;
+    event.SetIP.vmDomainAssembly = vmDomainAssembly;
     event.SetIP.mdMethod = pNativeCode->GetMetadataToken();
     event.SetIP.vmMethodDesc = pNativeCode->GetVMNativeCodeMethodDescToken();
     event.SetIP.startAddress = pNativeCode->GetAddress();
@@ -1655,7 +1654,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
         "mod:0x%x  MethodDef:0x%x offset:0x%x  il?:0x%x\n",
          GetCurrentThreadId(),
          VmPtrToCookie(m_vmThreadToken),
-         VmPtrToCookie(vmDomainFile),
+         VmPtrToCookie(vmDomainAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
@@ -2790,21 +2789,6 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
     return hr;
 }
 
-// ----------------------------------------------------------------------------
-// CordbThread::SetCreateEventQueued
-void CordbThread::SetCreateEventQueued()
-{
-    m_fCreationEventQueued = true;
-}
-
-// ----------------------------------------------------------------------------
-// CordbThread::CreateEventWasQueued
-bool CordbThread::CreateEventWasQueued()
-{
-    return m_fCreationEventQueued;
-}
-
-
 #ifdef FEATURE_INTEROP_DEBUGGING
 /* ------------------------------------------------------------------------- *
  * Unmanaged Thread classes
@@ -3019,11 +3003,11 @@ HRESULT CordbUnmanagedThread::RestoreLeafSeh()
 #endif
 
 // Read the contents from the LS's Predefined TLS block.
-// This is an auxillary TLS storage array-of-void*, indexed off the TLS.
+// This is an auxiliary TLS storage array-of-void*, indexed off the TLS.
 // pRead is optional. This makes sense when '0' is a valid default value.
 // 1) On success (block exists in LS, we can read it),
 //    return value of data in the slot, *pRead = true
-// 2) On failure to read block (block doens't exist yet, any other failure)
+// 2) On failure to read block (block doesn't exist yet, any other failure)
 //    return value == 0 (assumed default, *pRead = false
 REMOTE_PTR CordbUnmanagedThread::GetPreDefTlsSlot(SIZE_T offset)
 {
@@ -3107,7 +3091,7 @@ HRESULT CordbUnmanagedThread::GetTlsSlot(DWORD slot, REMOTE_PTR * pValue)
 //
 // Notes:
 //   This is very brittle because the OS can lazily allocates storage for TLS slots.
-//   In order to gaurantee the storage is available, it must have been written to by the debuggee.
+//   In order to guarantee the storage is available, it must have been written to by the debuggee.
 //   For managed threads, that's easy because the Thread* is already written to the slot.
 //   But for pure native threads where GetThread() == NULL, the storage may not yet be allocated.
 //
@@ -3542,14 +3526,14 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
     // 3) The original context present when the hijack was started
     //
     // Both #1 and #3 are stored in the GetHijackCtx() space so of course you can't
-    // have them both. You have have #1 if IsContextSet() is true, otherwise it holds #3
+    // have them both. You have #1 if IsContextSet() is true, otherwise it holds #3.
     //
     // GenericHijack, FirstChanceHijackForSync, and RaiseExceptionHijack use #1 if available
     // and fallback to #3 if not. In other words they use GetHijackCtx() regardless of which thing it holds
     // M2UHandoff uses #1 if available and then falls back to #2.
     //
     // The reasoning here is that the first three hijacks are intended to be transparent. Since
-    // the debugger shouldn't know they are occuring then it shouldn't see changes potentially
+    // the debugger shouldn't know they are occurring then it shouldn't see changes potentially
     // made on the LS. The M2UHandoff is not transparent, it has to update the context in order
     // to get clear of a bp.
     //
@@ -4389,7 +4373,7 @@ void CordbUnmanagedThread::SaveRaiseExceptionEntryContext()
         return;
     }
 
-    // If everything was succesful then set this flag, otherwise none of the above data is considered valid
+    // If everything was successful then set this flag, otherwise none of the above data is considered valid
     SetState(CUTS_HasRaiseExceptionEntryCtx);
     return;
 }
@@ -5265,7 +5249,7 @@ CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
         // Find the module of the function.  Note that this module isn't necessarily in the same domain as our frame.
         // FuncEval frames can point to methods they are going to invoke in another domain.
         CordbModule * pModule = NULL;
-        pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmDomainFile);
+        pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmDomainAssembly);
         _ASSERTE(pModule != NULL);
 
         //
@@ -6078,7 +6062,7 @@ HRESULT CordbNativeFrame::IsChild(BOOL * pIsChild)
 //
 // Arguments:
 //    pPotentialParentFrame - the ICDNativeFrame2 to check
-//    pIsParent             - out paramter; returns whether the specified frame is indeed the parent frame
+//    pIsParent             - out parameter; returns whether the specified frame is indeed the parent frame
 //
 // Return Value:
 //    S_OK on success.
@@ -6900,7 +6884,7 @@ CordbNativeFrame::GetLocalMemoryValue(CORDB_ADDRESS address,
     _ASSERTE(m_nativeCode->GetFunction() != NULL);
     HRESULT hr = S_OK;
 
-    ICorDebugValue *pValue;
+    ICorDebugValue *pValue = NULL;
     EX_TRY
     {
         CordbValue::CreateValueByType(GetCurrentAppDomain(),
@@ -8112,7 +8096,7 @@ HRESULT CordbJITILFrame::FabricateNativeInfo(DWORD dwIndex,
             IfFailThrow(pArgType->GetUnboxedObjectSize(&cbType));
 
 #if defined(TARGET_X86) // STACK_GROWS_DOWN_ON_ARGS_WALK
-            // The the rpCur pointer starts off in the right spot for the
+            // The rpCur pointer starts off in the right spot for the
             // first argument, but thereafter we have to decrement it
             // before getting the variable's location from it.  So increment
             // it here to be consistent later.
@@ -8343,6 +8327,9 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                                                        type, ppValue);
 #elif defined(TARGET_ARM64)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_ARM64_V0,
+                                                       type, ppValue);
+#elif defined(TARGET_LOONGARCH64)
+        hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_LOONGARCH64_F0,
                                                        type, ppValue);
 #else
 #error Platform not implemented
@@ -8780,6 +8767,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister floatRegister = REGISTER_ARM64_V0;
 #elif  defined(TARGET_ARM)
     const CorDebugRegister floatRegister = REGISTER_ARM_D0;
+#elif  defined(TARGET_LOONGARCH64)
+    const CorDebugRegister floatRegister = REGISTER_LOONGARCH64_F0;
 #endif
 
 #if defined(TARGET_X86)
@@ -8792,7 +8781,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
 #elif  defined(TARGET_ARM)
     const CorDebugRegister ptrRegister = REGISTER_ARM_R0;
     const CorDebugRegister ptrHighWordRegister = REGISTER_ARM_R1;
-
+#elif  defined(TARGET_LOONGARCH64)
+    const CorDebugRegister ptrRegister = REGISTER_LOONGARCH64_A0;
 #endif
 
     CorElementType corReturnType = pType->GetElementType();
@@ -9661,7 +9651,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
         event.FuncEval.funcEvalType = m_evalType;
         event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-        event.FuncEval.vmDomainFile = m_function->GetModule()->GetRuntimeDomainFile();
+        event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
         event.FuncEval.funcEvalKey = hFuncEval.Ptr();
         event.FuncEval.argCount = nArgs;
         event.FuncEval.genericArgsCount = nTypeArgs;
@@ -9844,7 +9834,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-    event.FuncEval.vmDomainFile = m_function->GetModule()->GetRuntimeDomainFile();
+    event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = nArgs;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -9945,7 +9935,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = (mdTypeDef)m_class->m_id;
-    event.FuncEval.vmDomainFile = m_class->GetModule()->GetRuntimeDomainFile();
+    event.FuncEval.vmDomainAssembly = m_class->GetModule()->GetRuntimeDomainAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10040,7 +10030,7 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainFile = VMPTR_DomainFile::NullPtr();
+    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 0;
     event.FuncEval.genericArgsNodeCount = 0;
@@ -10157,7 +10147,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainFile = VMPTR_DomainFile::NullPtr();
+    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 1;
 
@@ -10559,7 +10549,7 @@ HRESULT CordbEval::CreateValueForType(ICorDebugType *   pIType,
 /* ------------------------------------------------------------------------- *
  * CordbEval2
  *
- *   Extentions to the CordbEval class for Whidbey
+ *   Extensions to the CordbEval class for Whidbey
  *
  * ------------------------------------------------------------------------- */
 

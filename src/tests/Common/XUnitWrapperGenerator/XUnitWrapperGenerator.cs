@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -26,12 +27,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         && method.AttributeLists.Count > 0,
                 static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node)!);
 
-        var methodsInReferencedAssemblies = context.MetadataReferencesProvider.Combine(context.CompilationProvider).SelectMany((data, ct) =>
-        {
-            ExternallyReferencedTestMethodsVisitor visitor = new();
-            return visitor.Visit(data.Right.GetAssemblyOrModuleSymbol(data.Left))!;
-        });
-
         var outOfProcessTests = context.AdditionalTextsProvider.Combine(context.AnalyzerConfigOptionsProvider).SelectMany((data, ct) =>
         {
             var (file, options) = data;
@@ -51,8 +46,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             return ImmutableArray<ITestInfo>.Empty;
         });
 
-        var allMethods = methodsInSource.Collect().Combine(methodsInReferencedAssemblies.Collect()).SelectMany((methods, ct) => methods.Left.AddRange(methods.Right));
-
         var aliasMap = context.CompilationProvider.Select((comp, ct) =>
         {
             var aliasMap = ImmutableDictionary.CreateBuilder<string, string>();
@@ -69,21 +62,55 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         var alwaysWriteEntryPoint = context.CompilationProvider.Select((comp, ct) => comp.Options.OutputKind == OutputKind.ConsoleApplication && comp.GetEntryPoint(ct) is null);
 
-        context.RegisterImplementationSourceOutput(
-            allMethods
+        var testsInSource =
+            methodsInSource
             .Combine(context.AnalyzerConfigOptionsProvider)
             .Combine(aliasMap)
-            .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left.Left, data.Left.Right, data.Right)))
-            .Collect()
-            .Combine(outOfProcessTests.Collect())
-            .Select((tests, ct) => tests.Left.AddRange(tests.Right))
+            .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left.Left, data.Left.Right, data.Right)));
+
+        var pathsForReferences = context
+            .AdditionalTextsProvider
             .Combine(context.AnalyzerConfigOptionsProvider)
-            .Select((data, ct) =>
+            .Select((data, ct) => new KeyValuePair<string, string?>(data.Left.Path, data.Right.GetOptions(data.Left).SingleTestDisplayName()))
+            .Where(data => data.Value is not null)
+            .Collect()
+            .Select((paths, ct) => ImmutableDictionary.CreateRange(paths))
+            .WithComparer(new ImmutableDictionaryValueComparer<string, string?>(EqualityComparer<string?>.Default));
+
+        var testsInReferencedAssemblies = context
+            .MetadataReferencesProvider
+            .Combine(context.CompilationProvider)
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Combine(pathsForReferences)
+            .Combine(aliasMap)
+            .SelectMany((data, ct) =>
             {
-                var (tests, options) = data;
-                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter() ?? "");
-                return (ImmutableArray.CreateRange(tests.Where(test => filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>()))), options);
+                var ((((reference, compilation), configOptions), paths), aliasMap) = data;
+                ExternallyReferencedTestMethodsVisitor visitor = new();
+                IEnumerable<IMethodSymbol> testMethods = visitor.Visit(compilation.GetAssemblyOrModuleSymbol(reference))!;
+                ImmutableArray<ITestInfo> tests = ImmutableArray.CreateRange(testMethods.SelectMany(method => GetTestMethodInfosForMethod(method, configOptions, aliasMap)));
+                if (tests.Length == 1 && reference is PortableExecutableReference { FilePath: string pathOnDisk } && paths.TryGetValue(pathOnDisk, out string? referencePath))
+                {
+                    // If we only have one test in the module and we have a display name for the module the test comes from, then rename it to the module name to make on disk discovery easier.
+                    return ImmutableArray.Create((ITestInfo)new TestWithCustomDisplayName(tests[0], referencePath!));
+                }
+                return tests;
+            });
+
+        var allTests = testsInSource.Collect().Combine(testsInReferencedAssemblies.Collect()).Combine(outOfProcessTests.Collect()).SelectMany((tests, ct) => tests.Left.Left.AddRange(tests.Left.Right).AddRange(tests.Right));
+
+        context.RegisterImplementationSourceOutput(
+            allTests
+            .Combine(context.AnalyzerConfigOptionsProvider)
+            .Where(data =>
+            {
+                var (test, options) = data;
+                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter(), null);
+                return filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>());
             })
+            .Select((data, ct) => data.Left)
+            .Collect()
+            .Combine(context.AnalyzerConfigOptionsProvider)
             .Combine(aliasMap)
             .Combine(assemblyName)
             .Combine(alwaysWriteEntryPoint),
@@ -99,11 +126,18 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 }
 
                 bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+                configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
 
-                // TODO: add error (maybe in MSBuild that referencing CoreLib directly from a merged test runner is not supported)
                 if (isMergedTestRunnerAssembly)
                 {
-                    context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
+                    if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
+                    {
+                        context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName));
+                    }
+                    else
+                    {
+                        context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
+                    }
                 }
                 else
                 {
@@ -117,19 +151,107 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         StringBuilder builder = new();
-        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter");
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
-        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = args.Length != 0 ? new XUnitWrapperLibrary.TestFilter(args[0]) : null;");
+        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
+        builder.AppendLine("System.Console.SetOut(outputRecorder);");
 
-        foreach (ITestInfo test in testInfos)
+        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
+
+        StringBuilder testExecutorBuilder = new();
+        int testsLeftInCurrentTestExecutor = 0;
+        int currentTestExecutor = 0;
+        int totalTestsEmitted = 0;
+
+        if (testInfos.Length > 0)
         {
-            builder.AppendLine(test.GenerateTestExecution(reporter));
+            // Break tests into groups of 50 so that we don't create an unreasonably large main method
+            // Excessively large methods are known to take a long time to compile, and use excessive stack
+            // leading to test failures.
+            foreach (ITestInfo test in testInfos)
+            {
+                if (testsLeftInCurrentTestExecutor == 0)
+                {
+                    if (currentTestExecutor != 0)
+                        testExecutorBuilder.AppendLine("}");
+                    currentTestExecutor++;
+                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}();");
+                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empircally seems to work well
+                }
+                testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
+                totalTestsEmitted++;
+                testsLeftInCurrentTestExecutor--;
+            }
+            testExecutorBuilder.AppendLine("}");
         }
 
-        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput());");
+        builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
+        builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
+        builder.AppendLine($@"if (workitemUploadRoot != null) System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
+        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
+        builder.AppendLine("return 100;");
+
+        builder.Append(testExecutorBuilder);
+
+        builder.AppendLine("public static class TestCount { public const int Count = " + totalTestsEmitted.ToString() + "; }");
+        return builder.ToString();
+    }
+
+    private static string GenerateXHarnessTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName)
+    {
+        // For simplicity, we'll use top-level statements for the generated Main method.
+        StringBuilder builder = new();
+        builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+        builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
+
+        builder.AppendLine("try {");
+        builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null, testExclusionList);");
+        builder.AppendLine("} catch(System.Exception ex) { System.Console.WriteLine(ex.ToString()); return 101; }");
+
+        builder.AppendLine("static XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+        builder.AppendLine("{");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
+        builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
+        builder.AppendLine("System.Console.SetOut(outputRecorder);");
+
+        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
+
+        StringBuilder testExecutorBuilder = new();
+        int testsLeftInCurrentTestExecutor = 0;
+        int currentTestExecutor = 0;
+
+        if (testInfos.Length > 0)
+        {
+            // Break tests into groups of 50 so that we don't create an unreasonably large main method
+            // Excessively large methods are known to take a long time to compile, and use excessive stack
+            // leading to test failures.
+            foreach (ITestInfo test in testInfos)
+            {
+                if (testsLeftInCurrentTestExecutor == 0)
+                {
+                    if (currentTestExecutor != 0)
+                        testExecutorBuilder.AppendLine("}");
+                    currentTestExecutor++;
+                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}(XUnitWrapperLibrary.TestSummary summary, XUnitWrapperLibrary.TestFilter filter, XUnitWrapperLibrary.TestOutputRecorder outputRecorder, System.Diagnostics.Stopwatch stopwatch){{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch);");
+                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
+                }
+                testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
+                testsLeftInCurrentTestExecutor--;
+            }
+            testExecutorBuilder.AppendLine("}");
+        }
+
+        builder.AppendLine("return summary;");
+        builder.AppendLine("}");
+
+        builder.Append(testExecutorBuilder);
 
         return builder.ToString();
     }
@@ -284,7 +406,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             testInfos,
                             conditionType,
                             conditionMembers,
-                            aliasMap[conditionType.ContainingAssembly.MetadataName]);
+                            aliasMap[conditionType.ContainingAssembly.MetadataName],
+                            false /* do not negate the condition, as this attribute indicates that a test will be run */);
                         break;
                     }
                 case "Xunit.OuterloopAttribute":
@@ -303,7 +426,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             testInfos,
                             conditionType,
                             filterAttribute.ConstructorArguments[2].Values,
-                            aliasMap[conditionType.ContainingAssembly.MetadataName]);
+                            aliasMap[conditionType.ContainingAssembly.MetadataName],
+                            true /* negate the condition, as this attribute indicates that a test will NOT be run */);
                         break;
                     }
                     else if (filterAttribute.AttributeConstructor.Parameters.Length == 4)
@@ -333,7 +457,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                     break;
                 case "Xunit.SkipOnMonoAttribute":
-                    if (options.GlobalOptions.RuntimeFlavor() != "Mono")
+                    if (options.GlobalOptions.RuntimeFlavor().ToLowerInvariant() != "mono")
                     {
                         // If we're building tests not for Mono, we can skip handling the specifics of the SkipOnMonoAttribute.
                         continue;
@@ -350,7 +474,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[0].Value!);
                     break;
                 case "Xunit.SkipOnCoreClrAttribute":
-                    if (options.GlobalOptions.RuntimeFlavor() != "CoreCLR")
+                    if (options.GlobalOptions.RuntimeFlavor().ToLowerInvariant() != "coreclr")
                     {
                         // If we're building tests not for CoreCLR, we can skip handling the specifics of the SkipOnCoreClrAttribute.
                         continue;
@@ -530,12 +654,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options)
     {
         Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
-        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor();
-        if (runtimeFlavor == "Mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
+        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor().ToLowerInvariant();
+        if (runtimeFlavor == "mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }
-        else if (runtimeFlavor == "CoreCLR" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
+        else if (runtimeFlavor == "coreclr" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }
@@ -585,6 +709,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 "tvos" => Xunit.TestPlatforms.tvOS,
                 "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
                 "browser" => Xunit.TestPlatforms.Browser,
+                "wasi" => Xunit.TestPlatforms.Wasi,
                 "freebsd" => Xunit.TestPlatforms.FreeBSD,
                 "netbsd" => Xunit.TestPlatforms.NetBSD,
                 null or "" or "anyos" => Xunit.TestPlatforms.Any,
@@ -597,9 +722,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         ImmutableArray<ITestInfo> testInfos,
         ITypeSymbol conditionType,
         ImmutableArray<TypedConstant> values,
-        string externAlias)
+        string externAlias,
+        bool negate)
     {
         string condition = string.Join("&&", values.Select(v => $"{externAlias}::{conditionType.ToDisplayString(FullyQualifiedWithoutGlobalNamespace)}.{v.Value}"));
+        if (negate)
+            condition = $"!({condition})";
         return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(m => new ConditionalTest(m, condition)));
     }
 

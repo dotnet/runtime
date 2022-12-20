@@ -155,7 +155,7 @@ namespace System.Linq.Expressions
         /// <returns>An instance of <see cref="DebugInfoExpression"/>.</returns>
         public static DebugInfoExpression DebugInfo(SymbolDocumentInfo document, int startLine, int startColumn, int endLine, int endColumn)
         {
-            ContractUtils.RequiresNotNull(document, nameof(document));
+            ArgumentNullException.ThrowIfNull(document);
             if (startLine == 0xfeefee && startColumn == 0 && endLine == 0xfeefee && endColumn == 0)
             {
                 return new ClearDebugInfoExpression(document);
@@ -172,7 +172,7 @@ namespace System.Linq.Expressions
         /// <returns>An instance of <see cref="DebugInfoExpression"/> for clearing a sequence point.</returns>
         public static DebugInfoExpression ClearDebugInfo(SymbolDocumentInfo document)
         {
-            ContractUtils.RequiresNotNull(document, nameof(document));
+            ArgumentNullException.ThrowIfNull(document);
 
             return new ClearDebugInfoExpression(document);
         }

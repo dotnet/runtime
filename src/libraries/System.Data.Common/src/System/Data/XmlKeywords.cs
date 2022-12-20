@@ -3,10 +3,8 @@
 
 namespace System.Data
 {
-    internal sealed class Keywords
+    internal static class Keywords
     {
-        private Keywords() { /* prevent utility class from being insantiated*/ }
-
         // Keywords for DataSet Namespace
         internal const string DFF = "diffgr";
         internal const string DFFNS = "urn:schemas-microsoft-com:xml-diffgram-v1";

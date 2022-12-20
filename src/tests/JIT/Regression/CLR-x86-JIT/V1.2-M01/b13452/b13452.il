@@ -4,7 +4,6 @@
 .assembly extern mscorlib{}
 .assembly b13452{}
 .assembly extern xunit.core {}
-.module b13452.exe
 
 .class public auto ansi beforefieldinit test extends [mscorlib]System.Object
 {

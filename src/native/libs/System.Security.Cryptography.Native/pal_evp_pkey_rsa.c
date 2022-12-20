@@ -11,6 +11,8 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 {
     assert(currentKey != NULL);
 
+    ERR_clear_error();
+
     EVP_PKEY* pkey = EVP_PKEY_new();
 
     if (pkey == NULL)
@@ -29,6 +31,8 @@ EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 
 EVP_PKEY* CryptoNative_RsaGenerateKey(int keySize)
 {
+    ERR_clear_error();
+
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
 
     if (ctx == NULL)
@@ -99,6 +103,8 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    ERR_clear_error();
+
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
     int ret = -1;
@@ -152,6 +158,8 @@ int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
     assert(destination != NULL);
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
+
+    ERR_clear_error();
 
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
@@ -227,6 +235,8 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    ERR_clear_error();
+
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
     int ret = -1;
@@ -281,6 +291,8 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    ERR_clear_error();
+
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
     int ret = -1;
@@ -295,7 +307,7 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
         goto done;
     }
 
-    // EVP_PKEY_verify is not consistent on whether a mis-sized hash is an error or just a mismatch.
+    // EVP_PKEY_verify is not consistent on whether a missized hash is an error or just a mismatch.
     // Normalize to mismatch.
     if (hashLen != EVP_MD_get_size(digest))
     {
@@ -322,7 +334,7 @@ static int HasNoPrivateKey(const RSA* rsa)
     // Shared pointer, don't free.
     const RSA_METHOD* meth = RSA_get_method(rsa);
 
-    // The method has descibed itself as having the private key external to the structure.
+    // The method has described itself as having the private key external to the structure.
     // That doesn't mean it's actually present, but we can't tell.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"

@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)\Common\tests\TestUtilities.Unicode\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\CaseFolding.txt">
+      <Link>UnicodeData\CaseFolding.txt</Link>
+      <LogicalName>CaseFolding.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\PropList.txt">
+      <Link>UnicodeData\PropList.txt</Link>
+      <LogicalName>PropList.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
+      <Link>UnicodeData\UnicodeData.txt</Link>
+      <LogicalName>UnicodeData.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\auxiliary\GraphemeBreakProperty.txt">
+      <Link>UnicodeData\GraphemeBreakProperty.txt</Link>
+      <LogicalName>GraphemeBreakProperty.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\extracted\DerivedBidiClass.txt">
+      <Link>UnicodeData\DerivedBidiClass.txt</Link>
+      <LogicalName>DerivedBidiClass.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\extracted\DerivedName.txt">
+      <Link>UnicodeData\DerivedName.txt</Link>
+      <LogicalName>DerivedName.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\emoji\emoji-data.txt">
+      <Link>UnicodeData\emoji-data.txt</Link>
+      <LogicalName>emoji-data.txt</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+  </ItemGroup>
+
+</Project>

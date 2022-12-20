@@ -10,9 +10,10 @@ using System.Reflection.Emit;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(
+        public override Func<object>? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             Debug.Assert(type != null);
@@ -49,17 +50,22 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 generator.Emit(OpCodes.Newobj, realMethod);
+                if (type.IsValueType)
+                {
+                    // Since C# 10 it's now possible to have parameterless constructors in structs
+                    generator.Emit(OpCodes.Box, type);
+                }
             }
 
             generator.Emit(OpCodes.Ret);
 
-            return (JsonTypeInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonTypeInfo.ConstructorDelegate));
+            return CreateDelegate<Func<object>>(dynamicMethod);
         }
 
-        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
+        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
             CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
 
-        private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor)
+        private static DynamicMethod CreateParameterizedConstructor(ConstructorInfo constructor)
         {
             Type? type = constructor.DeclaringType;
 
@@ -69,11 +75,6 @@ namespace System.Text.Json.Serialization.Metadata
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
-
-            if (parameterCount > JsonConstants.MaxParameterCount)
-            {
-                return null;
-            }
 
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
@@ -89,7 +90,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Type paramType = parameters[i].ParameterType;
 
                 generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(OpCodes.Ldc_I4_S, i);
+                generator.Emit(OpCodes.Ldc_I4, i);
                 generator.Emit(OpCodes.Ldelem_Ref);
                 generator.Emit(OpCodes.Unbox_Any, paramType);
             }
@@ -173,6 +174,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>() =>
             CreateDelegate<Func<IEnumerable<TElement>, TCollection>>(
                 CreateImmutableEnumerableCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<TElement>)));
@@ -199,6 +201,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>() =>
             CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>>(
                 CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TKey), typeof(TValue), typeof(IEnumerable<KeyValuePair<TKey, TValue>>)));
@@ -389,7 +392,7 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
-        [return: NotNullIfNotNull("method")]
+        [return: NotNullIfNotNull(nameof(method))]
         private static T? CreateDelegate<T>(DynamicMethod? method) where T : Delegate =>
             (T?)method?.CreateDelegate(typeof(T));
     }

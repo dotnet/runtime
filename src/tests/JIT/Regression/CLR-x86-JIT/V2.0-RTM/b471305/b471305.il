@@ -16,7 +16,6 @@
     .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 01 01 00 00 00 00 ) 
 }
 .assembly extern xunit.core {}
-.module b471305.exe
 
 .class sealed Program
 {
@@ -49,7 +48,7 @@
   } 
 
  
-  .method static int32 Main(string[] args)
+  .method static int32 Main()
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

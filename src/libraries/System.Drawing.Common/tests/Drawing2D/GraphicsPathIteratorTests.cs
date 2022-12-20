@@ -63,9 +63,8 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void NextSubpath_PathFigureNotClosed_ReturnsExpeced()
+        public void NextSubpath_PathFigureNotClosed_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath())
             using (GraphicsPathIterator gpi = new GraphicsPathIterator(gp))
@@ -77,7 +76,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void NextSubpath_PathFigureClosed_ReturnsExpeced()
+        public void NextSubpath_PathFigureClosed_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath(_twoPoints, new byte[] { 0, 129 }))
             using (GraphicsPathIterator gpi = new GraphicsPathIterator(gp))
@@ -87,7 +86,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_NullPath_ReturnsExpected()
         {
@@ -98,7 +96,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_FigureNotClosed_ReturnsExpected()
         {
@@ -114,7 +111,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void NextSubpath_FigureClosed_ReturnsExpeced()
+        public void NextSubpath_FigureClosed_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath(_twoPoints, new byte[] { 0, 129 }))
             using (GraphicsPathIterator gpi = new GraphicsPathIterator(gp))
@@ -239,7 +236,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Rewind_Success()
         {
@@ -298,14 +294,14 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        public static IEnumerable<object[]> PointsTypesLenghtMismatch_TestData()
+        public static IEnumerable<object[]> PointsTypesLengthMismatch_TestData()
         {
             yield return new object[] { new PointF[1], new byte[2] };
             yield return new object[] { new PointF[2], new byte[1] };
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [MemberData(nameof(PointsTypesLenghtMismatch_TestData))]
+        [MemberData(nameof(PointsTypesLengthMismatch_TestData))]
         public void Enumerate_PointsTypesMismatch_ThrowsArgumentException(PointF[] points, byte[] types)
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -334,7 +330,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [MemberData(nameof(PointsTypesLenghtMismatch_TestData))]
+        [MemberData(nameof(PointsTypesLengthMismatch_TestData))]
         public void CopyData_PointsTypesMismatch_ThrowsArgumentException(PointF[] points, byte[] types)
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -379,7 +375,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(CopyData_StartEndIndexesOutOfRange_TestData))]
-        public void CopyData_StartEndIndexesOutOfRange_ReturnsExpeced(PointF[] points, byte[] types, int startIndex, int endIndex)
+        public void CopyData_StartEndIndexesOutOfRange_ReturnsExpected(PointF[] points, byte[] types, int startIndex, int endIndex)
         {
             PointF[] resultPoints = new PointF[points.Length];
             byte[] resultTypes = new byte[points.Length];
@@ -392,7 +388,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void CopyData_EqualStartEndIndexes_ReturnsExpeced()
+        public void CopyData_EqualStartEndIndexes_ReturnsExpected()
         {
             PointF[] points = new PointF[] { new PointF(1f, 1f), new PointF(2f, 2f), new PointF(3f, 3f), new PointF(4f, 4f) };
             byte[] types = new byte[] { 0, 3, 3, 3 };

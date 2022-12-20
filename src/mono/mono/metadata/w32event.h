@@ -8,7 +8,7 @@
 #include <config.h>
 #include <glib.h>
 
-#include "object.h"
+#include <mono/metadata/object.h>
 #include "object-internals.h"
 #include "w32handle.h"
 #include <mono/metadata/icalls.h>

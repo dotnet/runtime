@@ -71,8 +71,7 @@ namespace System.Xml.Linq
         /// </returns>
         public static XName Get(string expandedName)
         {
-            if (expandedName == null) throw new ArgumentNullException(nameof(expandedName));
-            if (expandedName.Length == 0) throw new ArgumentException(SR.Format(SR.Argument_InvalidExpandedName, expandedName));
+            ArgumentException.ThrowIfNullOrEmpty(expandedName);
             if (expandedName[0] == '{')
             {
                 int i = expandedName.LastIndexOf('}');
@@ -102,7 +101,7 @@ namespace System.Xml.Linq
         /// <param name="expandedName">A string containing an expanded XML name in the format: {namespace}localname.</param>
         /// <returns>An XName object constructed from the expanded name.</returns>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("expandedName")]
+        [return: NotNullIfNotNull(nameof(expandedName))]
         public static implicit operator XName?(string? expandedName)
         {
             return expandedName != null ? Get(expandedName) : null;

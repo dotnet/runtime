@@ -19,13 +19,25 @@ namespace NativeExports
             return input;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "bool_return_as_uint")]
+        [UnmanagedCallersOnly(EntryPoint = "winbool_return_as_uint")]
         public static uint ReturnUIntAsUInt(uint input)
         {
             return input;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "bool_return_as_refuint")]
+        [UnmanagedCallersOnly(EntryPoint = "uint_return_as_refbool")]
+        public static void ReturnUIntAsRefByte(uint input, byte* res)
+        {
+            *res = (byte)input;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "uint_return_as_refvariantbool")]
+        public static void ReturnUIntAsRefUShort(uint input, ushort* res)
+        {
+            *res = (ushort)input;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "uint_return_as_refwinbool")]
         public static void ReturnUIntAsRefUInt(uint input, uint* res)
         {
             *res = input;

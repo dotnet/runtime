@@ -583,11 +583,10 @@ namespace System.Net.Sockets.Tests
 
                 Assert.Equal(acceptBufferDataSize, acceptArgs.BytesTransferred);
 
-                AssertExtensions.SequenceEqual(sendBuffer, acceptArgs.Buffer.AsSpan().Slice(0, acceptArgs.BytesTransferred));
+                AssertExtensions.SequenceEqual(sendBuffer, acceptArgs.Buffer.AsSpan(0, acceptArgs.BytesTransferred));
             }
         }
 
-        [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithTooSmallReceiveBuffer_Failure()
@@ -604,7 +603,7 @@ namespace System.Net.Sockets.Tests
                 byte[] buffer = new byte[1];
                 acceptArgs.SetBuffer(buffer, 0, buffer.Length);
 
-                AssertExtensions.Throws<ArgumentException>(null, () => server.AcceptAsync(acceptArgs));
+                AssertExtensions.Throws<ArgumentException>("Count", () => server.AcceptAsync(acceptArgs));
             }
         }
 

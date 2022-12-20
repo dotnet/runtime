@@ -11,7 +11,7 @@ namespace System.Linq.Tests
 {
     public partial class ToLookupTests : EnumerableTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(DebuggerAttributesValid_Data))]
         public void DebuggerAttributesValid<TKey, TElement>(ILookup<TKey, TElement> lookup)
         {

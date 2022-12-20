@@ -10,7 +10,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(10, -1, int.MaxValue)]
         [InlineData(10, 6, -1)]
-        public static void MemoryStream_Ctor_NegativeIndeces(int arraySize, int index, int count)
+        public static void MemoryStream_Ctor_NegativeIndices(int arraySize, int index, int count)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new MemoryStream(new byte[arraySize], index, count));
         }
@@ -18,7 +18,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(1, 2, 1)]
         [InlineData(7, 8, 2)]
-        public static void MemoryStream_Ctor_OutOfRangeIndeces(int arraySize, int index, int count)
+        public static void MemoryStream_Ctor_OutOfRangeIndices(int arraySize, int index, int count)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new MemoryStream(new byte[arraySize], index, count));
         }

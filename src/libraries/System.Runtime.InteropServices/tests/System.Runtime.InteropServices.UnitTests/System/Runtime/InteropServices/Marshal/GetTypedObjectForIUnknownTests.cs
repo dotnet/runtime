@@ -63,9 +63,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new KeyValuePair<string, int>("key", 10), typeof(ValueType) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetTypedObjectForIUnknown_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetTypedObjectForIUnknown_ValidPointer_ReturnsExpected(object o, Type type)
         {
             IntPtr ptr = Marshal.GetIUnknownForObject(o);
@@ -86,15 +85,13 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetTypedObjectForIUnknown(IntPtr.Zero, typeof(int)));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypedObjectForIUnknown_ZeroUnknown_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.GetTypedObjectForIUnknown(IntPtr.Zero, typeof(int)));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypedObjectForIUnknown_NullType_ThrowsArgumentNullException()
         {
             IntPtr iUnknown = Marshal.GetIUnknownForObject(new object());
@@ -122,9 +119,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeBuilder };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetTypedObjectForIUnknown_Invalid_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetTypedObjectForIUnknown_InvalidType_ThrowsArgumentException(Type type)
         {
             IntPtr ptr = Marshal.GetIUnknownForObject(new object());
@@ -158,9 +154,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new object(), collectibleType };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetTypedObjectForIUnknownType_UncastableObject_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetTypedObjectForIUnknown_UncastableObject_ThrowsInvalidCastException(object o, Type type)
         {
             IntPtr ptr = Marshal.GetIUnknownForObject(o);
@@ -181,9 +176,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new int[,] { { 10 } } };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetTypedObjectForIUnknown_ArrayObjects_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetTypedObjectForIUnknown_ArrayType_ThrowsBadImageFormatException(object o)
         {
             IntPtr ptr = Marshal.GetIUnknownForObject(o);

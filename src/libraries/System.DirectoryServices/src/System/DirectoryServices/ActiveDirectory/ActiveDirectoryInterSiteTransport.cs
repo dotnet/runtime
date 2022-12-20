@@ -27,8 +27,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static ActiveDirectoryInterSiteTransport FindByTransportType(DirectoryContext context, ActiveDirectoryTransportType transport)
         {
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
+            ArgumentNullException.ThrowIfNull(context);
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
             if ((context.Name == null) && (!context.isRootDomain()))
@@ -350,8 +349,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (_cachedEntry != null)
-                    _cachedEntry.Dispose();
+                _cachedEntry?.Dispose();
             }
 
             // free your own state (unmanaged objects)

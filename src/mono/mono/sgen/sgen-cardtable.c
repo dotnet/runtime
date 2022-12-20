@@ -95,7 +95,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gconstpointer src_ptr
 				sgen_card_table_mark_address ((mword)dest);
 			sgen_dummy_use (value);
 		}
-	}	
+	}
 }
 
 static void
@@ -130,8 +130,10 @@ sgen_card_table_wbarrier_object_copy (GCObject* obj, GCObject *src)
 static void
 sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 {
-	sgen_card_table_mark_address ((mword)ptr);	
+	sgen_card_table_mark_address ((mword)ptr);
 }
+
+MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
 
 static void
 sgen_card_table_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
@@ -162,6 +164,8 @@ sgen_card_table_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int siz
 		size -= SIZEOF_VOID_P;
 	}
 }
+
+MONO_RESTORE_WARNING
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
@@ -293,9 +297,8 @@ sgen_card_table_find_address_with_cards (char *cards_start, guint8 *cards, char 
 static void
 update_mod_union (guint8 *dest, guint8 *start_card, size_t num_cards)
 {
-	int i;
 	/* Marking from another thread can happen while we mark here */
-	for (i = 0; i < num_cards; ++i) {
+	for (gsize i = 0; i < num_cards; ++i) {
 		if (start_card [i])
 			dest [i] = 1;
 	}
@@ -594,9 +597,9 @@ sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, 
 	HEAVY_STAT (++bloby_objects);
 	if (cards) {
 		if (sgen_card_table_is_range_marked (cards, (mword)obj, block_obj_size))
-			ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
+			ctx.ops->scan_object (obj, sgen_obj_get_descriptor_safe (obj), ctx.queue);
 	} else if (sgen_card_table_region_begin_scanning ((mword)obj, block_obj_size)) {
-		ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
+		ctx.ops->scan_object (obj, sgen_obj_get_descriptor_safe (obj), ctx.queue);
 	}
 
 	sgen_binary_protocol_card_scan (obj, sgen_safe_object_get_size (obj));

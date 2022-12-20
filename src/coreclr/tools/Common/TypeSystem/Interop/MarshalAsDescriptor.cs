@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-using System;
+using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
@@ -48,17 +47,39 @@ namespace Internal.TypeSystem
 
     public class MarshalAsDescriptor
     {
+        private TypeDesc _marshallerType;
+        private string _cookie;
+
         public NativeTypeKind Type { get; }
         public NativeTypeKind ArraySubType { get; }
         public uint? SizeParamIndex { get; }
         public uint? SizeConst { get; }
+        public TypeDesc MarshallerType
+        {
+            get
+            {
+                Debug.Assert(Type == NativeTypeKind.CustomMarshaler, "Marshaller type can be set only when using for CustomMarshaller");
+                return _marshallerType;
+            }
+        }
 
-        public MarshalAsDescriptor(NativeTypeKind type, NativeTypeKind arraySubType, uint? sizeParamIndex, uint? sizeConst)
+        public string Cookie
+        {
+            get
+            {
+                Debug.Assert(Type == NativeTypeKind.CustomMarshaler, "Cookie can be set only when using for CustomMarshaller");
+                return _cookie;
+            }
+        }
+
+        public MarshalAsDescriptor(NativeTypeKind type, NativeTypeKind arraySubType, uint? sizeParamIndex, uint? sizeConst, TypeDesc customMarshallerType, string cookie)
         {
             Type = type;
             ArraySubType = arraySubType;
             SizeParamIndex = sizeParamIndex;
             SizeConst = sizeConst;
+            _marshallerType = customMarshallerType;
+            _cookie = cookie;
         }
     }
 }

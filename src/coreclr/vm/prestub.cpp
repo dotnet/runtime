@@ -90,8 +90,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 
     // Only take the lock if the method is versionable with vtable slot backpatch, for recording slots and synchronizing with
     // backpatching slots
-    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
-        isVersionableWithVtableSlotBackpatch);
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(isVersionableWithVtableSlotBackpatch);
 
     // Get the method entry point inside the lock above to synchronize with backpatching in
     // MethodDesc::BackpatchEntryPointSlots()
@@ -256,7 +255,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 // <TODO> FIX IN BETA 2
 //
 // g_pNotificationTable is only modified by the DAC and therefore the
-// optmizer can assume that it will always be its default value and has
+// optimizer can assume that it will always be its default value and has
 // been seen to (on IA64 free builds) eliminate the code in DACNotifyCompilationFinished
 // such that DAC notifications are no longer sent.
 //
@@ -365,9 +364,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         if (codeVersion.IsDefaultVersion())
         {
             pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-            _ASSERTE(codeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
+            _ASSERTE(codeVersion.IsFinalTier());
         }
-        else if (codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+        else if (!codeVersion.IsFinalTier())
         {
             codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         }
@@ -388,18 +387,14 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
                 DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
                 if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
                 {
-                    ILStubResolver* pStubResolver = stubMethodDesc->GetILStubResolver();
-                    if (pStubResolver->GetStubType() == ILStubResolver::CLRToNativeInteropStub)
+                    MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
+                    if (pTargetMD != NULL)
                     {
-                        MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                        if (pTargetMD != NULL)
+                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
+                        if (pCode != NULL)
                         {
-                            pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                            if (pCode != NULL)
-                            {
-                                LOG_USING_R2R_CODE(this);
-                                pConfig->SetNativeCode(pCode, &pCode);
-                            }
+                            LOG_USING_R2R_CODE(this);
+                            pConfig->SetNativeCode(pCode, &pCode);
                         }
                     }
                 }
@@ -435,9 +430,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         DACNotifyCompilationFinished(this, pCode);
     }
 
-    // Mark the code as hot in case the method ends up in the native image
-    g_IBCLogger.LogMethodCodeAccess(this);
-
     return pCode;
 }
 
@@ -446,58 +438,49 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
 
+#ifdef FEATURE_READYTORUN
+    pCode = GetPrecompiledR2RCode(pConfig);
     if (pCode != NULL)
     {
-    #ifdef FEATURE_CODE_VERSIONING
-        pConfig->SetGeneratedOrLoadedNewCode();
-    #endif
-    }
-#ifdef FEATURE_READYTORUN
-    else
-    {
-        pCode = GetPrecompiledR2RCode(pConfig);
-        if (pCode != NULL)
+        LOG_USING_R2R_CODE(this);
+
+#ifdef FEATURE_TIERED_COMPILATION
+        // Finalize the optimization tier before SetNativeCode() is called
+        bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
+#endif
+
+        if (pConfig->SetNativeCode(pCode, &pCode))
         {
-            LOG_USING_R2R_CODE(this);
-
-#ifdef FEATURE_TIERED_COMPILATION
-            // Finalize the optimization tier before SetNativeCode() is called
-            bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
-#endif
-
-            if (pConfig->SetNativeCode(pCode, &pCode))
-            {
 #ifdef FEATURE_CODE_VERSIONING
-                pConfig->SetGeneratedOrLoadedNewCode();
+            pConfig->SetGeneratedOrLoadedNewCode();
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
-                if (shouldCountCalls)
-                {
-                    _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
-                    pConfig->SetShouldCountCalls();
-                }
+            if (shouldCountCalls)
+            {
+                _ASSERTE(!pConfig->GetCodeVersion().IsFinalTier());
+                pConfig->SetShouldCountCalls();
+            }
 #endif
 
 #ifdef FEATURE_MULTICOREJIT
-                // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
-                // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
-                // of R2R code are also recorded.
-                if (pConfig->NeedsMulticoreJitNotification())
-                {
-                    _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
-                    _ASSERTE(!pConfig->IsForMulticoreJit());
+            // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
+            // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
+            // of R2R code are also recorded.
+            if (pConfig->NeedsMulticoreJitNotification())
+            {
+                _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
+                _ASSERTE(!pConfig->IsForMulticoreJit());
 
-                    MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-                    if (mcJitManager.IsRecorderActive())
+                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+                if (mcJitManager.IsRecorderActive())
+                {
+                    if (MulticoreJitManager::IsMethodSupported(this))
                     {
-                        if (MulticoreJitManager::IsMethodSupported(this))
-                        {
-                            mcJitManager.RecordMethodJitOrLoad(this);
-                        }
+                        mcJitManager.RecordMethodJitOrLoad(this);
                     }
                 }
-#endif
             }
+#endif
         }
     }
 #endif // FEATURE_READYTORUN
@@ -511,21 +494,39 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 
     PCODE pCode = NULL;
 #ifdef FEATURE_READYTORUN
+    ReadyToRunInfo* pAlreadyExaminedInfos[2] = {NULL, NULL};
     Module * pModule = GetModule();
     if (pModule->IsReadyToRun())
     {
-        pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+        pAlreadyExaminedInfos[0] = pModule->GetReadyToRunInfo();
+        pCode = pAlreadyExaminedInfos[0]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
     }
 
-    // Lookup in the entry point assembly for a R2R entrypoint (generics with large version bubble enabled)
-    if (pCode == NULL && HasClassOrMethodInstantiation() && SystemDomain::System()->DefaultDomain()->GetRootAssembly() != NULL)
+    //  Generics may be located in several places
+    if (pCode == NULL && HasClassOrMethodInstantiation())
     {
-        pModule = SystemDomain::System()->DefaultDomain()->GetRootAssembly()->GetManifestModule();
-        _ASSERT(pModule != NULL);
+        // Generics have an alternative location that is looked up which is based on the first generic
+        // argument that the crossgen2 compiler will consider as requiring the cross module compilation logic to kick in.
+        pAlreadyExaminedInfos[1] = ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(this);
 
-        if (pModule->IsReadyToRun() && pModule->IsInSameVersionBubble(GetModule()))
+        if (pAlreadyExaminedInfos[1] != NULL &&  pAlreadyExaminedInfos[1] != pAlreadyExaminedInfos[0])
         {
-            pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+            pCode = pAlreadyExaminedInfos[1]->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+        }
+
+        if (pCode == NULL)
+        {
+            // R2R also supports a concept of R2R code that has code for "Unrelated" generics embedded within it
+            // A linked list of these are formed as those modules are loaded, and this restricted set of modules
+            // is examined for all generic method lookups
+            ReadyToRunInfo* pUnrelatedInfo = ReadyToRunInfo::GetUnrelatedR2RModules();
+            for (;pUnrelatedInfo != NULL && pCode == NULL; pUnrelatedInfo = pUnrelatedInfo->GetNextUnrelatedR2RModule())
+            {
+                if (pUnrelatedInfo == pAlreadyExaminedInfos[0]) continue;
+                if (pUnrelatedInfo == pAlreadyExaminedInfos[1]) continue;
+
+                pCode = pUnrelatedInfo->GetEntryPoint(this, pConfig, TRUE /* fFixups */);
+            }
         }
     }
 #endif
@@ -1224,6 +1225,12 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
                 case NativeCodeVersion::OptimizationTierOptimized:
                     return JitOptimizationTier::Optimized;
 
+                case NativeCodeVersion::OptimizationTier0Instrumented:
+                    return JitOptimizationTier::InstrumentedTier;
+
+                case NativeCodeVersion::OptimizationTier1Instrumented:
+                    return JitOptimizationTier::InstrumentedTierOptimized;
+
                 default:
                     UNREACHABLE();
             }
@@ -1246,6 +1253,8 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
         case JitOptimizationTier::QuickJitted: return "QuickJitted";
         case JitOptimizationTier::OptimizedTier1: return "OptimizedTier1";
         case JitOptimizationTier::OptimizedTier1OSR: return "OptimizedTier1OSR";
+        case JitOptimizationTier::InstrumentedTier: return "InstrumentedTier";
+        case JitOptimizationTier::InstrumentedTierOptimized: return "InstrumentedTierOptimized";
 
         default:
             UNREACHABLE();
@@ -1295,6 +1304,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         NativeCodeVersion::OptimizationTier previousOptimizationTier = GetCodeVersion().GetOptimizationTier();
         _ASSERTE(
             previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
+            previousOptimizationTier == NativeCodeVersion::OptimizationTier0Instrumented ||
             previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
     #endif // _DEBUG
 
@@ -1682,7 +1692,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
     }
     else
 #endif
@@ -1755,7 +1765,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap());
+        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD);
     }
     else
 #endif
@@ -2019,9 +2029,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
     MethodTable *pMT = GetMethodTable();
 
-    // Running a prestub on a method causes us to access its MethodTable
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (ContainsGenericVariables())
     {
         COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);
@@ -2080,7 +2087,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     // they are not your every day method descriptors, for example
     // they don't have an IL or code.
     */
-    if (IsComPlusCall() || IsGenericComPlusCall())
+    if (IsComPlusCall())
     {
         pCode = GetStubForInteropMethod(this);
 
@@ -2262,10 +2269,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 // use the prestub.
 //==========================================================================
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-static PCODE g_UMThunkPreStub;
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
-
 #ifndef DACCESS_COMPILE
 
 void ThePreStubManager::Init(void)
@@ -2286,10 +2289,6 @@ void InitPreStubManager(void)
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    g_UMThunkPreStub = GenerateUMThunkPrestub()->GetEntryPoint();
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
-
     ThePreStubManager::Init();
 }
 
@@ -2297,18 +2296,14 @@ PCODE TheUMThunkPreStub()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-    return g_UMThunkPreStub;
-#else  // TARGET_X86 && !FEATURE_STUBS_AS_IL
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 }
 
 PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);
@@ -2320,7 +2315,7 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
     }
 }
 
-static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CORCOMPILE_IMPORT_SECTION pImportSection, TADDR pIndirection)
+static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_READYTORUN_IMPORT_SECTION pImportSection, TADDR pIndirection)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2338,44 +2333,7 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
     }
 #endif //HAS_FIXUP_PRECODE
 
-    if (pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE)
-    {
-        CORCOMPILE_EXTERNAL_METHOD_THUNK * pThunk = (CORCOMPILE_EXTERNAL_METHOD_THUNK *)pIndirection;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-        INT64 oldValue = *(INT64*)pThunk;
-        BYTE* pOldValue = (BYTE*)&oldValue;
-
-        if (pOldValue[0] == X86_INSTR_CALL_REL32)
-        {
-            INT64 newValue = oldValue;
-            BYTE* pNewValue = (BYTE*)&newValue;
-            pNewValue[0] = X86_INSTR_JMP_REL32;
-
-            *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
-
-            _ASSERTE(IS_ALIGNED((size_t)pThunk, sizeof(INT64)));
-            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
-            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
-
-            FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
-        }
-#elif  defined(TARGET_ARM) || defined(TARGET_ARM64)
-        // Patchup the thunk to point to the actual implementation of the cross module external method
-        pThunk->m_pTarget = pCode;
-
-        #if defined(TARGET_ARM)
-        // ThumbBit must be set on the target address
-        _ASSERTE(pCode & THUMB_CODE);
-        #endif
-#else
-        PORTABILITY_ASSERT("ExternalMethodFixupWorker");
-#endif
-    }
-    else
-    {
-        *(TADDR *)pIndirection = pCode;
-    }
+    *(TADDR *)pIndirection = pCode;
 
     return pCode;
 }
@@ -2468,7 +2426,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         RVA rva = pNativeImage->GetDataRva(pIndirection);
 
-        PTR_CORCOMPILE_IMPORT_SECTION pImportSection;
+        PTR_READYTORUN_IMPORT_SECTION pImportSection;
         if (sectionIndex != (DWORD)-1)
         {
             pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
@@ -2480,17 +2438,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
         _ASSERTE(pImportSection != NULL);
 
-        COUNT_T index;
-        if (pImportSection->Flags & CORCOMPILE_IMPORT_FLAGS_CODE)
-        {
-            _ASSERTE(pImportSection->EntrySize == sizeof(CORCOMPILE_EXTERNAL_METHOD_THUNK));
-            index = (rva - pImportSection->Section.VirtualAddress) / sizeof(CORCOMPILE_EXTERNAL_METHOD_THUNK);
-        }
-        else
-        {
-            _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
-            index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
-        }
+        _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
+        COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
 
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
@@ -2498,7 +2447,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
         BYTE kind = *pBlob++;
 
-        Module * pInfoModule = pModule;
+        ModuleBase * pInfoModule = pModule;
         if (kind & ENCODE_MODULE_OVERRIDE)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
@@ -2515,6 +2464,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                                             pInfoModule,
                                             pBlob);
 
+                _ASSERTE(!pMD->GetMethodTable()->IsGenericTypeDefinition() || pMD->GetMethodTable()->GetNumGenericArgs() == 0);
+
                 if (pModule->IsReadyToRun())
                 {
                     // We do not emit activation fixups for version resilient references. Activate the target explicitly.
@@ -2527,7 +2478,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         case ENCODE_METHOD_ENTRY_DEF_TOKEN:
             {
                 mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
-                pMD = MemberLoader::GetMethodDescFromMethodDef(pInfoModule, MethodDef, FALSE);
+                _ASSERTE(pInfoModule->IsFullModule());
+                pMD = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), MethodDef, FALSE);
 
                 pMD->PrepareForUseAsADependencyOfANativeImage();
 
@@ -2586,7 +2538,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         case ENCODE_VIRTUAL_ENTRY_DEF_TOKEN:
             {
                 mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
-                pMD = MemberLoader::GetMethodDescFromMethodDef(pInfoModule, MethodDef, FALSE);
+                _ASSERTE(pInfoModule->IsFullModule());
+                pMD = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), MethodDef, FALSE);
 
                 goto VirtualEntry;
             }
@@ -2885,7 +2838,7 @@ TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
 
 void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock,
                                     Module *                    pModule,
-                                    Module *                    pInfoModule,
+                                    ModuleBase *                pInfoModule,
                                     BYTE                        kind,
                                     PCCOR_SIGNATURE             pBlob,
                                     PCCOR_SIGNATURE             pBlobStart,
@@ -3034,7 +2987,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 
-    PTR_CORCOMPILE_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
     _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
@@ -3048,7 +3001,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     BYTE kind = *pBlob++;
 
-    Module * pInfoModule = pModule;
+    ModuleBase * pInfoModule = pModule;
     if (kind & ENCODE_MODULE_OVERRIDE)
     {
         DWORD moduleIndex = CorSigUncompressData(pBlob);

@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
+    [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
     public class Comhost : IClassFixture<Comhost.SharedTestState>
     {
         private readonly SharedTestState sharedState;
@@ -23,7 +24,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         [InlineData(1, true)]
         [InlineData(10, true)]
         [InlineData(10, false)]
@@ -40,7 +40,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.HaveStdOutContaining("New instance of Server created");
+                .And.HaveStdOutContaining("New instance of Server created")
+                .And.ExecuteInIsolatedContext(sharedState.ComLibraryFixture.TestProject.AssemblyName);
 
             for (var i = 1; i <= count; ++i)
             {
@@ -48,8 +49,47 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ActivateClass_ContextConfig(bool inDefaultContext)
+        {
+            using (var fixture = sharedState.ComLibraryFixture.Copy())
+            {
+                var comHost = Path.Combine(
+                    fixture.TestProject.BuiltApp.Location,
+                    $"{fixture.TestProject.AssemblyName}.comhost.dll");
+
+                RuntimeConfig.FromFile(fixture.TestProject.RuntimeConfigJson)
+                    .WithProperty("System.Runtime.InteropServices.COM.LoadComponentInDefaultContext", inDefaultContext.ToString())
+                    .Save();
+
+                string[] args = {
+                    "comhost",
+                    "synchronous",
+                    "1",
+                    comHost,
+                    sharedState.ClsidString
+                    };
+                CommandResult result = sharedState.CreateNativeHostCommand(args, fixture.BuiltDotnet.BinPath)
+                    .Execute();
+
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("New instance of Server created")
+                    .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.");
+
+                if (inDefaultContext)
+                {
+                    result.Should().ExecuteInDefaultContext(sharedState.ComLibraryFixture.TestProject.AssemblyName);
+                }
+                else
+                {
+                    result.Should().ExecuteInIsolatedContext(sharedState.ComLibraryFixture.TestProject.AssemblyName);
+                }
+            }
+        }
+
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass_IgnoreAppLocalHostFxr()
         {
             using (var fixture = sharedState.ComLibraryFixture.Copy())
@@ -77,7 +117,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void ActivateClass_ValidateIErrorInfoResult()
         {
             using (var fixture = sharedState.ComLibraryFixture.Copy())
@@ -107,7 +146,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
         public void LoadTypeLibraries()
         {
             using (var fixture = sharedState.ComLibraryFixture.Copy())
@@ -185,7 +223,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     ComHostPath,
                     ClsidMapPath,
                     TypeLibraries);
-
             }
 
             protected override void Dispose(bool disposing)

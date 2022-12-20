@@ -239,7 +239,6 @@ namespace System.Reflection.Emit
             return _tb.GetConstructor(bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        [ComVisible(true)]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
@@ -301,7 +300,6 @@ namespace System.Reflection.Emit
             return _tb.GetInterface(name, ignoreCase);
         }
 
-        [ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             return _tb.GetInterfaceMap(interfaceType);
@@ -432,11 +430,13 @@ namespace System.Reflection.Emit
             return _tb.IsDefined(attributeType, inherit);
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return new ArrayType(this, 0);
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             if (rank < 1)
@@ -459,7 +459,6 @@ namespace System.Reflection.Emit
             _tb.SetCustomAttribute(customBuilder);
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));

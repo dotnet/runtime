@@ -95,12 +95,12 @@ test_queue_pop (void)
 
 	data = g_queue_pop_head (queue);
 	if (strcmp ("bar", data))
-		return FAILED ("expect bar.");	
+		return FAILED ("expect bar.");
 
 	data = g_queue_pop_head (queue);
 	if (strcmp ("foo", data))
 		return FAILED ("expect foo.");
-	
+
 	if (g_queue_is_empty (queue) == FALSE)
 		return FAILED ("expect is_empty.");
 

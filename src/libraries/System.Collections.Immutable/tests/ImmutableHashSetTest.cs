@@ -171,7 +171,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { "b" }, setAfterRemovingA);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableHashSet.Create<string>());

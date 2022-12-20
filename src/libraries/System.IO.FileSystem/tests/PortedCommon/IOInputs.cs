@@ -23,7 +23,7 @@ internal static class IOInputs
     // Windows specific, this is the maximum length that can be passed to APIs taking directory names, such as Directory.CreateDirectory & Directory.Move.
     // Does not include the trailing \0.
     // We now do the appropriate wrapping to allow creating longer directories. Like MaxPath, this is a legacy restriction.
-    public static readonly int MaxDirectory = 247;
+    public static readonly int MaxDirectory = OperatingSystem.IsWindows() ? 247 : 258;
 
     public const int MaxComponent = 255;
 

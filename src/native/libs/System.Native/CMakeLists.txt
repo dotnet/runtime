@@ -4,11 +4,18 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
+if (CLR_CMAKE_HOST_ALPINE_LINUX)
+    # Fix up the thread stack size for MUSL to more reasonable size.
+    # TODO: https://github.com/dotnet/runtimelab/issues/791
+    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
+endif ()
+
 if (CLR_CMAKE_TARGET_OSX)
     add_definitions(-D_DARWIN_C_SOURCE)
 endif ()
 
 set(NATIVE_SOURCES
+    pal_dynamicload.c
     pal_errno.c
     pal_interfaceaddresses.c
     pal_io.c
@@ -20,7 +27,6 @@ set(NATIVE_SOURCES
     pal_process.c
     pal_random.c
     pal_runtimeinformation.c
-    pal_runtimeextensions.c
     pal_signal.c
     pal_string.c
     pal_tcpstate.c
@@ -46,8 +52,18 @@ endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
+        pal_datetime.m)
+endif()
+
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES}
         pal_log.m
         pal_searchpath.m)
+elseif (CLR_CMAKE_TARGET_OSX)
+    list (APPEND NATIVE_SOURCES
+        pal_searchpath.m
+        pal_console.c
+        pal_log.c)
 else ()
     list (APPEND NATIVE_SOURCES
         pal_searchpath.c
@@ -71,6 +87,14 @@ include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
 set(NATIVE_LIBS_EXTRA)
 append_extra_system_libs(NATIVE_LIBS_EXTRA)
+
+if (CLR_CMAKE_TARGET_ANDROID AND NOT HAVE_GETIFADDRS)
+    add_definitions(-DANDROID_GETIFADDRS_WORKAROUND)
+    add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
+
+    list (APPEND NATIVE_LIBS_EXTRA -llog)
+    list (APPEND NATIVE_SOURCES pal_ifaddrs.c)
+endif ()
 
 if (GEN_SHARED_LIB)
     add_library(System.Native

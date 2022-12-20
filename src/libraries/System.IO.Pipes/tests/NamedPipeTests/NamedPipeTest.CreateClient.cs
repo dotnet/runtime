@@ -22,8 +22,8 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void EmptyStringPipeName_Throws_ArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream(""));
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream(".", ""));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeClientStream(""));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeClientStream(".", ""));
         }
 
         [Theory]
@@ -123,7 +123,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         public static void InvalidHandle_Throws_ArgumentException(PipeDirection direction)
         {
-            SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
+            using SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
             AssertExtensions.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, pipeHandle));
         }
 

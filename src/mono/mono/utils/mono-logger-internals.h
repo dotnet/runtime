@@ -7,7 +7,7 @@
 
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
-#include "mono-logger.h"
+#include <mono/utils/mono-logger.h>
 
 typedef enum {
 	MONO_TRACE_ASSEMBLY           = 1 << 0,
@@ -45,16 +45,16 @@ mono_trace_init (void);
 MONO_API void
 mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args);
 
-void 
+void
 mono_trace_set_level (GLogLevelFlags level);
 
-void 
+void
 mono_trace_set_mask (MonoTraceMask mask);
 
-void 
+void
 mono_trace_push (GLogLevelFlags level, MonoTraceMask mask);
 
-void 
+void
 mono_trace_pop (void);
 
 MONO_COMPONENT_API

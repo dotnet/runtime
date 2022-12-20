@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ namespace System.Text.Json.Reflection
 {
     internal static partial class ReflectionExtensions
     {
-        public static CustomAttributeData GetCustomAttributeData(this MemberInfo memberInfo, Type type)
+        public static CustomAttributeData? GetCustomAttributeData(this MemberInfo memberInfo, Type type)
         {
             return memberInfo.CustomAttributes.FirstOrDefault(a => type.IsAssignableFrom(a.AttributeType));
         }
@@ -23,7 +23,7 @@ namespace System.Text.Json.Reflection
 
         public static bool IsInitOnly(this MethodInfo method)
         {
-            if (method == null)
+            if (method is null)
             {
                 throw new ArgumentNullException(nameof(method));
             }

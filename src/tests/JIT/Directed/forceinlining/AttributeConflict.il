@@ -18,7 +18,6 @@
 {
 }
 
-.module AttributeConflict.exe
 
 .class public auto ansi beforefieldinit P
        extends [mscorlib]System.Object

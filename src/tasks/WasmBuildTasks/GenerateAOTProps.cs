@@ -25,7 +25,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
         private const string s_originalItemNameMetadata = "OriginalItemName__";
         private const string s_conditionToUseMetadata = "ConditionToUse__";
-        private static readonly HashSet<string> s_metdataNamesToSkip = new()
+        private static readonly HashSet<string> s_metadataNamesToSkip = new()
         {
             "FullPath",
             "RootDir",
@@ -91,7 +91,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                 foreach (string mdName in item.MetadataNames)
                 {
-                    if (!s_metdataNamesToSkip.Contains(mdName))
+                    if (!s_metadataNamesToSkip.Contains(mdName))
                         sb.AppendLine($"\t\t\t{mdName}=\"{item.GetMetadataValueEscaped(mdName)}\"");
                 }
 

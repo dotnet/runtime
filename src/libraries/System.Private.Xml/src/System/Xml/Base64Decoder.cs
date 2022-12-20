@@ -44,22 +44,11 @@ namespace System.Xml
 
         internal override int Decode(char[] chars, int startPos, int len)
         {
-            if (chars == null)
-            {
-                throw new ArgumentNullException(nameof(chars));
-            }
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (startPos < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startPos));
-            }
-            if (chars.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentNullException.ThrowIfNull(chars);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
+            ArgumentOutOfRangeException.ThrowIfNegative(startPos);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(len, chars.Length - startPos);
 
             if (len == 0)
             {
@@ -74,22 +63,11 @@ namespace System.Xml
 
         internal override int Decode(string str, int startPos, int len)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (startPos < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startPos));
-            }
-            if (str.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentNullException.ThrowIfNull(str);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
+            ArgumentOutOfRangeException.ThrowIfNegative(startPos);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(len, str.Length - startPos);
 
             if (len == 0)
             {

@@ -55,7 +55,7 @@ namespace System.Globalization.Tests
             // Slovak
             yield return new object[] { s_slovakCompare, "ch", "h", 0, 1, CompareOptions.None, -1, 0 };
             // Android has its own ICU, which doesn't work well with slovak
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { s_slovakCompare, "hore chodit", "HO", 11, 12, CompareOptions.IgnoreCase, 0, 2 };
             }
@@ -63,7 +63,7 @@ namespace System.Globalization.Tests
 
             // Turkish
             // Android has its own ICU, which doesn't work well with tr
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { s_turkishCompare, "Hi", "I", 1, 2, CompareOptions.IgnoreCase, -1, 0 };
                 yield return new object[] { s_turkishCompare, "Hi", "\u0130", 1, 2, CompareOptions.IgnoreCase, 1, 1 };
@@ -96,8 +96,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, 5, 0};
             yield return new object[] { s_invariantCompare, "hello", "\0", 4, 5, CompareOptions.None, useNls ? -1 : 5, 0};
 
-            yield return new object[] { s_invariantCompare, "A\u0303", "\u200d", 1, 2, CompareOptions.None, 2, 0}; // A +  ̃ = Ã
-            yield return new object[] { s_invariantCompare, "A\u0303\u200D", "\u200d", 2, 3, CompareOptions.None, 3, 0}; // A +  ̃ = Ã
+            yield return new object[] { s_invariantCompare, "A\u0303", "\u200d", 1, 2, CompareOptions.None, 2, 0};
+            yield return new object[] { s_invariantCompare, "A\u0303\u200D", "\u200d", 2, 3, CompareOptions.None, 3, 0};
             yield return new object[] { s_invariantCompare, "\u0001F601", "\u200d", 1, 2, CompareOptions.None, 2, 0}; // \u0001F601 is GRINNING FACE WITH SMILING EYES surrogate character
             yield return new object[] { s_invariantCompare, "AA\u200DA", "\u200d", 3, 4, CompareOptions.None, 4, 0};
 

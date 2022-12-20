@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0x3155fdf {}
+.assembly 'b58866' {}
 .assembly extern xunit.core {}
 .class ILGEN_0x3155fdf {
 .method static int32 Method_0xcfd10851(int64 Arg_0x2, int8 Arg_0x3, unsigned int64 Arg_0x5, int8 Arg_0x6) {

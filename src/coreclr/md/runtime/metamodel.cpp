@@ -782,7 +782,7 @@ CMiniMdBase::InitColsForTable(
             // definition templates, only if the fixed field columns appear at the beginning
             // of a table record.
             // Initializing StartOffset and Length (4th and 5th columns of the portable PDB
-            // LocalScope table) can cause assertion to fail at this point, since preceeding
+            // LocalScope table) can cause assertion to fail at this point, since preceding
             // column sizes are determined dynamically (2 or 4 bytes for RIDs depending on the
             // number of records) and cannot be compared against the static template.
 #endif

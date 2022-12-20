@@ -5,13 +5,13 @@
 //
 
 //
-// Make sure that layouts of MD data strucutres doesn't change accidentally
+// Make sure that layouts of MD data structures doesn't change accidentally
 //
 //*****************************************************************************
 
 // The code in MD\DataSource\TargetTypes.* takes a direct dependency on
 // the layouts of types in MD. This is used by the debugger to read metadata
-// from a seperate process by deserializing the memory for these datastructures.
+// from a separate process by deserializing the memory for these datastructures.
 //
 // You are probably reading this comment because you changed a layout and
 // one of the static_asserts failed during build. This is what you should

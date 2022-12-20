@@ -132,7 +132,7 @@ namespace System.Net
         public void Close() { }
         public void Close(byte[] responseEntity, bool willBlock) { }
         public void CopyFrom(System.Net.HttpListenerResponse templateResponse) { }
-        public void Redirect(string url) { }
+        public void Redirect([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url) { }
         public void SetCookie(System.Net.Cookie cookie) { }
         void System.IDisposable.Dispose() { }
     }

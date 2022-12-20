@@ -19,7 +19,7 @@ namespace System.Reflection
 
             Type? declaringType = m.DeclaringType;
             if (declaringType != null && declaringType.IsGenericType)
-                throw new ArgumentException(string.Format(SR.Argument_MethodDeclaringTypeGeneric,
+                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric,
                                                             m, declaringType.GetGenericTypeDefinition()));
 
             return m;
@@ -70,7 +70,7 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        internal virtual int get_next_table_index(object obj, int table, int count)
+        internal virtual int get_next_table_index(int table, int count)
         {
             throw new NotImplementedException();
         }

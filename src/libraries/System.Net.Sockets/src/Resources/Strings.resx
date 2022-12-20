@@ -279,9 +279,6 @@
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed stream.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
-    <value>Positive number required.</value>
-  </data>
   <data name="ArgumentOutOfRange_PathLengthInvalid" xml:space="preserve">
     <value>The path '{0}' is of an invalid length for use with domain sockets on this platform.  The length must be between 1 and {1} characters, inclusive.</value>
   </data>
@@ -323,9 +320,6 @@
   </data>
   <data name="SystemNetSockets_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Sockets is not supported on this platform.</value>
-  </data>
-  <data name="net_sockets_accept_receive_apm_notsupported" xml:space="preserve">
-    <value>This platform does not support receiving data with Socket.BeginAccept/EndAccept.  Instead, make a separate call to ReceiveAsync or BeginReceive/EndReceive.</value>
   </data>
   <data name="net_sockets_handle_already_used" xml:space="preserve">
     <value>Handle is already used by another Socket.</value>

@@ -429,9 +429,9 @@ namespace System.Collections.Specialized.Tests
         [InlineData(0)]
         public static void CreateSection_InvalidMaximumTest(short maxvalue)
         {
-            AssertExtensions.Throws<ArgumentException>("maxValue", () => BitVector32.CreateSection(maxvalue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maxValue", () => BitVector32.CreateSection(maxvalue));
             BitVector32.Section valid = BitVector32.CreateSection(1);
-            AssertExtensions.Throws<ArgumentException>("maxValue", () => BitVector32.CreateSection(maxvalue, valid));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maxValue", () => BitVector32.CreateSection(maxvalue, valid));
         }
 
         [Theory]
@@ -518,15 +518,30 @@ namespace System.Collections.Specialized.Tests
             Assert.True(new BitVector32(0).Equals(original));
             Assert.True(original.Equals(new BitVector32(0)));
 
+            Assert.True(original.Equals((object)original));
+            Assert.True(new BitVector32().Equals((object)original));
+            Assert.True(original.Equals((object)new BitVector32()));
+            Assert.True(new BitVector32(0).Equals((object)original));
+            Assert.True(original.Equals((object)new BitVector32(0)));
+
             BitVector32 other = new BitVector32(int.MaxValue / 2 - 1);
             Assert.True(other.Equals(other));
             Assert.True(new BitVector32(int.MaxValue / 2 - 1).Equals(other));
             Assert.True(other.Equals(new BitVector32(int.MaxValue / 2 - 1)));
 
+            Assert.True(other.Equals((object)other));
+            Assert.True(new BitVector32(int.MaxValue / 2 - 1).Equals((object)other));
+            Assert.True(other.Equals((object)new BitVector32(int.MaxValue / 2 - 1)));
+
             Assert.False(other.Equals(original));
             Assert.False(original.Equals(other));
             Assert.False(other.Equals(null));
             Assert.False(original.Equals(null));
+            Assert.False(other.Equals(int.MaxValue / 2 - 1));
+            Assert.False(original.Equals(0));
+
+            Assert.False(other.Equals((object)original));
+            Assert.False(original.Equals((object)other));
             Assert.False(other.Equals(int.MaxValue / 2 - 1));
             Assert.False(original.Equals(0));
         }

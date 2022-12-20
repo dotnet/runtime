@@ -31,7 +31,7 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                var builder = new SparseArrayBuilder<TResult>(initialize: true);
+                SparseArrayBuilder<TResult> builder = new();
                 ArrayBuilder<IEnumerable<TResult>> deferredCopies = default;
 
                 foreach (TSource element in _source)

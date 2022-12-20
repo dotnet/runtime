@@ -39,7 +39,7 @@ internal static partial class Interop
                 out pOSStatus);
         }
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509ImportCertificate(
             ref byte pbKeyBlob,
             int cbKeyBlob,
@@ -51,7 +51,7 @@ internal static partial class Interop
             out SafeSecIdentityHandle pPrivateKeyOut,
             out int pOSStatus);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509ImportCollection(
             ref byte pbKeyBlob,
             int cbKeyBlob,
@@ -62,7 +62,7 @@ internal static partial class Interop
             out SafeCFArrayHandle pCollectionOut,
             out int pOSStatus);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509ExportData(
             SafeCreateHandle data,
             X509ContentType type,
@@ -70,7 +70,7 @@ internal static partial class Interop
             out SafeCFDataHandle pExportOut,
             out int pOSStatus);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509CopyWithPrivateKey(
             SafeSecCertificateHandle certHandle,
             SafeSecKeyRefHandle privateKeyHandle,
@@ -78,7 +78,7 @@ internal static partial class Interop
             out SafeSecIdentityHandle pIdentityHandleOut,
             out int pOSStatus);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509MoveToKeychain(
             SafeSecCertificateHandle certHandle,
             SafeKeychainHandle targetKeychain,

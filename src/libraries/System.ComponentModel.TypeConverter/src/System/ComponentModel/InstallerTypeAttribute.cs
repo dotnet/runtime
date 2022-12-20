@@ -19,10 +19,7 @@ namespace System.ComponentModel
         /// </summary>
         public InstallerTypeAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type installerType)
         {
-            if (installerType == null)
-            {
-                throw new ArgumentNullException(nameof(installerType));
-            }
+            ArgumentNullException.ThrowIfNull(installerType);
 
             _typeName = installerType.AssemblyQualifiedName;
         }

@@ -22,19 +22,17 @@ namespace System.Security.Cryptography
         public static new HMAC Create() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static new HMAC? Create(string algorithmName) =>
-            (HMAC?)CryptoConfigForwarder.CreateFromName(algorithmName);
+            CryptoConfigForwarder.CreateFromName<HMAC>(algorithmName);
 
         public string HashName
         {
             get => _hashName;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(HashName));
-                }
+                ArgumentNullException.ThrowIfNull(value, nameof(HashName));
 
                 // On the desktop, setting the HashName selects (or switches over to) a new hashing algorithm via CryptoConfig.
                 // Our intended refactoring turns HMAC back into an abstract class with no algorithm-specific implementation.

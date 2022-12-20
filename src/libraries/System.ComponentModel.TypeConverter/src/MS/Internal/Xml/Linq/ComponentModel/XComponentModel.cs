@@ -240,7 +240,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             {
                 case XObjectChange.Name:
                     XElement? e = sender as XElement;
-                    _changeState = e != null ? e.Name : null;
+                    _changeState = e?.Name;
                     break;
             }
         }
@@ -368,11 +368,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
             {
                 case XObjectChange.Remove:
                     XElement? e = sender as XElement;
-                    _changeState = e != null ? e.Parent : null;
+                    _changeState = e?.Parent;
                     break;
                 case XObjectChange.Name:
                     e = sender as XElement;
-                    _changeState = e != null ? e.Name : null;
+                    _changeState = e?.Name;
                     break;
             }
         }
@@ -502,10 +502,9 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         public XDeferredAxis(Func<XElement, XName?, IEnumerable<T>> func, XElement element, XName? name)
         {
-            if (func == null)
-                throw new ArgumentNullException(nameof(func));
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
+            ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(element);
+
             _func = func;
             this.element = element;
             this.name = name;
@@ -525,8 +524,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
             get
             {
-                if (expandedName == null)
-                    throw new ArgumentNullException(nameof(expandedName));
+                ArgumentNullException.ThrowIfNull(expandedName);
                 if (name == null)
                 {
                     name = expandedName;
@@ -548,10 +546,9 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         public XDeferredSingleton(Func<XElement, XName, T?> func, XElement element, XName? name)
         {
-            if (func == null)
-                throw new ArgumentNullException(nameof(func));
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
+            ArgumentNullException.ThrowIfNull(func);
+            ArgumentNullException.ThrowIfNull(element);
+
             _func = func;
             this.element = element;
             this.name = name;
@@ -561,8 +558,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
             get
             {
-                if (expandedName == null)
-                    throw new ArgumentNullException(nameof(expandedName));
+                ArgumentNullException.ThrowIfNull(expandedName);
                 if (name == null)
                 {
                     name = expandedName;

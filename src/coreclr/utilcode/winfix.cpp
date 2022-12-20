@@ -185,7 +185,6 @@ WszCreateProcess(
 
 
 #include "psapi.h"
-#include "tlhelp32.h"
 #include "winnls.h"
 
 //********** Globals. *********************************************************
@@ -215,39 +214,6 @@ void EnsureCharSetInfoInitialized()
     }
 
     return;
-}
-
-
-// Running with an interactive workstation.
-BOOL RunningInteractive()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    static int fInteractive = -1;
-    if (fInteractive != -1)
-        return fInteractive != 0;
-
-#if !defined(FEATURE_CORESYSTEM)
-        HWINSTA hwinsta = NULL;
-
-        if ((hwinsta = GetProcessWindowStation() ) != NULL)
-        {
-            DWORD lengthNeeded;
-            USEROBJECTFLAGS flags;
-
-            if (GetUserObjectInformationW (hwinsta, UOI_FLAGS, &flags, sizeof(flags), &lengthNeeded))
-           {
-                    if ((flags.dwFlags & WSF_VISIBLE) == 0)
-                        fInteractive = 0;
-            }
-        }
-#endif // !FEATURE_CORESYSTEM
-
-    if (fInteractive != 0)
-        fInteractive = 1;
-
-    return fInteractive != 0;
 }
 
 typedef HRESULT(WINAPI *pfnSetThreadDescription)(HANDLE hThread, PCWSTR lpThreadDescription);

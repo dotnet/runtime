@@ -8,9 +8,10 @@ using Xunit;
 
 namespace System.IO.Tests.Enumeration
 {
+    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class Enumeration_SymbolicLinksTests : BaseSymbolicLinks
     {
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [Fact]
         public void EnumerateDirectories_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
@@ -29,7 +30,7 @@ namespace System.IO.Tests.Enumeration
             Assert.Equal(expected, enumerable.Count());
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [Fact]
         public void EnumerateFiles_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
@@ -48,7 +49,7 @@ namespace System.IO.Tests.Enumeration
             Assert.Equal(expected, enumerable.Count());
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [Fact]
         public void EnumerateFileSystemEntries_LinksWithCycles_ShouldNotThrow()
         {
             DirectoryInfo testDirectory = CreateDirectoryContainingSelfReferencingSymbolicLink();
@@ -62,7 +63,7 @@ namespace System.IO.Tests.Enumeration
             Assert.Single(enumerable);
         }
 
-        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
+        [Theory]
         [InlineData(false, false)] // OK
         [InlineData(false, true)] // throw
         [InlineData(true, false)] // throw, OK on Unix
@@ -100,7 +101,7 @@ namespace System.IO.Tests.Enumeration
             }
         }
 
-        [ConditionalTheory(nameof(CanCreateSymbolicLinks))]
+        [Theory]
         [InlineData(false, false)] // OK
         [InlineData(false, true)] // throw
         [InlineData(true, false)] // throw, OK on Unix
@@ -136,6 +137,13 @@ namespace System.IO.Tests.Enumeration
                 Assert.Throws<IOException>(() => Directory.EnumerateFiles(testDirectory.FullName, "*", options).Count());
                 Assert.Throws<IOException>(() => Directory.GetFiles(testDirectory.FullName, "*", options).Count());
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        public void PropertiesArePopulatedLazily()
+        {
+            Assert.True(Directory.EnumerateFileSystemEntries("/dev/fd").Count() >= 0);
         }
     }
 }

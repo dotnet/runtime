@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [DllImport(Libraries.Gdi32, ExactSpelling = true)]
-        public static extern int GetClipRgn(IntPtr hdc, IntPtr hrgn);
+        [LibraryImport(Libraries.Gdi32)]
+        public static partial int GetClipRgn(IntPtr hdc, IntPtr hrgn);
 
         public static int GetClipRgn(HandleRef hdc, IntPtr hrgn)
         {

@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+  <Target Name="GenerateReproProjectResponseFile"
+          AfterTargets="Build"
+          Condition="'$(BuildingInsideVisualStudio)' != 'true'">
+
+    <ItemGroup>
+      <ReproResponseLines Include="$(OutputPath)$(AssemblyName)$(TargetExt)" />
+      <ReproResponseLines Include="-o:$(OutputPath)$(AssemblyName).obj" />
+      <ReproResponseLines Include="-r:$(RuntimeBinDir)aotsdk\*.dll" />
+      <ReproResponseLines Include="-r:$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+      <ReproResponseLines Include="-g" />
+      <ReproResponseLines Include="-O" Condition="'$(Optimize)' == 'true'" />
+      <ReproResponseLines Include="--initassembly:System.Private.CoreLib" />
+      <ReproResponseLines Include="--initassembly:System.Private.StackTraceMetadata" />
+      <ReproResponseLines Include="--initassembly:System.Private.TypeLoader" />
+      <ReproResponseLines Include="--initassembly:System.Private.Reflection.Execution" />
+      <ReproResponseLines Include="--directpinvokelist:$(RuntimeBinDir)build\WindowsAPIs.txt" />
+      <ReproResponseLines Include="--directpinvoke:System.Globalization.Native" />
+      <ReproResponseLines Include="--directpinvoke:System.IO.Compression.Native" />
+      <ReproResponseLines Include="--stacktracedata" />
+      <ReproResponseLines Include="--scanreflection" />
+      <ReproResponseLines Include="--feature:System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=false" />
+      <ReproResponseLines Include="--feature:System.Diagnostics.Tracing.EventSource.IsSupported=false" />
+      <ReproResponseLines Include="--feature:System.Resources.ResourceManager.AllowCustomResourceTypes=false" />
+      <ReproResponseLines Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
+      <ReproResponseLines Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
+      <ReproResponseLines Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(OutputPath)\compile-with-$(LibrariesConfiguration)-libs.rsp"
+                      Lines="@(ReproResponseLines)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+</Project>

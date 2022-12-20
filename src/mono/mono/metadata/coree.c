@@ -19,16 +19,16 @@
 #include "utils/w32api.h"
 #include "cil-coff.h"
 #include "metadata-internals.h"
-#include "image.h"
+#include <mono/metadata/image.h>
 #include "image-internals.h"
 #include "assembly-internals.h"
 #include "domain-internals.h"
-#include "appdomain.h"
-#include "object.h"
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
 #include "object-internals.h"
-#include "loader.h"
-#include "threads.h"
-#include "environment.h"
+#include <mono/metadata/loader.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/environment.h>
 #include "coree.h"
 #include "coree-internals.h"
 #include <mono/utils/w32subset.h>
@@ -91,7 +91,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			image = mono_image_open_from_module_handle (alc, hInst, mono_path_resolve_symlinks (file_name), TRUE, NULL);
 		} else {
 			init_from_coree = TRUE;
-			mono_runtime_load (file_name, NULL);
+			mono_runtime_load (file_name);
 			error = (gchar*) mono_check_corlib_version ();
 			if (error) {
 				g_free (error);
@@ -103,7 +103,6 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			image = mono_image_open (file_name, NULL);
 			if (image) {
 				image->storage->has_entry_point = TRUE;
-				mono_close_exe_image ();
 				/* Decrement reference count to zero. (Image will not be closed.) */
 				mono_image_close (image);
 			}
@@ -161,7 +160,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 
 	file_name = mono_get_module_file_name (NULL);
 	init_from_coree = TRUE;
-	domain = mono_runtime_load (file_name, NULL);
+	domain = mono_runtime_load (file_name);
 
 	corlib_version_error = (gchar*) mono_check_corlib_version ();
 	if (corlib_version_error) {
@@ -175,7 +174,6 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare_open (&req, mono_alc_get_default ());
 	assembly = mono_assembly_request_open (file_name, &req, NULL);
-	mono_close_exe_image ();
 	if (!assembly) {
 		g_free (file_name);
 		MessageBox (NULL, L"Cannot open assembly.", NULL, MB_ICONERROR);
@@ -432,7 +430,7 @@ HMODULE WINAPI MonoLoadImage(LPCWSTR FileName)
 	if (FileHandle == INVALID_HANDLE_VALUE)
 		return NULL;
 
-	FileSize = GetFileSize(FileHandle, NULL); 
+	FileSize = GetFileSize(FileHandle, NULL);
 	if (FileSize == INVALID_FILE_SIZE)
 		goto CloseFile;
 

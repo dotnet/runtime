@@ -11,15 +11,15 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract class NodeInteropTests : SerializerTests
     {
-        public NodeInteropTests(JsonSerializerWrapperForString serializerWrapper) : base(serializerWrapper) { }
+        public NodeInteropTests(JsonSerializerWrapper serializerWrapper) : base(serializerWrapper) { }
 
         [Fact]
         public async Task CompareResultsAgainstSerializer()
         {
             List<Order> obj = JsonTestHelper.PopulateLargeObject(2);
-            string expected = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            string expected = await Serializer.SerializeWrapper(obj);
 
-            JsonArray jArray = await JsonSerializerWrapperForString.DeserializeWrapper<JsonArray>(expected);
+            JsonArray jArray = await Serializer.DeserializeWrapper<JsonArray>(expected);
             string actual = jArray.ToJsonString();
             Assert.Equal(expected, actual);
 
@@ -55,10 +55,10 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(poco);
+            string json = await Serializer.SerializeWrapper(poco);
             Assert.Equal(Expected, json);
 
-            poco = await JsonSerializerWrapperForString.DeserializeWrapper<Poco>(json);
+            poco = await Serializer.DeserializeWrapper<Poco>(json);
             Assert.Equal(42, (int)poco.Node);
             Assert.Equal(43, (int)poco.Array[0]);
             Assert.Equal(44, (int)poco.Value);

@@ -15,22 +15,22 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainEnumerateCerts(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainEnumerateCerts(
             out SafeCFArrayHandle matches);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainEnumerateIdentities(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainEnumerateIdentities(
             out SafeCFArrayHandle matches);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509StoreAddCertificate(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509StoreAddCertificate(
             SafeHandle certOrIdentity);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509StoreRemoveCertificate(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509StoreRemoveCertificate(
             SafeHandle certOrIdentity,
-            bool isReadOnlyMode);
+            [MarshalAs(UnmanagedType.Bool)] bool isReadOnlyMode);
 
         internal static SafeCFArrayHandle KeychainEnumerateCerts()
         {

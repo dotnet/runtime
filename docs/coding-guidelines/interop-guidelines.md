@@ -166,6 +166,12 @@ Using enums instead of partial, static classes can lead to needing lots of casts
 
 When defining the P/Invoke signatures and structs, we follow the guidelines in the [interop best practices documentation](https://docs.microsoft.com/en-us/dotnet/standard/native-interop/best-practices).
 
+The runtime repo makes use of [source-generated p/invokes](../design/features/source-generator-pinvokes.md) whenever possible (see [the compatibility doc](../design/libraries/LibraryImportGenerator/Compatibility.md) for unsupported scenarios). Methods should be marked `LibraryImport` and be `static` and `partial`.
+
+If implicit framework references are disabled (as is the case for most libraries projects), explicit references to the below are required for marshalling arrays:
+  - `System.Memory`
+  - `System.Runtime.CompilerServices.Unsafe`
+
 ## UNIX shims
 
 Often, various UNIX flavors offer the same API from the point-of-view of compatibility with C/C++ source code, but they do not have the same ABI. e.g. Fields can be laid out differently, constants can have different numeric values, exports can be named differently, etc. There are not only differences between operating systems (Mac OS X vs. Ubuntu vs. FreeBSD), but also differences related to the underlying processor architecture (x64 vs. x86 vs. ARM).
@@ -173,6 +179,8 @@ Often, various UNIX flavors offer the same API from the point-of-view of compati
 This leaves us with a situation where we can't write portable P/Invoke declarations that will work on all flavors, and writing separate declarations per flavor is quite fragile and won't scale.
 
 To address this, we're moving to a model where all UNIX interop from dotnet/runtime starts with a P/Invoke to a C++ lib written specifically for dotnet/runtime. These libs -- System.*.Native.so (aka "shims") -- are intended to be very thin layers over underlying platform libraries. Generally, they are not there to add any significant abstraction, but to create a stable ABI such that the same IL assembly can work across UNIX flavors.
+
+The System.Native shims are a private implementation detail of the Microsoft.NETCore.App shared framework and are intended only for use by code inside of the shared framework. Calling into the shims from external to Microsoft.NETCore.App has similar risks to using private reflection, with no guarantees from version to version or even patch to patch of stable exports. Assemblies that ship outside of the shared framework (e.g. Microsoft.Extensions.*) must not directly access the shims.
 
 Guidelines for shim C++ API:
 
@@ -184,7 +192,7 @@ Guidelines for shim C++ API:
   - If an export point has a 1:1 correspondence to the platform API, then name it after the platform API in PascalCase (e.g. stat -> Stat, fstat -> FStat).
   - If an export is not 1:1, then spell things out as we typically would in dotnet/runtime code (i.e. don't use abbreviations unless they come from the underlying API.
   - At first, it seemed that we'd want to use 1:1 names throughout, but it turns out there are many cases where being strictly 1:1 isn't practical.
-  - In order to reduce the chance of collisions when linking with CoreRT, all exports should have a prefix that corresponds to the Libraries' name, e.g. "SystemNative_" or "CryptoNative_" to make the method name more unique. See https://github.com/dotnet/runtime/issues/15854.
+  - In order to reduce the chance of collisions when linking single-file form factors, all exports should have a prefix that corresponds to the Libraries' name, e.g. "SystemNative_" or "CryptoNative_" to make the method name more unique.
 - Stick to data types which are guaranteed not to vary in size across flavors.
   - Use int32_t, int64_t, etc. from stdint.h and not int, long, etc.
   - Use char* for ASCII or UTF-8 strings and uint8_t* for byte buffers.

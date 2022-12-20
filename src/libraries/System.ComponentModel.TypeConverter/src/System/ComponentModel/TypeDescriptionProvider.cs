@@ -61,10 +61,7 @@ namespace System.ComponentModel
                 return _parent.CreateInstance(provider, objectType, argTypes, args);
             }
 
-            if (objectType == null)
-            {
-                throw new ArgumentNullException(nameof(objectType));
-            }
+            ArgumentNullException.ThrowIfNull(objectType);
 
             return Activator.CreateInstance(objectType, args);
         }
@@ -104,7 +101,7 @@ namespace System.ComponentModel
                 return _parent.GetExtendedTypeDescriptor(instance);
             }
 
-            return _emptyDescriptor ?? (_emptyDescriptor = new EmptyCustomTypeDescriptor());
+            return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
 
         protected internal virtual IExtenderProvider[] GetExtenderProviders(object instance)
@@ -114,10 +111,7 @@ namespace System.ComponentModel
                 return _parent.GetExtenderProviders(instance);
             }
 
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
 
             return Array.Empty<IExtenderProvider>();
         }
@@ -162,10 +156,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode("GetReflectionType is not trim compatible because the Type of object cannot be statically discovered.")]
         public Type GetReflectionType(object instance)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
 
             return GetReflectionType(instance.GetType(), instance);
         }
@@ -205,10 +196,7 @@ namespace System.ComponentModel
                 return _parent.GetRuntimeType(reflectionType);
             }
 
-            if (reflectionType == null)
-            {
-                throw new ArgumentNullException(nameof(reflectionType));
-            }
+            ArgumentNullException.ThrowIfNull(reflectionType);
 
             if (reflectionType.GetType().Assembly == typeof(object).Assembly)
             {
@@ -242,10 +230,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
         public ICustomTypeDescriptor? GetTypeDescriptor(object instance)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
 
             return GetTypeDescriptor(instance.GetType(), instance);
         }
@@ -271,7 +256,7 @@ namespace System.ComponentModel
                 return _parent.GetTypeDescriptor(objectType, instance);
             }
 
-            return _emptyDescriptor ?? (_emptyDescriptor = new EmptyCustomTypeDescriptor());
+            return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
 
         /// <summary>
@@ -280,10 +265,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual bool IsSupportedType(Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (_parent != null)
             {

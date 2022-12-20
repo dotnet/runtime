@@ -113,9 +113,9 @@ namespace System.IO.Tests
                 watcher2.Error += OnError;
                 watcher3.Error += OnError;
 
-                AutoResetEvent autoResetEvent1 = WatchCreated(watcher1, new[] { fileName }).EventOccured;
-                AutoResetEvent autoResetEvent2 = WatchCreated(watcher2, new[] { fileName }).EventOccured;
-                AutoResetEvent autoResetEvent3 = WatchCreated(watcher3, new[] { fileName }).EventOccured;
+                AutoResetEvent autoResetEvent1 = WatchCreated(watcher1, new[] { fileName }).EventOccurred;
+                AutoResetEvent autoResetEvent2 = WatchCreated(watcher2, new[] { fileName }).EventOccurred;
+                AutoResetEvent autoResetEvent3 = WatchCreated(watcher3, new[] { fileName }).EventOccurred;
 
                 watcher1.EnableRaisingEvents = true;
                 watcher2.EnableRaisingEvents = true;
@@ -137,20 +137,19 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Create_WatchOwnPath()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var dir1 = new TempDirectory(Path.Combine(dir.Path, "dir1")))
-            using (var dir2 = new TempDirectory(Path.Combine(dir.Path, "dir2")))
-            using (var watcher1 = new FileSystemWatcher(dir1.Path, "*"))
-            using (var watcher2 = new FileSystemWatcher(dir2.Path, "*"))
+            string dir1 = CreateTestDirectory(TestDirectory, "dir1");
+            string dir2 = CreateTestDirectory(TestDirectory, "dir2");
+            using (var watcher1 = new FileSystemWatcher(dir1, "*"))
+            using (var watcher2 = new FileSystemWatcher(dir2, "*"))
             {
                 watcher1.Error += OnError;
                 watcher2.Error += OnError;
 
-                string fileName1 = Path.Combine(dir1.Path, "file");
-                string fileName2 = Path.Combine(dir2.Path, "file");
+                string fileName1 = Path.Combine(dir1, "file");
+                string fileName2 = Path.Combine(dir2, "file");
 
-                AutoResetEvent autoResetEvent1 = WatchCreated(watcher1, new[] { fileName1 }).EventOccured;
-                AutoResetEvent autoResetEvent2 = WatchCreated(watcher2, new[] { fileName2 }).EventOccured;
+                AutoResetEvent autoResetEvent1 = WatchCreated(watcher1, new[] { fileName1 }).EventOccurred;
+                AutoResetEvent autoResetEvent2 = WatchCreated(watcher2, new[] { fileName2 }).EventOccurred;
 
                 watcher1.EnableRaisingEvents = true;
                 watcher2.EnableRaisingEvents = true;
@@ -183,7 +182,7 @@ namespace System.IO.Tests
                 {
                     watchers[i] = new FileSystemWatcher(TestDirectory);
                     watchers[i].Filter = Path.GetFileName(fileName);
-                    autoResetEvents[i] = WatchCreated(watchers[i], new[] { fileName }).EventOccured;
+                    autoResetEvents[i] = WatchCreated(watchers[i], new[] { fileName }).EventOccurred;
                     watchers[i].EnableRaisingEvents = true;
                 }
 
@@ -218,7 +217,7 @@ namespace System.IO.Tests
                     {
                         watchers1[i] = new FileSystemWatcher(TestDirectory);
                         watchers1[i].Filter = Path.GetFileName(fileName);
-                        autoResetEvents1[i] = WatchCreated(watchers1[i], new[] { fileName }).EventOccured;
+                        autoResetEvents1[i] = WatchCreated(watchers1[i], new[] { fileName }).EventOccurred;
                         watchers1[i].EnableRaisingEvents = true;
                     }
 
@@ -240,16 +239,15 @@ namespace System.IO.Tests
         [Fact]
         public void  FileSystemWatcher_File_Changed_NotAffectEachOther()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (var otherFile = new TempFile(Path.Combine(testDirectory.Path, "otherfile")))
-            using (var watcher1 = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
-            using (var watcher2 = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
-            using (var watcher3 = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(otherFile.Path)))
+            string file = CreateTestFile(TestDirectory, "apple");
+            string otherFile = CreateTestFile(TestDirectory, "pear");
+            using (var watcher1 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
+            using (var watcher2 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
+            using (var watcher3 = new FileSystemWatcher(TestDirectory, Path.GetFileName(otherFile)))
             {
-                AutoResetEvent autoResetEvent1 = WatchChanged(watcher1, new[] { Path.Combine(testDirectory.Path, "file") }).EventOccured;
-                AutoResetEvent autoResetEvent2 = WatchChanged(watcher2, new[] { Path.Combine(testDirectory.Path, "file") }).EventOccured;
-                AutoResetEvent autoResetEvent3 = WatchChanged(watcher3, new[] { Path.Combine(testDirectory.Path, "otherfile") }).EventOccured;
+                AutoResetEvent autoResetEvent1 = WatchChanged(watcher1, new[] { Path.Combine(TestDirectory, "apple") }).EventOccurred;
+                AutoResetEvent autoResetEvent2 = WatchChanged(watcher2, new[] { Path.Combine(TestDirectory, "apple") }).EventOccurred;
+                AutoResetEvent autoResetEvent3 = WatchChanged(watcher3, new[] { Path.Combine(TestDirectory, "pear") }).EventOccurred;
 
                 watcher1.Error += OnError;
                 watcher2.Error += OnError;
@@ -259,21 +257,21 @@ namespace System.IO.Tests
                 watcher2.EnableRaisingEvents = true;
                 watcher3.EnableRaisingEvents = true;
 
-                Directory.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Directory.SetLastWriteTime(file, DateTime.Now + TimeSpan.FromSeconds(10));
                 Assert.True(WaitHandle.WaitAll(new[] { autoResetEvent1, autoResetEvent2 }, WaitForExpectedEventTimeout_NoRetry));
                 Assert.False(autoResetEvent3.WaitOne(WaitForUnexpectedEventTimeout));
 
-                Directory.SetLastWriteTime(otherFile.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Directory.SetLastWriteTime(otherFile, DateTime.Now + TimeSpan.FromSeconds(10));
                 Assert.False(WaitHandle.WaitAll(new[] { autoResetEvent1, autoResetEvent2 }, WaitForUnexpectedEventTimeout));
                 Assert.True(autoResetEvent3.WaitOne(WaitForExpectedEventTimeout_NoRetry));
 
                 watcher1.EnableRaisingEvents = false;
 
-                Directory.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Directory.SetLastWriteTime(file, DateTime.Now + TimeSpan.FromSeconds(10));
                 Assert.False(WaitHandle.WaitAll(new[] { autoResetEvent1, autoResetEvent3 }, WaitForUnexpectedEventTimeout));
                 Assert.True(autoResetEvent2.WaitOne(WaitForExpectedEventTimeout_NoRetry));
 
-                Directory.SetLastWriteTime(otherFile.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                Directory.SetLastWriteTime(otherFile, DateTime.Now + TimeSpan.FromSeconds(10));
                 Assert.False(WaitHandle.WaitAll(new[] { autoResetEvent1, autoResetEvent2 }, WaitForUnexpectedEventTimeout));
                 Assert.True(autoResetEvent3.WaitOne(WaitForExpectedEventTimeout_NoRetry));
             }
@@ -287,8 +285,7 @@ namespace System.IO.Tests
             using (var watcher2 = new FileSystemWatcher(TestDirectory))
             using (var watcher3 = new FileSystemWatcher(TestDirectory))
             {
-                string fileName = Path.Combine(TestDirectory, "file");
-                File.Create(fileName).Dispose();
+                string fileName = CreateTestFile(TestDirectory, "file");
 
                 watcher1.Filter = Path.GetFileName(fileName);
                 watcher2.Filter = Path.GetFileName(fileName);
@@ -298,9 +295,9 @@ namespace System.IO.Tests
                 watcher2.Error += OnError;
                 watcher3.Error += OnError;
 
-                AutoResetEvent autoResetEvent1 = WatchDeleted(watcher1, new[] { fileName }, _output).EventOccured;
-                AutoResetEvent autoResetEvent2 = WatchDeleted(watcher2, new[] { fileName }, _output).EventOccured;
-                AutoResetEvent autoResetEvent3 = WatchDeleted(watcher3, new[] { fileName }, _output).EventOccured;
+                AutoResetEvent autoResetEvent1 = WatchDeleted(watcher1, new[] { fileName }, _output).EventOccurred;
+                AutoResetEvent autoResetEvent2 = WatchDeleted(watcher2, new[] { fileName }, _output).EventOccurred;
+                AutoResetEvent autoResetEvent3 = WatchDeleted(watcher3, new[] { fileName }, _output).EventOccurred;
 
                 watcher1.EnableRaisingEvents = true;
                 watcher2.EnableRaisingEvents = true;
@@ -323,16 +320,15 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public void FileSystemWatcher_File_Rename_NotAffectEachOther()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (var watcher1 = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
-            using (var watcher2 = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            string file = CreateTestFile(TestDirectory, "file");
+            using (var watcher1 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
+            using (var watcher2 = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
-                string filePath = file.Path;
-                string filePathRenamed = file.Path + "_renamed";
+                string filePath = file;
+                string filePathRenamed = file + "_renamed";
 
-                AutoResetEvent autoResetEvent1 = WatchRenamed(watcher1, new[] { filePathRenamed }, _output).EventOccured;
-                AutoResetEvent autoResetEvent2 = WatchRenamed(watcher2, new[] { filePathRenamed }, _output).EventOccured;
+                AutoResetEvent autoResetEvent1 = WatchRenamed(watcher1, new[] { filePathRenamed }, _output).EventOccurred;
+                AutoResetEvent autoResetEvent2 = WatchRenamed(watcher2, new[] { filePathRenamed }, _output).EventOccurred;
 
                 watcher1.Error += OnError;
                 watcher2.Error += OnError;

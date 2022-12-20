@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#include <config.h>
 #include <glib.h>
 #include <mono/metadata/components.h>
 #include "debugger-agent-external.h"
@@ -49,7 +50,7 @@ mono_debugger_agent_parse_options (char *options)
 }
 
 DebuggerTransport *
-mono_debugger_agent_get_transports (int *ntrans) 
+mono_debugger_agent_get_transports (int *ntrans)
 {
 	*ntrans = ntransports;
 	return transports;

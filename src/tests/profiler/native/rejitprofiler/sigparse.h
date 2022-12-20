@@ -180,7 +180,7 @@ protected:
     virtual void NotifyEndParam() = 0;
 
     // sentinel indication the location of the "..." in the method signature
-    virtual void NotifySentinal() = 0;
+    virtual void NotifySentinel() = 0;
 
     // number of generic parameters in this method signature (if any)
     virtual void NotifyGenericParamCount(sig_count) = 0;

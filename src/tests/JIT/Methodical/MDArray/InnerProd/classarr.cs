@@ -4,7 +4,10 @@
 //Inner Product of two 2D array
 
 using System;
+using Xunit;
 
+namespace Test_classarr_InnerProd
+{
 public class ArrayClass
 {
     public int[,] a2d;
@@ -120,7 +123,8 @@ public class intmm
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 
@@ -242,4 +246,5 @@ public class intmm
             return 1;
         }
     }
+}
 }

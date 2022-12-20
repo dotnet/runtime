@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial SafeCFStringHandle AppleCryptoNative_SecCopyErrorMessageString(int osStatus);
 
         internal static string? GetSecErrorString(int osStatus)

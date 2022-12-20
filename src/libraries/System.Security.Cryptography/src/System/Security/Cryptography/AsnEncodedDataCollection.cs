@@ -23,8 +23,7 @@ namespace System.Security.Cryptography
 
         public int Add(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
 
             int indexOfNewItem = _list.Count;
             _list.Add(asnEncodedData);
@@ -33,8 +32,8 @@ namespace System.Security.Cryptography
 
         public void Remove(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
+
             _list.Remove(asnEncodedData);
         }
 
@@ -66,12 +65,12 @@ namespace System.Security.Cryptography
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (Count > array.Length - index)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -84,13 +83,13 @@ namespace System.Security.Cryptography
 
         public void CopyTo(AsnEncodedData[] array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // Need to do part of the argument validation ourselves as AsnEncodedDataCollection throws
             // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
 
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
 
             _list.CopyTo(array, index);
         }

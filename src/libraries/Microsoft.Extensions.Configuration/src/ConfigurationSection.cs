@@ -23,15 +23,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="path">The path to this section.</param>
         public ConfigurationSection(IConfigurationRoot root, string path)
         {
-            if (root == null)
-            {
-                throw new ArgumentNullException(nameof(root));
-            }
-
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
+            ThrowHelper.ThrowIfNull(root);
+            ThrowHelper.ThrowIfNull(path);
 
             _root = root;
             _path = path;
@@ -45,18 +38,9 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets the key this section occupies in its parent.
         /// </summary>
-        public string Key
-        {
-            get
-            {
-                if (_key == null)
-                {
-                    // Key is calculated lazily as last portion of Path
-                    _key = ConfigurationPath.GetSectionKey(_path);
-                }
-                return _key;
-            }
-        }
+        public string Key =>
+            // Key is calculated lazily as last portion of Path
+            _key ??= ConfigurationPath.GetSectionKey(_path);
 
         /// <summary>
         /// Gets or sets the section value.

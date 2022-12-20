@@ -4,12 +4,6 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.41217.00
-//  Copyright (C) Microsoft Corporation. All rights reserved.
-
-
-
-// Metadata version: v2.0.41217
 .assembly extern retargetable mscorlib
 {
   .publickeytoken = (96 9D B8 05 3D 33 22 AC )                         // ....=3".
@@ -32,7 +26,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module M
 // MVID: {01C3371C-004D-0000-A745-03831C37C341}
 .imagebase 0x034f0000
 .file alignment 0x00000200
@@ -47,7 +40,7 @@
 .class public auto ansi beforefieldinit CMain
        extends [mscorlib_1]System.Object
 {
-  .method public hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

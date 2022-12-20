@@ -488,7 +488,7 @@ class SigParser
         }
 
         //------------------------------------------------------------------------
-        // Is this at the Sentinal (the ... in a varargs signature) that marks
+        // Is this at the Sentinel (the ... in a varargs signature) that marks
         // the beginning of varguments that are not decared at the target
 
         bool AtSentinel() const
@@ -864,6 +864,21 @@ public:
         return (GetGCType_NoThrow(type) == TYPE_GC_REF);
     }
 
+    static BOOL IsByRef(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (GetGCType(type) == TYPE_GC_BYREF);
+    }
+    static BOOL IsByRef_NoThrow(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (GetGCType_NoThrow(type) == TYPE_GC_BYREF);
+    }
+
     FORCEINLINE static BOOL IsGenericVariable(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;
@@ -951,7 +966,7 @@ protected:
 
 
 // Returns the address of the payload inside the stackelem
-inline void* StackElemEndianessFixup(void* pStackElem, UINT cbSize) {
+inline void* StackElemEndiannessFixup(void* pStackElem, UINT cbSize) {
     LIMITED_METHOD_CONTRACT;
 
     BYTE *pRetVal = (BYTE*)pStackElem;

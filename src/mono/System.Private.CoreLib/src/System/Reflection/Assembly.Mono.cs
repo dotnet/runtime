@@ -10,14 +10,13 @@ using System.Diagnostics.Tracing;
 
 namespace System.Reflection
 {
-    [StructLayout(LayoutKind.Sequential)]
     public partial class Assembly
     {
+        [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly? LoadWithPartialName(string partialName)
         {
-            if (partialName == null)
-                throw new ArgumentNullException(nameof(partialName));
+            ArgumentNullException.ThrowIfNull(partialName);
 
             if (partialName.Length == 0 || partialName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength, nameof(partialName));
@@ -57,8 +56,7 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(string assemblyString)
         {
-            if (assemblyString == null)
-                throw new ArgumentNullException(nameof(assemblyString));
+            ArgumentNullException.ThrowIfNull(assemblyString);
 
             var name = new AssemblyName(assemblyString);
             // TODO: trigger assemblyFromResolveEvent
@@ -70,8 +68,7 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(AssemblyName assemblyRef)
         {
-            if (assemblyRef == null)
-                throw new ArgumentNullException(nameof(assemblyRef));
+            ArgumentNullException.ThrowIfNull(assemblyRef);
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return Load(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
@@ -96,8 +93,5 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern Type InternalGetType(Module? module, string name, bool throwOnError, bool ignoreCase);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InternalGetAssemblyName(string assemblyFile, out Mono.MonoAssemblyName aname, out string codebase);
     }
 }

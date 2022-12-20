@@ -33,7 +33,7 @@ namespace System.Composition.TypedParts.Discovery
 
             foreach (var export in DiscoverExports(type))
             {
-                part = part ?? new DiscoveredPart(type, _attributeContext, _activationFeatures);
+                part ??= new DiscoveredPart(type, _attributeContext, _activationFeatures);
                 part.AddDiscoveredExport(export);
             }
 
@@ -99,7 +99,7 @@ namespace System.Composition.TypedParts.Discovery
             }
         }
 
-        private void ReadLooseMetadata(object[] appliedAttributes, IDictionary<string, object> metadata)
+        private static void ReadLooseMetadata(object[] appliedAttributes, IDictionary<string, object> metadata)
         {
             foreach (var attribute in appliedAttributes)
             {
@@ -119,7 +119,7 @@ namespace System.Composition.TypedParts.Discovery
             }
         }
 
-        private void AddMetadata(IDictionary<string, object> metadata, string name, Type valueType, object value)
+        private static void AddMetadata(IDictionary<string, object> metadata, string name, Type valueType, object value)
         {
             object existingValue;
             if (!metadata.TryGetValue(name, out existingValue))
@@ -145,7 +145,7 @@ namespace System.Composition.TypedParts.Discovery
             }
         }
 
-        private void ReadMetadataAttribute(Attribute attribute, IDictionary<string, object> metadata)
+        private static void ReadMetadataAttribute(Attribute attribute, IDictionary<string, object> metadata)
         {
             var attrType = attribute.GetType();
 
@@ -192,7 +192,7 @@ namespace System.Composition.TypedParts.Discovery
                     var mappedType = ifce;
                     if (!(mappedType == partType || mappedType.GenericTypeArguments.SequenceEqual(partType.GenericTypeParameters)))
                     {
-                        string message = SR.Format(SR.TypeInspector_ArgumentMissmatch, contractType.Name, partType.Name);
+                        string message = SR.Format(SR.TypeInspector_ArgumentMismatch, contractType.Name, partType.Name);
                         throw new CompositionFailedException(message);
                     }
 

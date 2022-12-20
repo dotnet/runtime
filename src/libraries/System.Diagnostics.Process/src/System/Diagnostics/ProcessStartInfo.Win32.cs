@@ -32,7 +32,7 @@ namespace System.Diagnostics
                             return Array.Empty<string>();
 
                         string[] names = subKey.GetSubKeyNames();
-                        List<string> verbs = new List<string>();
+                        ArrayBuilder<string> verbs = default;
                         foreach (string name in names)
                         {
                             if (!string.Equals(name, "new", StringComparison.OrdinalIgnoreCase))

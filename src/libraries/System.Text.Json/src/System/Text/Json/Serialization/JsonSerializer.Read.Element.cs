@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -24,10 +24,12 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(this JsonElement element, JsonSerializerOptions? options = null)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -48,15 +50,17 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(this JsonElement element, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadUsingMetadata<object?>(element, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -78,12 +82,35 @@ namespace System.Text.Json
         /// </exception>
         public static TValue? Deserialize<TValue>(this JsonElement element, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
+            jsonTypeInfo.EnsureConfigured();
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Converts the <see cref="JsonElement"/> representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="element">The <see cref="JsonElement"/> to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        public static object? Deserialize(this JsonElement element, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -120,24 +147,18 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(this JsonElement element, Type returnType, JsonSerializerContext context)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadUsingMetadata<object?>(element, jsonTypeInfo);
-        }
-
-        private static TValue? ReadUsingMetadata<TValue>(JsonElement element, JsonTypeInfo jsonTypeInfo)
-        {
             ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
-            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
     }
 }

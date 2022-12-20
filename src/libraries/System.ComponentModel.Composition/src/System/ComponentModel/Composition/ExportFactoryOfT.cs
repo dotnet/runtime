@@ -9,10 +9,7 @@ namespace System.ComponentModel.Composition
 
         public ExportFactory(Func<Tuple<T, Action>> exportLifetimeContextCreator)
         {
-            if (exportLifetimeContextCreator == null)
-            {
-                throw new ArgumentNullException(nameof(exportLifetimeContextCreator));
-            }
+            ArgumentNullException.ThrowIfNull(exportLifetimeContextCreator);
 
             _exportLifetimeContextCreator = exportLifetimeContextCreator;
         }

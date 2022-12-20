@@ -36,7 +36,7 @@ namespace System.Diagnostics
         /// <param name="list">Initial list to store in the collection.</param>
         public ActivityTagsCollection(IEnumerable<KeyValuePair<string, object?>> list)
         {
-            if (list == null)
+            if (list is null)
             {
                 throw new ArgumentNullException(nameof(list));
             }
@@ -144,7 +144,7 @@ namespace System.Diagnostics
         /// <param name="value">The tag value.</param>
         public void Add(string key, object? value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -221,7 +221,7 @@ namespace System.Diagnostics
         /// <returns>True if the item existed and removed. False otherwise.</returns>
         public bool Remove(string key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }

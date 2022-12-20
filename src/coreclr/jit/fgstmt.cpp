@@ -182,7 +182,7 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
     // This routine can only be used when in tree order.
     assert(fgOrder == FGOrderTree);
 
-    if ((block->bbJumpKind == BBJ_COND) || (block->bbJumpKind == BBJ_SWITCH) || (block->bbJumpKind == BBJ_RETURN))
+    if (block->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_RETURN))
     {
         Statement* firstStmt = block->firstStmt();
         noway_assert(firstStmt != nullptr);
@@ -511,9 +511,9 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 }
 
 /******************************************************************************/
-// Returns true if the operator is involved in control-flow
-// TODO-Cleanup: Move this into genTreeKinds in genTree.h
-
+// Returns true if the operator is involved in control-flow.
+// TODO-Cleanup: Make this a GenTreeOperKind.
+//
 inline bool OperIsControlFlow(genTreeOps oper)
 {
     switch (oper)

@@ -7,11 +7,10 @@ using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using T = XmlQueryTypeFactory;
-
     internal sealed class XsltQilFactory : XPathQilFactory
     {
         public XsltQilFactory(QilFactory f, bool debug) : base(f, debug) { }
@@ -41,7 +40,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         [Conditional("DEBUG")]
-        public void CheckQName(QilNode n)
+        public static void CheckQName(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.QNameX), "Must be a singleton QName");
         }

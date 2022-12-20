@@ -4,5 +4,6 @@
   <Target Name="Compile" />
   <Target Name="CoreCompile" />
   <Target Name="Build" />
+  <Target Name="PublishTestAsSelfContained" />
 
 </Project>

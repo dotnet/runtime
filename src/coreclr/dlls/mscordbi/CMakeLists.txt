@@ -2,10 +2,13 @@
 # Set the RPATH of mscordbi so that it can find dependencies without needing to set LD_LIBRARY_PATH
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if(CORECLR_SET_RPATH)
-  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   if(CLR_CMAKE_HOST_OSX)
+    set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "@loader_path")
   else()
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
   endif(CLR_CMAKE_HOST_OSX)
 endif(CORECLR_SET_RPATH)

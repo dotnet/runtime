@@ -18,7 +18,7 @@ namespace System.Resources
     //
     public class ResourceSet : IDisposable, IEnumerable
     {
-        protected IResourceReader Reader = null!;
+        protected IResourceReader? Reader; // The field is protected for .NET Framework compatibility
 
         private Dictionary<object, object?>? _table;
         private Dictionary<string, object?>? _caseInsensitiveTable;  // For case-insensitive lookups.
@@ -32,7 +32,7 @@ namespace System.Resources
 
         // For RuntimeResourceSet, ignore the Table parameter - it's a wasted
         // allocation.
-        internal ResourceSet(bool junk)
+        internal ResourceSet(bool _)
         {
         }
 
@@ -61,7 +61,9 @@ namespace System.Resources
         public ResourceSet(IResourceReader reader)
             : this()
         {
-            Reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
+
+            Reader = reader;
             ReadResources();
         }
 
@@ -81,8 +83,7 @@ namespace System.Resources
                 // Close the Reader in a thread-safe way.
                 IResourceReader? copyOfReader = Reader;
                 Reader = null!;
-                if (copyOfReader != null)
-                    copyOfReader.Close();
+                copyOfReader?.Close();
             }
             Reader = null!;
             _caseInsensitiveTable = null;
@@ -200,8 +201,7 @@ namespace System.Resources
 
         private object? GetObjectInternal(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
 

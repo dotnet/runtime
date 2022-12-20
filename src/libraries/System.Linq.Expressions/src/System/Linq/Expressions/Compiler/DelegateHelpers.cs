@@ -109,7 +109,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static Type MakeNewCustomDelegate(Type[] types)
         {
-            if (LambdaExpression.CanCompileToIL)
+            if (RuntimeFeature.IsDynamicCodeSupported)
             {
                 Type returnType = types[types.Length - 1];
                 Type[] parameters = types.RemoveLast();
@@ -122,7 +122,7 @@ namespace System.Linq.Expressions.Compiler
                 TypeBuilder builder = AssemblyGen.DefineDelegateType("Delegate" + types.Length);
                 builder.DefineConstructor(ctorAttributes, CallingConventions.Standard, delegateCtorSignature).SetImplementationFlags(implAttributes);
                 builder.DefineMethod("Invoke", invokeAttributes, returnType, parameters).SetImplementationFlags(implAttributes);
-                return builder.CreateTypeInfo()!;
+                return builder.CreateTypeInfo();
             }
             else
             {

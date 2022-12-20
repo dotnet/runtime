@@ -438,9 +438,9 @@ void BasicBlock::dspFlags()
     {
         printf("idxlen ");
     }
-    if (bbFlags & BBF_HAS_NEWARRAY)
+    if (bbFlags & BBF_HAS_MD_IDX_LEN)
     {
-        printf("new[] ");
+        printf("mdidxlen ");
     }
     if (bbFlags & BBF_HAS_NEWOBJ)
     {
@@ -463,6 +463,10 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_BACKWARD_JUMP_TARGET)
     {
         printf("bwd-target ");
+    }
+    if (bbFlags & BBF_BACKWARD_JUMP_SOURCE)
+    {
+        printf("bwd-src ");
     }
     if (bbFlags & BBF_PATCHPOINT)
     {
@@ -507,6 +511,10 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_LOOP_ALIGN)
     {
         printf("align ");
+    }
+    if (bbFlags & BBF_HAS_MDARRAYREF)
+    {
+        printf("mdarr ");
     }
 }
 
@@ -575,18 +583,49 @@ unsigned BasicBlock::dspCheapPreds()
     return count;
 }
 
-/*****************************************************************************
- *
- *  Display the basic block successors.
- */
-
+//------------------------------------------------------------------------
+// dspSuccs: Display the basic block successors.
+//
+// Arguments:
+//    compiler - compiler instance; passed to NumSucc(Compiler*) -- see that function for implications.
+//
 void BasicBlock::dspSuccs(Compiler* compiler)
 {
     bool first = true;
-    for (BasicBlock* const succ : Succs(compiler))
+
+    // If this is a switch, we don't want to call `Succs(Compiler*)` because it will eventually call
+    // `GetSwitchDescMap()`, and that will have the side-effect of allocating the unique switch descriptor map
+    // and/or compute this switch block's unique succ set if it is not present. Debug output functions should
+    // never have an effect on codegen. We also don't want to assume the unique succ set is accurate, so we
+    // compute it ourselves here.
+    if (bbJumpKind == BBJ_SWITCH)
     {
-        printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
-        first = false;
+        // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
+        // about the BlockSet epoch.
+        unsigned     bbNumMax = compiler->impInlineRoot()->fgBBNumMax;
+        BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
+        BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
+        for (BasicBlock* const bTarget : SwitchTargets())
+        {
+            BitVecOps::AddElemD(&bitVecTraits, uniqueSuccBlocks, bTarget->bbNum);
+        }
+        BitVecOps::Iter iter(&bitVecTraits, uniqueSuccBlocks);
+        unsigned        bbNum = 0;
+        while (iter.NextElem(&bbNum))
+        {
+            // Note that we will output switch successors in increasing numerical bbNum order, which is
+            // not related to their order in the bbJumpSwt->bbsDstTab table.
+            printf("%s" FMT_BB, first ? "" : ",", bbNum);
+            first = false;
+        }
+    }
+    else
+    {
+        for (BasicBlock* const succ : Succs(compiler))
+        {
+            printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
+            first = false;
+        }
     }
 }
 
@@ -1412,7 +1451,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     // TODO-Throughput: The following memset is pretty expensive - do something else?
     // Note that some fields have to be initialized to 0 (like bbFPStateX87)
-    memset(block, 0, sizeof(*block));
+    memset((void*)block, 0, sizeof(*block));
 
     // scopeInfo needs to be able to differentiate between blocks which
     // correspond to some instrs (and so may have some LocalVarInfo

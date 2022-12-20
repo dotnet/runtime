@@ -23,8 +23,7 @@ namespace System
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             ParsedName? pname = ParseName(typeName, false, 0, out int end_pos);
             if (pname == null)
@@ -142,7 +141,7 @@ namespace System
         [RequiresUnreferencedCode("Types might be removed")]
         private static Type? ResolveType(Assembly assembly, List<string> names, Func<Assembly, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            Type? type = null;
+            Type? type;
 
             string name = EscapeTypeName(names[0]);
             // Resolve the top level type.
@@ -263,7 +262,6 @@ namespace System
 
             var res = new ParsedName() { Names = new List<string>() };
 
-            int start = pos;
             int name_start = pos;
             bool in_modifiers = false;
             while (pos < name.Length)
@@ -309,16 +307,14 @@ namespace System
                         pos++;
                         isbyref = true;
                         isptr = false;
-                        if (res.Modifiers == null)
-                            res.Modifiers = new List<int>();
+                        res.Modifiers ??= new List<int>();
                         res.Modifiers.Add(0);
                         break;
                     case '*':
                         if (isbyref)
                             return null;
                         pos++;
-                        if (res.Modifiers == null)
-                            res.Modifiers = new List<int>();
+                        res.Modifiers ??= new List<int>();
                         res.Modifiers.Add(-1);
                         isptr = true;
                         break;
@@ -357,8 +353,7 @@ namespace System
                             if (bounded && rank > 1)
                                 return null;
                             /* n.b. bounded needs both modifiers: -2 == bounded, 1 == rank 1 array */
-                            if (res.Modifiers == null)
-                                res.Modifiers = new List<int>();
+                            res.Modifiers ??= new List<int>();
                             if (bounded)
                                 res.Modifiers.Add(-2);
                             res.Modifiers.Add(rank);

@@ -25,14 +25,11 @@ class PEImage;
 
 namespace BINDER_SPACE
 {
-    class AssemblyIdentityUTF8;
-
     class AssemblyBinderCommon
     {
     public:
         static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder, 
                                     /* in */  AssemblyName        *pAssemblyName,
-                                    /* in */  LPCWSTR              szCodeBase,
                                     /* in */  bool                 excludeAppPaths,
                                     /* out */ Assembly           **ppAssembly);
 
@@ -53,11 +50,13 @@ namespace BINDER_SPACE
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ DefaultAssemblyBinder *pDefaultBinder,
+                                                      /* in */ AssemblyBinder *pBinder,
                                                       /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,
                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                         /* in */  PEImage            *pPEImage,
+                                        /* in */  bool              excludeAppPaths,
                                         /* [retval] [out] */  Assembly **ppAssembly);
 #endif // !defined(DACCESS_COMPILE)
 
@@ -75,11 +74,6 @@ namespace BINDER_SPACE
                                   /* in */  bool                excludeAppPaths,
                                   /* out */ BindResult         *pBindResult);
 
-        static HRESULT BindWhereRef(/* in */  ApplicationContext *pApplicationContext,
-                                    /* in */  PathString         &assemblyPath,
-                                    /* in */  bool                excludeAppPaths,
-                                    /* out */ BindResult         *pBindResult);
-
         static HRESULT BindLocked(/* in */  ApplicationContext *pApplicationContext,
                                   /* in */  AssemblyName       *pAssemblyName,
                                   /* in */  bool                skipVersionCompatibilityCheck,
@@ -88,7 +82,7 @@ namespace BINDER_SPACE
 
         static HRESULT FindInExecutionContext(/* in */  ApplicationContext  *pApplicationContext,
                                               /* in */  AssemblyName        *pAssemblyName,
-                                              /* out */ ContextEntry       **ppContextEntry);
+                                              /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindByTpaList(/* in */  ApplicationContext  *pApplicationContext,
                                      /* in */  AssemblyName        *pRequestedAssemblyName,

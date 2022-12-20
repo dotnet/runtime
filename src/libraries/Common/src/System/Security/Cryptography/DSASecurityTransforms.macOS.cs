@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
                     {
                         DSAKeyFormatHelper.ReadEncryptedPkcs8(
                             keyBlob,
-                            ExportPassword,
+                            (ReadOnlySpan<char>)ExportPassword,
                             out int localRead,
                             out DSAParameters key);
                         Debug.Assert(localRead == keyBlob.Length);

@@ -9,67 +9,53 @@ namespace System.Net.Security
 {
     internal interface IReadWriteAdapter
     {
-        ValueTask<int> ReadAsync(Memory<byte> buffer);
-
-        ValueTask WriteAsync(byte[] buffer, int offset, int count);
-
-        Task WaitAsync(TaskCompletionSource<bool> waiter);
-
-        Task FlushAsync();
-
-        CancellationToken CancellationToken { get; }
+        static abstract ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken);
+        static abstract ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken);
+        static abstract ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
+        static abstract Task FlushAsync(Stream stream, CancellationToken cancellationToken);
+        static abstract Task WaitAsync(TaskCompletionSource<bool> waiter);
     }
 
     internal readonly struct AsyncReadWriteAdapter : IReadWriteAdapter
     {
-        private readonly Stream _stream;
+        public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
+            stream.ReadAsync(buffer, cancellationToken);
 
-        public AsyncReadWriteAdapter(Stream stream, CancellationToken cancellationToken)
-        {
-            _stream = stream;
-            CancellationToken = cancellationToken;
-        }
+        public static ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken) =>
+            stream.ReadAtLeastAsync(buffer, minimumBytes, throwOnEndOfStream, cancellationToken);
 
-        public ValueTask<int> ReadAsync(Memory<byte> buffer) =>
-            _stream.ReadAsync(buffer, CancellationToken);
+        public static ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) =>
+            stream.WriteAsync(buffer, cancellationToken);
 
-        public ValueTask WriteAsync(byte[] buffer, int offset, int count) =>
-            _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken);
+        public static Task FlushAsync(Stream stream, CancellationToken cancellationToken) => stream.FlushAsync(cancellationToken);
 
-        public Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
-
-        public Task FlushAsync() => _stream.FlushAsync(CancellationToken);
-
-        public CancellationToken CancellationToken { get; }
+        public static Task WaitAsync(TaskCompletionSource<bool> waiter) => waiter.Task;
     }
 
     internal readonly struct SyncReadWriteAdapter : IReadWriteAdapter
     {
-        private readonly Stream _stream;
+        public static ValueTask<int> ReadAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken) =>
+            new ValueTask<int>(stream.Read(buffer.Span));
 
-        public SyncReadWriteAdapter(Stream stream) => _stream = stream;
+        public static ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken) =>
+            new ValueTask<int>(stream.ReadAtLeast(buffer.Span, minimumBytes, throwOnEndOfStream));
 
-        public ValueTask<int> ReadAsync(Memory<byte> buffer) =>
-            new ValueTask<int>(_stream.Read(buffer.Span));
-
-        public ValueTask WriteAsync(byte[] buffer, int offset, int count)
+        public static ValueTask WriteAsync(Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            _stream.Write(buffer, offset, count);
+            stream.Write(buffer.Span);
             return default;
         }
 
-        public Task WaitAsync(TaskCompletionSource<bool> waiter)
+        public static Task FlushAsync(Stream stream, CancellationToken cancellationToken)
+        {
+            stream.Flush();
+            return Task.CompletedTask;
+        }
+
+        public static Task WaitAsync(TaskCompletionSource<bool> waiter)
         {
             waiter.Task.GetAwaiter().GetResult();
             return Task.CompletedTask;
         }
-
-        public Task FlushAsync()
-        {
-            _stream.Flush();
-            return Task.CompletedTask;
-        }
-
-        public CancellationToken CancellationToken => default;
     }
 }

@@ -44,9 +44,27 @@ namespace System.Collections.Generic
         public void Append(T item)
         {
             int pos = _pos;
-            if (pos >= _span.Length)
-                Grow();
 
+            // Workaround for https://github.com/dotnet/runtime/issues/72004
+            Span<T> span = _span;
+            if ((uint)pos < (uint)span.Length)
+            {
+                span[pos] = item;
+                _pos = pos + 1;
+            }
+            else
+            {
+                AddWithResize(item);
+            }
+        }
+
+        // Hide uncommon path
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddWithResize(T item)
+        {
+            Debug.Assert(_pos == _span.Length);
+            int pos = _pos;
+            Grow();
             _span[pos] = item;
             _pos = pos + 1;
         }
@@ -69,10 +87,25 @@ namespace System.Collections.Generic
 
         private void Grow()
         {
-            T[] array = ArrayPool<T>.Shared.Rent(_span.Length * 2);
+            const int ArrayMaxLength = 0x7FFFFFC7; // same as Array.MaxLength
 
-            bool success = _span.TryCopyTo(array);
-            Debug.Assert(success);
+            // Double the size of the span.  If it's currently empty, default to size 4,
+            // although it'll be increased in Rent to the pool's minimum bucket size.
+            int nextCapacity = _span.Length != 0 ? _span.Length * 2 : 4;
+
+            // If the computed doubled capacity exceeds the possible length of an array, then we
+            // want to downgrade to either the maximum array length if that's large enough to hold
+            // an additional item, or the current length + 1 if it's larger than the max length, in
+            // which case it'll result in an OOM when calling Rent below.  In the exceedingly rare
+            // case where _span.Length is already int.MaxValue (in which case it couldn't be a managed
+            // array), just use that same value again and let it OOM in Rent as well.
+            if ((uint)nextCapacity > ArrayMaxLength)
+            {
+                nextCapacity = Math.Max(Math.Max(_span.Length + 1, ArrayMaxLength), _span.Length);
+            }
+
+            T[] array = ArrayPool<T>.Shared.Rent(nextCapacity);
+            _span.CopyTo(array);
 
             T[]? toReturn = _arrayFromPool;
             _span = _arrayFromPool = array;

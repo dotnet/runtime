@@ -332,7 +332,7 @@ namespace System.Net
 
         private State ReadTrailer(byte[] buffer, ref int offset, int size)
         {
-            char c = '\0';
+            char c;
 
             // short path
             if (_trailerState == 2 && (char)buffer[offset] == '\r' && _saved.Length == 0)

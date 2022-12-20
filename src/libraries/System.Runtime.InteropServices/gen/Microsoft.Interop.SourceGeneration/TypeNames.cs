@@ -1,40 +1,55 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.Interop;
-
 namespace Microsoft.Interop
 {
     public static class TypeNames
     {
         public const string DllImportAttribute = "System.Runtime.InteropServices.DllImportAttribute";
-        public const string GeneratedDllImportAttribute = "System.Runtime.InteropServices.GeneratedDllImportAttribute";
+        public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
+        public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
 
-        public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
+        public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute";
 
-        public const string BlittableTypeAttribute = "System.Runtime.InteropServices.BlittableTypeAttribute";
+        public const string MarshalUsingAttribute = "System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute";
 
-        public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.NativeMarshallingAttribute";
+        public const string CustomMarshallerAttribute = "System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute";
+        public const string CustomMarshallerAttributeGenericPlaceholder = CustomMarshallerAttribute + ".GenericPlaceholder";
+        public const string ContiguousCollectionMarshallerAttribute = "System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshallerAttribute";
 
-        public const string MarshalUsingAttribute = "System.Runtime.InteropServices.MarshalUsingAttribute";
-
-        public const string GenericContiguousCollectionMarshallerAttribute = "System.Runtime.InteropServices.GenericContiguousCollectionMarshallerAttribute";
+        public const string AnsiStringMarshaller = "System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller";
+        public const string BStrStringMarshaller = "System.Runtime.InteropServices.Marshalling.BStrStringMarshaller";
+        public const string Utf16StringMarshaller = "System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller";
+        public const string Utf8StringMarshaller = "System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller";
+        public const string SwallowExceptionMarshaller = "System.Runtime.InteropServices.Marshalling.SwallowExceptionMarshaller";
+        public const string ExceptionHResultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionHResultMarshaller";
+        public const string ExceptionNaNMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionNaNMarshaller";
+        public const string ExceptionDefaultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionDefaultMarshaller";
 
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
         public const string SuppressGCTransitionAttribute = "System.Runtime.InteropServices.SuppressGCTransitionAttribute";
 
         public const string UnmanagedCallConvAttribute = "System.Runtime.InteropServices.UnmanagedCallConvAttribute";
+
+        public const string UnmanagedCallersOnlyAttribute = "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute";
+
+        public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute";
+
+        public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.IUnmanagedVirtualMethodTableProvider";
+
+        public const string IUnmanagedInterfaceType_Metadata = "System.Runtime.InteropServices.IUnmanagedInterfaceType`2";
+
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
+        public const string System_ReadOnlySpan_Metadata = "System.ReadOnlySpan`1";
+        public const string System_ReadOnlySpan = "System.ReadOnlySpan";
 
         public const string System_IntPtr = "System.IntPtr";
 
         public const string System_Activator = "System.Activator";
+
+        public const string System_Exception = "System.Exception";
 
         public const string System_Type = "System.Type";
 
@@ -55,9 +70,13 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_MemoryMarshal = "System.Runtime.InteropServices.MemoryMarshal";
 
-        public const string System_Runtime_InteropServices_GeneratedMarshalling_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.GeneratedMarshalling.ArrayMarshaller`1";
+        public const string System_Runtime_InteropServices_ArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ArrayMarshaller`2";
 
-        public const string System_Runtime_InteropServices_GeneratedMarshalling_PtrArrayMarshaller_Metadata = "System.Runtime.InteropServices.GeneratedMarshalling.PtrArrayMarshaller`1";
+        public const string System_Runtime_InteropServices_PointerArrayMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller`2";
+
+        public const string System_Runtime_InteropServices_ArrayMarshaller = "System.Runtime.InteropServices.Marshalling.ArrayMarshaller";
+
+        public const string System_Runtime_InteropServices_PointerArrayMarshaller = "System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller";
 
         public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
 
@@ -67,13 +86,18 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_CompilerServices_SkipLocalsInitAttribute = "System.Runtime.CompilerServices.SkipLocalsInitAttribute";
 
-        private const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
+        public const string System_Runtime_CompilerServices_Unsafe = "System.Runtime.CompilerServices.Unsafe";
 
-        private const string Internal_Runtime_CompilerServices_Unsafe = "Internal.Runtime.CompilerServices.Unsafe";
+        public const string System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute = "System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute";
 
-        public static string Unsafe(InteropGenerationOptions options)
-        {
-            return options.UseInternalUnsafeType ? Internal_Runtime_CompilerServices_Unsafe : System_Runtime_CompilerServices_Unsafe;
-        }
+        public const string DefaultDllImportSearchPathsAttribute = "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute";
+
+        public const string DllImportSearchPath = "System.Runtime.InteropServices.DllImportSearchPath";
+
+        public const string System_CodeDom_Compiler_GeneratedCodeAttribute = "System.CodeDom.Compiler.GeneratedCodeAttribute";
+
+        public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
+
+        public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
     }
 }

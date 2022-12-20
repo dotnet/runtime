@@ -1,15 +1,8 @@
 <Project>
   <PropertyGroup>
-    <SlnGenSolutionFolder Condition="'$(IsReferenceAssembly)' == 'true'">ref</SlnGenSolutionFolder>
-    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">tests</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsGeneratorProject)' == 'true'">gen</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsReferenceAssemblyProject)' == 'true'">ref</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">tests</SlnGenSolutionFolder>
     <SlnGenSolutionFolder Condition="'$(SlnGenSolutionFolder)' == ''">src</SlnGenSolutionFolder>
-
-    <!-- Don't include reference projects which compose the microsoft.netcore.app targeting pack (except the current leaf's reference project) as those are referenced by the source project via named references
-         and hence don't need to be part of the solution file (only P2Ps need to).
-         Include the reference project in the solution file if it targets more than just NetCoreAppCurrent as other frameworks like .NETFramework, .NETStandard or older .NETCoreApp ones require it. -->
-    <IncludeInSolutionFile Condition="'$(IsNETCoreAppRef)' == 'true' and '$(MSBuildProjectName)' != '$(SlnGenMainProject)' and '$(TargetFrameworks)' == '$(NetCoreAppCurrent)'">false</IncludeInSolutionFile>
   </PropertyGroup>
-  <ItemGroup>
-    <SlnGenCustomProjectTypeGuid Include=".ilproj" ProjectTypeGuid="{9A19103F-16F7-4668-BE54-9A1E7A4F7556}" />
-  </ItemGroup>
 </Project>

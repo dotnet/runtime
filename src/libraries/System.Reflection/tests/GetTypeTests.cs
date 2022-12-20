@@ -39,27 +39,27 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentException>("typeName@0", () => Type.GetType(aqn, throwOnError: true, ignoreCase: true));
 
             // Assembly.GetType
-            AssertExtensions.Throws<ArgumentException>(null, () => a.GetType(typeName));
+            Assert.Throws<ArgumentException>(() => a.GetType(typeName));
             Assert.Null(a.GetType(aqn));
 
-            AssertExtensions.Throws<ArgumentException>(null, () => a.GetType(typeName, throwOnError: false, ignoreCase: false));
-            AssertExtensions.Throws<ArgumentException>(null, () => a.GetType(typeName, throwOnError: false, ignoreCase: true));
+            Assert.Throws<ArgumentException>(() => a.GetType(typeName, throwOnError: false, ignoreCase: false));
+            Assert.Throws<ArgumentException>(() => a.GetType(typeName, throwOnError: false, ignoreCase: true));
             Assert.Null(a.GetType(aqn, throwOnError: false, ignoreCase: false));
             Assert.Null(a.GetType(aqn, throwOnError: false, ignoreCase: true));
 
-            AssertExtensions.Throws<ArgumentException>(null, () => a.GetType(typeName, throwOnError: true, ignoreCase: false));
-            AssertExtensions.Throws<ArgumentException>(null, () => a.GetType(typeName, throwOnError: true, ignoreCase: true));
+            Assert.Throws<ArgumentException>(() => a.GetType(typeName, throwOnError: true, ignoreCase: false));
+            Assert.Throws<ArgumentException>(() => a.GetType(typeName, throwOnError: true, ignoreCase: true));
             AssertExtensions.Throws<ArgumentException>("typeName@0", () => a.GetType(aqn, throwOnError: true, ignoreCase: false));
             AssertExtensions.Throws<ArgumentException>("typeName@0", () => a.GetType(aqn, throwOnError: true, ignoreCase: true));
 
             // Module.GetType
-            AssertExtensions.Throws<ArgumentException>(null, () => m.GetType(typeName, throwOnError: false, ignoreCase: false));
-            AssertExtensions.Throws<ArgumentException>(null, () => m.GetType(typeName, throwOnError: false, ignoreCase: true));
+            Assert.Throws<ArgumentException>(() => m.GetType(typeName, throwOnError: false, ignoreCase: false));
+            Assert.Throws<ArgumentException>(() => m.GetType(typeName, throwOnError: false, ignoreCase: true));
             Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: false));
             Assert.Null(m.GetType(aqn, throwOnError: false, ignoreCase: true));
 
-            AssertExtensions.Throws<ArgumentException>(null, () => m.GetType(typeName, throwOnError: true, ignoreCase: false));
-            AssertExtensions.Throws<ArgumentException>(null, () => m.GetType(typeName, throwOnError: true, ignoreCase: true));
+            Assert.Throws<ArgumentException>(() => m.GetType(typeName, throwOnError: true, ignoreCase: false));
+            Assert.Throws<ArgumentException>(() => m.GetType(typeName, throwOnError: true, ignoreCase: true));
             AssertExtensions.Throws<ArgumentException>("typeName@0", () => m.GetType(aqn, throwOnError: true, ignoreCase: false));
             AssertExtensions.Throws<ArgumentException>("typeName@0", () => m.GetType(aqn, throwOnError: true, ignoreCase: true));
         }
@@ -155,8 +155,8 @@ namespace System.Reflection.Tests
 
                 // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
                 // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
-                // layout of private hash tables.) As a result, we do not expect the same result across .NET Framework and Project N
-                // and so the best we can do is compare the names.
+                // layout of private hash tables.) As a result, we do not expect the same result across runtimes and so the best
+                // we can do is compare the names.
                 string expectedName = expectedResult.AssemblyQualifiedName;
 
                 Assert.Equal(expectedResult, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
@@ -209,8 +209,8 @@ namespace System.Reflection.Tests
 
                 // When called with "ignoreCase: true", GetType() may have a choice of matching items. The one that is chosen
                 // is an implementation detail (and on the CLR, *very* implementation-dependent as it's influenced by the internal
-                // layout of private hash tables.) As a result, we do not expect the same result across .NET Framework and Project N
-                // and so the best we can do is compare the names.
+                // layout of private hash tables.) As a result, we do not expect the same result across runtimes and so the best
+                // we can do is compare the names.
                 string expectedName = expectedResult.AssemblyQualifiedName;
 
                 Assert.Null(Type.GetType(typeName, throwOnError: false, ignoreCase: false));
@@ -279,7 +279,7 @@ namespace System.Reflection.Tests
             public class MyClass3
             {
                 public class Inner { }
-                public class inner { }
+                public class @inner { }
                 public class iNner { }
                 public class inNer { }
             }

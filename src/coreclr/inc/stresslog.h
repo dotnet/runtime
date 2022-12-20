@@ -14,13 +14,13 @@
    however thread safe */
 
 /* The log has a very simple structure, and it meant to be dumped from a NTSD
-   extention (eg. strike). There is no memory allocation system calls etc to purtub things */
+   extension (eg. strike). There is no memory allocation system calls etc to purtub things */
 
 // ******************************************************************************
 // WARNING!!!: These classes are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/stresslog.h
-// Parser: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/stressLogDump.cpp
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/stresslog.h
+// Parser: https://github.com/dotnet/diagnostics/blob/main/src/SOS/Strike/stressLogDump.cpp
 // ******************************************************************************
 
 /*************************************************************************************/
@@ -45,6 +45,8 @@
 #ifndef _ASSERTE
 #define _ASSERTE(expr)
 #endif
+#else
+#include <stddef.h> // offsetof
 #endif // STRESS_LOG_ANALYZER
 
 /* The STRESS_LOG* macros work like printf.  In fact the use printf in their implementation
@@ -57,11 +59,11 @@
             %pK     // The pointer is a code address (used for stack track)
 */
 
-/*  STRESS_LOG_VA was added to allow sendign GC trace output to the stress log. msg must be enclosed
-      in ()'s and contain a format string followed by 0 - 4 arguments.  The arguments must be numbers or
-      string literals.  LogMsgOL is overloaded so that all of the possible sets of parameters are covered.
-      This was done becasue GC Trace uses dprintf which dosen't contain info on how many arguments are
-      getting passed in and using va_args would require parsing the format string during the GC
+/*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
+    in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
+     or string literals. This was done because GC Trace uses dprintf which doesn't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
+    string during the GC
 */
 #define STRESS_LOG_VA(dprintfLevel,msg) do {                                                        \
             if (StressLog::LogOn(LF_GC, LL_ALWAYS))                                                 \
@@ -257,6 +259,8 @@
 #define STRESS_LOG_GC_STACK
 #endif //_DEBUG
 
+void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength);
+
 class ThreadStressLog;
 
 struct StressLogMsg;
@@ -322,12 +326,46 @@ public:
     static const size_t MAX_MODULES = 5;
     ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
 
-#if defined(HOST_WINDOWS) && defined(HOST_64BIT)
+#if defined(HOST_64BIT)
 #define MEMORY_MAPPED_STRESSLOG
+#ifdef HOST_WINDOWS
+#define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS (void*)0x400000000000
+#else
+#define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS nullptr
+#endif
+#endif
+
+#ifdef STRESS_LOG_ANALYZER
+    static size_t writing_base_address;
+    static size_t reading_base_address;
+
+    template<typename T>
+    static T* TranslateMemoryMappedPointer(T* input)
+    {
+        if (input == nullptr)
+        {
+            return nullptr;
+        }
+
+        return ((T*)(((uint8_t*)input) - writing_base_address + reading_base_address));
+    }
+#else
+    template<typename T>
+    static T* TranslateMemoryMappedPointer(T* input)
+    {
+        return input;
+    }
 #endif
 
 #ifdef MEMORY_MAPPED_STRESSLOG
-    MapViewHolder hMapView;
+
+    //
+    // Intentionally avoid unmapping the file during destructor to avoid a race
+    // condition between additional logging in other thread and the destructor.
+    //
+    // The operating system will make sure the file get unmapped during process shutdown
+    //
+    LPVOID hMapView;
     static void* AllocMemoryMapped(size_t n);
 
     struct StressLogHeader
@@ -506,7 +544,7 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 #endif
 
 // The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally alligned, so we don't waste
+// And make sure the timeStamp field is naturally aligned, so we don't waste
 // space on 32-bit platforms
 struct StressMsg {
     static const size_t formatOffsetBits = 26;
@@ -547,8 +585,14 @@ struct StressLogChunk
     DWORD dwSig2;
 
 #if !defined(STRESS_LOG_READONLY)
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    static bool s_memoryMapped;
+#endif //MEMORY_MAPPED_STRESSLOG
+
 #ifdef HOST_WINDOWS
     static HANDLE s_LogChunkHeap;
+#endif //HOST_WINDOWS
 
     void * operator new (size_t size) throw()
     {
@@ -556,43 +600,32 @@ struct StressLogChunk
         {
             return NULL;
         }
-
-        if (s_LogChunkHeap != NULL)
-        {
-            //no need to zero memory because we could handle garbage contents
-            return HeapAlloc(s_LogChunkHeap, 0, size);
-        }
-        else
-        {
 #ifdef MEMORY_MAPPED_STRESSLOG
+        if (s_memoryMapped)
             return StressLog::AllocMemoryMapped(size);
-#else
-            return nullptr;
 #endif //MEMORY_MAPPED_STRESSLOG
-        }
+#ifdef HOST_WINDOWS
+        _ASSERTE(s_LogChunkHeap);
+        return HeapAlloc(s_LogChunkHeap, 0, size);
+#else
+        return malloc(size);
+#endif //HOST_WINDOWS
     }
 
     void operator delete (void * chunk)
     {
-        if (s_LogChunkHeap != NULL)
-            HeapFree (s_LogChunkHeap, 0, chunk);
-    }
+#ifdef MEMORY_MAPPED_STRESSLOG
+        if (s_memoryMapped)
+            return;
+#endif //MEMORY_MAPPED_STRESSLOG
+#ifdef HOST_WINDOWS
+        _ASSERTE(s_LogChunkHeap);
+        HeapFree (s_LogChunkHeap, 0, chunk);
 #else
-    void* operator new (size_t size) throw()
-    {
-        if (IsInCantAllocStressLogRegion())
-        {
-            return NULL;
-        }
-
-        return malloc(size);
-    }
-
-    void operator delete (void* chunk)
-    {
         free(chunk);
+#endif //HOST_WINDOWS
     }
-#endif
+
 #endif //!STRESS_LOG_READONLY
 
     StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)
@@ -715,6 +748,7 @@ public:
 
 #if defined(MEMORY_MAPPED_STRESSLOG) && !defined(STRESS_LOG_ANALYZER)
     void* __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT;
+    void __cdecl operator delete (void * chunk);
 #endif
 
     ~ThreadStressLog ()
@@ -772,7 +806,7 @@ public:
 
     BOOL IsValid () const
     {
-        return chunkListHead != NULL && (!curWriteChunk || curWriteChunk->IsValid ());
+        return chunkListHead != NULL && (!curWriteChunk || StressLog::TranslateMemoryMappedPointer(curWriteChunk)->IsValid ());
     }
 
 #ifdef STRESS_LOG_READONLY

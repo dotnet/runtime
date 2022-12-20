@@ -6,8 +6,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
 
-.assembly MCCTest {}
-.module mcc_i65.exe
+.assembly 'mcc_i65' {}
 
 
 .namespace MCCTest
@@ -21,7 +20,7 @@
                                     float64, valuetype MCCTest.VType6, float32, valuetype MCCTest.VType6, int16, valuetype MCCTest.VType6) cil managed preservesig {
     }
 
-    .method private static int32 Main(string[] args)
+    .method private static int32 Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

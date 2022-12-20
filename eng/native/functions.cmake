@@ -4,8 +4,73 @@ function(clr_unknown_arch)
     elseif(CLR_CROSS_COMPONENTS_BUILD)
         message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
     endif()
+endfunction()
+
+# C to MASM include file translator
+# This is replacement for the deprecated h2inc tool that used to be part of VS.
+function(h2inc filename output)
+    file(STRINGS ${filename} lines)
+    get_filename_component(path "${filename}" DIRECTORY)
+    file(RELATIVE_PATH relative_filename "${CLR_REPO_ROOT_DIR}" "${filename}")
+
+    file(WRITE "${output}" "// File start: ${relative_filename}\n")
+
+    # Use of NEWLINE_CONSUME is needed for lines with trailing backslash
+    file(STRINGS ${filename} contents NEWLINE_CONSUME)
+    string(REGEX REPLACE "\\\\\n" "\\\\\\\\ \n" contents "${contents}")
+    string(REGEX REPLACE "\n" ";" lines "${contents}")
+
+    foreach(line IN LISTS lines)
+        string(REGEX REPLACE "\\\\\\\\ " "\\\\" line "${line}")
+
+        if(line MATCHES "^ *# pragma")
+            # Ignore pragmas
+            continue()
+        endif()
+
+        if(line MATCHES "^ *# *include *\"(.*)\"")
+            # Expand includes.
+            h2inc("${path}/${CMAKE_MATCH_1}" "${output}")
+            continue()
+        endif()
+
+        if(line MATCHES "^ *#define +([0-9A-Za-z_()]+) *(.*)")
+            # Augment #defines with their MASM equivalent
+            set(name "${CMAKE_MATCH_1}")
+            set(value "${CMAKE_MATCH_2}")
+
+            # Note that we do not handle multiline constants
+
+            # Strip comments from value
+            string(REGEX REPLACE "//.*" "" value "${value}")
+            string(REGEX REPLACE "/\\*.*\\*/" "" value "${value}")
+
+            # Strip whitespaces from value
+            string(REPLACE " +$" "" value "${value}")
+
+            # ignore #defines with arguments
+            if(NOT "${name}" MATCHES "\\(")
+                set(HEX_NUMBER_PATTERN "0x([0-9A-Fa-f]+)")
+                set(DECIMAL_NUMBER_PATTERN "(-?[0-9]+)")
+
+                if("${value}" MATCHES "${HEX_NUMBER_PATTERN}")
+                    string(REGEX REPLACE "${HEX_NUMBER_PATTERN}" "0\\1h" value "${value}")    # Convert hex constants
+                    file(APPEND "${output}" "${name} EQU ${value}\n")
+                elseif("${value}" MATCHES "${DECIMAL_NUMBER_PATTERN}" AND (NOT "${value}" MATCHES "[G-Zg-z]+" OR "${value}" MATCHES "\\("))
+                    string(REGEX REPLACE "${DECIMAL_NUMBER_PATTERN}" "\\1t" value "${value}") # Convert dec constants
+                    file(APPEND "${output}" "${name} EQU ${value}\n")
+                else()
+                    file(APPEND "${output}" "${name} TEXTEQU <${value}>\n")
+                endif()
+            endif()
+        endif()
+
+        file(APPEND "${output}" "${line}\n")
+    endforeach()
+
+    file(APPEND "${output}" "// File end: ${relative_filename}\n")
 endfunction()
 
 # Build a list of compiler definitions by putting -D in front of each define.
@@ -75,14 +140,35 @@ function(get_include_directories_asm IncludeDirectories)
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
 endfunction(get_include_directories_asm)
 
+# Adds prefix to paths list
+function(addprefix var prefix list)
+  set(f)
+  foreach(i ${list})
+    set(f ${f} ${prefix}/${i})
+  endforeach()
+  set(${var} ${f} PARENT_SCOPE)
+endfunction()
+
 # Finds and returns unwind libs
 function(find_unwind_libs UnwindLibs)
     if(CLR_CMAKE_HOST_ARCH_ARM)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
 
+    if(CLR_CMAKE_HOST_ARCH_ARMV6)
+      find_library(UNWIND_ARCH NAMES unwind-arm)
+    endif()
+
     if(CLR_CMAKE_HOST_ARCH_ARM64)
       find_library(UNWIND_ARCH NAMES unwind-aarch64)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+      find_library(UNWIND_ARCH NAMES unwind-loongarch64)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_RISCV64)
+      find_library(UNWIND_ARCH NAMES unwind-riscv64)
     endif()
 
     if(CLR_CMAKE_HOST_ARCH_AMD64)
@@ -91,6 +177,10 @@ function(find_unwind_libs UnwindLibs)
 
     if(CLR_CMAKE_HOST_ARCH_S390X)
       find_library(UNWIND_ARCH NAMES unwind-s390x)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_POWERPC64)
+      find_library(UNWIND_ARCH NAMES unwind-ppc64le)
     endif()
 
     if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
@@ -118,7 +208,8 @@ endfunction(find_unwind_libs)
 function(convert_to_absolute_path RetSources)
     set(Sources ${ARGN})
     foreach(Source IN LISTS Sources)
-        list(APPEND AbsolutePathSources ${CMAKE_CURRENT_SOURCE_DIR}/${Source})
+      get_filename_component(AbsolutePathSource ${Source} ABSOLUTE BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+      list(APPEND AbsolutePathSources ${AbsolutePathSource})
     endforeach()
     set(${RetSources} ${AbsolutePathSources} PARENT_SCOPE)
 endfunction(convert_to_absolute_path)
@@ -308,18 +399,29 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
+      set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
+
+      # codesign release build
       string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
       if (LOWERCASE_CMAKE_BUILD_TYPE STREQUAL release)
-        set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file} && codesign -f -s - ${strip_source_file})
-      else ()
-        set(strip_command)
+        set(strip_command ${strip_command} && codesign -f -s - ${strip_source_file})
+      endif ()
+
+      execute_process(
+        COMMAND ${DSYMUTIL} --help
+        OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
+      )
+
+      set(DSYMUTIL_OPTS "--flat")
+      if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
+        list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
 
       add_custom_command(
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
-        COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+        COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
@@ -330,7 +432,7 @@ function(strip_symbols targetName outputFilename)
         POST_BUILD
         VERBATIM
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-unneeded ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
@@ -364,6 +466,25 @@ function(install_symbol_file symbol_file destination_path)
       install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
   else()
       install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
+  endif()
+endfunction()
+
+function(install_static_library targetName destination component)
+  if (NOT "${component}" STREQUAL "${targetName}")
+    get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
+    list(FIND definedComponents "${component}" componentIdx)
+    if (${componentIdx} EQUAL -1)
+      message(FATAL_ERROR "The ${component} component is not defined. Add a call to `add_component(${component})` to define the component in the build.")
+    endif()
+    add_dependencies(${component} ${targetName})
+  endif()
+  install (TARGETS ${targetName} DESTINATION ${destination} COMPONENT ${component})
+  if (WIN32)
+    set_target_properties(${targetName} PROPERTIES
+        COMPILE_PDB_NAME "${targetName}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+    )
+    install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
   endif()
 endfunction()
 

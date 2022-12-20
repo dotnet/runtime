@@ -27,7 +27,7 @@ namespace BinderTracing
     {
     public:
         // This class assumes the assembly spec will have a longer lifetime than itself
-        AssemblyBindOperation(AssemblySpec *assemblySpec, const WCHAR *assemblyPath = nullptr);
+        AssemblyBindOperation(AssemblySpec *assemblySpec, const SString& assemblyPath = SString::Empty());
         ~AssemblyBindOperation();
 
         void SetResult(PEAssembly *assembly, bool cached = false);
@@ -173,7 +173,7 @@ namespace BinderTracing
     };
 
     // This must match the BindingPathSource value map in ClrEtwAll.man
-    enum PathSource
+    enum PathSource : uint16_t
     {
         ApplicationAssemblies,
         Unused,

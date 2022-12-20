@@ -10,7 +10,7 @@ namespace System.IO.Enumeration
 {
     /// <summary>Enumerates the file system elements of the provided type that are being searched and filtered by a <see cref="FileSystemEnumerable{T}" />.</summary>
     /// <typeparam name="TResult">The type of the result produced by this file system enumerator.</typeparam>
-    public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
+    public abstract unsafe partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
         private int _remainingRecursionDepth;
 
@@ -30,7 +30,9 @@ namespace System.IO.Enumeration
         /// <param name="options">Enumeration options to use.</param>
         internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions? options = null)
         {
-            _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
+            ArgumentNullException.ThrowIfNull(directory);
+
+            _originalRootDirectory = directory;
 
             string path = isNormalized ? directory : Path.GetFullPath(directory);
             _rootDirectory = Path.TrimEndingDirectorySeparator(path);

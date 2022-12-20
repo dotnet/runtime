@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
@@ -9,6 +8,6 @@
     <Compile Include="outermostFinally.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\common\common.csproj" />
+    <ProjectReference Include="..\..\..\..\..\common\eh_common.csproj" />
   </ItemGroup>
 </Project>

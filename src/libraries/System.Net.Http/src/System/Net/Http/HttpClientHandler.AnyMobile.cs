@@ -116,10 +116,7 @@ namespace System.Net.Http
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (IsNativeHandlerEnabled)
                 {
@@ -310,10 +307,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 if (value > HttpContent.MaxBufferSize)
                 {
@@ -322,7 +316,7 @@ namespace System.Net.Http
                         HttpContent.MaxBufferSize));
                 }
 
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 // No-op on property setter.
             }
@@ -620,6 +614,8 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public IWebProxy? Proxy
         {
             get
@@ -739,16 +735,9 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsNativeHandlerEnabled)
-                {
-                    throw new PlatformNotSupportedException();
-                }
-                else
-                {
-                    return Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
-                    Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
-                    s_dangerousAcceptAnyServerCertificateValidator;
-                }
+                return Volatile.Read(ref s_dangerousAcceptAnyServerCertificateValidator) ??
+                Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
+                s_dangerousAcceptAnyServerCertificateValidator;
             }
         }
 
@@ -757,14 +746,6 @@ namespace System.Net.Http
             // Hack to trigger an InvalidOperationException if a property that's stored on
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _socketHandler!.SslOptions = _socketHandler!.SslOptions;
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
-            }
         }
 
         private object InvokeNativeHandlerMethod(string name, params object?[] parameters)

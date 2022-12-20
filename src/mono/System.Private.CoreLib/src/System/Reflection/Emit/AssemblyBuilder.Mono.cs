@@ -33,13 +33,14 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace System.Reflection.Emit
 {
@@ -153,7 +154,7 @@ namespace System.Reflection.Emit
                 Type a = args[i];
                 Type b = other.args[i];
                 /*
-                We must cannonicalize as much as we can. Using equals means that some resulting types
+                We must canonicalize as much as we can. Using equals means that some resulting types
                 won't have the exact same types as the argument ones.
                 For example, flyweight types used array, pointer and byref will should this behavior.
                 MCS seens to be resilient to this problem so hopefully this won't show up.
@@ -178,6 +179,7 @@ namespace System.Reflection.Emit
         //
 #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
+        private LoaderAllocator? m_keepalive;
 
         private UIntPtr dynamic_assembly; /* GC-tracked */
         private ModuleBuilder[] modules;
@@ -227,7 +229,7 @@ namespace System.Reflection.Emit
             basic_init(this);
 
             // Netcore only allows one module per assembly
-            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule", false);
+            manifest_module = new ModuleBuilder(this, "RefEmit_InMemoryManifestModule");
             modules = new ModuleBuilder[] { manifest_module };
         }
 
@@ -236,14 +238,15 @@ namespace System.Reflection.Emit
             get { return base.ReflectionOnly; }
         }
 
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             return new AssemblyBuilder(name, access);
         }
 
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             AssemblyBuilder ab = DefineDynamicAssembly(name, access);
@@ -258,10 +261,7 @@ namespace System.Reflection.Emit
 
         public ModuleBuilder DefineDynamicModule(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Empty name is not legal.", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
 
@@ -271,17 +271,26 @@ namespace System.Reflection.Emit
             return manifest_module;
         }
 
+        internal static AssemblyBuilder InternalDefineDynamicAssembly(
+            AssemblyName name,
+            AssemblyBuilderAccess access,
+            Assembly? _ /*callingAssembly*/,
+            AssemblyLoadContext? assemblyLoadContext,
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        {
+            Debug.Assert(assemblyLoadContext is null);
+            return DefineDynamicAssembly(name, access, assemblyAttributes);
+        }
+
         public ModuleBuilder? GetDynamicModule(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Empty name is not legal.", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (modules != null)
                 for (int i = 0; i < modules.Length; ++i)
                     if (modules[i].name == name)
                         return modules[i];
+
             return null;
         }
 
@@ -289,8 +298,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             if (cattrs != null)
             {
@@ -308,13 +316,10 @@ namespace System.Reflection.Emit
             UpdateNativeCustomAttributes(this);
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
@@ -326,16 +331,13 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException(name);
-            if (name.Length == 0)
-                throw new ArgumentException("Name cannot be empty", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             Type res = InternalGetType(null, name, throwOnError, ignoreCase);
             if (res is TypeBuilder)
             {
                 if (throwOnError)
-                    throw new TypeLoadException(string.Format("Could not load type '{0}' from assembly '{1}'", name, this.name));
+                    throw new TypeLoadException(SR.Format(SR.ClassLoad_General, name, this.name));
                 return null;
             }
             return res;
@@ -343,10 +345,7 @@ namespace System.Reflection.Emit
 
         public override Module? GetModule(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Name can't be empty");
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (modules == null)
                 return null;
@@ -374,11 +373,11 @@ namespace System.Reflection.Emit
 
         public override Module[] GetLoadedModules(bool getResourceModules) => GetModules(getResourceModules);
 
-        //FIXME MS has issues loading satelite assemblies from SRE
+        //FIXME MS has issues loading satellite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture) => GetSatelliteAssembly(culture, null);
 
-        //FIXME MS has issues loading satelite assemblies from SRE
+        //FIXME MS has issues loading satellite assemblies from SRE
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version) =>
             RuntimeAssembly.InternalGetSatelliteAssembly(this, culture, version, true)!;
@@ -401,4 +400,3 @@ namespace System.Reflection.Emit
         public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttribute.GetCustomAttributesData(this);
     }
 }
-#endif

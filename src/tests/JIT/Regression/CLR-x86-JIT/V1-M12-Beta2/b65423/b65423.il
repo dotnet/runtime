@@ -6,11 +6,10 @@
 .assembly extern mscorlib { auto }
 .assembly extern Microsoft.VisualBasic { auto }
 
-.assembly 'b1904'
+.assembly 'b65423'
 {
 }
 .assembly extern xunit.core {}
-.module 'b1904.exe'
 .class private auto ansi b1904 extends ['mscorlib']System.Object
 {
   .field private static int32 Count

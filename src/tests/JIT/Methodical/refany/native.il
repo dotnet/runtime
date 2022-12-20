@@ -15,14 +15,13 @@
 {
 }
 .assembly extern xunit.core {}
-.module native.exe
 // MVID: {C18F1061-8239-420B-AC69-D4CB0BB38F2B}
-.namespace JitTest
+.namespace JitTest_native_refany_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -86,6 +85,6 @@
 
   } // end of class Test
 
-} // end of namespace JitTest
+} // end of namespace JitTest_native_refany_il
 
 //*********** DISASSEMBLY COMPLETE ***********************

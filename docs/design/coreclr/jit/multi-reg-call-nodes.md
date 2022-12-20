@@ -4,7 +4,7 @@ Support for multiple destination regs, GT_CALL and GT_RETURN nodes that return a
 The following targets allow a GT_CALL/GT_RETURN node to return a value in more than one register:
 
 x64 Unix:
-Structs of size betwee 9-16 bytes will be returned in RAX/RDX and/or XMM0/XMM1.
+Structs of size between 9-16 bytes will be returned in RAX/RDX and/or XMM0/XMM1.
 
 Arm64:
 HFA structs will be returned in 1-4 successive VFP registers s0-s3 or d0-d3.

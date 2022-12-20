@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly Recurse1 {}
+.assembly 'b53662' {}
 .assembly extern xunit.core {}
 .namespace Recurse1
 {
   .class public Recurse1
   {
-    .method public static int32  Main(class System.String[] A_0)
+    .method public static int32  Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

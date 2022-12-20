@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using BundleTests.Helpers;
+using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.Bundle;
@@ -22,16 +23,20 @@ namespace AppHost.Bundle.Tests
 
         private void RunTheApp(string path, TestProjectFixture fixture)
         {
-            Command.Create(path)
-                .EnableTracingAndCaptureOutputs()
-                .EnvironmentVariable("DOTNET_ROOT", fixture.BuiltDotnet.BinPath)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", fixture.BuiltDotnet.BinPath)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .Execute()
+            RunTheApp(path, fixture.BuiltDotnet)
                 .Should()
                 .Pass()
                 .And
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
+        }
+
+        private CommandResult RunTheApp(string path, DotNetCli dotnet)
+        {
+            return Command.Create(path)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(dotnet.BinPath)
+                .MultilevelLookup(false)
+                .Execute();
         }
 
         [InlineData(BundleOptions.None)]
@@ -49,6 +54,32 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app again (reuse extracted files)
             RunTheApp(singleFile, fixture);
+        }
+
+        [Fact]
+        public void Bundle_Framework_dependent_NoBundleEntryPoint()
+        {
+            var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
+            UseFrameworkDependentHost(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, BundleOptions.None);
+
+            string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
+            using (new TestArtifact(dotnetWithMockHostFxr))
+            {
+                Directory.CreateDirectory(dotnetWithMockHostFxr);
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrFrameworkMissingFailure")
+                    .RemoveHostFxr()
+                    .AddMockHostFxr(new Version(2, 2, 0));
+                var dotnet = dotnetBuilder.Build();
+
+                // Run the bundled app (extract files)
+                RunTheApp(singleFile, dotnet)
+                    .Should()
+                    .Fail()
+                    .And.HaveStdErrContaining("You must install or update .NET to run this application.")
+                    .And.HaveStdErrContaining("App host version:")
+                    .And.HaveStdErrContaining("apphost_version=");
+            }
         }
 
         [InlineData(BundleOptions.None)]
@@ -168,7 +199,7 @@ namespace AppHost.Bundle.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
-        // NOTE: when enabling this test take a look at commented code maked by "ACTIVE ISSUE:" in SharedTestState
+        // NOTE: when enabling this test take a look at commented code marked by "ACTIVE ISSUE:" in SharedTestState
         public void Bundled_Self_Contained_Composite_App_Run_Succeeds()
         {
             var fixture = sharedTestState.TestSelfContainedFixtureComposite.Copy();

@@ -178,7 +178,7 @@ namespace System.Xml.Xsl
 
         public override string? SourceUri
         {
-            get { return _lineInfo != null ? _lineInfo.Uri : null; }
+            get { return _lineInfo?.Uri; }
         }
 
         public override int LineNumber

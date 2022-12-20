@@ -10,9 +10,6 @@
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
-#ifdef HAVE_SYS_SYSCTL_H
-#include <sys/sysctl.h>
-#endif
 #include <signal.h>
 #include <fcntl.h>
 #include <string.h>
@@ -25,7 +22,6 @@
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-counters.h>
 
 #define BEGIN_CRITICAL_SECTION do { \
 	MonoThreadInfo *__info = mono_thread_info_current_unchecked (); \
@@ -34,8 +30,6 @@
 #define END_CRITICAL_SECTION \
 	if (__info) __info->inside_critical_region = FALSE;	\
 } while (0)	\
-
-static void* malloced_shared_area = NULL;
 
 int
 mono_pagesize (void)
@@ -64,6 +58,12 @@ mono_valloc_granule (void)
 static int
 prot_from_flags (int flags)
 {
+#if HOST_WASI
+	// The mmap in wasi-sdk rejects PROT_NONE, but otherwise disregards the flags
+	// We just need to pass an acceptable value
+	return PROT_READ;
+#endif
+
 	int prot = PROT_NONE;
 	/* translate the protection bits */
 	if (flags & MONO_MMAP_READ)
@@ -72,6 +72,7 @@ prot_from_flags (int flags)
 		prot |= PROT_WRITE;
 	if (flags & MONO_MMAP_EXEC)
 		prot |= PROT_EXEC;
+
 	return prot;
 }
 
@@ -154,7 +155,6 @@ int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
 	VallocInfo *info = (VallocInfo*)(valloc_hash ? g_hash_table_lookup (valloc_hash, addr) : NULL);
-	int res;
 
 	if (info) {
 		/*
@@ -162,13 +162,13 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 		 * mono_valloc_align (), free the original mapping.
 		 */
 		BEGIN_CRITICAL_SECTION;
-		res = munmap (info->addr, info->size);
+		munmap (info->addr, info->size);
 		END_CRITICAL_SECTION;
 		g_free (info);
 		g_hash_table_remove (valloc_hash, addr);
 	} else {
 		BEGIN_CRITICAL_SECTION;
-		res = munmap (addr, length);
+		munmap (addr, length);
 		END_CRITICAL_SECTION;
 	}
 
@@ -225,40 +225,6 @@ mono_file_unmap (void *addr, void *handle)
 
 int
 mono_mprotect (void *addr, size_t length, int flags)
-{
-	return 0;
-}
-
-void*
-mono_shared_area (void)
-{
-	if (!malloced_shared_area)
-		malloced_shared_area = mono_malloc_shared_area (mono_process_current_pid ());
-	/* get the pid here */
-	return malloced_shared_area;
-}
-
-void
-mono_shared_area_remove (void)
-{
-	if (malloced_shared_area)
-		g_free (malloced_shared_area);
-	malloced_shared_area = NULL;
-}
-
-void*
-mono_shared_area_for_pid (void *pid)
-{
-	return NULL;
-}
-
-void
-mono_shared_area_unload (void *area)
-{
-}
-
-int
-mono_shared_area_instances (void **array, int count)
 {
 	return 0;
 }

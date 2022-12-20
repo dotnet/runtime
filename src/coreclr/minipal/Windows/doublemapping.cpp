@@ -184,8 +184,8 @@ void *VMToOSInterface::CommitDoubleMappedMemory(void* pStart, size_t size, bool 
 
 bool VMToOSInterface::ReleaseDoubleMappedMemory(void *mapperHandle, void* pStart, size_t offset, size_t size)
 {
-    // Zero the memory before the unmapping
-    VirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
+    LPVOID  result = VirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
+    assert(result != NULL);
     memset(pStart, 0, size);
     return UnmapViewOfFile(pStart);
 }

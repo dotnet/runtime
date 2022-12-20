@@ -51,10 +51,6 @@ typedef enum {
 
 NurseryClearPolicy sgen_get_nursery_clear_policy (void);
 
-#if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED && defined(HAVE_PTHREAD_KILL)
-#define SGEN_POSIX_STW 1
-#endif
-
 /*
  * The nursery section uses this struct.
  */
@@ -121,8 +117,10 @@ extern guint64 stat_objects_copied_major;
 #endif
 
 #define SGEN_ASSERT(level, a, ...) do {	\
+	MONO_DISABLE_WARNING(4127) \
 	if (G_UNLIKELY ((level) <= SGEN_MAX_ASSERT_LEVEL && !(a))) {	\
 		g_error (__VA_ARGS__);	\
+	MONO_RESTORE_WARNING \
 } } while (0)
 
 #ifdef HAVE_LOCALTIME_R
@@ -146,10 +144,12 @@ extern guint64 stat_objects_copied_major;
 #endif
 
 #define SGEN_LOG(level, format, ...) do {      \
+	MONO_DISABLE_WARNING(4127) \
 	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= sgen_gc_debug_level)) {	\
 		char logTime[80];								\
 		LOG_TIMESTAMP;									\
 		mono_gc_printf (sgen_gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
+	MONO_RESTORE_WARNING \
 } } while (0)
 
 #define SGEN_COND_LOG(level, cond, format, ...) do {	\
@@ -293,13 +293,14 @@ sgen_get_nursery_end (void)
 #define SGEN_LOAD_VTABLE(obj)		((GCVTable)(SGEN_POINTER_UNTAG_ALL (SGEN_LOAD_VTABLE_UNCHECKED ((GCObject *)(obj)))))
 
 /*
-List of what each bit on of the vtable gc bits means. 
+List of what each bit on of the vtable gc bits means.
 */
 enum {
 	// When the Java bridge has determined an object is "bridged", it uses these two bits to cache that information.
 	SGEN_GC_BIT_BRIDGE_OBJECT = 1,
 	SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT = 2,
 	SGEN_GC_BIT_FINALIZER_AWARE = 4,
+	SGEN_GC_BIT_WEAKREF = 8,
 };
 
 void sgen_gc_init (void)
@@ -339,8 +340,6 @@ enum {
 	INTERNAL_MEM_WORKER_DATA,
 	INTERNAL_MEM_THREAD_POOL_JOB,
 	INTERNAL_MEM_BRIDGE_DATA,
-	INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE,
-	INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_BRIDGE_HASH_TABLE,
 	INTERNAL_MEM_BRIDGE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE,
@@ -845,7 +844,7 @@ sgen_safe_object_get_size_unaligned (GCObject *obj)
 		obj = (GCObject*)forwarded;
 	}
 
-	return sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
+	return (guint)sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
 }
 
 #ifdef SGEN_CLIENT_HEADER
@@ -1038,7 +1037,7 @@ sgen_major_is_object_alive (GCObject *object)
 
 
 /*
- * If the object has been forwarded it means it's still referenced from a root. 
+ * If the object has been forwarded it means it's still referenced from a root.
  * If it is pinned it's still alive as well.
  * A LOS object is only alive if we have pinned it.
  * Return TRUE if @obj is ready to be finalized.
@@ -1190,7 +1189,7 @@ gint64 sgen_timestamp (void);
  * - CANARY_SIZE must be multiple of word size in bytes
  * - Canary space is not included on checks against SGEN_MAX_SMALL_OBJ_SIZE
  */
- 
+
 gboolean sgen_nursery_canaries_enabled (void);
 
 #define CANARY_SIZE 8
@@ -1222,6 +1221,7 @@ sgen_dummy_use (gpointer v)
 {
 #if defined(_MSC_VER) || defined(HOST_WASM)
 	static volatile gpointer ptr;
+	(void)ptr; // avoid compiler warning: variable 'ptr' set but not used
 	ptr = v;
 #elif defined(__GNUC__)
 	__asm__ volatile ("" : "=r"(v) : "r"(v));

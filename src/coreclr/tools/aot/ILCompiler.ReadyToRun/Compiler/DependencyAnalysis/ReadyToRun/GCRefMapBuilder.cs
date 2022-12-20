@@ -7,15 +7,15 @@ using System.Diagnostics;
 
 using Internal.TypeSystem;
 
-// The GCRef map is used to encode GC type of arguments for callsites. Logically, it is sequence <pos, token> where pos is 
+// The GCRef map is used to encode GC type of arguments for callsites. Logically, it is sequence <pos, token> where pos is
 // position of the reference in the stack frame and token is type of GC reference (one of GCREFMAP_XXX values).
 //
-// - The encoding always starts at the byte boundary. The high order bit of each byte is used to signal end of the encoding 
+// - The encoding always starts at the byte boundary. The high order bit of each byte is used to signal end of the encoding
 // stream. The last byte has the high order bit zero. It means that there are 7 useful bits in each byte.
 // - "pos" is always encoded as delta from previous pos.
-// - The basic encoding unit is two bits. Values 0, 1 and 2 are the common constructs (skip single slot, GC reference, interior 
-// pointer). Value 3 means that extended encoding follows. 
-// - The extended information is integer encoded in one or more four bit blocks. The high order bit of the four bit block is 
+// - The basic encoding unit is two bits. Values 0, 1 and 2 are the common constructs (skip single slot, GC reference, interior
+// pointer). Value 3 means that extended encoding follows.
+// - The extended information is integer encoded in one or more four bit blocks. The high order bit of the four bit block is
 // used to signal the end.
 // - For x86, the encoding starts by size of the callee poped stack. The size is encoded using the same mechanism as above (two bit
 // basic encoding, with extended encoding for large values).
@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private int _pendingByte;
 
         /// <summary>
-        /// Number of bits in pending byte. Note that the trailing zero bits are not written out, 
+        /// Number of bits in pending byte. Note that the trailing zero bits are not written out,
         /// so this can be more than 7.
         /// </summary>
         private int _bits;
@@ -69,13 +69,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             TransitionBlock transitionBlock = TransitionBlock.FromTarget(method.Context.Target);
 
-            bool hasThis = (method.Signature.Flags & MethodSignatureFlags.Static) == 0;
+            MethodSignature signature = method.Signature;
+
+            bool hasThis = (signature.Flags & MethodSignatureFlags.Static) == 0;
+
+            // This pointer is omitted for string constructors
+            bool fCtorOfVariableSizedObject = hasThis && method.OwningType.IsString && method.IsConstructor;
+            if (fCtorOfVariableSizedObject)
+                hasThis = false;
+
             bool isVarArg = false;
-            TypeHandle returnType = new TypeHandle(method.Signature.ReturnType);
-            TypeHandle[] parameterTypes = new TypeHandle[method.Signature.Length];
+            TypeHandle returnType = new TypeHandle(signature.ReturnType);
+            TypeHandle[] parameterTypes = new TypeHandle[signature.Length];
             for (int parameterIndex = 0; parameterIndex < parameterTypes.Length; parameterIndex++)
             {
-                parameterTypes[parameterIndex] = new TypeHandle(method.Signature[parameterIndex]);
+                parameterTypes[parameterIndex] = new TypeHandle(signature[parameterIndex]);
             }
             CallingConventions callingConventions = (hasThis ? CallingConventions.ManagedInstance : CallingConventions.ManagedStatic);
             bool hasParamType = method.RequiresInstArg() && !isUnboxingStub;
@@ -191,7 +199,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 ArgLocDesc? argLocDescForStructInRegs = argit.GetArgLoc(argOffset);
                 ArgDestination argDest = new ArgDestination(_transitionBlock, argOffset, argLocDescForStructInRegs);
-                GcScanRoots(method.Signature[argIndex], in argDest, delta: 0, frame);
+                GcScanRoots(method.Signature[argIndex], in argDest, delta: 0, frame, topLevel: true);
                 argIndex++;
             }
         }
@@ -203,7 +211,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <param name="type">Parameter type</param>
         /// <param name="argDest">Location of the parameter</param>
         /// <param name="frame">Frame map to update by marking GC locations</param>
-        private void GcScanRoots(TypeDesc type, in ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
+        /// <param name="topLevel">Indicates if the call is for a type or inner member</param>
+        private void GcScanRoots(TypeDesc type, in ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool topLevel)
         {
             switch (type.Category)
             {
@@ -244,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // TYPE_GC_OTHER
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
-                    GcScanValueType(type, argDest, delta, frame);
+                    GcScanValueType(type, in argDest, delta, frame, topLevel);
                     break;
 
                 default:
@@ -252,52 +261,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private void GcScanValueType(TypeDesc type, ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
+        private void GcScanValueType(TypeDesc type, in ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool topLevel)
         {
-            if (_transitionBlock.IsArgPassedByRef(new TypeHandle(type)))
+            if (topLevel)
             {
-                argDest.GcMark(frame, delta, interior: true);
-                return;
-            }
+                if (_transitionBlock.IsArgPassedByRef(new TypeHandle(type)))
+                {
+                    argDest.GcMark(frame, delta, interior: true);
+                    return;
+                }
 
-            // ReportPointersFromValueTypeArg
-            if (argDest.IsStructPassedInRegs())
-            {
-                argDest.ReportPointersFromStructInRegisters(type, delta, frame);
-                return;
-            }
-            // ReportPointersFromValueType
-            if (type.IsByRefLike)
-            {
-                FindByRefPointerOffsetsInByRefLikeObject(type, argDest, delta, frame);
+                if (argDest.IsStructPassedInRegs())
+                {
+                    argDest.ReportPointersFromStructInRegisters(type, delta, frame);
+                    return;
+                }
             }
 
             Debug.Assert(type is DefType);
             DefType defType = (DefType)type;
             foreach (FieldDesc field in defType.GetFields())
             {
-                if (!field.IsStatic)
-                {
-                    GcScanRoots(field.FieldType, argDest, delta + field.Offset.AsInt, frame);
-                }
-            }
-        }
+                if (field.IsStatic)
+                    continue;
 
-        private void FindByRefPointerOffsetsInByRefLikeObject(TypeDesc type, ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
-        {
-            if (type.IsByReferenceOfT || type.IsByRef)
-            {
-                argDest.GcMark(frame, delta, interior: true);
-                return;
-            }
-
-            foreach (FieldDesc field in type.GetFields())
-            {
-                if (!field.IsStatic && field.FieldType.IsByRefLike)
-                {
-                    Debug.Assert(field.FieldType.IsValueType);
-                    FindByRefPointerOffsetsInByRefLikeObject(field.FieldType, argDest, delta + field.Offset.AsInt, frame);
-                }
+                GcScanRoots(field.FieldType, in argDest, delta + field.Offset.AsInt, frame, topLevel: false);
             }
         }
 

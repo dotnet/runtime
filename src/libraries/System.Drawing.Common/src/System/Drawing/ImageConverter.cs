@@ -15,16 +15,12 @@ namespace System.Drawing
 {
     public class ImageConverter : TypeConverter
     {
-        private static ReadOnlySpan<byte> PBrush => new byte[] { (byte)'P', (byte)'B', (byte)'r', (byte)'u', (byte)'s', (byte)'h' };
-
-        private static ReadOnlySpan<byte> BMBytes => new byte[] { (byte)'B', (byte)'M' };
-
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
         {
             return sourceType == typeof(byte[]) || sourceType == typeof(Icon);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(byte[]) || destinationType == typeof(string);
         }
@@ -111,7 +107,7 @@ namespace System.Drawing
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-        private unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
+        private static unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
         {
             try
             {
@@ -146,7 +142,7 @@ namespace System.Drawing
                 // pHeader.signature will always be 0x1c15.
                 // "PBrush" should be the 6 chars after position 12 as well.
                 if (rawData.Length <= headersize + 18 ||
-                    !rawData.Slice(headersize + 12, 6).SequenceEqual(PBrush))
+                    !rawData.Slice(headersize + 12, 6).SequenceEqual("PBrush"u8))
                 {
                     return null;
                 }

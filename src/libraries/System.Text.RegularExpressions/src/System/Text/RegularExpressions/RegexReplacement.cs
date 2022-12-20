@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
@@ -23,6 +24,7 @@ namespace System.Text.RegularExpressions
 
         private readonly string[] _strings; // table of string constants
         private readonly int[] _rules;      // negative -> group #, positive -> string #
+        private bool _hasBackreferences;    // true if the replacement has any backreferences; otherwise, false
 
         /// <summary>
         /// Since RegexReplacement shares the same parser as Regex,
@@ -31,13 +33,9 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
-            if (concat.Type != RegexNode.Concatenate)
-            {
-                throw ThrowHelper.CreateArgumentException(ExceptionResource.ReplacementError);
-            }
+            Debug.Assert(concat.Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {concat.Kind}");
 
-            Span<char> vsbStack = stackalloc char[256];
-            var vsb = new ValueStringBuilder(vsbStack);
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
             FourStackStrings stackStrings = default;
             var strings = new ValueListBuilder<string>(MemoryMarshal.CreateSpan(ref stackStrings.Item1!, 4));
             var rules = new ValueListBuilder<int>(stackalloc int[64]);
@@ -47,22 +45,22 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode child = concat.Child(i);
 
-                switch (child.Type)
+                switch (child.Kind)
                 {
-                    case RegexNode.Multi:
+                    case RegexNodeKind.Multi:
                         vsb.Append(child.Str!);
                         break;
 
-                    case RegexNode.One:
+                    case RegexNodeKind.One:
                         vsb.Append(child.Ch);
                         break;
 
-                    case RegexNode.Ref:
+                    case RegexNodeKind.Backreference:
                         if (vsb.Length > 0)
                         {
                             rules.Append(strings.Length);
-                            strings.Append(vsb.ToString());
-                            vsb = new ValueStringBuilder(vsbStack);
+                            strings.Append(vsb.AsSpan().ToString());
+                            vsb.Length = 0;
                         }
                         int slot = child.M;
 
@@ -72,10 +70,12 @@ namespace System.Text.RegularExpressions
                         }
 
                         rules.Append(-Specials - 1 - slot);
+                        _hasBackreferences = true;
                         break;
 
                     default:
-                        throw ThrowHelper.CreateArgumentException(ExceptionResource.ReplacementError);
+                        Debug.Fail($"Unexpected child kind {child.Kind}");
+                        break;
                 }
             }
 
@@ -84,6 +84,7 @@ namespace System.Text.RegularExpressions
                 rules.Append(strings.Length);
                 strings.Append(vsb.ToString());
             }
+            vsb.Dispose();
 
             Pattern = rep;
             _strings = strings.AsSpan().ToArray();
@@ -109,7 +110,6 @@ namespace System.Text.RegularExpressions
         public static RegexReplacement GetOrCreate(WeakReference<RegexReplacement?> replRef, string replacement, Hashtable caps,
             int capsize, Hashtable capnames, RegexOptions roptions)
         {
-
             if (!replRef.TryGetTarget(out RegexReplacement? repl) || !repl.Pattern.Equals(replacement))
             {
                 repl = RegexParser.ParseReplacement(replacement, roptions, caps, capsize, capnames);
@@ -214,32 +214,32 @@ namespace System.Text.RegularExpressions
 
             if (!regex.RightToLeft)
             {
-                regex.Run(input, startat, ref state, (ref (RegexReplacement thisRef, SegmentStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
+                regex.RunAllMatchesWithCallback(input, startat, ref state, (ref (RegexReplacement thisRef, SegmentStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
                 {
                     state.segments.Add(state.inputMemory.Slice(state.prevat, match.Index - state.prevat));
                     state.prevat = match.Index + match.Length;
                     state.thisRef.ReplacementImpl(ref state.segments, match);
                     return --state.count != 0;
-                }, reuseMatchObject: true);
+                }, _hasBackreferences ? RegexRunnerMode.FullMatchRequired : RegexRunnerMode.BoundsRequired, reuseMatchObject: true);
 
                 if (state.segments.Count == 0)
                 {
                     return input;
                 }
 
-                state.segments.Add(state.inputMemory.Slice(state.prevat, input.Length - state.prevat));
+                state.segments.Add(state.inputMemory.Slice(state.prevat));
             }
             else
             {
                 state.prevat = input.Length;
 
-                regex.Run(input, startat, ref state, (ref (RegexReplacement thisRef, SegmentStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
+                regex.RunAllMatchesWithCallback(input, startat, ref state, (ref (RegexReplacement thisRef, SegmentStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
                 {
                     state.segments.Add(state.inputMemory.Slice(match.Index + match.Length, state.prevat - match.Index - match.Length));
                     state.prevat = match.Index;
                     state.thisRef.ReplacementImplRTL(ref state.segments, match);
                     return --state.count != 0;
-                }, reuseMatchObject: true);
+                }, _hasBackreferences ? RegexRunnerMode.FullMatchRequired : RegexRunnerMode.BoundsRequired, reuseMatchObject: true);
 
                 if (state.segments.Count == 0)
                 {

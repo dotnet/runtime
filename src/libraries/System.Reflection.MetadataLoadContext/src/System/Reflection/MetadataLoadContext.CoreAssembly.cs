@@ -14,7 +14,6 @@ namespace System.Reflection
         // Cache loaded coreAssembly and core types.
         internal RoAssembly? TryGetCoreAssembly(string? coreAssemblyName, out Exception? e)
         {
-            e = null;
             Debug.Assert(_coreAssembly == null);
             if (coreAssemblyName == null)
             {
@@ -85,7 +84,7 @@ namespace System.Reflection
         // Seriously, ugh - the default binder for Reflection has a dependency on checking types for equality with System.Object - for that
         // one reason, we have to instance it per MetadataLoadContext.
         //
-        internal Binder GetDefaultBinder() => _lazyDefaultBinder ?? (_lazyDefaultBinder = new DefaultBinder(this));
+        internal Binder GetDefaultBinder() => _lazyDefaultBinder ??= new DefaultBinder(this);
         private volatile Binder? _lazyDefaultBinder;
     }
 }

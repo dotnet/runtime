@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
-        [GeneratedDllImport(Libraries.NtDll, ExactSpelling = true)]
+        [LibraryImport(Libraries.NtDll)]
         internal static unsafe partial uint NtQuerySystemInformation(int SystemInformationClass, void* SystemInformation, uint SystemInformationLength, uint* ReturnLength);
 
         internal const uint STATUS_INFO_LENGTH_MISMATCH = 0xC0000004;

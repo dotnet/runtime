@@ -5,7 +5,6 @@ using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -24,6 +23,10 @@ namespace System.Diagnostics.Tracing
         [NonEvent]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID);
+
+        [NonEvent]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID);
 
         [NonEvent]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -69,5 +72,12 @@ namespace System.Diagnostics.Tracing
             uint Count,
             ushort ClrInstanceID
         );
+
+        [NonEvent]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void LogThreadPoolIOPack(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID);
     }
 }

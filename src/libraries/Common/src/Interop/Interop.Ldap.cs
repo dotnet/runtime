@@ -1,7 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
+using System.Security.Authentication;
+
 
 internal static partial class Interop
 {
@@ -15,7 +22,7 @@ internal static partial class Interop
 namespace System.DirectoryServices.Protocols
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal sealed class Luid
+    internal readonly struct Luid
     {
         private readonly int _lowPart;
         private readonly int _highPart;
@@ -24,8 +31,11 @@ namespace System.DirectoryServices.Protocols
         public int HighPart => _highPart;
     }
 
+#if NET7_0_OR_GREATER
+    [NativeMarshalling(typeof(Marshaller))]
+#endif
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal sealed class SEC_WINNT_AUTH_IDENTITY_EX
+    internal struct SEC_WINNT_AUTH_IDENTITY_EX
     {
         public int version;
         public int length;
@@ -38,6 +48,53 @@ namespace System.DirectoryServices.Protocols
         public int flags;
         public string packageList;
         public int packageListLength;
+
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+        internal static class Marshaller
+        {
+            public static Native ConvertToUnmanaged(SEC_WINNT_AUTH_IDENTITY_EX managed)
+            {
+                Native n = default;
+                n.version = managed.version;
+                n.length = managed.length;
+                n.user = Marshal.StringToCoTaskMemUni(managed.user);
+                n.userLength = managed.userLength;
+                n.domain = Marshal.StringToCoTaskMemUni(managed.domain);
+                n.domainLength = managed.domainLength;
+                n.password = Marshal.StringToCoTaskMemUni(managed.password);
+                n.passwordLength = managed.passwordLength;
+                n.flags = managed.flags;
+                n.packageList = Marshal.StringToCoTaskMemUni(managed.packageList);
+                n.packageListLength = managed.packageListLength;
+                return n;
+            }
+
+            public static void Free(Native native)
+            {
+                Marshal.FreeCoTaskMem(native.user);
+                Marshal.FreeCoTaskMem(native.domain);
+                Marshal.FreeCoTaskMem(native.password);
+                Marshal.FreeCoTaskMem(native.packageList);
+            }
+        }
+#endif
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Native
+        {
+            public int version;
+            public int length;
+            public IntPtr user;
+            public int userLength;
+            public IntPtr domain;
+            public int domainLength;
+            public IntPtr password;
+            public int passwordLength;
+            public int flags;
+            public IntPtr packageList;
+            public int packageListLength;
+        }
     }
 
     internal enum BindMethod : uint // Not Supported in Linux
@@ -113,38 +170,106 @@ namespace System.DirectoryServices.Protocols
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class LDAP_TIMEVAL
+    internal struct LDAP_TIMEVAL
     {
         public int tv_sec;
         public int tv_usec;
     }
 
+#if NET7_0_OR_GREATER
+    [NativeMarshalling(typeof(PinningMarshaller))]
+#endif
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class berval
+    internal sealed class BerVal
     {
         public int bv_len;
         public IntPtr bv_val = IntPtr.Zero;
 
-        public berval() { }
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(BerVal), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        internal static unsafe class PinningMarshaller
+        {
+            public static ref int GetPinnableReference(BerVal managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.bv_len);
+
+            // All usages in our currently supported scenarios will always go through GetPinnableReference
+            public static int* ConvertToUnmanaged(BerVal _) => throw new UnreachableException();
+        }
+#endif
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal sealed class LdapControl
     {
         public IntPtr ldctl_oid = IntPtr.Zero;
-        public berval ldctl_value;
+        public BerVal ldctl_value;
         public bool ldctl_iscritical;
 
         public LdapControl() { }
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+#if NET7_0_OR_GREATER
+    [NativeMarshalling(typeof(Marshaller))]
+#endif
+    [StructLayout(LayoutKind.Sequential)]
     internal struct LdapReferralCallback
     {
         public int sizeofcallback;
         public QUERYFORCONNECTIONInternal query;
         public NOTIFYOFNEWCONNECTIONInternal notify;
         public DEREFERENCECONNECTIONInternal dereference;
+#if NET7_0_OR_GREATER
+        public static readonly unsafe int Size = sizeof(Marshaller.MarshalValue.Native);
+
+        [CustomMarshaller(typeof(LdapReferralCallback), MarshalMode.ManagedToUnmanagedIn, typeof(MarshalValue))]
+        [CustomMarshaller(typeof(LdapReferralCallback), MarshalMode.ManagedToUnmanagedRef, typeof(MarshalValue))]
+        [CustomMarshaller(typeof(LdapReferralCallback), MarshalMode.ManagedToUnmanagedOut, typeof(MarshalValue))]
+        public static class Marshaller
+        {
+            public unsafe struct MarshalValue
+            {
+                public unsafe struct Native
+                {
+                    public int sizeofcallback;
+                    public IntPtr query;
+                    public IntPtr notify;
+                    public IntPtr dereference;
+                }
+
+                private LdapReferralCallback _managed;
+                private Native _native;
+
+                public void FromManaged(LdapReferralCallback managed)
+                {
+                    _managed = managed;
+                    _native.sizeofcallback = sizeof(Native);
+                    _native.query = managed.query is not null ? Marshal.GetFunctionPointerForDelegate(managed.query) : IntPtr.Zero;
+                    _native.notify = managed.notify is not null ? Marshal.GetFunctionPointerForDelegate(managed.notify) : IntPtr.Zero;
+                    _native.dereference = managed.dereference is not null ? Marshal.GetFunctionPointerForDelegate(managed.dereference) : IntPtr.Zero;
+                }
+
+                public Native ToUnmanaged() => _native;
+
+                public void FromUnmanaged(Native value) => _native = value;
+
+                public LdapReferralCallback ToManaged()
+                {
+                    return new LdapReferralCallback()
+                    {
+                        sizeofcallback = _native.sizeofcallback,
+                        query = _native.query != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<QUERYFORCONNECTIONInternal>(_native.query) : null,
+                        notify = _native.notify != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<NOTIFYOFNEWCONNECTIONInternal>(_native.notify) : null,
+                        dereference = _native.dereference != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<DEREFERENCECONNECTIONInternal>(_native.dereference) : null
+                    };
+                }
+
+                public void OnInvoked() => GC.KeepAlive(_managed);
+
+                public void Free() {}
+            }
+        }
+#else
+        public static readonly unsafe int Size = Marshal.SizeOf<LdapReferralCallback>();
+#endif
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

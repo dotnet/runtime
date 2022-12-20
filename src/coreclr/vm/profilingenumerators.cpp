@@ -250,7 +250,7 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
     //             enumerable.
     //
     // Note: To determine what happens in a given load stage of a module or assembly,
-    // look at the switch statement in code:DomainFile::DoIncrementalLoad, and keep in
+    // look at the switch statement in code:DomainAssembly::DoIncrementalLoad, and keep in
     // mind that it takes cases on the *next* load stage; in other words, the actions
     // that appear in a case for a given load stage are actually executed as we attempt
     // to transition TO that load stage, and thus they actually execute while the module
@@ -282,21 +282,14 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
         //     < Module NOT available from catch-up enumeration
         //     < ModuleUnloadStarted issued
         //
-        // The IterateModules parameter below ensures only modules at level >=
-        // code:FILE_LOAD_LOADLIBRARY will be included in the iteration.
-        //
         // Details for module callbacks are the same as those for assemblies, so see
         // code:#ProfilerEnumAssemblies for info on how the timing works.
-        DomainModuleIterator domainModuleIterator =
-            pDomainAssembly->IterateModules(kModIterIncludeAvailableToProfilers);
-        while (domainModuleIterator.Next())
+
+        // Call user-supplied callback, and cancel iteration if requested
+        HRESULT hr = (callbackObj->*callbackMethod)(pDomainAssembly->GetModule());
+        if (hr != S_OK)
         {
-            // Call user-supplied callback, and cancel iteration if requested
-            HRESULT hr = (callbackObj->*callbackMethod)(domainModuleIterator.GetModule());
-            if (hr != S_OK)
-            {
-                return hr;
-            }
+            return hr;
         }
     }
 
@@ -402,9 +395,9 @@ HRESULT ProfilerModuleEnum::Init()
 
     HRESULT hr = S_OK;
 
-    // When an assembly or module is loaded into an AppDomain, a separate DomainFile is
-    // created (one per pairing of the AppDomain with the module or assembly). This means
-    // that we'll create multiple DomainFiles for the same module if it is loaded
+    // When an assembly is loaded into an AppDomain, a DomainAssembly is
+    // created (one per pairing of the AppDomain with the assembly). This means
+    // that we'll create multiple DomainAssemblys for the same module if it is loaded
     // domain-neutral (i.e., "shared"). The profiling API callbacks shield the profiler
     // from this, and only report a given module the first time it's loaded. So a
     // profiler sees only one ModuleLoadFinished for a module loaded domain-neutral, even
@@ -457,8 +450,8 @@ HRESULT IterateAppDomainContainingModule::AddAppDomainContainingModule(AppDomain
     }
     CONTRACTL_END;
 
-    DomainFile * pDomainFile = m_pModule->GetDomainFile();
-    if ((pDomainFile != NULL) && (pDomainFile->IsAvailableToProfilers()))
+    DomainAssembly * pDomainAssembly = m_pModule->GetDomainAssembly();
+    if ((pDomainAssembly != NULL) && (pDomainAssembly->IsAvailableToProfilers()))
     {
         if (m_index < m_cAppDomainIds)
         {

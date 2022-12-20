@@ -3,7 +3,7 @@
 .assembly extern System.Collections { }
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
-.assembly UnitTest { }
+.assembly 'CompatibleWithTest' { }
 
 .class public auto ansi abstract Base {}
 .class public auto ansi abstract Derived extends Base {}
@@ -783,7 +783,7 @@
         ret
     }
 
-    .method public hidebysig static int32 Main(string[] args) cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

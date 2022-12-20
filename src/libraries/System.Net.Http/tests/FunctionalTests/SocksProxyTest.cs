@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
             from host in Hosts(scheme)
             select new object[] { scheme, useSsl, useAuth, host };
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(TestLoopbackAsync_MemberData))]
         public async Task TestLoopbackAsync(string scheme, bool useSsl, bool useAuth, string host)
         {
@@ -34,15 +35,19 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (PlatformDetection.IsAndroid && useSsl && host == "::1")
+            {
+                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
                     await using var proxy = useAuth ? new LoopbackSocksServer("DOTNET", "424242") : new LoopbackSocksServer();
-                    using HttpClientHandler handler = CreateHttpClientHandler();
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
                     using HttpClient client = CreateHttpClient(handler);
 
                     handler.Proxy = new WebProxy($"{scheme}://127.0.0.1:{proxy.Port}");
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                     if (useAuth)
                     {
@@ -104,8 +109,8 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestMessage request = CreateRequest(HttpMethod.Get, new Uri($"http://{host}/"), UseVersion, exactVersion: true);
 
             // SocksException is not public
-            var ex = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
-            var innerException = ex.InnerException;
+            var exception = await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
+            var innerException = exception.InnerException;
             Assert.Equal(exceptionMessage, innerException.Message);
             Assert.Equal("SocksException", innerException.GetType().Name);
 
@@ -113,7 +118,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 await proxy.DisposeAsync();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+            }
         }
     }
 
@@ -126,6 +134,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Android, "The sync Send method is not supported on mobile platforms")]
     public sealed class SocksProxyTest_Http1_Sync : SocksProxyTest
     {
         public SocksProxyTest_Http1_Sync(ITestOutputHelper helper) : base(helper) { }

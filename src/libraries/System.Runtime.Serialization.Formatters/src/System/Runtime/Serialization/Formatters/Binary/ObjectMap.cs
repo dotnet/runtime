@@ -72,12 +72,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             for (int i = 0; i < memberNames.Length; i++)
             {
-                InternalPrimitiveTypeE primitiveTypeEnum;
-                bool isVariant;
-
                 BinaryTypeConverter.TypeFromInfo(
                     binaryTypeEnumA[i], typeInformationA[i], objectReader, (BinaryAssemblyInfo?)assemIdToAssemblyTable[memberAssemIds[i]],
-                    out primitiveTypeEnum, out string? typeString, out Type? type, out isVariant);
+                    out _, out _, out Type? type, out _);
                 _memberTypes[i] = type;
             }
 

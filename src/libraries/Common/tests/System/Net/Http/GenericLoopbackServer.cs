@@ -86,6 +86,17 @@ namespace System.Net.Test.Common
             CloseWebSocket();
         }
 
+        public async Task WaitForCloseAsync(CancellationToken cancellationToken)
+        {
+            while (_websocket != null
+                    ? _websocket.State != WebSocketState.Closed
+                    : !(_socket.Poll(1, SelectMode.SelectRead) && _socket.Available == 0))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Delay(100);
+            }
+        }
+
         public void Shutdown(SocketShutdown how)
         {
             _socket?.Shutdown(how);
@@ -111,9 +122,9 @@ namespace System.Net.Test.Common
         }
     }
 
-    public abstract class GenericLoopbackConnection : IDisposable
+    public abstract class GenericLoopbackConnection : IAsyncDisposable
     {
-        public abstract void Dispose();
+        public abstract ValueTask DisposeAsync();
 
         public abstract Task InitializeConnectionAsync();
 
@@ -137,6 +148,12 @@ namespace System.Net.Test.Common
 
         /// <summary>Waits for the client to signal cancellation.</summary>
         public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true);
+
+        /// <summary>Waits for the client to signal cancellation.</summary>
+        public abstract Task WaitForCloseAsync(CancellationToken cancellationToken);
+
+        /// <summary>Reset the connection's internal state so it can process further requests.</summary>
+        public virtual void CompleteRequestProcessing() { }
 
         /// <summary>Helper function to make it easier to convert old test with strings.</summary>
         public async Task SendResponseBodyAsync(string content, bool isFinal = true)

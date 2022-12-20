@@ -2016,32 +2016,63 @@ protected:
     DWORD m_dwLocalBuffer;      // localloc'ed temp buffer variable or LOCAL_NUM_UNUSED if not used
 };
 
+class ILCUTF8Marshaler : public ILMarshaler
+{
+public:
+    enum
+    {
+        c_fInOnly = TRUE,
+        c_nativeSize = TARGET_POINTER_SIZE,
+    };
+
+    enum
+    {
+        LOCAL_BUFFER_LENGTH = 0x100
+    };
+
+    ILCUTF8Marshaler() :
+        m_dwInstance(LOCAL_NUM_UNUSED)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    LocalDesc GetManagedType() override;
+    LocalDesc GetNativeType() override;
+    bool NeedsClearNative() override;
+    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
+    void EmitClearNative(ILCodeStream* pslILEmit) override;
+
+protected:
+    DWORD m_dwInstance;      // local marshaler instance or LOCAL_NUM_UNUSED if not used
+};
+
 class ILUTF8BufferMarshaler : public ILOptimizedAllocMarshaler
 {
 public:
-	enum
-	{
-		c_fInOnly = FALSE,
-		c_nativeSize = TARGET_POINTER_SIZE,
-	};
+    enum
+    {
+        c_fInOnly = FALSE,
+        c_nativeSize = TARGET_POINTER_SIZE,
+    };
 
-	enum
-	{
-		// If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
-		MAX_LOCAL_BUFFER_LENGTH = MAX_PATH_FNAME + 1
-	};
+    enum
+    {
+        // If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
+        MAX_LOCAL_BUFFER_LENGTH = MAX_PATH_FNAME + 1
+    };
 
-	ILUTF8BufferMarshaler() :
-		ILOptimizedAllocMarshaler(METHOD__MARSHAL__FREE_CO_TASK_MEM)
-	{
-		LIMITED_METHOD_CONTRACT;
-	}
+    ILUTF8BufferMarshaler() :
+        ILOptimizedAllocMarshaler(METHOD__MARSHAL__FREE_CO_TASK_MEM)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 
-	LocalDesc GetManagedType() override;
-	void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
-	void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
-	void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
-	void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
+    LocalDesc GetManagedType() override;
+    void EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
+    void EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit) override;
+    void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
 };
 
 class ILWSTRBufferMarshaler : public ILOptimizedAllocMarshaler
@@ -2554,33 +2585,6 @@ protected:
 #endif // FEATURE_COMINTEROP
 
 
-class ILCUTF8Marshaler : public ILOptimizedAllocMarshaler
-{
-public:
-	enum
-	{
-		c_fInOnly = TRUE,
-		c_nativeSize = TARGET_POINTER_SIZE,
-	};
-
-	enum
-	{
-		// If required buffer length > MAX_LOCAL_BUFFER_LENGTH, don't optimize by allocating memory on stack
-		MAX_LOCAL_BUFFER_LENGTH = MAX_PATH_FNAME + 1
-	};
-
-	ILCUTF8Marshaler() :
-		ILOptimizedAllocMarshaler(METHOD__CSTRMARSHALER__CLEAR_NATIVE)
-	{
-		LIMITED_METHOD_CONTRACT;
-	}
-
-protected:
-	LocalDesc GetManagedType() override;
-	void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
-	void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
-};
-
 class ILWSTRMarshaler : public ILOptimizedAllocMarshaler
 {
 public:
@@ -2653,7 +2657,7 @@ public:
     };
 
     ILCSTRMarshaler() :
-        ILOptimizedAllocMarshaler(METHOD__CSTRMARSHALER__CLEAR_NATIVE)
+        ILOptimizedAllocMarshaler(METHOD__MARSHAL__FREE_CO_TASK_MEM)
     {
         LIMITED_METHOD_CONTRACT;
     }

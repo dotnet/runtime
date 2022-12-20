@@ -20,7 +20,9 @@ namespace System.ComponentModel
         /// </summary>
         public NestedContainer(IComponent owner)
         {
-            Owner = owner ?? throw new ArgumentNullException(nameof(owner));
+            ArgumentNullException.ThrowIfNull(owner);
+
+            Owner = owner;
             Owner.Disposed += new EventHandler(OnOwnerDisposed);
         }
 
@@ -61,10 +63,8 @@ namespace System.ComponentModel
         /// </summary>
         protected override ISite CreateSite(IComponent component, string? name)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
+            ArgumentNullException.ThrowIfNull(component);
+
             return new Site(component, this, name);
         }
 

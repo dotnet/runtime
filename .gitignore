@@ -7,6 +7,7 @@ syntax: glob
 #       instead of directories), git will still ignore them.
 .dotnet
 .dotnet-mono
+.dotnet-tools-global
 .packages
 .tools
 
@@ -186,6 +187,10 @@ node_modules/
 *.metaproj
 *.metaproj.tmp
 bin.localpkg/
+src/mono/wasm/runtime/dotnet.d.ts.sha256
+src/mono/wasm/runtime/dotnet-legacy.d.ts.sha256
+
+src/mono/sample/wasm/browser-nextjs/public/
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -280,6 +285,9 @@ Session.vim
 # Visual Studio Code
 .vscode/
 
+# Codespaces
+.venv/
+
 # Private test configuration and binaries.
 config.ps1
 **/IISApplications
@@ -334,9 +342,6 @@ jit32
 # performance testing sandbox
 sandbox
 
-#IL linker for testing
-linker
-
 # Symbolic link for the shared portion of CoreLib to make grep/findstr work for runtime devs
 #
 # On Windows, make your own by running these commands from the repo root:
@@ -358,3 +363,5 @@ src/coreclr/System.Private.CoreLib/common
 # Temporary artifacts from local libraries stress builds
 .dotnet-daily/
 run-stress-*
+debugger-test-with-colon-in-source-name.csproj
+test:.cs

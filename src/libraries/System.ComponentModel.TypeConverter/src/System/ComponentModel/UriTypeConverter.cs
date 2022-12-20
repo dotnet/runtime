@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 
@@ -28,7 +29,7 @@ namespace System
         /// Gets a value indicating whether this converter can
         /// convert an object to the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(Uri) || destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
@@ -63,10 +64,7 @@ namespace System
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (value is Uri uri)
             {
@@ -95,7 +93,7 @@ namespace System
         {
             if (value is string text)
             {
-                return Uri.TryCreate(text, UriKind.RelativeOrAbsolute, out Uri? uri);
+                return Uri.TryCreate(text, UriKind.RelativeOrAbsolute, out _);
             }
             return value is Uri;
         }

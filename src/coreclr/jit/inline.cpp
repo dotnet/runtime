@@ -230,7 +230,7 @@ bool InlDecisionIsFailure(InlineDecision d)
 }
 
 //------------------------------------------------------------------------
-// InlDecisionIsSuccess: check if this decision describes a sucessful inline
+// InlDecisionIsSuccess: check if this decision describes a successful inline
 //
 // Arguments:
 //    d - the decision in question
@@ -330,20 +330,20 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Child(nullptr)
     , m_Sibling(nullptr)
     , m_Code(nullptr)
+    , m_Callee(nullptr)
     , m_ILSize(0)
     , m_ImportedILSize(0)
+    , m_ActualCallOffset(BAD_IL_OFFSET)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
     , m_CodeSizeEstimate(0)
+    , m_Ordinal(0)
     , m_Success(true)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
 #if defined(DEBUG) || defined(INLINE_DATA)
     , m_Policy(nullptr)
-    , m_Callee(nullptr)
     , m_TreeID(0)
-    , m_Ordinal(0)
-    , m_ActualCallOffset(BAD_IL_OFFSET)
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 #ifdef DEBUG
     , m_ILInstsSet(nullptr)
@@ -415,16 +415,7 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         const char* guarded       = m_Guarded ? " GUARDED" : "";
         const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
-        IL_OFFSET offs = BAD_IL_OFFSET;
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-        offs = m_ActualCallOffset;
-#endif
-
-        if (offs == BAD_IL_OFFSET && m_Location.IsValid())
-        {
-            offs = m_Location.GetOffset();
-        }
+        IL_OFFSET offs = m_ActualCallOffset;
 
         if (verbose)
         {
@@ -643,7 +634,8 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 //   stmt          - statement containing the call (if known)
 //   description   - string describing the context of the decision
 
-InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description)
+InlineResult::InlineResult(
+    Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
@@ -652,7 +644,9 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
     , m_Callee(nullptr)
     , m_ImportedILSize(0)
     , m_Description(description)
-    , m_Reported(false)
+    , m_successResult(INLINE_PASS)
+    , m_DoNotReport(doNotReport)
+    , m_reportFailureAsVmFailure(false)
 {
     // Set the compiler instance
     m_RootCompiler = compiler->impInlineRoot();
@@ -683,6 +677,12 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
     {
         m_Callee = m_Call->AsCall()->gtCallMethHnd;
     }
+
+    if (!m_DoNotReport)
+    {
+        COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
+        comp->beginInlining(m_Caller, m_Callee);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -701,7 +701,7 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
 //    We use the inlCallee member to track the method since logically
 //    it is the callee here.
 
-InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description)
+InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, const char* description, bool doNotReport)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(nullptr)
@@ -709,7 +709,9 @@ InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, con
     , m_Caller(nullptr)
     , m_Callee(method)
     , m_Description(description)
-    , m_Reported(false)
+    , m_successResult(INLINE_PASS)
+    , m_DoNotReport(doNotReport)
+    , m_reportFailureAsVmFailure(false)
 {
     // Set the compiler instance
     m_RootCompiler = compiler->impInlineRoot();
@@ -717,6 +719,12 @@ InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, con
     // Set the policy
     const bool isPrejitRoot = true;
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
+
+    if (!m_DoNotReport)
+    {
+        COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
+        comp->beginInlining(m_Caller, m_Callee);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -731,8 +739,6 @@ InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, con
 //    EE. Optionally update the method attribute to NOINLINE if
 //    observation and policy warrant.
 //
-//    All this can be suppressed if desired by calling setReported()
-//    before the InlineResult goes out of scope.
 
 void InlineResult::Report()
 {
@@ -753,13 +759,13 @@ void InlineResult::Report()
 #endif // DEBUG
 
     // If we weren't actually inlining, user may have suppressed
-    // reporting via setReported(). If so, do nothing.
-    if (m_Reported)
+    // reporting. If so, do nothing.
+    if (m_DoNotReport)
     {
         return;
     }
 
-    m_Reported = true;
+    m_DoNotReport = true;
 
 #ifdef DEBUG
     const char* callee = nullptr;
@@ -798,7 +804,7 @@ void InlineResult::Report()
         }
     }
 
-    if (IsDecided())
+    if (IsDecided() || m_reportFailureAsVmFailure || m_successResult != INLINE_PASS)
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s'\n";
         JITLOG_THIS(m_RootCompiler, (LL_INFO100000, format, m_Description, ResultString(), ReasonString()));
@@ -808,7 +814,7 @@ void InlineResult::Report()
 }
 
 //------------------------------------------------------------------------
-// InlineStrategy construtor
+// InlineStrategy constructor
 //
 // Arguments
 //    compiler - root compiler instance
@@ -1241,12 +1247,7 @@ InlineContext* InlineStrategy::NewRoot()
 
     rootContext->m_ILSize = m_Compiler->info.compILCodeSize;
     rootContext->m_Code   = m_Compiler->info.compCode;
-
-#if defined(DEBUG) || defined(INLINE_DATA)
-
     rootContext->m_Callee = m_Compiler->info.compMethodHnd;
-
-#endif // defined(DEBUG) || defined(INLINE_DATA)
 
     return rootContext;
 }
@@ -1267,9 +1268,10 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
 
     if (call->IsInlineCandidate())
     {
-        InlineCandidateInfo* info = call->gtInlineCandidateInfo;
-        context->m_Code           = info->methInfo.ILCode;
-        context->m_ILSize         = info->methInfo.ILCodeSize;
+        InlineCandidateInfo* info   = call->gtInlineCandidateInfo;
+        context->m_Code             = info->methInfo.ILCode;
+        context->m_ILSize           = info->methInfo.ILCodeSize;
+        context->m_ActualCallOffset = info->ilOffset;
 
 #ifdef DEBUG
         // All inline candidates should get their own statements that have
@@ -1278,25 +1280,33 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
         assert(diInlineContext == nullptr || diInlineContext == parentContext);
 #endif
     }
+    else
+    {
+// Should only get here in debug builds/build with inline data
+#if defined(DEBUG) || defined(INLINE_DATA)
+        context->m_ActualCallOffset = call->gtRawILOffset;
+#endif
+    }
 
-    // TODO-DEBUGINFO: Currently, to keep the same behavior as before, we use
-    // the location of the statement containing the call being inlined. This is
-    // not always the exact IL offset of the call instruction, consider e.g.
+    // We currently store both the statement location (used when reporting
+    // only-style mappings) and the actual call offset (used when reporting the
+    // inline tree for rich debug info).
+    // These are not always the same, consider e.g.
     // ldarg.0
     // call <foo>
     // which becomes a single statement where the IL location points to the
-    // ldarg instruction. For SPGO purposes we should consider always storing
-    // the exact offset of the call instruction which will be more precise. We
-    // may consider storing the statement itself as well.
-    context->m_Location      = stmt->GetDebugInfo().GetLocation();
+    // ldarg instruction.
+    context->m_Location = stmt->GetDebugInfo().GetLocation();
+
+    assert(call->gtCallType == CT_USER_FUNC);
+    context->m_Callee = call->gtCallMethHnd;
+
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
-    context->m_TreeID           = call->gtTreeID;
-    context->m_Callee           = call->gtCallType == CT_INDIRECT ? nullptr : call->gtCallMethHnd;
-    context->m_ActualCallOffset = call->gtRawILOffset;
+    context->m_TreeID = call->gtTreeID;
 #endif
 
     return context;
@@ -1312,8 +1322,9 @@ void InlineContext::SetSucceeded(const InlineInfo* info)
 #if defined(DEBUG) || defined(INLINE_DATA)
     m_Policy           = info->inlineResult->GetPolicy();
     m_CodeSizeEstimate = m_Policy->CodeSizeEstimate();
-    m_Ordinal          = m_InlineStrategy->m_InlineCount + 1;
 #endif
+
+    m_Ordinal = m_InlineStrategy->m_InlineCount + 1;
 
     m_InlineStrategy->NoteOutcome(this);
 }
@@ -1658,7 +1669,7 @@ void InlineStrategy::FinalizeXml(FILE* file)
         fprintf(file, "</InlineForest>\n");
         fflush(file);
 
-        // Workaroud compShutdown getting called twice.
+        // Workaround compShutdown getting called twice.
         s_HasDumpedXmlHeader = false;
     }
 

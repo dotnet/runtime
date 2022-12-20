@@ -42,10 +42,7 @@ namespace System.Runtime.Loader.Tests
                 // This custom load context will extract that resource and store it at the %temp% path at runtime.
                 // This prevents the corerun from adding the test assembly to the TPA list.
                 // Once loaded it is not possible to unload the assembly, therefore it cannot be deleted.
-                var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
-                // Create the folder since it will not exist already
-                Directory.CreateDirectory(tempPath);
+                var tempPath = Directory.CreateTempSubdirectory().FullName;
 
                 string path = Path.Combine(tempPath, assembly);
                 using (FileStream output = File.OpenWrite(path))

@@ -5,7 +5,9 @@ namespace ObjectiveCMarshalAPI
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ObjectiveC;
 
@@ -139,6 +141,7 @@ namespace ObjectiveCMarshalAPI
             ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static GCHandle AllocAndTrackObject<T>(uint count) where T : Base, new()
         {
             var obj = new T();
@@ -269,7 +272,7 @@ namespace ObjectiveCMarshalAPI
             }
 
             Assert.True(false, "Unknown exception type");
-            throw new Exception("Unreachable");
+            throw new UnreachableException();
         }
 
         class Scenario
@@ -282,6 +285,8 @@ namespace ObjectiveCMarshalAPI
         // Do not call this method from Main as it depends on a previous test for set up.
         static void _Validate_ExceptionPropagation()
         {
+            Console.WriteLine($"Running {nameof(_Validate_ExceptionPropagation)}");
+
             var delThrowInt = new ThrowExceptionDelegate(DEL_ThrowIntException);
             var delThrowException = new ThrowExceptionDelegate(DEL_ThrowExceptionException);
             var scenarios = new[]
@@ -314,7 +319,7 @@ namespace ObjectiveCMarshalAPI
                 });
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {

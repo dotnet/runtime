@@ -11,7 +11,6 @@
 .assembly catch2
 { 
 }
-.module catch2.exe 
 .class private  sealed  VT
        extends [mscorlib]System.ValueType
 {

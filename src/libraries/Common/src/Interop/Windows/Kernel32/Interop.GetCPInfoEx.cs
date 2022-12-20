@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetCPInfoExW", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "GetCPInfoExW", StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial Interop.BOOL GetCPInfoExW(uint CodePage, uint dwFlags, CPINFOEXW* lpCPInfoEx);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

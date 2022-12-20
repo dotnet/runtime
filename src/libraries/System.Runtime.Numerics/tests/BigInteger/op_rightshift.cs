@@ -25,6 +25,54 @@ namespace System.Numerics.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // May fail on 32-bit due to a large memory requirement
+        public static void LargeNegativeBigIntegerShiftTest()
+        {
+            // Create a very large negative BigInteger
+            BigInteger bigInt = new BigInteger(-1) << int.MaxValue;
+            Assert.Equal(2147483647, bigInt.GetBitLength());
+            Assert.Equal(-1, bigInt.Sign);
+
+            // Validate internal representation.
+            // At this point, bigInt should be a 1 followed by int.MaxValue zeros.
+            // Given this, bigInt._bits is expected to be structured as follows:
+            // - _bits.Length == (int.MaxValue + 1) / (8 * sizeof(uint))
+            // - First (_bits.Length - 1) elements: 0x00000000
+            // - Last element: 0x80000000
+            //                   ^------ (There's the leading '1')
+
+            Assert.Equal(((uint)int.MaxValue + 1) / (8 * sizeof(uint)), (uint)bigInt._bits.Length);
+
+            uint i = 0;
+            for (; i < (bigInt._bits.Length - 1); i++) {
+                Assert.Equal(0x00000000u, bigInt._bits[i]);
+            }
+
+            Assert.Equal(0x80000000u, bigInt._bits[i]);
+
+            // Right shift the BigInteger
+            BigInteger shiftedBigInt = bigInt >> 1;
+            Assert.Equal(2147483646, shiftedBigInt.GetBitLength());
+            Assert.Equal(-1, shiftedBigInt.Sign);
+
+            // Validate internal representation.
+            // At this point, shiftedBigInt should be a 1 followed by int.MaxValue - 1 zeros.
+            // Given this, shiftedBigInt._bits is expected to be structured as follows:
+            // - _bits.Length == (int.MaxValue + 1) / (8 * sizeof(uint))
+            // - First (_bits.Length - 1) elements: 0x00000000
+            // - Last element: 0x40000000
+            //                   ^------ (the '1' is now one position to the right)
+
+            Assert.Equal(((uint)int.MaxValue + 1) / (8 * sizeof(uint)), (uint)shiftedBigInt._bits.Length);
+
+            i = 0;
+            for (; i < (shiftedBigInt._bits.Length - 1); i++) {
+                Assert.Equal(0x00000000u, shiftedBigInt._bits[i]);
+            }
+
+            Assert.Equal(0x40000000u, shiftedBigInt._bits[i]);
+        }
+
         [Fact]
         public static void RunRightShiftTests()
         {

@@ -25,6 +25,7 @@ import "unknwn.idl";
 interface ICLRDataEnumMemoryRegions;
 interface ICLRDataEnumMemoryRegionsCallback;
 interface ICLRDataEnumMemoryRegionsCallback2;
+interface ICLRDataEnumMemoryRegionsCallback3;
 interface ICLRDataTarget;
 interface ICLRDataTarget2;
 interface ICLRMetadataLocator;
@@ -288,15 +289,31 @@ interface ICLRDataEnumMemoryRegionsCallback2 : ICLRDataEnumMemoryRegionsCallback
 }
 
 /*
+ * Optional callback interface for logging EnumMemoryRegions operations and errors.
+ */
+[
+    object,
+    local,
+    uuid(F315248D-8B79-49DB-B184-37426559F703)
+]
+interface ICLRDataLoggingCallback : IUnknown
+{
+    HRESULT LogMessage(
+        [in] LPCSTR message);
+}
+
+/*
  * Flags for controlling which memory regions are enumerated.
  */
 typedef enum CLRDataEnumMemoryFlags
 {
     CLRDATA_ENUM_MEM_DEFAULT = 0x0,
-    CLRDATA_ENUM_MEM_MINI = CLRDATA_ENUM_MEM_DEFAULT,       // generating skinny mini-dump
-    CLRDATA_ENUM_MEM_HEAP = 0x1,        // generating heap dump
-    CLRDATA_ENUM_MEM_TRIAGE = 0x2,      // generating triage mini-dump
-
+    CLRDATA_ENUM_MEM_MINI = CLRDATA_ENUM_MEM_DEFAULT,   // generating skinny mini-dump
+    CLRDATA_ENUM_MEM_HEAP = 0x1,                        // generating heap dump
+    CLRDATA_ENUM_MEM_TRIAGE = 0x2,                      // generating triage mini-dump
+    /* Generate heap dumps faster with less memory usage than CLRDATA_ENUM_MEM_HEAP by adding
+       the loader heaps instead of traversing all the individual runtime data structures. */
+    CLRDATA_ENUM_MEM_HEAP2 = 0x3,
     /* More bits to be added here later */
 } CLRDataEnumMemoryFlags;
 

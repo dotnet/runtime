@@ -128,15 +128,15 @@ public:
     COM_METHOD LogMessage( ICorDebugAppDomain *pAppDomain,
         ICorDebugThread *pThread,
         LONG lLevel,
-        __in LPWSTR pLogSwitchName,
-        __in LPWSTR pMessage);
+        _In_ LPWSTR pLogSwitchName,
+        _In_ LPWSTR pMessage);
 
     COM_METHOD LogSwitch( ICorDebugAppDomain *pAppDomain,
         ICorDebugThread *pThread,
         LONG lLevel,
         ULONG ulReason,
-        __in LPWSTR pLogSwitchName,
-        __in LPWSTR pParentName);
+        _In_ LPWSTR pLogSwitchName,
+        _In_ LPWSTR pParentName);
 
     COM_METHOD CreateAppDomain(ICorDebugProcess *pProcess,
         ICorDebugAppDomain *pAppDomain);
@@ -178,7 +178,7 @@ public:
         ICorDebugFunction *pNewFunction,
         ULONG32 oldILOffset);
 
-    COM_METHOD CreateConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId, __in LPWSTR pConnName);
+    COM_METHOD CreateConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId, _In_ LPWSTR pConnName);
 
     COM_METHOD ChangeConnection(ICorDebugProcess *pProcess, CONNID dwConnectionId );
 
@@ -368,7 +368,7 @@ public:
           Cordb * pCordb,
           ICorDebugRemoteTarget * pRemoteTarget,
           LPCWSTR programName,
-          __in_z LPWSTR  programArgs,
+          _In_z_ LPWSTR  programArgs,
           LPSECURITY_ATTRIBUTES lpProcessAttributes,
           LPSECURITY_ATTRIBUTES lpThreadAttributes,
           BOOL bInheritHandles,
@@ -389,7 +389,7 @@ public:
     );
 
     // Locates the DAC module adjacent to DBI
-    static HMODULE GetDacModule();
+    static HMODULE GetDacModule(PathString& dacModulePath);
 
     //
     // Functions used by CordbProcess
@@ -425,9 +425,6 @@ public:
 
     // Helper to queue fake assembly and mdule events
     void QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly);
-
-    // Queue fake thread-create events on attach. Order via native threads.
-    HRESULT QueueFakeThreadAttachEventsNativeOrder();
 
     // Queue fake thread-create events on attach. No ordering.
     HRESULT QueueFakeThreadAttachEventsNoOrder();
@@ -491,9 +488,6 @@ public:
     // dispatching an event.
     void PreDispatchEvent(bool fRealCreateProcessEvent = false);
 
-    // Look for a CLR in the process and if found, return it's instance ID
-    HRESULT FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId);
-
     // Retrieve the IP address and the port number of the debugger proxy.
     MachineInfo GetMachineInfo();
 
@@ -525,9 +519,6 @@ protected:
     //
     HANDLE  m_markAttachPendingEvent;
     HANDLE  m_terminatingEvent;
-
-    // Finds the base address of [core]clr.dll
-    CORDB_ADDRESS GetCLRInstanceBaseAddress();
 
     //
     // Event Queues

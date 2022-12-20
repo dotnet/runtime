@@ -48,7 +48,6 @@
 
 #include "packedfields.inl"
 #include "array.h"
-#define IBCLOG(x) g_IBCLogger.##x
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 
@@ -120,9 +119,9 @@ class ExplicitFieldTrust
             kNone         = 0,    // no guarantees at all                                              - Type refuses to load at all.
             kLegal        = 1,    // guarantees no objref <-> scalar overlap and no unaligned objref   - Type loads but field access won't verify
             kVerifiable   = 2,    // guarantees no objref <-> objref overlap and all guarantees above  - Type loads and field access will verify
-            kNonOverLayed = 3,    // guarantees no overlap at all and all guarantees above             - Type loads, field access verifies and Equals() may be optimized if structure is tightly packed
+            kNonOverlaid = 3,    // guarantees no overlap at all and all guarantees above             - Type loads, field access verifies and Equals() may be optimized if structure is tightly packed
 
-            kMaxTrust     = kNonOverLayed,
+            kMaxTrust     = kNonOverlaid,
         };
 
 };
@@ -160,10 +159,10 @@ class ExplicitClassTrust : private ExplicitFieldTrust
             return m_trust >= kVerifiable;
         }
 
-        BOOL IsNonOverLayed()
+        BOOL IsNonOverlaid()
         {
             LIMITED_METHOD_CONTRACT;
-            return m_trust >= kNonOverLayed;
+            return m_trust >= kNonOverlaid;
         }
 
         TrustLevel GetTrustLevel()
@@ -363,19 +362,23 @@ class EEClassLayoutInfo
     private:
         enum {
             // TRUE if the GC layout of the class is bit-for-bit identical
-            // to its unmanaged counterpart (i.e. no internal reference fields,
-            // no ansi-unicode char conversions required, etc.) Used to
-            // optimize marshaling.
-            e_BLITTABLE                 = 0x01,
-            // Post V1.0 addition: Is this type also sequential in managed memory?
-            e_MANAGED_SEQUENTIAL        = 0x02,
+            // to its unmanaged counterpart with the runtime marshalling system
+            // (i.e. no internal reference fields, no ansi-unicode char conversions required, etc.)
+            // Used to optimize marshaling.
+            e_BLITTABLE                       = 0x01,
+            // Is this type also sequential in managed memory?
+            e_MANAGED_SEQUENTIAL              = 0x02,
             // When a sequential/explicit type has no fields, it is conceptually
             // zero-sized, but actually is 1 byte in length. This holds onto this
             // fact and allows us to revert the 1 byte of padding when another
             // explicit type inherits from this type.
-            e_ZERO_SIZED                =   0x04,
+            e_ZERO_SIZED                      = 0x04,
             // The size of the struct is explicitly specified in the meta-data.
-            e_HAS_EXPLICIT_SIZE         = 0x08
+            e_HAS_EXPLICIT_SIZE               = 0x08,
+            // The type recursively has a field that is LayoutKind.Auto and not an enum.
+            e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10,
+            // Type type recursively has a field which is an Int128
+            e_IS_OR_HAS_INT128_FIELD          = 0x20,
         };
 
         BYTE        m_bFlags;
@@ -419,6 +422,18 @@ class EEClassLayoutInfo
             return (m_bFlags & e_HAS_EXPLICIT_SIZE) == e_HAS_EXPLICIT_SIZE;
         }
 
+        BOOL HasAutoLayoutField() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT) == e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT;
+        }
+
+        BOOL IsInt128OrHasInt128Fields() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_IS_OR_HAS_INT128_FIELD) == e_IS_OR_HAS_INT128_FIELD;
+        }
+
         BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -452,6 +467,20 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
                                        : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
+        }
+
+        void SetHasAutoLayoutField(BOOL hasAutoLayoutField)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasAutoLayoutField ? (m_bFlags | e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT)
+                                       : (m_bFlags & ~e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT);
+        }
+
+        void SetIsInt128OrHasInt128Fields(BOOL hasInt128Field)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasInt128Field ? (m_bFlags | e_IS_OR_HAS_INT128_FIELD)
+                                       : (m_bFlags & ~e_IS_OR_HAS_INT128_FIELD);
         }
 };
 
@@ -493,11 +522,11 @@ typedef struct
 #define DEFAULT_NONSTACK_CLASSNAME_SIZE (MAX_CLASSNAME_LENGTH/4)
 
 #define DefineFullyQualifiedNameForClass() \
-    ScratchBuffer<DEFAULT_NONSTACK_CLASSNAME_SIZE> _scratchbuffer_; \
+    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> _ssclsname8_; \
     InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassOnStack() \
-    ScratchBuffer<MAX_CLASSNAME_LENGTH> _scratchbuffer_; \
+    InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname8_; \
     InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassW() \
@@ -507,13 +536,13 @@ typedef struct
     InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname_w_;
 
 #define GetFullyQualifiedNameForClassNestedAware(pClass) \
-    pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_).GetUTF8(_scratchbuffer_)
+    (pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_), _ssclsname8_.SetAndConvertToUTF8(_ssclsname_), _ssclsname8_.GetUTF8())
 
 #define GetFullyQualifiedNameForClassNestedAwareW(pClass) \
     pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_w_).GetUnicode()
 
 #define GetFullyQualifiedNameForClass(pClass) \
-    pClass->_GetFullyQualifiedNameForClass(_ssclsname_).GetUTF8(_scratchbuffer_)
+    (pClass->_GetFullyQualifiedNameForClass(_ssclsname_), _ssclsname8_.SetAndConvertToUTF8(_ssclsname_), _ssclsname8_.GetUTF8())
 
 #define GetFullyQualifiedNameForClassW(pClass) \
     pClass->_GetFullyQualifiedNameForClass(_ssclsname_w_).GetUnicode()
@@ -573,6 +602,9 @@ class EEClassOptionalFields
     // Size of data the eightBytes
     unsigned int m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
 #endif // UNIX_AMD64_ABI
+
+    // Required alignment for this fields of this type (only set in auto-layout structures when different from pointer alignment)
+    BYTE m_requiredFieldAlignment;
 
     // Set default values for optional fields.
     inline void Init();
@@ -1181,7 +1213,7 @@ public:
     inline void SetHasNoGuid()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockOr(&m_VMFlags, VMFLAG_NO_GUID);
+        InterlockedOr((LONG*)&m_VMFlags, VMFLAG_NO_GUID);
     }
 
 public:
@@ -1194,6 +1226,16 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_PREFER_ALIGN8;
+    }
+    inline BOOL HasCustomFieldAlignment()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT);
+    }
+    inline void SetHasCustomFieldAlignment()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT;
     }
 #ifdef _DEBUG
     inline void SetDestroyed()
@@ -1241,10 +1283,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD) VMFLAG_HASLAYOUT;  //modified before the class is published
     }
-    inline void SetHasOverLayedFields()
+    inline void SetHasOverlaidFields()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= VMFLAG_HASOVERLAYEDFIELDS;
+        m_VMFlags |= VMFLAG_HASOVERLAIDFIELDS;
     }
     inline void SetIsNested()
     {
@@ -1322,10 +1364,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_VMFlags & VMFLAG_HASLAYOUT;
     }
-    BOOL HasOverLayedField()
+    BOOL HasOverlaidField()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_VMFlags & VMFLAG_HASOVERLAYEDFIELDS;
+        return m_VMFlags & VMFLAG_HASOVERLAIDFIELDS;
     }
     BOOL IsNested()
     {
@@ -1381,6 +1423,11 @@ public:
     BOOL IsManagedSequential();
 
     BOOL HasExplicitSize();
+
+    BOOL IsAutoLayoutOrHasAutoLayoutField();
+    
+    // Only accurate on non-auto layout types
+    BOOL IsInt128OrHasInt128Fields(); 
 
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
@@ -1478,6 +1525,13 @@ public:
 #else // !FEATURE_HFA
     bool CheckForHFA();
 #endif // FEATURE_HFA
+
+    inline int GetOverriddenFieldAlignmentRequirement()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasOptionalFields());
+        return GetOptionalFields()->m_requiredFieldAlignment;
+    }
 
 #ifdef FEATURE_COMINTEROP
     inline TypeHandle GetCoClassForInterface()
@@ -1651,8 +1705,8 @@ public:
 
         VMFLAG_IS_EQUIVALENT_TYPE              = 0x00000200,
 
-        //   OVERLAYED is used to detect whether Equals can safely optimize to a bit-compare across the structure.
-        VMFLAG_HASOVERLAYEDFIELDS              = 0x00000400,
+        //   OVERLAID is used to detect whether Equals can safely optimize to a bit-compare across the structure.
+        VMFLAG_HASOVERLAIDFIELDS               = 0x00000400,
 
         // Set this if this class or its parent have instance fields which
         // must be explicitly inited in a constructor (e.g. pointers of any
@@ -1672,7 +1726,7 @@ public:
         // unused                              = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
         VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
-        // unused                              = 0x00080000,
+        VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
         VMFLAG_ONLY_ABSTRACT_METHODS           = 0x00400000, // Type only contains abstract methods
@@ -1747,14 +1801,14 @@ private:
     DWORD m_VMFlags;
 
     /*
-     * We maintain some auxillary flags in DEBUG builds,
+     * We maintain some auxiliary flags in DEBUG builds,
      * this frees up some bits in m_wVMFlags
      */
 #if defined(_DEBUG)
     WORD m_wAuxFlags;
 #endif
 
-    // NOTE: Following BYTE fields are layed out together so they'll fit within the same DWORD for efficient
+    // NOTE: Following BYTE fields are laid out together so they'll fit within the same DWORD for efficient
     // structure packing.
     BYTE m_NormType;
     BYTE m_fFieldsArePacked;        // TRUE iff fields pointed to by GetPackedFields() are in packed state
@@ -2046,7 +2100,7 @@ inline BOOL EEClass::IsBlittable()
     LIMITED_METHOD_CONTRACT;
 
     // Either we have an opaque bunch of bytes, or we have some fields that are
-    // all isomorphic and explicitly layed out.
+    // all isomorphic and explicitly laid out.
     return (HasLayout() && GetLayoutInfo()->IsBlittable());
 }
 
@@ -2060,6 +2114,22 @@ inline BOOL EEClass::HasExplicitSize()
 {
     LIMITED_METHOD_CONTRACT;
     return HasLayout() && GetLayoutInfo()->HasExplicitSize();
+}
+
+inline BOOL EEClass::IsAutoLayoutOrHasAutoLayoutField()
+{
+    LIMITED_METHOD_CONTRACT;
+    // If this type is not auto
+    return !HasLayout() || GetLayoutInfo()->HasAutoLayoutField();
+}
+
+inline BOOL EEClass::IsInt128OrHasInt128Fields()
+{
+    // The name of this type is a slight misnomer as it doesn't detect Int128 fields on 
+    // auto layout types, but since we only need this for interop scenarios, it works out.
+    LIMITED_METHOD_CONTRACT;
+    // If this type is not auto
+    return HasLayout() && GetLayoutInfo()->IsInt128OrHasInt128Fields();
 }
 
 //==========================================================================

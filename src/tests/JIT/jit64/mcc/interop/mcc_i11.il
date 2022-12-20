@@ -6,8 +6,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
 
-.assembly MCCTest {}
-.module mcc_i11.exe
+.assembly 'mcc_i11' {}
 
 
 .namespace MCCTest
@@ -18,7 +17,7 @@
        vararg valuetype MCCTest.VType1 Sum(float64) cil managed preservesig {
     }
 
-    .method private static int32 Main(string[] args)
+    .method private static int32 Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

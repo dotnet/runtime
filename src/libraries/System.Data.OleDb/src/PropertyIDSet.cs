@@ -5,13 +5,11 @@ using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.OleDb
 {
     internal sealed class PropertyIDSet : DbBuffer
     {
-        private static readonly int PropertyIDSetAndValueSize = ODB.SizeOf_tagDBPROPIDSET + ADP.PtrSize; // sizeof(tagDBPROPIDSET) + sizeof(int)
+        private static readonly int PropertyIDSetAndValueSize = ODB.SizeOf_tagDBPROPIDSET + IntPtr.Size; // sizeof(tagDBPROPIDSET) + sizeof(int)
         private static readonly int PropertyIDSetSize = ODB.SizeOf_tagDBPROPIDSET;
 
         private readonly int _count;
@@ -27,7 +25,7 @@ namespace System.Data.OleDb
             IntPtr ptr = ADP.IntPtrOffset(base.handle, PropertyIDSetSize);
             Marshal.WriteIntPtr(base.handle, 0, ptr);
 
-            Marshal.WriteInt32(base.handle, ADP.PtrSize, /*propertyid count*/1);
+            Marshal.WriteInt32(base.handle, IntPtr.Size, /*propertyid count*/1);
 
             ptr = ADP.IntPtrOffset(base.handle, ODB.OffsetOf_tagDBPROPIDSET_PropertySet);
             Marshal.StructureToPtr(propertySet, ptr, false/*deleteold*/);

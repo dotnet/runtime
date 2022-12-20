@@ -9,8 +9,7 @@
   .ver 4:0:0:0
 }
 
-.assembly test1 {}
-.module test1.exe
+.assembly 'test' {}
 
 .namespace Test
 {
@@ -48,7 +47,7 @@
     }
 
 
-    .method public hidebysig static int32 Main(string[] args) cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

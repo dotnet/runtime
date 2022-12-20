@@ -12,7 +12,7 @@ CrstStatic _ep_rt_coreclr_config_lock;
 
 thread_local EventPipeCoreCLRThreadHolderTLS EventPipeCoreCLRThreadHolderTLS::g_threadHolderTLS;
 
-ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
+ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
 
 #ifndef TARGET_UNIX
 uint32_t *_ep_rt_coreclr_proc_group_offsets;

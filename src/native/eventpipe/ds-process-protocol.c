@@ -91,7 +91,7 @@ static
 uint16_t
 process_info_payload_get_size (DiagnosticsProcessInfoPayload *payload)
 {
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	// uint64_t ProcessId;  -> 8 bytes
@@ -137,7 +137,7 @@ process_info_payload_flatten (
 	EP_ASSERT (size != NULL);
 	EP_ASSERT (process_info_payload_get_size (process_info) == *size);
 
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	bool success = true;
@@ -205,7 +205,7 @@ static
 uint16_t
 process_info_2_payload_get_size (DiagnosticsProcessInfo2Payload *payload)
 {
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	// uint64_t ProcessId;  -> 8 bytes
@@ -261,7 +261,7 @@ process_info_2_payload_flatten (
 	EP_ASSERT (size != NULL);
 	EP_ASSERT (process_info_2_payload_get_size (process_info) == *size);
 
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	bool success = true;
@@ -388,7 +388,7 @@ env_info_payload_flatten (
 	EP_ASSERT (size != NULL);
 	EP_ASSERT (env_info_payload_get_size (env_info) == *size);
 
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	bool success = true;
@@ -420,7 +420,7 @@ env_info_stream_env_block (
 	EP_ASSERT (payload != NULL);
 	EP_ASSERT (stream != NULL);
 
-	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	// for definition of serialization format
 
 	bool success = true;
@@ -428,6 +428,7 @@ env_info_stream_env_block (
 
 	// Array<Array<WCHAR>>
 	uint32_t env_len = (uint32_t)ep_rt_env_array_utf16_size (&env_info->env_array);
+	env_len = ep_rt_val_uint32_t (env_len);
 	success &= ds_ipc_stream_write (stream, (const uint8_t *)&env_len, sizeof (env_len), &bytes_written, EP_INFINITE_WAIT);
 
 	ep_rt_env_array_utf16_iterator_t iterator = ep_rt_env_array_utf16_iterator_begin (&env_info->env_array);
@@ -485,13 +486,13 @@ process_protocol_helper_get_process_info (
 	DiagnosticsProcessInfoPayload payload;
 	DiagnosticsProcessInfoPayload *process_info_payload = NULL;
 
-	command_line = ep_rt_utf8_to_utf16_string (ep_rt_diagnostics_command_line_get (), -1);
+	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get (), -1);
 	ep_raise_error_if_nok (command_line != NULL);
 
-	os_info = ep_rt_utf8_to_utf16_string (ep_event_source_get_os_info (), -1);
+	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info (), -1);
 	ep_raise_error_if_nok (os_info != NULL);
 
-	arch_info = ep_rt_utf8_to_utf16_string (ep_event_source_get_arch_info (), -1);
+	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info (), -1);
 	ep_raise_error_if_nok (arch_info != NULL);
 
 	process_info_payload = ds_process_info_payload_init (
@@ -547,19 +548,19 @@ process_protocol_helper_get_process_info_2 (
 	DiagnosticsProcessInfo2Payload payload;
 	DiagnosticsProcessInfo2Payload *process_info_2_payload = NULL;
 
-	command_line = ep_rt_utf8_to_utf16_string (ep_rt_diagnostics_command_line_get (), -1);
+	command_line = ep_rt_utf8_to_utf16le_string (ep_rt_diagnostics_command_line_get (), -1);
 	ep_raise_error_if_nok (command_line != NULL);
 
-	os_info = ep_rt_utf8_to_utf16_string (ep_event_source_get_os_info (), -1);
+	os_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info (), -1);
 	ep_raise_error_if_nok (os_info != NULL);
 
-	arch_info = ep_rt_utf8_to_utf16_string (ep_event_source_get_arch_info (), -1);
+	arch_info = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info (), -1);
 	ep_raise_error_if_nok (arch_info != NULL);
 
-	managed_entrypoint_assembly_name = ep_rt_utf8_to_utf16_string (ep_rt_entrypoint_assembly_name_get_utf8 (), -1);
+	managed_entrypoint_assembly_name = ep_rt_utf8_to_utf16le_string (ep_rt_entrypoint_assembly_name_get_utf8 (), -1);
 	ep_raise_error_if_nok (managed_entrypoint_assembly_name != NULL);
 
-	clr_product_version = ep_rt_utf8_to_utf16_string (ep_rt_runtime_version_get_utf8 (), -1);
+	clr_product_version = ep_rt_utf8_to_utf16le_string (ep_rt_runtime_version_get_utf8 (), -1);
 	ep_raise_error_if_nok (clr_product_version != NULL);
 
 	process_info_2_payload = ds_process_info_2_payload_init (
@@ -796,7 +797,7 @@ ds_process_protocol_helper_handle_ipc_message (
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_process_protocol;
 const char quiet_linker_empty_file_warning_diagnostics_process_protocol = 0;
 #endif

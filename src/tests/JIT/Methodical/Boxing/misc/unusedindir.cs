@@ -3,8 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+namespace Test_unusedindir_cs
+{
+public class Program
 {
     struct NotPromoted
     {
@@ -34,5 +37,7 @@ class Program
         return t;
     }
 
-    static int Main() => Test(new TypeWithStruct()).c;
+    [Fact]
+    public static int TestEntryPoint() => Test(new TypeWithStruct()).c;
+}
 }

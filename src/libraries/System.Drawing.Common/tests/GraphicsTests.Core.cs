@@ -23,7 +23,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformElements_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
@@ -77,5 +76,150 @@ namespace System.Drawing.Tests
                 }
             }
         }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void DrawRectangle_NullPen_ThrowsArgumentNullException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangle(null, new RectangleF(0f, 0f, 1f, 1f)));
+                // other DrawRectangle overloads tested in DrawRectangle_NullPen_ThrowsArgumentNullException()
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void DrawRectangle_DisposedPen_ThrowsArgumentException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new RectangleF(0f, 0f, 1f, 1f)));
+                // other DrawRectangle overloads tested in DrawRectangle_DisposedPen_ThrowsArgumentException()
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void DrawRectangle_Busy_ThrowsInvalidOperationException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, new RectangleF(0f, 0f, 1f, 1f)));
+                    // other DrawRectangle overloads tested in DrawRectangle_Busy_ThrowsInvalidOperationException()
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void DrawRectangle_Disposed_ThrowsArgumentException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new RectangleF(0f, 0f, 1f, 1f)));
+                // other DrawRectangle overloads tested in DrawRectangle_Disposed_ThrowsArgumentException()
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void FillPie_NullPen_ThrowsArgumentNullException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("brush", () => graphics.FillPie(null, new RectangleF(0, 0, 1, 1), 0, 90));
+                // other FillPie overloads tested in FillPie_NullPen_ThrowsArgumentNullException()
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void FillPie_DisposedPen_ThrowsArgumentException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var brush = new SolidBrush(Color.Red);
+                brush.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.FillPie(brush, new RectangleF(0, 0, 1, 1), 0, 90));
+                // other FillPie overloads tested in FillPie_DisposedPen_ThrowsArgumentException()
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void FillPie_ZeroWidth_ThrowsArgumentException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var brush = new SolidBrush(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.FillPie(brush, new RectangleF(0, 0, 0, 1), 0, 90));
+                // other FillPie overloads tested in FillPie_ZeroWidth_ThrowsArgumentException()
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void FillPie_ZeroHeight_ThrowsArgumentException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var brush = new SolidBrush(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.FillPie(brush, new RectangleF(0, 0, 1, 0), 0, 90));
+                // other FillPie overloads tested in FillPie_ZeroHeight_ThrowsArgumentException()
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void FillPie_Busy_ThrowsInvalidOperationException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var brush = new SolidBrush(Color.Red))
+            {
+                graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.FillPie(brush, new RectangleF(0, 0, 1, 1), 0, 90));
+                    // other FillPie overloads tested in FillPie_Busy_ThrowsInvalidOperationException()
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void FillPie_Disposed_ThrowsArgumentException_Core()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var brush = new SolidBrush(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.FillPie(brush, new RectangleF(0, 0, 1, 1), 0, 90));
+                // other FillPie overloads tested in FillPie_Disposed_ThrowsArgumentException()
+            }
+        }
+
+
+
     }
 }

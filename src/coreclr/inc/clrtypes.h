@@ -11,7 +11,7 @@
 #ifndef CLRTYPES_H_
 #define CLRTYPES_H_
 
-#if defined(_MSC_VER) && !defined(SOURCE_FORMATTING) && defined(FEATURE_CORESYSTEM)
+#if defined(_MSC_VER) && !defined(SOURCE_FORMATTING)
     // Prefer intsafe.h when available, which defines many of the MAX/MIN
     // values below (which is why they are in #ifndef blocks).
     #include <intsafe.h>
@@ -338,6 +338,15 @@ inline UINT64 AlignUp(UINT64 value, UINT alignment)
     return (value+alignment-1)&~(UINT64)(alignment-1);
 }
 
+#ifdef __APPLE__
+inline SIZE_T AlignUp(SIZE_T value, UINT alignment)
+{
+    STATIC_CONTRACT_LEAF;
+    STATIC_CONTRACT_SUPPORTS_DAC;
+    return (value+alignment-1)&~(SIZE_T)(alignment-1);
+}
+#endif // __APPLE__
+
 inline UINT AlignDown(UINT value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
@@ -381,6 +390,14 @@ inline UINT AlignmentPad(UINT64 value, UINT alignment)
     return (UINT) (AlignUp(value, alignment) - value);
 }
 
+#ifdef __APPLE__
+inline UINT AlignmentPad(SIZE_T value, UINT alignment)
+{
+    STATIC_CONTRACT_WRAPPER;
+    return (UINT) (AlignUp(value, alignment) - value);
+}
+#endif // __APPLE__
+
 inline UINT AlignmentTrim(UINT value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
@@ -405,5 +422,14 @@ inline UINT AlignmentTrim(UINT64 value, UINT alignment)
     STATIC_CONTRACT_SUPPORTS_DAC;
     return ((UINT)value)&(alignment-1);
 }
+
+#ifdef __APPLE__
+inline UINT AlignmentTrim(SIZE_T value, UINT alignment)
+{
+    STATIC_CONTRACT_LEAF;
+    STATIC_CONTRACT_SUPPORTS_DAC;
+    return ((UINT)value)&(alignment-1);
+}
+#endif // __APPLE__
 
 #endif  // CLRTYPES_H_

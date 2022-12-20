@@ -97,7 +97,7 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "", "R" })
                 {
                     yield return new object[] { sbyte.MinValue, defaultSpecifier, defaultFormat, "-128" };
                     yield return new object[] { (sbyte)-123, defaultSpecifier, defaultFormat, "-123" };
@@ -119,7 +119,7 @@ namespace System.Tests
             }
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { (sbyte)32, "C100", invariantFormat, "¤32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (sbyte)32, "C100", invariantFormat, "\u00A432.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (sbyte)32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
             yield return new object[] { (sbyte)32, "D100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
             yield return new object[] { (sbyte)32, "E100", invariantFormat, "3.2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
@@ -158,7 +158,7 @@ namespace System.Tests
             string lowerExpected = expected.ToLowerInvariant();
 
             bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
-            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() is "G" or "R")
             {
                 if (isDefaultProvider)
                 {
@@ -182,10 +182,6 @@ namespace System.Tests
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
             sbyte b = 123;
-            Assert.Throws<FormatException>(() => b.ToString("r")); // Invalid format
-            Assert.Throws<FormatException>(() => b.ToString("r", null)); // Invalid format
-            Assert.Throws<FormatException>(() => b.ToString("R")); // Invalid format
-            Assert.Throws<FormatException>(() => b.ToString("R", null)); // Invalid format
             Assert.Throws<FormatException>(() => b.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => b.ToString("Y", null)); // Invalid format
         }

@@ -23,7 +23,7 @@ namespace System.Runtime.CompilerServices
         [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static CallSite<T> CreateMatchmaker<T>(CallSite<T> site) where T : class
         {
-            var mm = site.CreateMatchMaker();
+            var mm = CallSite<T>.CreateMatchMaker();
             // CallSiteOps.ClearMatch(mm);
             mm._match = true;
             return mm;

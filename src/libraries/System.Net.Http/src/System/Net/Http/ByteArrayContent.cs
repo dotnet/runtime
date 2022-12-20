@@ -16,10 +16,7 @@ namespace System.Net.Http
 
         public ByteArrayContent(byte[] content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
             _content = content;
             _count = content.Length;
@@ -27,10 +24,8 @@ namespace System.Net.Http
 
         public ByteArrayContent(byte[] content, int offset, int count)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
+
             if ((offset < 0) || (offset > content.Length))
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
+using System.Collections.Generic;
 
 namespace System.ComponentModel.Design.Serialization
 {
@@ -23,7 +23,7 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public sealed class ContextStack
     {
-        private ArrayList? _contextStack;
+        private List<object>? _contextStack;
 
         /// <summary>
         /// Retrieves the current object on the stack, or null
@@ -49,10 +49,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (level < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(level));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(level);
                 if (_contextStack != null && level < _contextStack.Count)
                 {
                     return _contextStack[_contextStack.Count - 1 - level];
@@ -70,10 +67,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (type == null)
-                {
-                    throw new ArgumentNullException(nameof(type));
-                }
+                ArgumentNullException.ThrowIfNull(type);
 
                 if (_contextStack != null)
                 {
@@ -101,15 +95,9 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public void Append(object context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
-            if (_contextStack == null)
-            {
-                _contextStack = new ArrayList();
-            }
+            _contextStack ??= new List<object>();
             _contextStack.Insert(0, context);
         }
 
@@ -136,15 +124,9 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public void Push(object context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
-            if (_contextStack == null)
-            {
-                _contextStack = new ArrayList();
-            }
+            _contextStack ??= new List<object>();
             _contextStack.Add(context);
         }
     }

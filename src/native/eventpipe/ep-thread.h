@@ -272,11 +272,11 @@ struct _EventPipeThreadSessionState_Internal {
 	EventPipeBufferManager *buffer_manager;
 #endif
 	// The number of events that were attempted to be written by this
-	// thread. Each event was either succesfully recorded in a buffer
+	// thread. Each event was either successfully recorded in a buffer
 	// or it was dropped.
 	//
 	// Only updated by the current thread under thread_holder->thread.rt_lock. Other
-	// event writer threads are allowed to do unsychronized reads when
+	// event writer threads are allowed to do unsynchronized reads when
 	// capturing a sequence point but this does not provide any consistency
 	// guarantee. In particular there is no promise that the other thread
 	// is observing the most recent sequence number, nor is there a promise
@@ -285,9 +285,9 @@ struct _EventPipeThreadSessionState_Internal {
 	// number in tandem with an event write or drop, but without a write
 	// barrier between those memory writes they might observed out-of-order
 	// by the thread capturing the sequence point. The only utility this
-	// unsychronized read has is that if some other thread observes a sequence
+	// unsynchronized read has is that if some other thread observes a sequence
 	// number X, it knows this thread must have attempted to write at least
-	// X events prior to the moment in time when the read occured. If the event
+	// X events prior to the moment in time when the read occurred. If the event
 	// buffers are later read and there are fewer than X events timestamped
 	// prior to the sequence point we can be certain the others were dropped.
 	volatile uint32_t sequence_number;

@@ -196,10 +196,7 @@ main (int argc, char* argv[])
 	new_test ("test_cprop_ldloc_stloc", verify_cprop_ldloc_stloc);
 
 	/* init mono runtime */
-	g_set_prgname (argv [0]);
-	mono_set_rootdir ();
-	mono_config_parse (NULL);
-	MonoDomain *root_domain = mini_init ("whitebox", NULL);
+	MonoDomain *root_domain = mini_init ("whitebox");
 	mono_gc_set_stack_end (&root_domain);
 
 	verbose_method_name = g_getenv ("MONO_VERBOSE_METHOD");

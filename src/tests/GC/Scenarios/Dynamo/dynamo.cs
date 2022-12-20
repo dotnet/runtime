@@ -22,8 +22,8 @@
  * There are quite a few arrays and ints that don't seem to be used for anything,
  * as labeled below.
  * Notes:
- *   -passes with complus_gcstress=0,1,2,3,4
- *   -passes with complus_hitminops
+ *   -passes with DOTNET_gcstress=0,1,2,3,4
+ *   -passes with DOTNET_hitminops
  *   -passes in debug
  */
 
@@ -244,7 +244,7 @@ namespace Dynamo {
                         ChkRandomValues[ ChkRandomNum++ ] = Value;
                     break;
                 default:
-                    Console.WriteLine( "Test error has occured: Unknown Type - {0} given", Type );
+                    Console.WriteLine( "Test error has occurred: Unknown Type - {0} given", Type );
                 break;
             }
         }

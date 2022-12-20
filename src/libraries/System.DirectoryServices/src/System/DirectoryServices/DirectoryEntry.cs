@@ -3,7 +3,6 @@
 
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.DirectoryServices.Interop;
 using System.ComponentModel;
 using System.Threading;
 using System.Reflection;
@@ -141,7 +140,7 @@ namespace System.DirectoryServices
             _options = new DirectoryEntryConfiguration(this);
 
             // We are starting from an already bound connection so make sure the options are set properly.
-            // If this is an externallly managed com object then we don't want to change it's current behavior
+            // If this is an externally managed com object then we don't want to change it's current behavior
             if (!AdsObjIsExternal)
             {
                 InitADsObjectOptions();
@@ -340,8 +339,7 @@ namespace System.DirectoryServices
             get => _path;
             set
             {
-                if (value == null)
-                    value = "";
+                value ??= "";
 
                 if (System.DirectoryServices.ActiveDirectory.Utils.Compare(_path, value) == 0)
                     return;
@@ -354,18 +352,8 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Gets a <see cref='System.DirectoryServices.PropertyCollection'/> of properties set on this object.
         /// </devdoc>
-        public PropertyCollection Properties
-        {
-            get
-            {
-                if (_propertyCollection == null)
-                {
-                    _propertyCollection = new PropertyCollection(this);
-                }
-
-                return _propertyCollection;
-            }
-        }
+        public PropertyCollection Properties =>
+            _propertyCollection ??= new PropertyCollection(this);
 
         /// <devdoc>
         /// Gets the name of the schema used for this <see cref='System.DirectoryServices.DirectoryEntry'/>
@@ -446,10 +434,7 @@ namespace System.DirectoryServices
                     _passwordIsNull = true;
                 }
 
-                if (value == null)
-                    _userNameIsNull = true;
-                else
-                    _userNameIsNull = false;
+                _userNameIsNull = value == null;
 
                 _credentials.UserName = value;
 
@@ -640,7 +625,7 @@ namespace System.DirectoryServices
         internal void CommitIfNotCaching()
         {
             if (JustCreated)
-                return;   // Do not write changes, beacuse the entry is just under construction until CommitChanges() is called.
+                return;   // Do not write changes, because the entry is just under construction until CommitChanges() is called.
 
             if (_useCache)
                 return;
@@ -806,13 +791,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;
@@ -843,13 +824,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;
@@ -876,13 +853,9 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is COMException inner)
                 {
-                    if (e.InnerException is COMException)
-                    {
-                        COMException inner = (COMException)e.InnerException;
-                        throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
-                    }
+                    throw new TargetInvocationException(e.Message, COMExceptionHelper.CreateFormattedComException(inner));
                 }
 
                 throw;

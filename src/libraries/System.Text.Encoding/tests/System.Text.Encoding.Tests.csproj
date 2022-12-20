@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Encoding.UTF7 and UTF7Encoding are obsolete, but we're the unit test project for it, so suppress warnings -->
     <NoWarn>$(NoWarn),SYSLIB0001</NoWarn>
     <EnableUnsafeUTF7Encoding>true</EnableUnsafeUTF7Encoding>

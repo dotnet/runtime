@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
 {
     public partial class SystemdLifetime
     {
-        private PosixSignalRegistration _sigTermRegistration;
+        private PosixSignalRegistration? _sigTermRegistration;
 
         private partial void RegisterShutdownHandlers()
         {

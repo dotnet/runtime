@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -32,7 +33,9 @@ namespace System.Security.Principal
         public WindowsPrincipal(WindowsIdentity ntIdentity)
             : base(ntIdentity)
         {
-            _identity = ntIdentity ?? throw new ArgumentNullException(nameof(ntIdentity));
+            ArgumentNullException.ThrowIfNull(ntIdentity);
+
+            _identity = ntIdentity;
         }
 
         //
@@ -134,36 +137,46 @@ namespace System.Security.Principal
 
         public virtual bool IsInRole(SecurityIdentifier sid)
         {
-            if (sid == null)
-                throw new ArgumentNullException(nameof(sid));
+            ArgumentNullException.ThrowIfNull(sid);
 
             // special case the anonymous identity.
             if (_identity.AccessToken.IsInvalid)
                 return false;
 
             // CheckTokenMembership expects an impersonation token
-            SafeAccessTokenHandle token = SafeAccessTokenHandle.InvalidHandle;
-            if (_identity.ImpersonationLevel == TokenImpersonationLevel.None)
+            using SafeAccessTokenHandle invalidHandle = SafeAccessTokenHandle.InvalidHandle;
+            SafeAccessTokenHandle token = invalidHandle;
+            try
             {
-                if (!Interop.Advapi32.DuplicateTokenEx(_identity.AccessToken,
-                                                  (uint)TokenAccessLevels.Query,
-                                                  IntPtr.Zero,
-                                                  (uint)TokenImpersonationLevel.Identification,
-                                                  (uint)TokenType.TokenImpersonation,
-                                                  ref token))
-                    throw new SecurityException(new Win32Exception().Message);
+                if (_identity.ImpersonationLevel == TokenImpersonationLevel.None)
+                {
+                    if (!Interop.Advapi32.DuplicateTokenEx(_identity.AccessToken,
+                                                      (uint)TokenAccessLevels.Query,
+                                                      IntPtr.Zero,
+                                                      (uint)TokenImpersonationLevel.Identification,
+                                                      (uint)TokenType.TokenImpersonation,
+                                                      ref token))
+                    {
+                        throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
+                    }
+                }
+
+                bool isMember = false;
+
+                // CheckTokenMembership will check if the SID is both present and enabled in the access token.
+                if (!Interop.Advapi32.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
+                                                      sid.BinaryForm,
+                                                      ref isMember))
+                {
+                    throw new SecurityException(Marshal.GetLastPInvokeErrorMessage());
+                }
+
+                return isMember;
             }
-
-            bool isMember = false;
-
-            // CheckTokenMembership will check if the SID is both present and enabled in the access token.
-            if (!Interop.Advapi32.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
-                                                  sid.BinaryForm,
-                                                  ref isMember))
-                throw new SecurityException(new Win32Exception().Message);
-
-            token.Dispose();
-            return isMember;
+            finally
+            {
+                token.Dispose();
+            }
         }
 
         // This is called by AppDomain.GetThreadPrincipal() via reflection.

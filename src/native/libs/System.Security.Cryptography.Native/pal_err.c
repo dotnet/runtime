@@ -4,29 +4,31 @@
 #include "pal_err.h"
 #include "pal_utilities.h"
 
-void CryptoNative_ErrClearError()
+void CryptoNative_ErrClearError(void)
 {
     ERR_clear_error();
 }
 
-uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure)
+uint64_t CryptoNative_ErrGetExceptionError(int32_t* isAllocFailure)
 {
-    unsigned long err = ERR_get_error();
+    unsigned long err = ERR_peek_last_error();
 
     if (isAllocFailure)
     {
         *isAllocFailure = ERR_GET_REASON(err) == ERR_R_MALLOC_FAILURE;
     }
 
+    // We took the one we want, clear the rest.
+    ERR_clear_error();
     return err;
 }
 
-uint64_t CryptoNative_ErrPeekError()
+uint64_t CryptoNative_ErrPeekError(void)
 {
     return ERR_peek_error();
 }
 
-uint64_t CryptoNative_ErrPeekLastError()
+uint64_t CryptoNative_ErrPeekLastError(void)
 {
     return ERR_peek_last_error();
 }

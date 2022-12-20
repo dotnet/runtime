@@ -5,13 +5,15 @@
 #include "asmconstants.h"
 
 .syntax unified
+#ifndef __armv6__
 .thumb
+#endif
 
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
     // Ported from src/pal/src/arch/amd64/exceptionhelper.S
 #ifdef HAS_ASAN
-    // Need to call __asan_handle_no_return explicitly here because we re-intialize SP before
+    // Need to call __asan_handle_no_return explicitly here because we re-initialize SP before
     // throwing exception in ThrowExceptionHelper
     push_nonvol_reg "{r0, r1}"
     bl  EXTERNAL_C_FUNC(__asan_handle_no_return)

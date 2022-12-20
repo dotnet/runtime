@@ -193,7 +193,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Resolves interface method '<paramref name="interfaceMethod"/>' to a method on '<paramref name="type"/>'
-        /// that implements the the method.
+        /// that implements the method.
         /// </summary>
         public static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
         {
@@ -205,9 +205,24 @@ namespace Internal.TypeSystem
             return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, type);
         }
 
+        public static MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
+        }
+
+        public static MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
+        }
+
         public static DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc implMethod)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out implMethod);
+        }
+
+        public static DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc implMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out implMethod);
         }
 
         /// <summary>
@@ -287,7 +302,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(interfaceMethodToResolve.OwningType.IsInterface);
 
-            MethodDesc result = null;
+            MethodDesc result;
             TypeDesc currentType = thisType;
             do
             {
@@ -307,7 +322,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(interfaceMethodToResolve.OwningType.IsInterface);
 
-            MethodDesc result = null;
+            MethodDesc result;
             TypeDesc currentType = thisType;
             do
             {
@@ -348,7 +363,7 @@ namespace Internal.TypeSystem
                     // It is generally a bug to have instantiations over generic parameters
                     // in the system. Typical instantiations are represented as instantiations
                     // over own formals - so these should be signature variables instead.
-                    throw new ArgumentException();
+                    throw new InvalidOperationException();
 
                 default:
                     Debug.Assert(thisType is DefType);

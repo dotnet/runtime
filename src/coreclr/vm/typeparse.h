@@ -158,7 +158,7 @@ private:
     //
     private:
         TypeNameTokens LexAToken(BOOL ignorePlus = FALSE);
-        BOOL GetIdentifier(SString* sszId, TypeNameIdentifiers identiferType);
+        BOOL GetIdentifier(SString* sszId, TypeNameIdentifiers identifierType);
         void NextToken()  { WRAPPER_NO_CONTRACT; m_currentToken = m_nextToken; m_currentItr = m_itr; m_nextToken = LexAToken(); }
         BOOL NextTokenIs(TypeNameTokens token) { LIMITED_METHOD_CONTRACT; return !!(m_nextToken & token); }
         BOOL TokenIs(TypeNameTokens token) { LIMITED_METHOD_CONTRACT; return !!(m_currentToken & token); }
@@ -198,7 +198,7 @@ private:
         // FULLNAME
 
         BOOL EASSEMSPEC();
-        // embededFusionName
+        // embeddedFusionName
 
         BOOL QUALIFIER();
         // *empty*
@@ -269,12 +269,6 @@ public:
     virtual ~TypeName();
 
 public:
-    //-------------------------------------------------------------------------------------------
-    // Retrieves a type from an assembly. It requires the caller to know which assembly
-    // the type is in.
-    //-------------------------------------------------------------------------------------------
-    static TypeHandle GetTypeFromAssembly(LPCWSTR szTypeName, Assembly *pAssembly, BOOL bThrowIfNotFound = TRUE);
-
     TypeHandle GetTypeFromAsm();
 
     //-------------------------------------------------------------------------------------------

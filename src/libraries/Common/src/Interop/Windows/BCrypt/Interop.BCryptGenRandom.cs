@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         internal const int BCRYPT_USE_SYSTEM_PREFERRED_RNG = 0x00000002;
 
-        [GeneratedDllImport(Libraries.BCrypt)]
+        [LibraryImport(Libraries.BCrypt)]
         internal static unsafe partial NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, byte* pbBuffer, int cbBuffer, int dwFlags);
     }
 }

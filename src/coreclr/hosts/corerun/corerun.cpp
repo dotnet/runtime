@@ -205,6 +205,11 @@ public:
 static void* CurrentClrInstance;
 static unsigned int CurrentAppDomainId;
 
+static void log_error_info(const char* line)
+{
+    std::fprintf(stderr, "%s\n", line);
+}
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -282,6 +287,7 @@ static int run(const configuration& config)
     // Get CoreCLR exports
     coreclr_initialize_ptr coreclr_init_func = nullptr;
     coreclr_execute_assembly_ptr coreclr_execute_func = nullptr;
+    coreclr_set_error_writer_ptr coreclr_set_error_writer_func = nullptr;
     coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
     if (!try_get_export(coreclr_mod, "coreclr_initialize", (void**)&coreclr_init_func)
         || !try_get_export(coreclr_mod, "coreclr_execute_assembly", (void**)&coreclr_execute_func)
@@ -290,10 +296,13 @@ static int run(const configuration& config)
         return -1;
     }
 
+    // The coreclr_set_error_writer is optional
+    (void)try_get_export(coreclr_mod, "coreclr_set_error_writer", (void**)&coreclr_set_error_writer_func);
+
     // Construct CoreCLR properties.
-    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(std::move(tpa_list));
-    pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(std::move(app_path));
-    pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
+    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(tpa_list.c_str());
+    pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(app_path.c_str());
+    pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str().c_str());
 
     std::vector<pal::string_utf8_t> user_defined_keys_utf8;
     std::vector<pal::string_utf8_t> user_defined_values_utf8;
@@ -334,7 +343,7 @@ static int run(const configuration& config)
     int propertyCount = (int)propertyKeys.size();
 
     // Construct arguments
-    pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(std::move(exe_path));
+    pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(exe_path.c_str());
     std::vector<pal::string_utf8_t> argv_lifetime;
     pal::malloc_ptr<const char*> argv_utf8{ pal::convert_argv_to_utf8(config.entry_assembly_argc, config.entry_assembly_argv, argv_lifetime) };
     pal::string_utf8_t entry_assembly_utf8 = pal::convert_to_utf8(config.entry_assembly_fullpath.c_str());
@@ -343,6 +352,11 @@ static int run(const configuration& config)
         exe_path_utf8.c_str(),
         propertyCount, propertyKeys.data(), propertyValues.data(),
         entry_assembly_utf8.c_str(), config.entry_assembly_argc, argv_utf8.get() };
+
+    if (coreclr_set_error_writer_func != nullptr)
+    {
+        coreclr_set_error_writer_func(log_error_info);
+    }
 
     int result;
     result = coreclr_init_func(
@@ -359,6 +373,11 @@ static int run(const configuration& config)
         logger.dump_details();
         pal::fprintf(stderr, W("END: coreclr_initialize failed - Error: 0x%08x\n"), result);
         return -1;
+    }
+
+    if (coreclr_set_error_writer_func != nullptr)
+    {
+        coreclr_set_error_writer_func(nullptr);
     }
 
     int exit_code;
@@ -564,16 +583,13 @@ int MAIN(const int argc, const char_t* argv[])
     return exit_code;
 }
 
-#ifdef TARGET_WINDOWS
-// Used by CoreShim to determine running CoreCLR details.
-extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
+extern "C" DLL_EXPORT HRESULT CDECL GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
 {
     assert(clrInstance != nullptr && appDomainId != nullptr);
     *clrInstance = CurrentClrInstance;
     *appDomainId = CurrentAppDomainId;
     return S_OK;
 }
-#endif // TARGET_WINDOWS
 
 //
 // Self testing for corerun.

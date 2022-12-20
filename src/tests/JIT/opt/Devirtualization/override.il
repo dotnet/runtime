@@ -10,7 +10,7 @@
 // or a MyBar reference.
 
 .assembly extern mscorlib{}
-.assembly self_override1{}
+.assembly 'override'{}
 
 .class public abstract auto ansi beforefieldinit MyBar
        extends [mscorlib]System.Object
@@ -83,7 +83,7 @@
 .class public auto ansi beforefieldinit CMain
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

@@ -14,12 +14,7 @@ namespace System.Drawing
     /// <summary>
     /// Defines an object used to draw lines and curves.
     /// </summary>
-    public sealed partial class Pen : MarshalByRefObject, ICloneable, IDisposable
-#pragma warning disable SA1001
-#if FEATURE_SYSTEM_EVENTS
-        , ISystemColorTracker
-#endif
-#pragma warning restore SA1001
+    public sealed class Pen : MarshalByRefObject, ICloneable, IDisposable, ISystemColorTracker
     {
 #if FINALIZATION_WATCH
         private string _allocationSite = Graphics.GetAllocationStack();
@@ -57,7 +52,7 @@ namespace System.Drawing
         {
             _color = color;
 
-            IntPtr pen = IntPtr.Zero;
+            IntPtr pen;
             int status = Gdip.GdipCreatePen1(color.ToArgb(),
                                                 width,
                                                 (int)GraphicsUnit.World,
@@ -66,12 +61,10 @@ namespace System.Drawing
 
             SetNativePen(pen);
 
-#if FEATURE_SYSTEM_EVENTS
             if (_color.IsSystemColor)
             {
                 SystemColorTracker.Add(this);
             }
-#endif
         }
 
         /// <summary>
@@ -86,12 +79,9 @@ namespace System.Drawing
         /// </summary>
         public Pen(Brush brush, float width)
         {
-            if (brush == null)
-            {
-                throw new ArgumentNullException(nameof(brush));
-            }
+            ArgumentNullException.ThrowIfNull(brush);
 
-            IntPtr pen = IntPtr.Zero;
+            IntPtr pen;
             int status = Gdip.GdipCreatePen2(new HandleRef(brush, brush.NativeBrush),
                 width,
                 (int)GraphicsUnit.World,
@@ -115,7 +105,7 @@ namespace System.Drawing
         /// </summary>
         public object Clone()
         {
-            IntPtr clonedPen = IntPtr.Zero;
+            IntPtr clonedPen;
             int status = Gdip.GdipClonePen(new HandleRef(this, NativePen), out clonedPen);
             Gdip.CheckStatus(status);
 
@@ -226,7 +216,7 @@ namespace System.Drawing
         {
             get
             {
-                int startCap = 0;
+                int startCap;
                 int status = Gdip.GdipGetPenStartCap(new HandleRef(this, NativePen), out startCap);
                 Gdip.CheckStatus(status);
 
@@ -268,7 +258,7 @@ namespace System.Drawing
         {
             get
             {
-                int endCap = 0;
+                int endCap;
                 int status = Gdip.GdipGetPenEndCap(new HandleRef(this, NativePen), out endCap);
                 Gdip.CheckStatus(status);
 
@@ -305,13 +295,65 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Gets or sets a custom cap style to use at the beginning of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
+        public CustomLineCap CustomStartCap
+        {
+            get
+            {
+                IntPtr lineCap;
+                int status = Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
+                Gdip.CheckStatus(status);
+
+                return CustomLineCap.CreateCustomLineCapObject(lineCap);
+            }
+            set
+            {
+                if (_immutable)
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
+
+                int status = Gdip.GdipSetPenCustomStartCap(new HandleRef(this, NativePen),
+                                                              new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
+                Gdip.CheckStatus(status);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a custom cap style to use at the end of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
+        public CustomLineCap CustomEndCap
+        {
+            get
+            {
+                IntPtr lineCap;
+                int status = Gdip.GdipGetPenCustomEndCap(new HandleRef(this, NativePen), out lineCap);
+                Gdip.CheckStatus(status);
+                return CustomLineCap.CreateCustomLineCapObject(lineCap);
+            }
+            set
+            {
+                if (_immutable)
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
+
+                int status = Gdip.GdipSetPenCustomEndCap(
+                    new HandleRef(this, NativePen),
+                    new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
+                Gdip.CheckStatus(status);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the cap style used at the beginning or end of dashed lines drawn with this <see cref='Pen'/>.
         /// </summary>
         public DashCap DashCap
         {
             get
             {
-                int dashCap = 0;
+                int dashCap;
                 int status = Gdip.GdipGetPenDashCap197819(new HandleRef(this, NativePen), out dashCap);
                 Gdip.CheckStatus(status);
 
@@ -341,7 +383,7 @@ namespace System.Drawing
         {
             get
             {
-                int lineJoin = 0;
+                int lineJoin;
                 int status = Gdip.GdipGetPenLineJoin(new HandleRef(this, NativePen), out lineJoin);
                 Gdip.CheckStatus(status);
 
@@ -396,7 +438,7 @@ namespace System.Drawing
         {
             get
             {
-                PenAlignment penMode = 0;
+                PenAlignment penMode;
                 int status = Gdip.GdipGetPenMode(new HandleRef(this, NativePen), out penMode);
                 Gdip.CheckStatus(status);
 
@@ -469,6 +511,8 @@ namespace System.Drawing
         /// </summary>
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
+            ArgumentNullException.ThrowIfNull(matrix);
+
             if (matrix.NativeMatrix == IntPtr.Zero)
             {
                 // Disposed matrices should result in a no-op.
@@ -543,7 +587,7 @@ namespace System.Drawing
         {
             get
             {
-                int type = -1;
+                int type;
                 int status = Gdip.GdipGetPenFillType(new HandleRef(this, NativePen), out type);
                 Gdip.CheckStatus(status);
 
@@ -565,7 +609,7 @@ namespace System.Drawing
                         throw new ArgumentException(SR.GdiplusInvalidParameter);
                     }
 
-                    int colorARGB = 0;
+                    int colorARGB;
                     int status = Gdip.GdipGetPenColor(new HandleRef(this, NativePen), out colorARGB);
                     Gdip.CheckStatus(status);
 
@@ -584,20 +628,16 @@ namespace System.Drawing
 
                 if (value != _color)
                 {
-#if FEATURE_SYSTEM_EVENTS
                     Color oldColor = _color;
-#endif
                     _color = value;
                     InternalSetColor(value);
 
-#if FEATURE_SYSTEM_EVENTS
                     // NOTE: We never remove pens from the active list, so if someone is
                     // changing their pen colors a lot, this could be a problem.
                     if (value.IsSystemColor && !oldColor.IsSystemColor)
                     {
                         SystemColorTracker.Add(this);
                     }
-#endif
                 }
             }
         }
@@ -659,7 +699,7 @@ namespace System.Drawing
 
         private IntPtr GetNativeBrush()
         {
-            IntPtr nativeBrush = IntPtr.Zero;
+            IntPtr nativeBrush;
             int status = Gdip.GdipGetPenBrushFill(new HandleRef(this, NativePen), out nativeBrush);
             Gdip.CheckStatus(status);
 
@@ -673,7 +713,7 @@ namespace System.Drawing
         {
             get
             {
-                int dashStyle = 0;
+                int dashStyle;
                 int status = Gdip.GdipGetPenDashStyle(new HandleRef(this, NativePen), out dashStyle);
                 Gdip.CheckStatus(status);
 
@@ -714,7 +754,7 @@ namespace System.Drawing
         /// </summary>
         private void EnsureValidDashPattern()
         {
-            int retval = 0;
+            int retval;
             int status = Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out retval);
             Gdip.CheckStatus(status);
 
@@ -832,7 +872,7 @@ namespace System.Drawing
         {
             get
             {
-                int count = 0;
+                int count;
                 int status = Gdip.GdipGetPenCompoundCount(new HandleRef(this, NativePen), out count);
                 Gdip.CheckStatus(status);
 
@@ -867,7 +907,6 @@ namespace System.Drawing
             }
         }
 
-#if FEATURE_SYSTEM_EVENTS
         void ISystemColorTracker.OnSystemColorChanged()
         {
             if (NativePen != IntPtr.Zero)
@@ -875,6 +914,5 @@ namespace System.Drawing
                 InternalSetColor(_color);
             }
         }
-#endif
     }
 }

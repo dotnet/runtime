@@ -101,7 +101,9 @@ namespace System
             // Call each hook in turn
             foreach (StartupHookNameOrPath startupHook in startupHooks)
             {
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 CallStartupHook(startupHook);
+#pragma warning restore IL2026
             }
         }
 

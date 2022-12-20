@@ -227,6 +227,7 @@ namespace System.Threading.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15159", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70127", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
         {
@@ -271,7 +272,7 @@ namespace System.Threading.Tests
                     return;
                 }
 
-                Assert.Throws<UnauthorizedAccessException>(() => new Mutex(false, "Global\\" + Guid.NewGuid().ToString("N")));
+                Assert.Throws<UnauthorizedAccessException>(() => new Mutex(false, $"Global\\{Guid.NewGuid():N}"));
                 Assert.True(RevertToSelf());
             });
         }
@@ -281,7 +282,7 @@ namespace System.Threading.Tests
         public void Ctor_TryCreateGlobalMutexTest_Uwp()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
-                Assert.Throws<UnauthorizedAccessException>(() => new Mutex(false, "Global\\" + Guid.NewGuid().ToString("N"))));
+                Assert.Throws<UnauthorizedAccessException>(() => new Mutex(false, $"Global\\{Guid.NewGuid():N}")));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

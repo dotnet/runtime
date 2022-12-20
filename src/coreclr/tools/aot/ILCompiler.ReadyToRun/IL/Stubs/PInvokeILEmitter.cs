@@ -5,6 +5,7 @@ using System;
 using System.Net;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using ILCompiler;
 using Internal.TypeSystem;
@@ -23,6 +24,7 @@ namespace Internal.IL.Stubs
         private readonly MethodDesc _targetMethod;
         private readonly Marshaller[] _marshallers;
         private readonly PInvokeMetadata _importMetadata;
+        private static readonly ConditionalWeakTable<TypeSystemContext, ConcurrentDictionary<MethodDesc, PInvokeTargetNativeMethod>> s_contexts = new ();
 
         private PInvokeILEmitter(MethodDesc targetMethod)
         {
@@ -41,15 +43,6 @@ namespace Internal.IL.Stubs
             TypeDesc nativeReturnType = _marshallers[0].NativeParameterType;
             TypeDesc[] nativeParameterTypes = new TypeDesc[_marshallers.Length - 1];
 
-            MetadataType stubHelpersType = InteropTypes.GetStubHelpers(context);
-
-            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke
-            if (_importMetadata.Flags.SetLastError)
-            {
-                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                            stubHelpersType.GetKnownMethod("ClearLastError", null)));
-            }
-
             for (int i = 1; i < _marshallers.Length; i++)
             {
                 nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;
@@ -59,16 +52,18 @@ namespace Internal.IL.Stubs
                 _targetMethod.Signature.Flags, 0, nativeReturnType,
                 nativeParameterTypes);
 
-            var rawTargetMethod = new PInvokeTargetNativeMethod(_targetMethod, nativeSig);
+            var rawTargetMethod = AllocateTargetNativeMethod(_targetMethod, nativeSig);
 
             callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(rawTargetMethod));
 
-            // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.SaveLastError
-            // so that last error can be used later by calling Marshal.GetLastPInvokeError
-            if (_importMetadata.Flags.SetLastError)
+            static PInvokeTargetNativeMethod AllocateTargetNativeMethod(MethodDesc targetMethod, MethodSignature nativeSigArg)
             {
-                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                            stubHelpersType.GetKnownMethod("SetLastError", null)));
+                var contextMethods = s_contexts.GetOrCreateValue(targetMethod.Context);
+                if (contextMethods.TryGetValue(targetMethod, out var pinvokeTargetMethod))
+                {
+                    return pinvokeTargetMethod;
+                }
+                return contextMethods.GetOrAdd(targetMethod, new PInvokeTargetNativeMethod(targetMethod, nativeSigArg));
             }
         }
 
@@ -84,6 +79,9 @@ namespace Internal.IL.Stubs
                 throw new NotSupportedException();
 
             if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
+                throw new NotSupportedException();
+
+            if (_importMetadata.Flags.SetLastError)
                 throw new NotSupportedException();
 
             PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();

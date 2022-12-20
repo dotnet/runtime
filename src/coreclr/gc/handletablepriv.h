@@ -14,6 +14,13 @@
 
 #include "handletable.h"
 
+
+ // Build support for async pinned handles into standalone GC to make it usable with older runtimes
+#if defined(BUILD_AS_STANDALONE) && !defined(FEATURE_NATIVEAOT)
+#define FEATURE_ASYNC_PINNED_HANDLES
+#endif
+
+
 /*--------------------------------------------------------------------------*/
 
 //<TODO>@TODO: find a home for this in a project-level header file</TODO>
@@ -248,7 +255,7 @@ struct _TableSegmentHeader
     /*
      * Commit Line
      *
-     * Index of the first uncommited block in the segment.
+     * Index of the first uncommitted block in the segment.
      */
     uint8_t bCommitLine;
 
@@ -566,7 +573,7 @@ void QuickSort(uintptr_t *pData, int left, int right, PFNCOMPARE pfnCompare);
  *
  * Returns:
  *  <0 - handle P should be freed before handle Q
- *  =0 - handles are eqivalent for free order purposes
+ *  =0 - handles are equivalent for free order purposes
  *  >0 - handle Q should be freed before handle P
  *
  */
@@ -789,7 +796,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment);
 /*
  * TableAllocBulkHandles
  *
- * Attempts to allocate the requested number of handes of the specified type.
+ * Attempts to allocate the requested number of handles of the specified type.
  *
  * Returns the number of handles that were actually allocated.  This is always
  * the same as the number of handles requested except in out-of-memory conditions,

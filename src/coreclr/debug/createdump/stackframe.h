@@ -66,9 +66,16 @@ public:
         }
     }
 
+// See comment in threadinfo.cpp UnwindNativeFrames function
+#if defined(__aarch64__)
+    #define STACK_POINTER_MASK ~0x7
+#else
+    #define STACK_POINTER_MASK ~0x0
+#endif
+
     inline uint64_t ModuleAddress() const { return m_moduleAddress; }
     inline uint64_t InstructionPointer() const { return m_instructionPointer; }
-    inline uint64_t StackPointer() const { return m_stackPointer; }
+    inline uint64_t StackPointer() const { return m_stackPointer & STACK_POINTER_MASK; }
     inline uint32_t NativeOffset() const { return m_nativeOffset; }
     inline uint32_t Token() const { return m_token; }
     inline uint32_t ILOffset() const { return m_ilOffset; }

@@ -35,7 +35,7 @@ EvpCipherReset
 
 Resets an EVP_CIPHER_CTX instance for a new computation.
 */
-PALEXPORT int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx);
+PALEXPORT int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx, uint8_t* pIv, int32_t cIv);
 
 /*
 Function:

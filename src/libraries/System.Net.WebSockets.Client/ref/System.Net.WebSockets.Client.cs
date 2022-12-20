@@ -11,6 +11,8 @@ namespace System.Net.WebSockets
         public ClientWebSocket() { }
         public override System.Net.WebSockets.WebSocketCloseStatus? CloseStatus { get { throw null; } }
         public override string? CloseStatusDescription { get { throw null; } }
+        public System.Net.HttpStatusCode HttpStatusCode { get { throw null; } }
+        public System.Collections.Generic.IReadOnlyDictionary<string, System.Collections.Generic.IEnumerable<string>>? HttpResponseHeaders { get { throw null; } set { } }
         public System.Net.WebSockets.ClientWebSocketOptions Options { get { throw null; } }
         public override System.Net.WebSockets.WebSocketState State { get { throw null; } }
         public override string? SubProtocol { get { throw null; } }
@@ -18,11 +20,13 @@ namespace System.Net.WebSockets
         public override System.Threading.Tasks.Task CloseAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string? statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.Task CloseOutputAsync(System.Net.WebSockets.WebSocketCloseStatus closeStatus, string? statusDescription, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task ConnectAsync(System.Uri uri, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task ConnectAsync(System.Uri uri, System.Net.Http.HttpMessageInvoker? invoker, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Dispose() { }
         public override System.Threading.Tasks.Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(System.ArraySegment<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask<System.Net.WebSockets.ValueWebSocketReceiveResult> ReceiveAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.Task SendAsync(System.ArraySegment<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override System.Threading.Tasks.ValueTask SendAsync(System.ReadOnlyMemory<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, bool endOfMessage, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask SendAsync(System.ReadOnlyMemory<byte> buffer, System.Net.WebSockets.WebSocketMessageType messageType, System.Net.WebSockets.WebSocketMessageFlags messageFlags, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public sealed partial class ClientWebSocketOptions
     {
@@ -31,6 +35,8 @@ namespace System.Net.WebSockets
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.CookieContainer? Cookies { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public bool CollectHttpResponseDetails { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -43,6 +49,8 @@ namespace System.Net.WebSockets
         public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseDefaultCredentials { get { throw null; } set { } }
+        public System.Version HttpVersion { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] set { } }
+        public System.Net.Http.HttpVersionPolicy HttpVersionPolicy { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] set { } }
         public void AddSubProtocol(string subProtocol) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SetBuffer(int receiveBufferSize, int sendBufferSize) { }

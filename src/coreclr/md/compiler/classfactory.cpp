@@ -23,8 +23,6 @@
 #include "mscoree.h"
 #include "corhost.h"
 
-// @telesto - why does Telesto export any Co-classes at all?
-
 // This map contains the list of coclasses which are exported from this module.
 // NOTE:  CLSID_CorMetaDataDispenser must be the first entry in this table!
 const COCLASS_REGISTER g_CoClasses[] =
@@ -123,9 +121,6 @@ HRESULT STDMETHODCALLTYPE MDClassFactory::CreateInstance(
 {
     HRESULT     hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
     // Avoid confusion.
     *ppvObject = NULL;
     _ASSERTE(m_pCoClass);
@@ -138,8 +133,6 @@ HRESULT STDMETHODCALLTYPE MDClassFactory::CreateInstance(
     hr = (*m_pCoClass->pfnCreateObject)(riid, ppvObject);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }
 

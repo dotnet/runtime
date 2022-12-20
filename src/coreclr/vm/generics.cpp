@@ -185,11 +185,10 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     {
         StackSString debugTypeKeyName;
         TypeString::AppendTypeKeyDebug(debugTypeKeyName, pTypeKey);
-        LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %S\n", debugTypeKeyName.GetUnicode()));
+        LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %s\n", debugTypeKeyName.GetUTF8()));
 
-        StackScratchBuffer buf;
-        if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8(buf)))
-            CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8(buf)));
+        if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8()))
+            CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8()));
     }
 #endif // _DEBUG
 
@@ -311,7 +310,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Note: Memory allocated on loader heap is zero filled
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -351,45 +350,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         }
     }
 #endif // FEATURE_TYPEEQUIVALENCE
-
-    if (pOldMT->IsInterface() && IsImplicitInterfaceOfSZArray(pOldMT))
-    {
-        // Determine if we are creating an interface methodtable that may be used to dispatch through VSD
-        // on an array object using a generic interface (such as IList<T>).
-        // Please read comments in IsArray block of code:MethodTable::FindDispatchImpl.
-        //
-        // Arrays are special because we use the same method table (object[]) for all arrays of reference
-        // classes (eg string[]). This means that the method table for an array is not a complete description of
-        // the type of the array and thus the target of if something list IList<T>::IndexOf can not be determined
-        // simply by looking at the method table of T[] (which might be the method table of object[], if T is a
-        // reference type).
-        //
-        // This is done to minimize MethodTables, but as a side-effect of this optimization,
-        // we end up using a domain-shared type (object[]) with a domain-specific dispatch token.
-        // This is a problem because the same domain-specific dispatch token value can appear in
-        // multiple unshared domains (VSD takes advantage of the fact that in general a shared type
-        // cannot implement an unshared interface). This means that the same <token, object[]> pair
-        // value can mean different things in different domains (since the token could represent
-        // IList<Foo> in one domain and IEnumerable<Bar> in another). This is a problem because the
-        // VSD polymorphic lookup mechanism relies on a process-wide cache table, and as a result
-        // these duplicate values would collide if we didn't use fat dispatch token to ensure uniqueness
-        // and the interface methodtable is not in the shared domain.
-        //
-        // Of note: there is also some interesting array-specific behaviour where if B inherits from A
-        // and you have an array of B (B[]) then B[] implements IList<B> and IList<A>, but a dispatch
-        // on an IList<A> reference results in a dispatch to SZArrayHelper<A> rather than
-        // SZArrayHelper<B> (i.e., the variance implemention is not done like virtual methods).
-        //
-        // For example If Sub inherits from Super inherits from Object, then
-        //     * Sub[] implements IList<Super>
-        //     * Sub[] implements IList<Sub>
-        //
-        // And as a result we have the following mappings:
-        //     * IList<Super>::IndexOf for Sub[] goes to SZArrayHelper<Super>::IndexOf
-        //     * IList<Sub>::IndexOf for Sub[] goes to SZArrayHelper<Sub>::IndexOf
-        //
-        pMT->SetRequiresFatDispatchTokens();
-    }
 
     // Number of slots only includes vtable slots
     pMT->SetNumVirtuals(cSlots);
@@ -513,8 +473,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Name for debugging
     StackSString debug_ClassNameString;
     TypeString::AppendTypeKey(debug_ClassNameString, pTypeKey, TypeString::FormatNamespace | TypeString::FormatAngleBrackets | TypeString::FormatFullInst);
-    StackScratchBuffer debug_ClassNameBuffer;
-    const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8(debug_ClassNameBuffer);
+    const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8();
     S_SIZE_T safeLen = S_SIZE_T(strlen(debug_szClassNameBuffer)) + S_SIZE_T(1);
     if (safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
 
@@ -539,9 +498,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         {
             pStaticFieldDescs = (FieldDesc*) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FieldDesc)) * S_SIZE_T(pOldMT->GetNumStaticFields())));
             FieldDesc* pOldFD = pOldMT->GetGenericsStaticFieldDescs();
-
-            g_IBCLogger.LogFieldDescsAccess(pOldFD);
-
             for (DWORD i = 0; i < pOldMT->GetNumStaticFields(); i++)
             {
                 pStaticFieldDescs[i].InitializeFrom(pOldFD[i], pMT);
@@ -612,8 +568,6 @@ BOOL CheckInstantiation(Instantiation inst)
             return TRUE;
         }
 
-        g_IBCLogger.LogTypeMethodTableAccess(&th);
-
         if (   type == ELEMENT_TYPE_BYREF
             || type == ELEMENT_TYPE_TYPEDBYREF
             || type == ELEMENT_TYPE_VOID
@@ -621,15 +575,6 @@ BOOL CheckInstantiation(Instantiation inst)
             || type == ELEMENT_TYPE_FNPTR)
         {
             return FALSE;
-        }
-
-        MethodTable* pMT = th.GetMethodTable();
-        if (pMT != NULL)
-        {
-            if (pMT->IsByRefLike())
-            {
-                return FALSE;
-            }
         }
     }
     return TRUE;

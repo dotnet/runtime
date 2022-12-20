@@ -42,7 +42,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public void PropertiesOfInvalidDrive()
         {
             string invalidDriveName = "NonExistentDriveName";
@@ -64,7 +64,7 @@ namespace System.IO.FileSystem.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void PropertiesOfValidDrive()
         {
-            var driveName = PlatformDetection.IsAndroid ? "/data" : "/";
+            var driveName = PlatformDetection.IsAndroid || PlatformDetection.IsLinuxBionic ? "/data" : "/";
             var driveInfo = new DriveInfo(driveName);
             var format = driveInfo.DriveFormat;
             Assert.Equal(PlatformDetection.IsBrowser ? DriveType.Unknown : DriveType.Fixed, driveInfo.DriveType);

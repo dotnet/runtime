@@ -3,9 +3,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -69,6 +68,10 @@ namespace System.Numerics
             get => new Quaternion(0, 0, 0, 1);
         }
 
+        /// <summary>Gets or sets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get or set.</param>
+        /// <returns>The element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
             get => GetElement(this, index);
@@ -88,8 +91,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            var result = quaternion;
-            return GetElementUnsafe(ref result, index);
+            return GetElementUnsafe(ref quaternion, index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -100,7 +102,7 @@ namespace System.Numerics
         }
 
         /// <summary>Sets the element at the specified index.</summary>
-        /// <param name="quaternion">The vector of the element to get.</param>
+        /// <param name="quaternion">The vector of the element to set.</param>
         /// <param name="index">The index of the element to set.</param>
         /// <param name="value">The value of the element to set.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
@@ -112,7 +114,7 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            var result = quaternion;
+            Quaternion result = quaternion;
             SetElementUnsafe(ref result, index, value);
             return result;
         }
@@ -671,16 +673,33 @@ namespace System.Numerics
         /// <param name="other">The other quaternion.</param>
         /// <returns><see langword="true" /> if the two quaternions are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two quaternions are equal if each of their corresponding components is equal.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Quaternion other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return Vector128.LoadUnsafe(ref Unsafe.AsRef(in X)).Equals(Vector128.LoadUnsafe(ref other.X));
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Quaternion self, Quaternion other)
+            {
+                return self.X.Equals(other.X)
+                    && self.Y.Equals(other.Y)
+                    && self.Z.Equals(other.Z)
+                    && self.W.Equals(other.W);
+            }
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>
         public override readonly int GetHashCode()
         {
-            return unchecked(X.GetHashCode() + Y.GetHashCode() + Z.GetHashCode() + W.GetHashCode());
+            return HashCode.Combine(X, Y, Z, W);
         }
 
         /// <summary>Calculates the length of the quaternion.</summary>

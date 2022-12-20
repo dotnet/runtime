@@ -10,7 +10,7 @@ namespace System.DirectoryServices.Tests
 {
     internal class LdapConfiguration
     {
-        private LdapConfiguration(string serverName, string searchDn, string userName, string password, string port, AuthenticationTypes at, bool useTls)
+        private LdapConfiguration(string serverName, string searchDn, string userName, string password, string port, AuthenticationTypes at, bool useTls, bool supportsServerSideSort)
         {
             ServerName = serverName;
             SearchDn = searchDn;
@@ -19,6 +19,7 @@ namespace System.DirectoryServices.Tests
             Port = port;
             AuthenticationTypes = at;
             UseTls = useTls;
+            SupportsServerSideSort = supportsServerSideSort;
         }
 
         private static LdapConfiguration s_ldapConfiguration = GetConfiguration("LDAP.Configuration.xml");
@@ -32,6 +33,7 @@ namespace System.DirectoryServices.Tests
         internal string SearchDn { get; set; }
         internal AuthenticationTypes AuthenticationTypes { get; set; }
         internal bool UseTls { get; set; }
+        internal bool SupportsServerSideSort { get; set; }
         internal string LdapPath => string.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/{SearchDn}" : $"LDAP://{ServerName}:{Port}/{SearchDn}";
         internal string RootDSEPath => string.IsNullOrEmpty(Port) ? $"LDAP://{ServerName}/rootDSE" : $"LDAP://{ServerName}:{Port}/rootDSE";
         internal string UserNameWithNoDomain
@@ -107,6 +109,7 @@ namespace System.DirectoryServices.Tests
                 string password = "";
                 AuthenticationTypes at = AuthenticationTypes.None;
                 bool useTls = false;
+                bool supportsServerSideSort = false;
 
                 XElement child = connection.Element("ServerName");
                 if (child != null)
@@ -141,6 +144,12 @@ namespace System.DirectoryServices.Tests
                     useTls = bool.Parse(child.Value);
                 }
 
+                child = connection.Element("SupportsServerSideSort");
+                if (child != null)
+                {
+                    supportsServerSideSort = bool.Parse(child.Value);
+                }
+
                 child = connection.Element("AuthenticationTypes");
                 if (child != null)
                 {
@@ -170,7 +179,7 @@ namespace System.DirectoryServices.Tests
                             at |= AuthenticationTypes.Signing;
                     }
 
-                    ldapConfig = new LdapConfiguration(serverName, searchDn, user, password, port, at, useTls);
+                    ldapConfig = new LdapConfiguration(serverName, searchDn, user, password, port, at, useTls, supportsServerSideSort);
                 }
             }
             catch (Exception ex)

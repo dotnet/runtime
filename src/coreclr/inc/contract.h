@@ -174,7 +174,7 @@
 //        A do-nothing contract used by functions that trivially wrap another.
 //
 //
-// "LEGACY" stuff - these features have been mostly superceded by better solutions
+// "LEGACY" stuff - these features have been mostly superseded by better solutions
 //     so their use should be discouraged.
 //
 //
@@ -226,7 +226,7 @@
 #define ENABLE_CONTRACTS
 #endif
 
-// Finally, only define the implementaiton parts of contracts if this isn't a DAC build.
+// Finally, only define the implementation parts of contracts if this isn't a DAC build.
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS)
 #define ENABLE_CONTRACTS_IMPL
 #endif
@@ -346,8 +346,8 @@ struct DbgStateLockData
     void LockTaken(DbgStateLockType dbgStateLockType,
                      UINT cEntrances,
                      void * pvLock,
-                     __in_z const char * szFunction,
-                     __in_z const char * szFile,
+                     _In_z_ const char * szFunction,
+                     _In_z_ const char * szFile,
                      int lineNum);
     void LockReleased(DbgStateLockType dbgStateLockType, UINT cExits, void * pvLock);
     UINT GetLockCount(DbgStateLockType dbgStateLockType);
@@ -418,7 +418,7 @@ public:
         // We start out in SO-tolerant mode and must probe before entering SO-intolerant
         //   any global state updates.
         // Initial mode is non-debug until we say otherwise
-        // Everthing defaults to mainline
+        // Everything defaults to mainline
         // By default, GetThread() is perfectly fine to call
         // By default, it's ok to take a lock (or call someone who does)
         m_flags             = CONTRACT_BITMASK_OK_TO_THROW|
@@ -439,7 +439,7 @@ public:
         m_LockState.SetStartingValues();
     }
 
-    void CheckOkayToThrow(__in_z const char *szFunction, __in_z const char *szFile, int lineNum); // Asserts if its not okay to throw.
+    void CheckOkayToThrow(_In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum); // Asserts if its not okay to throw.
     BOOL CheckOkayToThrowNoAssert(); // Returns if OK to throw
 
     //--//
@@ -676,13 +676,13 @@ public:
         m_LockState.OnEnterCannotRetakeLockFunction();
     }
 
-    void CheckOkayToLock(__in_z const char *szFunction, __in_z const char *szFile, int lineNum); // Asserts if its not okay to lock
+    void CheckOkayToLock(_In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum); // Asserts if its not okay to lock
     BOOL CheckOkayToLockNoAssert(); // Returns if OK to lock
     void LockTaken(DbgStateLockType dbgStateLockType,
                      UINT cEntrances,
                      void * pvLock,
-                     __in_z const char * szFunction,
-                     __in_z const char * szFile,
+                     _In_z_ const char * szFunction,
+                     _In_z_ const char * szFile,
                      int lineNum);
     void LockReleased(DbgStateLockType dbgStateLockType, UINT cExits, void * pvLock);
     UINT GetLockCount(DbgStateLockType dbgStateLockType);
@@ -949,7 +949,7 @@ class BaseContract
         }
     }
 
-    void DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum);
+    void DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum);
     void Disable()
     {
     }
@@ -998,7 +998,7 @@ class BaseContract
           }
     };
 
-    // PseudoTemplate is a class which can be instantated with a template-like syntax, resulting
+    // PseudoTemplate is a class which can be instantiated with a template-like syntax, resulting
     // in an expression which simply boxes a following value in a Box
 
     template <typename T>
@@ -2142,7 +2142,7 @@ class HostNoCallHolder
 // Eventually, all those bugs should be fixed this holder can be completely removed.
 //
 // It is also the case that we disallow allocations when any thread is OS suspended
-// This happens for a short time when we are suspending the EE.   We supress both
+// This happens for a short time when we are suspending the EE.   We suppress both
 // of these.
 //
 // @todo- ideally this would be rolled into the ContractViolation.

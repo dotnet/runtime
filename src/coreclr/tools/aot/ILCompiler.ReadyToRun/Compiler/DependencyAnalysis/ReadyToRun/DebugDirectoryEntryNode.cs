@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 
 using Internal.Text;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using System.IO;
 using System.Collections.Immutable;
@@ -23,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _module = module;
         }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
 
         public override bool IsShareable => false;
 
@@ -180,7 +181,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return builder.ToObjectData();
         }
 
-        public byte[] GenerateRSDSEntryData(byte[] md5Hash)
+        public byte[] GenerateRSDSEntryData(byte[] hash)
         {
             MemoryStream rsdsEntry = new MemoryStream(RSDSSize);
 
@@ -188,14 +189,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 writer.Write(RsdsMagic);
 
-                // The PDB signature will be the same as our NGEN signature.
-                // However we want the printed version of the GUID to be the same as the
-                // byte dump of the signature so we swap bytes to make this work.
-                Debug.Assert(md5Hash.Length == 16);
-                writer.Write((uint)((md5Hash[0] * 256 + md5Hash[1]) * 256 + md5Hash[2]) * 256 + md5Hash[3]);
-                writer.Write((ushort)(md5Hash[4] * 256 + md5Hash[5]));
-                writer.Write((ushort)(md5Hash[6] * 256 + md5Hash[7]));
-                writer.Write(md5Hash, 8, 8);
+                Debug.Assert(hash.Length >= 16);
+                writer.Write(hash, 0, 16);
 
                 // Age
                 writer.Write(1);
@@ -256,7 +251,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
             }
 
-            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.ReadDebugDirectory();
+            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.SafeReadDebugDirectory();
             Debug.Assert(entries != null && _debugEntryIndex < entries.Length);
 
             DebugDirectoryEntry sourceDebugEntry = entries[_debugEntryIndex];

@@ -37,10 +37,7 @@ namespace System.Security.Cryptography
 
         public CryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode, bool leaveOpen)
         {
-            if (transform is null)
-            {
-                throw new ArgumentNullException(nameof(transform));
-            }
+            ArgumentNullException.ThrowIfNull(transform);
 
             _stream = stream;
             _transform = transform;
@@ -51,7 +48,7 @@ namespace System.Security.Cryptography
                 case CryptoStreamMode.Read:
                     if (!_stream.CanRead)
                     {
-                        throw new ArgumentException(SR.Format(SR.Argument_StreamNotReadable, nameof(stream)));
+                        throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(stream));
                     }
                     _canRead = true;
                     break;
@@ -59,7 +56,7 @@ namespace System.Security.Cryptography
                 case CryptoStreamMode.Write:
                     if (!_stream.CanWrite)
                     {
-                        throw new ArgumentException(SR.Format(SR.Argument_StreamNotWritable, nameof(stream)));
+                        throw new ArgumentException(SR.Argument_StreamNotWritable, nameof(stream));
                     }
                     _canWrite = true;
                     break;
@@ -662,7 +659,7 @@ namespace System.Security.Cryptography
         }
 
         /// <inheritdoc/>
-        public unsafe override void CopyTo(Stream destination, int bufferSize)
+        public override unsafe void CopyTo(Stream destination, int bufferSize)
         {
             CheckCopyToArguments(destination, bufferSize);
 
@@ -717,28 +714,18 @@ namespace System.Security.Cryptography
                 pinHandle.Free();
             }
             ArrayPool<byte>.Shared.Return(rentedBuffer);
-            rentedBuffer = null;
         }
 
         private void CheckCopyToArguments(Stream destination, int bufferSize)
         {
-            if (destination is null)
-                throw new ArgumentNullException(nameof(destination));
-
-            EnsureNotDisposed(destination, nameof(destination));
+            ArgumentNullException.ThrowIfNull(destination);
+            ObjectDisposedException.ThrowIf(!destination.CanRead && !destination.CanWrite, destination);
 
             if (!destination.CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
             if (!CanRead)
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-        }
-
-        private static void EnsureNotDisposed(Stream stream, string objectName)
-        {
-            if (!stream.CanRead && !stream.CanWrite)
-                throw new ObjectDisposedException(objectName);
         }
 
         public void Clear()

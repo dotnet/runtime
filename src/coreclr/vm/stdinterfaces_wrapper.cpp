@@ -31,7 +31,7 @@
 #include "posterror.h"
 #include <corerror.h>
 #include <mscoree.h>
-#include "mtx.h"
+#include <mtx.h>
 #include "cgencpu.h"
 #include "interopconverter.h"
 #include "cominterfacemarshaler.h"
@@ -360,7 +360,7 @@ ULONG __stdcall Unknown_AddRef(IUnknown* pUnk)
     }
     CONTRACTL_END;
 
-    // Allow addrefs to go through, coz we are allowing
+    // Allow addrefs to go through, because we are allowing
     // all releases to go through, otherwise we would
     // have a mismatch of ref-counts
     return Unknown_AddRef_Internal(pUnk);
@@ -384,7 +384,7 @@ ULONG __stdcall Unknown_Release(IUnknown* pUnk)
     CONTRACTL_END;
 
     // Don't switch domains since we need to allow release calls to go through
-    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // even after the AD has been unloaded. Furthermore release doesn't require
     // us to transition into the domain to work properly.
     return Unknown_Release_Internal(pUnk);
 }
@@ -406,7 +406,7 @@ ULONG __stdcall Unknown_AddRefInner(IUnknown* pUnk)
     }
     CONTRACTL_END;
 
-    // Allow addrefs to go through, coz we are allowing
+    // Allow addrefs to go through, because we are allowing
     // all releases to go through, otherwise we would
     // have a mismatch of ref-counts
     return Unknown_AddRefInner_Internal(pUnk);
@@ -430,7 +430,7 @@ ULONG __stdcall Unknown_ReleaseInner(IUnknown* pUnk)
     CONTRACTL_END;
 
     // Don't switch domains since we need to allow release calls to go through
-    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // even after the AD has been unloaded. Furthermore release doesn't require
     // us to transition into the domain to work properly.
     return Unknown_ReleaseInner_Internal(pUnk);
 }
@@ -452,7 +452,7 @@ ULONG __stdcall Unknown_AddRefSpecial(IUnknown* pUnk)
     }
     CONTRACTL_END;
 
-    // Allow addrefs to go through, coz we are allowing
+    // Allow addrefs to go through, because we are allowing
     // all releases to go through, otherwise we would
     // have a mismatch of ref-counts
     return Unknown_AddRefSpecial_Internal(pUnk);
@@ -476,7 +476,7 @@ ULONG __stdcall Unknown_ReleaseSpecial(IUnknown* pUnk)
     CONTRACTL_END;
 
     // Don't switch domains since we need to allow release calls to go through
-    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // even after the AD has been unloaded. Furthermore release doesn't require
     // us to transition into the domain to work properly.
     return Unknown_ReleaseSpecial_Internal(pUnk);
 }
@@ -504,7 +504,7 @@ ULONG __stdcall Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk)
     CONTRACT_VIOLATION(GCViolation);
 
     // Don't switch domains since we need to allow release calls to go through
-    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // even after the AD has been unloaded. Furthermore release doesn't require
     // us to transition into the domain to work properly.
     return Unknown_ReleaseSpecial_IErrorInfo_Internal(pUnk);
 }
@@ -1016,7 +1016,7 @@ VOID __stdcall Dispatch_GetIDsOfNames_CallBack(LPVOID ptr)
     }
 }
 
-HRESULT __stdcall Dispatch_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, __in_ecount(cNames) OLECHAR **rgszNames,
+HRESULT __stdcall Dispatch_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     SetupForComCallHR();
@@ -1062,7 +1062,7 @@ VOID __stdcall InternalDispatchImpl_GetIDsOfNames_CallBack(LPVOID ptr)
     }
 }
 
-HRESULT __stdcall InternalDispatchImpl_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, __in_ecount(cNames) OLECHAR **rgszNames,
+HRESULT __stdcall InternalDispatchImpl_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                            unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     SetupForComCallHR();
@@ -1341,7 +1341,7 @@ VOID __stdcall DispatchEx_GetIDsOfNames_CallBack(LPVOID ptr)
     }
 }
 
-HRESULT __stdcall DispatchEx_GetIDsOfNames_Wrapper(IDispatchEx* pDisp, REFIID riid, __in_ecount(cNames) OLECHAR **rgszNames,
+HRESULT __stdcall DispatchEx_GetIDsOfNames_Wrapper(IDispatchEx* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                  unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     SetupForComCallHR();

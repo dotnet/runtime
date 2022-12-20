@@ -2,13 +2,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(InteropCommonDir)CheckGCMode.cs" />
     <Compile Include="SuppressGCTransitionTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
     <ProjectReference Include="SuppressGCTransitionUtil.ilproj" />
   </ItemGroup>
 </Project>

@@ -1,21 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System.IO
 {
     /// <summary>Base class for test classes the use temporary files that need to be cleaned up.</summary>
-    public abstract class FileCleanupTestBase : IDisposable
+    public abstract partial class FileCleanupTestBase : IDisposable
     {
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-
         private string fallbackGuid = Guid.NewGuid().ToString("N").Substring(0, 10);
-
-        protected static bool IsProcessElevated => s_isElevated.Value;
 
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
         protected FileCleanupTestBase(string tempDirectory = null)
@@ -33,7 +32,8 @@ namespace System.IO
             string failure = string.Empty;
             for (int i = 0; i <= 2; i++)
             {
-                TestDirectory = Path.Combine(tempDirectory, GetType().Name + "_" + Path.GetRandomFileName());
+                // Prefix with "#" to help spot leaked files
+                TestDirectory = Path.Combine(tempDirectory, "#" + GetType().Name + "_" + Path.GetRandomFileName());
                 try
                 {
                     Directory.CreateDirectory(TestDirectory);
@@ -65,10 +65,24 @@ namespace System.IO
         /// <summary>Delete the associated test directory.</summary>
         protected virtual void Dispose(bool disposing)
         {
-            // No managed resources to clean up, so disposing is ignored.
+            try
+            {
+                try
+                {
+                    Directory.Delete(TestDirectory, recursive: true);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    DirectoryInfo di = new DirectoryInfo(TestDirectory);
+                    foreach (FileSystemInfo fsi in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
+                    {
+                        fsi.Attributes = FileAttributes.Normal;
+                    }
 
-            try { Directory.Delete(TestDirectory, recursive: true); }
-            catch { } // avoid exceptions escaping Dispose
+                    Directory.Delete(TestDirectory, recursive: true);
+                }
+            }
+            catch {  } // avoid exceptions escaping Dispose
         }
 
         /// <summary>
@@ -76,6 +90,17 @@ namespace System.IO
         /// This directory is isolated per test class.
         /// </summary>
         protected string TestDirectory { get; }
+
+        protected string GetRandomFileName([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => GetTestFileName(index: null, memberName, lineNumber) + ".txt";
+        protected string GetRandomLinkName([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => GetTestFileName(index: null, memberName, lineNumber) + ".link";
+        protected string GetRandomDirName([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => GetTestFileName(index: null, memberName, lineNumber) + "_dir";
+
+        protected string GetRandomFilePath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => Path.Combine(TestDirectoryActualCasing, GetRandomFileName(memberName, lineNumber));
+        protected string GetRandomLinkPath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0) => Path.Combine(TestDirectoryActualCasing, GetRandomLinkName(memberName, lineNumber));
+        protected string GetRandomDirPath([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)  => Path.Combine(TestDirectoryActualCasing, GetRandomDirName(memberName, lineNumber));
+
+        private string _testDirectoryActualCasing;
+        private string TestDirectoryActualCasing => _testDirectoryActualCasing ??= GetTestDirectoryActualCasing();
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
         /// <param name="index">An optional index value to use as a suffix on the file name.  Typically a loop index.</param>
@@ -90,7 +115,7 @@ namespace System.IO
         /// <param name="lineNumber">The line number of the function calling this method.</param>
         protected string GetTestFileName(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
-            string testFileName = GenerateTestFileName(index, memberName, lineNumber);
+            string testFileName = PathGenerator.GenerateTestFileName(index, memberName, lineNumber);
             string testFilePath = Path.Combine(TestDirectory, testFileName);
 
             const int maxLength = 260 - 5; // Windows MAX_PATH minus a bit
@@ -108,7 +133,7 @@ namespace System.IO
                     int halfExcessLength = (int)Math.Ceiling((double)excessLength / 2);
                     memberName = memberName.Substring(0, halfMemberNameLength - halfExcessLength) + "..." + memberName.Substring(halfMemberNameLength + halfExcessLength);
 
-                    testFileName = GenerateTestFileName(index, memberName, lineNumber);
+                    testFileName = PathGenerator.GenerateTestFileName(index, memberName, lineNumber);
                     testFilePath = Path.Combine(TestDirectory, testFileName);
                 }
                 else
@@ -122,70 +147,106 @@ namespace System.IO
             return testFileName;
         }
 
-        private string GenerateTestFileName(int? index, string memberName, int lineNumber) =>
-            string.Format(
-                index.HasValue ? "{0}_{1}_{2}_{3}" : "{0}_{1}_{3}",
-                memberName ?? "TestBase",
-                lineNumber,
-                index.GetValueOrDefault(),
-                Guid.NewGuid().ToString("N").Substring(0, 8)); // randomness to avoid collisions between derived test classes using same base method concurrently
-
-        /// <summary>
-        /// In some cases (such as when running without elevated privileges),
-        /// the symbolic link may fail to create. Only run this test if it creates
-        /// links successfully.
-        /// </summary>
-        protected static bool CanCreateSymbolicLinks => s_canCreateSymbolicLinks.Value;
-
-        private static readonly Lazy<bool> s_canCreateSymbolicLinks = new Lazy<bool>(() =>
+        protected static string GetNamedPipeServerStreamName()
         {
-            bool success = true;
-
-            // Verify file symlink creation
-            string path = Path.GetTempFileName();
-            string linkPath = path + ".link";
-            success = CreateSymLink(path, linkPath, isDirectory: false);
-            try { File.Delete(path); } catch { }
-            try { File.Delete(linkPath); } catch { }
-
-            // Verify directory symlink creation
-            path = Path.GetTempFileName();
-            linkPath = path + ".link";
-            success = success && CreateSymLink(path, linkPath, isDirectory: true);
-            try { Directory.Delete(path); } catch { }
-            try { Directory.Delete(linkPath); } catch { }
-
-            return success;
-        });
-
-        protected static bool CreateSymLink(string targetPath, string linkPath, bool isDirectory)
-        {
-#if NETFRAMEWORK
-            bool isWindows = true;
-#else
-            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsBrowser()) // OSes that don't support Process.Start()
+            if (PlatformDetection.IsInAppContainer)
             {
-                return false;
+                return @"LOCAL\" + Guid.NewGuid().ToString("N");
             }
-            bool isWindows = OperatingSystem.IsWindows();
-#endif
-            Process symLinkProcess = new Process();
-            if (isWindows)
-            {
-                symLinkProcess.StartInfo.FileName = "cmd";
-                symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", Path.GetFullPath(linkPath), Path.GetFullPath(targetPath));
-            }
-            else
-            {
-                symLinkProcess.StartInfo.FileName = "/bin/ln";
-                symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", Path.GetFullPath(targetPath), Path.GetFullPath(linkPath));
-            }
-            symLinkProcess.StartInfo.RedirectStandardOutput = true;
-            symLinkProcess.Start();
 
-            symLinkProcess.WaitForExit();
-            return (0 == symLinkProcess.ExitCode);
+            if (PlatformDetection.IsWindows)
+            {
+                return Guid.NewGuid().ToString("N");
+            }
+
+            if (!PlatformDetection.FileCreateCaseSensitive)
+            {
+                return $"/tmp/{Guid.NewGuid().ToString("N")}";
+            }
+
+            const int MinUdsPathLength = 104; // required min is 92, but every platform we currently target is at least 104
+            const int MinAvailableForSufficientRandomness = 5; // we want enough randomness in the name to avoid conflicts between concurrent tests
+            string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
+            int availableLength = MinUdsPathLength - prefix.Length - 1; // 1 - for possible null terminator
+            Assert.True(availableLength >= MinAvailableForSufficientRandomness, $"UDS prefix {prefix} length {prefix.Length} is too long");
+
+            StringBuilder sb = new(availableLength);
+            Random random = new Random();
+            for (int i = 0; i < availableLength; i++)
+            {
+                sb.Append((char)('a' + random.Next(0, 26)));
+            }
+            return sb.ToString();
         }
+
+        // Some Windows versions like Windows Nano Server have the %TEMP% environment variable set to "C:\TEMP" but the
+        // actual folder name is "C:\Temp", which prevents asserting path values using Assert.Equal due to case sensitiveness.
+        // So instead of using TestDirectory directly, we retrieve the real path with proper casing of the initial folder path.
+        private unsafe string GetTestDirectoryActualCasing()
+        {
+            if (!PlatformDetection.IsWindows)
+                return TestDirectory;
+
+            try
+            {
+                using SafeFileHandle handle = Interop.Kernel32.CreateFile(
+                            TestDirectory,
+                            dwDesiredAccess: 0,
+                            dwShareMode: FileShare.ReadWrite | FileShare.Delete,
+                            dwCreationDisposition: FileMode.Open,
+                            dwFlagsAndAttributes:
+                                Interop.Kernel32.FileOperations.OPEN_EXISTING |
+                                Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS // Necessary to obtain a handle to a directory
+                            );
+
+                if (!handle.IsInvalid)
+                {
+                    const int InitialBufferSize = 4096;
+                    char[]? buffer = ArrayPool<char>.Shared.Rent(InitialBufferSize);
+                    uint result = GetFinalPathNameByHandle(handle, buffer);
+
+                    // Remove extended prefix
+                    int skip = PathInternal.IsExtended(buffer) ? 4 : 0;
+
+                    return new string(
+                        buffer,
+                        skip,
+                        (int)result - skip);
+                }
+            }
+            catch { }
+
+            return TestDirectory;
+        }
+
+        private unsafe uint GetFinalPathNameByHandle(SafeFileHandle handle, char[] buffer)
+        {
+            fixed (char* bufPtr = buffer)
+            {
+                return Interop.Kernel32.GetFinalPathNameByHandle(handle, bufPtr, (uint)buffer.Length, Interop.Kernel32.FILE_NAME_NORMALIZED);
+            }
+        }
+
+        protected string CreateTestDirectory(params string[] paths)
+        {
+            string dir = Path.Combine(paths);
+            Assert.True(Path.IsPathRooted(dir));
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        protected string CreateTestDirectory() => CreateTestDirectory(GetTestFilePath());
+
+        protected string CreateTestFile(params string[] paths)
+        {
+            string file = Path.Combine(paths);
+            Assert.True(Path.IsPathRooted(file));
+            Directory.CreateDirectory(Path.GetDirectoryName(file));
+            File.Create(file).Dispose();
+            return file;
+        }
+
+        protected string CreateTestFile() => CreateTestFile(GetTestFilePath());
 
     }
 }

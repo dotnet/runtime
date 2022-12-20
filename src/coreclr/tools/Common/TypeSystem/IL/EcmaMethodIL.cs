@@ -11,10 +11,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
 {
-    // Marker interface implemented by EcmaMethodIL and EcmaMethodILScope
-    public interface IEcmaMethodIL { }
-
-    public sealed partial class EcmaMethodIL : MethodIL, IEcmaMethodIL
+    public sealed partial class EcmaMethodIL : MethodIL
     {
         private readonly EcmaModule _module;
         private readonly EcmaMethod _method;
@@ -144,7 +141,7 @@ namespace Internal.IL
         }
     }
 
-    public sealed partial class EcmaMethodILScope : MethodILScope, IEcmaMethodIL
+    public sealed partial class EcmaMethodILScope : MethodILScope
     {
         private readonly EcmaModule _module;
         private readonly EcmaMethod _method;

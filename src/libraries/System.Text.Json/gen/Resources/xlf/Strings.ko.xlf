@@ -32,6 +32,16 @@
         <target state="translated">중복된 형식 이름입니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
+        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">'{0} 형식은 'JsonSourceGenerationMode.Serialization'에서 지원되지 않는 'JsonDerivedTypeAttribute'로 주석이 추가되었습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
+        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">'JsonSourceGenerationMode.Serialization'에서는 'JsonDerivedTypeAttribute'가 지원되지 않습니다.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
         <target state="translated">멤버 '{0}.{1}'이(가) JsonIncludeAttribute로 주석 처리되었지만 원본 생성기에는 표시되지 않습니다.</target>

@@ -17,7 +17,7 @@ namespace System.DirectoryServices.Protocols
     internal delegate DirectoryResponse GetLdapResponseCallback(int messageId, LdapOperation operation, ResultAll resultType, TimeSpan requestTimeout, bool exceptionOnTimeOut);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate bool QUERYCLIENTCERT(IntPtr Connection, IntPtr trusted_CAs, ref IntPtr certificateHandle);
+    internal unsafe delegate Interop.BOOL QUERYCLIENTCERT(IntPtr Connection, IntPtr trusted_CAs, IntPtr* certificateHandle);
 
     public partial class LdapConnection : DirectoryConnection, IDisposable
     {
@@ -63,7 +63,7 @@ namespace System.DirectoryServices.Protocols
         {
         }
 
-        public LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
+        public unsafe LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
         {
             _directoryIdentifier = identifier;
             _directoryCredential = (credential != null) ? new NetworkCredential(credential.UserName, credential.Password, credential.Domain) : null;
@@ -86,7 +86,7 @@ namespace System.DirectoryServices.Protocols
             _clientCertificateRoutine = new QUERYCLIENTCERT(ProcessClientCertificate);
         }
 
-        internal LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType, IntPtr handle)
+        internal unsafe LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType, IntPtr handle)
         {
             _directoryIdentifier = identifier;
             _needDispose = false;
@@ -426,7 +426,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentException(SR.Format(SR.NotReturnedAsyncResult, nameof(asyncResult)));
             }
 
-            int messageId = -1;
+            int messageId;
 
             LdapAsyncResult result = (LdapAsyncResult)asyncResult;
             if (!result._partialResults)
@@ -529,7 +529,7 @@ namespace System.DirectoryServices.Protocols
             return s_partialResultsProcessor.GetCompleteResult((LdapPartialAsyncResult)asyncResult);
         }
 
-        private int SendRequestHelper(DirectoryRequest request, ref int messageID)
+        private unsafe int SendRequestHelper(DirectoryRequest request, ref int messageID)
         {
             IntPtr serverControlArray = IntPtr.Zero;
             LdapControl[] managedServerControls = null;
@@ -541,7 +541,7 @@ namespace System.DirectoryServices.Protocols
             IntPtr modArray = IntPtr.Zero;
             int addModCount = 0;
 
-            berval berValuePtr = null;
+            BerVal berValuePtr = null;
 
             IntPtr searchAttributes = IntPtr.Zero;
             int attributeCount = 0;
@@ -565,8 +565,6 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                IntPtr tempPtr = IntPtr.Zero;
-
                 // Build server control.
                 managedServerControls = BuildControlArray(request.Controls, true);
                 int structSize = Marshal.SizeOf(typeof(LdapControl));
@@ -574,16 +572,15 @@ namespace System.DirectoryServices.Protocols
                 if (managedServerControls != null)
                 {
                     serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
+                    void** pServerControlArray = (void**)serverControlArray;
                     for (int i = 0; i < managedServerControls.Length; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pServerControlArray[i] = (void*)controlPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pServerControlArray[managedServerControls.Length] = null;
                 }
 
                 // build client control
@@ -591,16 +588,15 @@ namespace System.DirectoryServices.Protocols
                 if (managedClientControls != null)
                 {
                     clientControlArray = Utility.AllocHGlobalIntPtrArray(managedClientControls.Length + 1);
+                    void** pClientControlArray = (void**)clientControlArray;
                     for (int i = 0; i < managedClientControls.Length; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pClientControlArray[i] = (void*)controlPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pClientControlArray[managedClientControls.Length] = null;
                 }
 
                 if (request is DeleteRequest)
@@ -634,30 +630,39 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // Process the attribute.
-                    string stringValue = null;
-                    if (assertion[0] is byte[] byteArray)
+                    byte[] byteArray;
+                    if (assertion[0] is string str)
                     {
-                        if (byteArray != null && byteArray.Length != 0)
-                        {
-                            berValuePtr = new berval
-                            {
-                                bv_len = byteArray.Length,
-                                bv_val = Marshal.AllocHGlobal(byteArray.Length)
-                            };
-                            Marshal.Copy(byteArray, 0, berValuePtr.bv_val, byteArray.Length);
-                        }
+                        var encoder = new UTF8Encoding();
+                        byteArray = encoder.GetBytes(str);
+                    }
+                    else if (assertion[0] is Uri uri)
+                    {
+                        var encoder = new UTF8Encoding();
+                        byteArray = encoder.GetBytes(uri.ToString());
+                    }
+                    else if (assertion[0] is byte[] bytes)
+                    {
+                        byteArray = bytes;
                     }
                     else
                     {
-                        stringValue = assertion[0].ToString();
+                        throw new ArgumentException(SR.ValidValueType);
                     }
+
+                    berValuePtr = new BerVal
+                    {
+                        bv_len = byteArray.Length,
+                        bv_val = Marshal.AllocHGlobal(byteArray.Length)
+                    };
+                    Marshal.Copy(byteArray, 0, berValuePtr.bv_val, byteArray.Length);
 
                     // It is a compare request.
                     error = LdapPal.CompareDirectoryEntries(
                         _ldapHandle,
                         ((CompareRequest)request).DistinguishedName,
                         assertion.Name,
-                        stringValue,
+                        null,
                         berValuePtr,
                         serverControlArray, clientControlArray, ref messageID);
                 }
@@ -675,17 +680,16 @@ namespace System.DirectoryServices.Protocols
 
                     addModCount = (modifications == null ? 1 : modifications.Length + 1);
                     modArray = Utility.AllocHGlobalIntPtrArray(addModCount);
+                    void** pModArray = (void**)modArray;
                     int modStructSize = Marshal.SizeOf(typeof(LdapMod));
                     int i = 0;
                     for (i = 0; i < addModCount - 1; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(modStructSize);
                         Marshal.StructureToPtr(modifications[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)modArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pModArray[i] = (void*)controlPtr;
                     }
-                    tempPtr = (IntPtr)((long)modArray + IntPtr.Size * i);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pModArray[i] = null;
 
                     if (request is AddRequest)
                     {
@@ -712,7 +716,7 @@ namespace System.DirectoryServices.Protocols
                     // process the requestvalue
                     if (val != null && val.Length != 0)
                     {
-                        berValuePtr = new berval()
+                        berValuePtr = new BerVal()
                         {
                             bv_len = val.Length,
                             bv_val = Marshal.AllocHGlobal(val.Length)
@@ -746,16 +750,15 @@ namespace System.DirectoryServices.Protocols
                     if (attributeCount != 0)
                     {
                         searchAttributes = Utility.AllocHGlobalIntPtrArray(attributeCount + 1);
+                        void** pSearchAttributes = (void**)searchAttributes;
                         int i = 0;
                         for (i = 0; i < attributeCount; i++)
                         {
                             IntPtr controlPtr = LdapPal.StringToPtr(searchRequest.Attributes[i]);
-                            tempPtr = (IntPtr)((long)searchAttributes + IntPtr.Size * i);
-                            Marshal.WriteIntPtr(tempPtr, controlPtr);
+                            pSearchAttributes[i] = (void*)controlPtr;
                         }
 
-                        tempPtr = (IntPtr)((long)searchAttributes + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                        pSearchAttributes[i] = null;
                     }
 
                     // Process the scope.
@@ -919,19 +922,19 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        private bool ProcessClientCertificate(IntPtr ldapHandle, IntPtr CAs, ref IntPtr certificate)
+        private unsafe Interop.BOOL ProcessClientCertificate(IntPtr ldapHandle, IntPtr CAs, IntPtr* certificate)
         {
             int count = ClientCertificates == null ? 0 : ClientCertificates.Count;
             if (count == 0 && SessionOptions._clientCertificateDelegate == null)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
 
             // If the user specify certificate through property and not though option, we don't need to check the certificate authority.
             if (SessionOptions._clientCertificateDelegate == null)
             {
-                certificate = ClientCertificates[0].Handle;
-                return true;
+                *certificate = ClientCertificates[0].Handle;
+                return Interop.BOOL.TRUE;
             }
 
             // Processing the certificate authority.
@@ -942,7 +945,7 @@ namespace System.DirectoryServices.Protocols
                 int issuerNumber = trustedCAs.cIssuers;
                 for (int i = 0; i < issuerNumber; i++)
                 {
-                    IntPtr tempPtr = (IntPtr)((long)trustedCAs.aIssuers + Marshal.SizeOf(typeof(CRYPTOAPI_BLOB)) * i);
+                    IntPtr tempPtr = (IntPtr)((byte*)trustedCAs.aIssuers + Marshal.SizeOf(typeof(CRYPTOAPI_BLOB)) * (nint)i);
                     CRYPTOAPI_BLOB info = (CRYPTOAPI_BLOB)Marshal.PtrToStructure(tempPtr, typeof(CRYPTOAPI_BLOB));
                     int dataLength = info.cbData;
 
@@ -965,12 +968,12 @@ namespace System.DirectoryServices.Protocols
             X509Certificate cert = SessionOptions._clientCertificateDelegate(this, certAuthorities);
             if (cert != null)
             {
-                certificate = cert.Handle;
-                return true;
+                *certificate = cert.Handle;
+                return Interop.BOOL.TRUE;
             }
 
-            certificate = IntPtr.Zero;
-            return false;
+            *certificate = IntPtr.Zero;
+            return Interop.BOOL.FALSE;
         }
 
         private void Connect()
@@ -1040,7 +1043,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             // Set the credential.
-            NetworkCredential tempCredential = null;
+            NetworkCredential tempCredential;
             if (needSetCredential)
             {
                 _directoryCredential = tempCredential = (newCredential != null ? new NetworkCredential(newCredential.UserName, newCredential.Password, newCredential.Domain) : null);
@@ -1208,7 +1211,7 @@ namespace System.DirectoryServices.Protocols
             _disposed = true;
         }
 
-        internal LdapControl[] BuildControlArray(DirectoryControlCollection controls, bool serverControl)
+        internal static LdapControl[] BuildControlArray(DirectoryControlCollection controls, bool serverControl)
         {
             LdapControl[] managedControls = null;
 
@@ -1217,7 +1220,7 @@ namespace System.DirectoryServices.Protocols
                 var controlList = new ArrayList();
                 foreach (DirectoryControl col in controls)
                 {
-                    if (serverControl == true)
+                    if (serverControl)
                     {
                         if (col.ServerSide)
                         {
@@ -1252,7 +1255,7 @@ namespace System.DirectoryServices.Protocols
                         if (byteControlValue == null || byteControlValue.Length == 0)
                         {
                             // Treat the control value as null.
-                            managedControls[i].ldctl_value = new berval
+                            managedControls[i].ldctl_value = new BerVal
                             {
                                 bv_len = 0,
                                 bv_val = IntPtr.Zero
@@ -1260,7 +1263,7 @@ namespace System.DirectoryServices.Protocols
                         }
                         else
                         {
-                            managedControls[i].ldctl_value = new berval
+                            managedControls[i].ldctl_value = new BerVal
                             {
                                 bv_len = byteControlValue.Length,
                                 bv_val = Marshal.AllocHGlobal(sizeof(byte) * byteControlValue.Length)
@@ -1274,7 +1277,7 @@ namespace System.DirectoryServices.Protocols
             return managedControls;
         }
 
-        internal LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)
+        internal static unsafe LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)
         {
             LdapMod[] attributes = null;
 
@@ -1297,7 +1300,7 @@ namespace System.DirectoryServices.Protocols
                 for (int i = 0; i < directoryAttributes.Count; i++)
                 {
                     // Get the managed attribute first.
-                    DirectoryAttribute modAttribute = null;
+                    DirectoryAttribute modAttribute;
                     if (attributeCollection != null)
                     {
                         modAttribute = attributeCollection[i];
@@ -1327,14 +1330,14 @@ namespace System.DirectoryServices.Protocols
 
                     // Write the values.
                     int valuesCount = 0;
-                    berval[] berValues = null;
+                    BerVal[] berValues = null;
                     if (modAttribute.Count > 0)
                     {
                         valuesCount = modAttribute.Count;
-                        berValues = new berval[valuesCount];
+                        berValues = new BerVal[valuesCount];
                         for (int j = 0; j < valuesCount; j++)
                         {
-                            byte[] byteArray = null;
+                            byte[] byteArray;
                             if (modAttribute[j] is string)
                             {
                                 byteArray = encoder.GetBytes((string)modAttribute[j]);
@@ -1348,7 +1351,7 @@ namespace System.DirectoryServices.Protocols
                                 byteArray = (byte[])modAttribute[j];
                             }
 
-                            berValues[j] = new berval()
+                            berValues[j] = new BerVal()
                             {
                                 bv_len = byteArray.Length,
                                 bv_val = Marshal.AllocHGlobal(byteArray.Length)
@@ -1361,11 +1364,11 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     attributes[i].values = Utility.AllocHGlobalIntPtrArray(valuesCount + 1);
-                    int structSize = Marshal.SizeOf(typeof(berval));
-                    IntPtr controlPtr = IntPtr.Zero;
-                    IntPtr tempPtr = IntPtr.Zero;
+                    void** pAttributesValues = (void**)attributes[i].values;
+                    int structSize = Marshal.SizeOf(typeof(BerVal));
+                    IntPtr controlPtr;
 
-                    int m = 0;
+                    int m;
                     for (m = 0; m < valuesCount; m++)
                     {
                         controlPtr = Marshal.AllocHGlobal(structSize);
@@ -1373,11 +1376,9 @@ namespace System.DirectoryServices.Protocols
                         // Need to free the memory allocated on the heap when we are done.
                         ptrToFree.Add(controlPtr);
                         Marshal.StructureToPtr(berValues[m], controlPtr, false);
-                        tempPtr = (IntPtr)((long)attributes[i].values + IntPtr.Size * m);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
+                        pAttributesValues[m] = (void*)controlPtr;
                     }
-                    tempPtr = (IntPtr)((long)attributes[i].values + IntPtr.Size * m);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pAttributesValues[m] = null;
                 }
             }
 
@@ -1396,7 +1397,7 @@ namespace System.DirectoryServices.Protocols
             IntPtr requestName = IntPtr.Zero;
             IntPtr requestValue = IntPtr.Zero;
 
-            IntPtr entryMessage = IntPtr.Zero;
+            IntPtr entryMessage;
 
             bool needAbandon = true;
 
@@ -1501,11 +1502,11 @@ namespace System.DirectoryServices.Protocols
                                         name = LdapPal.PtrToString(requestName);
                                     }
 
-                                    berval val = null;
+                                    BerVal val = null;
                                     byte[] requestValueArray = null;
                                     if (requestValue != IntPtr.Zero)
                                     {
-                                        val = new berval();
+                                        val = new BerVal();
                                         Marshal.PtrToStructure(requestValue, val);
                                         if (val.bv_len != 0 && val.bv_val != IntPtr.Zero)
                                         {
@@ -1825,9 +1826,9 @@ namespace System.DirectoryServices.Protocols
                     IntPtr tempPtr = Marshal.ReadIntPtr(valuesArray, IntPtr.Size * count);
                     while (tempPtr != IntPtr.Zero)
                     {
-                        berval bervalue = new berval();
+                        BerVal bervalue = new BerVal();
                         Marshal.PtrToStructure(tempPtr, bervalue);
-                        byte[] byteArray = null;
+                        byte[] byteArray;
                         if (bervalue.bv_len > 0 && bervalue.bv_val != IntPtr.Zero)
                         {
                             byteArray = new byte[bervalue.bv_len];
@@ -1861,7 +1862,7 @@ namespace System.DirectoryServices.Protocols
                 if (error == 0)
                 {
                     var referralList = new ArrayList();
-                    IntPtr tempPtr = IntPtr.Zero;
+                    IntPtr tempPtr;
                     int count = 0;
                     if (referenceArray != IntPtr.Zero)
                     {
@@ -1958,7 +1959,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        private DirectoryControl ConstructControl(IntPtr controlPtr)
+        private static DirectoryControl ConstructControl(IntPtr controlPtr)
         {
             LdapControl control = new LdapControl();
             Marshal.PtrToStructure(controlPtr, control);
@@ -1974,7 +1975,7 @@ namespace System.DirectoryServices.Protocols
             return new DirectoryControl(controlType, bytes, criticality, true);
         }
 
-        private bool SameCredential(NetworkCredential oldCredential, NetworkCredential newCredential)
+        private static bool SameCredential(NetworkCredential oldCredential, NetworkCredential newCredential)
         {
             if (oldCredential == null && newCredential == null)
             {

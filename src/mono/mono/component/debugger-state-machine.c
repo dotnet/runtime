@@ -248,7 +248,7 @@ dump_thread_state (gpointer key, gpointer value, gpointer user_data)
 
 	mono_json_writer_indent (data->writer);
 	mono_json_writer_object_key(data->writer, "thread_id");
-	mono_json_writer_printf (data->writer, "\"0x%x\",\n", mono_debugger_tls_thread_id (debugger_tls));
+	mono_json_writer_printf (data->writer, "\"0x%x\",\n", (unsigned int) mono_debugger_tls_thread_id (debugger_tls));
 
 	mono_json_writer_indent (data->writer);
 	mono_json_writer_object_key (data->writer, "thread_state");
@@ -298,7 +298,7 @@ mono_debugger_state (JsonWriter *writer)
 		mono_json_writer_object_key(writer, "breakpoints");
 		mono_json_writer_array_begin (writer);
 
-		for (int i=0; i < breakpoint_copy->len; i++) {
+		for (guint i=0; i < breakpoint_copy->len; i++) {
 			MonoBreakpoint *bp = (MonoBreakpoint *) g_ptr_array_index (breakpoint_copy, i);
 
 			mono_json_writer_indent (writer);
@@ -310,7 +310,7 @@ mono_debugger_state (JsonWriter *writer)
 
 			mono_json_writer_indent (writer);
 			mono_json_writer_object_key(writer, "il_offset");
-			mono_json_writer_printf (writer, "\"0x%x\",\n", bp->il_offset);
+			mono_json_writer_printf (writer, "\"0x%x\",\n", (unsigned int) bp->il_offset);
 
 			mono_json_writer_indent_pop (writer);
 			mono_json_writer_indent (writer);
@@ -351,7 +351,7 @@ mono_debugger_state (JsonWriter *writer)
 
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "tid");
-		mono_json_writer_printf (writer, "\"0x%x\",\n", item.tid);
+		mono_json_writer_printf (writer, "\"0x%x\",\n", (unsigned int) item.tid);
 
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "message");
@@ -359,7 +359,7 @@ mono_debugger_state (JsonWriter *writer)
 
 		mono_json_writer_indent (writer);
 		mono_json_writer_object_key(writer, "counter");
-		mono_json_writer_printf (writer, "\"%d\"\n", header.counter);
+		mono_json_writer_printf (writer, "\"%ld\"\n", header.counter);
 
 		mono_json_writer_indent_pop (writer);
 		mono_json_writer_indent (writer);

@@ -8,7 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly callorder
+.assembly 'CallOrder'
 {
 }
 //------------------------------------------------------
@@ -109,7 +109,7 @@
 		ret
 	}
 
-	.method public static int32 Main(class [mscorlib]System.String[]) il managed
+	.method public static int32 Main() il managed
 	{
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00

@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -154,6 +152,15 @@ namespace System.Numerics
             get => _identity;
         }
 
+        /// <summary>Gets or sets the element at the specified indices.</summary>
+        /// <param name="row">The index of the row containing the element to get or set.</param>
+        /// <param name="column">The index of the column containing the element to get or set.</param>
+        /// <returns>The element at [<paramref name="row" />][<paramref name="column" />].</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="row" /> was less than zero or greater than the number of rows.
+        /// -or-
+        /// <paramref name="column" /> was less than zero or greater than the number of columns.
+        /// </exception>
         public unsafe float this[int row, int column]
         {
             get
@@ -161,7 +168,7 @@ namespace System.Numerics
                 if ((uint)row >= 4)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
 
-                var vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
+                Vector4 vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
                 return vrow[column];
             }
             set
@@ -169,7 +176,7 @@ namespace System.Numerics
                 if ((uint)row >= 4)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
 
-                ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
+                ref Vector4 vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
                 var tmp = Vector4.WithElement(vrow, column, value);
                 vrow = tmp;
             }
@@ -878,14 +885,9 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             Matrix4x4 result;
 
@@ -922,17 +924,12 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (fieldOfView <= 0.0f || fieldOfView >= MathF.PI)
-                throw new ArgumentOutOfRangeException(nameof(fieldOfView));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, MathF.PI);
 
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             float yScale = 1.0f / MathF.Tan(fieldOfView * 0.5f);
             float xScale = yScale / aspectRatio;
@@ -971,14 +968,9 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             Matrix4x4 result;
 
@@ -1195,10 +1187,13 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
+
             result.M11 = xScale;
             result.M22 = yScale;
             result.M33 = zScale;
+            result.M44 = 1;
+
             return result;
         }
 
@@ -1210,7 +1205,7 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
             float tx = centerPoint.X * (1 - xScale);
             float ty = centerPoint.Y * (1 - yScale);
@@ -1219,9 +1214,12 @@ namespace System.Numerics
             result.M11 = xScale;
             result.M22 = yScale;
             result.M33 = zScale;
+            result.M44 = 1;
+
             result.M41 = tx;
             result.M42 = ty;
             result.M43 = tz;
+
             return result;
         }
 
@@ -1230,10 +1228,13 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
+
             result.M11 = scales.X;
             result.M22 = scales.Y;
             result.M33 = scales.Z;
+            result.M44 = 1;
+
             return result;
         }
 
@@ -1243,18 +1244,19 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
-            float tx = centerPoint.X * (1 - scales.X);
-            float ty = centerPoint.Y * (1 - scales.Y);
-            float tz = centerPoint.Z * (1 - scales.Z);
+            Vector3 t = centerPoint * (Vector3.One - scales);
 
             result.M11 = scales.X;
             result.M22 = scales.Y;
             result.M33 = scales.Z;
-            result.M41 = tx;
-            result.M42 = ty;
-            result.M43 = tz;
+            result.M44 = 1;
+
+            result.M41 = t.X;
+            result.M42 = t.Y;
+            result.M43 = t.Z;
+
             return result;
         }
 
@@ -1263,11 +1265,12 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
             result.M11 = scale;
             result.M22 = scale;
             result.M33 = scale;
+            result.M44 = 1;
 
             return result;
         }
@@ -1278,19 +1281,18 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
-            float tx = centerPoint.X * (1 - scale);
-            float ty = centerPoint.Y * (1 - scale);
-            float tz = centerPoint.Z * (1 - scale);
+            Vector3 t = centerPoint * (Vector3.One - new Vector3(scale));
 
             result.M11 = scale;
             result.M22 = scale;
             result.M33 = scale;
+            result.M44 = 1;
 
-            result.M41 = tx;
-            result.M42 = ty;
-            result.M43 = tz;
+            result.M41 = t.X;
+            result.M42 = t.Y;
+            result.M43 = t.Z;
 
             return result;
         }
@@ -2191,9 +2193,30 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether this instance and another 4x4 matrix are equal.</summary>
         /// <param name="other">The other matrix.</param>
         /// <returns><see langword="true" /> if the two matrices are equal; otherwise, <see langword="false" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Matrix4x4 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return Vector128.LoadUnsafe(ref Unsafe.AsRef(in M11)).Equals(Vector128.LoadUnsafe(ref other.M11))
+                    && Vector128.LoadUnsafe(ref Unsafe.AsRef(in M21)).Equals(Vector128.LoadUnsafe(ref other.M21))
+                    && Vector128.LoadUnsafe(ref Unsafe.AsRef(in M31)).Equals(Vector128.LoadUnsafe(ref other.M31))
+                    && Vector128.LoadUnsafe(ref Unsafe.AsRef(in M41)).Equals(Vector128.LoadUnsafe(ref other.M41));
+
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Matrix4x4 self, Matrix4x4 other)
+            {
+                return self.M11.Equals(other.M11) && self.M22.Equals(other.M22) && self.M33.Equals(other.M33) && self.M44.Equals(other.M44) // Check diagonal element first for early out.
+                    && self.M12.Equals(other.M12) && self.M13.Equals(other.M13) && self.M14.Equals(other.M14) && self.M21.Equals(other.M21)
+                    && self.M23.Equals(other.M23) && self.M24.Equals(other.M24) && self.M31.Equals(other.M31) && self.M32.Equals(other.M32)
+                    && self.M34.Equals(other.M34) && self.M41.Equals(other.M41) && self.M42.Equals(other.M42) && self.M43.Equals(other.M43);
+            }
         }
 
         /// <summary>Calculates the determinant of the current 4x4 matrix.</summary>

@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial UIntPtr VirtualQuery(
             SafeHandle lpAddress,
             ref MEMORY_BASIC_INFORMATION lpBuffer,

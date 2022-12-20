@@ -108,7 +108,7 @@ typedef struct codeBlk
 
 /* static */
 size_t __stdcall DisAssembler::disCchAddr(
-    const DIS* pdis, DIS::ADDR addr, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
+    const DIS* pdis, DIS::ADDR addr, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
     DisAssembler* pDisAsm = (DisAssembler*)pdis->PvClient();
     assert(pDisAsm);
@@ -116,7 +116,7 @@ size_t __stdcall DisAssembler::disCchAddr(
 }
 
 size_t DisAssembler::disCchAddrMember(
-    const DIS* pdis, DIS::ADDR addr, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
+    const DIS* pdis, DIS::ADDR addr, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
     /* First check the termination type of the instruction
      * because this might be a helper or static function call
@@ -348,7 +348,7 @@ size_t DisAssembler::disCchAddrMember(
 
 /* static */
 size_t __stdcall DisAssembler::disCchFixup(
-    const DIS* pdis, DIS::ADDR addr, size_t size, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
+    const DIS* pdis, DIS::ADDR addr, size_t size, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
     DisAssembler* pDisAsm = (DisAssembler*)pdis->PvClient();
     assert(pDisAsm);
@@ -357,7 +357,7 @@ size_t __stdcall DisAssembler::disCchFixup(
 }
 
 size_t DisAssembler::disCchFixupMember(
-    const DIS* pdis, DIS::ADDR addr, size_t size, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
+    const DIS* pdis, DIS::ADDR addr, size_t size, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp)
 {
 #if defined(TARGET_XARCH)
 
@@ -389,7 +389,7 @@ size_t DisAssembler::disCchFixupMember(
             if (anyReloc)
             {
                 // Make instructions like "mov rcx, 7FE8247A638h" diffable.
-                swprintf_s(wz, cchMax, W("%IXh"), dspAddr(targetAddr));
+                swprintf_s(wz, cchMax, W("%zXh"), dspAddr(targetAddr));
                 break;
             }
 
@@ -494,7 +494,7 @@ size_t DisAssembler::disCchFixupMember(
                  * "addr" is the address of the immediate */
 
                 // Make instructions like "mov rcx, 7FE8247A638h" diffable.
-                swprintf_s(wz, cchMax, W("%IXh"), dspAddr(targetAddr));
+                swprintf_s(wz, cchMax, W("%zXh"), dspAddr(targetAddr));
                 break;
             }
 
@@ -588,7 +588,7 @@ size_t DisAssembler::disCchFixupMember(
 
 /* static */
 size_t __stdcall DisAssembler::disCchRegRel(
-    const DIS* pdis, DIS::REGA reg, DWORD disp, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
+    const DIS* pdis, DIS::REGA reg, DWORD disp, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
 {
     DisAssembler* pDisAsm = (DisAssembler*)pdis->PvClient();
     assert(pDisAsm);
@@ -597,7 +597,7 @@ size_t __stdcall DisAssembler::disCchRegRel(
 }
 
 size_t DisAssembler::disCchRegRelMember(
-    const DIS* pdis, DIS::REGA reg, DWORD disp, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
+    const DIS* pdis, DIS::REGA reg, DWORD disp, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp)
 {
 #if defined(TARGET_XARCH)
 
@@ -630,7 +630,7 @@ size_t DisAssembler::disCchRegRelMember(
             /* This case consists of non-static members */
 
             /* find the emitter block and the offset for the fixup
-             * fixup is emited after the coding of the instruction - size = word (2 bytes)
+             * fixup is emitted after the coding of the instruction - size = word (2 bytes)
              * GRRRR!!! - for the 16 bit case we have to check for the address size prefix = 0x66
              */
 
@@ -800,7 +800,7 @@ size_t DisAssembler::disCchRegRelMember(
  */
 
 /* static */
-size_t __stdcall DisAssembler::disCchReg(const DIS* pdis, DIS::REGA reg, __in_ecount(cchMax) wchar_t* wz, size_t cchMax)
+size_t __stdcall DisAssembler::disCchReg(const DIS* pdis, DIS::REGA reg, _In_reads_(cchMax) wchar_t* wz, size_t cchMax)
 {
     DisAssembler* pDisAsm = (DisAssembler*)pdis->PvClient();
     assert(pDisAsm);
@@ -808,7 +808,7 @@ size_t __stdcall DisAssembler::disCchReg(const DIS* pdis, DIS::REGA reg, __in_ec
     return pDisAsm->disCchRegMember(pdis, reg, wz, cchMax);
 }
 
-size_t DisAssembler::disCchRegMember(const DIS* pdis, DIS::REGA reg, __in_ecount(cchMax) wchar_t* wz, size_t cchMax)
+size_t DisAssembler::disCchRegMember(const DIS* pdis, DIS::REGA reg, _In_reads_(cchMax) wchar_t* wz, size_t cchMax)
 {
     // TODO-Review: DIS::REGA does not directly map to our regNumber! E.g., look at DISARM64::REGA --
     // the Wt registers come first (and do map to our regNumber), but the Xt registers follow.
@@ -913,9 +913,9 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
 
     if (cb == 0)
     {
-        DISASM_DUMP("CbDisassemble offs %Iu addr %I64u\n", offs, addr);
+        DISASM_DUMP("CbDisassemble offs %zu addr %llu\n", offs, addr);
         // assert(!"can't disassemble instruction!!!");
-        fprintf(pfile, "MSVCDIS can't disassemble instruction @ offset %Iu (0x%02x)!!!\n", offs, offs);
+        fprintf(pfile, "MSVCDIS can't disassemble instruction @ offset %zu (0x%02zx)!!!\n", offs, offs);
 #if defined(TARGET_ARM64)
         fprintf(pfile, "%08Xh\n", *(unsigned int*)pb);
         return 4;
@@ -1139,10 +1139,10 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
             {
                 // Truncate the bytes if they are too long
 
-                static const wchar_t* elipses    = W("...\0");
-                const size_t          cchElipses = 4;
+                static const wchar_t* ellipses    = W("...\0");
+                const size_t          cchEllipses = 4;
 
-                memcpy(&wzBytes[CCH_INDENT - cchElipses], elipses, cchElipses * sizeof(wchar_t));
+                memcpy(&wzBytes[CCH_INDENT - cchEllipses], ellipses, cchEllipses * sizeof(wchar_t));
 
                 cchBytes = CCH_INDENT;
             }

@@ -37,24 +37,21 @@ public:
     // ------------------------------------------------------------
     enum
     {
-        LAYOUT_MAPPED =1,
-        LAYOUT_FLAT =2,
-        LAYOUT_LOADED =4,
-        LAYOUT_LOADED_FOR_INTROSPECTION =8,
-        LAYOUT_ANY =0xf
+        LAYOUT_FLAT   = 2,
+        LAYOUT_LOADED = 4,
+        LAYOUT_ANY = 0xf
     };
-
 
 public:
 #ifndef DACCESS_COMPILE
-    static PEImageLayout* CreateFlat(const void *flat, COUNT_T size,PEImage* pOwner);
-    static PEImageLayout* CreateFromHMODULE(HMODULE mappedbase,PEImage* pOwner, BOOL bTakeOwnership);
-    static PEImageLayout* LoadFromFlat(PEImageLayout* pflatimage);
-    static PEImageLayout* Load(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow = NULL);
+    static PEImageLayout* CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size);
+#ifndef TARGET_UNIX
+    static PEImageLayout* CreateFromHMODULE(HMODULE hModule,PEImage* pOwner);
+#endif
+    static PEImageLayout* Load(PEImage* pOwner, HRESULT* loadFailure);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
-    static PEImageLayout* LoadConverted(PEImage* pOwner, BOOL isInBundle = FALSE);
+    static PEImageLayout* LoadConverted(PEImage* pOwner);
     static PEImageLayout* LoadNative(LPCWSTR fullPath);
-    static PEImageLayout* Map(PEImage* pOwner);
 #endif
     PEImageLayout();
     virtual ~PEImageLayout();
@@ -63,9 +60,8 @@ public:
     // Refcount above images.
     void AddRef();
     ULONG Release();
-    const SString& GetPath();
 
-    void ApplyBaseRelocations();
+    void ApplyBaseRelocations(bool relocationMustWriteCopy);
 
 public:
 #ifdef DACCESS_COMPILE
@@ -76,100 +72,71 @@ private:
     Volatile<LONG> m_refCount;
 public:
     PEImage* m_pOwner;
-    DWORD m_Layout;
 };
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;
 
-
-//RawImageView is built on external data, does not need cleanup
-class RawImageLayout: public PEImageLayout
+// A simple layout where data stays the same as in the input (file or a byte array)
+class FlatImageLayout : public PEImageLayout
 {
-    VPTR_VTABLE_CLASS(RawImageLayout,PEImageLayout)
+    VPTR_VTABLE_CLASS(FlatImageLayout, PEImageLayout)
+        VPTR_UNIQUE(0x59)
 protected:
-    CLRMapViewHolder m_DataCopy;
-#ifndef TARGET_UNIX
-    HModuleHolder m_LibraryHolder;
-#endif // !TARGET_UNIX
-
+    CLRMapViewHolder m_FileView;
 public:
-    RawImageLayout(const void *flat, COUNT_T size,PEImage* pOwner);
-    RawImageLayout(const void *mapped, PEImage* pOwner, BOOL bTakeOwnerShip, BOOL bFixedUp);
+    HandleHolder m_FileMap;
+
+#ifndef DACCESS_COMPILE
+    FlatImageLayout(PEImage* pOwner);
+    FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
+    void* LoadImageByCopyingParts(SIZE_T* m_imageParts) const;
+#if TARGET_WINDOWS
+    void* LoadImageByMappingParts(SIZE_T* m_imageParts) const;
+#endif
+#endif
 };
 
-// ConvertedImageView is for the case when we manually layout a flat image
+// ConvertedImageView is for the case when we construct a loaded
+// layout by mapping or copying portions of a flat layout
 class ConvertedImageLayout: public PEImageLayout
 {
     VPTR_VTABLE_CLASS(ConvertedImageLayout,PEImageLayout)
-protected:
-    HandleHolder m_FileMap;
-    CLRMapViewHolder m_FileView;
 public:
+    static const int MAX_PARTS = 16;
 #ifndef DACCESS_COMPILE
-    ConvertedImageLayout(PEImageLayout* source, BOOL isInBundle = FALSE);
+    ConvertedImageLayout(FlatImageLayout* source);
     virtual ~ConvertedImageLayout();
+    void  FreeImageParts();
 #endif
 private:
     PT_RUNTIME_FUNCTION m_pExceptionDir;
+    SIZE_T              m_imageParts[MAX_PARTS];
 };
 
-class MappedImageLayout: public PEImageLayout
+// LoadedImageLayout is for the case when we construct a loaded layout directly
+class LoadedImageLayout: public PEImageLayout
 {
-    VPTR_VTABLE_CLASS(MappedImageLayout,PEImageLayout)
-    VPTR_UNIQUE(0x15)
+    VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
 protected:
 #ifndef TARGET_UNIX
-    HandleHolder m_FileMap;
-    CLRMapViewHolder m_FileView;
+    HINSTANCE m_Module;
 #else
     PALPEFileHolder m_LoadedFile;
 #endif
 public:
 #ifndef DACCESS_COMPILE
-    MappedImageLayout(PEImage* pOwner);
-#endif
-};
-
+    LoadedImageLayout(PEImage* pOwner, HRESULT* returnDontThrow);
 #if !defined(TARGET_UNIX)
-class LoadedImageLayout: public PEImageLayout
-{
-    VPTR_VTABLE_CLASS(LoadedImageLayout,PEImageLayout)
-protected:
-    HINSTANCE m_Module;
-public:
-#ifndef DACCESS_COMPILE
-    LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, HRESULT* returnDontThrow);
-    ~LoadedImageLayout()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-        if (m_Module)
-            CLRFreeLibrary(m_Module);
-    }
+    LoadedImageLayout(PEImage* pOwner, HMODULE hModule);
+#endif // !TARGET_UNIX
+    ~LoadedImageLayout();
 #endif // !DACCESS_COMPILE
 };
-#endif // !TARGET_UNIX
-
-class FlatImageLayout: public PEImageLayout
-{
-    VPTR_VTABLE_CLASS(FlatImageLayout,PEImageLayout)
-    VPTR_UNIQUE(0x59)
-protected:
-    HandleHolder m_FileMap;
-    CLRMapViewHolder m_FileView;
-public:
-#ifndef DACCESS_COMPILE
-    FlatImageLayout(PEImage* pOwner);
-#endif
-
-};
 
 #ifndef DACCESS_COMPILE
+// A special layout that is used to load standalone composite r2r files.
+// This layout is not owned by a PEImage and created by simply loading the file
+// at the given path.
 class NativeImageLayout : public PEImageLayout
 {
     VPTR_VTABLE_CLASS(NativeImageLayout, PEImageLayout)

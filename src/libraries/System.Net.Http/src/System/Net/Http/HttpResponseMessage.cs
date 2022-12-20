@@ -28,10 +28,7 @@ namespace System.Net.Http
             set
             {
 #if !PHONE
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 #endif
                 CheckDisposed();
 
@@ -95,7 +92,7 @@ namespace System.Net.Http
             }
             set
             {
-                if ((value != null) && ContainsNewLineCharacter(value))
+                if ((value != null) && HttpRuleParser.ContainsNewLine(value))
                 {
                     throw new FormatException(SR.net_http_reasonphrase_format_error);
                 }
@@ -172,7 +169,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(
                     SR.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
-                        SR.net_http_message_not_success_statuscode,
+                        string.IsNullOrWhiteSpace(ReasonPhrase) ? SR.net_http_message_not_success_statuscode : SR.net_http_message_not_success_statuscode_reason,
                         (int)_statusCode,
                         ReasonPhrase),
                     inner: null,
@@ -210,18 +207,6 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        private bool ContainsNewLineCharacter(string value)
-        {
-            foreach (char character in value)
-            {
-                if ((character == HttpRuleParser.CR) || (character == HttpRuleParser.LF))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         #region IDisposable Members
 
         protected virtual void Dispose(bool disposing)
@@ -231,10 +216,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_content != null)
-                {
-                    _content.Dispose();
-                }
+                _content?.Dispose();
             }
         }
 
@@ -248,10 +230,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

@@ -23,6 +23,6 @@ namespace System.IO.Strategies
 
         internal abstract void Flush(bool flushToDisk);
 
-        internal abstract void DisposeInternal(bool disposing);
+        internal void DisposeInternal(bool disposing) => Dispose(disposing);
     }
 }

@@ -18,9 +18,9 @@ namespace System
         }
 
         // Terminates this process with the given exit code.
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
         [DoesNotReturn]
-        private static extern void _Exit(int exitCode);
+        private static partial void _Exit(int exitCode);
 
         [DoesNotReturn]
         public static void Exit(int exitCode) => _Exit(exitCode);
@@ -59,10 +59,9 @@ namespace System
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string? message, Exception? exception, string? errorMessage);
+        internal static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string[] GetCommandLineArgsNative();
+        private static string[]? s_commandLineArgs;
 
         public static string[] GetCommandLineArgs()
         {
@@ -84,8 +83,24 @@ namespace System
                 GetCommandLineArgsNative();
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
-        private static extern int GetProcessorCount();
+        private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
+        {
+            string[] commandLineArgs = new string[argc + 1];
+            string[] mainMethodArgs = new string[argc];
+
+            commandLineArgs[0] = new string(exePath);
+
+            for (int i = 0; i < mainMethodArgs.Length; i++)
+            {
+                 commandLineArgs[i + 1] = mainMethodArgs[i] = new string(argv[i]);
+            }
+
+            s_commandLineArgs = commandLineArgs;
+            return mainMethodArgs;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
+        private static partial int GetProcessorCount();
 
         // Used by VM
         internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);

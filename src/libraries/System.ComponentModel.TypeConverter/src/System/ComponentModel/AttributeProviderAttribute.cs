@@ -15,7 +15,9 @@ namespace System.ComponentModel
         /// </summary>
         public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] string typeName)
         {
-            TypeName = typeName ?? throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
+
+            TypeName = typeName;
         }
 
         /// <summary>
@@ -23,8 +25,11 @@ namespace System.ComponentModel
         /// </summary>
         public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] string typeName, string propertyName)
         {
-            TypeName = typeName ?? throw new ArgumentNullException(nameof(typeName));
-            PropertyName = propertyName ?? throw new ArgumentNullException(nameof(propertyName));
+            ArgumentNullException.ThrowIfNull(typeName);
+            ArgumentNullException.ThrowIfNull(propertyName);
+
+            TypeName = typeName;
+            PropertyName = propertyName;
         }
 
         /// <summary>
@@ -32,10 +37,7 @@ namespace System.ComponentModel
         /// </summary>
         public AttributeProviderAttribute([DynamicallyAccessedMembers(RequiredMemberTypes)] Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             TypeName = type.AssemblyQualifiedName;
         }

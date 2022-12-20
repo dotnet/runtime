@@ -291,42 +291,42 @@ namespace System.Xml.Tests
 
         public static void CreateByteTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
+
             tw.WriteLine("x");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateUTF8EncodedTestFile(string strFileName, Encoding encode)
         {
-            Stream strm = new MemoryStream();
-            TextWriter tw = new StreamWriter(strm, encode);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encode, bufferSize:-1, leaveOpen:true);
 
             tw.WriteLine("<root>");
             tw.Write("\u00A9");
             tw.WriteLine("</root>");
 
-            tw.Flush();
-            FilePathUtil.addStream(strFileName, strm);
+            FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateEncodedTestFile(string strFileName, Encoding encode)
         {
-            Stream strm = new MemoryStream();
-            TextWriter tw = new StreamWriter(strm, encode);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encode, bufferSize:-1, leaveOpen:true);
 
             tw.WriteLine("<root>");
             tw.WriteLine("</root>");
 
-            tw.Flush();
-            FilePathUtil.addStream(strFileName, strm);
+            FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateWhitespaceHandlingTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
+
             tw.WriteLine("<!DOCTYPE dt [");
             tw.WriteLine("<!ELEMENT WHITESPACE1 (#PCDATA)*>");
             tw.WriteLine("<!ELEMENT WHITESPACE2 (#PCDATA)*>");
@@ -337,7 +337,7 @@ namespace System.Xml.Tests
             tw.WriteLine("<WHITESPACE2> <ELEM /> </WHITESPACE2>");
             tw.WriteLine("<WHITESPACE3>\t<ELEM />\t</WHITESPACE3>");
             tw.WriteLine("</doc>");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
@@ -350,8 +350,9 @@ namespace System.Xml.Tests
         }
         public static void CreateGenericTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
+
             tw.WriteLine("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
             tw.WriteLine("<!-- comment1 -->");
             tw.WriteLine("<?PI1_First processing instruction?>");
@@ -425,7 +426,6 @@ namespace System.Xml.Tests
             tw.WriteLine("<CHARS_COMMENT1>xxx<!-- comment1-->zzz</CHARS_COMMENT1>");
             tw.WriteLine("<CHARS_COMMENT2><!-- comment1-->zzz</CHARS_COMMENT2>");
             tw.WriteLine("<CHARS_COMMENT3>xxx<!-- comment1--></CHARS_COMMENT3>");
-            tw.Flush();
             tw.WriteLine("<ISDEFAULT />");
             tw.WriteLine("<ISDEFAULT a1='a1value' />");
             tw.WriteLine("<BOOLEAN1>true</BOOLEAN1>");
@@ -457,7 +457,6 @@ namespace System.Xml.Tests
             tw.WriteLine("<GRPDESCR>twin brothers, and sons to Aegeon and Aemilia.</GRPDESCR>");
             tw.WriteLine("</PGROUP>");
             tw.WriteLine("<PGROUP>");
-            tw.Flush();
             tw.WriteLine("<XMLLANG0 xml:lang=\"en-US\">What color NO_REFERENCEe1; is it?</XMLLANG0>");
             tw.Write("<XMLLANG1 xml:lang=\"en-GB\">What color is it?<a><b><c>Language Test</c><PERSONA>DROMIO OF EPHESUS</PERSONA></b></a></XMLLANG1>");
             tw.WriteLine("<NOXMLLANG />");
@@ -523,7 +522,6 @@ namespace System.Xml.Tests
             tw.WriteLine("<VALIDXMLLANG3 xml:lang=\"a b-cd\" />");
 
             tw.Write("</PLAY>");
-            tw.Flush();
             FilePathUtil.addStream(strFileName, s);
         }
 
@@ -561,17 +559,18 @@ namespace System.Xml.Tests
 
         public static void CreateInvalidNamespaceTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
+
             tw.WriteLine("<NAMESPACE0 xmlns:bar=\"1\"><bar1:check>Namespace=1</bar1:check></NAMESPACE0>");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateNamespaceTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
 
             tw.WriteLine("<DOCNAMESPACE>");
             tw.WriteLine("<NAMESPACE0 xmlns:bar=\"1\"><bar:check>Namespace=1</bar:check></NAMESPACE0>");
@@ -585,14 +584,15 @@ namespace System.Xml.Tests
             tw.WriteLine("<a13 a:check=\"Namespace=13\" xmlns:a=\"13\" /><check14 xmlns=\"14\">Namespace=14</check14></NAMESPACE3>");
             tw.WriteLine("<NONAMESPACE>Namespace=\"\"</NONAMESPACE>");
             tw.WriteLine("</DOCNAMESPACE>");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateXmlLangTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
+
             tw.WriteLine("<PGROUP>");
             tw.WriteLine("<PERSONA>DROMIO OF EPHESUS</PERSONA>");
             tw.WriteLine("<PERSONA>DROMIO OF SYRACUSE</PERSONA>");
@@ -603,14 +603,14 @@ namespace System.Xml.Tests
             tw.WriteLine("<XMLLANG2 xml:lang=\"en-US\">What color is it?<TITLE><!-- this is a comment--></TITLE><XMLLANG1 xml:lang=\"en-GB\">Testing language<XMLLANG0 xml:lang=\"en-US\">What color is it?</XMLLANG0>haha </XMLLANG1>hihihi</XMLLANG2>");
             tw.WriteLine("<DONEXMLLANG />");
             tw.WriteLine("</PGROUP>");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateXmlSpaceTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
 
             tw.WriteLine("<PGROUP>");
             tw.WriteLine("<PERSONA>DROMIO OF EPHESUS</PERSONA>");
@@ -622,18 +622,18 @@ namespace System.Xml.Tests
             tw.WriteLine("<XMLSPACE2A xml:space=\'default\'>&lt; <XMLSPACE3 xml:space=\'preserve\'>  &lt; &gt; <XMLSPACE4 xml:space=\'default\'>  &lt; &gt;  </XMLSPACE4> test </XMLSPACE3> &gt;</XMLSPACE2A>");
             tw.WriteLine("<GRPDESCR>twin brothers, and attendants on the two Antipholuses.</GRPDESCR>");
             tw.WriteLine("</PGROUP>");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateJunkTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
 
             string str = new string('Z', (1 << 20) - 1);
             tw.Write(str);
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
@@ -661,8 +661,10 @@ namespace System.Xml.Tests
             {
                 WriteToBuffer(ref WTextOnly, ref WTextOnlylen, System.BitConverter.GetBytes(strBase64[i]));
             }
-            MemoryStream mems = new MemoryStream();
-            XmlWriter w = XmlWriter.Create(mems, null);
+
+            var mems = new MemoryStream();
+            using var w = XmlWriter.Create(mems, new XmlWriterSettings { CloseOutput = false });
+
             w.WriteStartDocument();
             w.WriteStartElement("Root");
             w.WriteStartElement("ElemAll");
@@ -697,7 +699,7 @@ namespace System.Xml.Tests
             w.WriteRaw("D2BAa<MIX></MIX>AQID");
             w.WriteEndElement();
             w.WriteEndElement();
-            w.Flush();
+
             FilePathUtil.addStream(strFileName, mems);
         }
 
@@ -725,14 +727,14 @@ namespace System.Xml.Tests
             {
                 WriteToBuffer(ref WTextOnly, ref WTextOnlylen, System.BitConverter.GetBytes(strBinHex[i]));
             }
-            MemoryStream mems = new MemoryStream();
 
-            XmlWriter w = XmlWriter.Create(mems);
+            var mems = new MemoryStream();
+            using var w = XmlWriter.Create(mems, new XmlWriterSettings { CloseOutput = false });
+
             w.WriteStartElement("Root");
             w.WriteStartElement("ElemAll");
             w.WriteBinHex(Wbinhex, 0, (int)Wbinhexlen);
             w.WriteEndElement();
-            w.Flush();
 
             w.WriteStartElement("ElemEmpty");
             w.WriteString(string.Empty);
@@ -759,68 +761,67 @@ namespace System.Xml.Tests
             w.WriteElementString("ElemErr", "a&A2A3");
 
             w.WriteEndElement();
-            w.Flush();
+
             FilePathUtil.addStream(strFileName, mems);
         }
 
         public static void CreateBigElementTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
 
             string str = new string('Z', (1 << 20) - 1);
             tw.WriteLine("<Root>");
             tw.Write("<");
             tw.Write(str);
             tw.WriteLine("X />");
-            tw.Flush();
 
             tw.Write("<");
             tw.Write(str);
             tw.WriteLine("Y />");
             tw.WriteLine("</Root>");
 
-            tw.Flush();
             FilePathUtil.addStream(strFileName, s);
         }
         public static void CreateXSLTStyleSheetWCopyTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
+
             tw.WriteLine("<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">");
             tw.WriteLine("<xsl:template match=\"/\">");
             tw.WriteLine("<xsl:copy-of select=\"/\" />");
             tw.WriteLine("</xsl:template>");
             tw.WriteLine("</xsl:stylesheet>");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateConstructorTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
 
             tw.WriteLine("<?xml version=\"1.0\"?>");
             tw.WriteLine("<ROOT>");
             tw.WriteLine("<ATTRIBUTE3 a1='a1value' a2='a2value' a3='a3value' />");
             tw.Write("</ROOT>");
-            tw.Flush();
+
             FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateLineNumberTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
 
             FilePathUtil.addStream(strFileName, s);
         }
 
         public static void CreateLbNormalizationTestFile(string strFileName)
         {
-            Stream s = new MemoryStream();
-            TextWriter tw = new StreamWriter(s);
+            var s = new MemoryStream();
+            using var tw = new StreamWriter(s, encoding:null, bufferSize:-1, leaveOpen:true);
 
             FilePathUtil.addStream(strFileName, s);
         }

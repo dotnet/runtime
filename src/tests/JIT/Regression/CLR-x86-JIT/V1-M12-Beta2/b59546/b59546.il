@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly bug {}
+.assembly 'b59546' {}
 .assembly extern xunit.core {}
 .class public bug
 {

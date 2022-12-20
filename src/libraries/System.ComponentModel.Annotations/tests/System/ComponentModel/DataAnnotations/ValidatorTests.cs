@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
@@ -331,6 +332,16 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(2, validationResults.Count);
             Assert.Contains(validationResults, x => x.ErrorMessage == "ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value");
             Assert.Contains(validationResults, x => x.ErrorMessage == "The SecondPropertyToBeTested field is not a valid phone number.");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has always thrown for this case. See https://github.com/dotnet/runtime/issues/64207")]
+        public static void TryValidateObject_for_JObject_does_not_throw()
+        {
+            var objectToBeValidated = JObject.Parse("{\"Enabled\":true}");
+            var results = new List<ValidationResult>();
+            Assert.True(Validator.TryValidateObject(objectToBeValidated, new ValidationContext(objectToBeValidated), results, true));
+            Assert.Empty(results);
         }
 
         public class RequiredFailure

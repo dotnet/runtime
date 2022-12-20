@@ -134,7 +134,7 @@ namespace System.Net
                 dataRead = Interop.HttpApi.GetChunks(_httpContext.Request.RequestBuffer, _httpContext.Request.OriginalBlobAddress, ref _dataChunkIndex, ref _dataChunkOffset, buffer, offset, size);
                 if (_dataChunkIndex != -1 && dataRead == size)
                 {
-                    asyncResult = new HttpRequestStreamAsyncResult(_httpContext.RequestQueueBoundHandle, this, state, callback, buffer, offset, (uint)size, 0);
+                    asyncResult = new HttpRequestStreamAsyncResult(_httpContext.RequestQueueBoundHandle, this, state, callback, buffer, offset, 0);
                     asyncResult.InvokeCallback(dataRead);
                 }
             }
@@ -152,7 +152,7 @@ namespace System.Net
                     size = MaxReadSize;
                 }
 
-                asyncResult = new HttpRequestStreamAsyncResult(_httpContext.RequestQueueBoundHandle, this, state, callback, buffer, offset, (uint)size, dataRead);
+                asyncResult = new HttpRequestStreamAsyncResult(_httpContext.RequestQueueBoundHandle, this, state, callback, buffer, offset, dataRead);
                 uint bytesReturned;
 
                 try
@@ -219,10 +219,7 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
 
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
             HttpRequestStreamAsyncResult? castedAsyncResult = asyncResult as HttpRequestStreamAsyncResult;
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {
@@ -291,7 +288,7 @@ namespace System.Net
                 _dataAlreadyRead = dataAlreadyRead;
             }
 
-            internal HttpRequestStreamAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object? userState, AsyncCallback? callback, byte[] buffer, int offset, uint size, uint dataAlreadyRead) : base(asyncObject, userState, callback)
+            internal HttpRequestStreamAsyncResult(ThreadPoolBoundHandle boundHandle, object asyncObject, object? userState, AsyncCallback? callback, byte[] buffer, int offset, uint dataAlreadyRead) : base(asyncObject, userState, callback)
             {
                 _dataAlreadyRead = dataAlreadyRead;
                 _boundHandle = boundHandle;
@@ -307,7 +304,7 @@ namespace System.Net
             private static void IOCompleted(HttpRequestStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} errorCode:0x {errorCode:x8} numBytes: {numBytes}");
-                object? result = null;
+                object? result;
                 try
                 {
                     if (errorCode != Interop.HttpApi.ERROR_SUCCESS && errorCode != Interop.HttpApi.ERROR_HANDLE_EOF)
@@ -318,7 +315,7 @@ namespace System.Net
                     else
                     {
                         result = numBytes;
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(asyncResult, (IntPtr)asyncResult._pPinnedBuffer, (int)numBytes);
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(asyncResult, new ReadOnlySpan<byte>(asyncResult._pPinnedBuffer, (int)numBytes));
                     }
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"asyncResult: {asyncResult} calling Complete()");
                 }

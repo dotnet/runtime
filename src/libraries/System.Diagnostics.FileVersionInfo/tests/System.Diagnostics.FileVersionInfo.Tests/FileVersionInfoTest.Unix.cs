@@ -10,6 +10,7 @@ namespace System.Diagnostics.Tests
     public partial class FileVersionInfoTest
     {
         [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.iOS | TestPlatforms.tvOS))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks mkfifo")]
         [Fact]
         public void NonRegularFile_Throws()
         {
@@ -19,11 +20,11 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void Symlink_ValidFile_Succeeds()
         {
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
-            string linkPath = GetTestFilePath();
+            string linkPath = GetRandomLinkPath();
 
             Assert.Equal(0, symlink(filePath, linkPath));
 
@@ -62,13 +63,13 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void Symlink_InvalidFile_Throws()
         {
             string sourcePath = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
             string filePath = GetTestFilePath();
             File.Copy(sourcePath, filePath);
-            string linkPath = GetTestFilePath();
+            string linkPath = GetRandomLinkPath();
             Assert.Equal(0, symlink(filePath, linkPath));
             File.Delete(filePath);
             Assert.Throws<FileNotFoundException>(() => FileVersionInfo.GetVersionInfo(linkPath));

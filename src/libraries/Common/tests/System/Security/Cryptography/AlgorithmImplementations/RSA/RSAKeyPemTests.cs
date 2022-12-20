@@ -400,7 +400,7 @@ AWvBUt33Sozc+dF0l7NGLAWL2tqkkpyDQuKn6UgYz/vxkFeQAVfSuaJVR+fUlHg0
 N4lD7/hJq7b+yYPhlN3Fvvt8M9MtRg1TLAve67CA2v4TITHB06M/ELe3y42bZuLW
 CA7ffFk=
 -----END ENCRYPTED PRIVATE KEY-----";
-                rsa.ImportFromEncryptedPem(pem, "test");
+                rsa.ImportFromEncryptedPem(pem, (ReadOnlySpan<char>)"test");
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
                 ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
@@ -425,7 +425,7 @@ E+nr7hyinl51raM1RSHojJB22oOW+GwV7GgWYIjUgIEMDOhN10FcGNfTeC65PCXx
 5QSEe7EKVF0aHXBYB5SzMGVuxR/BqydDa26jlhVzO3LNvy9FYuqLKUslCrBCmPrt
 raZNyk8KAsLs+FJq9T2tda0=
 -----END ENCRYPTED PRIVATE KEY-----";
-                rsa.ImportFromEncryptedPem(pem, Encoding.UTF8.GetBytes("test"));
+                rsa.ImportFromEncryptedPem(pem, "test"u8);
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
                 ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
@@ -462,9 +462,8 @@ AWvBUt33Sozc+dF0l7NGLAWL2tqkkpyDQuKn6UgYz/vxkFeQAVfSuaJVR+fUlHg0
 N4lD7/hJq7b+yYPhlN3Fvvt8M9MtRg1TLAve67CA2v4TITHB06M/ELe3y42bZuLW
 CA7ffFk=
 -----END ENCRYPTED PRIVATE KEY-----";
-                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
-                    rsa.ImportFromEncryptedPem(pem, passwordBytes));
+                    rsa.ImportFromEncryptedPem(pem, "test"u8));
                 Assert.Contains(AmbiguousExceptionMarker, ae.Message);
             }
         }
@@ -475,9 +474,8 @@ CA7ffFk=
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = "these aren't the PEMs we're looking for.";
-                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
-                    rsa.ImportFromEncryptedPem(pem, passwordBytes));
+                    rsa.ImportFromEncryptedPem(pem, "test"u8));
                 Assert.Contains(NoPemExceptionMarker, ae.Message);
             }
         }
@@ -498,9 +496,8 @@ Ya8CHwiO/cUU9RIt8A2B84gf2ZfuV2nPMaSuZpTPFC/K5UsCIQCsJMzx1JuilQAN
 acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
 9juGNbOPhoEL
 -----END PRIVATE KEY-----";
-                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
-                    rsa.ImportFromEncryptedPem(pem, passwordBytes));
+                    rsa.ImportFromEncryptedPem(pem, "test"u8));
                 Assert.Contains(NoPemExceptionMarker, ae.Message);
             }
         }

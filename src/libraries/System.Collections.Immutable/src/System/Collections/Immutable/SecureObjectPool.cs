@@ -38,10 +38,10 @@ namespace System.Collections.Immutable
         }
     }
 
-    internal sealed class SecureObjectPool<T, TCaller>
+    internal static class SecureObjectPool<T, TCaller>
         where TCaller : ISecurePooledObjectUser
     {
-        public void TryAdd(TCaller caller, SecurePooledObject<T> item)
+        public static void TryAdd(TCaller caller, SecurePooledObject<T> item)
         {
             // Only allow the caller to recycle this object if it is the current owner.
             if (caller.PoolUserId == item.Owner)
@@ -51,7 +51,7 @@ namespace System.Collections.Immutable
             }
         }
 
-        public bool TryTake(TCaller caller, out SecurePooledObject<T>? item)
+        public static bool TryTake(TCaller caller, out SecurePooledObject<T>? item)
         {
             if (caller.PoolUserId != SecureObjectPool.UnassignedId && AllocFreeConcurrentStack<SecurePooledObject<T>>.TryTake(out item))
             {
@@ -65,7 +65,7 @@ namespace System.Collections.Immutable
             }
         }
 
-        public SecurePooledObject<T> PrepNew(TCaller caller, T newValue)
+        public static SecurePooledObject<T> PrepNew(TCaller caller, T newValue)
         {
             Requires.NotNullAllowStructs(newValue, nameof(newValue));
             var pooledObject = new SecurePooledObject<T>(newValue);

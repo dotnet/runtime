@@ -12,15 +12,13 @@ namespace System.DirectoryServices.Protocols
     {
         public static byte[] Encode(string format, params object[] value)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
+            ArgumentNullException.ThrowIfNull(format);
 
             // no need to turn on invalid encoding detection as we just do string->byte[] conversion.
             UTF8Encoding utf8Encoder = new UTF8Encoding();
             byte[] encodingResult = null;
             // value is allowed to be null in certain scenario, so if it is null, just set it to empty array.
-            if (value == null)
-                value = Array.Empty<object>();
+            value ??= Array.Empty<object>();
 
             Debug.WriteLine("Begin encoding\n");
 
@@ -166,7 +164,7 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     string[] stringValues = (string[])value[valueCount];
-                    byte[][] tempValues = null;
+                    byte[][] tempValues;
                     if (stringValues != null)
                     {
                         tempValues = new byte[stringValues.Length][];
@@ -251,7 +249,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             // get the binary value back
-            berval binaryValue = new berval();
+            BerVal binaryValue = new BerVal();
             IntPtr flattenptr = IntPtr.Zero;
 
             try
@@ -303,13 +301,12 @@ namespace System.DirectoryServices.Protocols
 
         internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
+            ArgumentNullException.ThrowIfNull(format);
 
             Debug.WriteLine("Begin decoding");
 
             UTF8Encoding utf8Encoder = new UTF8Encoding(false, true);
-            berval berValue = new berval();
+            BerVal berValue = new BerVal();
             ArrayList resultList = new ArrayList();
             SafeBerHandle berElement = null;
 
@@ -338,7 +335,7 @@ namespace System.DirectoryServices.Protocols
                     Marshal.FreeHGlobal(berValue.bv_val);
             }
 
-            int error = 0;
+            int error;
 
             for (int formatCount = 0; formatCount < format.Length; formatCount++)
             {
@@ -360,7 +357,7 @@ namespace System.DirectoryServices.Protocols
                         if (fmt == 'b')
                         {
                             // should return a bool
-                            bool boolResult = false;
+                            bool boolResult;
                             if (result == 0)
                                 boolResult = false;
                             else
@@ -378,7 +375,7 @@ namespace System.DirectoryServices.Protocols
                 else if (fmt == 'a')
                 {
                     // return a string
-                    byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', ref error);
+                    byte[] byteArray = DecodingByteArrayHelper(berElement, 'O', out error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
                         string s = null;
@@ -390,8 +387,8 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (fmt == 'O')
                 {
-                    // return berval
-                    byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, ref error);
+                    // return BerVal
+                    byte[] byteArray = DecodingByteArrayHelper(berElement, fmt, out error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
                         // add result to the list
@@ -405,10 +402,10 @@ namespace System.DirectoryServices.Protocols
                 else if (fmt == 'v')
                 {
                     //null terminate strings
-                    byte[][] byteArrayresult = null;
+                    byte[][] byteArrayresult;
                     string[] stringArray = null;
 
-                    byteArrayresult = DecodingMultiByteArrayHelper(berElement, 'V', ref error);
+                    byteArrayresult = DecodingMultiByteArrayHelper(berElement, 'V', out error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
                         if (byteArrayresult != null)
@@ -432,9 +429,9 @@ namespace System.DirectoryServices.Protocols
                 }
                 else if (fmt == 'V')
                 {
-                    byte[][] result = null;
+                    byte[][] result;
 
-                    result = DecodingMultiByteArrayHelper(berElement, fmt, ref error);
+                    result = DecodingMultiByteArrayHelper(berElement, fmt, out error);
                     if (!BerPal.IsBerDecodeError(error))
                     {
                         resultList.Add(result);
@@ -465,7 +462,7 @@ namespace System.DirectoryServices.Protocols
 
         private static int EncodingByteArrayHelper(SafeBerHandle berElement, byte[] tempValue, char fmt, nuint tag)
         {
-            int error = 0;
+            int error;
 
             // one byte array, one int arguments
             if (tempValue != null)
@@ -484,11 +481,10 @@ namespace System.DirectoryServices.Protocols
             return error;
         }
 
-        private static byte[] DecodingByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
+        private static byte[] DecodingByteArrayHelper(SafeBerHandle berElement, char fmt, out int error)
         {
-            error = 0;
             IntPtr result = IntPtr.Zero;
-            berval binaryValue = new berval();
+            BerVal binaryValue = new BerVal();
             byte[] byteArray = null;
 
             // can't use SafeBerval here as CLR creates a SafeBerval which points to a different memory location, but when doing memory
@@ -519,11 +515,10 @@ namespace System.DirectoryServices.Protocols
             return byteArray;
         }
 
-        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
+        private static unsafe int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
         {
             IntPtr berValArray = IntPtr.Zero;
-            IntPtr tempPtr = IntPtr.Zero;
-            berval[] managedBervalArray = null;
+            BerVal[] managedBervalArray = null;
             int error = 0;
 
             try
@@ -532,15 +527,16 @@ namespace System.DirectoryServices.Protocols
                 {
                     int i = 0;
                     berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
-                    int structSize = Marshal.SizeOf(typeof(berval));
-                    managedBervalArray = new berval[tempValue.Length];
+                    int structSize = Marshal.SizeOf(typeof(BerVal));
+                    managedBervalArray = new BerVal[tempValue.Length];
+                    void** pBerValArray = (void**)berValArray;
 
                     for (i = 0; i < tempValue.Length; i++)
                     {
                         byte[] byteArray = tempValue[i];
 
-                        // construct the managed berval
-                        managedBervalArray[i] = new berval();
+                        // construct the managed BerVal
+                        managedBervalArray[i] = new BerVal();
 
                         if (byteArray != null)
                         {
@@ -553,12 +549,10 @@ namespace System.DirectoryServices.Protocols
                         IntPtr valPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedBervalArray[i], valPtr, false);
 
-                        tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, valPtr);
+                        pBerValArray[i] = (void*)valPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pBerValArray[i] = null;
                 }
 
                 error = BerPal.PrintBerArray(berElement, new string(fmt, 1), berValArray, tag);
@@ -577,7 +571,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 if (managedBervalArray != null)
                 {
-                    foreach (berval managedBerval in managedBervalArray)
+                    foreach (BerVal managedBerval in managedBervalArray)
                     {
                         if (managedBerval.bv_val != IntPtr.Zero)
                         {
@@ -590,14 +584,13 @@ namespace System.DirectoryServices.Protocols
             return error;
         }
 
-        private static byte[][] DecodingMultiByteArrayHelper(SafeBerHandle berElement, char fmt, ref int error)
+        private static byte[][] DecodingMultiByteArrayHelper(SafeBerHandle berElement, char fmt, out int error)
         {
-            error = 0;
-            // several berval
+            // several BerVal
             IntPtr ptrResult = IntPtr.Zero;
             int i = 0;
             ArrayList binaryList = new ArrayList();
-            IntPtr tempPtr = IntPtr.Zero;
+            IntPtr tempPtr;
             byte[][] result = null;
 
             try
@@ -611,7 +604,7 @@ namespace System.DirectoryServices.Protocols
                         tempPtr = Marshal.ReadIntPtr(ptrResult);
                         while (tempPtr != IntPtr.Zero)
                         {
-                            berval ber = new berval();
+                            BerVal ber = new BerVal();
                             Marshal.PtrToStructure(tempPtr, ber);
 
                             byte[] berArray = new byte[ber.bv_len];

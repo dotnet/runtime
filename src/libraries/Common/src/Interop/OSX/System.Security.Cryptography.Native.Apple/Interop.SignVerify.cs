@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
@@ -47,7 +45,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyVerifySignature(
             SafeSecKeyRefHandle publicKey,
             byte* pbDataHash,
@@ -79,7 +77,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyCreateSignature(
             SafeSecKeyRefHandle privateKey,
             byte* pbDataHash,

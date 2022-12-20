@@ -24,10 +24,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             ICompositionElement? origin)
             : base(contractName, requiredTypeIdentity, requiredMetadata, cardinality, isRecomposable, isPrerequisite, requiredCreationPolicy, metadata, origin)
         {
-            if (contractName == null)
-            {
-                throw new ArgumentNullException(nameof(contractName));
-            }
+            ArgumentNullException.ThrowIfNull(contractName);
 
             _importingLazyMember = importingLazyMember;
         }

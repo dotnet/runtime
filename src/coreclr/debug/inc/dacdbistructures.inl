@@ -79,7 +79,7 @@ void DacDbiArrayList<T>::Dealloc()
 }
 
 // Alloc and Init are very similar.  Both preallocate the array; but Alloc leaves the
-// contents unintialized while Init provides initial values. The array contents are always
+// contents uninitialized while Init provides initial values. The array contents are always
 // mutable.
 
 // allocate space for the list--in some instances, we'll know the count first, and then
@@ -640,8 +640,6 @@ void FieldData::ClearFields()
     m_pFldStaticAddress = NULL;
 }
 
-typedef ULONG_PTR SIZE_T;
-
 inline
 BOOL FieldData::OkToGetOrSetInstanceOffset()
 {
@@ -712,14 +710,14 @@ void EnCHangingFieldInfo::Init(VMPTR_Object     pObject,
                                mdFieldDef       fieldToken,
                                CorElementType   elementType,
                                mdTypeDef        metadataToken,
-                               VMPTR_DomainFile vmDomainFile)
+                               VMPTR_DomainAssembly vmDomainAssembly)
     {
         m_vmObject = pObject;
         m_offsetToVars = offset;
         m_fldToken = fieldToken;
         m_objectTypeData.elementType = elementType;
         m_objectTypeData.metadataToken = metadataToken;
-        m_objectTypeData.vmDomainFile = vmDomainFile;
+        m_objectTypeData.vmDomainAssembly = vmDomainAssembly;
     }
 
 

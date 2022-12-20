@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ctor_null1 { }
+.assembly 'b415164' { }
 .assembly extern xunit.core {}
  
 .class private auto ansi sealed MyDelegate
@@ -37,7 +37,7 @@
     call  void [System.Console]System.Console::WriteLine(string)
     ret
   }
-  .method public hidebysig static int32 Main(class System.String[] args) il managed
+  .method public hidebysig static int32 Main() il managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

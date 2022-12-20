@@ -12,7 +12,6 @@ namespace System.Net.Mail
     {
         internal bool disposed;
         private readonly MimePart _part = new MimePart();
-        private static readonly char[] s_contentCIDInvalidChars = new char[] { '<', '>' };
 
         internal AttachmentBase()
         {
@@ -69,15 +68,7 @@ namespace System.Net.Mail
 
         internal void SetContentFromFile(string fileName, ContentType? contentType)
         {
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
-            if (fileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
 
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _part.SetContent(stream, contentType);
@@ -85,15 +76,7 @@ namespace System.Net.Mail
 
         internal void SetContentFromFile(string fileName, string? mediaType)
         {
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
-            if (fileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
 
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _part.SetContent(stream, null, mediaType);
@@ -101,15 +84,9 @@ namespace System.Net.Mail
 
         internal void SetContentFromString(string content, ContentType? contentType)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
-            if (_part.Stream != null)
-            {
-                _part.Stream.Close();
-            }
+            _part.Stream?.Close();
 
             Encoding encoding;
 
@@ -143,15 +120,9 @@ namespace System.Net.Mail
 
         internal void SetContentFromString(string content, Encoding? encoding, string? mediaType)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
-            if (_part.Stream != null)
-            {
-                _part.Stream.Close();
-            }
+            _part.Stream?.Close();
 
             if (string.IsNullOrEmpty(mediaType))
             {
@@ -162,10 +133,10 @@ namespace System.Net.Mail
             int offset = 0;
             try
             {
-                string value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
+                string value = MailBnfHelper.ReadToken(mediaType, ref offset);
                 if (value.Length == 0 || offset >= mediaType.Length || mediaType[offset++] != '/')
                     throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
-                value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
+                value = MailBnfHelper.ReadToken(mediaType, ref offset);
                 if (value.Length == 0 || offset < mediaType.Length)
                 {
                     throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
@@ -233,7 +204,7 @@ namespace System.Net.Mail
                     ContentId = cid;
                     return cid;
                 }
-                if (cid.Length >= 2 && cid[0] == '<' && cid[cid.Length - 1] == '>')
+                if (cid.StartsWith('<') && cid.EndsWith('>'))
                 {
                     return cid.Substring(1, cid.Length - 2);
                 }
@@ -248,7 +219,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    if (value.IndexOfAny(s_contentCIDInvalidChars) != -1)
+                    if (value.AsSpan().IndexOfAny('<', '>') >= 0) // invalid chars
                     {
                         throw new ArgumentException(SR.MailHeaderInvalidCID, nameof(value));
                     }

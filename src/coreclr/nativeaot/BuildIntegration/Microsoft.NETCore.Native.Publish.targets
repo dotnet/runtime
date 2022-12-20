@@ -1,0 +1,110 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="_ComputeIlcCompileInputs"
+          BeforeTargets="ComputeIlcCompileInputs"
+          DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+    <ItemGroup>
+      <IlcReference Include="@(_ManagedResolvedAssembliesToPublish)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    This target hooks into the dotnet CLI publish pipeline. That pipeline has
+    a target called ComputeFilesToPublish which produces the ItemGroup
+    ResolvedFileToPublish based on the inputs of @(IntermediateAssembly)
+    and @(ResolvedAssembliesToPublish). We modify those two item groups
+    to control what gets published after NativeAOT optimizes the application.
+  -->
+  <Target Name="ComputeLinkedFilesToPublish"
+          BeforeTargets="ComputeResolvedFilesToPublishList"
+          DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
+
+    <ItemGroup>
+      <_ResolvedCopyLocalPublishAssets Remove="@(_AssembliesToSkipPublish)" />
+      <_ResolvedCopyLocalPublishAssets Include="@(_LinkedResolvedAssemblies)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_NativeIntermediateAssembly Include="@(IntermediateAssembly->'$(NativeOutputPath)%(Filename)$(NativeBinaryExt)')" />
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+      <IntermediateAssembly Include="@(_NativeIntermediateAssembly)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Filter the input publish file list selecting managed assemblies for compilation.
+    Also produces _AssembliesToSkipPublish which chops out things from the publish
+    pipeline we don't want to see in the output (native images, CoreCLR artifacts)
+    until we get a proper AOT NetCore app package.
+  -->
+  <UsingTask TaskName="ComputeManagedAssembliesToCompileToNative" AssemblyFile="$(IlcBuildTasksPath)" />
+  <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+
+    <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json that is not supported by PublishAot. Move the configuration to the project file using RuntimeHostConfigurationOption." />
+    
+    <!-- Fail with descriptive error message for common mistake. -->
+    <Error Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))" Text=".NET SDK 6+ is required for native compilation." />
+    <Error Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))" Text="For native compilation, the project needs to target .NET 6 or higher." />
+    <Error Condition="'$(RuntimeIdentifier)' == ''"
+      Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
+    <Error Condition="'$(GeneratePackageOnBuild)' == 'true'" Text="GeneratePackageOnBuild is not supported for native compilation." />
+    <Error Condition="'$(OutputType)' != 'Library' and '$(NativeLib)' != ''" Text="NativeLib requires OutputType=Library." />
+
+    <Error Condition="'$(PublishTrimmed)' == 'false'" Text="PublishTrimmed is implied by native compilation and cannot be disabled." />
+
+    <Error Condition="'$(PublishAot)' == 'true' and '$(PublishSingleFile)' == 'true'" Text="PublishAot and PublishSingleFile cannot be specified at the same time." />
+
+    <!-- Fail with descriptive error message for common unsupported cases. -->
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))"
+      Text="Cross-OS native compilation is not supported." />
+
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))"
+      Text="Cross-OS native compilation is not supported." />
+
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !($(RuntimeIdentifier.EndsWith('x64')) or $(RuntimeIdentifier.EndsWith('arm64')))"
+      Text="Native compilation does not support targeting $(RuntimeIdentifier) yet." />
+
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(IlcHostArch)' == 'x64' or '$(IlcHostArch)' == 'arm64')"
+      Text="Native compilation can run on x64 and arm64 hosts only." />
+
+    <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != '' and ('$(IlcHostArch)' == 'x64' or '$(IlcHostArch)' == 'arm64')"
+      Text="Add a PackageReference for '$(IlcHostPackageName)' to allow cross-compilation for $(TargetArchitecture)" />
+
+    <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
+    <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+
+    <ComputeManagedAssembliesToCompileToNative
+      Assemblies="@(_ResolvedCopyLocalPublishAssets)"
+      DotNetAppHostExecutableName="$(_DotNetAppHostExecutableName)"
+      DotNetHostFxrLibraryName="$(_DotNetHostFxrLibraryName)"
+      DotNetHostPolicyLibraryName="$(_DotNetHostPolicyLibraryName)"
+      SdkAssemblies="@(PrivateSdkAssemblies)"
+      FrameworkAssemblies="@(FrameworkAssemblies)">
+
+      <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
+      <Output TaskParameter="AssembliesToSkipPublish" ItemName="_AssembliesToSkipPublish" />
+    </ComputeManagedAssembliesToCompileToNative>
+
+  </Target>
+
+  <Target Name="CopyNativeBinary" AfterTargets="Publish">
+    <!-- replace apphost with binary we generated during native compilation -->
+    <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
+    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" DestinationFolder="$(PublishDir)" />
+
+    <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
+    <Delete Files="$(PublishDir)\$(TargetName).pdb" />
+
+    <PropertyGroup>
+      <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
+      <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
+    </PropertyGroup>    
+
+    <!-- replace native symbol file if it exists -->
+    <Delete Files="$(PublishDir)\$(TargetName)$(_symbolExt)" />
+    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(_symbolExt)" DestinationFolder="$(PublishDir)"
+      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)')" />
+  </Target>
+
+</Project>

@@ -23,7 +23,8 @@ internal static partial class Interop
             internal const int FILE_FLAG_OVERLAPPED = 0x40000000;
 
             internal const int FILE_LIST_DIRECTORY = 0x0001;
-        }
 
+            internal const int FILE_WRITE_ATTRIBUTES = 0x100;
+        }
     }
 }

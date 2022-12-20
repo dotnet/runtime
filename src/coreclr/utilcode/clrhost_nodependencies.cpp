@@ -39,13 +39,13 @@ void DisableThrowCheck()
 }
 
 #ifdef HAS_ADDRESS_SANITIZER
-// use the functionality from address santizier (which does not throw exceptions)
+// use the functionality from address sanitizer (which does not throw exceptions)
 #else
 
 #define CLRThrowsExceptionWorker() RealCLRThrowsExceptionWorker(__FUNCTION__, __FILE__, __LINE__)
 
-static void RealCLRThrowsExceptionWorker(__in_z const char *szFunction,
-                                         __in_z const char *szFile,
+static void RealCLRThrowsExceptionWorker(_In_z_ const char *szFunction,
+                                         _In_z_ const char *szFile,
                                          int lineNum)
 {
     WRAPPER_NO_CONTRACT;
@@ -216,7 +216,7 @@ ClrDebugState *CLRInitDebugState()
 const NoThrow nothrow = { 0 };
 
 #if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-// use standard heap functions for address santizier
+// use standard heap functions for address sanitizer
 #else
 
 #ifdef _DEBUG
@@ -350,7 +350,7 @@ operator new[](size_t n)
 void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
 {
 #if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-    // use standard heap functions for address santizier (which doesn't provide for NoThrow)
+    // use standard heap functions for address sanitizer (which doesn't provide for NoThrow)
 	void * result = operator new(n);
 #else
     STATIC_CONTRACT_NOTHROW;
@@ -369,7 +369,7 @@ void * __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT
 void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
 {
 #if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-    // use standard heap functions for address santizier (which doesn't provide for NoThrow)
+    // use standard heap functions for address sanitizer (which doesn't provide for NoThrow)
 	void * result = operator new[](n);
 #else
     STATIC_CONTRACT_NOTHROW;
@@ -386,7 +386,7 @@ void * __cdecl operator new[](size_t n, const NoThrow&) NOEXCEPT
 }
 
 #if defined(HAS_ADDRESS_SANITIZER) || defined(DACCESS_COMPILE)
-// use standard heap functions for address santizier
+// use standard heap functions for address sanitizer
 #else
 void __cdecl
 operator delete(void *p) NOEXCEPT

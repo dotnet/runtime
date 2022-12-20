@@ -117,12 +117,9 @@ namespace System.Xml
         //Precision        Length
         //    0            invalid
         //    1-9            1
-        //    10-19        2
-        //    20-28        3
-        //    29-38        4
-        // The array in Shiloh. Listed here for comparison.
-        //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
-        //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
+        //    10-19          2
+        //    20-28          3
+        //    29-38          4
         private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] { // rely on C# compiler optimization to eliminate allocation
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
         };
@@ -455,7 +452,7 @@ Error:
         {
             if (val < 0)
                 goto Error;
-            val = val / 4; // trim indicator bits
+            val /= 4; // trim indicator bits
             int totalMin = (int)(val % (29 * 60)) - 60 * 14;
             long totalDays = val / (29 * 60);
 
@@ -480,7 +477,7 @@ Error:
         {
             if (val < 0)
                 goto Error;
-            val = val / 4; // trim indicator bits
+            val /= 4; // trim indicator bits
             ms = (int)(val % 1000);
             val /= 1000;
             sec = (int)(val % 60);

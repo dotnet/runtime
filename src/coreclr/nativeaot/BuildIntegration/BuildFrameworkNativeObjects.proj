@@ -1,0 +1,47 @@
+<Project DefaultTargets="CreateLib" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <IlcCompileDependsOn>ComputeIlcCompileInputs;BuildOneFrameworkLibrary;SetupOSSpecificProps</IlcCompileDependsOn>
+    <CreateLibDependsOn>BuildAllFrameworkLibrariesAsSingleLib</CreateLibDependsOn>
+    <IlcMultiModule>true</IlcMultiModule>
+    <NativeIntermediateOutputPath Condition="'$(FrameworkObjPath)' != ''">$(FrameworkObjPath)\</NativeIntermediateOutputPath>
+    <BuildingFrameworkLibrary>true</BuildingFrameworkLibrary>
+    <Optimize Condition="'$(Configuration)' == 'Release' and '$(Optimize)' == ''">true</Optimize>
+    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(IlcCalledViaPackage)' == 'true'" />
+  <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(IlcCalledViaPackage)' == ''" />
+
+  <Target Name="BuildAllFrameworkLibraries"
+    Inputs="@(DefaultFrameworkAssemblies)"
+    Outputs="@(DefaultFrameworkAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')">
+    <ItemGroup>
+      <ProjectToBuild Include="$(MSBuildProjectFullPath)">
+        <AdditionalProperties>
+          LibraryToCompile=%(DefaultFrameworkAssemblies.Identity)
+        </AdditionalProperties>
+      </ProjectToBuild>
+    </ItemGroup>
+    <MSBuild Projects="@(ProjectToBuild)" Targets="IlcCompile" BuildInParallel="true" />
+  </Target>
+
+  <Target Name="BuildAllFrameworkLibrariesAsSingleLib"
+    DependsOnTargets="BuildAllFrameworkLibraries">
+
+    <ItemGroup>
+      <LibInputs Include="$(NativeIntermediateOutputPath)\*$(NativeObjectExt)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="BuildOneFrameworkLibrary">
+    <PropertyGroup>
+      <IlcGenerateMetadataLog>true</IlcGenerateMetadataLog>
+    </PropertyGroup>
+    <ItemGroup>
+      <ManagedBinary Include="$(LibraryToCompile)" />
+      <IlcCompileInput Include="@(ManagedBinary)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

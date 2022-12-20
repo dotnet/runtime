@@ -41,7 +41,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 },
                 async s =>
                 {
-                    using (LoopbackServer.Connection connection = await s.EstablishConnectionAsync().ConfigureAwait(false))
+                    await using (LoopbackServer.Connection connection = await s.EstablishConnectionAsync().ConfigureAwait(false))
                     {
                         SslStream sslStream = connection.Stream as SslStream;
                         Assert.NotNull(sslStream);
@@ -54,7 +54,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
 // Disabling it for full .Net Framework due to a missing ALPN API which leads to a protocol downgrade
 #if !NETFRAMEWORK
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version2004Build19573OrGreater))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version19573OrGreater))]
         public async Task UseClientCertOnHttp2_OSSupportsIt_Success()
         {
             using X509Certificate2 clientCert = Test.Common.Configuration.Certificates.GetClientCertificate();
@@ -76,7 +76,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 },
                 async s =>
                 {
-                    using (Http2LoopbackConnection connection = await s.EstablishConnectionAsync().ConfigureAwait(false))
+                    await using (Http2LoopbackConnection connection = await s.EstablishConnectionAsync().ConfigureAwait(false))
                     {
                         SslStream sslStream = connection.Stream as SslStream;
                         Assert.NotNull(sslStream);

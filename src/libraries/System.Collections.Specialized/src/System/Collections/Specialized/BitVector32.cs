@@ -10,7 +10,7 @@ namespace System.Collections.Specialized
     ///    <para>Provides a simple light bit vector with easy integer or Boolean access to
     ///       a 32 bit storage.</para>
     /// </devdoc>
-    public struct BitVector32
+    public struct BitVector32 : IEquatable<BitVector32>
     {
         private uint _data;
 
@@ -136,10 +136,7 @@ namespace System.Collections.Specialized
 
         private static Section CreateSectionHelper(short maxValue, short priorMask, short priorOffset)
         {
-            if (maxValue < 1)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidValue_TooSmall, nameof(maxValue), 1), nameof(maxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(maxValue, 1);
 
             short offset = (short)(priorOffset + BitOperations.PopCount((uint)(ushort)priorMask));
             if (offset >= 32)
@@ -151,7 +148,12 @@ namespace System.Collections.Specialized
             return new Section(mask, offset);
         }
 
-        public override bool Equals([NotNullWhen(true)] object? o) => o is BitVector32 other && _data == other._data;
+        public override bool Equals([NotNullWhen(true)] object? o) => o is BitVector32 other && Equals(other);
+
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(BitVector32 other) => _data == other._data;
 
         public override int GetHashCode() => _data.GetHashCode();
 
@@ -182,7 +184,7 @@ namespace System.Collections.Specialized
         ///    <para>
         ///       Represents an section of the vector that can contain a integer number.</para>
         /// </devdoc>
-        public readonly struct Section
+        public readonly struct Section : IEquatable<Section>
         {
             private readonly short _mask;
             private readonly short _offset;

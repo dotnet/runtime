@@ -6,25 +6,18 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
     public static class MarshallerHelpers
     {
-        public static readonly ExpressionSyntax IsWindows = InvocationExpression(
-                                                        MemberAccessExpression(
-                                                            SyntaxKind.SimpleMemberAccessExpression,
-                                                            ParseTypeName("System.OperatingSystem"),
-                                                            IdentifierName("IsWindows")));
-
-        public static readonly TypeSyntax InteropServicesMarshalType = ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal);
-
         public static readonly TypeSyntax SystemIntPtrType = ParseTypeName(TypeNames.System_IntPtr);
 
-        public static ForStatementSyntax GetForLoop(string collectionIdentifier, string indexerIdentifier)
+        public static ForStatementSyntax GetForLoop(ExpressionSyntax lengthExpression, string indexerIdentifier)
         {
-            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <collectionIdentifier>.Length; ++<indexerIdentifier>)
+            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <lengthIdentifier>; ++<indexerIdentifier>)
             //      ;
             return ForStatement(EmptyStatement())
             .WithDeclaration(
@@ -32,7 +25,7 @@ namespace Microsoft.Interop
                     PredefinedType(
                         Token(SyntaxKind.IntKeyword)))
                 .WithVariables(
-                    SingletonSeparatedList<VariableDeclaratorSyntax>(
+                    SingletonSeparatedList(
                         VariableDeclarator(
                             Identifier(indexerIdentifier))
                         .WithInitializer(
@@ -44,10 +37,7 @@ namespace Microsoft.Interop
                 BinaryExpression(
                     SyntaxKind.LessThanExpression,
                     IdentifierName(indexerIdentifier),
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(collectionIdentifier),
-                        IdentifierName("Length"))))
+                    lengthExpression))
             .WithIncrementors(
                 SingletonSeparatedList<ExpressionSyntax>(
                     PrefixUnaryExpression(
@@ -57,17 +47,22 @@ namespace Microsoft.Interop
 
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
+            return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
+        }
+
+        public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, ExpressionSyntax? initializer)
+        {
             VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
-            if (initializeToDefault)
+            if (initializer is not null)
             {
                 decl = decl.WithInitializer(
                     EqualsValueClause(
-                        LiteralExpression(SyntaxKind.DefaultLiteralExpression)));
+                        initializer));
             }
 
             // <type> <identifier>;
             // or
-            // <type> <identifier> = default;
+            // <type> <identifier> = <initializer>;
             return LocalDeclarationStatement(
                 VariableDeclaration(
                     typeSyntax,
@@ -97,14 +92,64 @@ namespace Microsoft.Interop
             return spanElementTypeSyntax;
         }
 
+
+        // Marshal.SetLastSystemError(<errorCode>);
+        public static StatementSyntax CreateClearLastSystemErrorStatement(int errorCode) =>
+            ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("SetLastSystemError")),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode)))))));
+
+        // <lastError> = Marshal.GetLastSystemError();
+        public static StatementSyntax CreateGetLastSystemErrorStatement(string lastErrorIdentifier) =>
+            ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(lastErrorIdentifier),
+                    InvocationExpression(
+                        MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("GetLastSystemError")))));
+
+        // Marshal.SetLastPInvokeError(<lastError>);
+        public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
+            ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("SetLastPInvokeError")),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(IdentifierName(lastErrorIdentifier))))));
+
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "marshaller");
         }
 
+        public static string GetManagedSpanIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "managedSpan");
+        }
+
         public static string GetNativeSpanIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "nativeSpan");
+        }
+
+        public static string GetNumElementsIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "numElements");
+        }
+
+        internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
         }
 
         /// <summary>
@@ -189,7 +234,7 @@ namespace Microsoft.Interop
             // If we have edges left, then we have a cycle.
             if (edgeMap.AnyEdges)
             {
-                throw new InvalidOperationException(Resources.GraphHasCycles);
+                throw new InvalidOperationException(SR.GraphHasCycles);
             }
 
             // If we make it here, we have a topologically sorted list.
@@ -232,60 +277,118 @@ namespace Microsoft.Interop
         public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
             MarshallingInfo elementMarshallingInfo)
         {
-            if (elementMarshallingInfo is NativeContiguousCollectionMarshallingInfo nestedCollection)
+            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
             {
                 if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
                 {
-                    yield return nestedCountElement;
+                    // Do not include dependent elements with no managed or native index.
+                    // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.
+                    if (nestedCountElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedCountElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                    {
+                        yield return nestedCountElement;
+                    }
                 }
-                foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
+                foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in nestedCollection.Marshallers.Modes)
                 {
-                    yield return nestedElements;
+                    foreach (TypePositionInfo nestedElement in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
+                    {
+                        if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                        {
+                            yield return nestedElement;
+                        }
+                    }
                 }
             }
         }
 
-        public static class StringMarshaller
+        public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubCodeContext context)
         {
-            public static ExpressionSyntax AllocationExpression(CharEncoding encoding, string managedIdentifier)
+            (TargetFramework fmk, _) = context.GetTargetFramework();
+            if (info.ManagedType is not PointerTypeInfo
+                && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
+                && fmk is TargetFramework.Net)
             {
-                string methodName = encoding switch
+                // Use the Unsafe.SkipInit<T> API when available and
+                // managed type is usable as a generic parameter.
+                return ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                            IdentifierName("SkipInit")))
+                    .WithArgumentList(
+                        ArgumentList(SingletonSeparatedList(
+                            Argument(IdentifierName(info.InstanceIdentifier))
+                            .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))));
+            }
+            else
+            {
+                // Assign out params to default
+                return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(info.InstanceIdentifier),
+                        LiteralExpression(
+                            SyntaxKind.DefaultLiteralExpression,
+                            Token(SyntaxKind.DefaultKeyword))));
+            }
+        }
+
+        /// <summary>
+        /// Get the marshalling direction for a given <see cref="TypePositionInfo"/> in a given <see cref="StubCodeContext"/>.
+        /// For example, an out parameter is marshalled in the <see cref="MarshalDirection.UnmanagedToManaged"/> direction in a <see cref="MarshalDirection.ManagedToUnmanaged"/> stub,
+        /// but from <see cref="MarshalDirection.ManagedToUnmanaged"/> in a <see cref="MarshalDirection.UnmanagedToManaged"/> stub.
+        /// </summary>
+        /// <param name="info">The info for an element.</param>
+        /// <param name="context">The context for the stub.</param>
+        /// <returns>The direction the element is marshalled.</returns>
+        public static MarshalDirection GetMarshalDirection(TypePositionInfo info, StubCodeContext context)
+        {
+            if (context.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.UnmanagedToManaged))
+            {
+                throw new ArgumentException("Stub context direction must not be bidirectional.");
+            }
+
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+            {
+                if (info.IsManagedReturnPosition)
                 {
-                    CharEncoding.Utf8 => "StringToCoTaskMemUTF8", // Not in .NET Standard 2.0, so we use the hard-coded name
-                    CharEncoding.Utf16 => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemUni),
-                    CharEncoding.Ansi => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemAnsi),
-                    _ => throw new System.ArgumentOutOfRangeException(nameof(encoding))
-                };
-
-                // Marshal.StringToCoTaskMemUTF8(<managed>)
-                // or
-                // Marshal.StringToCoTaskMemUni(<managed>)
-                // or
-                // Marshal.StringToCoTaskMemAnsi(<managed>)
-                return InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        InteropServicesMarshalType,
-                        IdentifierName(methodName)),
-                    ArgumentList(
-                        SingletonSeparatedList<ArgumentSyntax>(
-                            Argument(IdentifierName(managedIdentifier)))));
+                    return MarshalDirection.UnmanagedToManaged;
+                }
+                if (!info.IsByRef)
+                {
+                    return MarshalDirection.ManagedToUnmanaged;
+                }
+                switch (info.RefKind)
+                {
+                    case RefKind.In:
+                        return MarshalDirection.ManagedToUnmanaged;
+                    case RefKind.Ref:
+                        return MarshalDirection.Bidirectional;
+                    case RefKind.Out:
+                        return MarshalDirection.UnmanagedToManaged;
+                }
+                throw new UnreachableException("An element is either a return value or passed by value or by ref.");
             }
 
-            public static ExpressionSyntax FreeExpression(string nativeIdentifier)
+
+            if (info.IsNativeReturnPosition)
             {
-                // Marshal.FreeCoTaskMem((IntPtr)<nativeIdentifier>)
-                return InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        InteropServicesMarshalType,
-                        IdentifierName(nameof(System.Runtime.InteropServices.Marshal.FreeCoTaskMem))),
-                    ArgumentList(SingletonSeparatedList(
-                        Argument(
-                            CastExpression(
-                                SystemIntPtrType,
-                                IdentifierName(nativeIdentifier))))));
+                return MarshalDirection.ManagedToUnmanaged;
             }
+            if (!info.IsByRef)
+            {
+                return MarshalDirection.UnmanagedToManaged;
+            }
+            switch (info.RefKind)
+            {
+                case RefKind.In:
+                    return MarshalDirection.UnmanagedToManaged;
+                case RefKind.Ref:
+                    return MarshalDirection.Bidirectional;
+                case RefKind.Out:
+                    return MarshalDirection.ManagedToUnmanaged;
+            }
+            throw new UnreachableException("An element is either a return value or passed by value or by ref.");
         }
     }
 }

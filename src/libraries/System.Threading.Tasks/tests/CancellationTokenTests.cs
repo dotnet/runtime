@@ -805,7 +805,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// ensure that calling ctr.Dipose() from within a cancellation callback will not deadlock.
+        /// ensure that calling ctr.Dispose() from within a cancellation callback will not deadlock.
         /// </summary>
         /// <returns></returns>
         [Fact]
@@ -861,7 +861,7 @@ namespace System.Threading.Tasks.Tests
                 }
                 else
                 {
-                    Assert.True(false, string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - Exception Occurred (not an ODE!!): " + ex));
+                    Assert.True(false, string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - Exception Occurred (not an ODE!): " + ex));
                 }
             }
         }

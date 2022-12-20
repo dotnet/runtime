@@ -16,7 +16,7 @@ namespace System.IO.Tests
             return Directory.GetDirectories(path);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void EnumerateWithSymLinkToDirectory()
         {
             DirectoryInfo containingFolder = Directory.CreateDirectory(GetTestFilePath());
@@ -25,7 +25,7 @@ namespace System.IO.Tests
             DirectoryInfo targetDir = Directory.CreateDirectory(GetTestFilePath());
             {
                 // Create a symlink to a folder that exists
-                string linkPath = Path.Combine(containingFolder.FullName, Path.GetRandomFileName());
+                string linkPath = Path.Combine(containingFolder.FullName, GetRandomLinkName());
                 Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetDir.FullName, isDirectory: true));
 
                 Assert.True(Directory.Exists(linkPath));

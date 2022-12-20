@@ -9,7 +9,7 @@ namespace System.Reflection.Context.Projection
 {
     internal abstract class Projector
     {
-        [return: NotNullIfNotNull("values")]
+        [return: NotNullIfNotNull(nameof(values))]
         public IList<T>? Project<T>(IList<T>? values, Func<T, T> project)
         {
             if (values == null || values.Count == 0)
@@ -20,7 +20,7 @@ namespace System.Reflection.Context.Projection
             return Array.AsReadOnly(projected);
         }
 
-        [return: NotNullIfNotNull("values")]
+        [return: NotNullIfNotNull(nameof(values))]
         public T[]? Project<T>(T[]? values, Func<T, T> project)
         {
             if (values == null || values.Length == 0)
@@ -42,44 +42,44 @@ namespace System.Reflection.Context.Projection
             return value;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract TypeInfo? ProjectType(Type? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract Assembly? ProjectAssembly(Assembly? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract Module? ProjectModule(Module? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract FieldInfo? ProjectField(FieldInfo? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract EventInfo? ProjectEvent(EventInfo? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract ConstructorInfo? ProjectConstructor(ConstructorInfo? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract MethodInfo? ProjectMethod(MethodInfo? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract MethodBase? ProjectMethodBase(MethodBase? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract PropertyInfo? ProjectProperty(PropertyInfo? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract ParameterInfo? ProjectParameter(ParameterInfo? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract MethodBody? ProjectMethodBody(MethodBody? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract LocalVariableInfo? ProjectLocalVariable(LocalVariableInfo? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract ExceptionHandlingClause? ProjectExceptionHandlingClause(ExceptionHandlingClause? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract CustomAttributeData? ProjectCustomAttributeData(CustomAttributeData? value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract ManifestResourceInfo? ProjectManifestResource(ManifestResourceInfo? value);
         public abstract CustomAttributeTypedArgument ProjectTypedArgument(CustomAttributeTypedArgument value);
         public abstract CustomAttributeNamedArgument ProjectNamedArgument(CustomAttributeNamedArgument value);
         public abstract InterfaceMapping ProjectInterfaceMapping(InterfaceMapping value);
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public abstract MemberInfo? ProjectMember(MemberInfo? value);
 
-        [return: NotNullIfNotNull("values")]
-        public Type[]? Unproject(Type[]? values)
+        [return: NotNullIfNotNull(nameof(values))]
+        public static Type[]? Unproject(Type[]? values)
         {
             if (values == null)
                 return null;
@@ -93,8 +93,8 @@ namespace System.Reflection.Context.Projection
             return newTypes;
         }
 
-        [return: NotNullIfNotNull("value")]
-        public Type? Unproject(Type? value)
+        [return: NotNullIfNotNull(nameof(value))]
+        public static Type? Unproject(Type? value)
         {
             if (value is ProjectingType projectingType)
                 return projectingType.UnderlyingType;

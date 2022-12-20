@@ -478,6 +478,7 @@ FORCEINLINE bool AwareLock::TryEnterHelper(Thread* pCurThread)
     if (m_lockState.InterlockedTryLock())
     {
         m_HoldingThread = pCurThread;
+        m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return true;
     }
@@ -523,6 +524,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
 
         // Lock was acquired and the spinner was not registered
         m_HoldingThread = pCurThread;
+        m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return EnterHelperResult_Entered;
     }
@@ -554,6 +556,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper
 
     // Lock was acquired and spinner was unregistered
     m_HoldingThread = pCurThread;
+    m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
     return EnterHelperResult_Entered;
 }
@@ -576,6 +579,7 @@ FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
 
     // Spinner was unregistered and the lock was acquired
     m_HoldingThread = pCurThread;
+    m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
     return true;
 }
@@ -602,7 +606,11 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         }
 
         LONG newValue = oldValue | tid;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#else   
         if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#endif
         {
             return AwareLock::EnterHelperResult_Entered;
         }
@@ -628,10 +636,10 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         return AwareLock::EnterHelperResult_Contention;
     }
 
-    // The header is transitioning - treat this as if the lock was taken
+    // The header is transitioning - use the slow path
     if (oldValue & BIT_SBLK_SPIN_LOCK)
     {
-        return AwareLock::EnterHelperResult_Contention;
+        return AwareLock::EnterHelperResult_UseSlowPath;
     }
 
     // Here we know we have the "thin lock" layout, but the lock is not free.
@@ -650,7 +658,11 @@ FORCEINLINE AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelper(Thread
         return AwareLock::EnterHelperResult_UseSlowPath;
     }
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+    if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#else
     if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
+#endif
     {
         return AwareLock::EnterHelperResult_Entered;
     }
@@ -686,6 +698,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
     if (--m_Recursion == 0)
     {
         m_HoldingThread = NULL;
+        m_HoldingOSThreadId = 0;
 
         // Clear lock bit and determine whether we must signal a waiter to wake
         if (!m_lockState.InterlockedUnlock())
@@ -723,7 +736,12 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
         {
             // We are leaving the lock
             DWORD newValue = (syncBlockValue & (~SBLK_MASK_LOCK_THREADID));
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            if (FastInterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
+#else
             if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
+#endif
             {
                 return AwareLock::LeaveHelperAction_Yield;
             }
@@ -732,7 +750,11 @@ FORCEINLINE AwareLock::LeaveHelperAction ObjHeader::LeaveObjMonitorHelper(Thread
         {
             // recursion and ThinLock
             DWORD newValue = syncBlockValue - SBLK_LOCK_RECLEVEL_INC;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            if (FastInterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
+#else
             if (InterlockedCompareExchangeRelease((LONG*)&m_SyncBlockValue, newValue, syncBlockValue) != (LONG)syncBlockValue)
+#endif
             {
                 return AwareLock::LeaveHelperAction_Yield;
             }

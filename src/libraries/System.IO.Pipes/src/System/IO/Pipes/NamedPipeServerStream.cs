@@ -94,14 +94,7 @@ namespace System.IO.Pipes
             int outBufferSize,
             HandleInheritability inheritability)
         {
-            if (pipeName == null)
-            {
-                throw new ArgumentNullException(nameof(pipeName));
-            }
-            if (pipeName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonemptyPipeName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(pipeName);
             if (direction < PipeDirection.In || direction > PipeDirection.InOut)
             {
                 throw new ArgumentOutOfRangeException(nameof(direction), SR.ArgumentOutOfRange_DirectionModeInOutOrInOut);
@@ -114,14 +107,8 @@ namespace System.IO.Pipes
             {
                 throw new ArgumentOutOfRangeException(nameof(options), SR.ArgumentOutOfRange_OptionsInvalid);
             }
-            if (inBufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (outBufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(outBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(inBufferSize);
+            ArgumentOutOfRangeException.ThrowIfNegative(outBufferSize);
             if ((maxNumberOfServerInstances < 1 || maxNumberOfServerInstances > 254) && (maxNumberOfServerInstances != MaxAllowedServerInstances))
             {
                 // win32 allows fixed values of 1-254 or 255 to mean max allowed by system. We expose 255 as -1 (unlimited)
@@ -148,10 +135,8 @@ namespace System.IO.Pipes
         public NamedPipeServerStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, PipeTransmissionMode.Byte, 0)
         {
-            if (safePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(safePipeHandle));
-            }
+            ArgumentNullException.ThrowIfNull(safePipeHandle);
+
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));

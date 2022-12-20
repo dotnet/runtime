@@ -150,11 +150,11 @@
 *  LWSTDAPI_(BOOL) StrToIntExA(
 *      LPCSTR pszString,  //  No annotation required, const implies __in.
 *      DWORD dwFlags,
-*      __out int *piRet   // A pointer whose dereference will be filled in.
+*      _Out_ int *piRet   // A pointer whose dereference will be filled in.
 *  );
 *
 *  void MyPaintingFunction(
-*      __in HWND hwndControl,     //  An initialized read-only parameter.
+*      _In_ HWND hwndControl,     //  An initialized read-only parameter.
 *      __in_opt HDC hdcOptional,  //  An initialized read-only parameter that
 *                                 //  might be NULL.
 *      __inout IPropertyStore *ppsStore // An initialized parameter that
@@ -192,14 +192,12 @@
 #define __ecount(size)                                _SAL_VERSION_CHECK(__ecount)
 #define __bcount(size)                                _SAL_VERSION_CHECK(__bcount)
 #define __xcount(size)                                _SAL_VERSION_CHECK(__xcount)
-#define __in                                          _SAL_VERSION_CHECK(__in)
 #define __in_ecount(size)                             _SAL_VERSION_CHECK(__in_ecount)
 #define __in_bcount(size)                             _SAL_VERSION_CHECK(__in_bcount)
 #define __in_xcount(size)                             _SAL_VERSION_CHECK(__in_xcount)
 #define __in_z                                        _SAL_VERSION_CHECK(__in_z)
 #define __in_ecount_z(size)                           _SAL_VERSION_CHECK(__in_ecount_z)
 #define __in_bcount_z(size)                           _SAL_VERSION_CHECK(__in_bcount_z)
-#define __out                                         _SAL_VERSION_CHECK(__out)
 #define __out_ecount(size)                            _SAL_VERSION_CHECK(__out_ecount)
 #define __out_bcount(size)                            _SAL_VERSION_CHECK(__out_bcount)
 #define __out_xcount(size)                            _SAL_VERSION_CHECK(__out_xcount)
@@ -772,14 +770,14 @@
 *    __field_bcount_full(sz)
 *    char *buf;
 *   };
-*   void InitBuf(__out struct *buf_s b,int sz) {
+*   void InitBuf(_Out_ struct *buf_s b,int sz) {
 *        b->buf = calloc(sz,sizeof(char));
 *        b->sz = sz;
 *   }
-*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {
+*   void WriteBuf(_In_ FILE *fp,_In_ struct *buf_s b) {
 *     fwrite(b->buf,b->sz,sizeof(char),fp);
 *   }
-*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {
+*   void ReadBuf(_In_ FILE *fp,__inout struct *buf_s b) {
 *     fread(b->buf,b->sz,sizeof(char),fp);
 *   }
 *
@@ -791,10 +789,10 @@
 *    __field_bcount(sz)
 *    char buf[1];
 *   };
-*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {
+*   void WriteBuf(_In_ FILE *fp,_In_ struct *buf_s b) {
 *     fwrite(&(b->buf),b->sz,sizeof(char),fp);
 *   }
-*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {
+*   void ReadBuf(_In_ FILE *fp,__inout struct *buf_s b) {
 *     fread(&(b->buf),b->sz,sizeof(char),fp);
 *   }
 *
@@ -805,10 +803,10 @@
 *   struct buf_s {
 *    int sz;
 *   };
-*   void WriteBuf(__in FILE *fp,__in struct *buf_s b) {
+*   void WriteBuf(_In_ FILE *fp,_In_ struct *buf_s b) {
 *     fwrite(&b,b->sz,sizeof(char),fp);
 *   }
-*   void ReadBuf(__in FILE *fp,__inout struct *buf_s b) {
+*   void ReadBuf(_In_ FILE *fp,__inout struct *buf_s b) {
 *     fread(&b,b->sz,sizeof(char),fp);
 *   }
 *
@@ -876,7 +874,7 @@
 *  EMF                     - Windows Enhanced Metafile
 *  GIF                     - Graphics Interchange Format
 *  MIME_TYPE               - MIME type from header tokens
-*  MAIL_MONIKER            - MAIL information refered by URL moniker
+*  MAIL_MONIKER            - MAIL information referred by URL moniker
 *  HTML                    - HyperText Markup Language
 *  WMPHOTO                 - Windows media photo
 *  OE_VCARD                - Outlook Express virtual card
@@ -1007,7 +1005,7 @@
 * Macros deprecated with strict level greater then 1.
 **************************************************************************/
 #if (__SPECSTRINGS_STRICT_LEVEL > 1)
-/* Must come before macro defintions */
+/* Must come before macro definitions */
 #pragma deprecated(__in_nz)
 #pragma deprecated(__in_ecount_nz)
 #pragma deprecated(__in_bcount_nz)
@@ -1139,7 +1137,7 @@
 
 /**************************************************************************
 *  This should go away. It's only for __success which we should split into.
-*  __success and __typdecl_sucess
+*  __success and __typdecl_success
 ***************************************************************************/
 #define __$allowed_on_function_or_typedecl /* empty */
 #if (__SPECSTRINGS_STRICT_LEVEL == 1) || (__SPECSTRINGS_STRICT_LEVEL == 2)

@@ -1,15 +1,7 @@
-<Project TreatAsLocalProperty="TargetOS">
+<Project>
   <PropertyGroup>
     <SkipInferTargetOSName>true</SkipInferTargetOSName>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
-
-    <_projectDirName>$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)'))</_projectDirName>
-    <IsReferenceAssembly Condition="'$(_projectDirName)' == 'ref'">true</IsReferenceAssembly>
-    <IsSourceProject Condition="'$(_projectDirName)' == 'src'">true</IsSourceProject>
-    <IsGeneratorProject Condition="'$(_projectDirName)' == 'gen'">true</IsGeneratorProject>
-
-    <!-- Set OutDirName to change BaseOutputPath and BaseIntermediateOutputPath to include the ref subfolder. -->
-    <OutDirName Condition="'$(IsReferenceAssembly)' == 'true'">$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref</OutDirName>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
@@ -19,46 +11,6 @@
     <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
-    <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
-    <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
-  </PropertyGroup>
-
-  <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" Condition="'$(UseTargetFrameworkSDK)' != 'false'" />
-
-  <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
-  <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
-    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
-    <!-- To suppress warnings about reseting the assembly version.-->
-    <AssemblyVersion />
-  </PropertyGroup>
-
-  <!-- Define test projects and companions -->
-  <PropertyGroup Condition="'$(IsSourceProject)' != 'true'">
-    <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
-    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
-
-    <IsTestSupportProject>false</IsTestSupportProject>
-    <IsTestSupportProject Condition="($(MSBuildProjectFullPath.Contains('\tests\')) or $(MSBuildProjectFullPath.Contains('/tests/'))) and '$(IsTestProject)' != 'true'">true</IsTestSupportProject>
-
-    <IsTrimmingTestProject Condition="$(MSBuildProjectName.EndsWith('.TrimmingTests'))">true</IsTrimmingTestProject>
-
-    <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
-    <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">false</IsShipping>
-  </PropertyGroup>
-
-  <!-- Warnings that should be disabled in our test projects. -->
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">
-    <!-- don't warn on usage of BinaryFormatter from test projects -->
-    <NoWarn>$(NoWarn);SYSLIB0011</NoWarn>
-    <!-- allow nullable annotated files to be incorporated into tests without warning -->
-    <Nullable Condition="'$(Nullable)' == '' and '$(Language)' == 'C#'">annotations</Nullable>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <RunApiCompatForSrc>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunApiCompatForSrc>
-    <RunMatchingRefApiCompat>$([MSBuild]::ValueOrDefault('$(IsSourceProject)', 'false'))</RunMatchingRefApiCompat>
-    <ApiCompatEnforceOptionalRules>true</ApiCompatEnforceOptionalRules>
-    <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt,$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt</ApiCompatExcludeAttributeList>
   </PropertyGroup>
 
   <ItemGroup>
@@ -67,36 +19,31 @@
   </ItemGroup>
 
   <Import Project="NetCoreAppLibrary.props" />
-  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssembly)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.props" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
 
   <PropertyGroup>
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
-    <!-- TODO: Remove condition when all libraries migrated from pkgprojs to NuGet's Pack Task. -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
-    <IsPackable Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) and '$(IsSourceProject)' == 'true'">true</IsPackable>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <!--
-      Microsoft.NET.TargetFrameworkInference.targets appends the TargetFramework.
-      We do this manually and use the Configuration instead.
-    -->
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- Libraries packages use the incremental servicing infrastructure. -->
+    <PackageUseIncrementalServicingVersion>true</PackageUseIncrementalServicingVersion>
   </PropertyGroup>
 
   <!-- Language configuration -->
   <PropertyGroup>
-    <!-- We decided to keep this disabled by default: https://github.com/dotnet/runtime/issues/15152 -->
-    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
     <!-- Disable analyzers for tests and unsupported projects -->
-    <RunAnalyzers Condition="'$(IsTestProject)' != 'true' and '$(IsSourceProject)' != 'true'">false</RunAnalyzers>
+    <RunAnalyzers Condition="'$(IsTestProject)' != 'true' and '$(IsSourceProject)' != 'true' and '$(IsGeneratorProject)' != 'true'">false</RunAnalyzers>
     <!-- Enable documentation file generation by the compiler for all libraries except for vbproj. -->
     <GenerateDocumentationFile Condition="'$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.vbproj'">true</GenerateDocumentationFile>
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">true</CLSCompliant>
+    <!-- Nullability is enabled by default except for test projects, which instead default to annotations. -->
+    <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' != 'true'">enable</Nullable>
+    <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' == 'true'">annotations</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <EditorConfigFiles Remove="$(RepositoryEngineeringDir)CodeAnalysis.src.globalconfig" />
@@ -107,8 +54,6 @@
   <PropertyGroup>
     <!-- Helix properties -->
     <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig>
-    <AnyOSPlatformConfig>AnyOS.AnyCPU.$(Configuration)</AnyOSPlatformConfig>
-    <UnixPlatformConfig>Unix.$(Platform).$(Configuration)</UnixPlatformConfig>
     <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
     <TestArchiveTestsRoot Condition="$(IsFunctionalTest) != true">$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
     <TestArchiveTestsRoot Condition="$(IsFunctionalTest) == true">$(TestArchiveRoot)runonly/</TestArchiveTestsRoot>
@@ -118,9 +63,6 @@
 
     <UseAppBundleRootForBuildingTests Condition="'$(ArchiveTests)' == 'true' and '$(BuildTestsOnHelix)' != 'true' and '$(TargetsAppleMobile)' == 'true'">true</UseAppBundleRootForBuildingTests>
     <AppBundleRoot Condition="'$(UseAppBundleRootForBuildingTests)' == 'true'">$(ArtifactsDir)bundles\</AppBundleRoot>
-
-    <NetCoreAppCurrentRefPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref', '$(NetCoreAppCurrent)'))</NetCoreAppCurrentRefPath>
-    <NetCoreAppCurrentRuntimePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NetCoreAppCurrentRuntimePath>
 
     <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
@@ -144,13 +86,13 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)sdk-no-workload\</SdkWithNoWorkloadForTestingPath>
+    <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-none\</SdkWithNoWorkloadForTestingPath>
     <SdkWithNoWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithNoWorkloadForTestingPath)))</SdkWithNoWorkloadForTestingPath>
 
     <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
     <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
 
-    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-workload\</SdkWithWorkloadForTestingPath>
+    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-net7+latest\</SdkWithWorkloadForTestingPath>
     <SdkWithWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
 
     <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>

@@ -39,6 +39,7 @@ typedef struct _EventPipeSequencePoint EventPipeSequencePoint;
 typedef struct _EventPipeSequencePointBlock EventPipeSequencePointBlock;
 typedef struct _EventPipeStackBlock EventPipeStackBlock;
 typedef struct _EventPipeStackContents EventPipeStackContents;
+typedef struct _EventPipeStackContentsInstance EventPipeStackContentsInstance;
 typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;

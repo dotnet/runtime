@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.2.2211.0
-//  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
-
-
-
-// Metadata version: v1.1.2211
 .assembly extern legacy library mscorlib {}
 .assembly extern xunit.core {}
 .assembly extern System.Console
@@ -14,7 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'try-finally03'
+.assembly 'try-fault03'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -24,7 +18,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module 'try-finally03.exe'
 // MVID: {64D27B72-3BAB-4B06-AC5B-6ECC5A9F3FB9}
 .imagebase 0x00400000
 .subsystem 0x00000003

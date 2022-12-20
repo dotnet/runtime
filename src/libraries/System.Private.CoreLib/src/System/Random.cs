@@ -42,7 +42,7 @@ namespace System
 
         /// <summary>Constructor used by <see cref="ThreadSafeRandom"/>.</summary>
         /// <param name="isThreadSafeRandom">Must be true.</param>
-        protected private Random(bool isThreadSafeRandom)
+        private protected Random(bool isThreadSafeRandom)
         {
             Debug.Assert(isThreadSafeRandom);
             _impl = null!; // base implementation isn't used at all
@@ -69,10 +69,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than 0.</exception>
         public virtual int Next(int maxValue)
         {
-            if (maxValue < 0)
-            {
-                ThrowMaxValueMustBeNonNegative();
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
 
             int result = _impl.Next(maxValue);
             AssertInRange(result, 0, maxValue);
@@ -117,10 +114,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than 0.</exception>
         public virtual long NextInt64(long maxValue)
         {
-            if (maxValue < 0)
-            {
-                ThrowMaxValueMustBeNonNegative();
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
 
             long result = _impl.NextInt64(maxValue);
             AssertInRange(result, 0, maxValue);
@@ -191,9 +185,6 @@ namespace System
             return result;
         }
 
-        private static void ThrowMaxValueMustBeNonNegative() =>
-            throw new ArgumentOutOfRangeException("maxValue", SR.Format(SR.ArgumentOutOfRange_NeedNonNegNum, "maxValue"));
-
         private static void ThrowMinMaxValueSwapped() =>
             throw new ArgumentOutOfRangeException("minValue", SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));
 
@@ -251,10 +242,7 @@ namespace System
 
             public override int Next(int maxValue)
             {
-                if (maxValue < 0)
-                {
-                    ThrowMaxValueMustBeNonNegative();
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
 
                 int result = LocalRandom.Next(maxValue);
                 AssertInRange(result, 0, maxValue);
@@ -282,10 +270,7 @@ namespace System
 
             public override long NextInt64(long maxValue)
             {
-                if (maxValue < 0)
-                {
-                    ThrowMaxValueMustBeNonNegative();
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
 
                 long result = LocalRandom.NextInt64(maxValue);
                 AssertInRange(result, 0, maxValue);

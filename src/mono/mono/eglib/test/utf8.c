@@ -295,137 +295,6 @@ test_utf8_to_utf16_with_nuls (void)
 	return OK;
 }
 
-typedef struct {
-	char *content;
-	size_t length;
-} convert_result_t;
-
-static RESULT
-test_convert (void)
-{
-	static const char *charsets[] = { "UTF-8", "UTF-16LE", "UTF-16BE", "UTF-32LE", "UTF-32BE" };
-	gsize length, converted_length, n;
-	char *content, *converted, *path;
-	convert_result_t **expected;
-	GError *err = NULL;
-	const char *srcdir;
-	gboolean loaded;
-	guint i, j, k;
-	char c;
-
-	if (!(srcdir = getenv ("srcdir")) && !(srcdir = getenv ("PWD")))
-		return FAILED ("srcdir not defined!");
-
-	expected = g_malloc (sizeof (convert_result_t *) * G_N_ELEMENTS (charsets));
-
-	/* first load all our test samples... */
-	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
-		path = g_strdup_printf ("%s%c%s.txt", srcdir, G_DIR_SEPARATOR, charsets[i]);
-		loaded = g_file_get_contents (path, &content, &length, &err);
-		g_free (path);
-
-		if (!loaded) {
-			for (j = 0; j < i; j++) {
-				g_free (expected[j]->content);
-				g_free (expected[j]);
-			}
-
-			g_free (expected);
-
-			return FAILED ("Failed to load content for %s: %s", charsets[i], err->message);
-		}
-
-		expected[i] = g_malloc (sizeof (convert_result_t));
-		expected[i]->content = content;
-		expected[i]->length = length;
-	}
-
-	/* test conversion from every charset to every other charset */
-	for (i = 0; i < G_N_ELEMENTS (charsets); i++) {
-		for (j = 0; j < G_N_ELEMENTS (charsets); j++) {
-			converted = g_convert (expected[i]->content, expected[i]->length, charsets[j],
-					       charsets[i], NULL, &converted_length, NULL);
-
-			if (converted == NULL) {
-				for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
-					g_free (expected[k]->content);
-					g_free (expected[k]);
-				}
-
-				g_free (expected);
-
-				return FAILED ("Failed to convert from %s to %s: NULL", charsets[i], charsets[j]);
-			}
-
-			if (converted_length != expected[j]->length) {
-				length = expected[j]->length;
-
-				for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
-					g_free (expected[k]->content);
-					g_free (expected[k]);
-				}
-
-				g_free (converted);
-				g_free (expected);
-
-				return FAILED ("Failed to convert from %s to %s: expected %u bytes, got %u",
-					       charsets[i], charsets[j], length, converted_length);
-			}
-
-			for (n = 0; n < converted_length; n++) {
-				if (converted[n] != expected[j]->content[n]) {
-					c = expected[j]->content[n];
-
-					for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
-						g_free (expected[k]->content);
-						g_free (expected[k]);
-					}
-
-					g_free (converted);
-					g_free (expected);
-
-					return FAILED ("Failed to convert from %s to %s: expected 0x%x at offset %u, got 0x%x",
-						       charsets[i], charsets[j], c, n, converted[n]);
-				}
-			}
-
-			g_free (converted);
-		}
-	}
-
-	for (k = 0; k < G_N_ELEMENTS (charsets); k++) {
-		g_free (expected[k]->content);
-		g_free (expected[k]);
-	}
-
-	g_free (expected);
-
-	return OK;
-}
-
-static RESULT
-test_xdigit (void)
-{
-	static char test_chars[] = {
-		'0', '1', '2', '3', '4',
-		'5', '6', '7', '8', '9',
-		'a', 'b', 'c', 'd', 'e', 'f', 'g',
-		'A', 'B', 'C', 'D', 'E', 'F', 'G'};
-	static gint32 test_values[] = {
-		0, 1, 2, 3, 4,
-		5, 6, 7, 8, 9,
-		10, 11, 12, 13, 14, 15, -1,
-		10, 11, 12, 13, 14, 15, -1};
-
-		int i =0;
-
-		for (i = 0; i < sizeof(test_chars); i++)
-			if (g_unichar_xdigit_value ((gunichar)test_chars[i]) != test_values[i])
-				return FAILED("Incorrect value %d at index %d", test_values[i], i);
-
-		return OK;
-}
-
 static RESULT
 ucs4_to_utf16_check_result (const gunichar2 *result_str, const gunichar2 *expected_str,
 			    glong result_items_read, glong expected_items_read,
@@ -823,90 +692,6 @@ utf8_byteslen (const gchar *src)
 	} while (TRUE);
 }
 
-static RESULT
-test_utf8_strcase_each (const gchar *src, const gchar *expected, gboolean strup)
-{
-	gchar *tmp;
-	glong len, len2;
-	RESULT r;
-
-	len = utf8_byteslen (src);
-	tmp = strup ? g_utf8_strup (src, len) : g_utf8_strdown (src, len);
-	len2 = utf8_byteslen (tmp);
-	r = compare_strings_utf8_RESULT (expected, tmp, len < len2 ? len2 : len);
-	g_free (tmp);
-	return r;
-}
-
-static RESULT
-test_utf8_strup_each (const gchar *src, const gchar *expected)
-{
-	return test_utf8_strcase_each (src, expected, TRUE);
-}
-
-static RESULT
-test_utf8_strdown_each (const gchar *src, const gchar *expected)
-{
-	return test_utf8_strcase_each (src, expected, FALSE);
-}
-
-/*
- * g_utf8_strup
- */
-static RESULT
-test_utf8_strup (void)
-{
-	RESULT r;
-
-	if ((r = test_utf8_strup_each ("aBc", "ABC")) != OK)
-		return r;
-	if ((r = test_utf8_strup_each ("x86-64", "X86-64")) != OK)
-		return r;
-	// U+3B1 U+392 -> U+391 U+392
-	if ((r = test_utf8_strup_each ("\xCE\xB1\xCE\x92", "\xCE\x91\xCE\x92")) != OK)
-		return r;
-	// U+FF21 -> U+FF21
-	if ((r = test_utf8_strup_each ("\xEF\xBC\xA1", "\xEF\xBC\xA1")) != OK)
-		return r;
-	// U+FF41 -> U+FF21
-	if ((r = test_utf8_strup_each ("\xEF\xBD\x81", "\xEF\xBC\xA1")) != OK)
-		return r;
-	// U+10428 -> U+10400
-	if ((r = test_utf8_strup_each ("\xF0\x90\x90\xA8", "\xF0\x90\x90\x80")) != OK)
-		return r;
-
-	return OK;
-}
-
-/*
- * g_utf8_strdown
- */
-static RESULT
-test_utf8_strdown (void)
-{
-	RESULT r;
-
-	if ((r = test_utf8_strdown_each ("aBc", "abc")) != OK)
-		return r;
-	if ((r = test_utf8_strdown_each ("X86-64", "x86-64")) != OK)
-		return r;
-	// U+391 U+3B2 -> U+3B1 U+3B2
-	if ((r = test_utf8_strdown_each ("\xCE\x91\xCE\xB2", "\xCE\xB1\xCE\xB2")) != OK)
-		return r;
-/*
-	// U+FF41 -> U+FF41
-	if ((r = test_utf8_strdown_each ("\xEF\xBC\x81", "\xEF\xBC\x81")) != OK)
-		return r;
-	// U+FF21 -> U+FF41
-	if ((r = test_utf8_strdown_each ("\xEF\xBC\xA1", "\xEF\xBD\x81")) != OK)
-		return r;
-	// U+10400 -> U+10428
-	if ((r = test_utf8_strdown_each ("\xF0\x90\x90\x80", "\xF0\x90\x90\xA8")) != OK)
-		return r;
-*/
-	return OK;
-}
-
 /*
  * test initialization
  */
@@ -916,16 +701,12 @@ static Test utf8_tests [] = {
 	{"g_utf8_to_utf16", test_utf8_to_utf16},
 	{"g_utf8_to_utf16_with_nuls", test_utf8_to_utf16_with_nuls},
 	{"g_utf8_seq", test_utf8_seq},
-	{"g_convert", test_convert },
-	{"g_unichar_xdigit_value", test_xdigit },
 	{"g_ucs4_to_utf16", test_ucs4_to_utf16 },
 	{"g_utf16_to_ucs4", test_utf16_to_ucs4 },
 	{"g_utf8_strlen", test_utf8_strlen },
 	{"g_utf8_get_char", test_utf8_get_char },
 	{"g_utf8_next_char", test_utf8_next_char },
 	{"g_utf8_validate", test_utf8_validate },
-	{"g_utf8_strup", test_utf8_strup},
-	{"g_utf8_strdown", test_utf8_strdown},
 	{NULL, NULL}
 };
 

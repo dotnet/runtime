@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -22,28 +23,38 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
+    [JsonSerializable(typeof(HighLowTempsRecord))]
     [JsonSerializable(typeof(byte[]))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
+    [JsonSerializable(typeof(JsonDocument))]
+    [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
+#if NETCOREAPP
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues))]
+#endif
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
     [JsonSerializable(typeof(StructWithCustomConverterFactory))]
     [JsonSerializable(typeof(ClassWithCustomConverterProperty))]
     [JsonSerializable(typeof(StructWithCustomConverterProperty))]
-    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory))]
-    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactoryProperty))]
+    [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
+    [JsonSerializable(typeof(TypeWithValidationAttributes))]
+    [JsonSerializable(typeof(TypeWithDerivedAttribute))]
+    [JsonSerializable(typeof(PolymorphicClass))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     public sealed class MetadataAndSerializationContextTests : RealWorldContextTests
@@ -68,12 +79,15 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyIntermediateType.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.ObjectArray.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.String.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.JsonDocument.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.JsonElement.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithEnumAndNullable.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverter);
@@ -82,12 +96,15 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterFactory);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterProperty);
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterProperty);
-            Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterPropertyFactory);
-            Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterPropertyFactory);
+            Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterFactoryProperty);
+            Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterFactoryProperty);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.ClassWithBadCustomConverter);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.StructWithBadCustomConverter);
             Assert.Null(MetadataAndSerializationContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.PersonStruct.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.TypeWithValidationAttributes.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.TypeWithDerivedAttribute.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.PolymorphicClass.SerializeHandler);
         }
     }
 }

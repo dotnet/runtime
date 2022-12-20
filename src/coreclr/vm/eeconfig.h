@@ -35,7 +35,7 @@ public:
     TypeNamesList();
     ~TypeNamesList();
 
-    HRESULT Init(__in_z LPCWSTR str);
+    HRESULT Init(_In_z_ LPCWSTR str);
     bool IsInList(LPCUTF8 typeName);
 };
 #endif
@@ -90,6 +90,15 @@ public:
     DWORD         TieredCompilation_DeleteCallCountingStubsAfter() const { LIMITED_METHOD_CONTRACT; return tieredCompilation_DeleteCallCountingStubsAfter; }
 #endif
 
+#if defined(FEATURE_PGO)
+    bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
+    bool          TieredPGO_InstrumentOnlyHotCode(void) const { LIMITED_METHOD_CONTRACT;  return tieredPGO_InstrumentOnlyHotCode; }
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    bool          ReadyToRun(void) const { LIMITED_METHOD_CONTRACT;  return fReadyToRun; }
+#endif
+
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     // OSR Config
     DWORD         OSR_CounterBump() const { LIMITED_METHOD_CONTRACT; return dwOSR_CounterBump; }
@@ -135,9 +144,6 @@ public:
 
 #ifdef _DEBUG
     bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
-
-    bool ShouldExposeExceptionsInCOMToConsole()     const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 1) != 0; }
-    bool ShouldExposeExceptionsInCOMToMsgBox()      const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 2) != 0; }
 
     static bool RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input);
 
@@ -244,7 +250,7 @@ public:
         } CONTRACTL_END
         return RegexOrExactMatch(pszBreakOnStructMarshalSetup, className);
     }
-    static HRESULT ParseTypeList(__in_z LPWSTR str, TypeNamesList** out);
+    static HRESULT ParseTypeList(_In_z_ LPWSTR str, TypeNamesList** out);
     static void DestroyTypeList(TypeNamesList* list);
 
     inline bool ShouldGcCoverageOnMethod(LPCUTF8 methodName) const
@@ -491,7 +497,7 @@ private: //----------------------------------------------------------------
     bool   m_fInteropLogArguments; // Log all pinned arguments passed to an interop call
 
 #ifdef _DEBUG
-    static HRESULT ParseMethList(__in_z LPWSTR str, MethodNamesList* * out);
+    static HRESULT ParseMethList(_In_z_ LPWSTR str, MethodNamesList* * out);
     static void DestroyMethList(MethodNamesList* list);
     static bool IsInMethList(MethodNamesList* list, MethodDesc* pMD);
 
@@ -516,8 +522,6 @@ private: //----------------------------------------------------------------
 
     bool   fConditionalContracts;       // Conditional contracts (off inside asserts)
     bool   fSuppressChecks;             // Disable checks (including contracts)
-
-    DWORD  iExposeExceptionsInCOM;      // Should we exposed exceptions that will be transformed into HRs?
 
     unsigned m_SuspendThreadDeadlockTimeoutMs;  // Used in Thread::SuspendThread()
     unsigned m_SuspendDeadlockTimeout; // Used in Thread::SuspendRuntime.
@@ -647,6 +651,15 @@ private: //----------------------------------------------------------------
     DWORD tieredCompilation_BackgroundWorkerTimeoutMs;
     DWORD tieredCompilation_CallCountingDelayMs;
     DWORD tieredCompilation_DeleteCallCountingStubsAfter;
+#endif
+
+#if defined(FEATURE_PGO)
+    bool fTieredPGO;
+    bool tieredPGO_InstrumentOnlyHotCode;
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    bool fReadyToRun;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

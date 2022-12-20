@@ -3,7 +3,7 @@
  * Copyright 2014 Xamarin Inc
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
- 
+
 #ifndef __MONO_SEQ_POINTS_H__
 #define __MONO_SEQ_POINTS_H__
 

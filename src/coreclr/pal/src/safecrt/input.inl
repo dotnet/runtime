@@ -40,9 +40,6 @@
 
 #define UNALIGNED
 
-#define _BEGIN_SECURE_CRT_DEPRECATION_DISABLE
-#define _END_SECURE_CRT_DEPRECATION_DISABLE
-
 #define _CVTBUFSIZE (309+40) /* # of digits in max. dp value + slop */
 
 #define _MBTOWC(x,y,z) _minimal_chartowchar( x, y )
@@ -354,6 +351,7 @@ static int __check_float_string(size_t nFloatStrUsed,
                             break;
 
 #if _INTEGRAL_MAX_BITS >= 64
+                        case _T('z'):
                         case _T('I'):
                             if ( (*(format + 1) == _T('6')) &&
                                  (*(format + 2) == _T('4')) )
@@ -668,7 +666,7 @@ scanit:
                                     } else
 #else  /* _UNICODE */
                                     if (fl_wchar_arg) {
-                                        *(char16_t UNALIGNED *)pointer = ch;
+                                        *(char16_t UNALIGNED *)pointer = (char16_t)ch;
                                         pointer = (char16_t *)pointer + 1;
 #ifdef _SECURE_SCANF
                                         --array_width;
@@ -695,16 +693,12 @@ scanit:
                                     /* convert wide to multibyte */
                                     if (array_width >= ((size_t)MB_CUR_MAX))
                                     {
-_BEGIN_SECURE_CRT_DEPRECATION_DISABLE
                                         temp = wctomb((char *)pointer, ch);
-_END_SECURE_CRT_DEPRECATION_DISABLE
                                     }
                                     else
                                     {
                                         char tmpbuf[MB_LEN_MAX];
-_BEGIN_SECURE_CRT_DEPRECATION_DISABLE
                                         temp = wctomb(tmpbuf, ch);
-_END_SECURE_CRT_DEPRECATION_DISABLE
                                         if (temp > 0 && ((size_t)temp) > array_width)
                                         {
                                             /* We have exhausted the user's buffer */
@@ -780,7 +774,7 @@ _END_SECURE_CRT_DEPRECATION_DISABLE
                             }
                             else
                             {
-                                // supress set, do nothing
+                                // suppress set, do nothing
                             }
                         }
                         else
@@ -874,7 +868,7 @@ getnum:
 
                                     if (_ISXDIGIT(ch)) {
                                         num64 <<= 4;
-                                        ch = _hextodec(ch);
+                                        ch = _hextodec((_TCHAR)ch);
                                     }
                                     else
                                         ++done_flag;
@@ -917,7 +911,7 @@ getnum:
 
                                     if (_ISXDIGIT(ch)) {
                                         number = (number << 4);
-                                        ch = _hextodec(ch);
+                                        ch = _hextodec((_TCHAR)ch);
                                     }
                                     else
                                         ++done_flag;
@@ -1269,7 +1263,7 @@ static int __cdecl _inc(miniFILE* fileptr)
 static void __cdecl _un_inc(int chr, miniFILE* fileptr)
 {
     if (_TEOF != chr) {
-        _ungettc_nolock(chr,fileptr);
+        _ungettc_nolock((char)chr,fileptr);
     }
 }
 

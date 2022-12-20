@@ -78,6 +78,11 @@ if (MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
 
+  if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+  endif(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+
   # Checked build specific flags
   add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
   add_linker_flag(/OPT:REF CHECKED)
@@ -128,7 +133,7 @@ elseif (CLR_CMAKE_HOST_UNIX)
         message("Address Sanitizer (asan) enabled")
       endif ()
       if (${__UBSAN_POS} GREATER -1)
-        # all sanitizier flags are enabled except alignment (due to heavy use of __unaligned modifier)
+        # all sanitizer flags are enabled except alignment (due to heavy use of __unaligned modifier)
         list(APPEND CLR_CXX_SANITIZERS
           "bool"
           bounds
@@ -155,9 +160,8 @@ elseif (CLR_CMAKE_HOST_UNIX)
       list(JOIN CLR_LINK_SANITIZERS "," CLR_LINK_SANITIZERS_OPTIONS)
       list(APPEND CLR_SANITIZE_LINK_OPTIONS "-fsanitize=${CLR_LINK_SANITIZERS_OPTIONS}")
 
-      # -fdata-sections -ffunction-sections: each function has own section instead of one per .o file (needed for --gc-sections)
       # -O1: optimization level used instead of -O0 to avoid compile error "invalid operand for inline asm constraint"
-      add_compile_options("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;--ffunction-sections;-O1>")
+      add_compile_options("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SANITIZE_CXX_OPTIONS};-fdata-sections;-O1>")
       add_linker_flag("${CLR_SANITIZE_LINK_OPTIONS}" DEBUG CHECKED)
       # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
       add_linker_flag("-Wl,--gc-sections" DEBUG CHECKED)
@@ -213,9 +217,19 @@ elseif (CLR_CMAKE_HOST_ARCH_I386)
 elseif (CLR_CMAKE_HOST_ARCH_ARM)
   set(ARCH_HOST_NAME arm)
   add_definitions(-DHOST_ARM)
+elseif (CLR_CMAKE_HOST_ARCH_ARMV6)
+  set(ARCH_HOST_NAME armv6)
+  add_definitions(-DHOST_ARM)
+  add_definitions(-DHOST_ARMV6)
 elseif (CLR_CMAKE_HOST_ARCH_ARM64)
   set(ARCH_HOST_NAME arm64)
   add_definitions(-DHOST_ARM64 -DHOST_64BIT)
+elseif (CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+  set(ARCH_HOST_NAME loongarch64)
+  add_definitions(-DHOST_LOONGARCH64 -DHOST_64BIT)
+elseif (CLR_CMAKE_HOST_ARCH_RISCV64)
+  set(ARCH_HOST_NAME riscv64)
+  add_definitions(-DHOST_RISCV64 -DHOST_64BIT)
 elseif (CLR_CMAKE_HOST_ARCH_S390X)
   set(ARCH_HOST_NAME s390x)
   add_definitions(-DHOST_S390X -DHOST_64BIT -DBIGENDIAN)
@@ -225,6 +239,9 @@ elseif (CLR_CMAKE_HOST_ARCH_WASM)
 elseif (CLR_CMAKE_HOST_ARCH_MIPS64)
   set(ARCH_HOST_NAME mips64)
   add_definitions(-DHOST_MIPS64 -DHOST_64BIT=1)
+elseif (CLR_CMAKE_HOST_ARCH_POWERPC64)
+  set(ARCH_HOST_NAME ppc64le)
+  add_definitions(-DHOST_POWERPC64 -DHOST_64BIT)
 else ()
   clr_unknown_arch()
 endif ()
@@ -234,13 +251,21 @@ if (CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_HOST_UNIX_AMD64)
       message("Detected Linux x86_64")
     elseif(CLR_CMAKE_HOST_UNIX_ARM)
-      message("Detected Linux ARM")
+      message("Detected Linux arm")
+    elseif(CLR_CMAKE_HOST_UNIX_ARMV6)
+      message("Detected Linux armv6")
     elseif(CLR_CMAKE_HOST_UNIX_ARM64)
-      message("Detected Linux ARM64")
+      message("Detected Linux arm64")
+    elseif(CLR_CMAKE_HOST_UNIX_LOONGARCH64)
+      message("Detected Linux loongarch64")
+    elseif(CLR_CMAKE_HOST_UNIX_RISCV64)
+      message("Detected Linux riscv64")
     elseif(CLR_CMAKE_HOST_UNIX_X86)
       message("Detected Linux i686")
     elseif(CLR_CMAKE_HOST_UNIX_S390X)
       message("Detected Linux s390x")
+    elseif(CLR_CMAKE_HOST_UNIX_POWERPC64)
+      message("Detected Linux ppc64le")
     else()
       clr_unknown_arch()
     endif()
@@ -296,15 +321,36 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     set(ARCH_TARGET_NAME arm)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARM>)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_ARMV6)
+    set(ARCH_SOURCES_DIR arm)
+    set(ARCH_TARGET_NAME armv6)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARM>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARMV6>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_I386)
     set(ARCH_TARGET_NAME x86)
     set(ARCH_SOURCES_DIR i386)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_X86>)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+    set(ARCH_TARGET_NAME loongarch64)
+    set(ARCH_SOURCES_DIR loongarch64)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_LOONGARCH64>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_RISCV64)
+    set(ARCH_TARGET_NAME riscv64)
+    set(ARCH_SOURCES_DIR riscv64)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_RISCV64>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_S390X)
     set(ARCH_TARGET_NAME s390x)
     set(ARCH_SOURCES_DIR s390x)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_S390X>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_POWERPC64)
+    set(ARCH_TARGET_NAME ppc64le)
+    set(ARCH_SOURCES_DIR ppc64le)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_POWERPC64>)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_WASM)
     set(ARCH_TARGET_NAME wasm)
@@ -339,6 +385,11 @@ if (CLR_CMAKE_HOST_UNIX)
   if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
     add_compile_options(-fstack-protector)
+    if(CLR_CMAKE_HOST_UNIX_ARM64)
+      # For OSX-Arm64, LSE instructions are enabled by default
+      add_definitions(-DLSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
+      add_compile_options(-mcpu=apple-m1)
+    endif(CLR_CMAKE_HOST_UNIX_ARM64)
   elseif(NOT CLR_CMAKE_HOST_BROWSER)
     check_c_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
     if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
@@ -369,6 +420,10 @@ if (CLR_CMAKE_HOST_UNIX)
 
   add_compile_options(-Wno-unused-but-set-variable)
 
+  # Turn off floating point expression contraction because it is considered a value changing
+  # optimization in the IEEE 754 specification and is therefore considered unsafe.
+  add_compile_options(-ffp-contract=off)
+
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-unknown-warning-option)
 
@@ -396,11 +451,19 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
     add_compile_options(-Wno-array-bounds)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-misleading-indentation>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-overflow>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-restrict>)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-truncation>)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
+
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
+      # this warning is only reported by g++ 11 in debug mode when building
+      # src/coreclr/vm/stackingallocator.h. It is a false-positive, fixed in g++ 12.
+      # see: https://github.com/dotnet/runtime/pull/69188#issuecomment-1136764770
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
+
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
+    endif()
 
     if (CMAKE_CXX_COMPILER_ID)
       check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
@@ -416,6 +479,9 @@ if (CLR_CMAKE_HOST_UNIX)
 
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
+  
+  # Separate functions so linker can remove them.
+  add_compile_options(-ffunction-sections)
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
@@ -447,7 +513,7 @@ if (CLR_CMAKE_HOST_UNIX)
       set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
       add_compile_options(-arch arm64)
     elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-      set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+      set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
       add_compile_options(-arch x86_64)
     else()
       clr_unknown_arch()
@@ -468,11 +534,21 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   elseif(CLR_CMAKE_TARGET_LINUX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
+    if(CLR_CMAKE_TARGET_LINUX_MUSL)
+        add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX_MUSL>)
+    endif()
   elseif(CLR_CMAKE_TARGET_NETBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_NETBSD>)
   elseif(CLR_CMAKE_TARGET_SUNOS)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_SUNOS>)
+    if(CLR_CMAKE_TARGET_OS_ILLUMOS)
+      add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ILLUMOS>)
+    endif()
   endif()
+elseif(CLR_CMAKE_TARGET_WASI)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
+elseif(CLR_CMAKE_TARGET_BROWSER)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_BROWSER>)
 else(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WINDOWS>)
 endif(CLR_CMAKE_TARGET_UNIX)
@@ -497,6 +573,14 @@ if(CLR_CMAKE_HOST_UNIX_ARM)
    endif(ARM_SOFTFP)
 endif(CLR_CMAKE_HOST_UNIX_ARM)
 
+if(CLR_CMAKE_HOST_UNIX_ARMV6)
+   add_compile_options(-mfpu=vfp)
+   add_definitions(-DCLR_ARM_FPU_CAPABILITY=0x0)
+   add_compile_options(-march=armv6zk)
+   add_compile_options(-mcpu=arm1176jzf-s)
+   add_compile_options(-mfloat-abi=hard)
+endif(CLR_CMAKE_HOST_UNIX_ARMV6)
+
 if(CLR_CMAKE_HOST_UNIX_X86)
   add_compile_options(-msse2)
 endif()
@@ -512,8 +596,10 @@ if (MSVC)
   # /W3 is added by default by CMake, so remove it
   string(REPLACE "/W3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   string(REPLACE "/W3" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-  # set default warning level to 3 but allow targets to override it.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W$<GENEX_EVAL:$<IF:$<BOOL:$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>>,$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>,3>>>)
+
+  # [[! Microsoft.Security.SystemsADM.10086 !]] - SDL required warnings
+  # set default warning level to 4 but allow targets to override it.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W$<GENEX_EVAL:$<IF:$<BOOL:$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>>,$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>,4>>>)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oy->) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
@@ -540,19 +626,33 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4065>) # switch statement contains 'default' but no 'case' labels
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4100>) # 'identifier' : unreferenced formal parameter
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4127>) # conditional expression is constant
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4131>) # 'function' : uses old-style declarator
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4189>) # local variable is initialized but not referenced
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4200>) # nonstandard extension used : zero-sized array in struct/union
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4201>) # nonstandard extension used : nameless struct/union
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4206>) # nonstandard extension used : translation unit is empty
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4239>) # nonstandard extension used : 'token' : conversion from 'type' to 'type'
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # conversion from 'type1' to 'type2', signed/unsigned mismatch
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4291>) # no matching operator delete found; memory will not be freed if initialization throws an exception
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4310>) # cast truncates constant value
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>) # 'struct_name' : structure was padded due to __declspec(align())
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4366>) # The result of the unary 'operator' operator may be unaligned
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4456>) # declaration of 'identifier' hides previous local declaration
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4457>) # declaration of 'identifier' hides function parameter
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4458>) # declaration of 'identifier' hides class member
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4459>) # declaration of 'identifier' hides global declaration
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4463>) # overflow; assigning value to bit-field that can only hold values from low_value to high_value
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4505>) # unreferenced function with internal linkage has been removed
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # unreachable code
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # assignment within conditional expression
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4733>) # Inline asm assigning to 'FS:0' : handler not registered as safe handler
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4815>) # 'var': zero-sized array in stack object will have no elements (unless the object is an aggregate that has been aggregate initialized)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4838>) # conversion from 'type_1' to 'type_2' requires a narrowing conversion
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4918>) # 'character' : invalid character in pragma optimization list
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4960>) # 'function' is too big to be profiled
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4961>) # No profile data was merged into '.pgd file', profile-guided optimizations disabled
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd5105>) # macro expansion producing 'defined' has undefined behavior
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd5205>) # delete of an abstract class 'type-name' that has a non-virtual destructor results in undefined behavior
 
   # Treat Warnings as Errors:
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4007>) # 'main' : must be __cdecl.
@@ -696,6 +796,13 @@ if (CLR_CMAKE_HOST_WIN32)
     endif()
 
 elseif (NOT CLR_CMAKE_HOST_BROWSER)
+    # This is a workaround for upstream issue: https://gitlab.kitware.com/cmake/cmake/-/issues/22995.
+    #
+    # In Clang.cmake, the decision to use single or double hyphen for target and gcc-toolchain
+    # is made based on CMAKE_${LANG}_COMPILER_VERSION, but CMAKE_ASM_COMPILER_VERSION is empty
+    # so it picks up single hyphen options, which new clang versions don't recognize.
+    set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
+
     enable_language(ASM)
 
 endif(CLR_CMAKE_HOST_WIN32)

@@ -14,7 +14,7 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-
+using System.Buffers;
 
 namespace System.Xml
 {
@@ -30,40 +30,9 @@ namespace System.Xml
         public const int MaxUInt64Chars = 32;
         public const int MaxPrimitiveChars = MaxDateTimeChars;
 
-        private static UTF8Encoding? s_utf8Encoding;
-        private static UnicodeEncoding? s_unicodeEncoding;
-
-        private static Base64Encoding? s_base64Encoding;
-
-        public static Base64Encoding Base64Encoding
-        {
-            get
-            {
-                if (s_base64Encoding == null)
-                    s_base64Encoding = new Base64Encoding();
-                return s_base64Encoding;
-            }
-        }
-
-        private static UTF8Encoding UTF8Encoding
-        {
-            get
-            {
-                if (s_utf8Encoding == null)
-                    s_utf8Encoding = new UTF8Encoding(false, true);
-                return s_utf8Encoding;
-            }
-        }
-
-        private static UnicodeEncoding UnicodeEncoding
-        {
-            get
-            {
-                if (s_unicodeEncoding == null)
-                    s_unicodeEncoding = new UnicodeEncoding(false, false, true);
-                return s_unicodeEncoding;
-            }
-        }
+        // Matches IsWhitespace below
+        private static readonly IndexOfAnyValues<char> s_whitespaceChars = IndexOfAnyValues.Create(" \t\r\n");
+        private static readonly IndexOfAnyValues<byte> s_whitespaceBytes = IndexOfAnyValues.Create(" \t\r\n"u8);
 
         public static bool ToBoolean(string value)
         {
@@ -271,7 +240,7 @@ namespace System.Xml
         {
             try
             {
-                return new UniqueId(Trim(value));
+                return new UniqueId(value.Trim());
             }
             catch (ArgumentException exception)
             {
@@ -317,7 +286,7 @@ namespace System.Xml
         {
             try
             {
-                return new Guid(Trim(value));
+                return new Guid(value.Trim());
             }
             catch (FormatException exception)
             {
@@ -342,7 +311,7 @@ namespace System.Xml
         {
             try
             {
-                return ulong.Parse(value, NumberStyles.Any, NumberFormatInfo.InvariantInfo);
+                return ulong.Parse(value, NumberStyles.Integer, NumberFormatInfo.InvariantInfo);
             }
             catch (ArgumentException exception)
             {
@@ -367,7 +336,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetString(buffer, offset, count);
+                return DataContractSerializer.ValidatingUTF8.GetString(buffer, offset, count);
             }
             catch (DecoderFallbackException exception)
             {
@@ -379,7 +348,7 @@ namespace System.Xml
         {
             try
             {
-                return UnicodeEncoding.GetString(buffer, offset, count);
+                return DataContractSerializer.ValidatingUTF16.GetString(buffer, offset, count);
             }
             catch (DecoderFallbackException exception)
             {
@@ -392,7 +361,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetBytes(value);
+                return DataContractSerializer.ValidatingUTF8.GetBytes(value);
             }
             catch (DecoderFallbackException exception)
             {
@@ -404,7 +373,7 @@ namespace System.Xml
         {
             try
             {
-                return UTF8Encoding.GetChars(buffer, offset, count, chars, charOffset);
+                return DataContractSerializer.ValidatingUTF8.GetChars(buffer, offset, count, chars, charOffset);
             }
             catch (DecoderFallbackException exception)
             {
@@ -419,7 +388,6 @@ namespace System.Xml
         public static string ToString(double value) { return XmlConvert.ToString(value); }
         public static string ToString(decimal value) { return XmlConvert.ToString(value); }
         public static string ToString(TimeSpan value) { return XmlConvert.ToString(value); }
-
         public static string ToString(UniqueId value) { return value.ToString(); }
         public static string ToString(Guid value) { return value.ToString(); }
         public static string ToString(ulong value) { return value.ToString(NumberFormatInfo.InvariantInfo); }
@@ -483,14 +451,14 @@ namespace System.Xml
             if (index < 0)
             {
                 prefix = string.Empty;
-                localName = Trim(qname);
+                localName = qname.Trim();
             }
             else
             {
                 if (index == qname.Length - 1)
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.XmlInvalidQualifiedName, qname)));
-                prefix = Trim(qname.Substring(0, index));
-                localName = Trim(qname.Substring(index + 1));
+                prefix = qname.Substring(0, index).Trim();
+                localName = qname.Substring(index + 1).Trim();
             }
         }
 
@@ -640,7 +608,7 @@ namespace System.Xml
             if (count == 10)
                 return false;
             if (negative)
-                result = -value;
+                result = -(float)value;
             else
                 result = value;
             return true;
@@ -692,7 +660,7 @@ namespace System.Xml
             if (count == 10)
                 return false;
             if (negative)
-                result = -value;
+                result = -(double)value;
             else
                 result = value;
             return true;
@@ -819,7 +787,7 @@ namespace System.Xml
         {
             for (int i = 0; i < s.Length; i++)
             {
-                Fx.Assert(s[i] < 128, "");
+                DiagnosticUtility.DebugAssert(s[i] < 128, "");
                 buffer[offset++] = (byte)s[i];
             }
             return s.Length;
@@ -1118,62 +1086,63 @@ namespace System.Xml
             return offset - offsetMin;
         }
 
-        public static bool IsWhitespace(string s)
-        {
-            for (int i = 0; i < s.Length; i++)
-            {
-                if (!IsWhitespace(s[i]))
-                    return false;
-            }
-            return true;
-        }
+        public static bool IsWhitespace(ReadOnlySpan<char> chars) =>
+            chars.IndexOfAnyExcept(s_whitespaceChars) < 0;
 
-        public static bool IsWhitespace(char ch)
+        public static bool IsWhitespace(ReadOnlySpan<byte> bytes) =>
+            bytes.IndexOfAnyExcept(s_whitespaceBytes) < 0;
+
+        public static bool IsWhitespace(char ch) =>
+            ch is <= ' ' and (' ' or '\t' or '\r' or '\n');
+
+        public static int StripWhitespace(Span<char> chars)
         {
-            return (ch <= ' ' && (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'));
+            int count = chars.IndexOfAny(s_whitespaceChars);
+            if (count < 0)
+            {
+                return chars.Length;
+            }
+
+            foreach (char c in chars.Slice(count + 1))
+            {
+                if (!IsWhitespace(c))
+                {
+                    chars[count++] = c;
+                }
+            }
+
+            return count;
         }
 
         public static string StripWhitespace(string s)
         {
-            int count = s.Length;
-            for (int i = 0; i < s.Length; i++)
+            int indexOfWhitespace = s.AsSpan().IndexOfAny(s_whitespaceChars);
+            if (indexOfWhitespace < 0)
             {
-                if (IsWhitespace(s[i]))
+                return s;
+            }
+
+            int count = s.Length - 1;
+            foreach (char c in s.AsSpan(indexOfWhitespace + 1))
+            {
+                if (IsWhitespace(c))
                 {
                     count--;
                 }
             }
-            if (count == s.Length)
-                return s;
 
-            return string.Create(count, s, (chars, s) =>
+            return string.Create(count, s, static (chars, s) =>
             {
                 int count = 0;
-                for (int i = 0; i < s.Length; i++)
+                foreach (char c in s)
                 {
-                    char ch = s[i];
-                    if (!IsWhitespace(ch))
+                    if (!IsWhitespace(c))
                     {
-                        chars[count++] = ch;
+                        chars[count++] = c;
                     }
                 }
+                Debug.Assert(count == chars.Length);
             });
-        }
-
-        private static string Trim(string s)
-        {
-            int i;
-            for (i = 0; i < s.Length && IsWhitespace(s[i]); i++)
-                ;
-            int j;
-            for (j = s.Length; j > 0 && IsWhitespace(s[j - 1]); j--)
-                ;
-            if (i == 0 && j == s.Length)
-                return s;
-            else if (j == 0)
-                return string.Empty;
-            else
-                return s.Substring(i, j - i);
         }
     }
 }

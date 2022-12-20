@@ -2225,22 +2225,22 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128i _mm_sllv_epi32 (__m128i a, __m128i count)
-        ///   VPSLLVD xmm, ymm, xmm/m128
+        ///   VPSLLVD xmm, xmm, xmm/m128
         /// </summary>
         public static Vector128<int> ShiftLeftLogicalVariable(Vector128<int> value, Vector128<uint> count) => ShiftLeftLogicalVariable(value, count);
         /// <summary>
         /// __m128i _mm_sllv_epi32 (__m128i a, __m128i count)
-        ///   VPSLLVD xmm, ymm, xmm/m128
+        ///   VPSLLVD xmm, xmm, xmm/m128
         /// </summary>
         public static Vector128<uint> ShiftLeftLogicalVariable(Vector128<uint> value, Vector128<uint> count) => ShiftLeftLogicalVariable(value, count);
         /// <summary>
         /// __m128i _mm_sllv_epi64 (__m128i a, __m128i count)
-        ///   VPSLLVQ xmm, ymm, xmm/m128
+        ///   VPSLLVQ xmm, xmm, xmm/m128
         /// </summary>
         public static Vector128<long> ShiftLeftLogicalVariable(Vector128<long> value, Vector128<ulong> count) => ShiftLeftLogicalVariable(value, count);
         /// <summary>
         /// __m128i _mm_sllv_epi64 (__m128i a, __m128i count)
-        ///   VPSLLVQ xmm, ymm, xmm/m128
+        ///   VPSLLVQ xmm, xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> ShiftLeftLogicalVariable(Vector128<ulong> value, Vector128<ulong> count) => ShiftLeftLogicalVariable(value, count);
 

@@ -30,8 +30,8 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Ctor_HostPortAddressFamily_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new DnsEndPoint(null, 500, AddressFamily.InterNetwork)); //Null host
-            AssertExtensions.Throws<ArgumentException>(null, () => new DnsEndPoint("", 500, AddressFamily.InterNetwork)); //Empty host
+            AssertExtensions.Throws<ArgumentNullException>("host", () => new DnsEndPoint(null, 500, AddressFamily.InterNetwork)); //Null host
+            AssertExtensions.Throws<ArgumentException>("host", () => new DnsEndPoint("", 500, AddressFamily.InterNetwork)); //Empty host
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new DnsEndPoint("host", IPEndPoint.MinPort - 1, AddressFamily.InterNetwork)); //Port < min port (0)
             Assert.Throws<ArgumentOutOfRangeException>(() => new DnsEndPoint("host", IPEndPoint.MaxPort + 1, AddressFamily.InterNetwork)); //Port > max port (65535)

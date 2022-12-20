@@ -26,7 +26,6 @@
 #include "ex.h"
 #include "assemblyspecbase.h"
 #include "eecontract.h"
-#include "metadatatracker.h"
 #include "stackwalktypes.h"
 #include <specstrings.h>
 #include "slist.h"
@@ -44,7 +43,7 @@ class EditAndContinueModule;
 class PEAssembly;
 class SimpleRWLock;
 
-typedef VPTR(PEAssembly) PTR_PEAssembly;
+typedef DPTR(PEAssembly) PTR_PEAssembly;
 
 // --------------------------------------------------------------------------------
 // Types
@@ -65,7 +64,7 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 // 1. HMODULE - these PE Files are loaded in response to "spontaneous" OS callbacks.
 //    These should only occur for .exe main modules and IJW dlls loaded via LoadLibrary
 //    or static imports in umnanaged code.
-//    These get their PEImage loaded directly in PEImage::LoadImage(HMODULE hMod)
+//    These get their PEImage loaded directly in PEImage::CreateFromHMODULE(HMODULE hMod)
 //
 // 2. Assemblies loaded directly or indirectly by the managed code - these are the most
 //    common case.  A path is obtained from assembly binding and the result is loaded
@@ -83,11 +82,6 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 
 class PEAssembly final
 {
-    // ------------------------------------------------------------
-    // SOS support
-    // ------------------------------------------------------------
-    VPTR_BASE_CONCRETE_VTABLE_CLASS(PEAssembly)
-
 public:
 
     // ------------------------------------------------------------
@@ -98,7 +92,7 @@ public:
     STDMETHOD_(ULONG, Release)();
 
 #ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
 #if CHECK_INVARIANTS
@@ -128,10 +122,6 @@ public:
 #endif // DACCESS_COMPILE
 
     LPCWSTR GetPathForErrorMessages();
-
-    // This returns a non-empty path representing the source of the assembly; it may
-    // be the parent assembly for dynamic or memory assemblies
-    const SString& GetEffectivePath();
 
     // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
     // Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
@@ -344,9 +334,7 @@ public:
     // Creation entry points
     // ------------------------------------------------------------
 
-    // CoreCLR's PrivBinder PEAssembly creation entrypoint
     static PEAssembly* Open(
-        PEAssembly* pParent,
         PEImage* pPEImageIL,
         BINDER_SPACE::Assembly* pHostAssembly);
 
@@ -355,9 +343,7 @@ public:
 
     static PEAssembly* Open(BINDER_SPACE::Assembly* pBindResult);
 
-    static PEAssembly* Create(
-        PEAssembly* pParentAssembly,
-        IMetaDataAssemblyEmit* pEmit);
+    static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit);
 
       // ------------------------------------------------------------
       // Utility functions
@@ -381,19 +367,18 @@ private:
 
 #ifdef DACCESS_COMPILE
     // just to make the DAC and GCC happy.
-    virtual ~PEAssembly() {};
+    ~PEAssembly() {};
     PEAssembly() = default;
 #else
     PEAssembly(
         BINDER_SPACE::Assembly* pBindResultInfo,
         IMetaDataEmit* pEmit,
-        PEAssembly* creator,
         BOOL isSystem,
         PEImage* pPEImageIL = NULL,
         BINDER_SPACE::Assembly* pHostAssembly = NULL
     );
 
-    virtual ~PEAssembly();
+    ~PEAssembly();
 #endif
 
     void OpenMDImport();
@@ -414,7 +399,6 @@ private:
     // IL image, NULL if dynamic
     PTR_PEImage              m_PEImage;
 
-    PTR_PEAssembly           m_creator;
     // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage
     // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
     // IID_IMDInternalImportENC
@@ -427,7 +411,7 @@ private:
 #else
         // NB: m_pMDImport_UseAccessor appears to be never assigned a value, but its purpose is just
         //     to be a placeholder that has the same type and offset as m_pMDImport.
-        // 
+        //
         //     The field has a different name so it would be an error to use directly.
         //     Only GetMDInternalRWAddress is supposed to use it via (TADDR)m_pMDImport_UseAccessor,
         //     which at that point will match the m_pMDImport on the debuggee side.

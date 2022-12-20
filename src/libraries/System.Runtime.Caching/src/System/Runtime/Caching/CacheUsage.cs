@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace System.Runtime.Caching
 {
-    internal struct UsageEntryRef
+    internal readonly struct UsageEntryRef : IEquatable<UsageEntryRef>
     {
         internal static readonly UsageEntryRef INVALID = new UsageEntryRef(0, 0);
 
@@ -31,38 +31,18 @@ namespace System.Runtime.Caching
             _ref = ((((uint)pageIndex) << PAGE_SHIFT) | (((uint)(entryIndex)) & ENTRY_MASK));
         }
 
-        public override bool Equals(object value)
-        {
-            if (value is UsageEntryRef)
-            {
-                return _ref == ((UsageEntryRef)value)._ref;
-            }
+        public override bool Equals(object value) =>
+            value is UsageEntryRef other && Equals(other);
 
-            return false;
-        }
-        public static bool operator ==(UsageEntryRef r1, UsageEntryRef r2)
-        {
-            return r1._ref == r2._ref;
-        }
+        public bool Equals(UsageEntryRef other) => _ref == other._ref;
 
-        public static bool operator !=(UsageEntryRef r1, UsageEntryRef r2)
-        {
-            return r1._ref != r2._ref;
-        }
+        public static bool operator ==(UsageEntryRef r1, UsageEntryRef r2) => r1.Equals(r2);
 
-        public override int GetHashCode()
-        {
-            return (int)_ref;
-        }
+        public static bool operator !=(UsageEntryRef r1, UsageEntryRef r2) => !r1.Equals(r2);
 
-        internal int PageIndex
-        {
-            get
-            {
-                int result = (int)(_ref >> PAGE_SHIFT);
-                return result;
-            }
-        }
+        public override int GetHashCode() => (int)_ref;
+
+        internal int PageIndex => (int)(_ref >> PAGE_SHIFT);
 
         internal int Ref1Index
         {
@@ -84,29 +64,11 @@ namespace System.Runtime.Caching
             }
         }
 
-        internal bool IsRef1
-        {
-            get
-            {
-                return ((int)(sbyte)(_ref & ENTRY_MASK)) > 0;
-            }
-        }
+        internal bool IsRef1 => ((int)(sbyte)(_ref & ENTRY_MASK)) > 0;
 
-        internal bool IsRef2
-        {
-            get
-            {
-                return ((int)(sbyte)(_ref & ENTRY_MASK)) < 0;
-            }
-        }
+        internal bool IsRef2 => ((int)(sbyte)(_ref & ENTRY_MASK)) < 0;
 
-        internal bool IsInvalid
-        {
-            get
-            {
-                return _ref == 0;
-            }
-        }
+        internal bool IsInvalid => _ref == 0;
     }
 
     internal struct UsageEntryLink

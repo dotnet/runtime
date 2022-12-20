@@ -12,16 +12,15 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module initializearray.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
 .subsystem 0x0003       // WINDOWS_CUI
 .corflags 0x00000001    // ILONLY
 
-.class private auto ansi beforefieldinit InitializeArray extends [mscorlib]System.Object
+.class public auto ansi beforefieldinit InitializeArray extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

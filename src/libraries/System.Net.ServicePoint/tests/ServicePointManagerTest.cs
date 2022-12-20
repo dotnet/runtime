@@ -215,7 +215,7 @@ namespace System.Net.Tests
                 AssertExtensions.Throws<ArgumentNullException>("address", () => ServicePointManager.FindServicePoint((Uri)null, null));
                 Assert.Throws<NotSupportedException>(() => ServicePointManager.FindServicePoint("http://anything", new FixedWebProxy("https://anything")));
 
-                ServicePoint sp = ServicePointManager.FindServicePoint("http://" + Guid.NewGuid().ToString("N"), null);
+                ServicePoint sp = ServicePointManager.FindServicePoint($"http://{Guid.NewGuid():N}", null);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ConnectionLeaseTimeout = -2);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ConnectionLimit = 0);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.MaxIdleTime = -2);
@@ -284,6 +284,7 @@ namespace System.Net.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36217", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64674", typeof(PlatformDetection), nameof(PlatformDetection.IsArmv6Process))]
         public static void FindServicePoint_Collectible()
         {
             RemoteExecutor.Invoke(() =>

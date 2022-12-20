@@ -43,7 +43,8 @@ namespace System.Reflection.Tests
             TestClass<T> tc = new TestClass<T>(value);
             PropertyInfo p = typeof(TestClass<T>).GetProperty(nameof(TestClass<T>.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Exception ex = Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         [Fact]
@@ -65,7 +66,8 @@ namespace System.Reflection.Tests
 
             PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.NullRefReturningProp));
             Assert.NotNull(p);
-            Assert.Throws<NullReferenceException>(() => p.GetValue(tc));
+            Exception ex = Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         [Fact]

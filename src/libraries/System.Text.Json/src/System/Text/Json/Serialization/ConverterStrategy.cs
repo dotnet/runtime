@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Serialization;
+
 namespace System.Text.Json
 {
     /// <summary>
@@ -12,15 +14,25 @@ namespace System.Text.Json
     /// </remarks>
     internal enum ConverterStrategy : byte
     {
-        // Default - no class type.
+        /// <summary>
+        /// Default value; only used by <see cref="JsonConverterFactory"/>.
+        /// </summary>
         None = 0x0,
-        // JsonObjectConverter<> - objects with properties.
+        /// <summary>
+        /// Objects with properties.
+        /// </summary>
         Object = 0x1,
-        // JsonConverter<> - simple values.
+        /// <summary>
+        /// Simple values or user-provided custom converters.
+        /// </summary>
         Value = 0x2,
-        // JsonIEnumerableConverter<> - all enumerable collections except dictionaries.
+        /// <summary>
+        /// Enumerable collections except dictionaries.
+        /// </summary>
         Enumerable = 0x8,
-        // JsonDictionaryConverter<,> - dictionary types.
+        /// <summary>
+        /// Dictionary types.
+        /// </summary>
         Dictionary = 0x10,
     }
 }

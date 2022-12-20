@@ -40,7 +40,7 @@ namespace System.Runtime.Caching
         private bool _throwOnDisposed;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _countersSupported => !OperatingSystem.IsBrowser();
 #else
@@ -109,10 +109,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
                 return false;
@@ -149,7 +146,7 @@ namespace System.Runtime.Caching
                 {
                     CacheEntryUpdateArguments args = new CacheEntryUpdateArguments(cache, reason, entry.Key, null);
                     entry.CacheEntryUpdateCallback(args);
-                    object expensiveObject = (args.UpdatedCacheItem != null) ? args.UpdatedCacheItem.Value : null;
+                    object expensiveObject = args.UpdatedCacheItem?.Value;
                     CacheItemPolicy policy = args.UpdatedCacheItemPolicy;
                     // Only update the "expensive" object if the user returns a new object,
                     // a policy with update callback, and the change monitors haven't changed.  (Inserting
@@ -251,7 +248,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void ValidatePolicy(CacheItemPolicy policy)
+        private static void ValidatePolicy(CacheItemPolicy policy)
         {
             if (policy.AbsoluteExpiration != ObjectCache.InfiniteAbsoluteExpiration
                 && policy.SlidingExpiration != ObjectCache.NoSlidingExpiration)
@@ -293,10 +290,7 @@ namespace System.Runtime.Caching
                 {
                     lock (s_initLock)
                     {
-                        if (s_defaultCache == null)
-                        {
-                            s_defaultCache = new MemoryCache();
-                        }
+                        s_defaultCache ??= new MemoryCache();
                     }
                 }
                 return s_defaultCache;
@@ -350,10 +344,11 @@ namespace System.Runtime.Caching
 
         public MemoryCache(string name, NameValueCollection config = null)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -370,10 +365,11 @@ namespace System.Runtime.Caching
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the config system.
         public MemoryCache(string name, NameValueCollection config, bool ignoreConfigSection)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -401,10 +397,11 @@ namespace System.Runtime.Caching
 
         private object AddOrGetExistingInternal(string key, object value, CacheItemPolicy policy)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
             CacheItemPriority priority = CacheItemPriority.Default;
@@ -429,10 +426,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
 
@@ -443,7 +437,7 @@ namespace System.Runtime.Caching
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
             MemoryCacheStore store = GetStore(cacheKey);
             MemoryCacheEntry entry = store.AddOrGetExisting(cacheKey, new MemoryCacheEntry(key, value, absExp, slidingExp, priority, changeMonitors, removedCallback, this));
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
@@ -480,18 +474,12 @@ namespace System.Runtime.Caching
                 // unhook domain events
                 DisposeSafeCritical();
                 // stats must be disposed prior to disposing the stores.
-                if (_stats != null)
-                {
-                    _stats.Dispose();
-                }
+                _stats?.Dispose();
                 if (_storeRefs != null)
                 {
                     foreach (var storeRef in _storeRefs)
                     {
-                        if (storeRef != null)
-                        {
-                            storeRef.Dispose();
-                        }
+                        storeRef?.Dispose();
                     }
                 }
                 if (_perfCounters != null)
@@ -529,7 +517,7 @@ namespace System.Runtime.Caching
                 throw new ArgumentNullException(nameof(key));
             }
             MemoryCacheEntry entry = GetEntry(key);
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         internal MemoryCacheEntry GetEntry(string key)
@@ -634,10 +622,11 @@ namespace System.Runtime.Caching
 
         public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy policy)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
+
             return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
         }
 
@@ -674,10 +663,11 @@ namespace System.Runtime.Caching
 
         public override void Set(CacheItem item, CacheItemPolicy policy)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
+
             Set(item.Key, item.Value, policy);
         }
 
@@ -716,10 +706,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
 
@@ -739,10 +726,11 @@ namespace System.Runtime.Caching
                           TimeSpan slidingExpiration,
                           CacheEntryUpdateCallback onUpdateCallback)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             if (changeMonitors == null
                 && absoluteExpiration == ObjectCache.InfiniteAbsoluteExpiration
                 && slidingExpiration == ObjectCache.NoSlidingExpiration)
@@ -759,10 +747,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
 
@@ -786,10 +771,7 @@ namespace System.Runtime.Caching
             // Ensure the sentinel depends on its updatable entry
             string[] cacheKeys = { key };
             ChangeMonitor expensiveObjectDep = CreateCacheEntryChangeMonitor(cacheKeys);
-            if (changeMonitors == null)
-            {
-                changeMonitors = new Collection<ChangeMonitor>();
-            }
+            changeMonitors ??= new Collection<ChangeMonitor>();
             changeMonitors.Add(expensiveObjectDep);
 
             // Insert sentinel entry for the updatable cache entry
@@ -827,7 +809,7 @@ namespace System.Runtime.Caching
                 return null;
             }
             MemoryCacheEntry entry = RemoveEntry(key, null, reason);
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         public override long GetCount(string regionName = null)
@@ -883,10 +865,7 @@ namespace System.Runtime.Caching
                     object value = GetInternal(key, null);
                     if (value != null)
                     {
-                        if (values == null)
-                        {
-                            values = new Dictionary<string, object>();
-                        }
+                        values ??= new Dictionary<string, object>();
                         values[key] = value;
                     }
                 }
@@ -899,10 +878,11 @@ namespace System.Runtime.Caching
         // config system.
         internal void UpdateConfig(NameValueCollection config)
         {
-            if (config == null)
+            if (config is null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
+
             if (!IsDisposed)
             {
                 _stats.UpdateConfig(config);

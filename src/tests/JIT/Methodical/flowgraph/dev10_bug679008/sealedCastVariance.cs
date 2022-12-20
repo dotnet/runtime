@@ -6,14 +6,18 @@
  */
 
 using System;
+using Xunit;
 
-internal static class Repro
+namespace Test_sealedCastVariance_cs
+{
+public static class Repro
 {
     private static bool CheckType(Action<string> a)
     {
         return a.GetType() == typeof(Action<object>);
     }
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Action<string> a = (Action<object>)Console.WriteLine;
         if (CheckType(a))
@@ -24,4 +28,5 @@ internal static class Repro
         Console.WriteLine("FAIL");
         return 101;
     }
+}
 }

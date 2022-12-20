@@ -43,7 +43,7 @@ namespace System.Globalization.Tests
             // Turkish
             yield return new object[] { s_turkishCompare, "Hi", "I", CompareOptions.None, false, 0 };
             // Android has its own ICU, which doesn't work well with tr
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { s_turkishCompare, "Hi", "I", CompareOptions.IgnoreCase, false, 0 };
                 yield return new object[] { s_turkishCompare, "Hi", "\u0130", CompareOptions.IgnoreCase, true, 1 };
@@ -181,6 +181,15 @@ namespace System.Globalization.Tests
         public void IsSuffix_WithEmptyPrefix_DoesNotValidateOptions()
         {
             IsSuffix(s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void IsSuffixWithAsciiAndIgnoredCharacters()
+        {
+            Assert.EndsWith("A", "A\0");
+            Assert.EndsWith("A\0", "A");
+            Assert.EndsWith("a", "A\0", StringComparison.CurrentCultureIgnoreCase);
+            Assert.EndsWith("a\0", "A", StringComparison.CurrentCultureIgnoreCase);
         }
     }
 }

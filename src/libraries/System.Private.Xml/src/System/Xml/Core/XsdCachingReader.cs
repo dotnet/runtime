@@ -654,7 +654,7 @@ namespace System.Xml
 
         private ValidatingReaderNodeData AddAttribute(int attIndex)
         {
-            Debug.Assert(attIndex <= _attributeEvents.Length);
+            Debug.Assert(attIndex < _attributeEvents.Length);
             ValidatingReaderNodeData attInfo = _attributeEvents[attIndex];
             if (attInfo != null)
             {
@@ -667,13 +667,7 @@ namespace System.Xml
                 Array.Copy(_attributeEvents, newAttributeEvents, _attributeEvents.Length);
                 _attributeEvents = newAttributeEvents;
             }
-            attInfo = _attributeEvents[attIndex];
-            if (attInfo == null)
-            {
-                attInfo = new ValidatingReaderNodeData(XmlNodeType.Attribute);
-                _attributeEvents[attIndex] = attInfo;
-            }
-            return attInfo;
+            return _attributeEvents[attIndex] ??= new ValidatingReaderNodeData(XmlNodeType.Attribute);
         }
 
         private ValidatingReaderNodeData AddContent(XmlNodeType nodeType)
@@ -692,12 +686,7 @@ namespace System.Xml
                 Array.Copy(_contentEvents, newContentEvents, _contentEvents.Length);
                 _contentEvents = newContentEvents;
             }
-            contentInfo = _contentEvents[_contentIndex];
-            if (contentInfo == null)
-            {
-                contentInfo = new ValidatingReaderNodeData(nodeType);
-                _contentEvents[_contentIndex] = contentInfo;
-            }
+            contentInfo = _contentEvents[_contentIndex] ??= new ValidatingReaderNodeData(nodeType);
             _contentIndex++;
             return contentInfo;
         }
@@ -764,10 +753,7 @@ namespace System.Xml
 
         private ValidatingReaderNodeData CreateDummyTextNode(string attributeValue, int depth)
         {
-            if (_textNode == null)
-            {
-                _textNode = new ValidatingReaderNodeData(XmlNodeType.Text);
-            }
+            _textNode ??= new ValidatingReaderNodeData(XmlNodeType.Text);
 
             _textNode.Depth = depth;
             _textNode.RawValue = attributeValue;

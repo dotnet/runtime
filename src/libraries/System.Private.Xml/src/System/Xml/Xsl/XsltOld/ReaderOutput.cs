@@ -157,7 +157,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override char QuoteChar
         {
-            get { return _encoder.QuoteChar; }
+            get { return XmlEncoder.QuoteChar; }
         }
 
         public override bool IsDefault
@@ -420,10 +420,7 @@ namespace System.Xml.Xsl.XsltOld
                         }
                         else
                         {
-                            if (sb == null)
-                            {
-                                sb = new StringBuilder(result);
-                            }
+                            sb ??= new StringBuilder(result);
                             sb.Append(this.Value);
                         }
                         if (!Read())
@@ -628,14 +625,8 @@ namespace System.Xml.Xsl.XsltOld
 
         private bool FindAttribute(string? localName, string? namespaceURI, out int attrIndex)
         {
-            if (namespaceURI == null)
-            {
-                namespaceURI = string.Empty;
-            }
-            if (localName == null)
-            {
-                localName = string.Empty;
-            }
+            namespaceURI ??= string.Empty;
+            localName ??= string.Empty;
 
             for (int index = 0; index < _attributeCount; index++)
             {
@@ -655,10 +646,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private bool FindAttribute(string? name, out int attrIndex)
         {
-            if (name == null)
-            {
-                name = string.Empty;
-            }
+            name ??= string.Empty;
 
             for (int index = 0; index < _attributeCount; index++)
             {
@@ -732,10 +720,7 @@ namespace System.Xml.Xsl.XsltOld
                 return _buffer.ToString();
             }
 
-            public char QuoteChar
-            {
-                get { return '"'; }
-            }
+            public const char QuoteChar = '"';
         }
     }
 }

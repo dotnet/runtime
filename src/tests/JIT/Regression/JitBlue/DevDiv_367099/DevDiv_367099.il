@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly devdiv_367099 {}
+.assembly 'DevDiv_367099' {}
 .assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit P

@@ -3,23 +3,33 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 
-namespace Microsoft.WebAssembly.Diagnostics
+namespace DebuggerTests
 {
     internal class InspectorClient : DevToolsClient
     {
-        Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        Func<string, JObject, CancellationToken, Task> onEvent;
-        int next_cmd_id;
+        protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
+        protected Func<string, JObject, CancellationToken, Task> onEvent;
+        protected int next_cmd_id;
 
         public InspectorClient(ILogger logger) : base(logger) { }
 
-        Task HandleMessage(string msg, CancellationToken token)
+        protected override async Task<WasmDebuggerConnection> SetupConnection(Uri webserverUri, CancellationToken token)
+            => new DevToolsDebuggerConnection(
+                        await ConnectToWebServer(webserverUri, token),
+                        "client",
+                         logger);
+
+        protected virtual Task HandleMessage(string msg, CancellationToken token)
         {
             var res = JObject.Parse(msg);
 
@@ -34,10 +44,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task Connect(
+        public virtual async Task ProcessCommand(Result command, CancellationToken token)
+        {
+            await Task.FromResult(true);
+        }
+
+        public virtual async Task Connect(
             Uri uri,
             Func<string, JObject, CancellationToken, Task> onEvent,
-            CancellationToken token)
+            CancellationTokenSource cts)
         {
             this.onEvent = onEvent;
 
@@ -47,7 +62,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (args.reason == RunLoopStopReason.Exception)
                 {
                     foreach (var cmd in pending_cmds.Values)
-                        cmd.SetException(args.ex);
+                        cmd.SetException(args.exception);
                 }
                 else
                 {
@@ -56,13 +71,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             };
 
-            await ConnectWithMainLoops(uri, HandleMessage, token);
+            await ConnectAndStartRunLoopAsync(uri, HandleMessage, cts);
         }
 
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)
             => SendCommand(new SessionId(null), method, args, token);
 
-        public Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
+        public virtual Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             int id = ++next_cmd_id;
             if (args == null)

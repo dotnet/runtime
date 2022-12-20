@@ -58,41 +58,6 @@ LPCUTF8 ILStubResolver::GetStubClassName(MethodDesc* pMD)
     return "ILStubClass";
 }
 
-LPCUTF8 ILStubResolver::GetStubMethodName()
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_NOTRIGGER;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    switch (m_type)
-    {
-        case CLRToNativeInteropStub: return "IL_STUB_PInvoke";
-        case CLRToCOMInteropStub:    return "IL_STUB_CLRtoCOM";
-        case NativeToCLRInteropStub: return "IL_STUB_ReversePInvoke";
-        case COMToCLRInteropStub:    return "IL_STUB_COMtoCLR";
-        case StructMarshalInteropStub: return "IL_STUB_StructMarshal";
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-        case ArrayOpStub:            return "IL_STUB_Array";
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
-        case MulticastDelegateStub:  return "IL_STUB_MulticastDelegate_Invoke";
-#endif
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-        case UnboxingILStub:         return "IL_STUB_UnboxingStub";
-        case InstantiatingStub:      return "IL_STUB_InstantiatingStub";
-#endif
-        case WrapperDelegateStub:    return "IL_STUB_WrapperDelegate_Invoke";
-        case TailCallStoreArgsStub:  return "IL_STUB_StoreTailCallArgs";
-        case TailCallCallTargetStub: return "IL_STUB_CallTailCallTarget";
-        default:
-            UNREACHABLE_MSG("Unknown stub type");
-    }
-}
-
 void ILStubResolver::GetJitContext(SecurityControlFlags* pSecurityControlFlags,
                                    TypeHandle* pTypeOwner)
 {
@@ -139,11 +104,11 @@ BOOL ILStubResolver::IsValidStringRef(mdToken metaTok)
     return FALSE;
 }
 
-int ILStubResolver::GetStringLiteralLength(mdToken metaTok)
+STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
     _ASSERTE(FALSE);
-    return -1;
+    return NULL;
 }
 
 void ILStubResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
@@ -237,18 +202,6 @@ void ILStubResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
     clause->FilterOffset = ehInfo->GetFilterOffset();
 }
 
-ILStubResolver::ILStubType ILStubResolver::GetStubType()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_type;
-}
-
-void ILStubResolver::SetStubType(ILStubType stubType)
-{
-    LIMITED_METHOD_CONTRACT;
-    m_type = stubType;
-}
-
 void ILStubResolver::SetStubMethodDesc(MethodDesc* pStubMD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -303,7 +256,6 @@ ILStubResolver::ILStubResolver() :
     m_pCompileTimeState(dac_cast<PTR_CompileTimeState>(ILNotYetGenerated)),
     m_pStubMD(dac_cast<PTR_MethodDesc>(nullptr)),
     m_pStubTargetMD(dac_cast<PTR_MethodDesc>(nullptr)),
-    m_type(Unassigned),
     m_jitFlags(),
     m_loaderHeap(dac_cast<PTR_LoaderHeap>(nullptr))
 {
@@ -359,7 +311,7 @@ ILStubResolver::AllocGeneratedIL(
 #ifdef _DEBUG
         LPVOID pPrevCompileTimeState =
 #endif // _DEBUG
-            FastInterlockExchangePointer(&m_pCompileTimeState, pNewCompileTimeState.GetValue());
+            InterlockedExchangeT(&m_pCompileTimeState, pNewCompileTimeState.GetValue());
         CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
 
         pNewLocalSig.SuppressRelease();
@@ -369,8 +321,6 @@ ILStubResolver::AllocGeneratedIL(
     }
     else
     {
-        CONSISTENCY_CHECK(m_loaderHeap != dac_cast<PTR_LoaderHeap>(nullptr));
-
         AllocMemHolder<BYTE>             pNewILCodeBuffer(m_loaderHeap->AllocMem(S_SIZE_T(cbCode)));
         AllocMemHolder<CompileTimeState> pNewCompileTimeState(m_loaderHeap->AllocMem(S_SIZE_T(sizeof(CompileTimeState))));
         memset(pNewCompileTimeState, 0, sizeof(CompileTimeState));
@@ -388,7 +338,7 @@ ILStubResolver::AllocGeneratedIL(
 #ifdef _DEBUG
         LPVOID pPrevCompileTimeState =
 #endif // _DEBUG
-            FastInterlockExchangePointer(&m_pCompileTimeState, (CompileTimeState*)pNewCompileTimeState);
+            InterlockedExchangeT(&m_pCompileTimeState, (CompileTimeState*)pNewCompileTimeState);
         CONSISTENCY_CHECK(ILNotYetGenerated == (UINT_PTR)pPrevCompileTimeState);
 
         pNewLocalSig.SuppressRelease();
@@ -442,9 +392,7 @@ COR_ILMETHOD_SECT_EH* ILStubResolver::AllocEHSect(size_t nClauses)
 
 bool ILStubResolver::UseLoaderHeap()
 {
-    // Struct marshal stub MethodDescs might be directly called from `call` IL instructions
-    // so we want to keep their compile time data alive as long as the LoaderAllocator in case they're used again.
-    return m_type == StructMarshalInteropStub;
+    return m_loaderHeap != dac_cast<PTR_LoaderHeap>(nullptr);
 }
 
 void ILStubResolver::FreeCompileTimeState()
@@ -510,7 +458,7 @@ ILStubResolver::ClearCompileTimeState(CompileTimeStatePtrSpecialValues newState)
 
     delete m_pCompileTimeState;
 
-    FastInterlockExchangePointer(&m_pCompileTimeState, dac_cast<PTR_CompileTimeState>((TADDR)newState));
+    InterlockedExchangeT(&m_pCompileTimeState, dac_cast<PTR_CompileTimeState>((TADDR)newState));
 } // ILStubResolver::ClearCompileTimeState
 
 //---------------------------------------------------------------------------------------

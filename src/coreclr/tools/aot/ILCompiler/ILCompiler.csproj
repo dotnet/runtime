@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <Import Project="ILCompiler.props" />
+
+
+  <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
+    <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
+    <PublishTrimmed>true</PublishTrimmed>
+    <!-- Don't R2R on ARM64 machines because ARM64 crossgen2 that comes with .NET SDK <= 7.0 Preview 7 crashes.-->
+    <PublishReadyToRun Condition="'$(BuildArchitecture)' != 'arm64'">true</PublishReadyToRun>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+
+  <Target Name="PublishCompiler"
+          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish;StompSingleFileHostPath" />
+
+  <!--  HACK: liveBuilds stomps over SingleFileHostSourcePath, setting it to the host that we just built.
+        That's unfortunate because it's not the host we're supposed to use here. -->
+  <Target Name="StompSingleFileHostPath"
+          BeforeTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <SingleFileHostSourcePath></SingleFileHostSourcePath>
+    </PropertyGroup>
+  </Target>
+  <!-- END: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
+</Project>

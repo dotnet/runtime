@@ -39,7 +39,7 @@ static void
 hot_reload_stub_cleanup_on_close (MonoImage *image);
 
 static void
-hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx);
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, uint32_t idx);
 
 static void
 hot_reload_stub_close_except_pools_all (MonoImage *base_image);
@@ -62,14 +62,71 @@ hot_reload_stub_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
 static gboolean
 hot_reload_stub_has_modified_rows (const MonoTableInfo *table);
 
-static int
+static guint32
 hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index);
-
-static GArray*
-hot_reload_stub_get_added_methods (MonoClass *klass);
 
 static uint32_t
 hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index);
+
+static void*
+hot_reload_stub_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
+
+static uint32_t
+hot_reload_stub_field_parent (MonoImage *image, uint32_t field_index);
+
+static uint32_t
+hot_reload_stub_get_field_idx (MonoClassField *field);
+
+static MonoClassField *
+hot_reload_stub_get_field (MonoClass *klass, uint32_t fielddef_token);
+
+static gpointer
+hot_reload_stub_get_static_field_addr (MonoClassField *field);
+
+static MonoMethod *
+hot_reload_stub_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
+
+static gboolean
+hot_reload_stub_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count);
+
+static gboolean
+hot_reload_stub_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count);
+
+static gboolean
+hot_reload_stub_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count);
+
+static MonoMethod *
+hot_reload_stub_added_methods_iter (MonoClass *klass, gpointer *iter);
+
+static MonoClassField *
+hot_reload_stub_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter);
+
+static uint32_t
+hot_reload_get_num_fields_added (MonoClass *klass);
+
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass);
+
+static const char *
+hot_reload_get_capabilities (void);
+
+static uint32_t
+hot_reload_stub_get_method_params (MonoImage *base_image, uint32_t methoddef_token, uint32_t *out_param_count_opt);
+
+static gpointer
+hot_reload_stub_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error);
+
+static MonoProperty *
+hot_reload_stub_added_properties_iter (MonoClass *klass, gpointer *iter);
+
+static uint32_t
+hot_reload_stub_get_property_idx (MonoProperty *prop);
+
+static MonoEvent *
+hot_reload_stub_added_events_iter (MonoClass *klass, gpointer *iter);
+
+static uint32_t
+hot_reload_stub_get_event_idx (MonoEvent *evt);
 
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
@@ -89,8 +146,27 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_updated_method_ppdb,
 	&hot_reload_stub_has_modified_rows,
 	&hot_reload_stub_table_num_rows_slow,
-	&hot_reload_stub_get_added_methods,
 	&hot_reload_stub_method_parent,
+	&hot_reload_stub_metadata_linear_search,
+	&hot_reload_stub_field_parent,
+	&hot_reload_stub_get_field_idx,
+	&hot_reload_stub_get_field,
+	&hot_reload_stub_get_static_field_addr,
+	&hot_reload_stub_find_method_by_name,
+	&hot_reload_stub_get_typedef_skeleton,
+	&hot_reload_stub_get_typedef_skeleton_properties,
+	&hot_reload_stub_get_typedef_skeleton_events,
+	&hot_reload_stub_added_methods_iter,
+	&hot_reload_stub_added_fields_iter,
+	&hot_reload_get_num_fields_added,
+	&hot_reload_get_num_methods_added,
+	&hot_reload_get_capabilities,
+	&hot_reload_stub_get_method_params,
+	&hot_reload_stub_added_field_ldflda,
+	&hot_reload_stub_added_properties_iter,
+	&hot_reload_stub_get_property_idx,
+	&hot_reload_stub_added_events_iter,
+	&hot_reload_stub_get_event_idx,
 };
 
 static bool
@@ -143,7 +219,7 @@ hot_reload_stub_cleanup_on_close (MonoImage *image)
 }
 
 void
-hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx)
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, uint32_t idx)
 {
 	g_assert_not_reached ();
 }
@@ -194,16 +270,10 @@ hot_reload_stub_has_modified_rows (const MonoTableInfo *table)
 	return FALSE;
 }
 
-static int
+static guint32
 hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index)
 {
 	g_assert_not_reached (); /* should always take the fast path */
-}
-
-static GArray*
-hot_reload_stub_get_added_methods (MonoClass *klass)
-{
-	return NULL;
 }
 
 static uint32_t
@@ -213,9 +283,131 @@ hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index)
 }
 
 
+static void*
+hot_reload_stub_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer)
+{
+	return NULL;
+}
+
+static uint32_t
+hot_reload_stub_field_parent (MonoImage *image, uint32_t field_index)
+{
+	return 0;
+}
+
+static uint32_t
+hot_reload_stub_get_field_idx (MonoClassField *field)
+{
+	return 0;
+}
+
+static MonoClassField *
+hot_reload_stub_get_field (MonoClass *klass, uint32_t fielddef_token)
+{
+	return NULL;
+}
+
+static gpointer
+hot_reload_stub_get_static_field_addr (MonoClassField *field)
+{
+	return NULL;
+}
+
+static MonoMethod *
+hot_reload_stub_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error)
+{
+	return NULL;
+}
+
+static gboolean
+hot_reload_stub_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count)
+{
+	return FALSE;
+}
+
+static gboolean
+hot_reload_stub_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count)
+{
+	return FALSE;
+}
+
+static gboolean
+hot_reload_stub_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count)
+{
+	return FALSE;
+}
+
+static MonoMethod *
+hot_reload_stub_added_methods_iter (MonoClass *klass, gpointer *iter)
+{
+	return NULL;
+}
+
+static MonoClassField *
+hot_reload_stub_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter)
+{
+	return NULL;
+}
+
+static uint32_t
+hot_reload_get_num_fields_added (MonoClass *klass)
+{
+	return 0;
+}
+
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass)
+{
+	return 0;
+}
+
+static const char *
+hot_reload_get_capabilities (void)
+{
+	return "";
+}
+
+static uint32_t
+hot_reload_stub_get_method_params (MonoImage *base_image, uint32_t methoddef_token, uint32_t *out_param_count_opt)
+{
+	return 0;
+}
+
+static gpointer
+hot_reload_stub_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error)
+{
+	return NULL;
+}
+
+static MonoProperty *
+hot_reload_stub_added_properties_iter (MonoClass *klass, gpointer *iter)
+{
+	return NULL;
+}
+
+static uint32_t
+hot_reload_stub_get_property_idx (MonoProperty *prop)
+{
+	return 0;
+}
+
+MonoEvent *
+hot_reload_stub_added_events_iter (MonoClass *klass, gpointer *iter)
+{
+	return NULL;
+}
+
+static uint32_t
+hot_reload_stub_get_event_idx (MonoEvent *evt)
+{
+	return 0;
+}
+
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentHotReload *
 mono_component_hot_reload_init (void)
 {
 	return component_hot_reload_stub_init ();
 }
+
+

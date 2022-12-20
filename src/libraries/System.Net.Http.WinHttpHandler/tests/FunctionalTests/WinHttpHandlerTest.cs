@@ -128,7 +128,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             using (HttpClient client = new HttpClient(handler))
             {
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
-                _output.WriteLine(ex.ToString());
+                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
             }
         }
 
@@ -236,7 +236,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             _output.WriteLine(responseContent);
 
             // Uncomment this to observe an exchange of "TCP Keep-Alive" and "TCP Keep-Alive ACK" packets:
-            // await Task.Delay(5000); 
+            // await Task.Delay(5000);
         }
 
         private async Task VerifyResponse(Task<HttpResponseMessage> task, string payloadText)

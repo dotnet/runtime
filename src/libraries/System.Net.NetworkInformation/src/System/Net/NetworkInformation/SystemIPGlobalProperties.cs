@@ -19,7 +19,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.FixedInfo.hostName;
+                return HostInformationPal.GetHostName();
             }
         }
 
@@ -28,7 +28,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.FixedInfo.domainName;
+                return HostInformationPal.GetDomainName();
             }
         }
 
@@ -48,7 +48,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return (NetBiosNodeType)HostInformationPal.FixedInfo.nodeType;
+                return (NetBiosNodeType)HostInformationPal.GetNodeType();
             }
         }
 
@@ -57,7 +57,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return HostInformationPal.FixedInfo.scopeId;
+                return HostInformationPal.GetScopeId();
             }
         }
 
@@ -66,7 +66,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                return (HostInformationPal.FixedInfo.enableProxy);
+                return HostInformationPal.GetEnableProxy();
             }
         }
 
@@ -102,10 +102,10 @@ namespace System.Net.NetworkInformation
 
         ///
         /// Gets the active TCP connections. Uses the native GetTcpTable API.
-        private unsafe List<SystemTcpConnectionInformation> GetAllTcpConnections()
+        private static unsafe List<SystemTcpConnectionInformation> GetAllTcpConnections()
         {
             uint size = 0;
-            uint result = 0;
+            uint result;
             List<SystemTcpConnectionInformation> tcpConnections = new List<SystemTcpConnectionInformation>();
 
             // Check if it supports IPv4 for IPv6 only modes.
@@ -211,10 +211,10 @@ namespace System.Net.NetworkInformation
         }
 
         /// Gets the active UDP listeners. Uses the native GetUdpTable API.
-        public unsafe override IPEndPoint[] GetActiveUdpListeners()
+        public override unsafe IPEndPoint[] GetActiveUdpListeners()
         {
             uint size = 0;
-            uint result = 0;
+            uint result;
             List<IPEndPoint> udpListeners = new List<IPEndPoint>();
 
             // Check if it support IPv4 for IPv6 only modes.
@@ -379,8 +379,8 @@ namespace System.Net.NetworkInformation
         public override async Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
             // Wait for the address table to stabilize.
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(s => ((TaskCompletionSource)s).TrySetResult(), tcs))
             {
                 await tcs.Task.ConfigureAwait(false);
             }

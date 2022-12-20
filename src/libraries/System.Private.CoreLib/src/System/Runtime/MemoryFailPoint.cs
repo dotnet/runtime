@@ -139,8 +139,7 @@ namespace System.Runtime
         // is somehow incorrect.
         public MemoryFailPoint(int sizeInMegabytes)
         {
-            if (sizeInMegabytes <= 0)
-                throw new ArgumentOutOfRangeException(nameof(sizeInMegabytes), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizeInMegabytes);
 
             ulong size = ((ulong)sizeInMegabytes) << 20;
             _reservedMemory = size;
@@ -286,7 +285,7 @@ namespace System.Runtime
 
         ~MemoryFailPoint()
         {
-            Dispose(false);
+            Disposing();
         }
 
         // Applications must call Dispose, which conceptually "releases" the
@@ -298,11 +297,11 @@ namespace System.Runtime
         // memory, apps will help their performance greatly by calling Dispose.
         public void Dispose()
         {
-            Dispose(true);
+            Disposing();
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        private void Disposing()
         {
             // This is just bookkeeping to ensure multiple threads can really
             // get enough memory, and this does not actually reserve memory

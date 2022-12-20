@@ -37,7 +37,7 @@ typedef struct {
  *
  * Initializes the mono tracer.
  */
-void 
+void
 mono_trace_init (void)
 {
 	if(level_stack == NULL) {
@@ -68,7 +68,7 @@ mono_trace_init (void)
  * Traces a new message, depending on the current logging level
  * and trace mask.
  */
-void 
+void
 mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args)
 {
 	char *log_message;
@@ -93,7 +93,7 @@ mono_tracev_inner (GLogLevelFlags level, MonoTraceMask mask, const char *format,
  * \c mono_trace will check the visibility of a message against this
  * value.
  */
-void 
+void
 mono_trace_set_level (GLogLevelFlags level)
 {
 	if(level_stack == NULL)
@@ -109,7 +109,7 @@ mono_trace_set_level (GLogLevelFlags level)
  * \c mono_trace will check the visibility of a message against this
  * value.
  */
-void 
+void
 mono_trace_set_mask (MonoTraceMask mask)
 {
 	if(level_stack == NULL)
@@ -124,7 +124,7 @@ mono_trace_set_mask (MonoTraceMask mask)
  * Sets the current logging destination. This can be a file or, if supported,
  * syslog.
  */
-void 
+void
 mono_trace_set_logdest_string (const char *dest)
 {
 	MonoLogCallParm logger;
@@ -179,7 +179,7 @@ mono_trace_set_logdest_string (const char *dest)
  * \param head Whether we want pid/date/time header on log messages
  * Sets the current logging header option.
  */
-void 
+void
 mono_trace_set_logheader_string(const char *head)
 {
 	if (head == NULL) {
@@ -196,7 +196,7 @@ mono_trace_set_logheader_string(const char *head)
  * Saves the current values of level and mask then calls \c mono_trace_set
  * with the specified new values.
  */
-void 
+void
 mono_trace_push (GLogLevelFlags level, MonoTraceMask mask)
 {
 	if(level_stack == NULL)
@@ -220,7 +220,7 @@ mono_trace_push (GLogLevelFlags level, MonoTraceMask mask)
  *
  * Restores level and mask values saved from a previous call to mono_trace_push.
  */
-void 
+void
 mono_trace_pop (void)
 {
 	if(level_stack == NULL)
@@ -240,7 +240,7 @@ mono_trace_pop (void)
 }
 
 
-void 
+void
 mono_trace_set_level_string (const char *value)
 {
 	int i = 0;
@@ -263,7 +263,7 @@ mono_trace_set_level_string (const char *value)
 		g_print("Unknown trace loglevel: %s\n", value);
 }
 
-void 
+void
 mono_trace_set_mask_string (const char *value)
 {
 	int i;
@@ -368,7 +368,7 @@ log_level_get_name (GLogLevelFlags log_level)
 
 /**
  * callback_adapter
- * 
+ *
  *  @log_domain Message prefix
  *  @log_level Severity
  *  @message Message to be written
@@ -415,7 +415,7 @@ legacy_closer(void)
 {
 	if (logCallback.user_data != NULL) {
 		g_free (logCallback.user_data); /* This is a UserSuppliedLoggerUserData struct */
-		logCallback.opener = NULL;	
+		logCallback.opener = NULL;
 		logCallback.writer = NULL;
 		logCallback.closer = NULL;
 		logCallback.user_data = NULL;
@@ -425,10 +425,10 @@ legacy_closer(void)
 
 /**
  *   mono_trace_set_log_handler:
- *  
+ *
  *  @callback The callback that will replace the default logging handler
  *  @user_data Argument passed to @callback
- * 
+ *
  * The log handler replaces the default runtime logger. All logging requests with be routed to it.
  * If the fatal argument in the callback is true, the callback must abort the current process. The runtime expects that
  * execution will not resume after a fatal error.

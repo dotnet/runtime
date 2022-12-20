@@ -11,8 +11,7 @@
 .assembly extern xunit.core {}
 .assembly extern System.Console {}
 .assembly extern System.Runtime {}
-.assembly main {}
-.module main.exe
+.assembly 'mismatch64' {}
 
 .class public sealed F extends System.ValueType
 {
@@ -40,7 +39,7 @@
    pop
 }
 
-.method public hidebysig static int32 Main(string[] args) cil managed
+.method public hidebysig static int32 Main() cil managed
 {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

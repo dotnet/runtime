@@ -75,28 +75,12 @@ mono_type_is_native_blittable (MonoType *t)
 MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	const char* cmethod_klass_name_space = m_class_get_name_space (cmethod->klass);
-	const char* cmethod_klass_name = m_class_get_name (cmethod->klass);
-	MonoImage *cmethod_klass_image = m_class_get_image (cmethod->klass);
-	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;
 	MonoInst *ins = NULL;
 
 	/* Required intrinsics are always used even with -O=-intrins */
-	if (in_corlib &&
-		!strcmp (cmethod_klass_name_space, "System") &&
-		!strcmp (cmethod_klass_name, "ByReference`1")) {
-		/* public ByReference(ref T value) */
-		g_assert (fsig->hasthis && fsig->param_count == 1);
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [0]->dreg, 0, args [1]->dreg);
-		return ins;
-	}
-
-	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
-	if (ins)
-		return ins;
 
 	if (!(cfg->opt & MONO_OPT_INTRINS))
-		return NULL;
+		return ins;
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
@@ -104,9 +88,13 @@ mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignat
 		if (ins)
 			return ins;
 	}
+
+	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 #endif
 
-	return NULL;
+	return ins;
 }
 
 static MonoInst*
@@ -217,7 +205,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R8 && fsig->params [1]->type == MONO_TYPE_R8) {
 			// Max and Min can only be optimized in fast math mode
 			if (!strcmp (cmethod->name, "Max") && mono_use_fast_math) {
-				opcode = OP_FMAX; 
+				opcode = OP_FMAX;
 			} else if (!strcmp (cmethod->name, "Min") && mono_use_fast_math) {
 				opcode = OP_FMIN;
 			} else if (!strcmp (cmethod->name, "Pow")) {
@@ -243,7 +231,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		// (float, float)
 		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R4 && fsig->params [1]->type == MONO_TYPE_R4) {
 			if (!strcmp (cmethod->name, "Max") && mono_use_fast_math) {
-				opcode = OP_RMAX; 
+				opcode = OP_RMAX;
 			} else if (!strcmp (cmethod->name, "Min") && mono_use_fast_math) {
 				opcode = OP_RMIN;
 			} else if (!strcmp (cmethod->name, "Pow")) {
@@ -300,7 +288,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "Buffer")) {
-		if (!strcmp (cmethod->name, "Memmove") && fsig->param_count == 3 && fsig->params [0]->type == MONO_TYPE_PTR && fsig->params [1]->type == MONO_TYPE_PTR) {
+		if (!strcmp (cmethod->name, "Memmove") && fsig->param_count == 3 && m_type_is_byref (fsig->params [0]) && m_type_is_byref (fsig->params [1]) && !cmethod->is_inflated) {
 			MonoBasicBlock *end_bb;
 			NEW_BBLOCK (cfg, end_bb);
 
@@ -323,6 +311,20 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
+#ifdef TARGET_WASM
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "BitOperations")) {
+		if (!strcmp (cmethod->name, "PopCount") && fsig->param_count == 1 &&
+			(fsig->params [0]->type == MONO_TYPE_U4 || fsig->params [0]->type == MONO_TYPE_U8)) {
+			gboolean is_64bit = fsig->params [0]->type == MONO_TYPE_U8;
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+#endif
+
 	return ins;
 }
 
@@ -331,7 +333,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 {
 	MonoInst *ins;
 
-	MonoClassField *ptr_field = mono_class_get_field_from_name_full (cmethod->klass, "_pointer", NULL);
+	MonoClassField *ptr_field = mono_class_get_field_from_name_full (cmethod->klass, "_reference", NULL);
 	if (!ptr_field)
 		/* Portable Span<T> */
 		return NULL;
@@ -348,7 +350,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 			return NULL;
 
 		int span_reg = args [0]->dreg;
-		/* Load _pointer.Value */
+		/* Load _reference.Value */
 		int base_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, base_reg, span_reg, ptr_field->offset - MONO_ABI_SIZEOF (MonoObject));
 		/* Similar to mini_emit_ldelema_1_ins () */
@@ -397,7 +399,6 @@ static MonoInst*
 emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
-	int dreg, align;
 	MonoGenericContext *ctx = mono_method_get_context (cmethod);
 	MonoType *t;
 
@@ -407,7 +408,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 
 		t = ctx->method_inst->type_argv [0];
 		if (ctx->method_inst->type_argc == 2) {
-			dreg = alloc_preg (cfg);
+			int dreg = alloc_preg (cfg);
 			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
 			ins->type = STACK_OBJ;
 			ins->klass = mono_get_object_class ();
@@ -418,7 +419,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			// Casts the given object to the specified type, performs no dynamic type checking.
 			g_assert (fsig->param_count == 1);
 			g_assert (fsig->params [0]->type == MONO_TYPE_OBJECT);
-			dreg = alloc_preg (cfg);
+			int dreg = alloc_preg (cfg);
 			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
 			ins->type = STACK_OBJ;
 			ins->klass = mono_class_from_mono_type_internal (ctx->method_inst->type_argv [0]);
@@ -430,7 +431,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 1);
 
-		dreg = alloc_preg (cfg);
+		int dreg = alloc_preg (cfg);
 		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
 		ins->type = STACK_PTR;
 		return ins;
@@ -440,7 +441,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 1);
 
-		dreg = alloc_preg (cfg);
+		int dreg = alloc_preg (cfg);
 		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
 		ins->type = STACK_OBJ;
 		ins->klass = mono_get_object_class ();
@@ -451,7 +452,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		dreg = alloc_ireg (cfg);
+		int dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCEQ, dreg, -1);
 		return ins;
@@ -461,7 +462,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		dreg = alloc_ireg (cfg);
+		int dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCLT_UN, dreg, -1);
 		return ins;
@@ -471,7 +472,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		dreg = alloc_ireg (cfg);
+		int dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCGT_UN, dreg, -1);
 		return ins;
@@ -487,8 +488,10 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		MonoInst *esize_ins;
 		if (mini_is_gsharedvt_variable_type (t)) {
 			esize_ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (SIZEOF_REGISTER == 8)
 				MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, esize_ins->dreg, esize_ins->dreg);
+MONO_RESTORE_WARNING
 		} else {
 			t = mini_type_get_underlying_type (t);
 			int esize = mono_class_array_element_size (mono_class_from_mono_type_internal (t));
@@ -499,7 +502,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		EMIT_NEW_BIALU (cfg, ins, OP_PMUL, mul_reg, args [1]->dreg, esize_ins->dreg);
 		ins->type = STACK_PTR;
 
-		dreg = alloc_preg (cfg);
+		int dreg = alloc_preg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, mul_reg);
 		ins->type = STACK_PTR;
 		return ins;
@@ -509,17 +512,19 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		if (fsig->params [1]->type == MONO_TYPE_I) {
+		if (fsig->params [1]->type == MONO_TYPE_I || fsig->params [1]->type == MONO_TYPE_U) {
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, args [1]->dreg);
 			ins->type = STACK_PTR;
 			return ins;
 		} else if (fsig->params [1]->type == MONO_TYPE_U8) {
 			int sreg = args [1]->dreg;
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (SIZEOF_REGISTER == 4) {
 				sreg = alloc_ireg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_LCONV_TO_U4, sreg, args [1]->dreg);
 			}
+MONO_RESTORE_WARNING
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, sreg);
 			ins->type = STACK_PTR;
@@ -535,6 +540,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		if (mini_is_gsharedvt_variable_type (t)) {
 			ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
 		} else {
+			int align;
 			int esize = mono_type_size (t, &align);
 			EMIT_NEW_ICONST (cfg, ins, esize);
 		}
@@ -571,17 +577,79 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [1]->dreg, args [0]->dreg);
 		ins->type = STACK_PTR;
 		return ins;
+	} else if (!strcmp (cmethod->name, "Unbox")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+
+		MonoClass *klass = mono_class_from_mono_type_internal (t);
+		int context_used = mini_class_check_context_used (cfg, klass);
+		return mini_handle_unbox (cfg, klass, args [0], context_used);
+	} else if (!strcmp (cmethod->name, "Copy")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+
+		MonoClass *klass = mono_class_from_mono_type_internal (t);
+		mini_emit_memory_copy (cfg, args [0], args [1], klass, FALSE, 0);
+		return cfg->cbb->last_ins;
+	} else if (!strcmp (cmethod->name, "CopyBlock")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_copy_bytes (cfg, args [0], args [1], args [2], 0);
+		return cfg->cbb->last_ins;
+	} else if (!strcmp (cmethod->name, "CopyBlockUnaligned")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_copy_bytes (cfg, args [0], args [1], args [2], MONO_INST_UNALIGNED);
+		return cfg->cbb->last_ins;
+	} else if (!strcmp (cmethod->name, "InitBlock")) {
+		g_assert (fsig->param_count == 3);
+
+		mini_emit_memory_init_bytes (cfg, args [0], args [1], args [2], 0);
+		return cfg->cbb->last_ins;
 	} else if (!strcmp (cmethod->name, "InitBlockUnaligned")) {
 		g_assert (fsig->param_count == 3);
 
 		mini_emit_memory_init_bytes (cfg, args [0], args [1], args [2], MONO_INST_UNALIGNED);
- 		MONO_INST_NEW (cfg, ins, OP_NOP);
-		MONO_ADD_INS (cfg->cbb, ins);
-		return ins;
+		return cfg->cbb->last_ins;
 	}
 	else if (!strcmp (cmethod->name, "SkipInit")) {
  		MONO_INST_NEW (cfg, ins, OP_NOP);
 		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
+	} else if (!strcmp (cmethod->name, "SubtractByteOffset")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		int dreg = alloc_preg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [0]->dreg, args [1]->dreg);
+		ins->type = STACK_PTR;
+		return ins;
+	} else if (!strcmp (cmethod->name, "IsNullRef")) {
+		g_assert (fsig->param_count == 1);
+
+		MONO_EMIT_NEW_COMPARE_IMM (cfg, args [0]->dreg, 0);
+		int dreg = alloc_ireg (cfg);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCEQ, dreg, -1);
+		return ins;
+	} else if (!strcmp (cmethod->name, "NullRef")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 0);
+
+		EMIT_NEW_PCONST (cfg, ins, NULL);
+		ins->type = STACK_MP;
+		ins->klass = mono_class_from_mono_type_internal (fsig->ret);
 		return ins;
 	}
 
@@ -650,6 +718,11 @@ emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 			}
 		}
 		return ins;
+	} else if (!strcmp (cmethod->name, "DisableInline")) {
+		cfg->disable_inline = TRUE;
+		MONO_INST_NEW (cfg, ins, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
 	}
 
 	return NULL;
@@ -694,7 +767,7 @@ get_class_from_ldtoken_ins (MonoInst *ins)
  * their relation (EQ/NE/NONE).
  */
 static CompRelation
-get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2)
+get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2, gboolean *vtype_constrained_gparam)
 {
 	MonoClass *k1 = get_class_from_ldtoken_ins (ins1);
 	MonoClass *k2 = get_class_from_ldtoken_ins (ins2);
@@ -715,6 +788,7 @@ get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2)
 				if (MONO_TYPE_IS_PRIMITIVE (t2) || MONO_TYPE_ISSTRUCT (t2))
 					rel = CMP_NE;
 			} else if (MONO_TYPE_IS_PRIMITIVE (constraint1)) {
+				*vtype_constrained_gparam = TRUE;
 				if (MONO_TYPE_IS_PRIMITIVE (t2) && constraint1->type != t2->type)
 					rel = CMP_NE;
 				else if (MONO_TYPE_IS_REFERENCE (t2))
@@ -744,15 +818,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	gboolean in_corlib = cmethod_klass_image == mono_defaults.corlib;
 
 	/* Required intrinsics are always used even with -O=-intrins */
-	if (in_corlib &&
-		!strcmp (cmethod_klass_name_space, "System") &&
-		!strcmp (cmethod_klass_name, "ByReference`1") &&
-		!strcmp (cmethod->name, "get_Value")) {
-		g_assert (fsig->hasthis && fsig->param_count == 0);
-		int dreg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, args [0]->dreg, 0);
-		return ins;
-	}
 
 	if (!(cfg->opt & MONO_OPT_INTRINS))
 		return NULL;
@@ -772,19 +837,19 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 #else
 			index_reg = args [1]->dreg;
-#endif	
+#endif
 			MONO_EMIT_BOUNDS_CHECK (cfg, args [0]->dreg, MonoString, length, index_reg);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 			EMIT_NEW_X86_LEA (cfg, ins, args [0]->dreg, index_reg, 1, MONO_STRUCT_OFFSET (MonoString, chars));
 			add_reg = ins->dreg;
-			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU2_MEMBASE, dreg, 
+			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU2_MEMBASE, dreg,
 								   add_reg, 0);
 #else
 			int mult_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, mult_reg, index_reg, 1);
 			MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, mult_reg, args [0]->dreg);
-			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU2_MEMBASE, dreg, 
+			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU2_MEMBASE, dreg,
 								   add_reg, MONO_STRUCT_OFFSET (MonoString, chars));
 #endif
 			mini_type_from_op (cfg, ins, NULL, NULL);
@@ -799,7 +864,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
 
 			return ins;
-		} else 
+		} else
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.object_class) {
 		if (strcmp (cmethod->name, "GetType") == 0 && fsig->param_count + fsig->hasthis == 1) {
@@ -816,7 +881,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else if (!cfg->backend->emulate_mul_div && strcmp (cmethod->name, "InternalGetHashCode") == 0 && fsig->param_count == 1 && !mono_gc_is_moving ()) {
 			int dreg = alloc_ireg (cfg);
 			int t1 = alloc_ireg (cfg);
-	
+
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, t1, args [0]->dreg, 3);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_MUL_IMM, dreg, t1, 2654435761u);
 			ins->type = STACK_I4;
@@ -841,60 +906,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, class_reg, vt_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, sizes_reg, class_reg, m_class_offsetof_sizes ());
 			return ins;
-		} else if (!strcmp (cmethod->name, "IsPrimitive")) {
-			int dreg = alloc_ireg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, dreg, dreg, MONO_STRUCT_OFFSET (MonoVTable, flags));
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, dreg, dreg, MONO_VT_FLAG_ARRAY_IS_PRIMITIVE);
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_COMPARE_IMM, -1, dreg, 0);
-			EMIT_NEW_UNALU (cfg, ins, OP_ICGT, dreg, -1);
-			ins->type = STACK_I4;
-			return ins;
 		}
-
-#ifndef MONO_BIG_ARRAYS
-		/*
-		 * This is an inline version of GetLength/GetLowerBound(0) used frequently in
-		 * Array methods.
-		 */
-		else if (((strcmp (cmethod->name, "GetLength") == 0 && fsig->param_count + fsig->hasthis == 2) ||
-		         (strcmp (cmethod->name, "GetLowerBound") == 0 && fsig->param_count + fsig->hasthis == 2)) &&
-		         args [1]->opcode == OP_ICONST && args [1]->inst_c0 == 0) {
-			int dreg = alloc_ireg (cfg);
-			int bounds_reg = alloc_ireg_mp (cfg);
-			MonoBasicBlock *end_bb, *szarray_bb;
-			gboolean get_length = strcmp (cmethod->name, "GetLength") == 0;
-
-			NEW_BBLOCK (cfg, end_bb);
-			NEW_BBLOCK (cfg, szarray_bb);
-
-			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOAD_MEMBASE, bounds_reg,
-										 args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, bounds_reg, 0);
-			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, szarray_bb);
-			/* Non-szarray case */
-			if (get_length)
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, length));
-			else
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
-			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
-			MONO_START_BB (cfg, szarray_bb);
-			/* Szarray case */
-			if (get_length)
-				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg,
-									   args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length));
-			else
-				MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
-			MONO_START_BB (cfg, end_bb);
-
-			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, dreg);
-			ins->type = STACK_I4;
-			
-			return ins;
-		}
-#endif
 
  		if (cmethod->name [0] != 'g')
  			return NULL;
@@ -902,7 +914,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "get_Rank") == 0 && fsig->param_count + fsig->hasthis == 1) {
 			int dreg = alloc_ireg (cfg);
 			int vtable_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOAD_MEMBASE, vtable_reg, 
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOAD_MEMBASE, vtable_reg,
 												 args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU1_MEMBASE, dreg,
 								   vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
@@ -912,7 +924,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		} else if (strcmp (cmethod->name, "get_Length") == 0 && fsig->param_count + fsig->hasthis == 1) {
 			int dreg = alloc_ireg (cfg);
 
-			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOADI4_MEMBASE, dreg, 
+			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOADI4_MEMBASE, dreg,
 										 args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length));
 			mini_type_from_op (cfg, ins, NULL, NULL);
 
@@ -1011,7 +1023,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (!strcmp (cmethod->name, "GetArrayDataReference")) {
 			// Logic below works for both SZARRAY and MDARRAY
 			int dreg = alloc_preg (cfg);
-			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
+			MONO_EMIT_NEW_CHECK_THIS(cfg, args[0]->dreg);
+			//MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}
@@ -1220,6 +1233,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins_iconst->dreg = mono_alloc_ireg (cfg);
 				MONO_ADD_INS (cfg->cbb, ins_iconst);
 
+				MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 				MONO_INST_NEW (cfg, ins, opcode);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->inst_basereg = args [0]->dreg;
@@ -1248,6 +1262,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins_iconst->dreg = mono_alloc_ireg (cfg);
 				MONO_ADD_INS (cfg->cbb, ins_iconst);
 
+				MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 				MONO_INST_NEW (cfg, ins, opcode);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->inst_basereg = args [0]->dreg;
@@ -1286,6 +1301,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			// For now, only Add is supported in non-LLVM back-ends
 			if (opcode && (COMPILE_LLVM (cfg) || mono_arch_opcode_supported (opcode))) {
+				MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 				MONO_INST_NEW (cfg, ins, opcode);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->inst_basereg = args [0]->dreg;
@@ -1297,7 +1313,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		else if (strcmp (cmethod->name, "Exchange") == 0 && fsig->param_count == 2 && m_type_is_byref (fsig->params [0])) {
 			MonoInst *f2i = NULL, *i2f;
-			guint32 opcode, f2i_opcode, i2f_opcode;
+			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
 			gboolean is_ref = byref_arg_is_reference (fsig->params [0]);
 			gboolean is_float = fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8;
 
@@ -1345,6 +1361,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? mono_alloc_ireg_ref (cfg) : mono_alloc_ireg (cfg);
 			ins->inst_basereg = args [0]->dreg;
@@ -1393,7 +1410,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 3) {
 			MonoInst *f2i_new = NULL, *f2i_cmp = NULL, *i2f;
-			guint32 opcode, f2i_opcode, i2f_opcode;
+			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
 			gboolean is_ref = mini_type_is_reference (fsig->params [1]);
 			gboolean is_float = fsig->params [1]->type == MONO_TYPE_R4 || fsig->params [1]->type == MONO_TYPE_R8;
 
@@ -1448,6 +1465,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
+			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
 			ins->sreg1 = args [0]->dreg;
@@ -1470,7 +1488,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif
 				break;
 			case MONO_TYPE_R4:
-				ins->type = cfg->r4_stack_type;
+				ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 				break;
 			case MONO_TYPE_R8:
 				ins->type = STACK_R8;
@@ -1608,7 +1626,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif
 					break;
 				case MONO_TYPE_R4:
-					ins->type = cfg->r4_stack_type;
+					ins->type = GINT_TO_UINT8 (cfg->r4_stack_type);
 					break;
 				case MONO_TYPE_R8:
 					ins->type = STACK_R8;
@@ -1722,8 +1740,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		}
 	} else if (cmethod->klass == mono_class_try_get_math_class ()) {
-		/* 
-		 * There is general branchless code for Min/Max, but it does not work for 
+		/*
+		 * There is general branchless code for Min/Max, but it does not work for
 		 * all inputs:
 		 * http://everything2.com/?node_id=1051618
 		 */
@@ -1738,7 +1756,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			int opcode = 0;
 			const char *mname = cmethod->name;
 			char c = mname [0];
-			
+
 			if (c == 'A'){
 				if (strcmp (mname, "Abs") == 0 && fsig->params [0]->type == MONO_TYPE_R8) {
 					opcode = OP_ABS;
@@ -1758,7 +1776,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				} else if (strcmp (mname, "Atanh") == 0){
 					if (fabs (source) < 1)
 						opcode = OP_ATANH;
-				} 
+				}
 			} else if (c == 'C'){
 				if (strcmp (mname, "Cos") == 0) {
 					if (!isinf (source))
@@ -1797,7 +1815,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->type = STACK_R8;
 				ins->dreg = mono_alloc_dreg (cfg, (MonoStackType) ins->type);
 				ins->inst_p0 = dest;
-				
+
 				switch (opcode){
 				case OP_ABS:
 					result = fabs (source);
@@ -1858,7 +1876,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
-		CompRelation rel = get_rttype_ins_relation (args [0], args [1]);
+		gboolean vtype_constrained_gparam = FALSE;
+		CompRelation rel = get_rttype_ins_relation (args [0], args [1], &vtype_constrained_gparam);
 		if (rel == CMP_EQ) {
 			if (cfg->verbose_level > 2)
 				printf ("-> true\n");
@@ -1873,11 +1892,16 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->dreg = alloc_preg (cfg);
 			ins->type = STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
+
+			/* Type checks in gshared methods like Vector<T>.IsSupported can not be optimized away if the type is T_BYTE etc. */
+			if (cfg->gshared && !cfg->gsharedvt && vtype_constrained_gparam)
+				cfg->prefer_instances = TRUE;
 		}
 		return ins;
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Inequality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
-		CompRelation rel = get_rttype_ins_relation (args [0], args [1]);
+		gboolean vtype_constrained_gparam = FALSE;
+		CompRelation rel = get_rttype_ins_relation (args [0], args [1], &vtype_constrained_gparam);
 		if (rel == CMP_NE) {
 			if (cfg->verbose_level > 2)
 				printf ("-> true\n");
@@ -1892,6 +1916,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->dreg = alloc_preg (cfg);
 			ins->type = STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
+
+			if (cfg->gshared && !cfg->gsharedvt && vtype_constrained_gparam)
+				cfg->prefer_instances = TRUE;
 		}
 		return ins;
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "get_IsValueType") &&
@@ -1924,7 +1951,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.MacCatalyst") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac")) &&
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.tvOS") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.MacCatalyst") ||
+				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.macOS")) &&
 				!strcmp (cmethod_klass_name_space, "ObjCRuntime") &&
 				!strcmp (cmethod_klass_name, "Selector"))
 			   ) {
@@ -1983,12 +2014,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			   (!strcmp (cmethod_klass_name, "Span`1") || !strcmp (cmethod_klass_name, "ReadOnlySpan`1"))) {
 		return emit_span_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
-			   !strcmp (cmethod_klass_name_space, "Internal.Runtime.CompilerServices") &&
+			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
 			   !strcmp (cmethod_klass_name, "Unsafe")) {
-		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
-	} else if (!strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
-			   !strcmp (cmethod_klass_name, "Unsafe") &&
-			   (in_corlib || !strcmp (cmethod_klass_image->assembly->aname.name, "System.Runtime.CompilerServices.Unsafe"))) {
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
@@ -2029,25 +2056,21 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (ins)
 			return ins;
 	}
+
+	ins = mono_emit_common_intrinsics (cfg, cmethod, fsig, args);
+	if (ins)
+		return ins;
 #endif
 
 	/* Fallback if SIMD is disabled */
-	if (in_corlib && !strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) {
+	if (in_corlib && 
+		((!strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) || 
+		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
 		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
 		}
-	}
-
-	// Return false for IsSupported for all types in System.Runtime.Intrinsics.* 
-	// if it's not handled in mono_emit_simd_intrinsics
-	if (in_corlib && 
-		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25) && 
-		!strcmp (cmethod->name, "get_IsSupported")) {
-		EMIT_NEW_ICONST (cfg, ins, 0);
-		ins->type = STACK_I4;
-		return ins;
 	}
 
 	// Return false for RuntimeFeature.IsDynamicCodeSupported and RuntimeFeature.IsDynamicCodeCompiled on FullAOT, otherwise true
@@ -2125,10 +2148,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
-	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
-	if (ins)
-		return ins;
-
 	if (COMPILE_LLVM (cfg)) {
 		ins = llvm_emit_inst_for_method (cfg, cmethod, fsig, args, in_corlib);
 		if (ins)
@@ -2143,7 +2162,7 @@ static MonoInst*
 emit_array_unsafe_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args, int is_set)
 {
 	MonoClass *eklass;
-	
+
 	if (is_set)
 		eklass = mono_class_from_mono_type_internal (fsig->params [2]);
 	else
@@ -2262,7 +2281,7 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 MonoInst*
 mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field)
 {
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	const char *klass_name_space = m_class_get_name_space (klass);
 	const char *klass_name = m_class_get_name (klass);
 	MonoImage *klass_image = m_class_get_image (klass);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -13,11 +14,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public ExpressionResolverBuilder ResolverBuilder { get; }
 #endif
 
+        [RequiresDynamicCode("Creates DynamicMethods")]
         public CompiledServiceProviderEngine(ServiceProvider provider)
         {
             ResolverBuilder = new(provider);
         }
 
-        public override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite) => ResolverBuilder.Build(callSite);
+        public override Func<ServiceProviderEngineScope, object?> RealizeService(ServiceCallSite callSite) => ResolverBuilder.Build(callSite);
     }
 }

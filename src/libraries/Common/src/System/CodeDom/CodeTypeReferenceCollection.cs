@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization
 
         public void AddRange(CodeTypeReference[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -54,7 +54,7 @@ namespace System.Runtime.Serialization
 
         public void AddRange(CodeTypeReferenceCollection value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

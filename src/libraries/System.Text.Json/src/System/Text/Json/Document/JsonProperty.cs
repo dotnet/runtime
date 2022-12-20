@@ -112,9 +112,9 @@ namespace System.Text.Json
         /// </exception>>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
             writer.WritePropertyName(Name);

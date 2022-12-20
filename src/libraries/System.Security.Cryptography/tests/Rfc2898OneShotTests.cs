@@ -8,7 +8,6 @@ using Test.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public static class Rfc2898OneShotTests
     {
         // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Password for testing.")]
@@ -75,9 +74,13 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Pbkdf2_PasswordBytes_NullHashName()
         {
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () =>
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () =>
                 Rfc2898DeriveBytes.Pbkdf2(
                     s_passwordBytes, s_salt, iterations: 1, default(HashAlgorithmName), s_extractLength)
+            );
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () =>
+                Rfc2898DeriveBytes.Pbkdf2(
+                    s_passwordBytes, s_salt, iterations: 1, new HashAlgorithmName(""), s_extractLength)
             );
         }
 
@@ -147,9 +150,13 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Pbkdf2_PasswordString_NullHashName()
         {
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () =>
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () =>
                 Rfc2898DeriveBytes.Pbkdf2(
                     Password, s_salt, iterations: 1, default(HashAlgorithmName), s_extractLength)
+            );
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () =>
+                Rfc2898DeriveBytes.Pbkdf2(
+                    Password, s_salt, iterations: 1, new HashAlgorithmName(""), s_extractLength)
             );
         }
 
@@ -281,7 +288,7 @@ namespace System.Security.Cryptography
             string password = "password";
             int iterations = 16777216;
             byte[] expected = "eefe3d61cd4da4e4e9945b3d6ba2158c2634e984".HexToByteArray();
-            byte[] salt = Encoding.UTF8.GetBytes("salt");
+            ReadOnlySpan<byte> salt = "salt"u8;
             byte[] actual = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA1, expected.Length);
             Assert.Equal(expected, actual);
         }

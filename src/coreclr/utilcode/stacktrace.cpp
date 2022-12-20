@@ -362,7 +362,7 @@ LPSTR FillSymbolSearchPath(CQuickBytes &qb)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
-    LPSTR retval;
+    LPSTR retval = NULL;
     HRESULT hr = S_OK;
 
     EX_TRY
@@ -905,7 +905,7 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
 void GetStringFromAddr
 (
 DWORD_PTR dwAddr,
-__out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put string.
+_Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put string.
                 // Buffer must hold at least cchMaxAssertStackLevelStringLen.
 )
 {
@@ -956,7 +956,7 @@ void MagicDeinit(void)
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/
 extern "C" __declspec(naked) void __stdcall
-ClrCaptureContext(__out PCONTEXT ctx)
+ClrCaptureContext(_Out_ PCONTEXT ctx)
 {
     __asm {
         push ebx;

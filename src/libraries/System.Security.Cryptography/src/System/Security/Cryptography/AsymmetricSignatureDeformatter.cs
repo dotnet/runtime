@@ -14,8 +14,7 @@ namespace System.Security.Cryptography
 
         public virtual bool VerifySignature(HashAlgorithm hash, byte[] rgbSignature)
         {
-            if (hash == null)
-                throw new ArgumentNullException(nameof(hash));
+            ArgumentNullException.ThrowIfNull(hash);
 
             SetHashAlgorithm(hash.ToAlgorithmName()!);
             Debug.Assert(hash.Hash != null);

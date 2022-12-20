@@ -670,7 +670,7 @@ namespace System.IO.Ports.Tests
             {
                 int bufferLength = null == buffer ? 0 : buffer.Length;
 
-                Debug.WriteLine("Verifying read method throws {0} buffer.Lenght={1}, offset={2}, count={3}", expectedException, bufferLength, offset, count);
+                Debug.WriteLine("Verifying read method throws {0} buffer.Length={1}, offset={2}, count={3}", expectedException, bufferLength, offset, count);
                 com.Open();
 
                 Assert.Throws(expectedException, () => com.Read(buffer, offset, count));
@@ -721,7 +721,7 @@ namespace System.IO.Ports.Tests
                     charsToWrite = TCSupport.GetRandomChars(numberOfBytesToRead, TCSupport.CharacterOptions.None);
                 }
 
-                //Genrate some random chars in the buffer
+                // Generate some random chars in the buffer
                 for (int i = 0; i < buffer.Length; i++)
                 {
                     char randChar = (char)rndGen.Next(0, ushort.MaxValue);
@@ -812,7 +812,7 @@ namespace System.IO.Ports.Tests
             com1.ReadTimeout = 500;
 
             //This is pretty silly but we will have to live with if for now becuase we can not
-            //gaurentee the number of bytes Write will add
+            //guarantee the number of bytes Write will add
             Thread.Sleep((int)(((bytesToWrite.Length * 10.0) / com1.BaudRate) * 1000) + 250);
 
             PerformReadOnCom1FromCom2(com1, com2, expectedChars, rcvBuffer, offset, count);

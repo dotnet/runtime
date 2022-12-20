@@ -9,8 +9,10 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+#pragma warning disable IDE0060
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public void Kill(bool entireProcessTree)
         {
             throw new PlatformNotSupportedException();
@@ -22,6 +24,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             throw new PlatformNotSupportedException();
@@ -30,6 +33,7 @@ namespace System.Diagnostics
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -38,7 +42,7 @@ namespace System.Diagnostics
         /// <summary>Gets the time the associated process was started.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        internal DateTime StartTimeCore
+        internal static DateTime StartTimeCore
         {
             get { throw new PlatformNotSupportedException(); }
         }
@@ -50,6 +54,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -61,6 +66,7 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get { throw new PlatformNotSupportedException(); }
@@ -69,19 +75,19 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns all immediate child processes.
         /// </summary>
-        private IReadOnlyList<Process> GetChildProcesses(Process[]? processes = null)
+        private static List<Process> GetChildProcesses(Process[]? processes = null)
         {
             throw new PlatformNotSupportedException();
         }
 
         /// <summary>Gets parent process ID</summary>
-        private int GetParentProcessId =>
+        private static int GetParentProcessId =>
             throw new PlatformNotSupportedException();
 
         /// <summary>
         /// Gets or sets which processors the threads in this process can be scheduled to run on.
         /// </summary>
-        private IntPtr ProcessorAffinityCore
+        private static IntPtr ProcessorAffinityCore
         {
             get { throw new PlatformNotSupportedException(); }
             set { throw new PlatformNotSupportedException(); }
@@ -90,7 +96,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Make sure we have obtained the min and max working set limits.
         /// </summary>
-        private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
+        private static void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
             throw new PlatformNotSupportedException();
         }
@@ -100,18 +106,22 @@ namespace System.Diagnostics
         /// <param name="newMax">The new maximum working set limit, or null not to change it.</param>
         /// <param name="resultingMin">The resulting minimum working set limit after any changes applied.</param>
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
-        private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
+        private static void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
             throw new PlatformNotSupportedException();
         }
+
+#pragma warning restore IDE0060
 
         /// <summary>Gets execution path</summary>
-        private string GetPathToOpenFile()
+        private static string GetPathToOpenFile()
         {
             throw new PlatformNotSupportedException();
         }
 
+#pragma warning disable CA1822
         private int ParentProcessId => throw new PlatformNotSupportedException();
+#pragma warning restore CA1822
 
         private static bool IsProcessInvalidException(Exception e) =>
             // InvalidOperationException signifies conditions such as the process already being dead.

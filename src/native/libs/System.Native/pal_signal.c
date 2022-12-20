@@ -28,7 +28,7 @@ static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NU
 static volatile SigChldCallback g_sigChldCallback = NULL;
 static volatile bool g_sigChldConsoleConfigurationDelayed;
 static void (*g_sigChldConsoleConfigurationCallback)(void);
-// Callback invoked for for SIGTTOU while terminal settings are changed.
+// Callback invoked for SIGTTOU while terminal settings are changed.
 static volatile ConsoleSigTtouHandler g_consoleTtouHandler;
 
 // Callback invoked for PosixSignal handling.
@@ -38,7 +38,9 @@ static volatile bool* g_hasPosixSignalRegistrations;
 
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
 
-static int GetSignalMax() // Returns the highest usable signal number.
+static pid_t g_pid;
+
+static int GetSignalMax(void) // Returns the highest usable signal number.
 {
 #ifdef SIGRTMAX
     return SIGRTMAX;
@@ -226,7 +228,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
                 assert(origHandler->sa_handler);
                 origHandler->sa_handler(sig);
             }
-            
+
         }
     }
 
@@ -294,7 +296,7 @@ void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
 #ifdef HAS_CONSOLE_SIGNALS
             UninitializeTerminal();
 #endif
-            kill(getpid(), signalCode);
+            kill(g_pid, signalCode);
             break;
     }
 }
@@ -310,6 +312,14 @@ static void* SignalHandlerLoop(void* arg)
     int pipeFd = *(int*)arg;
     free(arg);
     assert(pipeFd >= 0);
+
+    char* threadName = ".NET SigHandler";
+#if defined(__linux__) || defined(__FreeBSD__)
+    pthread_setname_np(pthread_self(), threadName);
+#endif
+#if defined(__APPLE__)
+    pthread_setname_np(threadName);
+#endif
 
     // Continually read a signal code from the signal pipe and process it,
     // until the pipe is closed.
@@ -341,9 +351,15 @@ static void* SignalHandlerLoop(void* arg)
         bool usePosixSignalHandler = g_hasPosixSignalRegistrations[signalCode - 1];
         if (signalCode == SIGCHLD)
         {
-            // When the original disposition is SIG_IGN, children that terminated did not become zombies.
-            // Since we overwrote the disposition, we have become responsible for reaping those processes.
-            bool reapAll = IsSigIgn(OrigActionFor(signalCode));
+            // By default we only reap managed processes started using the 'Process' class.
+            // This allows other code to start processes without .NET reaping them.
+            //
+            // In two cases we reap all processes (and may inadvertently reap non-managed processes):
+            // - When the original disposition is SIG_IGN, children that terminated did not become zombies.
+            //   Because overwrote the disposition, we have become responsible for reaping those processes.
+            // - pid 1 (the init daemon) is responsible for reaping orphaned children.
+            //   Because containers usually don't have an init daemon .NET may be pid 1.
+            bool reapAll = g_pid == 1 || IsSigIgn(OrigActionFor(signalCode));
             SigChldCallback callback = g_sigChldCallback;
 
             // double-checked locking
@@ -393,7 +409,7 @@ static void* SignalHandlerLoop(void* arg)
     }
 }
 
-static void CloseSignalHandlingPipe()
+static void CloseSignalHandlingPipe(void)
 {
     assert(g_signalPipe[0] >= 0);
     assert(g_signalPipe[1] >= 0);
@@ -460,7 +476,7 @@ void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback ca
 {
     assert(callback != NULL);
     assert(g_terminalInvalidationCallback == NULL);
-    bool installed;
+    bool installed = false;
     (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
@@ -481,7 +497,7 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
 {
     assert(callback != NULL);
     assert(g_sigChldCallback == NULL);
-    bool installed;
+    bool installed = false;
     (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
@@ -532,7 +548,7 @@ static bool CreateSignalHandlerThread(int* readFdPtr)
     return success;
 }
 
-int32_t InitializeSignalHandlingCore()
+int32_t InitializeSignalHandlingCore(void)
 {
     size_t signalMax = (size_t)GetSignalMax();
     g_origSigHandler = (struct sigaction*)calloc(sizeof(struct sigaction), signalMax);
@@ -551,6 +567,8 @@ int32_t InitializeSignalHandlingCore()
         errno = ENOMEM;
         return 0;
     }
+
+    g_pid = getpid();
 
     // Create a pipe we'll use to communicate with our worker
     // thread.  We can't do anything interesting in the signal handler,
@@ -584,6 +602,16 @@ int32_t InitializeSignalHandlingCore()
         return 0;
     }
 
+#ifdef HAS_CONSOLE_SIGNALS
+    // Unconditionally register signals for terminal configuration.
+    bool installed = InstallSignalHandler(SIGINT, SA_RESTART);
+    assert(installed);
+    installed = InstallSignalHandler(SIGQUIT, SA_RESTART);
+    assert(installed);
+    installed = InstallSignalHandler(SIGCONT, SA_RESTART);
+    assert(installed);
+#endif
+
     return 1;
 }
 
@@ -612,7 +640,12 @@ void SystemNative_DisablePosixSignalHandling(int signalCode)
     {
         g_hasPosixSignalRegistrations[signalCode - 1] = false;
 
-        if (!(g_consoleTtouHandler && signalCode == SIGTTOU) &&
+        // Don't restore handler when something other than posix handling needs the signal.
+        if (
+#ifdef HAS_CONSOLE_SIGNALS
+            signalCode != SIGINT && signalCode != SIGQUIT && signalCode != SIGCONT &&
+#endif
+            !(g_consoleTtouHandler && signalCode == SIGTTOU) &&
             !(g_sigChldCallback && signalCode == SIGCHLD) &&
             !(g_terminalInvalidationCallback && (signalCode == SIGCONT ||
                                                  signalCode == SIGCHLD ||
@@ -637,7 +670,7 @@ void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
         // will stop it (default SIGTTOU action).
         // We change SIGTTOU's disposition to get EINTR instead.
         // This thread may be used to run a signal handler, which may write to
-        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
+        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitely
         // on EINTR when the process is running in background and the terminal
         // configured with TOSTOP.
         RestoreSignalHandler(SIGTTOU);
@@ -649,7 +682,7 @@ void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
 
 void UninstallTTOUHandlerForConsole(void)
 {
-    bool installed;
+    bool installed = false;
     (void)installed; // only used for assert
     pthread_mutex_lock(&lock);
     {
@@ -667,7 +700,7 @@ void UninstallTTOUHandlerForConsole(void)
 
 #ifndef HAS_CONSOLE_SIGNALS
 
-int32_t SystemNative_InitializeTerminalAndSignalHandling()
+int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
     static int32_t initialized = 0;
 

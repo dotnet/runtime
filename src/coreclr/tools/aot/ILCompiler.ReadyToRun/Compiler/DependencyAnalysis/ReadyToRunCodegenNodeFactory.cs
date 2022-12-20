@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Win32Resources;
 
+using Internal.IL;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.Text;
@@ -43,6 +44,11 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public sealed class NodeFactoryOptimizationFlags
+    {
+        public bool OptimizeAsyncMethods;
+    }
+
     // To make the code future compatible to the composite R2R story
     // do NOT attempt to pass and store _inputModule here
     public sealed class NodeFactory
@@ -63,11 +69,34 @@ namespace ILCompiler.DependencyAnalysis
 
         public CompositeImageSettings CompositeImageSettings { get; set; }
 
+        public readonly NodeFactoryOptimizationFlags OptimizationFlags;
+
+        public ulong ImageBase;
+
+        List<ILBodyFixupSignature> _markedILBodyFixupSignatures = new List<ILBodyFixupSignature>();
+
         public bool MarkingComplete => _markingComplete;
+
+        public void GenerateHotColdMap(DependencyAnalyzerBase<NodeFactory> dependencyGraph)
+        {
+            if (HotColdMap == null)
+            {
+                HotColdMap = new HotColdMapNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.HotColdMap, HotColdMap, HotColdMap);
+                dependencyGraph.AddRoot(HotColdMap, "HotColdMap is generated because there is cold code");
+            }
+        }
 
         public void SetMarkingComplete()
         {
             _markingComplete = true;
+            ILCompiler.DependencyAnalysis.ReadyToRun.ILBodyFixupSignature.NotifyComplete(this, _markedILBodyFixupSignatures);
+            _markedILBodyFixupSignatures = null;
+        }
+
+        public void AddMarkedILBodyFixupSignature(ILBodyFixupSignature sig)
+        {
+            _markedILBodyFixupSignatures.Add(sig);
         }
 
         private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
@@ -155,8 +184,11 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode corHeaderNode,
             DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
-            ReadyToRunFlags flags)
+            ReadyToRunFlags flags,
+            NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
+            ulong imageBase)
         {
+            OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
             ProfileDataManager = profileDataManager;
@@ -166,7 +198,8 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
-            Header = new GlobalHeaderNode(Target, flags);
+            Header = new GlobalHeaderNode(flags);
+            ImageBase = imageBase;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
 
@@ -252,7 +285,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new DelayLoadHelperMethodImport(
                     this,
-                    DispatchImports, 
+                    DispatchImports,
                     ReadyToRunHelper.DelayLoad_Helper_Obj,
                     key.Method,
                     useVirtualCall: false,
@@ -297,11 +330,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new CopiedManagedResourcesNode(module);
             });
-
-            _profileDataCountsNodes = new NodeCache<MethodWithGCInfo, ProfileDataNode>(method =>
-            {
-                return new ProfileDataNode(method, Target);
-            });
         }
 
         public int CompilationCurrentPhase { get; private set; }
@@ -320,9 +348,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
+        public HotColdMapNode HotColdMap;
+
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
-        public ProfileDataSectionNode ProfileDataSection;
         public DelayLoadMethodCallThunkNodeRange DelayLoadMethodCallThunks;
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
@@ -332,6 +361,7 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionsTableNode ImportSectionsTable;
 
         public InstrumentationDataTableNode InstrumentationDataTable;
+        public InliningInfoNode CrossModuleInlningInfo;
 
         public Import ModuleImport;
 
@@ -352,6 +382,8 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionNode HelperImports;
 
         public ImportSectionNode PrecodeImports;
+
+        public ImportSectionNode ILBodyPrecodeImports;
 
         private NodeCache<ReadyToRunHelper, Import> _constructedHelpers;
 
@@ -416,20 +448,23 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
-                EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
-                ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
+                if (!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method))
+                {
+                    EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                    ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
 
-                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false, false);
-                MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
-                if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
-                {
-                    methodCodeNodeDebug = DelayLoadMethodImport.MethodCodeNode;
+                    IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false, false);
+                    MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
+                    if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
+                    {
+                        methodCodeNodeDebug = DelayLoadMethodImport.MethodCodeNode;
+                    }
+                    if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
+                    {
+                        methodCodeNodeDebug = precodeMethodImport.MethodCodeNode;
+                    }
+                    Debug.Assert(methodCodeNodeDebug == methodCodeNode);
                 }
-                if (methodCodeNodeDebug == null && methodNodeDebug is PrecodeMethodImport precodeMethodImport)
-                {
-                    methodCodeNodeDebug = precodeMethodImport.MethodCodeNode;
-                }
-                Debug.Assert(methodCodeNodeDebug == methodCodeNode);
 #endif
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
@@ -529,7 +564,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public bool Equals(VirtualResolutionFixupSignatureFixupKey other)
             {
-                return FixupKind == other.FixupKind && DeclMethod.Equals(other.DeclMethod) && ImplType == other.ImplType && 
+                return FixupKind == other.FixupKind && DeclMethod.Equals(other.DeclMethod) && ImplType == other.ImplType &&
                     ((ImplMethod == null && other.ImplMethod == null) || (ImplMethod != null && ImplMethod.Equals(other.ImplMethod)));
             }
 
@@ -554,6 +589,30 @@ namespace ILCompiler.DependencyAnalysis
         public VirtualResolutionFixupSignature VirtualResolutionFixupSignature(ReadyToRunFixupKind fixupKind, MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod)
         {
             return _virtualResolutionSignatures.GetOrAdd(new VirtualResolutionFixupSignatureFixupKey(fixupKind, declMethod, implType, implMethod));
+        }
+
+        private struct ILBodyFixupSignatureFixupKey : IEquatable<ILBodyFixupSignatureFixupKey>
+        {
+            public readonly ReadyToRunFixupKind FixupKind;
+            public readonly EcmaMethod Method;
+
+            public ILBodyFixupSignatureFixupKey(ReadyToRunFixupKind fixupKind, EcmaMethod method)
+            {
+                FixupKind = fixupKind;
+                Method = method;
+            }
+            public bool Equals(ILBodyFixupSignatureFixupKey other) => FixupKind == other.FixupKind && Method.Equals(other.Method);
+            public override bool Equals(object obj) => obj is ILBodyFixupSignatureFixupKey other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(FixupKind, Method);
+            public override string ToString() => $"'{FixupKind}' '{Method}'";
+        }
+
+        private NodeCache<ILBodyFixupSignatureFixupKey, ILBodyFixupSignature> _ilBodySignatures =
+            new NodeCache<ILBodyFixupSignatureFixupKey, ILBodyFixupSignature>((key) => new ILBodyFixupSignature(key.FixupKind, key.Method));
+
+        public ILBodyFixupSignature ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, EcmaMethod method)
+        {
+            return _ilBodySignatures.GetOrAdd(new ILBodyFixupSignatureFixupKey(fixupKind, method));
         }
 
         private struct ImportThunkKey : IEquatable<ImportThunkKey>
@@ -601,7 +660,7 @@ namespace ILCompiler.DependencyAnalysis
             return _importThunks.GetOrAdd(thunkKey);
         }
 
-        public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
+        public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)
         {
             graph.ComputingDependencyPhaseChange += Graph_ComputingDependencyPhaseChange;
 
@@ -614,9 +673,6 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            ProfileDataSection = new ProfileDataSectionNode();
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ProfileDataInfo, ProfileDataSection, ProfileDataSection.StartSymbol);
-
             DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
@@ -627,6 +683,8 @@ namespace ILCompiler.DependencyAnalysis
             ManifestMetadataTable = new ManifestMetadataTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
             Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
+            ((ReadyToRunILProvider)ilProvider).InitManifestMutableModule(ManifestMetadataTable._mutableModule);
+            Resolver.InitManifestMutableModule(ManifestMetadataTable._mutableModule);
 
             ManifestAssemblyMvidHeaderNode mvidTableNode = new ManifestAssemblyMvidHeaderNode(ManifestMetadataTable);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestAssemblyMvids, mvidTableNode, mvidTableNode);
@@ -635,7 +693,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.IsCompositeBuildMode)
             {
-                assemblyTable = new AssemblyTableNode(Target);
+                assemblyTable = new AssemblyTableNode();
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
             }
 
@@ -647,19 +705,22 @@ namespace ILCompiler.DependencyAnalysis
                 HeaderNode tableHeader = Header;
                 if (assemblyTable != null)
                 {
-                    AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(Target, ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
+                    AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
                     assemblyTable.Add(perAssemblyHeader);
                     tableHeader = perAssemblyHeader;
                 }
 
-                MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule, Target);
+                MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable, methodEntryPointTable);
 
-                TypesTableNode typesTable = new TypesTableNode(Target, inputModule);
+                TypesTableNode typesTable = new TypesTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
 
-                InliningInfoNode inliningInfoTable = new InliningInfoNode(Target, inputModule);
-                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
+                if (CompilationModuleGroup.IsCompositeBuildMode)
+                {
+                    InliningInfoNode inliningInfoTable = new InliningInfoNode(inputModule, InliningInfoNode.InfoType.InliningInfo2);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
+                }
 
                 // Core library attributes are checked FAR more often than other dlls
                 // attributes, so produce a highly efficient table for determining if they are
@@ -668,9 +729,14 @@ namespace ILCompiler.DependencyAnalysis
                 if (inputModule == TypeSystemContext.SystemModule)
                 {
                     AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
-                    Header.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
                 }
             }
+
+            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 
+                CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
+            this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
 
             InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
@@ -678,13 +744,13 @@ namespace ILCompiler.DependencyAnalysis
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
 
-            DebugInfoTable = new DebugInfoTableNode(Target);
+            DebugInfoTable = new DebugInfoTableNode();
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_EAGER,
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.Eager,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: false);
@@ -713,30 +779,43 @@ namespace ILCompiler.DependencyAnalysis
             if ((ProfileDataManager != null) && (ProfileDataManager.EmbedPgoDataInR2RImage))
             {
                 // Profile instrumentation data attaches here
-                HashSet<MethodDesc> methodsToInsertInstrumentationDataFor = new HashSet<MethodDesc>();
-                foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
+
+                bool HasAnyProfileDataForInput()
                 {
-                    foreach (MethodDesc method in ProfileDataManager.GetMethodsForModuleDesc(inputModule))
+                    foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
                     {
-                        if (ProfileDataManager[method].SchemaData != null)
+                        foreach (MethodDesc method in ProfileDataManager.GetInputProfileDataMethodsForModule(inputModule))
                         {
-                            methodsToInsertInstrumentationDataFor.Add(method);
+                            if (ProfileDataManager[method].SchemaData != null)
+                            {
+                                return true;
+                            }
                         }
                     }
+
+                    return false;
                 }
-                if (methodsToInsertInstrumentationDataFor.Count != 0)
+
+                if (ProfileDataManager.SynthesizeRandomPgoData || HasAnyProfileDataForInput())
                 {
-                    MethodDesc[] methodsToInsert = methodsToInsertInstrumentationDataFor.ToArray();
-                    methodsToInsert.MergeSort(new TypeSystemComparer().Compare);
-                    InstrumentationDataTable = new InstrumentationDataTableNode(this, methodsToInsert, ProfileDataManager);
+                    InstrumentationDataTable = new InstrumentationDataTableNode(this, ProfileDataManager);
                     Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable, InstrumentationDataTable);
                 }
             }
 
+            ILBodyPrecodeImports = new ImportSectionNode(
+                "A_ILBodyPrecodeImports",
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.None,
+                (byte)Target.PointerSize,
+                emitPrecode: true,
+                emitGCRefMap: false);
+            ImportSectionsTable.AddEmbeddedObject(ILBodyPrecodeImports);
+
             MethodImports = new ImportSectionNode(
                 "MethodImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
+                ReadyToRunImportSectionType.StubDispatch,
+                ReadyToRunImportSectionFlags.PCode,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
@@ -744,8 +823,8 @@ namespace ILCompiler.DependencyAnalysis
 
             DispatchImports = new ImportSectionNode(
                 "DispatchImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STUB_DISPATCH,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
+                ReadyToRunImportSectionType.StubDispatch,
+                ReadyToRunImportSectionFlags.PCode,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
@@ -753,8 +832,8 @@ namespace ILCompiler.DependencyAnalysis
 
             HelperImports = new ImportSectionNode(
                 "HelperImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.PCode,
                 (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: false);
@@ -762,8 +841,8 @@ namespace ILCompiler.DependencyAnalysis
 
             PrecodeImports = new ImportSectionNode(
                 "PrecodeImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_UNKNOWN,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_PCODE,
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.PCode,
                 (byte)Target.PointerSize,
                 emitPrecode: true,
                 emitGCRefMap: false);
@@ -771,8 +850,8 @@ namespace ILCompiler.DependencyAnalysis
 
             StringImports = new ImportSectionNode(
                 "StringImports",
-                CorCompileImportType.CORCOMPILE_IMPORT_TYPE_STRING_HANDLE,
-                CorCompileImportFlags.CORCOMPILE_IMPORT_FLAGS_UNKNOWN,
+                ReadyToRunImportSectionType.StringHandle,
+                ReadyToRunImportSectionFlags.None,
                 (byte)Target.PointerSize,
                 emitPrecode: true,
                 emitGCRefMap: false);
@@ -785,6 +864,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
+            graph.AddRoot(ILBodyPrecodeImports, "IL body precode imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
             graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated for R2R files");
@@ -793,7 +873,7 @@ namespace ILCompiler.DependencyAnalysis
             if (Win32ResourcesNode != null)
                 graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
 
-            MetadataManager.AttachToDependencyGraph(graph);
+            MetadataManager.AttachToDependencyGraph(graph, this);
         }
 
         private void Graph_ComputingDependencyPhaseChange(int newPhase)
@@ -927,13 +1007,6 @@ namespace ILCompiler.DependencyAnalysis
         public CopiedManagedResourcesNode CopiedManagedResources(EcmaModule module)
         {
             return _copiedManagedResources.GetOrAdd(module);
-        }
-
-        private NodeCache<MethodWithGCInfo, ProfileDataNode> _profileDataCountsNodes;
-
-        public ProfileDataNode ProfileData(MethodWithGCInfo method)
-        {
-            return _profileDataCountsNodes.GetOrAdd(method);
         }
     }
 }

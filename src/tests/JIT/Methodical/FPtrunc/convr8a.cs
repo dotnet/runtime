@@ -4,6 +4,7 @@
 //testing double narrowing
 
 using System;
+using Xunit;
 
 public struct VT
 {
@@ -85,7 +86,8 @@ public class ConvR8test
         return s_f1 / s_a1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = true;
 

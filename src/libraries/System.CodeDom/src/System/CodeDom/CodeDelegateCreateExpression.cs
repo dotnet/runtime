@@ -19,7 +19,7 @@ namespace System.CodeDom
 
         public CodeTypeReference DelegateType
         {
-            get => _delegateType ?? (_delegateType = new CodeTypeReference(""));
+            get => _delegateType ??= new CodeTypeReference("");
             set => _delegateType = value;
         }
 

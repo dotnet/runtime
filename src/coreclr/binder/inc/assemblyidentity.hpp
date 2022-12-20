@@ -30,12 +30,9 @@ namespace BINDER_SPACE
             IDENTITY_FLAG_PUBLIC_KEY_TOKEN       = 0x004,
             IDENTITY_FLAG_PUBLIC_KEY             = 0x008,
             IDENTITY_FLAG_CULTURE                = 0x010,
-            IDENTITY_FLAG_LANGUAGE               = 0x020,
             IDENTITY_FLAG_PROCESSOR_ARCHITECTURE = 0x040,
             IDENTITY_FLAG_RETARGETABLE           = 0x080,
             IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL  = 0x100,
-            IDENTITY_FLAG_CUSTOM                 = 0x200,
-            IDENTITY_FLAG_CUSTOM_NULL            = 0x400,
             IDENTITY_FLAG_CONTENT_TYPE           = 0x800,
             IDENTITY_FLAG_FULL_NAME              = (IDENTITY_FLAG_SIMPLE_NAME |
                                                     IDENTITY_FLAG_VERSION)
@@ -50,7 +47,6 @@ namespace BINDER_SPACE
             // Need to pre-populate SBuffers because of bogus asserts
             static const BYTE byteArr[] = { 0 };
             m_publicKeyOrTokenBLOB.SetImmutable(byteArr, sizeof(byteArr));
-            m_customBLOB.SetImmutable(byteArr, sizeof(byteArr));
         }
         ~AssemblyIdentity()
         {
@@ -83,51 +79,7 @@ namespace BINDER_SPACE
         SBuffer             m_publicKeyOrTokenBLOB;
         PEKIND              m_kProcessorArchitecture;
         AssemblyContentType m_kContentType;
-        SBuffer             m_customBLOB;
         DWORD               m_dwIdentityFlags;
-    };
-
-    class AssemblyIdentityUTF8 final : public AssemblyIdentity
-    {
-    public:
-        AssemblyIdentityUTF8()
-        {
-            m_szSimpleNameUTF8 = NULL;
-            m_szCultureOrLanguageUTF8 = NULL;
-        }
-
-        void PopulateUTF8Fields()
-        {
-            m_szSimpleNameUTF8 = m_simpleName.GetUTF8(sSimpleNameBuffer);
-
-            if (Have(IDENTITY_FLAG_CULTURE) && !m_cultureOrLanguage.IsEmpty())
-            {
-                m_szCultureOrLanguageUTF8 = m_cultureOrLanguage.GetUTF8(sCultureBuffer);
-            }
-        }
-
-        inline LPCSTR GetSimpleNameUTF8()
-        {
-            return m_szSimpleNameUTF8;
-        }
-
-        inline LPCSTR GetCultureOrLanguageUTF8()
-        {
-            return m_szCultureOrLanguageUTF8;
-        }
-
-        inline const BYTE *GetPublicKeyOrTokenArray()
-        {
-            const BYTE *pPublicKeyOrToken = m_publicKeyOrTokenBLOB;
-
-            return pPublicKeyOrToken;
-        }
-
-    protected:
-        StackScratchBuffer sSimpleNameBuffer;
-        StackScratchBuffer sCultureBuffer;
-        LPCSTR m_szSimpleNameUTF8;
-        LPCSTR m_szCultureOrLanguageUTF8;
     };
 };
 

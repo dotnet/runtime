@@ -36,6 +36,7 @@
 
 #if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -74,15 +75,15 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
+        private int is_byreflike_set;
 
         private int state;
 #endregion
 
+        internal bool is_hidden_global_type;
         private ITypeName fullname;
         private bool createTypeCalled;
         private Type? underlying_type;
-
-        public const int UnspecifiedTypeSize = 0;
 
         protected override TypeAttributes GetAttributeFlagsImpl()
         {
@@ -91,8 +92,9 @@ namespace System.Reflection.Emit
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
-        internal TypeBuilder(ModuleBuilder mb, TypeAttributes attr, int table_idx)
+        internal TypeBuilder(ModuleBuilder mb, TypeAttributes attr, int table_idx, bool is_hidden_global_type = false)
         {
+            this.is_hidden_global_type = is_hidden_global_type;
             this.parent = null;
             this.attrs = attr;
             this.class_size = UnspecifiedTypeSize;
@@ -110,6 +112,7 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
+            this.is_hidden_global_type = false;
             int sep_index;
             this.parent = ResolveUserType(parent);
             this.attrs = attr;
@@ -144,7 +147,7 @@ namespace System.Reflection.Emit
                 this.parent = typeof(object);
 
             // skip .<Module> ?
-            table_idx = mb.get_next_table_index(this, 0x02, 1);
+            table_idx = mb.get_next_table_index(0x02, 1);
             this.fullname = GetFullName();
         }
 
@@ -174,7 +177,6 @@ namespace System.Reflection.Emit
             get { return nesting_type; }
         }
 
-        [ComVisible(true)]
         public override bool IsSubclassOf(Type c)
         {
             Type? t;
@@ -268,13 +270,10 @@ namespace System.Reflection.Emit
             get { return nesting_type; }
         }
 
-        [ComVisible(true)]
         public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
-            if (interfaceType == null)
-                throw new ArgumentNullException(nameof(interfaceType));
-            if (interfaceType.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
+            ArgumentNullException.ThrowIfNull(interfaceType);
+
             check_not_created();
 
             if (interfaces != null)
@@ -379,22 +378,6 @@ namespace System.Reflection.Emit
             return created!.GetCustomAttributes(attributeType, inherit);
         }
 
-        public TypeBuilder DefineNestedType(string name)
-        {
-            return DefineNestedType(name, TypeAttributes.NestedPrivate,
-                                     typeof(object), null);
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr)
-        {
-            return DefineNestedType(name, attr, typeof(object), null);
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
-        {
-            return DefineNestedType(name, attr, parent, null);
-        }
-
         private TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces,
                               PackingSize packSize, int typeSize)
         {
@@ -408,8 +391,7 @@ namespace System.Reflection.Emit
             {
                 foreach (Type iface in interfaces)
                 {
-                    if (iface == null)
-                        throw new ArgumentNullException(nameof(interfaces));
+                    ArgumentNullException.ThrowIfNull(iface, nameof(interfaces));
                     if (iface.IsByRef)
                         throw new ArgumentException(nameof(interfaces));
                 }
@@ -433,20 +415,9 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        [ComVisible(true)]
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
         {
             return DefineNestedType(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typeSize)
-        {
-            return DefineNestedType(name, attr, parent, null, PackingSize.Unspecified, typeSize);
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize)
-        {
-            return DefineNestedType(name, attr, parent, null, packSize, UnspecifiedTypeSize);
         }
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize,
@@ -455,13 +426,6 @@ namespace System.Reflection.Emit
             return DefineNestedType(name, attr, parent, null, packSize, typeSize);
         }
 
-        [ComVisible(true)]
-        public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes)
-        {
-            return DefineConstructor(attributes, callingConvention, parameterTypes, null, null);
-        }
-
-        [ComVisible(true)]
         public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
             check_not_created();
@@ -485,7 +449,6 @@ namespace System.Reflection.Emit
             return cb;
         }
 
-        [ComVisible(true)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         public ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
@@ -514,10 +477,7 @@ namespace System.Reflection.Emit
                     null, EmptyTypes, null);
             if (parent_constructor == null)
             {
-                throw new NotSupportedException("Parent does"
-                    + " not have a default constructor."
-                    + " The default constructor must be"
-                    + " explicitly defined.");
+                throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
             }
 
             ConstructorBuilder cb = DefineConstructor(attributes,
@@ -549,18 +509,6 @@ namespace System.Reflection.Emit
             num_methods++;
         }
 
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, Type returnType, Type[] parameterTypes)
-        {
-            return DefineMethod(name, attributes, CallingConventions.Standard,
-                returnType, parameterTypes);
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
-        {
-            return DefineMethod(name, attributes, callingConvention, returnType,
-                null, null, parameterTypes, null, null);
-        }
-
         public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             check_name(nameof(name), name);
@@ -571,8 +519,7 @@ namespace System.Reflection.Emit
                 !(((attributes & MethodAttributes.Static) != 0)))
                 throw new ArgumentException("Interface method must be abstract and virtual.");
 
-            if (returnType == null)
-                returnType = typeof(void);
+            returnType ??= typeof(void);
             MethodBuilder res = new MethodBuilder(this, name, attributes,
                 callingConvention, returnType,
                 returnTypeRequiredCustomModifiers,
@@ -581,14 +528,6 @@ namespace System.Reflection.Emit
                 parameterTypeOptionalCustomModifiers);
             append_method(res);
             return res;
-        }
-
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            return DefinePInvokeMethod(name, dllName, entryName, attributes,
-                callingConvention, returnType, null, null, parameterTypes,
-                null, null, nativeCallConv, nativeCharSet);
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
@@ -610,9 +549,9 @@ namespace System.Reflection.Emit
             check_name(nameof(dllName), dllName);
             check_name(nameof(entryName), entryName);
             if ((attributes & MethodAttributes.Abstract) != 0)
-                throw new ArgumentException("PInvoke methods must be static and native and cannot be abstract.");
+                throw new ArgumentException(SR.Argument_BadPInvokeMethod);
             if (IsInterface)
-                throw new ArgumentException("PInvoke methods cannot exist on interfaces.");
+                throw new ArgumentException(SR.Argument_BadPInvokeOnInterface);
             check_not_created();
 
             MethodBuilder res
@@ -635,29 +574,10 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            return DefinePInvokeMethod(name, dllName, name, attributes, callingConvention, returnType, parameterTypes,
-                nativeCallConv, nativeCharSet);
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes)
-        {
-            return DefineMethod(name, attributes, CallingConventions.Standard);
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention)
-        {
-            return DefineMethod(name, attributes, callingConvention, null, null);
-        }
-
         public void DefineMethodOverride(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
-            if (methodInfoBody == null)
-                throw new ArgumentNullException(nameof(methodInfoBody));
-            if (methodInfoDeclaration == null)
-                throw new ArgumentNullException(nameof(methodInfoDeclaration));
+            ArgumentNullException.ThrowIfNull(methodInfoBody);
+            ArgumentNullException.ThrowIfNull(methodInfoDeclaration);
             check_not_created();
             if (methodInfoBody.DeclaringType != this)
                 throw new ArgumentException("method body must belong to this type");
@@ -668,16 +588,11 @@ namespace System.Reflection.Emit
             }
         }
 
-        public FieldBuilder DefineField(string fieldName, Type type, FieldAttributes attributes)
-        {
-            return DefineField(fieldName, type, null, null, attributes);
-        }
-
         public FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             check_name(nameof(fieldName), fieldName);
             if (type == typeof(void))
-                throw new ArgumentException("Bad field type in defining field.");
+                throw new ArgumentException(SR.Argument_BadFieldType);
             check_not_created();
 
             FieldBuilder res = new FieldBuilder(this, fieldName, type, attributes, requiredCustomModifiers, optionalCustomModifiers);
@@ -708,21 +623,6 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, Type returnType, Type[]? parameterTypes)
-        {
-            return DefineProperty(name, attributes, 0, returnType, null, null, parameterTypes, null, null);
-        }
-
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? parameterTypes)
-        {
-            return DefineProperty(name, attributes, callingConvention, returnType, null, null, parameterTypes, null, null);
-        }
-
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
-        {
-            return DefineProperty(name, attributes, 0, returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
-        }
-
         public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             check_name(nameof(name), name);
@@ -746,7 +646,6 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        [ComVisible(true)]
         public ConstructorBuilder DefineTypeInitializer()
         {
             return DefineConstructor(MethodAttributes.Public |
@@ -794,9 +693,11 @@ namespace System.Reflection.Emit
         // We require emitted types to have all members on their bases to be accessible.
         // This is basically an identity function for `this`.
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
         {
-            return CreateTypeInfo();
+            Type? type = CreateTypeInfo();
+            Debug.Assert(type != null);
+            return type;
         }
 
         // We require emitted types to have all members on their bases to be accessible.
@@ -838,7 +739,7 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsByRef)
-                    throw new ArgumentException();
+                    throw new NotSupportedException();
                 if (IsInterface)
                     throw new TypeLoadException();
             }
@@ -877,17 +778,6 @@ namespace System.Reflection.Emit
                 }
             }
 
-            if (fields != null)
-            {
-                foreach (FieldBuilder fb in fields)
-                {
-                    if (fb == null)
-                        continue;
-                    if (fb.FieldType.IsByRef)
-                        throw new COMException();
-                }
-            }
-
             if (methods != null)
             {
                 bool is_concrete = !IsAbstract;
@@ -910,6 +800,12 @@ namespace System.Reflection.Emit
             ResolveUserTypes();
 
             created = create_runtime_class();
+
+            if (is_hidden_global_type)
+            {
+                return null;
+            }
+
             if (created != null)
                 return created;
             return this;
@@ -925,24 +821,21 @@ namespace System.Reflection.Emit
             {
                 foreach (FieldBuilder fb in fields)
                 {
-                    if (fb != null)
-                        fb.ResolveUserTypes();
+                    fb?.ResolveUserTypes();
                 }
             }
             if (methods != null)
             {
                 foreach (MethodBuilder mb in methods)
                 {
-                    if (mb != null)
-                        mb.ResolveUserTypes();
+                    mb?.ResolveUserTypes();
                 }
             }
             if (ctors != null)
             {
                 foreach (ConstructorBuilder cb in ctors)
                 {
-                    if (cb != null)
-                        cb.ResolveUserTypes();
+                    cb?.ResolveUserTypes();
                 }
             }
         }
@@ -954,7 +847,7 @@ namespace System.Reflection.Emit
                     types[i] = ResolveUserType(types[i]);
         }
 
-        [return: NotNullIfNotNull("t")]
+        [return: NotNullIfNotNull(nameof(t))]
         internal static Type? ResolveUserType(Type? t)
         {
             if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
@@ -994,7 +887,7 @@ namespace System.Reflection.Emit
                     }
                 }
         */
-        [ComVisible(true)]
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
@@ -1060,12 +953,13 @@ namespace System.Reflection.Emit
 
         /* Needed to keep signature compatibility with MS.NET */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public override EventInfo[] GetEvents()
         {
             const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
+            // Suppression can be removed after https://github.com/dotnet/linker/issues/2673 is resolved.
+#pragma warning disable IL2085
             return GetEvents(DefaultBindingFlags);
+#pragma warning restore IL2085
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
@@ -1384,11 +1278,13 @@ namespace System.Reflection.Emit
             }
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return new ArrayType(this, 0);
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             if (rank < 1)
@@ -1401,23 +1297,22 @@ namespace System.Reflection.Emit
             return new ByRefType(this);
         }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {
             //return base.MakeGenericType (typeArguments);
 
             if (!IsGenericTypeDefinition)
-                throw new InvalidOperationException("not a generic type definition");
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (generic_params!.Length != typeArguments.Length)
-                throw new ArgumentException(string.Format("The type or method has {0} generic parameter(s) but {1} generic argument(s) where provided. A generic argument must be provided for each generic parameter.", generic_params.Length, typeArguments.Length), nameof(typeArguments));
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, generic_params.Length, typeArguments.Length), nameof(typeArguments));
 
             foreach (Type t in typeArguments)
             {
-                if (t == null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                ArgumentNullException.ThrowIfNull(t, nameof(typeArguments));
             }
 
             Type[] copy = new Type[typeArguments.Length];
@@ -1441,8 +1336,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.StructLayoutAttribute")
@@ -1544,6 +1438,10 @@ namespace System.Reflection.Emit
             {
                 attrs |= TypeAttributes.HasSecurity;
             }
+            else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+            {
+                is_byreflike_set = 1;
+            }
 
             if (cattrs != null)
             {
@@ -1559,7 +1457,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
@@ -1568,11 +1465,9 @@ namespace System.Reflection.Emit
         public EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
         {
             check_name(nameof(name), name);
-            if (eventtype == null)
-                throw new ArgumentNullException(nameof(eventtype));
+            ArgumentNullException.ThrowIfNull(eventtype);
             check_not_created();
-            if (eventtype.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
+
             EventBuilder res = new EventBuilder(this, name, attributes, eventtype);
             if (events != null)
             {
@@ -1591,8 +1486,7 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
 
             FieldBuilder res = DefineUninitializedData(name, data.Length, attributes);
             res.SetRVAData(data);
@@ -1601,12 +1495,9 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException("Empty name is not legal", nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
             if ((size <= 0) || (size > 0x3f0000))
-                throw new ArgumentException("Data size must be > 0 and < 0x3f0000");
+                throw new ArgumentException(SR.Argument_BadSizeForData);
             check_not_created();
 
             string typeName = "$ArrayType$" + size;
@@ -1616,7 +1507,7 @@ namespace System.Reflection.Emit
             {
                 TypeBuilder tb = DefineNestedType(typeName,
                     TypeAttributes.NestedPrivate | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
-                                                   typeof(ValueType), null, PackingSize.Size1, size);
+                                                   typeof(ValueType), null, FieldBuilder.RVADataPackingSize(size), size);
                 tb.CreateType();
                 datablobtype = tb;
             }
@@ -1636,7 +1527,7 @@ namespace System.Reflection.Emit
                 if ((attrs & TypeAttributes.Interface) != 0)
                 {
                     if ((attrs & TypeAttributes.Abstract) == 0)
-                        throw new InvalidOperationException("Interface must be declared abstract.");
+                        throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
                     this.parent = null;
                 }
                 else
@@ -1653,12 +1544,11 @@ namespace System.Reflection.Emit
             this.parent = ResolveUserType(this.parent);
         }
 
-        internal int get_next_table_index(object obj, int table, int count)
+        internal int get_next_table_index(int table, int count)
         {
-            return pmodule.get_next_table_index(obj, table, count);
+            return pmodule.get_next_table_index(table, count);
         }
 
-        [ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (created == null)
@@ -1689,7 +1579,7 @@ namespace System.Reflection.Emit
 
         private static Exception not_supported()
         {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+            return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         internal void check_not_created()
@@ -1706,9 +1596,8 @@ namespace System.Reflection.Emit
 
         private static void check_name(string argName, string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(argName);
-            if (name.Length == 0 || name[0] == ((char)0))
+            ArgumentException.ThrowIfNullOrEmpty(name, argName);
+            if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_EmptyName, argName);
         }
 
@@ -1769,7 +1658,7 @@ namespace System.Reflection.Emit
         public override Type GetGenericTypeDefinition()
         {
             if (generic_params == null)
-                throw new InvalidOperationException("Type is not generic");
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
             return this;
         }
 
@@ -1826,8 +1715,7 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(names);
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
@@ -1835,8 +1723,8 @@ namespace System.Reflection.Emit
             for (int i = 0; i < names.Length; i++)
             {
                 string item = names[i];
-                if (item == null)
-                    throw new ArgumentNullException(nameof(names));
+                ArgumentNullException.ThrowIfNull(item, nameof(names));
+
                 generic_params[i] = new GenericTypeParameterBuilder(this, null, item, i);
             }
 
@@ -2072,7 +1960,7 @@ namespace System.Reflection.Emit
                         destValue = ticks;
                         return true;
                     default:
-                        throw new ArgumentException(type!.ToString() + " is not a supported constant type.");
+                        throw new ArgumentException(SR.Format(SR.Argument_ConstantNotSupported, type));
                 }
             }
             else
@@ -2088,7 +1976,7 @@ namespace System.Reflection.Emit
 
         private static void throw_argument_ConstantDoesntMatch()
         {
-            throw new ArgumentException("Constant does not match the defined type.");
+            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
         }
 
         public override bool IsTypeDefinition => true;

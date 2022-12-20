@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpPKeyCreateRsa(IntPtr rsa);
 
         internal static SafeEvpPKeyHandle EvpPKeyCreateRsa(IntPtr rsa)
@@ -29,7 +29,7 @@ internal static partial class Interop
             return pkey;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
 
         internal static SafeEvpPKeyHandle RsaGenerateKey(int keySize)
@@ -45,7 +45,7 @@ internal static partial class Interop
             return pkey;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaDecrypt(
             SafeEvpPKeyHandle pkey,
             ref byte source,
@@ -80,7 +80,7 @@ internal static partial class Interop
             return written;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaEncrypt(
             SafeEvpPKeyHandle pkey,
             ref byte source,
@@ -115,7 +115,7 @@ internal static partial class Interop
             return written;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaSignHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,
@@ -150,7 +150,7 @@ internal static partial class Interop
             return written;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaVerifyHash(
             SafeEvpPKeyHandle pkey,
             RSASignaturePaddingMode paddingMode,

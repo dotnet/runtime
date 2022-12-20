@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <RootNamespace>XmlMiscTests</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="XmlUrlResolverTests.cs" />
-  </ItemGroup>
-</Project>

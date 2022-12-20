@@ -11,7 +11,7 @@ using System.Xml.XPath;
 namespace MS.Internal.Xml.XPath
 {
     [DebuggerDisplay("Position={CurrentPosition}, Current={debuggerDisplayProxy, nq}")]
-    internal class XPathArrayIterator : ResetableIterator
+    internal class XPathArrayIterator : ResettableIterator
     {
         protected IList list;
         protected int index;

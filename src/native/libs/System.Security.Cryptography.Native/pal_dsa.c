@@ -6,6 +6,7 @@
 
 int32_t CryptoNative_DsaUpRef(DSA* dsa)
 {
+    // no impact on the error queue.
     return DSA_up_ref(dsa);
 }
 
@@ -24,6 +25,8 @@ int32_t CryptoNative_DsaGenerateKey(DSA** dsa, int32_t bits)
         assert(false);
         return 0;
     }
+
+    ERR_clear_error();
 
     *dsa = DSA_new();
     if (!(*dsa))
@@ -44,11 +47,13 @@ int32_t CryptoNative_DsaGenerateKey(DSA** dsa, int32_t bits)
 
 int32_t CryptoNative_DsaSizeSignature(DSA* dsa)
 {
+    // No error queue impact.
     return DSA_size(dsa);
 }
 
 int32_t CryptoNative_DsaSizeP(DSA* dsa)
 {
+    // No error queue impact.
     if (dsa)
     {
         const BIGNUM* p;
@@ -65,6 +70,7 @@ int32_t CryptoNative_DsaSizeP(DSA* dsa)
 
 int32_t CryptoNative_DsaSizeQ(DSA* dsa)
 {
+    // No error queue impact.
     if (dsa)
     {
         const BIGNUM* q;
@@ -91,6 +97,8 @@ int32_t CryptoNative_DsaSign(
         assert(false);
         return 0;
     }
+
+    ERR_clear_error();
 
     // DSA_OpenSSL() returns a shared pointer, no need to free/cache.
     if (DSA_get_method(dsa) == DSA_OpenSSL())
@@ -161,6 +169,7 @@ int32_t CryptoNative_GetDsaParameters(
     assert(yLength != NULL);
     assert(xLength != NULL);
 
+    // No error queue impact.
     DSA_get0_pqg(dsa, p, q, g);
     *pLength = BN_num_bytes(*p);
     *qLength = BN_num_bytes(*q);
@@ -202,6 +211,8 @@ int32_t CryptoNative_DsaKeyCreateByExplicitParameters(
         assert(false);
         return 0;
     }
+
+    ERR_clear_error();
 
     *outDsa = DSA_new();
     if (!*outDsa)

@@ -32,6 +32,16 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public static void FormatCrlDistibutionPoint()
+        {
+            byte[] data = ("30363034A032A030862E687474703A2F2F63726C2E676C6F62616C7369676E2E" +
+                "636F6D2F67737273616F7673736C6361323031382E63726C").HexToByteArray();
+            AsnEncodedData extension = new AsnEncodedData("2.5.29.31", data);
+            Assert.Contains("http://crl.globalsign.com/gsrsaovsslca2018.crl", extension.Format(true));
+        }
+
+        [Fact]
         public static void FormatInvalidTypedData()
         {
             // This passes in data in an illegal format. AsnEncodedData.Format() swallows the error and falls back to a simple hex-encoding scheme.
@@ -101,11 +111,12 @@ namespace System.Security.Cryptography.Tests
                 sanExtension);
 
             string s = asnData.Format(false);
+            bool isOpenSsl3 = PlatformDetection.IsOpenSsl3;
 
             string expected = string.Join(
                 ", ",
                 // Choice[0]: OtherName
-                "othername:<unsupported>",
+                isOpenSsl3 ? "othername: UPN::subjectupn1@example.org" : "othername:<unsupported>",
                 // Choice[1]: Rfc822Name (EmailAddress)
                 "email:sanemail1@example.org",
                 // Choice[2]: DnsName
@@ -123,7 +134,7 @@ namespace System.Security.Cryptography.Tests
                 // Choice[7]: IPAddress (IPv6)
                 "IP Address:2001:DB8:AC10:FE01:0:0:0:0",
                 // Choice[7]: IPAddress (unknown type)
-                "IP Address:<invalid>",
+                isOpenSsl3 ? "IP Address:<invalid length=15>" : "IP Address:<invalid>",
                 // Choice[7]: IPAddress (IPv4, longer string)
                 "IP Address:255.255.255.255",
                 // Choice[7]: IPAddress (IPv4, medium string)

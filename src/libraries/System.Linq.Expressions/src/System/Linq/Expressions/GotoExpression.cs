@@ -338,7 +338,7 @@ namespace System.Linq.Expressions
 
         private static void ValidateGoto(LabelTarget target, ref Expression? value, string targetParameter, string valueParameter, Type? type)
         {
-            ContractUtils.RequiresNotNull(target, targetParameter);
+            ArgumentNullException.ThrowIfNull(target, targetParameter);
             if (value == null)
             {
                 if (target.Type != typeof(void)) throw Error.LabelMustBeVoidOrHaveExpression(nameof(target));

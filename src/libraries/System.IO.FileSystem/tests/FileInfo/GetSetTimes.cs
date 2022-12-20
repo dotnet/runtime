@@ -10,10 +10,18 @@ namespace System.IO.Tests
 {
     public class FileInfo_GetSetTimes : InfoGetSetTimes<FileInfo>
     {
-        protected override FileInfo GetExistingItem()
+        protected override bool CanBeReadOnly => true;
+
+        protected override FileInfo GetExistingItem(bool readOnly = false)
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
+
+            if (readOnly)
+            {
+                File.SetAttributes(path, FileAttributes.ReadOnly);
+            }
+
             return new FileInfo(path);
         }
 
@@ -145,7 +153,12 @@ namespace System.IO.Tests
             output.Directory.Create();
             output = input.CopyTo(output.FullName, true);
 
-            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
+            // On Browser, we sometimes see a difference of exactly 10M, eg.,
+            // Expected: 637949564520000000
+            // Actual:   637949564530000000
+            double tolerance = PlatformDetection.IsBrowser ? 10_000_000 : 0;
+
+            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks, tolerance);
             Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 

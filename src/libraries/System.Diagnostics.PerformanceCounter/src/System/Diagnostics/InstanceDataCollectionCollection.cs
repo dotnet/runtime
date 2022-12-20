@@ -51,8 +51,7 @@ namespace System.Diagnostics
 
         public bool Contains(string counterName)
         {
-            if (counterName == null)
-                throw new ArgumentNullException(nameof(counterName));
+            ArgumentNullException.ThrowIfNull(counterName);
 
             object objectName = counterName.ToLowerInvariant();
             return Dictionary.Contains(objectName);

@@ -110,8 +110,7 @@ namespace System.Net.Http.Headers
             }
 
             // Empty segments are allowed, so skip all delimiter-only segments (e.g. ", ,").
-            bool separatorFound = false;
-            int current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, startIndex, true, out separatorFound);
+            int current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, startIndex, true, out _);
             // It's OK if we didn't find leading separator characters. Ignore 'separatorFound'.
 
             if (current == input.Length)
@@ -131,8 +130,8 @@ namespace System.Net.Http.Headers
 
                 rangeCollection.Add(range!);
 
-                current = current + rangeLength;
-                current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, current, true, out separatorFound);
+                current += rangeLength;
+                current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, current, true, out bool separatorFound);
 
                 // If the string is not consumed, we must have a delimiter, otherwise the string is not a valid
                 // range list.
@@ -173,8 +172,8 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            current = current + fromLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += fromLength;
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             // After the first value, the '-' character must follow.
             if ((current == input.Length) || (input[current] != '-'))
@@ -184,7 +183,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // skip the '-' character
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             int toStartIndex = current;
             int toLength = 0;
@@ -199,8 +198,8 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                current = current + toLength;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += toLength;
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
             }
 
             if ((fromLength == 0) && (toLength == 0))

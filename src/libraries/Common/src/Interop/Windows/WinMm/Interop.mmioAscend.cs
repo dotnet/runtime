@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class WinMM
     {
-        [GeneratedDllImport(Libraries.WinMM)]
+        [LibraryImport(Libraries.WinMM)]
         internal static unsafe partial int mmioAscend(IntPtr hMIO, MMCKINFO* lpck, int flags);
     }
 }

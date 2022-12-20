@@ -14,11 +14,10 @@
 .assembly extern Microsoft.VisualBasic
 {
 }
-.assembly 'test'
+.assembly 'b46292'
 {
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 // MVID: {74C704CE-5E25-4072-A5C7-A9DD14614D82}
 .class private auto ansi Mod1
        extends [mscorlib]System.Object
@@ -79,7 +78,7 @@
 .class private auto ansi _vbProject
        extends [mscorlib]System.Object
 {
-  .method public static int32  _main(class [mscorlib]System.String[] _s) il managed
+  .method public static int32  _main() il managed
   {
     .entrypoint
     // Code size       6 (0x6)

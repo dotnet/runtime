@@ -40,7 +40,7 @@ namespace System.Drawing {
         ///    <para>Gets a value indicating whether this converter can
         ///       convert an object to the given destination type using the context.</para>
         /// </devdoc>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) {
+        public override bool CanConvertTo(ITypeDescriptorContext context, [NotNullWhen(true)] Type? destinationType) {
             if (destinationType == typeof(InstanceDescriptor)) {
                 return true;
             }
@@ -66,9 +66,7 @@ namespace System.Drawing {
 
                     // Parse 2 integer values.
                     //
-                    if (culture == null) {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
@@ -97,7 +95,7 @@ namespace System.Drawing {
         ///      Converts the given object to another type.  The most common types to convert
         ///      are to and from a string object.  The default implementation will make a call
         ///      to ToString on the object if the object is valid and if the destination
-        ///      type is string.  If this cannot convert to the desitnation type, this will
+        ///      type is string.  If this cannot convert to the destination type, this will
         ///      throw a NotSupportedException.
         /// </devdoc>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType) {
@@ -109,19 +107,17 @@ namespace System.Drawing {
                 if (destinationType == typeof(string)) {
                     Size size = (Size)value;
 
-                    if (culture == null) {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
-                    string[] args = new string[2];
-                    int nArg = 0;
 
                     // Note: ConvertToString will raise exception if value cannot be converted.
+                    return
+                        intConverter.ConvertToString(context, culture, size.Width) +
+                        sep +
+                        intConverter.ConvertToString(context, culture, size.Height);
                     args[nArg++] = intConverter.ConvertToString(context, culture, size.Width);
                     args[nArg++] = intConverter.ConvertToString(context, culture, size.Height);
-
-                    return string.Join(sep, args);
                 }
                 if (destinationType == typeof(InstanceDescriptor)) {
                     Size size = (Size)value;

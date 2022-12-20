@@ -17,7 +17,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 #include "filtermanager.h"
-#include "mdperf.h"
 #include "switches.h"
 #include "posterror.h"
 #include "stgio.h"
@@ -67,7 +66,6 @@ RegMeta::RegMeta() :
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
     m_bKeepKnownCa(false),
-    m_pCorProfileData(NULL),
     m_ReorderingOptions(NoReordering)
 #ifdef FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN
     , m_safeToDeleteStgdb(true)
@@ -88,8 +86,6 @@ RegMeta::RegMeta() :
 
 RegMeta::~RegMeta()
 {
-    BEGIN_CLEANUP_ENTRYPOINT;
-
     _ASSERTE(!m_bCached);
 
     HRESULT hr = S_OK;
@@ -167,8 +163,6 @@ RegMeta::~RegMeta()
 
     if (m_OptionValue.m_RuntimeVersion != NULL)
         delete[] m_OptionValue.m_RuntimeVersion;
-
-    END_CLEANUP_ENTRYPOINT;
 
 } // RegMeta::~RegMeta()
 
@@ -543,7 +537,6 @@ RegMeta::QueryInterface(
     void ** ppUnk)
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
     int fIsInterfaceRW = false;
     *ppUnk = 0;
 
@@ -701,9 +694,6 @@ RegMeta::QueryInterface(
 
     AddRef();
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::QueryInterface
 
@@ -811,20 +801,20 @@ ErrExit:
 #define STRING_BUFFER_LEN 1024
 #define ENUM_BUFFER_SIZE 10
 
-int DumpMD_Write(__in __in_z const char *str)
+int DumpMD_Write(_In_ _In_z_ const char *str)
 {
     OutputDebugStringA(str);
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
-int DumpMD_WriteLine(__in __in_z const char *str)
+int DumpMD_WriteLine(_In_ _In_z_ const char *str)
 {
     OutputDebugStringA(str);
     OutputDebugStringA("\n");
     return 0; // strlen(str);
 } // int DumpMD_Write()
 
-int DumpMD_VWriteMarker(__in __in_z const char *str, va_list marker)
+int DumpMD_VWriteMarker(_In_ _In_z_ const char *str, va_list marker)
 {
     CQuickBytes m_output;
 
@@ -846,7 +836,7 @@ int DumpMD_VWriteMarker(__in __in_z const char *str, va_list marker)
     return count;
 } // int DumpMD_VWriteMarker()
 
-int DumpMD_VWrite(__in __in_z const char *str, ...)
+int DumpMD_VWrite(_In_ _In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -857,7 +847,7 @@ int DumpMD_VWrite(__in __in_z const char *str, ...)
     return count;
 } // int DumpMD_VWrite()
 
-int DumpMD_VWriteLine(__in __in_z const char *str, ...)
+int DumpMD_VWriteLine(_In_ _In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;

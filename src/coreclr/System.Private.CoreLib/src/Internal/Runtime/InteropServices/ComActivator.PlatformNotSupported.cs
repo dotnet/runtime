@@ -4,9 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
+#pragma warning disable IDE0060
+
 namespace Internal.Runtime.InteropServices
 {
-    public static class ComActivator
+    internal static class ComActivator
     {
         /// <summary>
         /// Internal entry point for unmanaged COM activation API from native code

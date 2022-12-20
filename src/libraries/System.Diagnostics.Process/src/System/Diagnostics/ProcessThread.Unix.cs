@@ -29,7 +29,7 @@ namespace System.Diagnostics
         /// Returns or sets whether this thread would like a priority boost if the user interacts
         /// with user interface associated with this thread.
         /// </summary>
-        private bool PriorityBoostEnabledCore
+        private static bool PriorityBoostEnabledCore
         {
             get { return false; }
             set { } // Nop

@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Linq\CachedReflection.cs" />
     <Compile Include="System\Linq\EnumerableExecutor.cs" />
     <Compile Include="System\Linq\EnumerableQuery.cs" />
     <Compile Include="System\Linq\EnumerableRewriter.cs" />

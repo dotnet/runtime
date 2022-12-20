@@ -85,10 +85,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(target != null, "The target that is supposed to be linked must not be null.");
             Debug.Assert(linkOptions != null, "The link options must not be null.");
 
-            LinkedTargetInfo? targetInfo;
-
             // If the target already exists in the registry, replace it with a new NopLinkPropagator to maintain uniqueness
-            if (_targetInformation.TryGetValue(target, out targetInfo)) target = new NopLinkPropagator(_owningSource, target);
+            if (_targetInformation.TryGetValue(target, out _)) target = new NopLinkPropagator(_owningSource, target);
 
             // Add the target to both stores, the list and the dictionary, which are used for different purposes
             var node = new LinkedTargetInfo(target, linkOptions);

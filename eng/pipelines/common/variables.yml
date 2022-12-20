@@ -10,22 +10,47 @@ variables:
   value: 1000
 
 - name: isOfficialBuild
-  value: ${{ and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
-- name: isFullMatrix
-  value: ${{ and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
-- name: isNotFullMatrix
-  value: ${{ and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
-- name: isNotManualAndIsPR
-  value: ${{ and(not(in(variables['Build.DefinitionName'], 'runtime-staging-manual', 'runtime-manual')), eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}
-- name: isManualOrIsNotPR
-  value: ${{ or(in(variables['Build.DefinitionName'], 'runtime-staging-manual', 'runtime-manual'), and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'))) }}
+  value: ${{ and(eq(variables['System.TeamProject'], 'internal'), eq(variables['Build.DefinitionName'], 'dotnet-runtime-official')) }}
+- name: isRollingBuild
+  value: ${{ ne(variables['Build.Reason'], 'PullRequest') }}
+- name: isExtraPlatformsBuild
+  value: ${{ eq(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
+- name: isNotExtraPlatformsBuild
+  value: ${{ ne(variables['Build.DefinitionName'], 'runtime-extra-platforms') }}
+- name: isWasmOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests') }}
+- name: isiOSLikeOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-ioslike') }}
+- name: isiOSLikeSimulatorOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-ioslikesimulator') }}
+- name: isAndroidOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-android') }}
+- name: isAndroidEmulatorOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-androidemulator') }}
+- name: isMacCatalystOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-maccatalyst') }}
+- name: isLinuxBionicOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-linuxbionic') }}
+- name: isRunSmokeTestsOnly
+  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
+- name: isNotSpecificPlatformOnlyBuild
+  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
 
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml
 - name: dependOnEvaluatePaths
-  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community')) }}
+  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic', 'dotnet-linker-tests', 'runtime-dev-innerloop', 'runtime-coreclr superpmi-replay', 'runtime-coreclr superpmi-diffs')) }}
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release
   ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
     value: Debug
+
+- name: isDefaultPipeline
+  value: $[ and(
+              ne(variables['isWasmOnlyBuild'], true),
+              or(
+                ne(variables['isExtraPlatformsBuild'], true),
+                eq(variables['isRollingBuild'], true))) ]
+
+- template: /eng/pipelines/common/perf-variables.yml

@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -147,25 +146,25 @@ namespace System.Diagnostics
             }
         }
 
-        // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
-        public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
+        public DiagEnumerator<T> GetEnumerator() => new DiagEnumerator<T>(_first);
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
-    // Note: Some consumers use this Enumerator dynamically to avoid allocations.
-    internal struct Enumerator<T> : IEnumerator<T>
+    internal struct DiagEnumerator<T> : IEnumerator<T>
     {
-        private DiagNode<T>? _nextNode;
-        [AllowNull, MaybeNull] private T _currentItem;
+        private static readonly DiagNode<T> s_Empty = new DiagNode<T>(default!);
 
-        public Enumerator(DiagNode<T>? head)
+        private DiagNode<T>? _nextNode;
+        private DiagNode<T> _currentNode;
+
+        public DiagEnumerator(DiagNode<T>? head)
         {
             _nextNode = head;
-            _currentItem = default;
+            _currentNode = s_Empty;
         }
 
-        public T Current => _currentItem!;
+        public T Current => _currentNode.Value;
 
         object? IEnumerator.Current => Current;
 
@@ -173,11 +172,11 @@ namespace System.Diagnostics
         {
             if (_nextNode == null)
             {
-                _currentItem = default;
+                _currentNode = s_Empty;
                 return false;
             }
 
-            _currentItem = _nextNode.Value;
+            _currentNode = _nextNode;
             _nextNode = _nextNode.Next;
             return true;
         }
@@ -188,5 +187,4 @@ namespace System.Diagnostics
         {
         }
     }
-
 }

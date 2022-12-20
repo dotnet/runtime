@@ -53,25 +53,17 @@ namespace System.Data.Odbc
             return new OdbcConnectionPoolGroupProviderInfo();
         }
 
-        protected override DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
+        protected override DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection)
         {
             Debug.Assert(internalConnection != null, "internalConnection may not be null.");
-            cacheMetaDataFactory = false;
 
             OdbcConnection odbcOuterConnection = ((OdbcConnectionOpen)internalConnection).OuterConnection;
             Debug.Assert(odbcOuterConnection != null, "outer connection may not be null.");
 
             // get the DBMS Name
-            object? driverName = null;
-            string? stringValue = odbcOuterConnection.GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME);
-            if (stringValue != null)
-            {
-                driverName = stringValue;
-            }
+            odbcOuterConnection.GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME);
 
             Stream? XMLStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("System.Data.Odbc.OdbcMetaData.xml");
-            cacheMetaDataFactory = true;
-
 
             Debug.Assert(XMLStream != null, "XMLstream may not be null.");
 
@@ -105,11 +97,7 @@ namespace System.Data.Odbc
 
         internal override void PermissionDemand(DbConnection outerConnection)
         {
-            OdbcConnection? c = (outerConnection as OdbcConnection);
-            if (null != c)
-            {
-                c.PermissionDemand();
-            }
+            (outerConnection as OdbcConnection)?.PermissionDemand();
         }
 
         internal override void SetConnectionPoolGroup(DbConnection outerConnection, DbConnectionPoolGroup poolGroup)
@@ -123,11 +111,7 @@ namespace System.Data.Odbc
 
         internal override void SetInnerConnectionEvent(DbConnection owningObject, DbConnectionInternal to)
         {
-            OdbcConnection? c = (owningObject as OdbcConnection);
-            if (null != c)
-            {
-                c.SetInnerConnectionEvent(to);
-            }
+            (owningObject as OdbcConnection)?.SetInnerConnectionEvent(to);
         }
 
         internal override bool SetInnerConnectionFrom(DbConnection owningObject, DbConnectionInternal to, DbConnectionInternal from)
@@ -142,11 +126,7 @@ namespace System.Data.Odbc
 
         internal override void SetInnerConnectionTo(DbConnection owningObject, DbConnectionInternal to)
         {
-            OdbcConnection? c = (owningObject as OdbcConnection);
-            if (null != c)
-            {
-                c.SetInnerConnectionTo(to);
-            }
+            (owningObject as OdbcConnection)?.SetInnerConnectionTo(to);
         }
     }
 }

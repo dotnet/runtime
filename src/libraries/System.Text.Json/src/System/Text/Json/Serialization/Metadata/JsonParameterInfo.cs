@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal abstract class JsonParameterInfo
     {
-        private JsonTypeInfo? _runtimeTypeInfo;
+        private JsonTypeInfo? _jsonTypeInfo;
 
         public JsonConverter ConverterBase { get; private set; } = null!;
 
@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Metadata
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
         public object? DefaultValue { get; private protected set; }
 
-        public bool IgnoreDefaultValuesOnRead { get; private set; }
+        public bool IgnoreNullTokensOnRead { get; private set; }
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonTypeInfo that is cached on JsonSerializerOptions.
         public JsonSerializerOptions? Options { get; set; } // initialized in Init method
@@ -33,42 +33,40 @@ namespace System.Text.Json.Serialization.Metadata
         // Using a field to avoid copy semantics.
         public JsonParameterInfoValues ClrInfo = null!;
 
-        public JsonTypeInfo RuntimeTypeInfo
+        public JsonTypeInfo JsonTypeInfo
         {
             get
             {
+                Debug.Assert(Options != null);
                 Debug.Assert(ShouldDeserialize);
-                if (_runtimeTypeInfo == null)
-                {
-                    Debug.Assert(Options != null);
-                    _runtimeTypeInfo = Options!.GetOrAddClass(RuntimePropertyType);
-                }
-
-                return _runtimeTypeInfo;
+                return _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
             }
             set
             {
                 // Used by JsonMetadataServices.
-                Debug.Assert(_runtimeTypeInfo == null);
-                _runtimeTypeInfo = value;
+                Debug.Assert(_jsonTypeInfo == null);
+                _jsonTypeInfo = value;
             }
         }
 
-        public Type RuntimePropertyType { get; set; } = null!;
+        public Type PropertyType { get; set; } = null!;
 
         public bool ShouldDeserialize { get; private set; }
 
+        public JsonPropertyInfo MatchingProperty { get; private set; } = null!;
+
         public virtual void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
         {
+            MatchingProperty = matchingProperty;
             ClrInfo = parameterInfo;
             Options = options;
             ShouldDeserialize = true;
 
-            RuntimePropertyType = matchingProperty.RuntimePropertyType!;
+            PropertyType = matchingProperty.PropertyType;
             NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
-            ConverterBase = matchingProperty.ConverterBase;
-            IgnoreDefaultValuesOnRead = matchingProperty.IgnoreDefaultValuesOnRead;
-            NumberHandling = matchingProperty.NumberHandling;
+            ConverterBase = matchingProperty.EffectiveConverter;
+            IgnoreNullTokensOnRead = matchingProperty.IgnoreNullTokensOnRead;
+            NumberHandling = matchingProperty.EffectiveNumberHandling;
             MatchingPropertyCanBeNull = matchingProperty.PropertyTypeCanBeNull;
         }
 
@@ -83,7 +81,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonParameterInfo jsonParameterInfo = new JsonParameterInfo<sbyte>();
             jsonParameterInfo.ClrInfo = parameterInfo;
-            jsonParameterInfo.RuntimePropertyType = matchingProperty.RuntimePropertyType!;
+            jsonParameterInfo.PropertyType = matchingProperty.PropertyType;
             jsonParameterInfo.NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
 
             // TODO: https://github.com/dotnet/runtime/issues/60082.
@@ -101,14 +99,14 @@ namespace System.Text.Json.Serialization.Metadata
                 // doesn't match the parameter type, use reflection to get the default value.
                 Type parameterType = parameterInfo.ParameterType;
 
-                GenericMethodHolder holder;
-                if (matchingProperty.Options.TryGetClass(parameterType, out JsonTypeInfo? typeInfo))
+                DefaultValueHolder holder;
+                if (matchingProperty.Options.TryGetTypeInfoCached(parameterType, out JsonTypeInfo? typeInfo))
                 {
-                    holder = typeInfo.GenericMethods;
+                    holder = typeInfo.DefaultValueHolder;
                 }
                 else
                 {
-                    holder = GenericMethodHolder.CreateHolder(parameterInfo.ParameterType);
+                    holder = DefaultValueHolder.CreateHolder(parameterInfo.ParameterType);
                 }
 
                 jsonParameterInfo.DefaultValue = holder.DefaultValue;

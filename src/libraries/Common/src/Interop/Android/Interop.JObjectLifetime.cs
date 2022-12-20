@@ -10,10 +10,10 @@ internal static partial class Interop
 {
     internal static partial class JObjectLifetime
     {
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_NewGlobalReference")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_NewGlobalReference")]
         internal static partial IntPtr NewGlobalReference(IntPtr obj);
 
-        [GeneratedDllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DeleteGlobalReference")]
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_DeleteGlobalReference")]
         internal static partial void DeleteGlobalReference(IntPtr obj);
 
         internal class SafeJObjectHandle : SafeHandle

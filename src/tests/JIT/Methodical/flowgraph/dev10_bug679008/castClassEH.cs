@@ -13,8 +13,11 @@ Fix: Use an intermediate temporary, just like for other patterns, when the cast 
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal static class Repro
+namespace Test_castClassEH_cs
+{
+public static class Repro
 {
     private class Helper<T>
     {
@@ -46,7 +49,8 @@ internal static class Repro
         return ReturnVal;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int exploit = reinterpret_cast<IntPtr, string>("Hello World!");
         Console.WriteLine(exploit);
@@ -54,3 +58,4 @@ internal static class Repro
     }
 }
 
+}

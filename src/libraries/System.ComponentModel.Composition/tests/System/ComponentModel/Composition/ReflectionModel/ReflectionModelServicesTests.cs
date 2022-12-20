@@ -715,7 +715,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
-        public void CreateImportDefinition_Parameter_NullAsParamater_ShouldThrowArgumentNull()
+        public void CreateImportDefinition_Parameter_NullAsParameter_ShouldThrowArgumentNull()
         {
             ParameterInfo parameter = typeof(TestPart).GetConstructor(new Type[] { typeof(int) }).GetParameters()[0];
             Lazy<ParameterInfo> expectedLazyParameter = parameter.AsLazy();
@@ -1042,7 +1042,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private class TypeOrigin : ICompositionElement
         {
             private readonly Type _type;
-            private readonly ICompositionElement _orgin;
+            private readonly ICompositionElement _origin;
 
             public TypeOrigin(Type type)
                 : this(type, null)
@@ -1052,7 +1052,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             public TypeOrigin(Type type, ICompositionElement origin)
             {
                 this._type = type;
-                this._orgin = origin;
+                this._origin = origin;
             }
 
             public string DisplayName
@@ -1067,7 +1067,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 get
                 {
-                    return this._orgin;
+                    return this._origin;
                 }
             }
         }

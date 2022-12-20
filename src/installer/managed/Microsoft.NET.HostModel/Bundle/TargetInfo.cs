@@ -33,21 +33,21 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             OS = os ?? HostOS;
             Arch = arch ?? RuntimeInformation.OSArchitecture;
-            FrameworkVersion = targetFrameworkVersion ?? net60;
+            FrameworkVersion = targetFrameworkVersion ?? Environment.Version;
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
 
-            if (FrameworkVersion.CompareTo(net60) >= 0)
+            if (FrameworkVersion.Major >= 6)
             {
                 BundleMajorVersion = 6u;
                 DefaultOptions = BundleOptions.None;
             }
-            else if (FrameworkVersion.CompareTo(net50) >= 0)
+            else if (FrameworkVersion.Major == 5)
             {
                 BundleMajorVersion = 2u;
                 DefaultOptions = BundleOptions.None;
             }
-            else if (FrameworkVersion.Major == 3 && (FrameworkVersion.Minor == 0 || FrameworkVersion.Minor == 1))
+            else if (FrameworkVersion.Major == 3)
             {
                 BundleMajorVersion = 1u;
                 DefaultOptions = BundleOptions.BundleAllContent;
@@ -57,17 +57,23 @@ namespace Microsoft.NET.HostModel.Bundle
                 throw new ArgumentException($"Invalid input: Unsupported Target Framework Version {targetFrameworkVersion}");
             }
 
-            if (IsLinux && Arch == Architecture.Arm64)
+            if (IsWindows)
             {
-                // We align assemblies in the bundle at 4K so that we can use mmap on Linux without changing the page alignment of ARM64 R2R code.
+                // We align assemblies in the bundle at 4K - per requirements of memory mapping API (MapViewOfFile3, et al).
+                // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
+                AssemblyAlignment = 4096;
+            }
+            else if (Arch == Architecture.Arm64)
+            {
+                // We align assemblies in the bundle at 4K so that we can use mmap on Unix without changing the page alignment of ARM64 R2R code.
                 // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
                 // See https://github.com/dotnet/runtime/issues/41832.
                 AssemblyAlignment = 4096;
             }
             else
             {
-                // Otherwise, assemblies are 16 bytes aligned, so that their sections can be memory-mapped cache aligned.
-                AssemblyAlignment = 16;
+                // Otherwise, assemblies are 64 bytes aligned, so that their sections can be memory-mapped cache aligned.
+                AssemblyAlignment = 64;
             }
         }
 
@@ -110,11 +116,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public bool ShouldExclude(string relativePath) =>
             (FrameworkVersion.Major != 3) && (relativePath.Equals(HostFxr) || relativePath.Equals(HostPolicy));
 
-        private readonly Version net60 = new Version(6, 0);
-        private readonly Version net50 = new Version(5, 0);
         private string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
         private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";
-
-
     }
 }

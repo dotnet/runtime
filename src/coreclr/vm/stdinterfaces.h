@@ -168,7 +168,7 @@ HRESULT __stdcall   Dispatch_GetTypeInfo_Wrapper (
 HRESULT __stdcall   Dispatch_GetIDsOfNames_Wrapper (
                                     IDispatch* pDisp,
                                     REFIID riid,
-                                    __in_ecount(cNames) OLECHAR **rgszNames,
+                                    _In_reads_(cNames) OLECHAR **rgszNames,
                                     unsigned int cNames,
                                     LCID lcid,
                                     DISPID *rgdispid);
@@ -190,7 +190,7 @@ HRESULT __stdcall   Dispatch_Invoke_Wrapper (
 HRESULT __stdcall   InternalDispatchImpl_GetIDsOfNames_Wrapper (
                                     IDispatch* pDisp,
                                     REFIID riid,
-                                    __in_ecount(cNames) OLECHAR **rgszNames,
+                                    _In_reads_(cNames) OLECHAR **rgszNames,
                                     unsigned int cNames,
                                     LCID lcid,
                                     DISPID *rgdispid);
@@ -229,7 +229,7 @@ HRESULT __stdcall   DispatchEx_GetTypeInfo_Wrapper (
 HRESULT __stdcall   DispatchEx_GetIDsOfNames_Wrapper (
                                     IDispatchEx* pDisp,
                                     REFIID riid,
-                                    __in_ecount(cNames) OLECHAR **rgszNames,
+                                    _In_reads_(cNames) OLECHAR **rgszNames,
                                     unsigned int cNames,
                                     LCID lcid,
                                     DISPID *rgdispid);
@@ -384,7 +384,7 @@ HRESULT __stdcall
 InternalDispatchImpl_GetIDsOfNames (
     IDispatch* pDisp,
     REFIID riid,
-    __in_ecount(cNames) OLECHAR **rgszNames,
+    _In_reads_(cNames) OLECHAR **rgszNames,
     unsigned int cNames,
     LCID lcid,
     DISPID *rgdispid);

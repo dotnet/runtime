@@ -60,7 +60,7 @@ namespace System.Collections.Tests
             yield return new object[] { new SortedList<float, long>{{1f, 1L}, {2f, 2L}}.Values };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(TestDebuggerAttributes_Inputs))]
         public static void TestDebuggerAttributes(object obj)
         {
@@ -71,7 +71,7 @@ namespace System.Collections.Tests
             Assert.Equal((obj as IEnumerable).Cast<object>().ToArray(), items.Cast<object>());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(TestDebuggerAttributes_Inputs))]
         public static void TestDebuggerAttributes_Null(object obj)
         {

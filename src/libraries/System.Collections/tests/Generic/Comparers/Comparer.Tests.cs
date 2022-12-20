@@ -235,7 +235,7 @@ namespace System.Collections.Generic.Tests
         [Theory]
         [MemberData(nameof(NullableOfInt32ComparisonsData))]
         [MemberData(nameof(NullableOfInt32EnumComparisonsData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58933", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58933", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void NullableComparisons<T>(T leftValue, bool leftHasValue, T rightValue, bool rightHasValue, int expected) where T : struct
         {
             // Comparer<T> is specialized (for perf reasons) when T : U? where U : IComparable<U>

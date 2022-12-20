@@ -51,9 +51,8 @@ namespace System.Net.Http
             ref uint proxyAuthScheme,
             ref uint serverAuthScheme)
         {
-            uint supportedSchemes = 0;
-            uint firstSchemeIgnored = 0;
-            uint authTarget = 0;
+            uint supportedSchemes;
+            uint authTarget;
 
             Debug.Assert(state.RequestMessage != null);
             Debug.Assert(state.RequestMessage.RequestUri != null);
@@ -87,7 +86,7 @@ namespace System.Net.Http
                     if (!Interop.WinHttp.WinHttpQueryAuthSchemes(
                         state.RequestHandle,
                         out supportedSchemes,
-                        out firstSchemeIgnored,
+                        out _,
                         out authTarget))
                     {
                         // WinHTTP returns an error for schemes it doesn't handle.
@@ -140,7 +139,7 @@ namespace System.Net.Http
                     if (!Interop.WinHttp.WinHttpQueryAuthSchemes(
                         state.RequestHandle,
                         out supportedSchemes,
-                        out firstSchemeIgnored,
+                        out _,
                         out authTarget))
                     {
                         // WinHTTP returns an error for schemes it doesn't handle.
@@ -244,7 +243,7 @@ namespace System.Net.Http
             serverAuthScheme = 0;
             serverCredentials = null;
 
-            NetworkCredential? cred = null;
+            NetworkCredential? cred;
 
             lock (_credentialCacheLock)
             {

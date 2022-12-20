@@ -22,10 +22,7 @@ namespace System.Net.Http
 
         public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+            ArgumentNullException.ThrowIfNull(handler);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, handler);
 
@@ -36,11 +33,9 @@ namespace System.Net.Http
         [UnsupportedOSPlatformAttribute("browser")]
         public virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-            CheckDisposed();
+            ArgumentNullException.ThrowIfNull(request);
+
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (ShouldSendWithTelemetry(request))
             {
@@ -68,11 +63,9 @@ namespace System.Net.Http
 
         public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-            CheckDisposed();
+            ArgumentNullException.ThrowIfNull(request);
+
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (ShouldSendWithTelemetry(request))
             {
@@ -132,14 +125,6 @@ namespace System.Net.Http
                 {
                     _handler.Dispose();
                 }
-            }
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
             }
         }
     }

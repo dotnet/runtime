@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.module extern kernel32.dll
 .assembly extern System.Console { auto }
 .assembly extern xunit.core {}
 .assembly extern System.Threading.Thread { auto }

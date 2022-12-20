@@ -41,10 +41,8 @@ namespace System.Diagnostics
 
         public void AddRange(CounterCreationData[] value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
@@ -53,10 +51,8 @@ namespace System.Diagnostics
 
         public void AddRange(CounterCreationDataCollection value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {
@@ -91,8 +87,7 @@ namespace System.Diagnostics
 
         protected override void OnValidate(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!(value is CounterCreationData))
                 throw new ArgumentException(SR.MustAddCounterCreationData);

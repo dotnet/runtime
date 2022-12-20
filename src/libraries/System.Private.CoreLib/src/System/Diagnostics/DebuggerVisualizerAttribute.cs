@@ -32,10 +32,7 @@ namespace System.Diagnostics
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string visualizerTypeName,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizerObjectSource)
         {
-            if (visualizerObjectSource == null)
-            {
-                throw new ArgumentNullException(nameof(visualizerObjectSource));
-            }
+            ArgumentNullException.ThrowIfNull(visualizerObjectSource);
 
             VisualizerTypeName = visualizerTypeName;
             VisualizerObjectSourceTypeName = visualizerObjectSource.AssemblyQualifiedName;
@@ -44,10 +41,7 @@ namespace System.Diagnostics
         public DebuggerVisualizerAttribute(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer)
         {
-            if (visualizer == null)
-            {
-                throw new ArgumentNullException(nameof(visualizer));
-            }
+            ArgumentNullException.ThrowIfNull(visualizer);
 
             VisualizerTypeName = visualizer.AssemblyQualifiedName!;
         }
@@ -56,14 +50,8 @@ namespace System.Diagnostics
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizerObjectSource)
         {
-            if (visualizer == null)
-            {
-                throw new ArgumentNullException(nameof(visualizer));
-            }
-            if (visualizerObjectSource == null)
-            {
-                throw new ArgumentNullException(nameof(visualizerObjectSource));
-            }
+            ArgumentNullException.ThrowIfNull(visualizer);
+            ArgumentNullException.ThrowIfNull(visualizerObjectSource);
 
             VisualizerTypeName = visualizer.AssemblyQualifiedName!;
             VisualizerObjectSourceTypeName = visualizerObjectSource.AssemblyQualifiedName;
@@ -73,10 +61,7 @@ namespace System.Diagnostics
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type visualizer,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string? visualizerObjectSourceTypeName)
         {
-            if (visualizer == null)
-            {
-                throw new ArgumentNullException(nameof(visualizer));
-            }
+            ArgumentNullException.ThrowIfNull(visualizer);
 
             VisualizerTypeName = visualizer.AssemblyQualifiedName!;
             VisualizerObjectSourceTypeName = visualizerObjectSourceTypeName;
@@ -95,10 +80,7 @@ namespace System.Diagnostics
             get => _target;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 TargetTypeName = value.AssemblyQualifiedName;
                 _target = value;

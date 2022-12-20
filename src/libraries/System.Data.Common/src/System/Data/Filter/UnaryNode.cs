@@ -47,7 +47,7 @@ namespace System.Data
 
         private object EvalUnaryOp(int op, object vl)
         {
-            object value = DBNull.Value;
+            object value;
 
             if (DataExpression.IsUnknown(vl))
                 return DBNull.Value;
@@ -139,7 +139,7 @@ namespace System.Data
                     }
                     else
                     {
-                        if (DataExpression.ToBoolean(vl) != false)
+                        if (DataExpression.ToBoolean(vl))
                             return false;
                         return true;
                     }

@@ -6,6 +6,7 @@ namespace ComWrappersTests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
@@ -376,7 +377,7 @@ namespace ComWrappersTests
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
                         Assert.True(false, "Invalid failure mode");
-                        throw new Exception("UNREACHABLE");
+                        throw new UnreachableException();
                 }
             }
 
@@ -390,7 +391,7 @@ namespace ComWrappersTests
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
                         Assert.True(false, "Invalid failure mode");
-                        throw new Exception("UNREACHABLE");
+                        throw new UnreachableException();
                 }
             }
 
@@ -538,6 +539,10 @@ namespace ComWrappersTests
             refCount = MockReferenceTrackerRuntime.TrackerTarget_ReleaseFromReferenceTracker(refTrackerTarget);
             Assert.Equal(0, refCount);
 
+            // Inlining this method could unintentionally extend the lifetime of
+            // the Test instance. This lifetime extension makes clean-up of the CCW
+            // impossible when desired because the GC sees the object as reachable.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static IntPtr CreateWrapper(TestComWrappers cw)
             {
                 return cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
@@ -558,6 +563,7 @@ namespace ComWrappersTests
                 // Use the base type
                 IntPtr testWrapper = cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
                 int id = derived.AddObjectRef(testWrapper);
+                Marshal.Release(testWrapper);
 
                 // Tell the tracker runtime to release its hold on the base instance.
                 MockReferenceTrackerRuntime.ReleaseAllTrackerObjects();
@@ -606,7 +612,7 @@ namespace ComWrappersTests
             Assert.Equal(0, allocTracker.GetCount());
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {

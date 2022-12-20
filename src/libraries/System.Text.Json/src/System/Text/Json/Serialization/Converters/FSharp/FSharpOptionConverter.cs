@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -11,8 +11,6 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class FSharpOptionConverter<TOption, TElement> : JsonConverter<TOption>
         where TOption : class
     {
-        // Reflect the converter strategy of the element type, since we use the identical contract for Some(_) values.
-        internal override ConverterStrategy ConverterStrategy => _converterStrategy;
         internal override Type? ElementType => typeof(TElement);
         // 'None' is encoded using 'null' at runtime and serialized as 'null' in JSON.
         public override bool HandleNull => true;
@@ -20,23 +18,18 @@ namespace System.Text.Json.Serialization.Converters
         private readonly JsonConverter<TElement> _elementConverter;
         private readonly Func<TOption, TElement> _optionValueGetter;
         private readonly Func<TElement?, TOption> _optionConstructor;
-        private readonly ConverterStrategy _converterStrategy;
 
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         public FSharpOptionConverter(JsonConverter<TElement> elementConverter)
         {
             _elementConverter = elementConverter;
             _optionValueGetter = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionValueGetter<TOption, TElement>();
             _optionConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionSomeConstructor<TOption, TElement>();
-
-            // temporary workaround for JsonConverter base constructor needing to access
-            // ConverterStrategy when calculating `CanUseDirectReadOrWrite`.
-            // TODO move `CanUseDirectReadOrWrite` from JsonConverter to JsonTypeInfo.
-            _converterStrategy = _elementConverter.ConverterStrategy;
-            CanUseDirectReadOrWrite = _converterStrategy == ConverterStrategy.Value;
+            ConverterStrategy = elementConverter.ConverterStrategy;
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TOption? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out TOption? value)
         {
             // `null` values deserialize as `None`
             if (!state.IsContinuation && reader.TokenType == JsonTokenType.Null)
@@ -66,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             TElement element = _optionValueGetter(value);
-            state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
+            state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
             return _elementConverter.TryWrite(writer, element, options, ref state);
         }
 

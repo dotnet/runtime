@@ -28,6 +28,7 @@
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "generics.h"
+#include "corinfo.h"
 
 #include "asmconstants.h"
 #include "virtualcallstub.h"
@@ -113,17 +114,6 @@ static void RtlUnwindCallback()
     _ASSERTE(!"Should never get here");
 }
 
-BOOL NExportSEH(EXCEPTION_REGISTRATION_RECORD* pEHR)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if ((LPVOID)pEHR->Handler == (LPVOID)UMThunkPrestubHandler)
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
-
 BOOL FastNExportSEH(EXCEPTION_REGISTRATION_RECORD* pEHR)
 {
     LIMITED_METHOD_CONTRACT;
@@ -156,9 +146,8 @@ BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD *pEstablisherF
     //
     // ComPlusFrameSEH() is for COMPlusFrameHandler & COMPlusNestedExceptionHandler.
     // FastNExportSEH() is for FastNExportExceptHandler.
-    // NExportSEH() is for UMThunkPrestubHandler.
     //
-    return (ComPlusFrameSEH(pEstablisherFrame) || FastNExportSEH(pEstablisherFrame) || NExportSEH(pEstablisherFrame) || ReverseCOMSEH(pEstablisherFrame));
+    return (ComPlusFrameSEH(pEstablisherFrame) || FastNExportSEH(pEstablisherFrame) || ReverseCOMSEH(pEstablisherFrame));
 }
 
 Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
@@ -166,10 +155,7 @@ Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
     Frame *pFrame;
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsUnmanagedToManagedSEHHandler(pEstablisherFrame));
-    if (NExportSEH(pEstablisherFrame))
-        pFrame = ((ComToManagedExRecord *)pEstablisherFrame)->GetCurrFrame();
-    else
-        pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
+    pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
 
     // Assert that the exception frame is on the thread or that the exception frame is the top frame.
     _ASSERTE(GetThreadNULLOk() == NULL || GetThread()->GetFrame() == (Frame*)-1 || GetThread()->GetFrame() <= pFrame);
@@ -272,7 +258,7 @@ GetClrSEHRecordServicingStackPointer(Thread *pThread,
 // state of the EH chain is correct.
 //
 // For x86, check that we do INSTALL_COMPLUS_EXCEPTION_HANDLER before calling managed code.  This check should be
-// done for all managed code sites, not just transistions. But this will catch most problem cases.
+// done for all managed code sites, not just transitions. But this will catch most problem cases.
 void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF)
 {
     WRAPPER_NO_CONTRACT;
@@ -653,18 +639,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     EXCEPTION_DISPOSITION retval;
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
     Thread *pThread = GetThread();
-
-#ifdef _DEBUG
-    static int breakOnSO = -1;
-
-    if (breakOnSO == -1)
-        breakOnSO = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnSO);
-
-    if (breakOnSO != 0 && exceptionCode == STATUS_STACK_OVERFLOW)
-    {
-        DebugBreak();   // ASSERTing will overwrite the guard region
-    }
-#endif
 
     // We always want to be in co-operative mode when we run this function and whenever we return
     // from it, want to go to pre-emptive mode because are returning to OS.
@@ -1250,8 +1224,6 @@ void InitializeExceptionHandling()
 {
     WRAPPER_NO_CONTRACT;
 
-    InitSavedExceptionInfo();
-
     CLRAddVectoredHandlers();
 
     // Initialize the lock used for synchronizing access to the stacktrace in the exception object
@@ -1283,13 +1255,13 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
     // Call to the vectored handler to give other parts of the Runtime a chance to jump in and take over an
     // exception before we do too much with it. The most important point in the vectored handler is not to toggle
     // the GC mode.
-    DWORD filter = CLRVectoredExceptionHandler(&ptrs);
+    VEH_ACTION filter = CLRVectoredExceptionHandler(&ptrs);
 
-    if (filter == (DWORD) EXCEPTION_CONTINUE_EXECUTION)
+    if (filter == VEH_CONTINUE_EXECUTION)
     {
         return ExceptionContinueExecution;
     }
-    else if (filter == EXCEPTION_CONTINUE_SEARCH)
+    else if (filter == VEH_CONTINUE_SEARCH)
     {
         return ExceptionContinueSearch;
     }
@@ -1329,22 +1301,16 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
 
     CPFH_VerifyThreadIsInValidState(pThread, exceptionCode, pEstablisherFrame);
 
-    // If we were in cooperative mode when we came in here, then its okay to see if we should do HandleManagedFault
+    // If we were in cooperative mode when we came in here, then it's okay to see if we should do HandleManagedFault
     // and push a FaultingExceptionFrame. If we weren't in coop mode coming in here, then it means that there's no
-    // way the exception could really be from managed code. I might look like it was from managed code, but in
-    // reality its a rethrow from unmanaged code, either unmanaged user code, or unmanaged EE implementation.
+    // way the exception could really be from managed code. It might look like it was from managed code, but in
+    // reality it's a rethrow from unmanaged code, either unmanaged user code, or unmanaged EE implementation.
     if (disabled && ShouldHandleManagedFault(pExceptionRecord, pContext, pEstablisherFrame, pThread))
     {
 #if defined(USE_FEF)
-        HandleManagedFault(pExceptionRecord, pContext, pEstablisherFrame, pThread);
+        HandleManagedFault(pExceptionRecord, pContext);
         retval = ExceptionContinueExecution;
         goto exit;
-#else // USE_FEF
-        // Save the context pointer in the Thread's EXInfo, so that a stack crawl can recover the
-        //  register values from the fault.
-
-        //@todo: I haven't yet found any case where we need to do anything here.  If there are none, eliminate
-        //  this entire if () {} block.
 #endif // USE_FEF
     }
 
@@ -1599,7 +1565,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!DebugIsEECxxException(pExceptionRecord) && "EE C++ Exception leaked into managed code!");
 
-    STRESS_LOG5(LF_EH, LL_INFO100, "In COMPlusFrameHander EH code = %x  flag = %x EIP = %x with ESP = %x, pEstablisherFrame = 0x%p\n",
+    STRESS_LOG5(LF_EH, LL_INFO100, "In COMPlusFrameHandler EH code = %x  flag = %x EIP = %x with ESP = %x, pEstablisherFrame = 0x%p\n",
         pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags,
         pContext ? GetIP(pContext) : 0, pContext ? GetSP(pContext) : 0, pEstablisherFrame);
 
@@ -1673,7 +1639,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
             // Switch to preemp mode since we are returning back to the OS.
             // We will do the quick switch since we are short of stack
-            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
 
             return ExceptionContinueSearch;
         }
@@ -1725,7 +1691,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
             // Switch to preemp mode since we are returning back to the OS.
             // We will do the quick switch since we are short of stack
-            FastInterlockAnd(&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
 
             return ExceptionContinueSearch;
         }
@@ -1782,7 +1748,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     EEToProfilerExceptionInterfaceWrapper::ExceptionCatcherLeave();
 
     // no need to set pExInfo->m_ClauseType = (DWORD)COR_PRF_CLAUSE_NONE now that the
-    // notification is done because because the ExInfo record is about to be popped off anyway
+    // notification is done because the ExInfo record is about to be popped off anyway
 
     LOG((LF_EH, LL_INFO1000, "COMPlusPEndCatch:pThread:0x%x\n",pThread));
 
@@ -1813,14 +1779,14 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     //
     // In a case when we're nested inside another catch block, the domain in which we're executing may not be the
     // same as the one the domain of the throwable that was just made the current throwable above. Therefore, we
-    // make a special effort to preserve the domain of the throwable as we update the the last thrown object.
+    // make a special effort to preserve the domain of the throwable as we update the last thrown object.
     //
     // This function (COMPlusEndCatch) can also be called by the in-proc debugger helper thread on x86 when
     // an attempt to SetIP takes place to set IP outside the catch clause. In such a case, managed thread object
     // will not be available. Thus, we should reset the severity only if its not such a thread.
     //
     // This behaviour (of debugger doing SetIP) is not allowed on 64bit since the catch clauses are implemented
-    // as a seperate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch
+    // as a separate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch
     // clause to outside of the catch clause.
     bool fIsDebuggerHelperThread = (g_pDebugInterface == NULL) ? false : g_pDebugInterface->ThisIsHelperThread();
 
@@ -3000,6 +2966,8 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         // InlinedCallFrame somewhere up the call chain that is not related to the current exception
         // handling.
 
+        // See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
+
 #ifdef DEBUG
         TADDR handlerFrameSP = pCf->GetRegisterSet()->SP;
 #endif // DEBUG
@@ -3011,10 +2979,22 @@ void ResumeAtJitEH(CrawlFrame* pCf,
                                                                      NULL /* StackwalkCacheUnwindInfo* */);
         _ASSERTE(unwindSuccess);
 
-        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP) && ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress))
+        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP))
         {
-            _ASSERTE((TADDR)pThread->m_pFrame >= handlerFrameSP);
-            pThread->m_pFrame->Pop(pThread);
+            TADDR returnAddress = ((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress;
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+            // If we're setting up the frame for each P/Invoke for the given platform,
+            // then we do this for all P/Invokes except ones in IL stubs.
+            if (returnAddress != NULL && !ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
+#else
+            // If we aren't setting up the frame for each P/Invoke (instead setting up once per method),
+            // then ReadyToRun code is the only code using the per-P/Invoke logic.
+            if (ExecutionManager::IsReadyToRunCode(returnAddress))
+#endif
+            {
+                _ASSERTE((TADDR)pThread->m_pFrame >= handlerFrameSP);
+                pThread->m_pFrame->Pop(pThread);
+            }
         }
     }
 
@@ -3299,7 +3279,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusNestedExceptionHandler)
         // previous exception is overridden -- and needs to be unwound.
 
         // The preceding is ALMOST true.  There is one more case, where we use setjmp/longjmp
-        // from withing a nested handler.  We won't have a nested exception in that case -- just
+        // from within a nested handler.  We won't have a nested exception in that case -- just
         // the unwind.
 
         Thread* pThread = GetThread();
@@ -3384,52 +3364,6 @@ EXCEPTION_HANDLER_IMPL(FastNExportExceptHandler)
     return retval;
 }
 
-
-// Just like a regular NExport handler -- except it pops an extra frame on unwind.  A handler
-// like this is needed by the COMMethodStubProlog code.  It first pushes a frame -- and then
-// pushes a handler.  When we unwind, we need to pop the extra frame to avoid corrupting the
-// frame chain in the event of an unmanaged catcher.
-//
-EXCEPTION_HANDLER_IMPL(UMThunkPrestubHandler)
-{
-    // @todo: we'd like to have a dynamic contract here, but there's a problem. (Bug 129180) Enter on the CRST used
-    // in HandleManagedFault leaves the no-trigger count incremented. The destructor of this contract will restore
-    // it to zero, then when we leave the CRST in LinkFrameAndThrow, we assert because we're trying to decrement the
-    // gc-trigger count down past zero. The solution is to fix what we're doing with this CRST. </TODO>
-    STATIC_CONTRACT_THROWS; // COMPlusFrameHandler throws
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    EXCEPTION_DISPOSITION retval = ExceptionContinueSearch;
-
-    // We must forward to the COMPlusFrameHandler. This will unwind the Frame Chain up to here, and also leave the
-    // preemptive GC mode set correctly.
-    retval = EXCEPTION_HANDLER_FWD(COMPlusFrameHandler);
-
-#ifdef _DEBUG
-    // If the exception is escaping the last CLR personality routine on the stack,
-    // then state a flag on the thread to indicate so.
-    if (retval == ExceptionContinueSearch)
-    {
-        SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags), pEstablisherFrame);
-    }
-#endif // _DEBUG
-
-    if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-    {
-        // Pops an extra frame on unwind.
-
-        GCX_COOP();     // Must be cooperative to modify frame chain.
-
-        Thread *pThread = GetThread();
-        Frame *pFrame = pThread->GetFrame();
-        pFrame->ExceptionUnwind();
-        pFrame->Pop(pThread);
-    }
-
-    return retval;
-}
-
 #ifdef FEATURE_COMINTEROP
 // The reverse COM interop path needs to be sure to pop the ComMethodFrame that is pushed, but we do not want
 // to have an additional FS:0 handler between the COM callsite and the call into managed.  So we push this
@@ -3472,19 +3406,12 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_ENTRY_POINT;
 
-    LONG result = EXCEPTION_CONTINUE_SEARCH;
-
-    // This function can be called during the handling of a SO
-    //BEGIN_ENTRYPOINT_VOIDRET;
-
-    result = CLRVectoredExceptionHandler(pExceptionInfo);
+    LONG result = CLRVectoredExceptionHandler(pExceptionInfo);
 
     if (EXCEPTION_EXECUTE_HANDLER == result)
     {
         result = EXCEPTION_CONTINUE_SEARCH;
     }
-
-    //END_ENTRYPOINT_VOIDRET;
 
     return result;
 #else  // !FEATURE_EH_FUNCLETS

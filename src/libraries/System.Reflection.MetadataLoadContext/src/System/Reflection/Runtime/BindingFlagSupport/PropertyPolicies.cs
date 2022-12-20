@@ -81,15 +81,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        private MethodInfo? GetAccessorMethod(PropertyInfo property)
-        {
-            MethodInfo? accessor = property.GetMethod;
-            if (accessor == null)
-            {
-                accessor = property.SetMethod;
-            }
-
-            return accessor;
-        }
+        private static MethodInfo? GetAccessorMethod(PropertyInfo property) =>
+            property.GetMethod ?? property.SetMethod;
     }
 }

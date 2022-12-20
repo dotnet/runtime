@@ -12,7 +12,7 @@ include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 include_directories("${CLR_SRC_NATIVE_DIR}")
 
 # Add this subdir. We install the headers for the jit.
-add_subdirectory(../coreclr/pal/prebuilt/inc ../coreclr/pal/prebuilt/inc)
+add_subdirectory(${CLR_REPO_ROOT_DIR}/src/coreclr/pal/prebuilt/inc ${CLR_ARTIFACTS_OBJ_DIR}/coreclr/pal/prebuilt/inc)
 
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Common/Platform)
 if (CLR_CMAKE_TARGET_WIN32)
@@ -23,6 +23,7 @@ endif()
 
 if (CLR_CMAKE_HOST_WIN32)
     # 4100 - unreferenced formal parameter
+    # 4244 - conversion from 'type1' to 'type2', possible loss of data
     # 4514 - unreferenced inline function has been removed
     # 4625 - copy constructor was implicitly defined as deleted because a base class copy constructor is inaccessible or deleted
     # 4626 - assignment operator was implicitly defined as deleted because a base class assignment operator is inaccessible or deleted
@@ -35,7 +36,7 @@ if (CLR_CMAKE_HOST_WIN32)
     # 5026 - move constructor was implicitly defined as deleted
     # 5027 - move assignment operator was implicitly defined as deleted
     # 5039 - pointer or reference to potentially throwing function passed to extern C function under -EHc. Undefined behavior may occur if this function throws an exception.
-    add_compile_options(-wd4100 -wd4514 -wd4625 -wd4626 -wd4668 -wd4710 -wd4711 -wd4774 -wd4820 -wd5025 -wd5026 -wd5027 -wd5039)
+    add_compile_options(-wd4100 -wd4244 -wd4514 -wd4625 -wd4626 -wd4668 -wd4710 -wd4711 -wd4774 -wd4820 -wd5025 -wd5026 -wd5027 -wd5039)
 
     string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     add_compile_options(/EHa) # enable C++ EH (w/ SEH exceptions)

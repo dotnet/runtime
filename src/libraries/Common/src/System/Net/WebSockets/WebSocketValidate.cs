@@ -40,11 +40,7 @@ namespace System.Net.WebSockets
                     if (currentState == validState)
                     {
                         // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                        if (isDisposed)
-                        {
-                            throw new ObjectDisposedException(nameof(WebSocket));
-                        }
-
+                        ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
                         return;
                     }
                 }
@@ -151,10 +147,7 @@ namespace System.Net.WebSockets
 
         internal static void ValidateBuffer(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
 
             if (offset < 0 || offset > buffer.Length)
             {

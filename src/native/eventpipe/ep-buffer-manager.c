@@ -501,7 +501,12 @@ buffer_manager_allocate_buffer_for_thread (
 	EP_ASSERT(buffer_size > 0);
 	ep_return_null_if_nok(buffer_manager_try_reserve_buffer(buffer_manager, buffer_size));
 
-	// Allocating a buffer requires us to take the lock.
+	// The sequence counter is exclusively mutated on this thread so this is a thread-local read.
+	sequence_number = ep_thread_session_state_get_volatile_sequence_number (thread_session_state);
+	new_buffer = ep_buffer_alloc (buffer_size, ep_thread_session_state_get_thread (thread_session_state), sequence_number);
+	ep_raise_error_if_nok (new_buffer != NULL);
+
+	// Adding a buffer to the buffer list requires us to take the lock.
 	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
 		thread_buffer_list = ep_thread_session_state_get_buffer_list (thread_session_state);
 		if (thread_buffer_list == NULL) {
@@ -512,11 +517,6 @@ buffer_manager_allocate_buffer_for_thread (
 			ep_thread_session_state_set_buffer_list (thread_session_state, thread_buffer_list);
 			thread_buffer_list = NULL;
 		}
-
-		// The sequence counter is exclusively mutated on this thread so this is a thread-local read.
-		sequence_number = ep_thread_session_state_get_volatile_sequence_number (thread_session_state);
-		new_buffer = ep_buffer_alloc (buffer_size, ep_thread_session_state_get_thread (thread_session_state), sequence_number);
-		ep_raise_error_if_nok_holding_spin_lock (new_buffer != NULL, section1);
 
 		if (buffer_manager->sequence_point_alloc_budget != 0) {
 			// sequence point bookkeeping
@@ -1188,7 +1188,7 @@ ep_buffer_manager_write_all_buffers_to_file_v4 (
 	// need an arbitrarily large cache in the reader to store all the events, however there is a fair amount of slop
 	// in the current scheme. In the worst case you could imagine N threads, each of which was already allocated a
 	// max size buffer (currently 1MB) but only an insignificant portion has been used. Even if the trigger
-	// threshhold is a modest amount such as 10MB, the threads could first write 1MB * N bytes to the stream
+	// threshold is a modest amount such as 10MB, the threads could first write 1MB * N bytes to the stream
 	// beforehand. I'm betting on these extreme cases being very rare and even something like 1GB isn't an unreasonable
 	// amount of virtual memory to use on to parse an extreme trace. However if I am wrong we can control
 	// both the allocation policy and the triggering instrumentation. Nothing requires us to give out 1MB buffers to
@@ -1393,8 +1393,8 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 	// to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
 	// sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
 	// buffer at the same time.
-	ep_timestamp_t stop_timetamp = ep_perf_timestamp_get ();
-	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timetamp);
+	ep_timestamp_t stop_timestamp = ep_perf_timestamp_get ();
+	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timestamp);
 	return buffer_manager->current_event;
 }
 
@@ -1489,7 +1489,7 @@ ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_buffer_manager;
 const char quiet_linker_empty_file_warning_eventpipe_buffer_manager = 0;
 #endif

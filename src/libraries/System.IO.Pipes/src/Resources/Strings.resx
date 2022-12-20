@@ -117,14 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="ArgumentOutOfRange_NeedValidPipeAccessRights" xml:space="preserve">
     <value>Invalid PipeAccessRights value.</value>
-  </data>
-  <data name="Argument_NeedNonemptyPipeName" xml:space="preserve">
-    <value>pipeName cannot be an empty string.</value>
   </data>
   <data name="Argument_NonContainerInvalidAnyFlag" xml:space="preserve">
     <value>This flag may not be set on a pipe.</value>
@@ -134,9 +128,6 @@
   </data>
   <data name="Argument_InvalidHandle" xml:space="preserve">
     <value>Handle has been disposed or is invalid.</value>
-  </data>
-  <data name="ArgumentNull_Buffer" xml:space="preserve">
-    <value>Buffer cannot be null.</value>
   </data>
   <data name="ArgumentNull_ServerName" xml:space="preserve">
     <value>serverName cannot be null. Use \".\" for current machine.</value>
@@ -165,9 +156,6 @@
   <data name="ArgumentOutOfRange_MaxNumServerInstances" xml:space="preserve">
     <value>maxNumberOfServerInstances must either be a value between 1 and 254, or NamedPipeServerStream.MaxAllowedServerInstances (to obtain the maximum number allowed by system resources).</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
-    <value>Positive number required.</value>
-  </data>
   <data name="InvalidOperation_PipeNotYetConnected" xml:space="preserve">
     <value>Pipe hasn't been connected yet.</value>
   </data>
@@ -176,9 +164,6 @@
   </data>
   <data name="InvalidOperation_PipeHandleNotSet" xml:space="preserve">
     <value>Pipe handle has not been set.  Did your PipeStream implementation call InitializeHandle?</value>
-  </data>
-  <data name="InvalidOperation_PipeNotAsync" xml:space="preserve">
-    <value>Pipe is not opened in asynchronous mode.</value>
   </data>
   <data name="InvalidOperation_PipeReadModeNotMessage" xml:space="preserve">
     <value>ReadMode is not of PipeTransmissionMode.Message.</value>

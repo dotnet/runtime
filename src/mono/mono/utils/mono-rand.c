@@ -17,12 +17,12 @@
 #include <config.h>
 
 #include "atomic.h"
-#include "mono-error.h"
+#include <mono/utils/mono-error.h>
 #include "mono-error-internals.h"
 #include "mono-rand.h"
 #include "mono-threads.h"
-#include "metadata/exception.h"
-#include "metadata/object.h"
+#include <mono/metadata/exception.h>
+#include <mono/metadata/object.h>
 
 #ifdef HOST_WIN32
 // Windows specific implementation in mono-rand-windows.c
@@ -131,7 +131,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, gssize buffer_size, Mono
 	gint ret;
 	guint offset = 0;
 	int err = 0;
-	
+
 	socket_fd = socket (PF_UNIX, SOCK_STREAM, 0);
 	if (socket_fd < 0) {
 		ret = -1;
@@ -157,7 +157,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, gssize buffer_size, Mono
 
 		/* block until daemon can return enough entropy */
 		request [0] = 2;
-		request [1] = buffer_size < 255 ? buffer_size : 255;
+		request [1] = buffer_size < 255 ? (guchar)buffer_size : 255;
 		while (count < 2) {
 			int sent = write (socket_fd, request + count, 2 - count);
 			err = errno;
@@ -325,7 +325,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, M
 	error_init (error);
 
 	g_static_assert (RAND_MAX >= 0xFF);
-	
+
 	while (buffer_size > 0) {
 		int const i = rand ();
 		int j;

@@ -204,7 +204,7 @@ void MDInfo::InitSigBuffer()
 
 // helper to append a string into the signature buffer. If size of signature buffer is not big enough,
 // we will grow it.
-HRESULT MDInfo::AddToSigBuffer(__in_z __in const char *string)
+HRESULT MDInfo::AddToSigBuffer(_In_z_ const char *string)
 {
     HRESULT     hr;
     size_t LL = strlen((LPSTR)m_sigBuf.Ptr()) + strlen(string) + 1;
@@ -360,7 +360,7 @@ void MDInfo::DisplayMD()
         // WriteLine("Unresolved MemberRefs");
         // DisplayMemberRefs(0x00000001, "\t");
 
-        VWrite("\n\nCoff symbol name overhead:  %d\n", g_cbCoffNames);
+        VWrite("\n\nCoff symbol name overhead:  %zu\n", g_cbCoffNames);
     }
     WriteLine("===========================================================");
     if (m_DumpFilter & dumpUnsat)
@@ -368,7 +368,7 @@ void MDInfo::DisplayMD()
     WriteLine("===========================================================");
 } // MDVEHandlerClass()
 
-int MDInfo::WriteLine(__in_z __in const char *str)
+int MDInfo::WriteLine(_In_z_ const char *str)
 {
     ULONG32 count = (ULONG32) strlen(str);
 
@@ -377,7 +377,7 @@ int MDInfo::WriteLine(__in_z __in const char *str)
     return count;
 } // int MDInfo::WriteLine()
 
-int MDInfo::Write(__in_z __in const char *str)
+int MDInfo::Write(_In_z_ const char *str)
 {
     ULONG32 count = (ULONG32) strlen(str);
 
@@ -385,7 +385,7 @@ int MDInfo::Write(__in_z __in const char *str)
     return count;
 } // int MDInfo::Write()
 
-int MDInfo::VWriteLine(__in_z __in const char *str, ...)
+int MDInfo::VWriteLine(_In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -397,7 +397,7 @@ int MDInfo::VWriteLine(__in_z __in const char *str, ...)
     return count;
 } // int MDInfo::VWriteLine()
 
-int MDInfo::VWrite(__in_z __in const char *str, ...)
+int MDInfo::VWrite(_In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -408,7 +408,7 @@ int MDInfo::VWrite(__in_z __in const char *str, ...)
     return count;
 } // int MDInfo::VWrite()
 
-int MDInfo::VWriteMarker(__in_z __in const char *str, va_list marker)
+int MDInfo::VWriteMarker(_In_z_ const char *str, va_list marker)
 {
     HRESULT hr;
     int count = -1;
@@ -561,7 +561,7 @@ const char *MDInfo::TokenTypeName(mdToken inToken)
 // Prints out name of the given memberref
 //
 
-LPCWSTR MDInfo::MemberRefName(mdMemberRef inMemRef, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberRefName(mdMemberRef inMemRef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -829,7 +829,7 @@ void MDInfo::DisplaySignatureInfo(mdSignature inSignature)
 // member in wide characters
 //
 
-LPCWSTR MDInfo::MemberName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1179,7 +1179,9 @@ void MDInfo::DisplayParamInfo(mdParamDef inParamDef)
                             &nameLen, &flags, &dwCPlusFlags, &pValue, &cbValue);
     if (FAILED(hr)) Error("GetParamProps failed.", hr);
 
+#ifdef FEATURE_COMINTEROP
     _FillVariant((BYTE)dwCPlusFlags, pValue, cbValue, &defValue);
+#endif
 
     char sFlags[STRING_BUFFER_LEN];
     sFlags[0] = 0;
@@ -1312,7 +1314,7 @@ void MDInfo::DisplayGenericParamInfo(mdGenericParam tkParam, const char *prefix)
     DisplayCustomAttributes(tkParam, newprefix);
 }
 
-LPCWSTR MDInfo::TokenName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TokenName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     LPCUTF8     pName;                  // Token name in UTF8.
 
@@ -1329,7 +1331,7 @@ LPCWSTR MDInfo::TokenName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, U
 // prints out name of typeref or typedef
 //
 
-LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     if (RidFromToken(inToken))
     {
@@ -1346,7 +1348,7 @@ LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR bu
         return W("");
 } // LPCWSTR MDInfo::TypeDeforRefName()
 
-LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     if (RidFromToken(inToken))
     {
@@ -1365,7 +1367,7 @@ LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR 
 //
 //
 
-LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1379,7 +1381,7 @@ LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, __out_ecount(bufLen) LPWSTR buf
         NULL);                  // [OUT] Put base class TypeDef/TypeRef here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeDef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeDef]"));
     }
 
     return buffer;
@@ -1439,7 +1441,7 @@ void MDInfo::DisplayTypeDefProps(mdTypeDef inTypeDef)
 //  Prints out the name of the given TypeRef
 //
 
-LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1451,7 +1453,7 @@ LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, __out_ecount(bufLen) LPWSTR buffer, UL
         NULL);              // Put actual size of name here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeRef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeRef]"));
     }
 
     return (buffer);
@@ -1543,7 +1545,7 @@ void MDInfo::DisplayMethodSpecInfo(mdMethodSpec ms, const char *preFix)
 // associated with the class.
 //
 
-char *MDInfo::ClassFlags(DWORD flags, __out_ecount(STRING_BUFFER_LEN) char *sFlags)
+char *MDInfo::ClassFlags(DWORD flags, _Out_writes_(STRING_BUFFER_LEN) char *sFlags)
 {
     sFlags[0] = 0;
     ISFLAG(Td, NotPublic);
@@ -1877,7 +1879,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
     LPCUTF8     pMethName=0;            // Name of custom attribute ctor, if any.
     CQuickBytes qSigName;               // Buffer to pretty-print signature.
     PCCOR_SIGNATURE pSig=0;             // Signature of ctor.
-    ULONG       cbSig;                  // Size of the signature.
+    ULONG       cbSig=0;                // Size of the signature.
     BOOL        bCoffSymbol = false;    // true for coff symbol CA's.
     WCHAR       rcName[MAX_CLASS_NAME]; // Name of the type.
 
@@ -1939,7 +1941,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
 
     VWrite("%s\tCustomAttributeName: %ls", preFix, rcName);
     if (pSig && pMethName)
-        VWrite(" :: %S", qSigName.Ptr());
+        VWrite(" :: %S", (LPWSTR)qSigName.Ptr());
 
     // Keep track of coff overhead.
     if (!wcscmp(W("__DecoratedName"), rcName))
@@ -2039,7 +2041,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
                 case ELEMENT_TYPE_U8:
                     CA.GetU8(&u8);
                     uI64 = u8;
-                    VWrite("%#lx", uI64);
+                    VWrite("%#I64x", uI64);
                     break;
                 case ELEMENT_TYPE_R4:
                     dblVal = CA.GetR4();
@@ -2169,9 +2171,9 @@ void MDInfo::DisplayPermissionInfo(mdPermission inPermission, const char *preFix
 
 // simply prints out the given GUID in standard form
 
-LPWSTR MDInfo::GUIDAsString(GUID inGuid, __out_ecount(bufLen) LPWSTR guidString, ULONG bufLen)
+LPWSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPWSTR guidString, ULONG bufLen)
 {
-    StringFromGUID2(inGuid, guidString, bufLen);
+    GuidToLPWSTR(inGuid, guidString, bufLen);
     return guidString;
 } // LPWSTR MDInfo::GUIDAsString()
 
@@ -2194,7 +2196,7 @@ LPCWSTR MDInfo::VariantAsString(VARIANT *pVariant)
         // Set variant type to bstr.
         V_VT(pVariant) = VT_BSTR;
         // Create the ansi string.
-        sprintf_s(szStr, 32, "%I64d", V_CY(pVariant).int64);
+        sprintf_s(szStr, 32, "%lld", V_CY(pVariant).int64);
         // Convert to unicode.
         WszMultiByteToWideChar(CP_ACP, 0, szStr, -1, wszStr, 32);
         // convert to bstr and set variant value.
@@ -2527,7 +2529,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
 {
     ULONG       cbCur = 0;
     ULONG       cb;
-    // 428793: Prefix complained correctly about unitialized data.
+    // 428793: Prefix complained correctly about uninitialized data.
     ULONG       ulData = (ULONG) IMAGE_CEE_CS_CALLCONV_MAX;
     ULONG       ulArgs;
     HRESULT     hr = NOERROR;
@@ -2606,7 +2608,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
         {
             ULONG       ulDataTemp;
 
-            // Handle the sentinal for varargs because it isn't counted in the args.
+            // Handle the sentinel for varargs because it isn't counted in the args.
             CorSigUncompressData(&pbSigBlob[cbCur], &ulDataTemp);
             ++i;
 
@@ -2950,7 +2952,7 @@ void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
 // Fills given varaint with value given in pValue and of type in bCPlusTypeFlag
 //
 // Taken from MetaInternal.cpp
-
+#ifdef FEATURE_COMINTEROP
 HRESULT _FillVariant(
     BYTE        bCPlusTypeFlag,
     const void  *pValue,
@@ -3043,6 +3045,7 @@ HRESULT _FillVariant(
 
     return hr;
 } // HRESULT _FillVariant()
+#endif // FEATURE_COMINTEROP
 
 void MDInfo::DisplayAssembly()
 {

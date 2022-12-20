@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Internal
     {
         public static Timer Create(TimerCallback callback, object state, TimeSpan dueTime, TimeSpan period)
         {
-            if (callback == null)
+            if (callback is null)
             {
                 throw new ArgumentNullException(nameof(callback));
             }

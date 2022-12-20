@@ -75,11 +75,11 @@ namespace System.IO.Pipes
                         _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) =>
                         {
                             PipeValueTaskSource vts = (PipeValueTaskSource)s!;
-                            if (!vts._pipeStream.SafePipeHandle.IsInvalid)
+                            if (vts._pipeStream.InternalHandle is { IsClosed: false } handle)
                             {
                                 try
                                 {
-                                    Interop.Kernel32.CancelIoEx(vts._pipeStream.SafePipeHandle, vts._overlapped);
+                                    Interop.Kernel32.CancelIoEx(handle, vts._overlapped);
                                     // Ignore all failures: no matter whether it succeeds or fails, completion is handled via the IOCallback.
                                 }
                                 catch (ObjectDisposedException) { } // in case the SafeHandle is (erroneously) closed concurrently

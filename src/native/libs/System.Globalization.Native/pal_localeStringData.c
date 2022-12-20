@@ -19,11 +19,17 @@ Obtains the value of a DecimalFormatSymbols
 static UErrorCode GetLocaleInfoDecimalFormatSymbol(const char* locale,
                                                    UNumberFormatSymbol symbol,
                                                    UChar* value,
-                                                   int32_t valueLength)
+                                                   int32_t valueLength,
+                                                   int32_t* symbolLength)
 {
     UErrorCode status = U_ZERO_ERROR;
     UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, NULL, 0, locale, NULL, &status);
-    unum_getSymbol(pFormat, symbol, value, valueLength, &status);
+
+    int32_t lengthResult =  unum_getSymbol(pFormat, symbol, value, valueLength, &status);
+    if (symbolLength != NULL)
+    {
+        *symbolLength = lengthResult;
+    }
     unum_close(pFormat);
     return status;
 }
@@ -39,14 +45,15 @@ static UErrorCode GetDigitSymbol(const char* locale,
                                  UNumberFormatSymbol symbol,
                                  int digit,
                                  UChar* value,
-                                 int32_t valueLength)
+                                 int32_t valueLength,
+                                 int32_t* symbolLength)
 {
     if (U_FAILURE(previousStatus))
     {
         return previousStatus;
     }
 
-    return GetLocaleInfoDecimalFormatSymbol(locale, symbol, value + digit, valueLength - digit);
+    return GetLocaleInfoDecimalFormatSymbol(locale, symbol, value + digit, valueLength - digit, symbolLength);
 }
 
 /*
@@ -279,26 +286,49 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             }
             break;
         case LocaleString_ThousandSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_DecimalSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_DECIMAL_SEPARATOR_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_DECIMAL_SEPARATOR_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_Digits:
-            status = GetDigitSymbol(locale, status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength);
-            // symbols UNUM_ONE_DIGIT to UNUM_NINE_DIGIT are contiguous
-            for (int32_t symbol = UNUM_ONE_DIGIT_SYMBOL; symbol <= UNUM_NINE_DIGIT_SYMBOL; symbol++)
             {
-                int charIndex = symbol - UNUM_ONE_DIGIT_SYMBOL + 1;
-                status = GetDigitSymbol(
-                    locale, status, (UNumberFormatSymbol)symbol, charIndex, value, valueLength);
+                // Native digit can be more than one 16-bit character (e.g. ccp-Cakm-BD locale which using surrogate pairs to represent the native digit).
+                // We'll separate the native digits in the returned buffer by the character '\uFFFF'.
+                int32_t symbolLength = 0;
+                status = GetDigitSymbol(locale, status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength, &symbolLength);
+
+                int32_t charIndex = symbolLength;
+
+                if (U_SUCCESS(status) && (uint32_t)charIndex < (uint32_t)valueLength)
+                {
+                    value[charIndex++] = 0xFFFF;
+
+                    // symbols UNUM_ONE_DIGIT to UNUM_NINE_DIGIT are contiguous
+                    for (int32_t symbol = UNUM_ONE_DIGIT_SYMBOL; symbol <= UNUM_NINE_DIGIT_SYMBOL && charIndex < valueLength - 3; symbol++)
+                    {
+                        status = GetDigitSymbol(locale, status, (UNumberFormatSymbol)symbol, charIndex, value, valueLength, &symbolLength);
+                        charIndex += symbolLength;
+                        if (!U_SUCCESS(status) || (uint32_t)charIndex >= (uint32_t)valueLength)
+                        {
+                            break;
+                        }
+
+                        value[charIndex++] = 0xFFFF;
+                    }
+
+                    if ((uint32_t)charIndex < (uint32_t)valueLength)
+                    {
+                        value[charIndex] = 0;
+                    }
+                }
             }
             break;
         case LocaleString_MonetarySymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_CURRENCY_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_CURRENCY_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_Iso4217MonetarySymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_CurrencyEnglishName:
             status = GetLocaleCurrencyName(locale, false, value, valueLength);
@@ -307,11 +337,11 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             status = GetLocaleCurrencyName(locale, true, value, valueLength);
             break;
         case LocaleString_MonetaryDecimalSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_MonetaryThousandSeparator:
             status =
-                GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
+                GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_AMDesignator:
             status = GetLocaleInfoAmPm(locale, true, value, valueLength);
@@ -320,10 +350,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             status = GetLocaleInfoAmPm(locale, false, value, valueLength);
             break;
         case LocaleString_PositiveSign:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_NegativeSign:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MINUS_SIGN_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MINUS_SIGN_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_Iso639LanguageTwoLetterName:
             status = GetLocaleIso639LanguageTwoLetterName(locale, value, valueLength);
@@ -338,10 +368,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             status = GetLocaleIso3166CountryCode(locale, value, valueLength);
             break;
         case LocaleString_NaNSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_NAN_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_NAN_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_PositiveInfinitySymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INFINITY_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INFINITY_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_ParentName:
         {
@@ -358,10 +388,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             break;
         }
         case LocaleString_PercentSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERCENT_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERCENT_SYMBOL, value, valueLength, NULL);
             break;
         case LocaleString_PerMilleSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERMILL_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERMILL_SYMBOL, value, valueLength, NULL);
             break;
         default:
             status = U_UNSUPPORTED_ERROR;
@@ -375,7 +405,7 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
 PAL Function:
 GetLocaleTimeFormat
 
-Obtains time format information (in ICU format, it needs to be coverted to .NET Format).
+Obtains time format information (in ICU format, it needs to be converted to .NET's format).
 Returns 1 for success, 0 otherwise
 */
 int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,

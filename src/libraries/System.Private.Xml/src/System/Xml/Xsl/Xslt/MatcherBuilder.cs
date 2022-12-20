@@ -4,13 +4,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.XPath;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using T = XmlQueryTypeFactory;
-
     #region Comments
     /*  The MatcherBuilder class implements xsl:apply-templates/imports logic, grouping patterns
      *  first by node type, then by node name of their last StepPattern. For example, suppose that
@@ -180,13 +180,12 @@ namespace System.Xml.Xsl.Xslt
             }
 
             XmlNodeKindFlags nodeKinds = isType.Right.XmlType!.NodeKinds;
-            if (!Bits.ExactlyOne((uint)nodeKinds))
+            if (!BitOperations.IsPow2((uint)nodeKinds))
             {
                 return;
             }
 
             // Recognized pattern A, check for B
-            QilNode x = isType;
             _nodeKind = nodeKinds;
             QilBinary lastAnd = leftPath[idx & 3];
 
@@ -200,7 +199,6 @@ namespace System.Xml.Xsl.Xslt
                 )
                 {
                     // Recognized pattern B
-                    x = lastAnd;
                     _qname = (QilName?)((QilLiteral)eq.Right).Value;
                     idx--;
                 }
@@ -418,7 +416,7 @@ namespace System.Xml.Xsl.Xslt
             return _f.Conditional(_f.IsType(it, xt), MatchPatterns(it, patternList), otherwise);
         }
 
-        private bool IsNoMatch(QilNode matcher)
+        private static bool IsNoMatch(QilNode matcher)
         {
             if (matcher.NodeType == QilNodeType.LiteralInt32)
             {

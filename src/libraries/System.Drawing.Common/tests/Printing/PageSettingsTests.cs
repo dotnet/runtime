@@ -24,7 +24,7 @@
 //
 // Author:
 //
-//  Jordi Mas i Hernandez, jordimash@gmail.com
+//  Jordi Mas i Hernandez (jordi@ximian.com)
 //
 
 using Xunit;
@@ -34,7 +34,6 @@ namespace System.Drawing.Printing.Tests
 
     public class PageSettingsTests
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.WindowsRS3OrEarlier)] // RS4 failures: https://github.com/dotnet/runtime/issues/26247
         public void Clone_Success()
         {

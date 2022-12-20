@@ -29,10 +29,7 @@ namespace System.Runtime.ExceptionServices
         // needed to be propagated when the exception is "rethrown" on a different thread.
         public static ExceptionDispatchInfo Capture(Exception source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             return new ExceptionDispatchInfo(source);
         }
@@ -70,10 +67,7 @@ namespace System.Runtime.ExceptionServices
         [StackTraceHidden]
         public static Exception SetCurrentStackTrace(Exception source)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             source.SetCurrentStackTrace();
 
@@ -100,14 +94,8 @@ namespace System.Runtime.ExceptionServices
         /// </remarks>
         public static Exception SetRemoteStackTrace(Exception source, string stackTrace)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (stackTrace is null)
-            {
-                throw new ArgumentNullException(nameof(stackTrace));
-            }
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(stackTrace);
 
             source.SetRemoteStackTrace(stackTrace);
 

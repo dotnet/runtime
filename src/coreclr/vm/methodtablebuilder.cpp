@@ -258,8 +258,8 @@ MethodTableBuilder::LoaderFindMethodInParentClass(
                     // and return the result to the caller.
                     // We do this here to avoid recalculating pSubst.
                     *pMethodConstraintsMatch = MetaSig::CompareMethodConstraints(
-                        &methodSig.GetSubstitution(), methodSig.GetModule(), methodSig.GetToken(),
-                        &entrySig.GetSubstitution(),  entrySig.GetModule(),  entrySig.GetToken());
+                        methodSig.GetSubstitution(), methodSig.GetModule(), methodSig.GetToken(),
+                        entrySig.GetSubstitution(),  entrySig.GetModule(),  entrySig.GetToken());
                 }
 
                 return pEntryMethod;
@@ -341,7 +341,7 @@ MethodTableBuilder::ExpandApproxInterface(
         bmtInterfaceEntry * pItfEntry = &bmtInterface->pInterfaceMap[i];
         bmtRTType * pItfType = pItfEntry->GetInterfaceType();
 
-        // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+        // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
         TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
         if (MetaSig::CompareTypeDefsUnderSubstitutions(pItfType->GetMethodTable(),
                                                        pNewInterface,
@@ -396,7 +396,8 @@ MethodTableBuilder::ExpandApproxInterface(
         }
 
         bmtInterfaceEntry * pNewMap = (bmtInterfaceEntry *)new (GetStackingAllocator()) BYTE[safeSize.Value()];
-        memcpy(pNewMap, bmtInterface->pInterfaceMap, sizeof(bmtInterfaceEntry) * bmtInterface->dwInterfaceMapAllocated);
+        if (bmtInterface->dwInterfaceMapAllocated > 0)
+            memcpy(pNewMap, bmtInterface->pInterfaceMap, sizeof(bmtInterfaceEntry) * bmtInterface->dwInterfaceMapAllocated);
 
         bmtInterface->pInterfaceMap = pNewMap;
         bmtInterface->dwInterfaceMapAllocated = dwNewAllocated.Value();
@@ -574,13 +575,6 @@ MethodTableBuilder::LoadApproxInterfaceMap()
         // Use the same injection status as typical instantiation
         bmtInterface->dbg_fShouldInjectInterfaceDuplicates =
             bmtGenerics->Debug_GetTypicalMethodTable()->Debug_HasInjectedInterfaceDuplicates();
-
-        if (GetModule() == g_pObjectClass->GetModule())
-        {   // CoreLib has some weird hardcoded information about interfaces (e.g.
-            // code:CEEPreloader::ApplyTypeDependencyForSZArrayHelper), so we don't inject duplicates into
-            // CoreLib types
-            bmtInterface->dbg_fShouldInjectInterfaceDuplicates = FALSE;
-        }
     }
 #endif //_DEBUG
 
@@ -869,8 +863,8 @@ MethodTableBuilder::MethodSignature::SignaturesEquivalent(
     STANDARD_VM_CONTRACT;
 
     return !!MetaSig::CompareMethodSigs(
-        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
-        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), sig1.GetSubstitution(),
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), sig2.GetSubstitution(),
         allowCovariantReturn);
 }
 
@@ -884,8 +878,8 @@ MethodTableBuilder::MethodSignature::SignaturesExactlyEqual(
 
     TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
     return !!MetaSig::CompareMethodSigs(
-        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
-        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), sig1.GetSubstitution(),
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), sig2.GetSubstitution(),
         FALSE, &newVisited);
 }
 
@@ -1154,18 +1148,15 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (jitMgr->LoadJIT())
     {
         CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        if (cpuCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD))
+        unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
+        if (intrinsicSIMDVectorLength != 0)
         {
-            unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-            if (intrinsicSIMDVectorLength != 0)
+            bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
+            if (HasLayout())
             {
-                bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
-                if (HasLayout())
-                {
-                    GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
-                }
-                return true;
+                GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
             }
+            return true;
         }
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1352,8 +1343,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     {
         StackSString debugName(SString::Utf8, GetDebugClassName());
         TypeString::AppendInst(debugName, bmtGenerics->GetInstantiation(), TypeString::FormatBasic);
-        StackScratchBuffer buff;
-        const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+        const char* pDebugNameUTF8 = debugName.GetUTF8();
         S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
         if(safeLen.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
@@ -1365,10 +1355,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pszDebugName = (LPCUTF8)name;
     }
 
-    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%S\" from module \"%ws\" in domain 0x%p %s\n",
+    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%s\" from module \"%ws\" in domain 0x%p %s\n",
         *pszDebugNamespace ? pszDebugNamespace : "",
         *pszDebugNamespace ? NAMESPACE_SEPARATOR_STR : "",
-        debugName.GetUnicode(),
+        debugName.GetUTF8(),
         pModule->GetDebugName(),
         pModule->GetDomain(),
         (pModule->IsSystem()) ? "System Domain" : ""
@@ -1726,7 +1716,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
         // For simple Blittable types we still need to check if they have any overlapping
-        // fields and call the method SetHasOverLayedFields() when they are detected.
+        // fields and call the method SetHasOverlaidFields() when they are detected.
         //
         if (HasExplicitFieldOffsetLayout())
         {
@@ -1800,7 +1790,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (IsValueClass())
     {
-        if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverLayedField())
+        if (bmtFP->NumInstanceFieldBytes != totalDeclaredFieldSize || HasOverlaidField())
             GetHalfBakedClass()->SetIsNotTightlyPacked();
 
 #ifdef FEATURE_HFA
@@ -1895,10 +1885,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
             {
                 {
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
-                    StackSString name(SString::Utf8);
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    const char* pDebugNameUTF8 = name.GetUTF8();
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();
@@ -1910,10 +1899,9 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     MethodDesc *pMD = methIt->GetMethodDesc();
 
-                    StackSString name(SString::Utf8);
+                    StackSString name;
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    const char* pDebugNameUTF8 = name.GetUTF8();
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();
@@ -2000,18 +1988,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // once we're past the commit point.
     EnsureRIDMapsCanBeFilled();
 
-    {
-        // NOTE. NOTE!! the EEclass can now be accessed by other threads.
-        // Do NOT place any initialization after this point.
-        // You may NOT fail the call after this point.
-        FAULT_FORBID();
-        CANNOTTHROWCOMPLUSEXCEPTION();
-
-        /*
-        GetMemTracker()->SuppressRelease();
-        */
-    }
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldDumpOnClassLoad(pszDebugName))
     {
@@ -2023,10 +1999,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared fields: %d\n", NumDeclaredFields()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared methods: %d\n", NumDeclaredMethods()));
         LOG((LF_ALWAYS, LL_ALWAYS, "Number of declared non-abstract methods: %d\n", bmtMethod->dwNumDeclaredNonAbstractMethods));
+
+        BOOL debugging = IsDebuggerPresent();
         pMT->Debug_DumpInterfaceMap("Approximate");
-        pMT->DebugDumpVtable(pszDebugName, FALSE);
-        pMT->DebugDumpFieldLayout(pszDebugName, FALSE);
-        pMT->DebugDumpGCDesc(pszDebugName, FALSE);
+        pMT->DebugDumpVtable(pszDebugName, debugging);
+        pMT->DebugDumpFieldLayout(pszDebugName, debugging);
+        pMT->DebugDumpGCDesc(pszDebugName, debugging);
         pMT->Debug_DumpDispatchMap();
     }
 #endif //_DEBUG
@@ -2681,14 +2659,6 @@ MethodTableBuilder::EnumerateClassMethods()
         METHOD_IMPL_TYPE implType;
         LPSTR strMethodName;
 
-#ifdef FEATURE_TYPEEQUIVALENCE
-        // TypeEquivalent structs must not have methods
-        if (bmtProp->fIsTypeEquivalent && fIsClassValueType)
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS);
-        }
-#endif
-
         //
         // Go to the next method and retrieve its attributes.
         //
@@ -2708,6 +2678,14 @@ MethodTableBuilder::EnumerateClassMethods()
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
 
+#ifdef FEATURE_TYPEEQUIVALENCE
+        // TypeEquivalent structs must not have non-static methods
+        if (!IsMdStatic(dwMemberAttrs) && bmtProp->fIsTypeEquivalent && fIsClassValueType)
+        {
+            BuildMethodTableThrowException(IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS);
+        }
+#endif
+
         bool isVtblGap = false;
         if (IsMdRTSpecialName(dwMemberAttrs) || IsMdVirtual(dwMemberAttrs) || IsDelegate())
         {
@@ -2720,7 +2698,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }
 
-            isVtblGap = IsMdRTSpecialName(dwMemberAttrs) && strncmp(strMethodName, "_VtblGap", 8) == 0;
+            isVtblGap = IsMdRTSpecialName(dwMemberAttrs) && IsVtblGapName(strMethodName);
         }
         else
         {
@@ -2759,9 +2737,6 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
 
                 numGenericMethodArgs = hEnumTyPars.EnumGetCount();
-
-                // We do not want to support context-bound objects with generic methods.
-
                 if (numGenericMethodArgs != 0)
                 {
                     HENUMInternalHolder hEnumGenericPars(pMDInternalImport);
@@ -2821,7 +2796,7 @@ MethodTableBuilder::EnumerateClassMethods()
             //   the '_'. We ignore this.
             //
 
-            LPCSTR pos = strMethodName + 8;
+            LPCSTR pos = strMethodName + COR_VTABLEGAP_NAME_LENGTH;
 
             // Skip optional number.
             while (IS_DIGIT(*pos))
@@ -2938,7 +2913,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     BuildMethodTableThrowException(BFA_AB_METHOD_IN_AB_CLASS);
                 }
-                if(!IsMdVirtual(dwMemberAttrs))
+                if(!IsMdVirtual(dwMemberAttrs) && !IsMdStatic(dwMemberAttrs))
                 {
                     BuildMethodTableThrowException(BFA_NONVIRT_AB_METHOD);
                 }
@@ -3213,7 +3188,6 @@ MethodTableBuilder::EnumerateClassMethods()
             else
 #endif // !FEATURE_COMINTEROP
             {
-                // This codepath is used by remoting
                 type = METHOD_TYPE_NORMAL;
             }
         }
@@ -3935,6 +3909,27 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 break;
             }
 
+        case ELEMENT_TYPE_BYREF:
+            {
+                dwLog2FieldSize = LOG2_PTRSIZE;
+                if (fIsStatic)
+                {
+                    // Byref-like types cannot be used for static fields
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_STATICFIELD);
+                }
+                if (!bmtFP->fIsByRefLikeType)
+                {
+                    // Non-byref-like types cannot contain byref-like instance fields
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_INSTANCEFIELD);
+                }
+                break;
+            }
+
+        case ELEMENT_TYPE_TYPEDBYREF:
+            {
+                goto IS_VALUETYPE;
+            }
+
         // Class type variable (method type variables aren't allowed in fields)
         // These only occur in open types used for verification/reflection.
         case ELEMENT_TYPE_VAR:
@@ -3970,7 +3965,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             {
                 Module * pTokenModule;
                 dwByValueClassToken = fsig.GetArgProps().PeekValueTypeTokenClosed(GetModule(), &bmtGenerics->typeContext, &pTokenModule);
-                fIsByValue = TRUE;
 
                 // By-value class
                 BAD_FORMAT_NOTHROW_ASSERT(dwByValueClassToken != 0);
@@ -4042,6 +4036,11 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                         pByValueClass = (MethodTable *)-1;
                     }
                 } // If 'this' is a value class
+            }
+            // TypedReference shares the rest of the code here
+IS_VALUETYPE:
+            {
+                fIsByValue = TRUE;
 
                 // It's not self-referential so try to load it
                 if (pByValueClass == NULL)
@@ -4091,12 +4090,12 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                     if (fIsStatic)
                     {
                         // Byref-like types cannot be used for static fields
-                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_STATICFIELD);
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_STATICFIELD);
                     }
                     if (!bmtFP->fIsByRefLikeType)
                     {
                         // Non-byref-like types cannot contain byref-like instance fields
-                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_INSTANCEFIELD);
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREF_OR_BYREFLIKE_INSTANCEFIELD);
                     }
                 }
 
@@ -4179,18 +4178,18 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
         if (!fIsStatic)
         {
-            pFD = &pFieldDescList[dwCurrentDeclaredField];
+            pFD = &pFieldDescList[dwCurrentDeclaredField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             *totalDeclaredSize += (1 << dwLog2FieldSize);
         }
         else /* (dwMemberAttrs & mdStatic) */
         {
             if (fIsThreadStatic)
             {
-                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields + dwCurrentThreadStaticField];
+                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields + dwCurrentThreadStaticField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             }
             else
             {
-                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + dwCurrentStaticField];
+                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + dwCurrentStaticField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             }
         }
 
@@ -4337,8 +4336,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 DWORD rva;
                 IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
 
-                // Ensure that the IL image is loaded.
-                GetModule()->GetPEAssembly()->EnsureLoaded();
+                // The PE should be loaded by now.
+                _ASSERT(GetModule()->GetPEAssembly()->IsLoaded());
 
                 DWORD fldSize;
                 if (FieldDescElementType == ELEMENT_TYPE_VALUETYPE)
@@ -4428,7 +4427,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     // For types with layout we drop any 64-bit alignment requirement if the packing size was less than 8
     // bytes (this mimics what the native compiler does and ensures we match up calling conventions during
     // interop).
-    if (HasLayout() && GetLayoutInfo()->GetPackingSize() < 8)
+    // We don't do this for types that are marked as sequential but end up with auto-layout due to containing pointers,
+    // as auto-layout ignores any Pack directives.
+    if (HasLayout() && (HasExplicitFieldOffsetLayout() || IsManagedSequential()) && GetLayoutInfo()->GetPackingSize() < 8)
     {
         fFieldRequiresAlign8 = false;
     }
@@ -4653,7 +4654,7 @@ BOOL MethodTableBuilder::TestOverrideForAccessibility(
         // Cross-Assembly
         else
         {
-            // If the method marks itself as check visibility the the method must be
+            // If the method marks itself as check visibility the method must be
             // public, FamORAssem, or family
             if((dwParentAttrs & mdMemberAccessMask) <= mdAssem)
             {
@@ -4805,8 +4806,8 @@ VOID MethodTableBuilder::TestMethodImpl(
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_DECL);
     }
 
-    // Interface method body that has methodimpl should always be final
-    if (IsInterface() && !IsMdFinal(dwImplAttrs))
+    // Non-static interface method body that has methodimpl should always be final
+    if (IsInterface() && !IsMdStatic(dwDeclAttrs) && !IsMdFinal(dwImplAttrs))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_FINAL_IMPL);
     }
@@ -5049,7 +5050,7 @@ MethodTableBuilder::ValidateMethods()
         // Virtual static methods are only allowed on interfaces and they must be abstract.
         if (IsMdStatic(it.Attrs()) && IsMdVirtual(it.Attrs()))
         {
-            if (!IsInterface() || !IsMdAbstract(it.Attrs()))
+            if (!IsInterface())
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_STATICVIRTUAL, it.Token());
             }
@@ -5154,7 +5155,7 @@ MethodTableBuilder::InitNewMethodDesc(
                                                     NULL,
                                                     NULL)))
         {
-            pNewMD->SetIsJitIntrinsic();
+            pNewMD->SetIsIntrinsic();
         }
 
     }
@@ -5747,7 +5748,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                 for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
                                 {
                                     bmtRTType * pCurItf = bmtInterface->pInterfaceMap[i].GetInterfaceType();
-                                    // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+                                    // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
                                     TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
                                     if (MetaSig::CompareTypeDefsUnderSubstitutions(
                                         pCurItf->GetMethodTable(),      pDeclMT,
@@ -5777,7 +5778,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                         for (DWORD i = 0; i < bmtInterface->dwInterfaceMapSize; i++)
                                         {
                                             bmtRTType * pCurItf = bmtInterface->pInterfaceMap[i].GetInterfaceType();
-                                            // Type Equivalence is respected for this comparision as we just need to find an
+                                            // Type Equivalence is respected for this comparison as we just need to find an
                                             // equivalent interface, the particular interface is unimportant
                                             if (MetaSig::CompareTypeDefsUnderSubstitutions(
                                                 pCurItf->GetMethodTable(), pDeclMT,
@@ -6076,7 +6077,7 @@ MethodTableBuilder::InitMethodDesc(
             BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
         }
 
-        // StoredSig specific intialization
+        // StoredSig specific initialization
         {
             StoredSigMethodDesc *pNewSMD = (StoredSigMethodDesc*) pNewMD;;
             DWORD cSig;
@@ -6246,8 +6247,8 @@ MethodTableBuilder::MethodImplCompareSignatures(
     }
 
     //now compare the method constraints
-    if (!MetaSig::CompareMethodConstraints(&implSig.GetSubstitution(), implSig.GetModule(), implSig.GetToken(),
-                                           &declSig.GetSubstitution(), declSig.GetModule(), declSig.GetToken()))
+    if (!MetaSig::CompareMethodConstraints(implSig.GetSubstitution(), implSig.GetModule(), implSig.GetToken(),
+                                           declSig.GetSubstitution(), declSig.GetModule(), declSig.GetToken()))
     {
         BuildMethodTableThrowException(dwConstraintErrorCode, implSig.GetToken());
     }
@@ -6588,7 +6589,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
     DispatchMapTypeID firstDispatchMapTypeID;
     ComputeDispatchMapTypeIDs(
         pDeclMT,
-        &pDecl->GetMethodSignature().GetSubstitution(),
+        pDecl->GetMethodSignature().GetSubstitution(),
         &firstDispatchMapTypeID,
         1,
         &cInterfaceDuplicates);
@@ -6611,7 +6612,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
         DispatchMapTypeID * rgDispatchMapTypeIDs = (DispatchMapTypeID *)_alloca(sizeof(DispatchMapTypeID) * cInterfaceDuplicates);
         ComputeDispatchMapTypeIDs(
             pDeclMT,
-            &pDecl->GetMethodSignature().GetSubstitution(),
+            pDecl->GetMethodSignature().GetSubstitution(),
             rgDispatchMapTypeIDs,
             cInterfaceDuplicates,
             &cInterfaceDuplicates);
@@ -7026,7 +7027,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     }
     _ASSERTE(offset == sizeof(MethodDescChunk) + sizeOfMethodDescs);
 
-    pChunk->SetSizeAndCount((ULONG)sizeOfMethodDescs, methodDescCount);
+    pChunk->SetSizeAndCount(sizeOfMethodDescs, methodDescCount);
 
     GetHalfBakedClass()->AddChunk(pChunk);
 }
@@ -7980,7 +7981,26 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         DWORD   dwCumulativeInstanceFieldPos;
 
         // Instance fields start right after the parent
-        dwCumulativeInstanceFieldPos    = HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0;
+        if (HasParent())
+        {
+            MethodTable* pParentMT = GetParentMethodTable();
+            if (pParentMT->HasLayout() && pParentMT->GetLayoutInfo()->IsZeroSized())
+            {
+                // If the parent type has sequential/explicit layout and is "zero sized"
+                // then we don't want to use the actual class size here.
+                // That includes an extra byte that isn't actually used, so we shouldn't
+                // count it here.
+                dwCumulativeInstanceFieldPos = 0;
+            }
+            else
+            {
+                dwCumulativeInstanceFieldPos = pParentMT->GetNumInstanceFieldBytes();
+            }
+        }
+        else
+        {
+            dwCumulativeInstanceFieldPos = 0;
+        }
 
         DWORD dwOffsetBias = 0;
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -8111,10 +8131,10 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 continue;
 
             // Align instance fields if we aren't already
-#ifdef FEATURE_64BIT_ALIGNMENT
-            DWORD dwDataAlignment = 1 << i;
-#else
+#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             DWORD dwDataAlignment = min(1 << i, DATA_ALIGNMENT);
+#else
+            DWORD dwDataAlignment = 1 << i;
 #endif
             dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwDataAlignment);
 
@@ -8169,35 +8189,62 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         else
             dwNumGCPointerSeries = bmtParent->NumParentPointerSeries;
 
+        bool containsGCPointers = bmtFP->NumInstanceGCPointerFields > 0;
         // Place by value class fields last
         // Update the number of GC pointer series
+        // Calculate largest alignment requirement
+        int largestAlignmentRequirement = 1;
         for (i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
         {
             if (pFieldDescList[i].IsByValue())
             {
                 MethodTable * pByValueMT = pByValueClassCache[i];
 
-                    // value classes could have GC pointers in them, which need to be pointer-size aligned
-                    // so do this if it has not been done already
-
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
-                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos,
-                    (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT) ? DATA_ALIGNMENT : TARGET_POINTER_SIZE);
-#else // !(!defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4))
-#ifdef FEATURE_64BIT_ALIGNMENT
+                if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
+                {
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
+                }
+                else
+#elif defined(FEATURE_64BIT_ALIGNMENT)
                 if (pByValueMT->RequiresAlign8())
+                {
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
+                }
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
+                if (pByValueMT->ContainsPointers())
+                {
+                    // this field type has GC pointers in it, which need to be pointer-size aligned
+                    // so do this if it has not been done already
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-#endif // !(!defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4))
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                    containsGCPointers = true;
+                }
+                else
+                {
+                    int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
+                }
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
-                dwCumulativeInstanceFieldPos += pByValueMT->GetAlignedNumInstanceFieldBytes();
+                dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
 
-                // Add pointer series for by-value classes
-                dwNumGCPointerSeries += pByValueMT->ContainsPointers() ?
-                    (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries() : 0;
+                if (pByValueMT->ContainsPointers())
+                {
+                    // Add pointer series for by-value classes
+                    dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
+                }
+            }
+            else
+            {
+                // non-value-type fields always require pointer alignment
+                // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
+                // but that is explicitly handled when we calculate the final alignment for the type.
+                largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
             }
         }
 
@@ -8223,12 +8270,19 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             if (dwNumInstanceFieldBytes > TARGET_POINTER_SIZE) {
-                minAlign = TARGET_POINTER_SIZE;
+                minAlign = containsGCPointers ? TARGET_POINTER_SIZE : (unsigned)largestAlignmentRequirement;
             }
             else {
                 minAlign = 1;
                 while (minAlign < dwNumInstanceFieldBytes)
                     minAlign *= 2;
+            }
+
+            if (minAlign != min(dwNumInstanceFieldBytes, TARGET_POINTER_SIZE))
+            {
+                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+                GetHalfBakedClass()->GetOptionalFields()->m_requiredFieldAlignment = (BYTE)minAlign;
+                GetHalfBakedClass()->SetHasCustomFieldAlignment();
             }
 
             dwNumInstanceFieldBytes = (dwNumInstanceFieldBytes + minAlign-1) & ~(minAlign-1);
@@ -8298,10 +8352,18 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
     if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout))
     {
+        LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is enregisterable\n",
+               this->GetDebugClassName()));
+
         // All the above tests passed. It's registers passed struct!
         GetHalfBakedMethodTable()->SetRegPassedStruct();
 
         StoreEightByteClassification(&helper);
+    }
+    else
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is _not_ enregisterable\n",
+               this->GetDebugClassName()));
     }
 }
 
@@ -8330,12 +8392,9 @@ MethodTableBuilder::HandleExplicitLayout(
 {
     STANDARD_VM_CONTRACT;
 
-
     // Instance slice size is the total size of an instance, and is calculated as
     // the field whose offset and size add to the greatest number.
     UINT instanceSliceSize = 0;
-    DWORD firstObjectOverlapOffset = ((DWORD)(-1));
-
 
     UINT i;
     for (i = 0; i < bmtMetaData->cFields; i++)
@@ -8359,32 +8418,35 @@ MethodTableBuilder::HandleExplicitLayout(
     }
 
     CQuickBytes qb;
-    PREFIX_ASSUME(sizeof(BYTE) == 1);
-    BYTE *pFieldLayout = (BYTE*) qb.AllocThrows(instanceSliceSize * sizeof(BYTE));
+    PREFIX_ASSUME(sizeof(bmtFieldLayoutTag) == 1);
+    bmtFieldLayoutTag *pFieldLayout = (bmtFieldLayoutTag*)qb.AllocThrows(instanceSliceSize * sizeof(bmtFieldLayoutTag));
     for (i=0; i < instanceSliceSize; i++)
     {
         pFieldLayout[i] = empty;
     }
 
-    // go through each field and look for invalid layout
+    // Go through each field and look for invalid layout.
     // (note that we are more permissive than what Ecma allows. We only disallow the minimum set necessary to
     // close security holes.)
     //
-    // This is what we implment:
+    // This is what we implement:
     //
-    // 1. Verify that every OREF is on a valid alignment
+    // 1. Verify that every OREF or BYREF is on a valid alignment.
     // 2. Verify that OREFs only overlap with other OREFs.
-    // 3. If an OREF does overlap with another OREF, the class is marked unverifiable.
-    // 4. If an overlap of any kind occurs, the class will be marked NotTightlyPacked (affects ValueType.Equals()).
+    // 3. Verify that BYREFs only overlap with other BYREFs.
+    // 4. If an OREF does overlap with another OREF, the class is marked unverifiable.
+    // 5. If a BYREF does overlap with another BYREF, the class is marked unverifiable.
+    // 6. If an overlap of any kind occurs, the class will be marked NotTightlyPacked (affects ValueType.Equals()).
     //
-    char emptyObject[TARGET_POINTER_SIZE];
-    char isObject[TARGET_POINTER_SIZE];
+    bmtFieldLayoutTag emptyObject[TARGET_POINTER_SIZE];
+    bmtFieldLayoutTag isObject[TARGET_POINTER_SIZE];
+    bmtFieldLayoutTag isByRef[TARGET_POINTER_SIZE];
     for (i = 0; i < TARGET_POINTER_SIZE; i++)
     {
         emptyObject[i] = empty;
         isObject[i]    = oref;
+        isByRef[i]     = byref;
     }
-
 
     ExplicitClassTrust explicitClassTrust;
 
@@ -8414,47 +8476,62 @@ MethodTableBuilder::HandleExplicitLayout(
         pFD = bmtMFDescs->ppFieldDescList[i];
         if (pFD == NULL || pFD->IsStatic())
         {
-            fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+            fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
             continue;
         }
 
         // "i" indexes all fields, valueClassCacheIndex indexes non-static fields only. Don't get them confused!
         valueClassCacheIndex++;
 
-        if (CorTypeInfo::IsObjRef(pFD->GetFieldType()))
+        CorElementType type = pFD->GetFieldType();
+        if (CorTypeInfo::IsObjRef(type) || CorTypeInfo::IsByRef(type))
         {
-            // Check that the ref offset is pointer aligned
+            // Check that the field is pointer aligned
             if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
             {
                 badOffset = pFD->GetOffset_NoLogging();
                 fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
 
-                // If we got here, OREF field was not pointer aligned. THROW.
+                // If we got here, OREF or BYREF field was not pointer aligned. THROW.
                 break;
             }
-            // check if overlaps another object
-            if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], (void *)isObject, sizeof(isObject)) == 0)
+
+            // Determine which tag type we are working with.
+            bmtFieldLayoutTag tag;
+            SIZE_T tagBlockSize;
+            void* tagBlock;
+            if (CorTypeInfo::IsObjRef(type))
             {
-                // If we got here, an OREF overlapped another OREF. We permit this but mark the class unverifiable.
+                tagBlockSize = sizeof(isObject);
+                tagBlock = (void*)isObject;
+                tag = oref;
+            }
+            else
+            {
+                _ASSERTE(CorTypeInfo::IsByRef(type));
+                tagBlockSize = sizeof(isByRef);
+                tagBlock = (void*)isByRef;
+                tag = byref;
+            }
+
+            // Check if there is overlap with its own tag type
+            if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], tagBlock, tagBlockSize) == 0)
+            {
+                // If we got here, there is tag type overlap. We permit this but mark the class unverifiable.
                 fieldTrust.SetTrust(ExplicitFieldTrust::kLegal);
-
-                if (firstObjectOverlapOffset == ((DWORD)(-1)))
-                {
-                    firstObjectOverlapOffset = pFD->GetOffset_NoLogging();
-                }
-
                 continue;
             }
-            // check if is empty at this point
+            // check if typed layout is empty at this point
             if (memcmp((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], (void *)emptyObject, sizeof(emptyObject)) == 0)
             {
-                // If we got here, this OREF is overlapping no other fields (yet). Record that these bytes now contain an OREF.
-                memset((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], oref, sizeof(isObject));
-                fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                // If we got here, this tag type is overlapping no other fields (yet).
+                // Record that these bytes now contain the current tag type.
+                memset((void *)&pFieldLayout[pFD->GetOffset_NoLogging()], tag, tagBlockSize);
+                fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                 continue;
             }
 
-            // If we got here, the OREF overlaps a non-OREF. THROW.
+            // If we got here, the tag overlaps something else. THROW.
             badOffset = pFD->GetOffset_NoLogging();
             fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
             break;
@@ -8462,64 +8539,57 @@ MethodTableBuilder::HandleExplicitLayout(
         else
         {
             UINT fieldSize;
-            if (pFD->IsByValue())
+            if (!pFD->IsByValue())
+            {
+                fieldSize = GetFieldSize(pFD);
+            }
+            else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                if (pByValueMT->IsByRefLike())
+                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsPointers())
                 {
                     if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
                     {
-                        // If we got here, then a byref-like valuetype was misaligned.
+                        // If we got here, then a ByRefLike valuetype or a valuetype containing an OREF was misaligned.
                         badOffset = pFD->GetOffset_NoLogging();
                         fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
                         break;
                     }
-                }
-                if (pByValueMT->ContainsPointers())
-                {
-                    if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) == 0)
-                    {
-                        ExplicitFieldTrust::TrustLevel trust;
-                        DWORD firstObjectOverlapOffsetInsideValueClass = ((DWORD)(-1));
-                        trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset_NoLogging()], &firstObjectOverlapOffsetInsideValueClass);
-                        fieldTrust.SetTrust(trust);
-                        if (firstObjectOverlapOffsetInsideValueClass != ((DWORD)(-1)))
-                        {
-                            if (firstObjectOverlapOffset == ((DWORD)(-1)))
-                            {
-                                firstObjectOverlapOffset = pFD->GetOffset_NoLogging() + firstObjectOverlapOffsetInsideValueClass;
-                            }
-                        }
 
-                        if (trust != ExplicitFieldTrust::kNone)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            // If we got here, then an OREF inside the valuetype illegally overlapped a non-OREF field. THROW.
-                            badOffset = pFD->GetOffset_NoLogging();
-                            break;
-                        }
+                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset_NoLogging()]);
+                    fieldTrust.SetTrust(trust);
+
+                    if (trust != ExplicitFieldTrust::kNone)
+                    {
+                        continue;
                     }
-                    // If we got here, then a valuetype containing an OREF was misaligned.
-                    badOffset = pFD->GetOffset_NoLogging();
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
+                    else
+                    {
+                        // If we got here, then an OREF/BYREF inside the valuetype illegally overlapped a non-OREF field. THROW.
+                        badOffset = pFD->GetOffset_NoLogging();
+                        break;
+                    }
                     break;
                 }
                 // no pointers so fall through to do standard checking
                 fieldSize = pByValueMT->GetNumInstanceFieldBytes();
             }
-            else
-            {
-                // field size temporarily stored in pInterface field
-                fieldSize = GetFieldSize(pFD);
-            }
 
             // If we got here, we are trying to place a non-OREF (or a valuetype composed of non-OREFs.)
-            // Look for any orefs under this field
-            BYTE *loc;
-            if ((loc = (BYTE*)memchr((void*)&pFieldLayout[pFD->GetOffset_NoLogging()], oref, fieldSize)) == NULL)
+            // Look for any orefs or byrefs under this field
+            bmtFieldLayoutTag* loc = NULL;
+            bmtFieldLayoutTag* currOffset = pFieldLayout + pFD->GetOffset_NoLogging();
+            bmtFieldLayoutTag* endOffset = currOffset + fieldSize;
+            for (; currOffset < endOffset; ++currOffset)
+            {
+                if (*currOffset == oref || *currOffset == byref)
+                {
+                    loc = currOffset;
+                    break;
+                }
+            }
+
+            if (loc == NULL)
             {
                 // If we have a nonoref in the range then we are doing an overlay
                 if(memchr((void*)&pFieldLayout[pFD->GetOffset_NoLogging()], nonoref, fieldSize))
@@ -8528,14 +8598,14 @@ MethodTableBuilder::HandleExplicitLayout(
                 }
                 else
                 {
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                 }
                 memset((void*)&pFieldLayout[pFD->GetOffset_NoLogging()], nonoref, fieldSize);
                 continue;
             }
 
             // If we got here, we tried to place a non-OREF (or a valuetype composed of non-OREFs)
-            // on top of an OREF. THROW.
+            // on top of an OREF/BYREF. THROW.
             badOffset = (UINT)(loc - pFieldLayout);
             fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
             break;
@@ -8551,7 +8621,7 @@ MethodTableBuilder::HandleExplicitLayout(
         // we will put a catchall "break" here which will cause the typeload to abort (albeit with a probably misleading
         // error message.)
         break;
-    } // for(;;)
+    }
 
     // We only break out of the loop above if we detected an error.
     if (i < bmtMetaData->cFields || !explicitClassTrust.IsLegal())
@@ -8562,18 +8632,9 @@ MethodTableBuilder::HandleExplicitLayout(
                               IDS_CLASSLOAD_EXPLICIT_LAYOUT);
     }
 
-    if (!explicitClassTrust.IsNonOverLayed())
+    if (!explicitClassTrust.IsNonOverlaid())
     {
-        SetHasOverLayedFields();
-    }
-
-    if (IsBlittable() || IsManagedSequential())
-    {
-        // Bug 849333: We shouldn't update "bmtFP->NumInstanceFieldBytes"
-        // for Blittable/ManagedSequential types.  As this will break backward compatiblity
-        // for the size of types that return true for HasExplicitFieldOffsetLayout()
-        //
-        return;
+        SetHasOverlaidFields();
     }
 
     FindPointerSeriesExplicit(instanceSliceSize, pFieldLayout);
@@ -8606,11 +8667,29 @@ MethodTableBuilder::HandleExplicitLayout(
 
         if (clstotalsize != 0)
         {
-            // size must be large enough to accomodate layout. If not, we use the layout size instead.
+            // size must be large enough to accommodate layout. If not, we use the layout size instead.
             if (!numInstanceFieldBytes.IsOverflow() && clstotalsize >= numInstanceFieldBytes.Value())
             {
                 numInstanceFieldBytes = S_UINT32(clstotalsize);
             }
+        }
+        else
+        {
+            // align up to the alignment requirements of the members of this value type.
+            numInstanceFieldBytes.AlignUp(GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers);
+            if (numInstanceFieldBytes.IsOverflow())
+            {
+                // addition overflow or cast truncation
+                BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
+            }
+        }
+
+        if (!numInstanceFieldBytes.IsOverflow() && numInstanceFieldBytes.Value() == 0)
+        {
+            // If we calculate a 0-byte size here, we should have also calculated a 0-byte size
+            // in the initial layout algorithm.
+            _ASSERTE(GetLayoutInfo()->IsZeroSized());
+            numInstanceFieldBytes = S_UINT32(1);
         }
     }
 
@@ -8644,27 +8723,29 @@ MethodTableBuilder::HandleExplicitLayout(
 } // MethodTableBuilder::HandleExplicitLayout
 
 //*******************************************************************************
-// make sure that no object fields are overlapped incorrectly, returns S_FALSE if
-// there overlap but nothing illegal, S_OK if there is no overlap
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, BYTE *pFieldLayout, DWORD *pFirstObjectOverlapOffset)
+// make sure that no object fields are overlapped incorrectly, returns the trust level
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
 {
     STANDARD_VM_CONTRACT;
 
+    // ByRefLike types need to be checked for ByRef fields.
+    if (pMT->IsByRefLike())
+        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
 
-    *pFirstObjectOverlapOffset = (DWORD)(-1);
+    // This method assumes there is a GC desc associated with the MethodTable.
+    _ASSERTE(pMT->ContainsPointers());
 
-    // Build a layout of the value class. Don't know the sizes of all the fields easily, but
-    // do know a) vc is already consistent so don't need to check it's overlaps and
-    // b) size and location of all objectrefs. So build it by setting all non-oref
+    // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
+    // do know (a) vc is already consistent so don't need to check it's overlaps and
+    // (b) size and location of all objectrefs. So build it by setting all non-oref
     // then fill in the orefs later
     UINT fieldSize = pMT->GetNumInstanceFieldBytes();
-    CQuickBytes qb;
-    BYTE *vcLayout = (BYTE*) qb.AllocThrows(fieldSize * sizeof(BYTE));
 
+    CQuickBytes qb;
+    bmtFieldLayoutTag *vcLayout = (bmtFieldLayoutTag*) qb.AllocThrows(fieldSize * sizeof(bmtFieldLayoutTag));
     memset((void*)vcLayout, nonoref, fieldSize);
 
     // use pointer series to locate the orefs
-
     CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
     CGCDescSeries *pSeries = map->GetLowestSeries();
 
@@ -8676,11 +8757,9 @@ MethodTableBuilder::HandleExplicitLayout(
         pSeries++;
     }
 
-
     ExplicitClassTrust explicitClassTrust;
-
-    for (UINT i=0; i < fieldSize; i++) {
-
+    for (UINT i=0; i < fieldSize; i++)
+    {
         ExplicitFieldTrustHolder fieldTrust(&explicitClassTrust);
 
         if (vcLayout[i] == oref) {
@@ -8688,7 +8767,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 // oref <--> empty
                 case empty:
                     pFieldLayout[i] = oref;
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                     break;
 
                 // oref <--> nonoref
@@ -8699,10 +8778,6 @@ MethodTableBuilder::HandleExplicitLayout(
                 // oref <--> oref
                 case oref:
                     fieldTrust.SetTrust(ExplicitFieldTrust::kLegal);
-                    if ((*pFirstObjectOverlapOffset) == ((DWORD)(-1)))
-                    {
-                        *pFirstObjectOverlapOffset = (DWORD)i;
-                    }
                     break;
 
                 default:
@@ -8713,7 +8788,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 // nonoref <--> empty
                 case empty:
                     pFieldLayout[i] = nonoref;
-                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverLayed);
+                    fieldTrust.SetTrust(ExplicitFieldTrust::kNonOverlaid);
                     break;
 
                 // nonoref <--> nonoref
@@ -8738,14 +8813,92 @@ MethodTableBuilder::HandleExplicitLayout(
 }
 
 
+//*******************************************************************************
+// make sure that no byref/object fields are overlapped, returns the trust level
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMT->IsByRefLike());
 
+    ExplicitClassTrust explicitClassTrust;
 
+    ExplicitFieldTrust::TrustLevel trust;
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        ExplicitFieldTrustHolder fieldTrust(&explicitClassTrust);
+        int fieldStartIndex = pFD->GetOffset();
 
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            MethodTable *pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
+        }
+        else if (pFD->IsObjRef())
+        {
+            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
+            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref);
+        }
+        else if (pFD->IsByRef())
+        {
+            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
+            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref);
+        }
+        else
+        {
+            trust = MarkTagType(&pFieldLayout[fieldStartIndex], pFD->GetSize(), nonoref);
+        }
 
+        fieldTrust.SetTrust(trust);
+
+        // Some invalid overlap was detected.
+        if (trust == ExplicitFieldTrust::kNone)
+            break;
+    }
+
+    return explicitClassTrust.GetTrustLevel();
+}
+
+//*******************************************************************************
+// Set the field's tag type and/or detect invalid overlap
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::MarkTagType(bmtFieldLayoutTag* field, SIZE_T fieldSize, bmtFieldLayoutTag tagType)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(field != NULL);
+    _ASSERTE(fieldSize != 0);
+    _ASSERTE(tagType != empty);
+
+    ExplicitFieldTrust::TrustLevel trust = ExplicitFieldTrust::kMaxTrust;
+    for (SIZE_T i = 0; i < fieldSize; ++i)
+    {
+        if (field[i] == empty)
+        {
+            // Nothing set for overlap, mark as requested.
+            field[i] = tagType;
+        }
+        else if (field[i] == tagType)
+        {
+            // Only a overlapped nonoref tag is verifiable, all others are simply legal.
+            ExplicitFieldTrust::TrustLevel overlapTrust = tagType == nonoref ? ExplicitFieldTrust::kVerifiable : ExplicitFieldTrust::kLegal;
+
+            // The ExplicitFieldTrust enum is ranked in descending order of trust.
+            // We always take the computed minimum trust level.
+            trust = min(trust, overlapTrust);
+        }
+        else
+        {
+            // A non-equal overlap was detected. There is no trust for the type.
+            trust = ExplicitFieldTrust::kNone;
+            break;
+        }
+    }
+
+    return trust;
+}
 
 //*******************************************************************************
 void MethodTableBuilder::FindPointerSeriesExplicit(UINT instanceSliceSize,
-                                                   BYTE *pFieldLayout)
+                                                   bmtFieldLayoutTag *pFieldLayout)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8757,19 +8910,19 @@ void MethodTableBuilder::FindPointerSeriesExplicit(UINT instanceSliceSize,
     DWORD sz = (instanceSliceSize + (2 * TARGET_POINTER_SIZE) - 1);
     bmtGCSeries->pSeries = new bmtGCSeriesInfo::Series[sz/2/ TARGET_POINTER_SIZE];
 
-    BYTE *loc = pFieldLayout;
-    BYTE *layoutEnd = pFieldLayout + instanceSliceSize;
+    bmtFieldLayoutTag *loc = pFieldLayout;
+    bmtFieldLayoutTag *layoutEnd = pFieldLayout + instanceSliceSize;
     while (loc < layoutEnd)
     {
         // Find the next OREF entry.
-        loc = (BYTE*)memchr((void*)loc, oref, layoutEnd-loc);
+        loc = (bmtFieldLayoutTag*)memchr((void*)loc, oref, layoutEnd-loc);
         if (loc == NULL)
         {
             break;
         }
 
         // Find the next non-OREF entry
-        BYTE *cur = loc;
+        bmtFieldLayoutTag *cur = loc;
         while(cur < layoutEnd && *cur == oref)
         {
             cur++;
@@ -9143,9 +9296,8 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     {
         //#LoadExactInterfaceMap_Algorithm2
         // Exact interface instantiation loading TECHNIQUE 2 - The exact instantiation has caused some duplicates to
-        // appear in the interface map!  This may not be an error: if the duplicates
-        // were ones that arose because because of inheritance from
-        // a parent type then we accept that.  For example
+        // appear in the interface map!  This may not be an error: if the duplicates were ones that arose because of
+        // inheritance from a parent type then we accept that.  For example
         //     class C<T> : I<T>
         //     class D<T> : C<T>, I<string>
         // is acceptable even when loading D<string>.  Note that in such a case
@@ -9356,7 +9508,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
                     // Compare original and duplicate interface entries in the dispatch map if they contain
                     // different implementation for the same interface method
-                    for (;;)
+                    while (true)
                     {
                         if (!originalIt.IsValid() || !duplicateIt.IsValid())
                         {   // We reached end of one dispatch map iterator
@@ -9480,7 +9632,7 @@ MethodTableBuilder::ExpandExactInheritedInterfaces(
         pMTInterfaceMapOwner
         COMMA_INDEBUG(pMT));
 
-    // Restore type's subsitution chain for comparing interfaces
+    // Restore type's substitution chain for comparing interfaces
     *pSubstForComparing = substForComparingBackup;
 } // MethodTableBuilder::ExpandExactInheritedInterfaces
 
@@ -9552,7 +9704,7 @@ MethodTableBuilder::ExpandExactInterface(
     // determined the layout of the interface map for the "generic" version of the class.
     for (DWORD i = 0; i < bmtInfo->nAssigned; i++)
     {
-        // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+        // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
         TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
         if (MetaSig::CompareTypeDefsUnderSubstitutions(bmtInfo->pExactMTs[i],
                                                        pIntf,
@@ -9637,7 +9789,7 @@ void MethodTableBuilder::InterfaceAmbiguityCheck(bmtInterfaceAmbiguityCheckInfo 
     // determined the layout of the interface map for the "generic" version of the class.
     for (DWORD i = 0; i < bmtCheckInfo->nAssigned; i++)
     {
-        // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+        // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
         TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
         if (MetaSig::CompareTypeDefsUnderSubstitutions(bmtCheckInfo->ppExactDeclaredInterfaces[i],
                                                        pIntf,
@@ -9691,7 +9843,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 
             if (strcmp(nameSpace, g_IntrinsicsNS) == 0)
             {
-                EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
 
                 // The SIMD Hardware Intrinsic types correspond to fundamental data types in the underlying ABIs:
                 // * Vector64<T>:  __m64
@@ -9700,7 +9852,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
-
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {
@@ -9749,9 +9900,6 @@ void MethodTableBuilder::CheckForSystemTypes()
 
         if (g_pNullableClass != NULL)
         {
-            _ASSERTE(g_pByReferenceClass != NULL);
-            _ASSERTE(g_pByReferenceClass->IsByRefLike());
-
             _ASSERTE(g_pNullableClass->IsNullable());
 
             // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
@@ -9830,6 +9978,30 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
         {
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
+        }
+        else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
+        {
+            EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+            pLayout->SetIsInt128OrHasInt128Fields(TRUE);
+#ifdef TARGET_ARM
+            // No such type exists for the Procedure Call Standard for ARM. We will default
+            // to the same alignment as __m128, which is supported by the ABI.
+
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+#elif defined(TARGET_64BIT) || defined(TARGET_X86)
+
+            // These types correspond to fundamental data types in the underlying ABIs:
+            // * Int128:  __int128
+            // * UInt128: unsigned __int128
+            //
+            // This behavior matches the ABI standard on various Unix platforms
+            // On Windows, no standard for Int128 has been established yet,
+            // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
+            // even on X86
+            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+#else
+#error Unknown architecture
+#endif // TARGET_64BIT
         }
     }
     else
@@ -10003,7 +10175,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     _ASSERTE(IS_ALIGNED(pData, TARGET_POINTER_SIZE));
 
-    // There should be no overflows if we have allocated the memory succesfully
+    // There should be no overflows if we have allocated the memory successfully
     _ASSERTE(!cbTotalSize.IsOverflow());
 
     MethodTable* pMT = (MethodTable*)(pData + dwGCSize);
@@ -10015,7 +10187,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     // Note: Memory allocated on loader heap is zero filled
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -10026,7 +10198,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     pClassLoader->m_dwVtableData += (dwVtableSlots * sizeof(PCODE));
 #endif // _DEBUG
 
-    // There should be no overflows if we have allocated the memory succesfully
+    // There should be no overflows if we have allocated the memory successfully
     _ASSERTE(!offsetOfUnsharedVtableChunks.IsOverflow());
     _ASSERTE(!offsetOfNonVirtualSlots.IsOverflow());
     _ASSERTE(!offsetOfInterfaceMap.IsOverflow());
@@ -10295,25 +10467,6 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
     if (bmtProp->fSparse)
         pClass->SetSparseForCOMInterop();
-
-    if (IsInterface() && IsComImport())
-    {
-        // Determine if we are creating an interface methodtable that may be used to dispatch through VSD
-        // on an object that has the methodtable of __ComObject.
-
-        // This is done to allow COM tearoff interfaces, but as a side-effect of this feature,
-        // we end up using a domain-shared type (__ComObject) with a domain-specific dispatch token.
-        // This is a problem because the same domain-specific dispatch token value can appear in
-        // multiple unshared domains (VSD takes advantage of the fact that in general a shared type
-        // cannot implement an unshared interface). This means that the same <token, __ComObject> pair
-        // value can mean different things in different domains (since the token could represent
-        // IFoo in one domain and IBar in another). This is a problem because the
-        // VSD polymorphic lookup mechanism relies on a process-wide cache table, and as a result
-        // these duplicate values would collide if we didn't use fat dispatch token to ensure uniqueness
-        // and the interface methodtable is not in the shared domain.
-
-        pMT->SetRequiresFatDispatchTokens();
-    }
 #endif // FEATURE_COMINTEROP
 
     if (bmtVT->pCCtor != NULL)
@@ -10334,10 +10487,6 @@ MethodTableBuilder::SetupMethodTable2(
 
 #ifdef _DEBUG
     {
-        // disable ibc logging because we can assert in ComputerPreferredZapModule for partially constructed
-        // generic types
-        IBCLoggingDisabler disableLogging;
-
         DeclaredMethodIterator it(*this);
         while (it.Next())
         {
@@ -10706,7 +10855,7 @@ MethodTableBuilder::SetupMethodTable2(
 #ifdef FEATURE_COMINTEROP
     // for ComObject types, i.e. if the class extends from a COM Imported
     // class
-    // make sure any interface implementated by the COM Imported class
+    // make sure any interface implemented by the COM Imported class
     // is overridden fully, (OR) not overridden at all..
     if (bmtProp->fIsComObjectType)
     {
@@ -10882,7 +11031,7 @@ BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(bmtRTType *pDeclType,
                     // If this is generic, we need to compare under substitutions
                     Substitution curItfSubs(tkParent, pCurIntfModule, &pCurItf->GetSubstitution());
 
-                    // Type Equivalence is not respected for this comparision as you can have multiple type equivalent interfaces on a class
+                    // Type Equivalence is not respected for this comparison as you can have multiple type equivalent interfaces on a class
                     TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
                     if (MetaSig::CompareTypeDefsUnderSubstitutions(
                         pPotentialInterfaceMT, pDeclType->GetMethodTable(),
@@ -11540,7 +11689,8 @@ void MethodTableBuilder::bmtMethodImplInfo::AddMethodImpl(
         // If we have to grow this array, we will not free the old array before we clean up the BuildMethodTable operation
         // because this is a stacking allocator. However, the old array will get freed when all the stack allocator is freed.
         Entry *rgEntriesNew = new (pStackingAllocator) Entry[newEntriesCount];
-        memcpy(rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
+        if (cMaxIndex > 0)
+            memcpy(rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
 
         // Start using newly allocated array.
         rgEntries = rgEntriesNew;
@@ -11641,7 +11791,7 @@ BOOL MethodTableBuilder::ChangesImplementationOfVirtualSlot(SLOT_INDEX idx)
             // the fact that we get some false positives and end up sharing less vtable chunks.
 
             // Search the previous slots in the parent vtable for the same implementation. If it exists and it was
-            // overriden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
+            // overridden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
             // slot (idx), so the implementation of it will change.
             MethodDesc* pParentMD = ParentImpl.GetMethodDesc();
             for (SLOT_INDEX i = 0; i < idx; i++)

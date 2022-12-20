@@ -40,7 +40,7 @@ namespace System.Net.Sockets.Tests
             new object[] { SocketType.Unknown, ProtocolType.Udp },
         };
 
-        private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
+        private static bool SupportsRawSockets => Environment.IsPrivilegedProcess;
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
         [OuterLoop]
@@ -480,7 +480,7 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
-            }).WaitAsync(TestSettings.PassingTestTimeout); 
+            }).WaitAsync(TestSettings.PassingTestTimeout);
         }
 
         [DllImport("libc")]
@@ -541,7 +541,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct nlmsghdr
+        internal struct @nlmsghdr
         {
             internal int nlmsg_len;       /* Length of message including header */
             internal ushort nlmsg_type;   /* Type of message content */
@@ -551,13 +551,13 @@ namespace System.Net.Sockets.Tests
         };
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct nlmsgerr {
+        private struct @nlmsgerr {
             internal int     error;
             internal nlmsghdr msg;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct rtmsg
+        internal unsafe struct @rtmsg
         {
             internal byte rtm_family;
             internal byte rtm_dst_len;
@@ -686,6 +686,35 @@ namespace System.Net.Sockets.Tests
 
             close(ptr[0]);
             close(ptr[1]);
+        }
+
+        // On some Unix machines the second (manual) handle close succeeds despite Socket's/SafeSocketHandle's Dispose
+        // completing a succesful close of the same handle value previously.
+        // We may investigate this, but it doesn't indicate incorrect behavior in Socket code,
+        // so making the test PlatformSpecific seems to be good enough. The SafeSocketHandle lifecycle logic is platform cross-platform.
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Ctor_Dispose_HandleClosedIfOwnsHandle(bool ownsHandle)
+        {
+            Socket original = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            IntPtr handleValue = original.Handle;
+
+            SafeSocketHandle handleClone = new SafeSocketHandle(handleValue, ownsHandle: ownsHandle);
+            Socket socketClone = new Socket(handleClone);
+            socketClone.Dispose();
+
+            bool manualCloseSucceeded = closesocket(handleValue) == 0;
+            Assert.Equal(!ownsHandle, manualCloseSucceeded);
+
+#if DEBUG   // The finalizer will fail to close the handle which leads to an assertion failure in Debug builds.
+            GC.SuppressFinalize(original);
+            GC.SuppressFinalize(original.SafeHandle);
+#endif
+
+            [DllImport("ws2_32.dll", SetLastError = true)]
+            static extern int closesocket(IntPtr socketHandle);
         }
 
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)

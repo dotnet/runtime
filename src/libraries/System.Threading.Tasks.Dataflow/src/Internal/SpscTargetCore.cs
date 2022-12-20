@@ -10,6 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -323,8 +324,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(_completionReserved, "Should only invoke once completion has been reserved.");
 
             // Dump any messages that might remain in the queue, which could happen if we completed due to exceptions.
-            TInput? dumpedMessage;
-            while (_messages.TryDequeue(out dumpedMessage)) ;
+            while (_messages.TryDequeue(out _)) ;
 
             // Complete the completion task
             bool result;

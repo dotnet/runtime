@@ -160,7 +160,7 @@ Implementation
 
 The implementation can be located in [codeversion.h](../../../src/coreclr/vm/codeversion.h) and [codeversion.cpp](../../../src/coreclr/vm/codeversion.cpp)
 
-Code versions are embodied by the configuration in NativeCodeVersion structure as well as the configuration in the transitively reachable ILCodeVersion. NativeCodeVersion::GetILCodeVersion() allows trivial access from one part of the configuration to the other. These structures have various accesors to retrieve all the code and configuration data such as:
+Code versions are embodied by the configuration in NativeCodeVersion structure as well as the configuration in the transitively reachable ILCodeVersion. NativeCodeVersion::GetILCodeVersion() allows trivial access from one part of the configuration to the other. These structures have various accessors to retrieve all the code and configuration data such as:
 
 ```
     NativeCodeVersion::GetVersionId()
@@ -171,7 +171,7 @@ Code versions are embodied by the configuration in NativeCodeVersion structure a
 
 ILCodeVersion objects are always partial code versions, containing only the portion of versioning information that doesn't vary by generic instantiation.
 
-The NativeCodeVersion and ILCodeVersion don't directly store any of the configuration data but rather serve as facades that use one of two different storage strategies. For the default version (or in the case of ILCodeVersion, default partial code version), the structures only store sufficient information to identify which version is being refered to. Then they delegate all storage to the pre-existing runtime data structures which already store this data. For non-default versions the structure stores a pointer block of memory that does store the configuration. For example:
+The NativeCodeVersion and ILCodeVersion don't directly store any of the configuration data but rather serve as facades that use one of two different storage strategies. For the default version (or in the case of ILCodeVersion, default partial code version), the structures only store sufficient information to identify which version is being referred to. Then they delegate all storage to the pre-existing runtime data structures which already store this data. For non-default versions the structure stores a pointer block of memory that does store the configuration. For example:
 
 ```
 PCODE NativeCodeVersion::GetNativeCode() const
@@ -343,7 +343,7 @@ APIs that require the lock is held/not held should ASSERT the lock state in debu
 
 The example build pipeline in the design section has many stages, but the implemented versioning tree only tracks a few specific chunks of configuration information:
 
-1. Profiler ReJIT can specify an IL body, IL remaping table, and a few jit flags.
+1. Profiler ReJIT can specify an IL body, IL remapping table, and a few jit flags.
 2. The runtime can specify any number of generic instantiations
 3. Tiered compilation can specify an optimization level
 
@@ -363,7 +363,7 @@ The runtime's current classification is:
 Future roadmap possibilities
 ============================
 
-A few (completely uncommited) thoughts on how this area of the code might evolve in the future, in no particular order:
+A few (completely uncommitted) thoughts on how this area of the code might evolve in the future, in no particular order:
 
 - Make the debugger configuration for EnC another explicit build pipeline stage. This seems most interesting to allow diagnostic tools that use profiler instrumentation to coexist with a live debugging session that is rewriting code using EnC.
 - Add code version collection to save memory when certain code versions are no longer being used.

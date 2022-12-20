@@ -45,10 +45,6 @@ namespace System.Resources
             ReadResources();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
-            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
-            "the user to only get one error.")]
         private object DeserializeObject(int typeIndex)
         {
             if (!AllowCustomResourceTypes)
@@ -61,9 +57,19 @@ namespace System.Resources
                 throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
             }
 
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
+                "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+                "the user to only get one error.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
+                "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+                "the user to only get one error.")]
+            bool InitializeBinaryFormatterLocal() => InitializeBinaryFormatter();
+
             if (Volatile.Read(ref _binaryFormatter) is null)
             {
-                if (!InitializeBinaryFormatter())
+                if (!InitializeBinaryFormatterLocal())
                 {
                     // The linker trimmed away the BinaryFormatter implementation and we can't call into it.
                     // We'll throw an exception with the same text that BinaryFormatter would have thrown
@@ -85,6 +91,7 @@ namespace System.Resources
         }
 
         // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private bool InitializeBinaryFormatter()
@@ -128,8 +135,8 @@ namespace System.Resources
 
         public void GetResourceData(string resourceName, out string resourceType, out byte[] resourceData)
         {
-            if (resourceName == null)
-                throw new ArgumentNullException(nameof(resourceName));
+            ArgumentNullException.ThrowIfNull(resourceName);
+
             if (_resCache == null)
                 throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 

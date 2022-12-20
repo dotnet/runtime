@@ -13,6 +13,7 @@ namespace System.Diagnostics
     {
         private readonly ActivityTagsCollection? _samplerTags;
         private readonly ActivityContext _context;
+        private readonly string? _traceState;
 
         /// <summary>
         /// Construct a new <see cref="ActivityCreationOptions{T}"/> object.
@@ -40,6 +41,7 @@ namespace System.Diagnostics
             }
 
             _samplerTags = null;
+            _traceState = null;
 
             if (parent is ActivityContext ac && ac != default)
             {
@@ -48,6 +50,8 @@ namespace System.Diagnostics
                 {
                     IdFormat = ActivityIdFormat.W3C;
                 }
+
+                _traceState = ac.TraceState;
             }
             else if (parent is string p && p != null)
             {
@@ -144,6 +148,31 @@ namespace System.Diagnostics
                 return _context.TraceId;
             }
         }
+
+        /// <summary>
+        /// Retrieve or initialize the trace state to use for the Activity we may create.
+        /// </summary>
+        public string? TraceState
+        {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
+            get => _traceState;
+
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+            [System.Security.SecuritySafeCriticalAttribute]
+#endif
+            init
+            {
+                _traceState = value;
+            }
+        }
+
+        // SetTraceState is to set the _traceState without the need of copying the whole structure.
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
+        internal void SetTraceState(string? traceState) => Unsafe.AsRef(in _traceState) = traceState;
 
         /// <summary>
         /// Retrieve Id format of to use for the Activity we may create.

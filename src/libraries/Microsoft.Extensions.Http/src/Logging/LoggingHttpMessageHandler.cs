@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Http.Logging
     public class LoggingHttpMessageHandler : DelegatingHandler
     {
         private ILogger _logger;
-        private readonly HttpClientFactoryOptions _options;
+        private readonly HttpClientFactoryOptions? _options;
 
         private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;
 
@@ -27,10 +27,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
         public LoggingHttpMessageHandler(ILogger logger)
         {
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
+            ThrowHelper.ThrowIfNull(logger);
 
             _logger = logger;
         }
@@ -43,15 +40,8 @@ namespace Microsoft.Extensions.Http.Logging
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
         public LoggingHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
         {
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(logger);
+            ThrowHelper.ThrowIfNull(options);
 
             _logger = logger;
             _options = options;
@@ -59,23 +49,24 @@ namespace Microsoft.Extensions.Http.Logging
 
         /// <inheritdoc />
         /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
-        protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
+            ThrowHelper.ThrowIfNull(request);
+            return Core(request, cancellationToken);
+
+            async Task<HttpResponseMessage> Core(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                throw new ArgumentNullException(nameof(request));
+                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+
+                // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
+                // not really anything to surround.
+                Log.RequestStart(_logger, request, shouldRedactHeaderValue);
+                var stopwatch = ValueStopwatch.StartNew();
+                HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                Log.RequestEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+
+                return response;
             }
-
-            Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
-
-            // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
-            // not really anything to surround.
-            Log.RequestStart(_logger, request, shouldRedactHeaderValue);
-            var stopwatch = ValueStopwatch.StartNew();
-            HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            Log.RequestEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
-
-            return response;
         }
 
         // Used in tests.
@@ -90,19 +81,26 @@ namespace Microsoft.Extensions.Http.Logging
                 public static readonly EventId ResponseHeader = new EventId(103, "ResponseHeader");
             }
 
-            private static readonly Action<ILogger, HttpMethod, Uri, Exception> _requestStart = LoggerMessage.Define<HttpMethod, Uri>(
+            private static readonly LogDefineOptions _skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
+
+            private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestStart = LoggerMessage.Define<HttpMethod, string?>(
                 LogLevel.Information,
                 EventIds.RequestStart,
-                "Sending HTTP request {HttpMethod} {Uri}");
+                "Sending HTTP request {HttpMethod} {Uri}",
+                _skipEnabledCheckLogDefineOptions);
 
-            private static readonly Action<ILogger, double, int, Exception> _requestEnd = LoggerMessage.Define<double, int>(
+            private static readonly Action<ILogger, double, int, Exception?> _requestEnd = LoggerMessage.Define<double, int>(
                 LogLevel.Information,
                 EventIds.RequestEnd,
                 "Received HTTP response headers after {ElapsedMilliseconds}ms - {StatusCode}");
 
             public static void RequestStart(ILogger logger, HttpRequestMessage request, Func<string, bool> shouldRedactHeaderValue)
             {
-                _requestStart(logger, request.Method, request.RequestUri, null);
+                // We check here to avoid allocating in the GetUriString call unnecessarily
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    _requestStart(logger, request.Method, GetUriString(request.RequestUri), null);
+                }
 
                 if (logger.IsEnabled(LogLevel.Trace))
                 {
@@ -128,6 +126,13 @@ namespace Microsoft.Extensions.Http.Logging
                         null,
                         (state, ex) => state.ToString());
                 }
+            }
+
+            private static string? GetUriString(Uri? requestUri)
+            {
+                return requestUri?.IsAbsoluteUri == true
+                    ? requestUri.AbsoluteUri
+                    : requestUri?.ToString();
             }
         }
     }

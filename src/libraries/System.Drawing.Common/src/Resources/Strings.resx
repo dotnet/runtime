@@ -128,9 +128,6 @@
   <data name="ColorNotSystemColor" xml:space="preserve">
     <value>The color {0} is not a system color.</value>
   </data>
-  <data name="DotNET_ComponentType" xml:space="preserve">
-    <value>.NET Component</value>
-  </data>
   <data name="GdiplusAborted" xml:space="preserve">
     <value>Function was ended.</value>
   </data>
@@ -224,18 +221,6 @@
   <data name="IconInvalidMaskLength" xml:space="preserve">
     <value>'{0}' data length expected {1}, read {2}</value>
   </data>
-  <data name="ToolboxItemLocked" xml:space="preserve">
-    <value>Toolbox item cannot be modified.</value>
-  </data>
-  <data name="ToolboxItemInvalidPropertyType" xml:space="preserve">
-    <value>Property {0} requires an argument of type {1}.</value>
-  </data>
-  <data name="ToolboxItemValueNotSerializable" xml:space="preserve">
-    <value>Data type {0} is not serializable. Items added to a property dictionary must be serializable.</value>
-  </data>
-  <data name="ToolboxItemInvalidKey" xml:space="preserve">
-    <value>Argument should be a non-empty string.</value>
-  </data>
   <data name="IllegalState" xml:space="preserve">
     <value>Internal state of the {0} class is invalid.</value>
   </data>
@@ -263,14 +248,11 @@
   <data name="InvalidArgumentValue" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'.</value>
   </data>
-    <data name="InvalidArgumentValueFontConverter" xml:space="preserve">
+  <data name="InvalidArgumentValueFontConverter" xml:space="preserve">
     <value>Value of '{0}' is not valid for font size unit.</value>
   </data>
   <data name="InvalidBoundArgument" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than {2} and less than or equal to {3}.</value>
-  </data>
-  <data name="InvalidClassName" xml:space="preserve">
-    <value>Class name is not valid.</value>
   </data>
   <data name="InvalidColor" xml:space="preserve">
     <value>Color '{0}' is not valid.</value>
@@ -289,9 +271,6 @@
   </data>
   <data name="InvalidLowBoundArgumentEx" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'. '{0}' must be greater than or equal to {2}.</value>
-  </data>
-  <data name="InvalidPermissionLevel" xml:space="preserve">
-    <value>Permission level is not valid.</value>
   </data>
   <data name="InvalidPermissionState" xml:space="preserve">
     <value>Permission state is not valid.</value>
@@ -350,20 +329,11 @@
   <data name="PDOCqueryPageSettingsDescr" xml:space="preserve">
     <value>Occurs before each page is printed.  Useful for changing PageSettings for a particular page.</value>
   </data>
-  <data name="PlatformNotSupported_Drawing" xml:space="preserve">
-    <value>System.Drawing is not supported on this platform.</value>
-  </data>
   <data name="PlatformNotSupported_Unix" xml:space="preserve">
     <value>System.Drawing.Common is not supported on non-Windows platforms. See https://aka.ms/systemdrawingnonwindows for more information.</value>
   </data>
   <data name="PrintDocumentDesc" xml:space="preserve">
     <value>Defines an object that sends output to a printer.</value>
-  </data>
-  <data name="PrintingPermissionBadXml" xml:space="preserve">
-    <value>XML is not valid.</value>
-  </data>
-  <data name="PrintingPermissionAttributeInvalidPermissionLevel" xml:space="preserve">
-    <value>Permission level must be between PrintingPermissionLevel.NoPrinting and PrintingPermissionLevel.AllPrinting.</value>
   </data>
   <data name="PropertyValueInvalidEntry" xml:space="preserve">
     <value>IDictionary parameter contains at least one entry that is not valid. Ensure all values are consistent with the object's properties.</value>
@@ -373,9 +343,6 @@
   </data>
   <data name="ResourceNotFound" xml:space="preserve">
     <value>Resource '{1}' cannot be found in class '{0}'.</value>
-  </data>
-  <data name="TargetNotPrintingPermission" xml:space="preserve">
-    <value>Target does not have permission to print.</value>
   </data>
   <data name="TextParseFailedFormat" xml:space="preserve">
     <value>Text "{0}" cannot be parsed. The expected text format is "{1}".</value>
@@ -406,12 +373,6 @@
   </data>
   <data name="BlendObjectLastElementInvalid" xml:space="preserve">
     <value>Invalid Blend object. The positions array must have 1.0 as its last element.</value>
-  </data>
-  <data name="DllNotFoundExceptionMessage" xml:space="preserve">
-    <value>Unable to load DLL '{0}': The specified module could not be found.</value>
-  </data>
-  <data name="EntryPointNotFoundExceptionMessage" xml:space="preserve">
-    <value>Unable to find an entry point named '{0}' in DLL '{1}'.</value>
   </data>
   <data name="AvailableOnlyOnWMF" xml:space="preserve">
     <value>{0} only available on WMF files.</value>

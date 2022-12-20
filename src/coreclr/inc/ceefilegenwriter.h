@@ -97,22 +97,22 @@ public:
     HRESULT clearComImageFlags(DWORD mask);
     DWORD getComImageFlags();
 
-    HRESULT setOutputFileName(__in LPWSTR outputFileName);
+    HRESULT setOutputFileName(_In_ LPWSTR outputFileName);
     LPWSTR getOutputFileName();
 
-    HRESULT setResourceFileName(__in LPWSTR resourceFileName);
+    HRESULT setResourceFileName(_In_ LPWSTR resourceFileName);
     LPWSTR getResourceFileName();
 
     HRESULT setDirectoryEntry(CeeSection &section, ULONG entry, ULONG size, ULONG offset=0);
-    HRESULT computeSectionOffset(CeeSection &section, __in char *ptr,
+    HRESULT computeSectionOffset(CeeSection &section, _In_ char *ptr,
                                  unsigned *offset);
-    HRESULT computeOffset(__in char *ptr, CeeSection **pSection,
+    HRESULT computeOffset(_In_ char *ptr, CeeSection **pSection,
                           unsigned *offset);
     HRESULT getCorHeader(IMAGE_COR20_HEADER **ppHeader);
 
     HRESULT getFileTimeStamp(DWORD *pTimeStamp);
 
-    HRESULT setLibraryGuid(__in LPWSTR libraryGuid);
+    HRESULT setLibraryGuid(_In_ LPWSTR libraryGuid);
 
     HRESULT setDllSwitch(bool dllSwitch);
     bool getDllSwitch();

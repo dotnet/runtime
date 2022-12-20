@@ -21,7 +21,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(value is DateTimeOffset);
 
-            return HttpDateParser.DateToString((DateTimeOffset)value);
+            return ((DateTimeOffset)value).ToString("r");
         }
 
         public override bool TryParseValue([NotNullWhen(true)] string? value, object? storeValue, ref int index, [NotNullWhen(true)] out object? parsedValue)

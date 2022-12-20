@@ -41,7 +41,6 @@ namespace System.Net.WebSockets.Tests
         [Theory]
         [MemberData(nameof(EchoServers))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CanSendReceiveData(Uri echoUri)
         {
             if (PlatformDetection.IsWindows7)
@@ -77,7 +76,7 @@ namespace System.Net.WebSockets.Tests
         public async Task ReceiveAsync_UTF8SplitAcrossMultipleBuffers_ValidDataReceived()
         {
             // 1 character - 2 bytes
-            byte[] payload = Encoding.UTF8.GetBytes("\u00E6");
+            byte[] payload = "\u00E6"u8.ToArray();
             var frame = new byte[payload.Length + 2];
             frame[0] = 0x81; // FIN = true, Opcode = Text
             frame[1] = (byte)payload.Length;
@@ -104,7 +103,6 @@ namespace System.Net.WebSockets.Tests
 
         [Theory]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0b_1000_0001, 0b_0_000_0001, false)] // fin + text, no mask + length == 1
         [InlineData(0b_1100_0001, 0b_0_000_0001, true)] // fin + rsv1 + text, no mask + length == 1
         [InlineData(0b_1010_0001, 0b_0_000_0001, true)] // fin + rsv2 + text, no mask + length == 1
@@ -182,7 +180,6 @@ namespace System.Net.WebSockets.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task ReceiveAsync_ServerSplitHeader_ValidDataReceived()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -237,7 +234,6 @@ namespace System.Net.WebSockets.Tests
         [Theory]
         [MemberData(nameof(EchoServersAndBoolean))]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform.")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncClosesStream(Uri echoUri, bool explicitCloseAsync)
         {
             if (PlatformDetection.IsWindows7)
@@ -294,7 +290,7 @@ namespace System.Net.WebSockets.Tests
                     Assert.Equal(WebSocketState.Open, socket.State);
 
                     // Ask server to send us a close
-                    await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(".close")), WebSocketMessageType.Text, true, default);
+                    await socket.SendAsync(new ArraySegment<byte>(".close"u8.ToArray()), WebSocketMessageType.Text, true, default);
 
                     // Verify received server-initiated close message.
                     WebSocketReceiveResult recvResult = await socket.ReceiveAsync(new ArraySegment<byte>(new byte[256]), default);

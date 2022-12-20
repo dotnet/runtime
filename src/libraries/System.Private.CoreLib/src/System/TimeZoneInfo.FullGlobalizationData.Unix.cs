@@ -59,11 +59,13 @@ namespace System
             return standardDisplayName;
         }
 
+#pragma warning disable IDE0060
         // Helper function to get the full display name for the UTC static time zone instance
         private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
         {
             return $"(UTC) {standardDisplayName}";
         }
+#pragma warning restore IDE0060
 
         // Helper function that retrieves various forms of time zone display names from ICU
         private static unsafe void GetDisplayName(string timeZoneId, Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)

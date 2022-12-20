@@ -35,9 +35,9 @@ class CeeSectionString : public CeeSection {
 	enum { MaxRealEntries = 100, MaxVirtualEntries = 10000 };
 	StringTableEntry *stringTable[MaxRealEntries];
 
-	StringTableEntry *createEntry(__in_z LPWSTR target, ULONG hashId);
+	StringTableEntry *createEntry(_In_z_ LPWSTR target, ULONG hashId);
 	StringTableEntry *findStringInsert(
-				StringTableEntry *&entry, __in_z LPWSTR targetValue, ULONG hashId);
+				StringTableEntry *&entry, _In_z_ LPWSTR targetValue, ULONG hashId);
 	void deleteEntries(StringTableEntry *e);
 #ifdef RDATA_STATS
 	int dumpEntries(StringTableEntry *e);
@@ -47,7 +47,7 @@ class CeeSectionString : public CeeSection {
   public:
 	~CeeSectionString();
 	CeeSectionString(CCeeGen &ceeFile, CeeSectionImpl &impl);
-	virtual HRESULT getEmittedStringRef(__in_z LPWSTR targetValue, StringRef *ref);
+	virtual HRESULT getEmittedStringRef(_In_z_ LPWSTR targetValue, StringRef *ref);
 };
 
 #endif

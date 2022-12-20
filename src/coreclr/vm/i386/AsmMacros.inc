@@ -21,3 +21,28 @@ INLINE_GETTHREAD macro destReg, trashReg
     add         trashReg, SECTIONREL gCurrentThreadInfo
     mov         destReg, [trashReg]
 endm
+
+LEAF_ENTRY macro functionName
+    functionName PROC PUBLIC
+endm
+
+LEAF_END macro functionName
+    functionName ENDP
+endm
+
+LEAF_END_MARKED macro functionName
+    LOCAL stackArgsSize, bareFunctionName, endMarkerName
+    stackArgsSize TEXTEQU @SubStr(functionName, @InStr(,functionName, <@>))
+    bareFunctionName TEXTEQU @SubStr(functionName, 1, @SizeStr(functionName)-@SizeStr(%stackArgsSize))
+    endMarkerName TEXTEQU @CatStr(%bareFunctionName, <_End@0>)
+    %endMarkerName:
+    PUBLIC endMarkerName
+    functionName ENDP
+    ; make sure this symbol gets its own address
+    nop
+endm
+
+PATCH_LABEL macro labelName
+    labelName:
+    PUBLIC labelName
+endm

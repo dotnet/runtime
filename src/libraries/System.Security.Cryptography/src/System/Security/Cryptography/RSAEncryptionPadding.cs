@@ -56,10 +56,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public static RSAEncryptionPadding CreateOaep(HashAlgorithmName hashAlgorithm)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             return new RSAEncryptionPadding(RSAEncryptionPaddingMode.Oaep, hashAlgorithm);
         }

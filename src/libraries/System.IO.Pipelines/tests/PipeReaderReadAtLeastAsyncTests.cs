@@ -31,7 +31,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CanWriteAndReadAtLeast()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
 
             await Pipe.Writer.WriteAsync(bytes);
             ReadResult result = await PipeReader.ReadAtLeastAsync(11);
@@ -46,7 +46,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task ReadAtLeastShouldNotCompleteIfWriterWroteLessThanMinimum()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
 
             await Pipe.Writer.WriteAsync(bytes.AsMemory(0, 5));
             ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(11);
@@ -68,7 +68,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CanAlternateReadAtLeastAndRead()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
 
             await Pipe.Writer.WriteAsync(bytes.AsMemory(0, 5));
             ReadResult result = await PipeReader.ReadAtLeastAsync(3);
@@ -113,7 +113,7 @@ namespace System.IO.Pipelines.Tests
         public async Task CanReadAtLeast(int bufferSize, bool bufferedRead)
         {
             SetPipeReaderOptions(bufferSize: bufferSize);
-            await Pipe.Writer.WriteAsync(Encoding.ASCII.GetBytes("Hello Pipelines World"));
+            await Pipe.Writer.WriteAsync("Hello Pipelines World"u8.ToArray());
 
             if (bufferedRead)
             {
@@ -148,7 +148,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WriteAndCancellingPendingReadBeforeReadAtLeastAsync()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             PipeWriter output = Pipe.Writer;
             output.Write(bytes);
             await output.FlushAsync();
@@ -161,6 +161,37 @@ namespace System.IO.Pipelines.Tests
             Assert.False(result.IsCompleted);
             Assert.True(result.IsCanceled);
             PipeReader.AdvanceTo(buffer.End);
+        }
+
+        [Fact]
+        public Task ReadAtLeastAsyncCancelableWhenWaitingForMoreData()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(1, cts.Token);
+            cts.Cancel();
+            return Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+        }
+
+        [Fact]
+        public async Task ReadAtLeastAsyncCancelableAfterReadingSome()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            await Pipe.WriteAsync(new byte[10], default);
+            ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(11, cts.Token);
+            cts.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+        }
+
+        [Fact]
+        public async Task ReadAtLeastAsyncCancelableAfterReadingSomeAndWritingAfterStartingRead()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            await Pipe.WriteAsync(new byte[10], default);
+            ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(12, cts.Token);
+            // Write, but not enough to unblock ReadAtLeastAsync
+            await Pipe.WriteAsync(new byte[1], default);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
         }
     }
 }

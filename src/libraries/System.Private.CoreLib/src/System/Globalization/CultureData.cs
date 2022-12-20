@@ -413,6 +413,12 @@ namespace System.Globalization
         private static volatile Dictionary<string, CultureData>? s_cachedRegions;
         private static volatile Dictionary<string, string>? s_regionNames;
 
+        /// <summary>
+        /// The culture name to use to interop with the underlying native globalization libraries like ICU or Windows NLS APIs.
+        /// For example, we can have the name de_DE@collation=phonebook when using ICU for the German culture de-DE with the phonebook sorting behavior.
+        /// </summary>
+        internal string? InteropName => _sWindowsName;
+
         internal static CultureData? GetCultureDataForRegion(string? cultureName, bool useUserOverride)
         {
             // First do a shortcut for Invariant
@@ -420,9 +426,9 @@ namespace System.Globalization
             {
                 return CultureData.Invariant;
             }
-            CultureData? retVal = null;
+
             // First check if GetCultureData() can find it (ie: its a real culture)
-            retVal = GetCultureData(cultureName, useUserOverride);
+            CultureData? retVal = GetCultureData(cultureName, useUserOverride);
             if (retVal != null && !retVal.IsNeutralCulture)
             {
                 return retVal;
@@ -469,7 +475,7 @@ namespace System.Globalization
             // If not found in the hard coded table we'll have to find a culture that works for us
             if (!GlobalizationMode.Invariant && (retVal == null || retVal.IsNeutralCulture))
             {
-                retVal = GlobalizationMode.UseNls ? NlsGetCultureDataFromRegionName(cultureName) : IcuGetCultureDataFromRegionName(cultureName);
+                retVal = GlobalizationMode.UseNls ? NlsGetCultureDataFromRegionName(cultureName) : IcuGetCultureDataFromRegionName();
             }
 
             // If we found one we can use, then cache it for next time
@@ -734,7 +740,7 @@ namespace System.Globalization
 
             while (i < name.Length && name[i] != '-' && name[i] != '_')
             {
-                if (name[i] >= 'A' && name[i] <= 'Z')
+                if (char.IsAsciiLetterUpper(name[i]))
                 {
                     // lowercase characters before '-'
                     normalizedName[i] = (char)(((int)name[i]) + 0x20);
@@ -755,7 +761,7 @@ namespace System.Globalization
 
             while (i < name.Length)
             {
-                if (name[i] >= 'a' && name[i] <= 'z')
+                if (char.IsAsciiLetterLower(name[i]))
                 {
                     normalizedName[i] = (char)(((int)name[i]) - 0x20);
                     changed = true;
@@ -853,7 +859,6 @@ namespace System.Globalization
         /// We'd rather people use the named version since this doesn't allow custom locales
         internal static CultureData GetCultureData(int culture, bool bUseUserOverride)
         {
-            string? localeName = null;
             CultureData? retVal = null;
 
             if (culture == CultureInfo.LOCALE_INVARIANT)
@@ -868,7 +873,7 @@ namespace System.Globalization
             }
 
             // Convert the lcid to a name, then use that
-            localeName = LCIDToLocaleName(culture);
+            string? localeName = LCIDToLocaleName(culture);
 
             if (!string.IsNullOrEmpty(localeName))
             {
@@ -994,7 +999,7 @@ namespace System.Globalization
                             // Our existing names mostly look like:
                             // "English" + "United States" -> "English (United States)"
                             // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
-                            if (EnglishLanguageName[^1] == ')')
+                            if (EnglishLanguageName.EndsWith(')'))
                             {
                                 // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
                                 englishDisplayName = string.Concat(
@@ -2089,7 +2094,7 @@ namespace System.Globalization
         private static int IndexOfTimePart(string format, int startIndex, string timeParts)
         {
             Debug.Assert(startIndex >= 0, "startIndex cannot be negative");
-            Debug.Assert(timeParts.IndexOfAny(new char[] { '\'', '\\' }) == -1, "timeParts cannot include quote characters");
+            Debug.Assert(timeParts.AsSpan().IndexOfAny('\'', '\\') < 0, "timeParts cannot include quote characters");
             bool inQuote = false;
             for (int i = startIndex; i < format.Length; ++i)
             {
@@ -2133,7 +2138,7 @@ namespace System.Globalization
         {
             string[] result = NumberFormatInfo.s_asciiDigits;
 
-            // LOCALE_SNATIVEDIGITS (array of 10 single character strings).
+            // NLS LOCALE_SNATIVEDIGITS (array of 10 single character strings). In case of ICU, the buffer can be longer.
             string digits = GetLocaleInfoCoreUserOverride(LocaleStringData.Digits);
 
             // if digits.Length < NumberFormatInfo.s_asciiDigits.Length means the native digits setting is messed up in the host machine.
@@ -2143,31 +2148,49 @@ namespace System.Globalization
                 return result;
             }
 
-            // Try to check if the digits are all ASCII so we can avoid the array allocation and use the static array NumberFormatInfo.s_asciiDigits instead.
-            // If we have non-ASCII digits, we should exit the loop very quickly.
-            int i = 0;
-            while (i < NumberFormatInfo.s_asciiDigits.Length)
-            {
-                if (digits[i] != NumberFormatInfo.s_asciiDigits[i][0])
-                {
-                    break;
-                }
-                i++;
-            }
+            // In ICU we separate the digits with the '\uFFFF' character
 
-            if (i >= NumberFormatInfo.s_asciiDigits.Length)
+            if (digits.StartsWith("0\uFFFF1\uFFFF2\uFFFF3\uFFFF4\uFFFF5\uFFFF6\uFFFF7\uFFFF8\uFFFF9\uFFFF", StringComparison.Ordinal) ||  // ICU common cases
+                digits.StartsWith("0123456789", StringComparison.Ordinal))  // NLS common cases
             {
                 return result;
             }
 
-            // we have non-ASCII digits
+            // Non-ASCII digits
+
+            // Check if values coming from ICU separated by 0xFFFF
+            int ffffPos = digits.IndexOf('\uFFFF');
+
             result = new string[10];
-            for (i = 0; i < result.Length; i++)
+            if (ffffPos < 0) // NLS case
             {
-                result[i] = char.ToString(digits[i]);
+                for (int i = 0; i < result.Length; i++)
+                {
+                    result[i] = char.ToString(digits[i]);
+                }
+
+                return result;
             }
 
-            return result;
+            // ICU case
+
+            int start = 0;
+            int index = 0;
+
+            do
+            {
+                result[index++] = digits.Substring(start, ffffPos - start);
+                start = ++ffffPos;
+                while ((uint)ffffPos < (uint)digits.Length && digits[ffffPos] != '\uFFFF')
+                {
+                    ffffPos++;
+                }
+
+            } while (ffffPos < digits.Length && index < 10);
+
+            Debug.Assert(index >= 10, $"Couldn't read native digits for '{_sWindowsName}' successfully.");
+
+            return index < 10 ? NumberFormatInfo.s_asciiDigits : result;
         }
 
         internal void GetNFIValues(NumberFormatInfo nfi)

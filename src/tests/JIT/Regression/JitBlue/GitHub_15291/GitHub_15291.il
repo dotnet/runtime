@@ -10,7 +10,7 @@
 .assembly extern System.Runtime { auto }
 .assembly extern mscorlib { auto }
 
-.assembly GitHub_15219 {}
+.assembly 'GitHub_15291' {}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit P

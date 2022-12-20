@@ -106,5 +106,12 @@ namespace System.Security.Cryptography.Cng.Tests
                 Assert.Equal(CngPropertyOptions.CustomProperty, retrievedProperty.Options);
             }
         }
+
+        [Fact]
+        public static void NullValueRoundtrip()
+        {
+            CngProperty property = new CngProperty("banana", null, CngPropertyOptions.CustomProperty);
+            Assert.Null(property.GetValue());
+        }
     }
 }

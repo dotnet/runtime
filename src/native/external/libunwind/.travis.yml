@@ -1,0 +1,84 @@
+sudo: required
+language: c
+compiler: gcc
+env:
+- HOST=x86_64-linux-gnu OPT=-O0
+- HOST=x86-linux-gnu OPT=-O0
+- HOST=arm-linux-gnueabihf OPT=-O0
+- HOST=aarch64-linux-gnu OPT=-O0
+- HOST=mipsel-linux-gnu OPT=-O0
+- HOST=powerpc64-linux-gnu OPT=-O0
+- HOST=x86_64-linux-gnu OPT=-O2
+- HOST=x86-linux-gnu OPT=-O2
+- HOST=arm-linux-gnueabihf OPT=-O2
+- HOST=aarch64-linux-gnu OPT=-O2
+- HOST=mipsel-linux-gnu OPT=-O2
+- HOST=powerpc64-linux-gnu OPT=-O2
+- HOST=x86_64-linux-gnu OPT=-O3
+- HOST=x86-linux-gnu OPT=-O3
+- HOST=arm-linux-gnueabihf OPT=-O3
+- HOST=aarch64-linux-gnu OPT=-O3
+- HOST=mipsel-linux-gnu OPT=-O3
+- HOST=powerpc64-linux-gnu OPT=-O3
+
+linux-s390x: &linux-s390x
+  os: linux
+  arch: s390x
+  env: HOST=s390x-linux-gnu BUILD=s390x-linux-gnu
+  script:
+    - |
+      CFLAGS="$OPT"
+      CXXFLAGS="$OPT"
+      export CFLAGS CXXFLAGS
+    - autoreconf -i
+    - ./configure
+    - make -j32
+    - ulimit -c unlimited
+    - make check -j32
+
+windows-remote-only: &windows-remote-only
+  os: windows
+  compiler: msvc
+  script:
+  - cmake -G "Visual Studio 15 2017" -A ${WINHOST} -S . -B bin/windows-${WINHOST}/${TARGET}
+  - cmake --build bin/windows-${WINHOST}/${TARGET}
+
+script:
+- |
+  BUILD=x86_64-linux-gnu
+  export BUILD
+  if [ $HOST = 'x86-linux-gnu' ]; then
+    sudo apt-get update 
+    sudo apt-get install -yqq -o=Dpkg::Use-Pty=0 g++-multilib
+    CFLAGS=" -m32"
+    CXXFLAGS=" -m32"
+    export CFLAGS CXXFLAGS
+  elif [ $HOST != 'x86_64-linux-gnu' ]; then
+    sudo apt-get update
+    sudo apt-get install -yqq -o=Dpkg::Use-Pty=0 g++-$HOST
+    CC=$HOST-gcc
+    CXX=$HOST-g++
+    export CC CXX
+  fi
+- |
+  CFLAGS="$CFLAGS $OPT"
+  CXXFLAGS="$CXXFLAGS $OPT"
+  export CFLAGS CXXFLAGS
+- autoreconf -i
+- ./configure CC=$CC CXX=$CXX CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" --build=$BUILD --host=$HOST
+- make -j32
+- sudo bash -c 'echo core.%p.%p > /proc/sys/kernel/core_pattern'
+- ulimit -c unlimited
+- if [ $HOST = 'x86_64-linux-gnu' ]; then make check -j32; fi
+
+after_failure: cat tests/test-suite.log 2>/dev/null
+
+jobs:
+  include:
+    - <<: *linux-s390x
+    - <<: *windows-remote-only
+      env: WINHOST=x64 TARGET=x86_64-linux-gnu
+    - <<: *windows-remote-only
+      env: WINHOST=Win32 TARGET=arm-linux-gnueabihf
+    - <<: *windows-remote-only
+      env: WINHOST=x64 TARGET=aarch64-linux-gnu

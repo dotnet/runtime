@@ -56,12 +56,11 @@ namespace System.Security.Cryptography
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
+            ArgumentNullException.ThrowIfNull(rgbKey);
+
             // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
 
-            if (rgbKey == null)
-                throw new ArgumentNullException(nameof(rgbKey));
-
-            if (!ValidKeySize(rgbKey.Length, out int keySize))
+            if (!ValidKeySize(rgbKey.Length))
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
 
             if (rgbIV != null)
@@ -86,17 +85,15 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length, out int keySize))
+            if (!ValidKeySize(Key.Length))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: null,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: false);
 
@@ -112,17 +109,15 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length, out int keySize))
+            if (!ValidKeySize(Key.Length))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: default,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: true);
 
@@ -139,17 +134,15 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length, out int keySize))
+            if (!ValidKeySize(Key.Length))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: true);
 
@@ -166,17 +159,15 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length, out int keySize))
+            if (!ValidKeySize(Key.Length))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: false);
 
@@ -211,7 +202,7 @@ namespace System.Security.Cryptography
         private static void ValidateCFBFeedbackSize(int feedback)
         {
             // CFB not supported at all
-            throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
         }
 
         private int GetPaddingSize()
@@ -219,15 +210,14 @@ namespace System.Security.Cryptography
             return BlockSize / BitsPerByte;
         }
 
-        private bool ValidKeySize(int keySizeBytes, out int keySizeBits)
+        private new bool ValidKeySize(int keySizeBytes)
         {
             if (keySizeBytes > (int.MaxValue / BitsPerByte))
             {
-                keySizeBits = 0;
                 return false;
             }
 
-            keySizeBits = keySizeBytes << 3;
+            int keySizeBits = keySizeBytes << 3;
             return keySizeBits.IsLegalSize(LegalKeySizes);
         }
     }

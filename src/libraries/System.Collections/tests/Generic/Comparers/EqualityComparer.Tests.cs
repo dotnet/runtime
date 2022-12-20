@@ -33,8 +33,10 @@ namespace System.Collections.Generic.Tests
         [MemberData(nameof(Int16EnumData))]
         [MemberData(nameof(SByteEnumData))]
         [MemberData(nameof(Int32EnumData))]
+        [MemberData(nameof(NullableInt32EnumData))]
         [MemberData(nameof(Int64EnumData))]
         [MemberData(nameof(NonEquatableValueTypeData))]
+        [MemberData(nameof(NullableNonEquatableValueTypeData))]
         [MemberData(nameof(ObjectData))]
         public void EqualsTest<T>(T left, T right, bool expected)
         {
@@ -253,6 +255,22 @@ namespace System.Collections.Generic.Tests
             };
         }
 
+        public static EqualsData<Int32Enum?> NullableInt32EnumData()
+        {
+            return new EqualsData<Int32Enum?>
+            {
+                { (Int32Enum)(-2), (Int32Enum)(-4), false },
+                { Int32Enum.Two, Int32Enum.Two, true },
+                { Int32Enum.Min, Int32Enum.Max, false },
+                { Int32Enum.Min, Int32Enum.Min, true },
+                { Int32Enum.One, Int32Enum.Min + 1, false },
+                { (Int32Enum)(-2), null, false },
+                { Int32Enum.Two, null, false },
+                { null, Int32Enum.Max, false },
+                { null, Int32Enum.Min + 1, false }
+            };
+        }
+
         public static EqualsData<Int64Enum> Int64EnumData()
         {
             return new EqualsData<Int64Enum>
@@ -278,6 +296,24 @@ namespace System.Collections.Generic.Tests
                 { one, one, true },
                 { new NonEquatableValueType(-1), new NonEquatableValueType(), false },
                 { new NonEquatableValueType(2), new NonEquatableValueType(2), true }
+            };
+        }
+
+        public static EqualsData<NonEquatableValueType?> NullableNonEquatableValueTypeData()
+        {
+            // Comparisons for structs that do not override ValueType.Equals or
+            // ValueType.GetHashCode should still work as expected.
+
+            var one = new NonEquatableValueType { Value = 1 };
+
+            return new EqualsData<NonEquatableValueType?>
+            {
+                { new NonEquatableValueType(), new NonEquatableValueType(), true },
+                { one, one, true },
+                { new NonEquatableValueType(-1), new NonEquatableValueType(), false },
+                { new NonEquatableValueType(2), new NonEquatableValueType(2), true },
+                { new NonEquatableValueType(-1), null, false },
+                { null, new NonEquatableValueType(2), false }
             };
         }
 
@@ -426,6 +462,91 @@ namespace System.Collections.Generic.Tests
             }
 
             return result;
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_InvalidArguments_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("equals", () => EqualityComparer<int>.Create(null));
+            AssertExtensions.Throws<ArgumentNullException>("equals", () => EqualityComparer<string>.Create(null, null));
+            EqualityComparer<int>.Create((x, y) => x == y); // no exception
+            EqualityComparer<int>.Create((x, y) => x == y, null); // no exception
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_DelegatesUsed()
+        {
+            int equalsCalls = 0;
+            EqualityComparer<int> ec;
+
+            ec = EqualityComparer<int>.Create(
+                (x, y) =>
+                {
+                    equalsCalls++;
+                    return x == y * 2;
+                });
+            Assert.Throws<NotSupportedException>(() => ec.GetHashCode(42));
+            Assert.True(ec.Equals(2, 1));
+            Assert.False(ec.Equals(2, 2));
+            Assert.False(ec.Equals(1, 2));
+            Assert.True(ec.Equals(6, 3));
+            Assert.Equal(4, equalsCalls);
+
+            ec = EqualityComparer<int>.Create((x, y) => x == y, null);
+            Assert.Throws<NotSupportedException>(() => ec.GetHashCode(42));
+
+            int getHashCodeCalls = 0;
+            equalsCalls = 0;
+            ec = EqualityComparer<int>.Create(
+                (x, y) =>
+                {
+                    equalsCalls++;
+                    return x * 2 == y;
+                },
+                x =>
+                {
+                    getHashCodeCalls++;
+                    return x * 2;
+                });
+            Assert.True(ec.Equals(1, 2));
+            Assert.False(ec.Equals(2, 2));
+            Assert.False(ec.Equals(2, 1));
+            Assert.True(ec.Equals(3, 6));
+            Assert.Equal(6, ec.GetHashCode(3));
+            Assert.Equal(8, ec.GetHashCode(4));
+            Assert.Equal(4, equalsCalls);
+            Assert.Equal(2, getHashCodeCalls);
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_ArgsNotDereferenced()
+        {
+            EqualityComparer<string> ec = EqualityComparer<string>.Create((x, y) => true, x => 0);
+            Assert.True(ec.Equals(null, null));
+            Assert.Equal(0, ec.GetHashCode(null));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_EqualsGetHashCodeOverridden()
+        {
+            Func<int, int, bool> equals1 = (x, y) => x == y;
+            Func<int, int, bool> equals2 = (x, y) => x == y;
+            Func<int, int> getHashCode1 = x => x;
+            Func<int, int> getHashCode2 = x => x;
+
+            EqualityComparer<int> ec = EqualityComparer<int>.Create(equals1, getHashCode1);
+            Assert.True(ec.Equals(ec));
+            Assert.Equal(ec.GetHashCode(), ec.GetHashCode());
+
+            Assert.True(EqualityComparer<int>.Create(equals1).Equals(EqualityComparer<int>.Create(equals1)));
+            Assert.True(EqualityComparer<int>.Create(equals1, getHashCode1).Equals(EqualityComparer<int>.Create(equals1, getHashCode1)));
+            Assert.Equal(EqualityComparer<int>.Create(equals1).GetHashCode(), EqualityComparer<int>.Create(equals1).GetHashCode());
+            Assert.Equal(EqualityComparer<int>.Create(equals1, getHashCode1).GetHashCode(), EqualityComparer<int>.Create(equals1, getHashCode1).GetHashCode());
+
+            Assert.False(EqualityComparer<int>.Create(equals1).Equals(EqualityComparer<int>.Create(equals2)));
+            Assert.False(EqualityComparer<int>.Create(equals1).Equals(EqualityComparer<int>.Create(equals1, getHashCode1)));
+            Assert.False(EqualityComparer<int>.Create(equals1, getHashCode1).Equals(EqualityComparer<int>.Create(equals1, getHashCode2)));
+            Assert.False(EqualityComparer<int>.Create(equals1, getHashCode1).Equals(EqualityComparer<int>.Create(equals2, getHashCode1)));
         }
     }
 }

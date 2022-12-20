@@ -89,14 +89,8 @@ namespace System.Net.Http
 
             foreach (char ch in boundary)
             {
-                if (('0' <= ch && ch <= '9') || // Digit.
-                    ('a' <= ch && ch <= 'z') || // alpha.
-                    ('A' <= ch && ch <= 'Z') || // ALPHA.
-                    (AllowedMarks.Contains(ch))) // Marks.
-                {
-                    // Valid.
-                }
-                else
+                if (!char.IsAsciiLetterOrDigit(ch) &&
+                    !AllowedMarks.Contains(ch)) // Marks.
                 {
                     throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
                 }
@@ -110,10 +104,7 @@ namespace System.Net.Http
 
         public virtual void Add(HttpContent content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
             _nestedContent.Add(content);
         }
@@ -499,6 +490,12 @@ namespace System.Net.Http
                 }
             }
 
+            public override int ReadByte()
+            {
+                byte b = 0;
+                return Read(new Span<byte>(ref b)) == 1 ? b : -1;
+            }
+
             public override int Read(Span<byte> buffer)
             {
                 if (buffer.Length == 0)
@@ -579,10 +576,7 @@ namespace System.Net.Http
                 get { return _position; }
                 set
                 {
-                    if (value < 0)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                     long previousStreamsLength = 0;
                     for (int i = 0; i < _streams.Length; i++)
@@ -641,6 +635,8 @@ namespace System.Net.Http
             public override long Length => _length;
 
             public override void Flush() { }
+            public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
             public override void SetLength(long value) { throw new NotSupportedException(); }
             public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
             public override void Write(ReadOnlySpan<byte> buffer) { throw new NotSupportedException(); }

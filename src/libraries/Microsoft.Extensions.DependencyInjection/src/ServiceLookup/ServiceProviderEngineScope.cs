@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
@@ -14,16 +15,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal IList<object> Disposables => _disposables ?? (IList<object>)Array.Empty<object>();
 
         private bool _disposed;
-        private List<object> _disposables;
+        private List<object>? _disposables;
 
         public ServiceProviderEngineScope(ServiceProvider provider, bool isRootScope)
         {
-            ResolvedServices = new Dictionary<ServiceCacheKey, object>();
+            ResolvedServices = new Dictionary<ServiceCacheKey, object?>();
             RootProvider = provider;
             IsRootScope = isRootScope;
         }
 
-        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; }
+        internal Dictionary<ServiceCacheKey, object?> ResolvedServices { get; }
 
         // This lock protects state on the scope, in particular, for the root scope, it protects
         // the list of disposable entries only, since ResolvedServices are cached on CallSites
@@ -34,7 +35,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         internal ServiceProvider RootProvider { get; }
 
-        public object GetService(Type serviceType)
+        public object? GetService(Type serviceType)
         {
             if (_disposed)
             {
@@ -48,7 +49,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public IServiceScope CreateScope() => RootProvider.CreateScope();
 
-        internal object CaptureDisposable(object service)
+        [return: NotNullIfNotNull(nameof(service))]
+        internal object? CaptureDisposable(object? service)
         {
             if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))
             {
@@ -91,7 +93,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public void Dispose()
         {
-            List<object> toDispose = BeginDispose();
+            List<object>? toDispose = BeginDispose();
 
             if (toDispose != null)
             {
@@ -111,7 +113,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ValueTask DisposeAsync()
         {
-            List<object> toDispose = BeginDispose();
+            List<object>? toDispose = BeginDispose();
 
             if (toDispose != null)
             {
@@ -168,7 +170,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        private List<object> BeginDispose()
+        private List<object>? BeginDispose()
         {
             lock (Sync)
             {
@@ -185,12 +187,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // No further changes to _state.Disposables, are allowed.
                 _disposed = true;
 
-                // ResolvedServices is never cleared for singletons because there might be a compilation running in background
-                // trying to get a cached singleton service. If it doesn't find it
-                // it will try to create a new one which will result in an ObjectDisposedException.
-
-                return _disposables;
             }
+
+            if (IsRootScope && !RootProvider.IsDisposed())
+            {
+                // If this ServiceProviderEngineScope instance is a root scope, disposing this instance will need to dispose the RootProvider too.
+                // Otherwise the RootProvider will never get disposed and will leak.
+                // Note, if the RootProvider get disposed first, it will automatically dispose all attached ServiceProviderEngineScope objects.
+                RootProvider.Dispose();
+            }
+
+            // ResolvedServices is never cleared for singletons because there might be a compilation running in background
+            // trying to get a cached singleton service. If it doesn't find it
+            // it will try to create a new one which will result in an ObjectDisposedException.
+            return _disposables;
         }
     }
 }

@@ -28,7 +28,7 @@ internal static partial class Interop
         }
 
         // NOTE: Shim returns null pointer on failure, not non-null MAP_FAILED sentinel.
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MMap", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MMap", SetLastError = true)]
         internal static partial IntPtr MMap(
             IntPtr addr, ulong len,
             MemoryMappedProtections prot, MemoryMappedFlags flags,

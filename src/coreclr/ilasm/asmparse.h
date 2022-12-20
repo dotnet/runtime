@@ -20,11 +20,11 @@ public:
 
     virtual ~ReadStream() = default;
 
-    virtual unsigned getAll(__out char** ppch) = 0;
+    virtual unsigned getAll(_Out_ char** ppch) = 0;
 
     // read at most 'buffLen' bytes into 'buff', Return the
         // number of characters read.  On EOF return 0
-    virtual unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen) = 0;
+    virtual unsigned read(_Out_writes_(buffLen) char* buff, unsigned buffLen) = 0;
 
         // Return the name of the stream, (for error reporting).
     //virtual const char* name() = 0;
@@ -49,12 +49,12 @@ public:
         //if(m_pBS)
         //    delete m_pBS;
     };
-    unsigned getAll(__out char **ppbuff)
+    unsigned getAll(_Out_ char **ppbuff)
     {
         *ppbuff = m_pStart;
         return m_pBS->length();
     };
-    unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen)
+    unsigned read(_Out_writes_(buffLen) char* buff, unsigned buffLen)
     {
         _ASSERTE(m_pStart != NULL);
         unsigned Remainder = (unsigned)(m_pEnd - m_pCurr);
@@ -95,7 +95,7 @@ private:
 /**************************************************************************/
 class MappedFileStream : public ReadStream {
 public:
-    MappedFileStream(__in __nullterminated WCHAR* wFileName)
+    MappedFileStream(_In_ __nullterminated WCHAR* wFileName)
     {
         fileNameW = wFileName;
         m_hFile = INVALID_HANDLE_VALUE;
@@ -124,12 +124,12 @@ public:
             fileNameW = NULL;
         }
     }
-    unsigned getAll(__out char** pbuff)
+    unsigned getAll(_Out_ char** pbuff)
     {
         *pbuff = m_pStart;
         return m_FileSize;
     }
-    unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen)
+    unsigned read(_Out_writes_(buffLen) char* buff, unsigned buffLen)
     {
         _ASSERTE(m_pStart != NULL);
         unsigned Remainder = (unsigned)(m_pEnd - m_pCurr);
@@ -214,29 +214,29 @@ typedef LIFO<ARG_NAME_LIST> ARG_NAME_LIST_STACK;
 /*--------------------------------------------------------------------------*/
 typedef char*(*PFN_NEXTCHAR)(char*);
 
-char* nextcharU(__in __nullterminated char* pos);
-char* nextcharW(__in __nullterminated char* pos);
+char* nextcharU(_In_ __nullterminated char* pos);
+char* nextcharW(_In_ __nullterminated char* pos);
 
 /*--------------------------------------------------------------------------*/
 typedef unsigned(*PFN_SYM)(char*);
 
-unsigned SymAU(__in __nullterminated char* curPos);
-unsigned SymW(__in __nullterminated char* curPos);
+unsigned SymAU(_In_ __nullterminated char* curPos);
+unsigned SymW(_In_ __nullterminated char* curPos);
 /*--------------------------------------------------------------------------*/
 typedef char*(*PFN_NEWSTRFROMTOKEN)(char*,size_t);
 
-char* NewStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen);
-char* NewStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen);
+char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen);
+char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen);
 /*--------------------------------------------------------------------------*/
 typedef char*(*PFN_NEWSTATICSTRFROMTOKEN)(char*,size_t,char*,size_t);
 
-char* NewStaticStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize);
-char* NewStaticStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize);
+char* NewStaticStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize);
+char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize);
 /*--------------------------------------------------------------------------*/
 typedef unsigned(*PFN_GETDOUBLE)(char*,unsigned,double**);
 
-unsigned GetDoubleAU(__in __nullterminated char* begNum, unsigned L, double** ppRes);
-unsigned GetDoubleW(__in __nullterminated char* begNum, unsigned L, double** ppRes);
+unsigned GetDoubleAU(_In_ __nullterminated char* begNum, unsigned L, double** ppRes);
+unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppRes);
 /*--------------------------------------------------------------------------*/
 struct PARSING_ENVIRONMENT
 {
@@ -284,9 +284,9 @@ public:
     virtual void warn(const char* fmt, ...);
     virtual void msg(const char* fmt, ...);
 	char *getLine(int lineNum) { return penv->in->getLine(lineNum); };
-    unsigned getAll(__out char** pbuff) { return penv->in->getAll(pbuff); };
+    unsigned getAll(_Out_ char** pbuff) { return penv->in->getAll(pbuff); };
 	bool Success() {return success; };
-    void SetIncludePath(__in WCHAR* wz) { wzIncludePath = wz; };
+    void SetIncludePath(_In_ WCHAR* wz) { wzIncludePath = wz; };
 
     ARG_NAME_LIST_STACK  m_ANSFirst;
     ARG_NAME_LIST_STACK  m_ANSLast;
@@ -298,20 +298,20 @@ private:
     BinStr* MakeTypeClass(CorElementType kind, mdToken tk);
     BinStr* MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* bounds);
 
-    char* fillBuff(__in_opt __nullterminated char* curPos);   // refill the input buffer
+    char* fillBuff(_In_opt_z_ char* curPos);   // refill the input buffer
     HANDLE hstdout;
     HANDLE hstderr;
 
 private:
-    friend void yyerror(__in __nullterminated const char* str);
+    friend void yyerror(_In_ __nullterminated const char* str);
     friend int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL translate_escapes);
     friend int yyparse();
     friend int yylex();
     friend Instr* SetupInstr(unsigned short opcode);
     friend int findKeyword(const char* name, size_t nameLen, unsigned short* opcode);
-    friend TypeDefDescr* findTypedef(__in_ecount(nameLen) char* name, size_t nameLen);
-    friend char* skipBlanks(__in __nullterminated char*,unsigned*);
-    friend char* nextBlank(__in __nullterminated char*);
+    friend TypeDefDescr* findTypedef(_In_reads_(nameLen) char* name, size_t nameLen);
+    friend char* skipBlanks(_In_ __nullterminated char*,unsigned*);
+    friend char* nextBlank(_In_ __nullterminated char*);
     friend int ProcessEOF();
     friend unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType);
     friend void FixupConstraints();

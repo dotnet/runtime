@@ -9,7 +9,7 @@
 #include "instmethhash.h"
 #include "method.hpp"
 #include "appdomain.hpp"
-#include "domainfile.h"
+#include "domainassembly.h"
 #include "typehash.h"
 
 
@@ -44,9 +44,8 @@ class LoadedMethodDescIterator
 
     // These are used when iterating over an AppDomain
     AppDomain::AssemblyIterator             m_assemIterator;
-    DomainModuleIterator                    m_moduleIterator;
+    Module*                                 m_currentModule;
     AssemblyIterationFlags                  m_assemIterationFlags;
-    ModuleIterationOption                   m_moduleIterationFlags;
 
     EETypeHashTable::Iterator               m_typeIterator;
     EETypeHashEntry *                       m_typeIteratorEntry;
@@ -69,19 +68,17 @@ public:
     void Start(AppDomain * pAppDomain,
                Module *pModule,
                mdMethodDef md,
-               AssemblyIterationFlags assemIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution),
-               ModuleIterationOption moduleIterationFlags = kModIterIncludeLoaded);
+               AssemblyIterationFlags assemIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     void Start(AppDomain * pAppDomain, Module *pModule, mdMethodDef md, MethodDesc *pDesc);
 
     LoadedMethodDescIterator(
         AppDomain * pAppDomain,
         Module *pModule,
         mdMethodDef md,
-        AssemblyIterationFlags assemblyIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution),
-        ModuleIterationOption moduleIterationFlags = kModIterIncludeLoaded)
+        AssemblyIterationFlags assemblyIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution))
     {
         LIMITED_METHOD_CONTRACT;
-        Start(pAppDomain, pModule, md, assemblyIterationFlags, moduleIterationFlags);
+        Start(pAppDomain, pModule, md, assemblyIterationFlags);
     }
     LoadedMethodDescIterator(void);
 

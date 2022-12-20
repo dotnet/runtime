@@ -18,6 +18,7 @@
 #include <hostpolicy.h>
 #include "hostpolicy_context.h"
 #include "bundle/runner.h"
+#include "shared_store.h"
 
 namespace
 {
@@ -291,17 +292,17 @@ void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
         _STRINGIFY(HOST_POLICY_PKG_NAME),
         _STRINGIFY(HOST_POLICY_PKG_VER),
         _STRINGIFY(HOST_POLICY_PKG_REL_DIR),
-        get_arch(),
+        get_current_arch_name(),
         entryPointName.c_str());
 }
 
 //
-// Loads and initilizes the hostpolicy.
+// Loads and initializes the hostpolicy.
 //
-// If hostpolicy is already initalized, the library will not be
+// If hostpolicy is already initialized, the library will not be
 // reinitialized.
 //
-SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(host_interface_t* init)
+SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(const host_interface_t* init)
 {
     assert(init != nullptr);
     std::lock_guard<std::mutex> lock{ g_init_lock };
@@ -654,7 +655,7 @@ namespace
 //      [out] if initialization is successful, populated with a contract for performing operations on hostpolicy
 //
 // Return value:
-//    Success                            - Initialization was succesful
+//    Success                            - Initialization was successful
 //    Success_HostAlreadyInitialized     - Request is compatible with already initialized hostpolicy
 //    Success_DifferentRuntimeProperties - Request has runtime properties that differ from already initialized hostpolicy
 //
@@ -862,12 +863,8 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     arguments_t args;
     if (!init_arguments(
             component_main_assembly_path,
-            g_init.host_info,
-            g_init.tfm,
             host_mode,
-            /* additional_deps_serialized */ pal::string_t(), // Additional deps - don't use those from the app, they're already in the app
             /* deps_file */ pal::string_t(), // Avoid using any other deps file than the one next to the component
-            g_init.probe_paths,
             /* init_from_file_system */ true,
             args))
     {
@@ -903,12 +900,15 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     // TODO Review: Since we're only passing the one component framework, the resolver will not consider
     // frameworks from the app for probing paths. So potential references to paths inside frameworks will not resolve.
 
-    // The RID graph still has to come from the actuall root framework, so take that from the g_init.fx_definitions
-    // which are the frameworks for the app.
+    // The RID graph still has to come from the actual root framework, so take that from the g_init.root_rid_fallback_graph,
+    // which stores the fallback graph for the app's root framework.
     deps_resolver_t resolver(
         args,
         component_fx_definitions,
-        &get_root_framework(g_init.fx_definitions).get_deps().get_rid_fallback_graph(),
+        /* additional_deps_serialized */ nullptr, // Additional deps - don't use those from the app, they're already in the app
+        shared_store::get_paths(g_init.tfm, host_mode, g_init.host_info.host_path),
+        g_init.probe_paths,
+        &g_init.root_rid_fallback_graph,
         true);
 
     pal::string_t resolver_errors;
@@ -961,7 +961,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
 // By default no callback is registered in which case the errors are written to stderr.
 //
 // Each call to the error writer is sort of like writing a single line (the EOL character is omitted).
-// Multiple calls to the error writer may occure for one failure.
+// Multiple calls to the error writer may occur for one failure.
 //
 SHARED_API corehost_error_writer_fn HOSTPOLICY_CALLTYPE corehost_set_error_writer(corehost_error_writer_fn error_writer)
 {

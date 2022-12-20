@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -22,28 +23,38 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(HighLowTempsRecord), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(JsonDocument), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(JsonElement), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+#if NETCOREAPP
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+#endif
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverterProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
-    [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
-    [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(ClassWithCustomConverterFactoryProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(StructWithCustomConverterFactoryProperty), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     internal partial class MixedModeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization;
+        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
     public sealed class MixedModeContextTests : RealWorldContextTests
@@ -67,6 +78,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MixedModeContext.Default.MyTypeWithPropertyOrdering.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.MyIntermediateType.SerializeHandler);
             Assert.Null(MixedModeContext.Default.HighLowTempsImmutable.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.HighLowTempsRecord.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ObjectArray.SerializeHandler);
@@ -74,6 +86,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MixedModeContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MixedModeContext.Default.String.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.JsonDocument.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.JsonElement.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.ClassWithEnumAndNullable.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ClassWithCustomConverter.SerializeHandler);
@@ -82,12 +96,15 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MixedModeContext.Default.StructWithCustomConverterFactory.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ClassWithCustomConverterProperty.SerializeHandler);
             Assert.Null(MixedModeContext.Default.StructWithCustomConverterProperty.SerializeHandler);
-            Assert.Null(MixedModeContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
-            Assert.Null(MixedModeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ClassWithCustomConverterFactoryProperty.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.StructWithCustomConverterFactoryProperty.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.StructWithBadCustomConverter.SerializeHandler);
             Assert.Null(MixedModeContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.PersonStruct.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.TypeWithValidationAttributes.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.TypeWithDerivedAttribute.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.PolymorphicClass.SerializeHandler);
         }
 
         [Fact]
@@ -134,9 +151,11 @@ namespace System.Text.Json.SourceGeneration.Tests
             EmptyPoco expected = CreateEmptyPoco();
 
             string json = JsonSerializer.Serialize(expected, DefaultContext.EmptyPoco);
-            JsonTestHelper.AssertThrows_PropMetadataInit(() => JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco), typeof(EmptyPoco));
+            // This would have thrown if we tried to lookup any properties but since there are no properties this is able to complete.
+            EmptyPoco obj = JsonSerializer.Deserialize(json, DefaultContext.EmptyPoco);
+            VerifyEmptyPoco(expected, obj);
 
-            EmptyPoco obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).EmptyPoco);
+            obj = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).EmptyPoco);
             VerifyEmptyPoco(expected, obj);
 
             AssertFastPathLogicCorrect(json, obj, DefaultContext.EmptyPoco);

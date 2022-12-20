@@ -13,7 +13,7 @@ namespace System.Drawing
     /// <summary>
     /// Abstracts a group of type faces having a similar basic design but having certain variation in styles.
     /// </summary>
-    public sealed partial class FontFamily : MarshalByRefObject, IDisposable
+    public sealed class FontFamily : MarshalByRefObject, IDisposable
     {
         private const int NeutralLanguage = 0;
         private IntPtr _nativeFamily;
@@ -68,7 +68,7 @@ namespace System.Drawing
         // Note: GDI+ creates singleton font family objects (from the corresponding font file) and reference count them.
         private void CreateFontFamily(string name, FontCollection? fontCollection)
         {
-            IntPtr fontfamily = IntPtr.Zero;
+            IntPtr fontfamily;
             IntPtr nativeFontCollection = (fontCollection == null) ? IntPtr.Zero : fontCollection._nativeFontCollection;
 
             int status = Gdip.GdipCreateFontFamilyFromName(name, new HandleRef(fontCollection, nativeFontCollection), out fontfamily);
@@ -105,7 +105,7 @@ namespace System.Drawing
         /// </summary>
         public FontFamily(GenericFontFamilies genericFamily)
         {
-            IntPtr nativeFamily = IntPtr.Zero;
+            IntPtr nativeFamily;
             int status;
 
             switch (genericFamily)
@@ -134,6 +134,24 @@ namespace System.Drawing
         /// Converts this <see cref='FontFamily'/> to a human-readable string.
         /// </summary>
         public override string ToString() => $"[{GetType().Name}: Name={Name}]";
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            if (obj == this)
+            {
+                return true;
+            }
+
+            // if obj = null then (obj is FontFamily) = false.
+            if (!(obj is FontFamily otherFamily))
+            {
+                return false;
+            }
+
+            // We can safely use the ptr to the native GDI+ FontFamily because in windows it is common to
+            // all objects of the same family (singleton RO object).
+            return otherFamily.NativeFamily == NativeFamily;
+        }
 
         /// <summary>
         /// Gets a hash code for this <see cref='FontFamily'/>.
@@ -204,7 +222,7 @@ namespace System.Drawing
 
         private static IntPtr GetGdipGenericSansSerif()
         {
-            IntPtr nativeFamily = IntPtr.Zero;
+            IntPtr nativeFamily;
             int status = Gdip.GdipGetGenericFontFamilySansSerif(out nativeFamily);
             Gdip.CheckStatus(status);
 
@@ -228,10 +246,7 @@ namespace System.Drawing
         [Obsolete("FontFamily.GetFamilies has been deprecated. Use Families instead.")]
         public static FontFamily[] GetFamilies(Graphics graphics)
         {
-            if (graphics == null)
-            {
-                throw new ArgumentNullException(nameof(graphics));
-            }
+            ArgumentNullException.ThrowIfNull(graphics);
 
             return new InstalledFontCollection().Families;
         }
@@ -253,7 +268,7 @@ namespace System.Drawing
         /// </summary>
         public int GetEmHeight(FontStyle style)
         {
-            int result = 0;
+            int result;
             int status = Gdip.GdipGetEmHeight(new HandleRef(this, NativeFamily), style, out result);
             Gdip.CheckStatus(status);
 
@@ -265,7 +280,7 @@ namespace System.Drawing
         /// </summary>
         public int GetCellAscent(FontStyle style)
         {
-            int result = 0;
+            int result;
             int status = Gdip.GdipGetCellAscent(new HandleRef(this, NativeFamily), style, out result);
             Gdip.CheckStatus(status);
 
@@ -277,7 +292,7 @@ namespace System.Drawing
         /// </summary>
         public int GetCellDescent(FontStyle style)
         {
-            int result = 0;
+            int result;
             int status = Gdip.GdipGetCellDescent(new HandleRef(this, NativeFamily), style, out result);
             Gdip.CheckStatus(status);
 
@@ -290,7 +305,7 @@ namespace System.Drawing
         /// </summary>
         public int GetLineSpacing(FontStyle style)
         {
-            int result = 0;
+            int result;
             int status = Gdip.GdipGetLineSpacing(new HandleRef(this, NativeFamily), style, out result);
             Gdip.CheckStatus(status);
 

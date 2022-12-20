@@ -79,7 +79,7 @@ namespace System
             return false;
         }
 
-        internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
+        internal static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style, scoped ref DateTimeResult result)
         {
             if (s.Length == 0)
             {
@@ -166,7 +166,7 @@ namespace System
         }
 
         internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string?[]? formats,
-                                                DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
+                                                DateTimeFormatInfo dtfi, DateTimeStyles style, scoped ref DateTimeResult result)
         {
             if (formats == null)
             {
@@ -341,10 +341,10 @@ namespace System
 new DS[] { DS.BEGIN,  DS.ERROR,   DS.TX_N,    DS.N,       DS.D_Nd,    DS.T_Nt,    DS.ERROR,   DS.D_M,     DS.D_M,     DS.D_S,     DS.T_S,         DS.BEGIN,     DS.D_Y,     DS.D_Y,     DS.ERROR,   DS.BEGIN,  DS.BEGIN,    DS.ERROR },
 
 // DS.N                                                                                 // DS.N
-new DS[] { DS.ERROR,  DS.DX_NN,   DS.ERROR,   DS.NN,      DS.D_NNd,   DS.ERROR,   DS.DX_NM,   DS.D_NM,    DS.D_MNd,   DS.D_NDS,   DS.ERROR,       DS.N,         DS.D_YN,    DS.D_YNd,   DS.DX_YN,   DS.N,      DS.N,        DS.ERROR },
+new DS[] { DS.ERROR,  DS.DX_NN,   DS.TX_NN,   DS.NN,      DS.D_NNd,   DS.ERROR,   DS.DX_NM,   DS.D_NM,    DS.D_MNd,   DS.D_NDS,   DS.ERROR,       DS.N,         DS.D_YN,    DS.D_YNd,   DS.DX_YN,   DS.N,      DS.N,        DS.ERROR },
 
 // DS.NN                                                                                // DS.NN
-new DS[] { DS.DX_NN,  DS.DX_NNN,  DS.TX_N,    DS.DX_NNN,  DS.ERROR,   DS.T_Nt,    DS.DX_MNN,  DS.DX_MNN,  DS.ERROR,   DS.ERROR,   DS.T_S,         DS.NN,        DS.DX_NNY,  DS.ERROR,   DS.DX_NNY,  DS.NN,     DS.NN,       DS.ERROR },
+new DS[] { DS.DX_NN,  DS.DX_NNN,  DS.TX_NNN,  DS.DX_NNN,  DS.ERROR,   DS.T_Nt,    DS.DX_MNN,  DS.DX_MNN,  DS.ERROR,   DS.ERROR,   DS.T_S,         DS.NN,        DS.DX_NNY,  DS.ERROR,   DS.DX_NNY,  DS.NN,     DS.NN,       DS.ERROR },
 
 // DS.D_Nd                                                                              // DS.D_Nd
 new DS[] { DS.ERROR,  DS.DX_NN,   DS.ERROR,   DS.D_NN,    DS.D_NNd,   DS.ERROR,   DS.DX_NM,   DS.D_MN,    DS.D_MNd,   DS.ERROR,   DS.ERROR,       DS.D_Nd,      DS.D_YN,    DS.D_YNd,   DS.DX_YN,   DS.ERROR,  DS.D_Nd,     DS.ERROR },
@@ -454,8 +454,6 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        internal static bool IsDigit(char ch) => (uint)(ch - '0') <= 9;
-
         /*=================================ParseFraction==========================
         **Action: Starting at the str.Index, which should be a decimal symbol.
         ** if the current character is a digit, parse the remaining
@@ -473,8 +471,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             double decimalBase = 0.1;
             int digits = 0;
             char ch;
-            while (str.GetNext()
-                   && IsDigit(ch = str.m_current))
+            while (str.GetNext() && char.IsAsciiDigit(ch = str.m_current))
             {
                 result += (ch - '0') * decimalBase;
                 decimalBase *= 0.1;
@@ -494,7 +491,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **      FormatException if invalid timezone format is found.
         ============================================================================*/
 
-        private static bool ParseTimeZone(ref __DTString str, ref TimeSpan result)
+        private static bool ParseTimeZone(ref __DTString str, scoped ref TimeSpan result)
         {
             // The hour/minute offset for timezone.
             int hourOffset;
@@ -568,7 +565,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         // This is the helper function to handle timezone in string in the format like +/-0800
-        private static bool HandleTimeZone(ref __DTString str, ref DateTimeResult result)
+        private static bool HandleTimeZone(ref __DTString str, scoped ref DateTimeResult result)
         {
             if (str.Index < str.Length - 1)
             {
@@ -604,13 +601,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // This is the lexer. Check the character at the current index, and put the found token in dtok and
         // some raw date/time information in raw.
         //
-        private static bool Lex(DS dps, ref __DTString str, ref DateTimeToken dtok, ref DateTimeRawInfo raw, ref DateTimeResult result, ref DateTimeFormatInfo dtfi, DateTimeStyles styles)
+        private static bool Lex(DS dps, ref __DTString str, scoped ref DateTimeToken dtok, scoped ref DateTimeRawInfo raw, scoped ref DateTimeResult result, scoped ref DateTimeFormatInfo dtfi, DateTimeStyles styles)
         {
             int indexBeforeSeparator;
             char charBeforeSeparator;
 
             TokenType sep;
-            dtok.dtt = DTT.Unk;     // Assume the token is unkown.
+            dtok.dtt = DTT.Unk;     // Assume the token is unknown.
 
             str.GetRegularToken(out TokenType tokenType, out int tokenValue, dtfi);
 
@@ -1174,7 +1171,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         private static bool VerifyValidPunctuation(ref __DTString str)
         {
-            // Compatability Behavior. Allow trailing nulls and surrounding hashes
+            // Compatibility Behavior. Allow trailing nulls and surrounding hashes
             char ch = str.Value[str.Index];
             if (ch == '#')
             {
@@ -1230,14 +1227,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
             else if (ch == '\0')
             {
-                for (int i = str.Index; i < str.Length; i++)
+                // Nulls are only valid if they are the only trailing character
+                if (str.Value.Slice(str.Index + 1).IndexOfAnyExcept('\0') >= 0)
                 {
-                    if (str.Value[i] != '\0')
-                    {
-                        // Nulls are only valid if they are the only trailing character
-                        return false;
-                    }
+                    return false;
                 }
+
                 // Move to the end of the string
                 str.Index = str.Length;
                 return true;
@@ -1544,14 +1539,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return SetDateYMD(ref result, year, month, day);
         }
 
-        private static void GetDefaultYear(ref DateTimeResult result, ref DateTimeStyles styles)
+        private static void GetDefaultYear(ref DateTimeResult result, scoped ref DateTimeStyles styles)
         {
             result.Year = result.calendar.GetYear(GetDateTimeNow(ref result, ref styles));
             result.flags |= ParseFlags.YearDefault;
         }
 
         // Processing teriminal case: DS.DX_NN
-        private static bool GetDayOfNN(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfNN(ref DateTimeResult result, scoped ref DateTimeStyles styles, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1593,7 +1588,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         // Processing teriminal case: DS.DX_NNN
-        private static bool GetDayOfNNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfNNN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1649,7 +1644,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool GetDayOfMN(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfMN(ref DateTimeResult result, scoped ref DateTimeStyles styles, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1708,7 +1703,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         ////////////////////////////////////////////////////////////////////////
 
-        private static bool GetHebrewDayOfNM(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetHebrewDayOfNM(ref DateTimeResult result, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if (!GetMonthDayOrder(dtfi.MonthDayPattern, out int monthDayOrder))
             {
@@ -1728,7 +1723,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool GetDayOfNM(ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfNM(ref DateTimeResult result, scoped ref DateTimeStyles styles, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1781,7 +1776,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static bool GetDayOfMNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfMNN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1850,7 +1845,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool GetDayOfYNN(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfYNN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1884,7 +1879,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool GetDayOfNNY(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDayOfNNY(ref DateTimeResult result, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1922,7 +1917,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool GetDayOfYMN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDayOfYMN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1940,7 +1935,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool GetDayOfYN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDayOfYN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1958,7 +1953,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static bool GetDayOfYM(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDayOfYM(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveDate) != 0)
             {
@@ -1976,7 +1971,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return false;
         }
 
-        private static void AdjustTimeMark(DateTimeFormatInfo dtfi, ref DateTimeRawInfo raw)
+        private static void AdjustTimeMark(DateTimeFormatInfo dtfi, scoped ref DateTimeRawInfo raw)
         {
             // Specail case for culture which uses AM as empty string.
             // E.g. af-ZA (0x0436)
@@ -2030,7 +2025,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static bool GetTimeOfN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetTimeOfN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveTime) != 0)
             {
@@ -2051,7 +2046,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static bool GetTimeOfNN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetTimeOfNN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
             Debug.Assert(raw.numCount >= 2, "raw.numCount >= 2");
             if ((result.flags & ParseFlags.HaveTime) != 0)
@@ -2067,7 +2062,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static bool GetTimeOfNNN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetTimeOfNNN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
             if ((result.flags & ParseFlags.HaveTime) != 0)
             {
@@ -2086,7 +2081,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         // Processing terminal state: A Date suffix followed by one number.
         //
-        private static bool GetDateOfDSN(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDateOfDSN(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
             if (raw.numCount != 1 || result.Day != -1)
             {
@@ -2097,7 +2092,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static bool GetDateOfNDS(ref DateTimeResult result, ref DateTimeRawInfo raw)
+        private static bool GetDateOfNDS(ref DateTimeResult result, scoped ref DateTimeRawInfo raw)
         {
             if (result.Month == -1)
             {
@@ -2121,7 +2116,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static bool GetDateOfNNDS(ref DateTimeResult result, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        private static bool GetDateOfNNDS(ref DateTimeResult result, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             // For partial CJK Dates, the only valid formats are with a specified year, followed by two numbers, which
             // will be the Month and Day, and with a specified Month, when the numbers are either the year and day or
@@ -2170,7 +2165,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         // A date suffix is found, use this method to put the number into the result.
         //
-        private static bool ProcessDateTimeSuffix(ref DateTimeResult result, ref DateTimeRawInfo raw, ref DateTimeToken dtok)
+        private static bool ProcessDateTimeSuffix(ref DateTimeResult result, scoped ref DateTimeRawInfo raw, scoped ref DateTimeToken dtok)
         {
             switch (dtok.suffix)
             {
@@ -2234,13 +2229,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static bool ProcessHebrewTerminalState(DS dps, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        internal static bool ProcessHebrewTerminalState(DS dps, scoped ref DateTimeResult result, scoped ref DateTimeStyles styles, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             // The following are accepted terminal state for Hebrew date.
             switch (dps)
             {
                 case DS.DX_MNN:
-                    // Deal with the default long/short date format when the year number is ambigous (i.e. year < 100).
+                    // Deal with the default long/short date format when the year number is ambiguous (i.e. year < 100).
                     raw.year = raw.GetNumber(1);
                     if (!dtfi.YearMonthAdjustment(ref raw.year, ref raw.month, true))
                     {
@@ -2253,7 +2248,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     }
                     break;
                 case DS.DX_YMN:
-                    // Deal with the default long/short date format when the year number is NOT ambigous (i.e. year >= 100).
+                    // Deal with the default long/short date format when the year number is NOT ambiguous (i.e. year >= 100).
                     if (!dtfi.YearMonthAdjustment(ref raw.year, ref raw.month, true))
                     {
                         result.SetFailure(ParseFailureKind.FormatBadDateTimeCalendar, nameof(SR.Format_BadDateTimeCalendar));
@@ -2344,7 +2339,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // A terminal state has been reached, call the appropriate function to fill in the parsing result.
         // Return true if the state is a terminal state.
         //
-        internal static bool ProcessTerminalState(DS dps, ref DateTimeResult result, ref DateTimeStyles styles, ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
+        internal static bool ProcessTerminalState(DS dps, scoped ref DateTimeResult result, scoped ref DateTimeStyles styles, scoped ref DateTimeRawInfo raw, DateTimeFormatInfo dtfi)
         {
             bool passed = true;
             switch (dps)
@@ -2489,7 +2484,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //
         // This is the real method to do the parsing work.
         //
-        internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, ref DateTimeResult result)
+        internal static bool TryParse(ReadOnlySpan<char> s, DateTimeFormatInfo dtfi, DateTimeStyles styles, scoped ref DateTimeResult result)
         {
             if (s.Length == 0)
             {
@@ -2956,11 +2951,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // Parse the ISO8601 format string found during Parse();
         //
         //
-        private static bool ParseISO8601(ref DateTimeRawInfo raw, ref __DTString str, DateTimeStyles styles, ref DateTimeResult result)
+        private static bool ParseISO8601(scoped ref DateTimeRawInfo raw, ref __DTString str, DateTimeStyles styles, scoped ref DateTimeResult result)
         {
-            if (raw.year < 0 || raw.GetNumber(0) < 0 || raw.GetNumber(1) < 0)
-            {
-            }
             str.Index--;
             int second = 0;
             double partSecond = 0;
@@ -3166,7 +3158,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if error in parsing number.
         ==============================================================================*/
 
-        private static bool ParseFractionExact(ref __DTString str, int maxDigitLen, ref double result)
+        private static bool ParseFractionExact(ref __DTString str, int maxDigitLen, scoped ref double result)
         {
             if (!str.GetNextDigit())
             {
@@ -3192,14 +3184,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         /*=================================ParseSign==================================
         **Action: Parse a positive or a negative sign.
-        **Returns:      true if postive sign.  flase if negative sign.
-        **Arguments:    str: a __DTString.  The parsing will start from the
+        **Returns:      true if positive sign. false if negative sign.
+        **Arguments:    str: a __DTString. The parsing will start from the
         **              next character after str.Index.
         **Exceptions:   FormatException if end of string is encountered or a sign
         **              symbol is not found.
         ==============================================================================*/
 
-        private static bool ParseSign(ref __DTString str, ref bool result)
+        private static bool ParseSign(ref __DTString str, scoped ref bool result)
         {
             if (!str.GetNext())
             {
@@ -3230,7 +3222,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if errors in parsing.
         ==============================================================================*/
 
-        private static bool ParseTimeZoneOffset(ref __DTString str, int len, ref TimeSpan result)
+        private static bool ParseTimeZoneOffset(ref __DTString str, int len, scoped ref TimeSpan result)
         {
             bool isPositive = true;
             int hourOffset;
@@ -3301,7 +3293,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if an abbreviated month name can not be found.
         ==============================================================================*/
 
-        private static bool MatchAbbreviatedMonthName(ref __DTString str, DateTimeFormatInfo dtfi, ref int result)
+        private static bool MatchAbbreviatedMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result)
         {
             int maxMatchStrLen = 0;
             result = -1;
@@ -3372,7 +3364,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if a month name can not be found.
         ==============================================================================*/
 
-        private static bool MatchMonthName(ref __DTString str, DateTimeFormatInfo dtfi, ref int result)
+        private static bool MatchMonthName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result)
         {
             int maxMatchStrLen = 0;
             result = -1;
@@ -3444,7 +3436,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if a abbreviated day of week name can not be found.
         ==============================================================================*/
 
-        private static bool MatchAbbreviatedDayName(ref __DTString str, DateTimeFormatInfo dtfi, ref int result)
+        private static bool MatchAbbreviatedDayName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result)
         {
             int maxMatchStrLen = 0;
             result = -1;
@@ -3482,7 +3474,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if a day of week name can not be found.
         ==============================================================================*/
 
-        private static bool MatchDayName(ref __DTString str, DateTimeFormatInfo dtfi, ref int result)
+        private static bool MatchDayName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result)
         {
             // Turkish (tr-TR) got day names with the same prefix.
             int maxMatchStrLen = 0;
@@ -3521,7 +3513,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if an era name can not be found.
         ==============================================================================*/
 
-        private static bool MatchEraName(ref __DTString str, DateTimeFormatInfo dtfi, ref int result)
+        private static bool MatchEraName(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref int result)
         {
             if (str.GetNext())
             {
@@ -3559,7 +3551,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if a time mark can not be found.
         ==============================================================================*/
 
-        private static bool MatchTimeMark(ref __DTString str, DateTimeFormatInfo dtfi, ref TM result)
+        private static bool MatchTimeMark(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref TM result)
         {
             result = TM.NotSet;
             // In some cultures have empty strings in AM/PM mark. E.g. af-ZA (0x0436), the AM mark is "", and PM mark is "nm".
@@ -3614,7 +3606,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions: FormatException if a abbreviated time mark can not be found.
         ==============================================================================*/
 
-        private static bool MatchAbbreviatedTimeMark(ref __DTString str, DateTimeFormatInfo dtfi, ref TM result)
+        private static bool MatchAbbreviatedTimeMark(ref __DTString str, DateTimeFormatInfo dtfi, scoped ref TM result)
         {
             // NOTENOTE : the assumption here is that abbreviated time mark is the first
             // character of the AM/PM designator.  If this invariant changes, we have to
@@ -3648,7 +3640,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         **Exceptions:
         ==============================================================================*/
 
-        private static bool CheckNewValue(ref int currentValue, int newValue, char patternChar, ref DateTimeResult result)
+        private static bool CheckNewValue(scoped ref int currentValue, int newValue, char patternChar, scoped ref DateTimeResult result)
         {
             if (currentValue == -1)
             {
@@ -3666,7 +3658,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static DateTime GetDateTimeNow(ref DateTimeResult result, ref DateTimeStyles styles)
+        private static DateTime GetDateTimeNow(scoped ref DateTimeResult result, scoped ref DateTimeStyles styles)
         {
             if ((result.flags & ParseFlags.CaptureOffset) != 0)
             {
@@ -3686,7 +3678,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return DateTime.Now;
         }
 
-        private static bool CheckDefaultDateTime(ref DateTimeResult result, ref Calendar cal, DateTimeStyles styles)
+        private static bool CheckDefaultDateTime(scoped ref DateTimeResult result, scoped ref Calendar cal, DateTimeStyles styles)
         {
             if ((result.flags & ParseFlags.CaptureOffset) != 0)
             {
@@ -3787,7 +3779,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // This method also set the dtfi according/parseInfo to some special pre-defined
         // formats.
         //
-        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, ref DateTimeFormatInfo dtfi, ref ParsingInfo parseInfo, ref DateTimeResult result)
+        private static string ExpandPredefinedFormat(ReadOnlySpan<char> format, scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
         {
             //
             // Check the format to see if we need to override the dtfi to be InvariantInfo,
@@ -3850,7 +3842,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static void ConfigureFormatR(ref DateTimeFormatInfo dtfi, ref ParsingInfo parseInfo, ref DateTimeResult result)
+        private static void ConfigureFormatR(scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
         {
             parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
             dtfi = DateTimeFormatInfo.InvariantInfo;
@@ -3860,7 +3852,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
         }
 
-        private static void ConfigureFormatOS(ref DateTimeFormatInfo dtfi, ref ParsingInfo parseInfo)
+        private static void ConfigureFormatOS(scoped ref DateTimeFormatInfo dtfi, scoped ref ParsingInfo parseInfo)
         {
             parseInfo.calendar = GregorianCalendar.GetDefaultInstance();
             dtfi = DateTimeFormatInfo.InvariantInfo;
@@ -3871,9 +3863,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         private static bool ParseByFormat(
             ref __DTString str,
             ref __DTString format,
-            ref ParsingInfo parseInfo,
+            scoped ref ParsingInfo parseInfo,
             DateTimeFormatInfo dtfi,
-            ref DateTimeResult result)
+            scoped ref DateTimeResult result)
         {
             int tokenLen;
             int tempYear = 0, tempMonth = 0, tempDay = 0, tempDayOfWeek = 0, tempHour = 0, tempMinute = 0, tempSecond = 0;
@@ -4226,12 +4218,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     break;
                 case '\"':
                 case '\'':
-                    StringBuilder enquotedString = StringBuilderCache.Acquire();
+                    var enquotedString = new ValueStringBuilder(stackalloc char[128]);
                     // Use ParseQuoteString so that we can handle escape characters within the quoted string.
-                    if (!TryParseQuoteString(format.Value, format.Index, enquotedString, out tokenLen))
+                    if (!TryParseQuoteString(format.Value, format.Index, ref enquotedString, out tokenLen))
                     {
                         result.SetFailure(ParseFailureKind.FormatWithParameter, nameof(SR.Format_BadQuote), ch);
-                        StringBuilderCache.Release(enquotedString);
+                        enquotedString.Dispose();
                         return false;
                     }
                     format.Index += tokenLen - 1;
@@ -4239,7 +4231,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // Some cultures uses space in the quoted string.  E.g. Spanish has long date format as:
                     // "dddd, dd' de 'MMMM' de 'yyyy".  When inner spaces flag is set, we should skip whitespaces if there is space
                     // in the quoted string.
-                    string quotedStr = StringBuilderCache.GetStringAndRelease(enquotedString);
+                    string quotedStr = enquotedString.ToString();
 
                     for (int i = 0; i < quotedStr.Length; i++)
                     {
@@ -4257,7 +4249,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
                     // The "r" and "u" formats incorrectly quoted 'GMT' and 'Z', respectively.  We cannot
                     // correct this mistake for DateTime.ParseExact for compatibility reasons, but we can
-                    // fix it for DateTimeOffset.ParseExact as DateTimeOffset has not been publically released
+                    // fix it for DateTimeOffset.ParseExact as DateTimeOffset has not been publicly released
                     // with this issue.
                     if ((result.flags & ParseFlags.CaptureOffset) != 0)
                     {
@@ -4385,18 +4377,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // The pos should point to a quote character. This method will
         // get the string enclosed by the quote character.
         //
-        internal static bool TryParseQuoteString(ReadOnlySpan<char> format, int pos, StringBuilder result, out int returnValue)
+        internal static bool TryParseQuoteString(ReadOnlySpan<char> format, int pos, ref ValueStringBuilder result, out int returnValue)
         {
-            //
-            // NOTE : pos will be the index of the quote character in the 'format' string.
-            //
-            returnValue = 0;
-            int formatLen = format.Length;
+            // NOTE: pos will be the index of the quote character in the 'format' string.
             int beginPos = pos;
             char quoteChar = format[pos++]; // Get the character used to quote the following string.
 
             bool foundQuote = false;
-            while (pos < formatLen)
+            while ((uint)pos < (uint)format.Length)
             {
                 char ch = format[pos++];
                 if (ch == quoteChar)
@@ -4411,15 +4399,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     // Therefore, someone can use a format like "'minute:' mm\"" to display:
                     //  minute: 45"
                     // because the second double quote is escaped.
-                    if (pos < formatLen)
+                    if ((uint)pos < (uint)format.Length)
                     {
                         result.Append(format[pos++]);
                     }
                     else
                     {
-                        //
                         // This means that '\' is at the end of the formatting string.
-                        //
+                        returnValue = 0;
                         return false;
                     }
                 }
@@ -4432,6 +4419,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (!foundQuote)
             {
                 // Here we can't find the matching quote.
+                returnValue = 0;
                 return false;
             }
 
@@ -4463,7 +4451,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             ReadOnlySpan<char> formatParam,
             DateTimeStyles styles,
             DateTimeFormatInfo dtfi,
-            ref DateTimeResult result)
+            scoped ref DateTimeResult result)
         {
             ParsingInfo parseInfo = default;
             parseInfo.Init();
@@ -4582,7 +4570,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 {
                     // hh is used, but no AM/PM designator is specified.
                     // Assume the time is AM.
-                    // Don't throw exceptions in here becasue it is very confusing for the caller.
+                    // Don't throw exceptions in here because it is very confusing for the caller.
                     // I always got confused myself when I use "hh:mm:ss" to parse a time string,
                     // and ParseExact() throws on me (because I didn't use the 24-hour clock 'HH').
                     parseInfo.timeMark = TM.AM;
@@ -4669,13 +4657,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return DetermineTimeZoneAdjustments(ref result, styles, bTimeOnly);
         }
 
-        private static bool ParseFormatR(ReadOnlySpan<char> source, ref ParsingInfo parseInfo, ref DateTimeResult result)
+        private static bool ParseFormatR(ReadOnlySpan<char> source, scoped ref ParsingInfo parseInfo, scoped ref DateTimeResult result)
         {
             // Example:
             // Tue, 03 Jan 2017 08:08:05 GMT
 
             // The format is exactly 29 characters.
-            if ((uint)source.Length != 29)
+            if (source.Length != 29)
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -4864,7 +4852,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return true;
         }
 
-        private static bool ParseFormatO(ReadOnlySpan<char> source, ref DateTimeResult result)
+        private static bool ParseFormatO(ReadOnlySpan<char> source, scoped ref DateTimeResult result)
         {
             // Examples:
             // 2017-06-12T05:30:45.7680000        (interpreted as local time wrt to current time zone)
@@ -4872,7 +4860,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             // 2017-06-12T05:30:45.7680000-7:00   (special-case of one-digit offset hour)
             // 2017-06-12T05:30:45.7680000-07:00
 
-            if ((uint)source.Length < 27 ||
+            if (source.Length < 27 ||
                 source[4] != '-' ||
                 source[7] != '-' ||
                 source[10] != 'T' ||
@@ -4993,7 +4981,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
-            if ((uint)source.Length > 27)
+            if (source.Length > 27)
             {
                 char offsetChar = source[27];
                 switch (offsetChar)
@@ -5011,7 +4999,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     case '-':
                         int offsetHours, colonIndex;
 
-                        if ((uint)source.Length == 33)
+                        if (source.Length == 33)
                         {
                             uint oh1 = (uint)(source[28] - '0'), oh2 = (uint)(source[29] - '0');
 
@@ -5024,7 +5012,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                             offsetHours = (int)(oh1 * 10 + oh2);
                             colonIndex = 30;
                         }
-                        else if ((uint)source.Length == 32) // special-case allowed for compat: only one offset hour digit
+                        else if (source.Length == 32) // special-case allowed for compat: only one offset hour digit
                         {
                             offsetHours = source[28] - '0';
 
@@ -5078,7 +5066,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             return DetermineTimeZoneAdjustments(ref result, DateTimeStyles.None, bTimeOnly: false);
         }
 
-        private static Exception GetDateTimeParseException(ref DateTimeResult result)
+        private static Exception GetDateTimeParseException(scoped ref DateTimeResult result)
         {
             switch (result.failure)
             {
@@ -5227,10 +5215,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return "\\u" + ((int)c).ToString("x4", CultureInfo.InvariantCulture);
         }
 
+#pragma warning disable IDE0060
         private static void Trace(string s)
         {
-            // Internal.Console.WriteLine(s);
+            //Internal.Console.WriteLine(s);
         }
+#pragma warning restore IDE0060
 
         // for testing; do not make this readonly
         private static bool s_tracingEnabled;
@@ -5244,6 +5234,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
     //
     internal ref struct __DTString
     {
+        internal const char RightToLeftMark = '\u200F';
+
         //
         // Value property: stores the real string to be parsed.
         //
@@ -5332,7 +5324,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
 
         Start:
-            if (DateTimeParse.IsDigit(m_current))
+            if (char.IsAsciiDigit(m_current))
             {
                 // This is a digit.
                 tokenValue = m_current - '0';
@@ -5382,7 +5374,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     {
                         tokenType = tempType;
                         tokenValue = tempValue;
-                        // This is a token, so the Index has been advanced propertly in DTFI.Tokenizer().
+                        // This is a token, so the Index has been advanced properly in DTFI.Tokenizer().
                     }
                     else
                     {
@@ -5418,12 +5410,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             indexBeforeSeparator = Index;
             charBeforeSeparator = m_current;
             TokenType tokenType;
-            if (!SkipWhiteSpaceCurrent())
+            if (!SkipWhiteSpaceAndRtlMarkCurrent())
             {
                 // Reach the end of the string.
                 return TokenType.SEP_End;
             }
-            if (!DateTimeParse.IsDigit(m_current))
+            if (!char.IsAsciiDigit(m_current))
             {
                 // Not a digit.  Tokenize it.
                 bool found = dtfi.Tokenize(TokenType.SeparatorTokenMask, out tokenType, out _, ref this);
@@ -5446,9 +5438,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             Index + target.Length <= Length &&
             m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
-        private static readonly char[] WhiteSpaceChecks = new char[] { ' ', '\u00A0' };
-
-        internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, ref int matchLength)
+        internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, scoped ref int matchLength)
         {
             int valueRemaining = Value.Length - Index;
             matchLength = target.Length;
@@ -5458,12 +5448,14 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Check word by word
                 int targetPosition = 0;                 // Where we are in the target string
                 int thisPosition = Index;         // Where we are in this string
-                int wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition);
-                if (wsIndex == -1)
+                int wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
+                if (wsIndex < 0)
                 {
                     return false;
                 }
-                do
+                wsIndex += targetPosition;
+
+                while (true)
                 {
                     int segmentLength = wsIndex - targetPosition;
                     if (thisPosition >= Value.Length - segmentLength)
@@ -5499,7 +5491,15 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         thisPosition++;
                         matchLength++;
                     }
-                } while ((wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition)) >= 0);
+
+                    wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
+                    if (wsIndex < 0)
+                    {
+                        break;
+                    }
+                    wsIndex += targetPosition;
+                }
+
                 // now check the last segment;
                 if (targetPosition < target.Length)
                 {
@@ -5550,7 +5550,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (m_info.Compare(Value.Slice(Index, str.Length), str, CompareOptions.Ordinal) == 0)
             {
                 // Update the Index to the end of the matching string.
-                // So the following GetNext()/Match() opeartion will get
+                // So the following GetNext()/Match() operation will get
                 // the next character to be parsed.
                 Index += (str.Length - 1);
                 return true;
@@ -5584,7 +5584,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         //      maxMatchStrLen  [in/out] the initialized maximum length.  This parameter can be used to
         //          find the longest match in two string arrays.
         //
-        internal int MatchLongestWords(string[] words, ref int maxMatchStrLen)
+        internal int MatchLongestWords(string[] words, scoped ref int maxMatchStrLen)
         {
             int result = -1;
             for (int i = 0; i < words.Length; i++)
@@ -5619,7 +5619,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             }
             int repeatCount = (pos - Index);
             // Update the Index to the end of the repeated characters.
-            // So the following GetNext() opeartion will get
+            // So the following GetNext() operation will get
             // the next character to be parsed.
             Index = pos - 1;
             return repeatCount;
@@ -5629,7 +5629,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool GetNextDigit() =>
             ++Index < Length &&
-            DateTimeParse.IsDigit(Value[Index]);
+            char.IsAsciiDigit(Value[Index]);
 
         //
         // Get the current character.
@@ -5646,7 +5646,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal int GetDigit()
         {
             Debug.Assert(Index >= 0 && Index < Length, "Index >= 0 && Index < len");
-            Debug.Assert(DateTimeParse.IsDigit(Value[Index]), "IsDigit(Value[Index])");
+            Debug.Assert(char.IsAsciiDigit(Value[Index]), "IsDigit(Value[Index])");
             return Value[Index] - '0';
         }
 
@@ -5672,18 +5672,20 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         }
 
         //
-        // Skip white spaces from the current position
+        // Skip white spaces and right-to-left Mark from the current position
         //
+        // U+200F is the Unicode right-to-left mark. In some Bidi cultures, this mark gets inserted inside the formatted date or time to have the output displayed in the correct layout.
+        // This mark does not affect the date or the time component values. Ignoring this mark during parsing wouldn't affect the result but will avoid having the parsing fail.
         // Return false if end of string is encountered.
         //
-        internal bool SkipWhiteSpaceCurrent()
+        internal bool SkipWhiteSpaceAndRtlMarkCurrent()
         {
             if (Index >= Length)
             {
                 return false;
             }
 
-            if (!char.IsWhiteSpace(m_current))
+            if (!char.IsWhiteSpace(m_current) && m_current != RightToLeftMark)
             {
                 return true;
             }
@@ -5691,7 +5693,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             while (++Index < Length)
             {
                 m_current = Value[Index];
-                if (!char.IsWhiteSpace(m_current))
+                if (!char.IsWhiteSpace(m_current) && m_current != RightToLeftMark)
                 {
                     return true;
                 }
@@ -5774,26 +5776,17 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 DTSubStringType currentType;
                 char ch = Value[Index + sub.length];
-                if (ch >= '0' && ch <= '9')
-                {
-                    currentType = DTSubStringType.Number;
-                }
-                else
-                {
-                    currentType = DTSubStringType.Other;
-                }
+                currentType = char.IsAsciiDigit(ch) ? DTSubStringType.Number : DTSubStringType.Other;
 
                 if (sub.length == 0)
                 {
                     sub.type = currentType;
                 }
-                else
+                else if (sub.type != currentType)
                 {
-                    if (sub.type != currentType)
-                    {
-                        break;
-                    }
+                    break;
                 }
+
                 sub.length++;
                 if (currentType == DTSubStringType.Number)
                 {

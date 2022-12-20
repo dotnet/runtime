@@ -360,26 +360,26 @@ namespace System.Text
         }
 
         // Helper methods
-        internal bool IsGBLeadByte(short ch)
+        internal static bool IsGBLeadByte(short ch)
         {
             // return true if we're in the lead byte range
             return ((ch) >= 0x81 && (ch) <= 0xfe);
         }
 
-        internal bool IsGBTwoByteTrailing(short ch)
+        internal static bool IsGBTwoByteTrailing(short ch)
         {
             // Return true if we are in range for the trailing byte of a 2 byte sequence
             return (((ch) >= 0x40 && (ch) <= 0x7e) ||
                     ((ch) >= 0x80 && (ch) <= 0xfe));
         }
 
-        internal bool IsGBFourByteTrailing(short ch)
+        internal static bool IsGBFourByteTrailing(short ch)
         {
             // Return true if we are in range for the trailing byte of a 4 byte sequence
             return ((ch) >= 0x30 && (ch) <= 0x39);
         }
 
-        internal int GetFourBytesOffset(short offset1, short offset2, short offset3, short offset4)
+        internal static int GetFourBytesOffset(short offset1, short offset2, short offset3, short offset4)
         {
             return ((offset1 - 0x81) * 0x0a * 0x7e * 0x0a +
                     (offset2 - 0x30) * 0x7e * 0x0a +
@@ -801,8 +801,7 @@ namespace System.Text
                 bLeftOver2 = -1;
                 bLeftOver3 = -1;
                 bLeftOver4 = -1;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our decoder?

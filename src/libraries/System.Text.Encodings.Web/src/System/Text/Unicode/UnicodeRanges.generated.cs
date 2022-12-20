@@ -191,6 +191,15 @@ namespace System.Text.Unicode
         private static UnicodeRange? _u0860;
 
         /// <summary>
+        /// A <see cref="UnicodeRange"/> corresponding to the 'Arabic Extended-B' Unicode block (U+0870..U+089F).
+        /// </summary>
+        /// <remarks>
+        /// See https://www.unicode.org/charts/PDF/U0870.pdf for the full set of characters in this block.
+        /// </remarks>
+        public static UnicodeRange ArabicExtendedB => _u0870 ?? CreateRange(ref _u0870, first: '\u0870', last: '\u089F');
+        private static UnicodeRange? _u0870;
+
+        /// <summary>
         /// A <see cref="UnicodeRange"/> corresponding to the 'Arabic Extended-A' Unicode block (U+08A0..U+08FF).
         /// </summary>
         /// <remarks>

@@ -86,7 +86,7 @@ public:
     // Get a string representation of this TraceDestination
     // Uses the supplied buffer to store the memory (or may return a string literal).
     // This will also print the TD's arguments.
-    const WCHAR * DbgToString(SString &buffer);
+    const CHAR * DbgToString(SString &buffer);
 #endif
 
     // Initialize for unmanaged code.
@@ -399,6 +399,28 @@ class PrecodeStubManager : public StubManager
     ~PrecodeStubManager() {WRAPPER_NO_CONTRACT;}
 #endif
 
+  protected:
+    LockedRangeList m_stubPrecodeRangeList;
+    LockedRangeList m_fixupPrecodeRangeList;
+
+  public:
+    // Get dac-ized pointer to rangelist.
+    PTR_RangeList GetStubPrecodeRangeList()
+    {
+        SUPPORTS_DAC;
+
+        TADDR addr = PTR_HOST_MEMBER_TADDR(PrecodeStubManager, this, m_stubPrecodeRangeList);
+        return PTR_RangeList(addr);
+    }
+
+    PTR_RangeList GetFixupPrecodeRangeList()
+    {
+        SUPPORTS_DAC;
+
+        TADDR addr = PTR_HOST_MEMBER_TADDR(PrecodeStubManager, this, m_fixupPrecodeRangeList);
+        return PTR_RangeList(addr);
+    }
+
   public:
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 
@@ -591,8 +613,6 @@ class RangeSectionStubManager : public StubManager
 
     static StubCodeBlockKind GetStubKind(PCODE stubStartAddress);
 
-    static PCODE GetMethodThunkTarget(PCODE stubStartAddress);
-
   public:
 #ifdef _DEBUG
     virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "RangeSectionStubManager"; }
@@ -662,10 +682,6 @@ class ILStubManager : public StubManager
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_COMINTEROP
-    static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo);
-#endif // FEATURE_COMINTEROP
-
     virtual BOOL TraceManager(Thread *thread,
                               TraceDestination *trace,
                               T_CONTEXT *pContext,

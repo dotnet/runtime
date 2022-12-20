@@ -13,7 +13,7 @@
 
 .assembly extern mscorlib {}
 
-.assembly abstract01 {}
+.assembly 'abstract09' {}
 
 
 // =============== CLASS MEMBERS DECLARATION ===================

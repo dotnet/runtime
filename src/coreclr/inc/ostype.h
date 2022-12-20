@@ -14,12 +14,9 @@
 
 //*****************************************************************************
 // Enum to track which version of the OS we are running
-// Note that NT5 (Win2k) is the minimum supported platform. Any code using
+// Note that Win7 is the minimum supported platform. Any code using
 // utilcode (which includes the CLR's execution engine) will fail to start
-// on a pre-Win2k platform. This is enforced by InitRunningOnVersionStatus.
-//
-// Note: The value is used for data mining from links clicked by user in shim dialog - see code:FWLinkTemplateFromTextID
-//   Please do not modify existing values, adding new ones is fine.
+// on a pre-Win7 platform. This is enforced by InitRunningOnVersionStatus.
 //*****************************************************************************
 typedef enum {
     RUNNING_ON_STATUS_UNINITED = 0,
@@ -30,20 +27,6 @@ typedef enum {
 extern RunningOnStatusEnum gRunningOnStatus;
 
 void InitRunningOnVersionStatus();
-
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
-typedef enum
-{
-    WINRT_STATUS_UNINITED = 0,
-    WINRT_STATUS_UNSUPPORTED,
-    WINRT_STATUS_SUPPORTED
-}
-WinRTStatusEnum;
-
-extern WinRTStatusEnum      gWinRTStatus;
-
-void InitWinRTStatus();
-#endif // FEATURE_COMINTEROP && !FEATURE_CORESYSTEM
 
 //*****************************************************************************
 // Returns true if you are running on Windows 8 or newer.
@@ -65,28 +48,10 @@ inline BOOL RunningOnWin8()
 
 #ifdef FEATURE_COMINTEROP
 
-#ifdef FEATURE_CORESYSTEM
-
 inline BOOL WinRTSupported()
 {
     return RunningOnWin8();
 }
-#else
-inline BOOL WinRTSupported()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-
-    if (gWinRTStatus == WINRT_STATUS_UNINITED)
-    {
-        InitWinRTStatus();
-    }
-
-    return gWinRTStatus == WINRT_STATUS_SUPPORTED;
-}
-#endif // FEATURE_CORESYSTEM
 
 #endif // FEATURE_COMINTEROP
 

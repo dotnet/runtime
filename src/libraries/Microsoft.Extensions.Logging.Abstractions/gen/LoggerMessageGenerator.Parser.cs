@@ -16,9 +16,9 @@ namespace Microsoft.Extensions.Logging.Generators
 {
     public partial class LoggerMessageGenerator
     {
-        internal class Parser
+        internal sealed class Parser
         {
-            private const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
+            internal const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
             private readonly CancellationToken _cancellationToken;
             private readonly Compilation _compilation;
@@ -29,36 +29,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 _compilation = compilation;
                 _cancellationToken = cancellationToken;
                 _reportDiagnostic = reportDiagnostic;
-            }
-
-            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
-                node is MethodDeclarationSyntax m && m.AttributeLists.Count > 0;
-
-            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
-            {
-                var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
-
-                foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
-                {
-                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
-                    {
-                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
-                        if (attributeSymbol == null)
-                        {
-                            continue;
-                        }
-
-                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
-                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
-
-                        if (fullName == LoggerMessageAttribute)
-                        {
-                            return methodDeclarationSyntax.Parent as ClassDeclarationSyntax;
-                        }
-                    }
-                }
-
-                return null;
             }
 
             /// <summary>
@@ -141,15 +111,20 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     bool hasMisconfiguredInput = false;
-                                    ImmutableArray<AttributeData>? boundAttrbutes = logMethodSymbol?.GetAttributes();
+                                    ImmutableArray<AttributeData>? boundAttributes = logMethodSymbol?.GetAttributes();
 
-                                    if (boundAttrbutes == null)
+                                    if (boundAttributes == null || boundAttributes!.Value.Length == 0)
                                     {
                                         continue;
                                     }
 
-                                    foreach (AttributeData attributeData in boundAttrbutes)
+                                    foreach (AttributeData attributeData in boundAttributes)
                                     {
+                                        if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, loggerMessageAttribute))
+                                        {
+                                            continue;
+                                        }
+
                                         // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
                                         // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
                                         if (attributeData.ConstructorArguments.Any())
@@ -273,9 +248,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                         }
 
-                                        if (method.Body != null)
+                                        CSharpSyntaxNode? methodBody = method.Body as CSharpSyntaxNode ?? method.ExpressionBody;
+                                        if (methodBody != null)
                                         {
-                                            Diag(DiagnosticDescriptors.LoggingMethodHasBody, method.Body.GetLocation());
+                                            Diag(DiagnosticDescriptors.LoggingMethodHasBody, methodBody.GetLocation());
                                             keepMethod = false;
                                         }
 
@@ -306,6 +282,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                         foreach (IParameterSymbol paramSymbol in methodSymbol.Parameters)
                                         {
                                             string paramName = paramSymbol.Name;
+                                            bool needsAtSign = false;
+                                            if (paramSymbol.DeclaringSyntaxReferences.Length > 0)
+                                            {
+                                                ParameterSyntax paramSyntax = paramSymbol.DeclaringSyntaxReferences[0].GetSyntax(_cancellationToken) as ParameterSyntax;
+                                                if (paramSyntax != null && !string.IsNullOrEmpty(paramSyntax.Identifier.Text))
+                                                {
+                                                    needsAtSign = paramSyntax.Identifier.Text[0] == '@';
+                                                }
+                                            }
                                             if (string.IsNullOrWhiteSpace(paramName))
                                             {
                                                 // semantic problem, just bail quietly
@@ -321,6 +306,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 break;
                                             }
 
+                                            string? qualifier = null;
+                                            if (paramSymbol.RefKind == RefKind.In)
+                                            {
+                                                qualifier = "in";
+                                            }
+                                            else if (paramSymbol.RefKind == RefKind.Ref)
+                                            {
+                                                qualifier = "ref";
+                                            }
                                             string typeName = paramTypeSymbol.ToDisplayString(
                                                 SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
                                                     SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
@@ -329,6 +323,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 Name = paramName,
                                                 Type = typeName,
+                                                Qualifier = qualifier,
+                                                CodeName = needsAtSign ? "@" + paramName : paramName,
                                                 IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol!, loggerSymbol),
                                                 IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol!, exceptionSymbol),
                                                 IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol!, logLevelSymbol),
@@ -339,17 +335,21 @@ namespace Microsoft.Extensions.Logging.Generators
                                             foundException |= lp.IsException;
                                             foundLogLevel |= lp.IsLogLevel;
 
+                                            bool forceAsTemplateParams = false;
                                             if (lp.IsLogger && lm.TemplateMap.ContainsKey(paramName))
                                             {
                                                 Diag(DiagnosticDescriptors.ShouldntMentionLoggerInMessage, paramSymbol.Locations[0], paramName);
+                                                forceAsTemplateParams = true;
                                             }
                                             else if (lp.IsException && lm.TemplateMap.ContainsKey(paramName))
                                             {
                                                 Diag(DiagnosticDescriptors.ShouldntMentionExceptionInMessage, paramSymbol.Locations[0], paramName);
+                                                forceAsTemplateParams = true;
                                             }
                                             else if (lp.IsLogLevel && lm.TemplateMap.ContainsKey(paramName))
                                             {
                                                 Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, paramSymbol.Locations[0], paramName);
+                                                forceAsTemplateParams = true;
                                             }
                                             else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName))
                                             {
@@ -368,7 +368,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
 
                                             lm.AllParameters.Add(lp);
-                                            if (lp.IsTemplateParameter)
+                                            if (lp.IsTemplateParameter || forceAsTemplateParams)
                                             {
                                                 lm.TemplateParameters.Add(lp);
                                             }
@@ -474,14 +474,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Keyword = classDec.Keyword.ValueText,
                                                 Namespace = nspace,
                                                 Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
-                                                Constraints = classDec.ConstraintClauses.ToString(),
                                                 ParentClass = null,
                                             };
 
                                             LoggerClass currentLoggerClass = lc;
                                             var parentLoggerClass = (classDec.Parent as TypeDeclarationSyntax);
 
-                                            bool IsAllowedKind(SyntaxKind kind) =>
+                                            static bool IsAllowedKind(SyntaxKind kind) =>
                                                 kind == SyntaxKind.ClassDeclaration ||
                                                 kind == SyntaxKind.StructDeclaration ||
                                                 kind == SyntaxKind.RecordDeclaration;
@@ -493,7 +492,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     Keyword = parentLoggerClass.Keyword.ValueText,
                                                     Namespace = nspace,
                                                     Name = parentLoggerClass.Identifier.ToString() + parentLoggerClass.TypeParameterList,
-                                                    Constraints = parentLoggerClass.ConstraintClauses.ToString(),
                                                     ParentClass = null,
                                                 };
 
@@ -510,6 +508,23 @@ namespace Microsoft.Extensions.Logging.Generators
 
                         if (lc != null)
                         {
+                            //once we've collected all methods for the given class, check for overloads
+                            //and provide unique names for logger methods
+                            var methods = new Dictionary<string, int>(lc.Methods.Count);
+                            foreach (LoggerMethod lm in lc.Methods)
+                            {
+                                if (methods.ContainsKey(lm.Name))
+                                {
+                                    int currentCount = methods[lm.Name];
+                                    lm.UniqueName = $"{lm.Name}{currentCount}";
+                                    methods[lm.Name] = currentCount + 1;
+                                }
+                                else
+                                {
+                                    lm.UniqueName = lm.Name;
+                                    methods[lm.Name] = 1; //start from 1
+                                }
+                            }
                             results.Add(lc);
                         }
                     }
@@ -522,29 +537,33 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 string? loggerField = null;
 
-                foreach (MemberDeclarationSyntax m in classDec.Members)
+                INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
+
+                bool onMostDerivedType = true;
+
+                while (classType is { SpecialType: not SpecialType.System_Object })
                 {
-                    if (m is FieldDeclarationSyntax fds)
+                    foreach (IFieldSymbol fs in classType.GetMembers().OfType<IFieldSymbol>())
                     {
-                        foreach (VariableDeclaratorSyntax v in fds.Declaration.Variables)
+                        if (!onMostDerivedType && fs.DeclaredAccessibility == Accessibility.Private)
                         {
-                            var fs = sm.GetDeclaredSymbol(v, _cancellationToken) as IFieldSymbol;
-                            if (fs != null)
+                            continue;
+                        }
+                        if (IsBaseOrIdentity(fs.Type, loggerSymbol))
+                        {
+                            if (loggerField == null)
                             {
-                                if (IsBaseOrIdentity(fs.Type, loggerSymbol))
-                                {
-                                    if (loggerField == null)
-                                    {
-                                        loggerField = v.Identifier.Text;
-                                    }
-                                    else
-                                    {
-                                        return (null, true);
-                                    }
-                                }
+                                loggerField = fs.Name;
+                            }
+                            else
+                            {
+                                return (null, true);
                             }
                         }
                     }
+
+                    onMostDerivedType = false;
+                    classType = classType.BaseType;
                 }
 
                 return (loggerField, false);
@@ -673,26 +692,26 @@ namespace Microsoft.Extensions.Logging.Generators
         /// <summary>
         /// A logger class holding a bunch of logger methods.
         /// </summary>
-        internal class LoggerClass
+        internal sealed class LoggerClass
         {
             public readonly List<LoggerMethod> Methods = new();
             public string Keyword = string.Empty;
             public string Namespace = string.Empty;
             public string Name = string.Empty;
-            public string Constraints = string.Empty;
             public LoggerClass? ParentClass;
         }
 
         /// <summary>
         /// A logger method in a logger class.
         /// </summary>
-        internal class LoggerMethod
+        internal sealed class LoggerMethod
         {
             public readonly List<LoggerParameter> AllParameters = new();
             public readonly List<LoggerParameter> TemplateParameters = new();
             public readonly Dictionary<string, string> TemplateMap = new(StringComparer.OrdinalIgnoreCase);
             public readonly List<string> TemplateList = new();
             public string Name = string.Empty;
+            public string UniqueName = string.Empty;
             public string Message = string.Empty;
             public int? Level;
             public int EventId;
@@ -706,10 +725,12 @@ namespace Microsoft.Extensions.Logging.Generators
         /// <summary>
         /// A single parameter to a logger method.
         /// </summary>
-        internal class LoggerParameter
+        internal sealed class LoggerParameter
         {
             public string Name = string.Empty;
             public string Type = string.Empty;
+            public string CodeName = string.Empty;
+            public string? Qualifier;
             public bool IsLogger;
             public bool IsException;
             public bool IsLogLevel;

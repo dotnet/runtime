@@ -49,7 +49,7 @@ namespace System.IO.Pipelines
         {
             if (buffer is null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
             }
 
             return ReadInternal(new Span<byte>(buffer, offset, count));
@@ -64,7 +64,7 @@ namespace System.IO.Pipelines
         private int ReadInternal(Span<byte> buffer)
         {
             ValueTask<ReadResult> vt = _pipeReader.ReadAsync();
-            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().Result;
+            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().GetAwaiter().GetResult();
             return HandleReadResult(result, buffer);
         }
 
@@ -84,7 +84,7 @@ namespace System.IO.Pipelines
         {
             if (buffer is null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
             }
 
             return ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();

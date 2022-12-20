@@ -22,7 +22,7 @@ namespace System.Drawing
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return (destinationType == typeof(string)) || (destinationType == typeof(InstanceDescriptor));
         }
@@ -33,10 +33,7 @@ namespace System.Drawing
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
 
                     ValueStringBuilder sb = default;
                     sb.Append(font.Name);
@@ -120,15 +117,12 @@ namespace System.Drawing
                 return null;
             }
 
-            if (culture == null)
-            {
-                culture = CultureInfo.CurrentCulture;
-            }
+            culture ??= CultureInfo.CurrentCulture;
 
             char separator = culture.TextInfo.ListSeparator[0]; // For vi-VN: ','
             string fontName = font; // start with the assumption that only the font name was provided.
             string? style = null;
-            string? sizeStr = null;
+            string? sizeStr;
             float fontSize = 8.25f;
             FontStyle fontStyle = FontStyle.Regular;
             GraphicsUnit units = GraphicsUnit.Point;
@@ -153,7 +147,7 @@ namespace System.Drawing
                 if (styleIndex != -1)
                 {
                     // style found.
-                    style = font.Substring(styleIndex, font.Length - styleIndex);
+                    style = font.Substring(styleIndex);
 
                     // Get the mid-substring containing the size information.
                     sizeStr = font.Substring(nameIndex + 1, styleIndex - nameIndex - 1);
@@ -197,7 +191,7 @@ namespace System.Drawing
                         string styleText = styleTokens[tokenCount];
                         styleText = styleText.Trim();
 
-                        fontStyle |= (FontStyle)Enum.Parse(typeof(FontStyle), styleText, true);
+                        fontStyle |= Enum.Parse<FontStyle>(styleText, true);
 
                         // Enum.IsDefined doesn't do what we want on flags enums...
                         FontStyle validBits = FontStyle.Regular | FontStyle.Bold | FontStyle.Italic | FontStyle.Underline | FontStyle.Strikeout;
@@ -216,7 +210,7 @@ namespace System.Drawing
             static TypeConverter GetFloatConverter() => TypeDescriptor.GetConverter(typeof(float));
         }
 
-        private (string?, string?) ParseSizeTokens(string text, char separator)
+        private static (string?, string?) ParseSizeTokens(string text, char separator)
         {
             string? size = null;
             string? units = null;
@@ -257,7 +251,7 @@ namespace System.Drawing
             return (size, units);
         }
 
-        private GraphicsUnit ParseGraphicsUnits(string units) =>
+        private static GraphicsUnit ParseGraphicsUnits(string units) =>
             units switch
             {
                 "display" => GraphicsUnit.Display,
@@ -272,10 +266,7 @@ namespace System.Drawing
 
         public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
-            if (propertyValues == null)
-            {
-                throw new ArgumentNullException(nameof(propertyValues));
-            }
+            ArgumentNullException.ThrowIfNull(propertyValues);
 
             object? value;
             byte charSet = 1;
@@ -303,25 +294,25 @@ namespace System.Drawing
 
             if ((value = propertyValues["Bold"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Bold;
             }
 
             if ((value = propertyValues["Italic"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Italic;
             }
 
             if ((value = propertyValues["Strikeout"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Strikeout;
             }
 
             if ((value = propertyValues["Underline"]) != null)
             {
-                if ((bool)value == true)
+                if ((bool)value)
                     style |= FontStyle.Underline;
             }
 
@@ -358,8 +349,7 @@ namespace System.Drawing
                 }
 
                 // font family not found in private fonts also
-                if (fontFamily == null)
-                    fontFamily = FontFamily.GenericSansSerif;
+                fontFamily ??= FontFamily.GenericSansSerif;
             }
 
             return new Font(fontFamily, size, style, unit, charSet, vertical);

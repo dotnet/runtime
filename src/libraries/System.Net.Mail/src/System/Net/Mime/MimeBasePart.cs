@@ -36,15 +36,13 @@ namespace System.Net.Mime
 
             encoding ??= Encoding.GetEncoding(DefaultCharSet);
 
-            EncodedStreamFactory factory = new EncodedStreamFactory();
-            IEncodableStream stream = factory.GetEncoderForHeader(encoding, base64Encoding, headerLength);
+            IEncodableStream stream = EncodedStreamFactory.GetEncoderForHeader(encoding, base64Encoding, headerLength);
 
             stream.EncodeString(value, encoding);
             return stream.GetEncodedString();
         }
 
         private static readonly char[] s_headerValueSplitChars = new char[] { '\r', '\n', ' ' };
-        private static readonly char[] s_questionMarkSplitChars = new char[] { '?' };
 
         internal static string DecodeHeaderValue(string? value)
         {
@@ -66,7 +64,7 @@ namespace System.Net.Mime
                 //the third is the unicode encoding type, and the fourth is encoded message itself.  '?' is not valid inside of
                 //an encoded string other than as a separator for these five parts.
                 //If this check fails, the string is either not encoded or cannot be decoded by this method
-                string[] subStrings = foldedSubString.Split(s_questionMarkSplitChars);
+                string[] subStrings = foldedSubString.Split('?');
                 if ((subStrings.Length != 5 || subStrings[0] != "=" || subStrings[4] != "="))
                 {
                     return value;
@@ -77,8 +75,7 @@ namespace System.Net.Mime
                 byte[] buffer = Encoding.ASCII.GetBytes(subStrings[3]);
                 int newLength;
 
-                EncodedStreamFactory encoderFactory = new EncodedStreamFactory();
-                IEncodableStream s = encoderFactory.GetEncoderForHeader(Encoding.GetEncoding(charSet), base64Encoding, 0);
+                IEncodableStream s = EncodedStreamFactory.GetEncoderForHeader(Encoding.GetEncoding(charSet), base64Encoding, 0);
 
                 newLength = s.DecodeBytes(buffer, 0, buffer.Length);
 
@@ -111,10 +108,7 @@ namespace System.Net.Mime
 
         internal static bool IsAscii(string value, bool permitCROrLF)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             foreach (char c in value)
             {
@@ -167,21 +161,12 @@ namespace System.Net.Mime
             get
             {
                 //persist existing info before returning
-                if (_headers == null)
-                {
-                    _headers = new HeaderCollection();
-                }
+                _headers ??= new HeaderCollection();
 
-                if (_contentType == null)
-                {
-                    _contentType = new ContentType();
-                }
+                _contentType ??= new ContentType();
                 _contentType.PersistIfNeeded(_headers, false);
 
-                if (_contentDisposition != null)
-                {
-                    _contentDisposition.PersistIfNeeded(_headers, false);
-                }
+                _contentDisposition?.PersistIfNeeded(_headers, false);
 
                 return _headers;
             }
@@ -192,10 +177,7 @@ namespace System.Net.Mime
             get { return _contentType ??= new ContentType(); }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _contentType = value;
                 _contentType.PersistIfNeeded((HeaderCollection)Headers, true);
@@ -227,10 +209,7 @@ namespace System.Net.Mime
 
         internal void EndSend(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             LazyAsyncResult? castedAsyncResult = asyncResult as MimePartAsyncResult;
 

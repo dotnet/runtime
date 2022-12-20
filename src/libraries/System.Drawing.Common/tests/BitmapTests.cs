@@ -45,18 +45,6 @@ namespace System.Drawing.Tests
             yield return new object[] { "16x16_nonindexed_24bit.png", 16, 16, PixelFormat.Format24bppRgb, ImageFormat.Png };
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void UnixSupportDisabledThrows()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                AppContext.SetSwitch("System.Drawing.EnableUnixSupport", false);
-                TypeInitializationException exception = Assert.Throws<TypeInitializationException>(() => new Bitmap(100, 100));
-                Assert.IsType<PlatformNotSupportedException>(exception.InnerException);
-            }).Dispose();
-        }
-
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_FilePath_TestData))]
         public void Ctor_FilePath(string filename, int width, int height, PixelFormat pixelFormat, ImageFormat rawFormat)
@@ -201,7 +189,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(10, 10, PixelFormat.Format1bppIndexed)]
         [InlineData(10, 10, PixelFormat.Format8bppIndexed)]
@@ -236,7 +223,6 @@ namespace System.Drawing.Tests
             yield return new object[] { 1, 1, 1, PixelFormat.Format1bppIndexed, IntPtr.Zero };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Width_Height_Stride_PixelFormat_Scan0_TestData))]
         public void Ctor_Width_Height_Stride_PixelFormat_Scan0(int width, int height, int stride, PixelFormat pixelFormat, IntPtr scan0)
@@ -250,7 +236,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1)]
         [InlineData(0)]
@@ -266,7 +251,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Bitmap(width, 1, 0, PixelFormat.Format16bppArgb1555, IntPtr.Zero));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1)]
         [InlineData(0)]
@@ -299,7 +283,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Bitmap(1, 1, 0, format, IntPtr.Zero));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_InvalidScan0_ThrowsArgumentException()
         {
@@ -321,7 +304,6 @@ namespace System.Drawing.Tests
             yield return new object[] { new Bitmap(Helpers.GetTestBitmapPath("16x16_nonindexed_24bit.png")), 32, 48 };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Image_TestData))]
         public void Ctor_Width_Height_Graphics(Bitmap image, int width, int height)
@@ -361,7 +343,6 @@ namespace System.Drawing.Tests
             Assert.Throws<NullReferenceException>(() => new Bitmap((Image)null));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Image_TestData))]
         public void Ctor_Image_Width_Height(Image image, int width, int height)
@@ -375,7 +356,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Image_TestData))]
         public void Ctor_Size(Image image, int width, int height)
@@ -415,7 +395,6 @@ namespace System.Drawing.Tests
             yield return new object[] { new Bitmap(3, 3, PixelFormat.Format64bppPArgb), new Rectangle(1, 1, 1, 1), PixelFormat.Format16bppRgb565 };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Clone_TestData))]
         public void Clone_Rectangle_ReturnsExpected(Bitmap bitmap, Rectangle rectangle, PixelFormat targetFormat)
@@ -454,7 +433,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Clone_TestData))]
         public void Clone_RectangleF_ReturnsExpected(Bitmap bitmap, Rectangle rectangle, PixelFormat format)
@@ -476,7 +454,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 1)]
         [InlineData(1, 0)]
@@ -489,7 +466,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 0, 4, 1)]
         [InlineData(0, 0, 1, 4)]
@@ -506,7 +482,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(PixelFormat.Max)]
         [InlineData(PixelFormat.Indexed)]
@@ -525,7 +500,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_GrayscaleFormat_ThrowsOutOfMemoryException()
         {
@@ -559,7 +533,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Clone(new RectangleF(0, 0, 1, 1), PixelFormat.Format32bppArgb));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetFrameCount_NewBitmap_ReturnsZero()
         {
@@ -581,7 +554,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetFrameCount(FrameDimension.Page));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1)]
         [InlineData(0)]
@@ -651,7 +623,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetPixel_GrayScalePixelFormat_ThrowsArgumentException()
         {
@@ -677,7 +648,6 @@ namespace System.Drawing.Tests
             yield return new object[] { new Bitmap(512, 512, PixelFormat.Format16bppRgb555), 512, 512 };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(GetHbitmap_TestData))]
         public void GetHbitmap_FromHbitmap_ReturnsExpected(Bitmap bitmap, int width, int height)
@@ -719,7 +689,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(1, 1)]
         [InlineData(short.MaxValue, 1)]
@@ -741,7 +710,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetHbitmap());
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHbitmap_InvalidHandle_ThrowsExternalException()
         {
@@ -785,7 +753,6 @@ namespace System.Drawing.Tests
             yield return new object[] { new Bitmap(512, 512, PixelFormat.Format16bppRgb555).GetHicon(), 512, 512 };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(FromHicon_TestData))]
         public Bitmap GetHicon_FromHicon_ReturnsExpected(IntPtr handle, int width, int height)
@@ -803,7 +770,6 @@ namespace System.Drawing.Tests
             return result;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHicon_Grayscale_ThrowsArgumentException()
         {
@@ -823,8 +789,8 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In .NET Framework we use GDI 1.0")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69471")]
         public void SaveWmfAsPngDoesntChangeImageBoundaries()
         {
             if (PlatformDetection.IsWindows7)
@@ -857,7 +823,6 @@ namespace System.Drawing.Tests
         }
 
         // This test causes an AV on Linux
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHicon_InvalidHandle_ThrowsArgumentException()
         {
@@ -865,7 +830,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Bitmap.FromHicon((IntPtr)10));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHicon_1bppIcon_ThrowsArgumentException()
         {
@@ -875,7 +839,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromResource_InvalidHandle_ThrowsArgumentException()
         {
@@ -883,7 +846,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Bitmap.FromResource((IntPtr)10, "Name"));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromResource_InvalidBitmapName_ThrowsArgumentException()
         {
@@ -891,7 +853,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Bitmap.FromResource((IntPtr)10, "Name"));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MakeTransparent_NoColorWithMatches_SetsMatchingPixelsToTransparent()
         {
@@ -930,7 +891,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MakeTransparent_CustomColorExists_SetsMatchingPixelsToTransparent()
         {
@@ -1003,7 +963,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.MakeTransparent(Color.Red));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22629", TargetFrameworkMonikers.NetFramework)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26247", TestPlatforms.Windows)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -1073,7 +1032,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetPixel_GrayScalePixelFormat_ThrowsArgumentException()
         {
@@ -1117,7 +1075,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1)]
         [InlineData(0)]
@@ -1138,25 +1095,6 @@ namespace System.Drawing.Tests
             bitmap.Dispose();
 
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.SetResolution(1, 1));
-        }
-
-        public static IEnumerable<object[]> LockBits_NotUnix_TestData()
-        {
-            Bitmap bitmap() => new Bitmap(2, 2, PixelFormat.Format32bppArgb);
-            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb, 8, 1 };
-            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb, 8, 3 };
-            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb, 8, 2 };
-
-            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadOnly - 1, PixelFormat.Format32bppArgb, 8, 0 };
-
-            yield return new object[] { bitmap(), new Rectangle(0, 0, 2, 2), ImageLockMode.WriteOnly, PixelFormat.Format16bppGrayScale, 4, 65538 };
-
-            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format32bppRgb), new Rectangle(0, 0, 100, 100), ImageLockMode.ReadOnly, PixelFormat.Format8bppIndexed, 100, 65537 };
-            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format32bppRgb), new Rectangle(0, 0, 100, 100), ImageLockMode.ReadWrite, PixelFormat.Format8bppIndexed, 100, 65539 };
-            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format32bppRgb), new Rectangle(0, 0, 100, 100), ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed, 100, 65538 };
-
-            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format8bppIndexed), new Rectangle(0, 0, 100, 100), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb, 300, 65539 };
-            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format8bppIndexed), new Rectangle(0, 0, 100, 100), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb, 300, 65538 };
         }
 
         public static IEnumerable<object[]> LockBits_TestData()
@@ -1192,26 +1130,27 @@ namespace System.Drawing.Tests
             yield return new object[] { new Bitmap(184, 184, PixelFormat.Format1bppIndexed), new Rectangle(0, 0, 184, 184), ImageLockMode.ReadOnly, PixelFormat.Format1bppIndexed, 24, 1 };
             yield return new object[] { new Bitmap(184, 184, PixelFormat.Format1bppIndexed), new Rectangle(0, 0, 184, 184), ImageLockMode.ReadWrite, PixelFormat.Format1bppIndexed, 24, 3 };
             yield return new object[] { new Bitmap(184, 184, PixelFormat.Format1bppIndexed), new Rectangle(0, 0, 184, 184), ImageLockMode.WriteOnly, PixelFormat.Format1bppIndexed, 24, 2 };
+
+            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb, 8, 1 };
+            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb, 8, 3 };
+            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb, 8, 2 };
+
+            yield return new object[] { bitmap(), new Rectangle(1, 1, 1, 1), ImageLockMode.ReadOnly - 1, PixelFormat.Format32bppArgb, 8, 0 };
+
+            yield return new object[] { bitmap(), new Rectangle(0, 0, 2, 2), ImageLockMode.WriteOnly, PixelFormat.Format16bppGrayScale, 4, 65538 };
+
+            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format32bppRgb), new Rectangle(0, 0, 100, 100), ImageLockMode.ReadOnly, PixelFormat.Format8bppIndexed, 100, 65537 };
+            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format32bppRgb), new Rectangle(0, 0, 100, 100), ImageLockMode.ReadWrite, PixelFormat.Format8bppIndexed, 100, 65539 };
+            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format32bppRgb), new Rectangle(0, 0, 100, 100), ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed, 100, 65538 };
+
+            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format8bppIndexed), new Rectangle(0, 0, 100, 100), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb, 300, 65539 };
+            yield return new object[] { new Bitmap(100, 100, PixelFormat.Format8bppIndexed), new Rectangle(0, 0, 100, 100), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb, 300, 65538 };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28859")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/30565", TestPlatforms.Windows)]
         [MemberData(nameof(LockBits_TestData))]
         public void LockBits_Invoke_Success(Bitmap bitmap, Rectangle rectangle, ImageLockMode lockMode, PixelFormat pixelFormat, int expectedStride, int expectedReserved)
-        {
-            Do_LockBits_Invoke_Success(bitmap, rectangle, lockMode, pixelFormat, expectedStride, expectedReserved);
-        }
-
-        // This test causes an AV on Unix
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30565", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [MemberData(nameof(LockBits_NotUnix_TestData))]
-        public void LockBits_Invoke_Success_NotUnix(Bitmap bitmap, Rectangle rectangle, ImageLockMode lockMode, PixelFormat pixelFormat, int expectedStride, int expectedReserved)
-        {
-            Do_LockBits_Invoke_Success(bitmap, rectangle, lockMode, pixelFormat, expectedStride, expectedReserved);
-        }
-
-        private void Do_LockBits_Invoke_Success(Bitmap bitmap, Rectangle rectangle, ImageLockMode lockMode, PixelFormat pixelFormat, int expectedStride, int expectedReserved)
         {
             try
             {
@@ -1224,7 +1163,6 @@ namespace System.Drawing.Tests
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // "Reserved" is documented as "Reserved. Do not use.", so it's not clear whether we actually need to test this in any unit tests.
-                    // Additionally, the values are not consistent across Windows (GDI+) and Unix (libgdiplus)
                     Assert.Equal(expectedReserved, data.Reserved);
                 }
 
@@ -1301,7 +1239,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void LockBits_ReadOnlyGrayscale_ThrowsArgumentException()
         {
@@ -1318,7 +1255,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData((ImageLockMode)(-1))]
         [InlineData(ImageLockMode.UserInputBuffer + 1)]
@@ -1362,7 +1298,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, -1)]
         [InlineData(0, 2)]
@@ -1455,7 +1390,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.Size);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(PixelFormat.Format16bppArgb1555)]
         [InlineData(PixelFormat.Format16bppRgb555)]
@@ -1624,7 +1558,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Palette_SetNull_ThrowsNullReferenceException()
         {

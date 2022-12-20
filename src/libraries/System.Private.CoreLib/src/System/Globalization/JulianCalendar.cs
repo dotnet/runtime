@@ -54,7 +54,7 @@ namespace System.Globalization
         public JulianCalendar()
         {
             // There is no system setting of TwoDigitYear max, so set the value here.
-            _twoDigitYearMax = 2029;
+            _twoDigitYearMax = 2049;
         }
 
         internal override CalendarId ID => CalendarId.JULIAN;
@@ -123,7 +123,7 @@ namespace System.Globalization
         /// </summary>
         internal static int GetDatePart(long ticks, int part)
         {
-            // Gregorian 1/1/0001 is Julian 1/3/0001. Remember DateTime(0) is refered to Gregorian 1/1/0001.
+            // Gregorian 1/1/0001 is Julian 1/3/0001. Remember DateTime(0) is referred to Gregorian 1/1/0001.
             // The following line convert Gregorian ticks to Julian ticks.
             long julianTicks = ticks + TicksPerDay * 2;
             // n = number of days since 1/1/0001
@@ -349,10 +349,7 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
             if (year > MaxYear)
             {
                 throw new ArgumentOutOfRangeException(

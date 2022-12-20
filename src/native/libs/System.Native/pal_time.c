@@ -18,9 +18,10 @@
 
 enum
 {
-    SecondsToMicroSeconds = 1000000,   // 10^6
-    SecondsToNanoSeconds = 1000000000, // 10^9
-    MicroSecondsToNanoSeconds = 1000   // 10^3
+    MicroSecondsToNanoSeconds = 1000,   // 10^3
+    SecondsToNanoSeconds = 1000000000,  // 10^9
+    SecondsToTicks = 10000000,          // 10^7
+    TicksToNanoSeconds = 100,           // 10^2
 };
 
 int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
@@ -53,7 +54,34 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
     return result;
 }
 
-uint64_t SystemNative_GetTimestamp()
+int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
+{
+    int32_t result;
+
+#if HAVE_FUTIMENS
+    struct timespec updatedTimes[2];
+    updatedTimes[0].tv_sec = (time_t)times[0].tv_sec;
+    updatedTimes[0].tv_nsec = (long)times[0].tv_nsec;
+    updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
+    updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;
+
+    while (CheckInterrupted(result = futimens(ToFileDescriptor(fd), updatedTimes)));
+#else
+    // Fallback on unsupported platforms (e.g. iOS, tvOS, watchOS)
+    // to futimes (lower precision)
+    struct timeval updatedTimes[2];
+    updatedTimes[0].tv_sec = (long)times[0].tv_sec;
+    updatedTimes[0].tv_usec = (int)times[0].tv_nsec / 1000;
+    updatedTimes[1].tv_sec = (long)times[1].tv_sec;
+    updatedTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
+
+    while (CheckInterrupted(result = futimes(ToFileDescriptor(fd), updatedTimes)));
+#endif
+
+    return result;
+}
+
+uint64_t SystemNative_GetTimestamp(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
@@ -68,7 +96,30 @@ uint64_t SystemNative_GetTimestamp()
 #endif
 }
 
-int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
+int64_t SystemNative_GetBootTimeTicks(void)
+{
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+    struct timespec ts;
+
+    int result = clock_gettime(CLOCK_BOOTTIME, &ts);
+    assert(result == 0); // only possible errors are if the given clockId isn't supported or &ts is an invalid address
+    (void)result; // suppress unused parameter warning in release builds
+
+    int64_t sinceBootTicks = ((int64_t)ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
+
+    result = clock_gettime(CLOCK_REALTIME_COARSE, &ts);
+    assert(result == 0);
+
+    int64_t sinceEpochTicks = ((int64_t)ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
+    const int64_t UnixEpochTicks = 621355968000000000;
+
+    return UnixEpochTicks + sinceEpochTicks - sinceBootTicks;
+#else
+    return -1;
+#endif
+}
+
+double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
     uint64_t kernelTime = 0;
     uint64_t userTime = 0;
@@ -82,7 +133,7 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     else
     {
         kernelTime =
-            ((uint64_t)(resUsage.ru_stime.tv_sec) * SecondsToNanoSeconds) + 
+            ((uint64_t)(resUsage.ru_stime.tv_sec) * SecondsToNanoSeconds) +
             ((uint64_t)(resUsage.ru_stime.tv_usec) * MicroSecondsToNanoSeconds);
         userTime =
             ((uint64_t)(resUsage.ru_utime.tv_sec) * SecondsToNanoSeconds) +
@@ -107,10 +158,10 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
         cpuBusyTime = (userTime - lastRecordedUserTime) + (kernelTime - lastRecordedKernelTime);
     }
 
-    int32_t cpuUtilization = 0;
+    double cpuUtilization = 0.0;
     if (cpuTotalTime > 0 && cpuBusyTime > 0)
     {
-        cpuUtilization = (int32_t)(cpuBusyTime * 100 / cpuTotalTime);
+        cpuUtilization = ((double)cpuBusyTime * 100.0 / (double)cpuTotalTime);
     }
 
     previousCpuInfo->lastRecordedCurrentTime = currentTime;

@@ -6,7 +6,6 @@
 .assembly extern System.Runtime.Extensions { }
 .assembly extern System.Console { }
 .assembly RVAOrderingTest { }
-.module RVAOrderingTest.exe
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -15,7 +14,7 @@
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static int32 
-          Main(string[] args) cil managed
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

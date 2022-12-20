@@ -95,7 +95,7 @@ namespace System.IO.Tests
             using (var buffer = new TestSafeBuffer(length))
             {
                 var stream = new UnmanagedMemoryStream(buffer, 0, (long)buffer.ByteLength, FileAccess.Write);
-                Assert.Equal(stream.Length, length);
+                Assert.Equal(length, stream.Length);
 
                 var bytes = ArrayHelpers.CreateByteArray(length);
                 var copy = bytes.Copy();
@@ -103,7 +103,7 @@ namespace System.IO.Tests
 
                 var memory = buffer.ToArray();
 
-                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
+                AssertExtensions.SequenceEqual(bytes, memory);
 
                 stream.Write(new byte[0], 0, 0);
             }
@@ -116,7 +116,7 @@ namespace System.IO.Tests
             using (var buffer = new TestSafeBuffer(length))
             {
                 var stream = new UnmanagedMemoryStream(buffer, 0, (long)buffer.ByteLength, FileAccess.ReadWrite);
-                Assert.Equal(stream.Length, length);
+                Assert.Equal(length, stream.Length);
 
                 var bytes = ArrayHelpers.CreateByteArray(length);
                 for (int index = 0; index < length; index++)
@@ -132,7 +132,7 @@ namespace System.IO.Tests
                 }
 
                 var memory = buffer.ToArray();
-                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
+                AssertExtensions.SequenceEqual(bytes, memory);
             }
         }
     }

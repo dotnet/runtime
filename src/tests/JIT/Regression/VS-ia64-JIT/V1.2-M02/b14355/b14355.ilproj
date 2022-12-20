@@ -8,9 +8,9 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="call01.il" />
+    <Compile Include="$(MSBuildProjectName).il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\jit64\localloc\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

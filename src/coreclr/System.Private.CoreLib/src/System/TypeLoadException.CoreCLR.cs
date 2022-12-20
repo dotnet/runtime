@@ -46,7 +46,7 @@ namespace System
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static partial void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
     }
 }

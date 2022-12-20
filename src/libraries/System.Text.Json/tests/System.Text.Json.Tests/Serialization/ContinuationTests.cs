@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public static void ShouldWorkAtAnyPosition_Sequence(
             string json,
             int bufferSize,
@@ -231,6 +231,31 @@ namespace System.Text.Json.Serialization.Tests
             });
             Assert.Equal(expectedFailure.Line, ex.LineNumber);
             Assert.Equal(expectedFailure.Column, ex.BytePositionInLine);
+        }
+
+        [Fact]
+        public static async Task BomHandlingRegressionTest()
+        {
+            byte[] utf8Bom = Encoding.UTF8.GetPreamble();
+            byte[] json = """{ "Value" :                    "Hello" }"""u8.ToArray();
+
+            using var stream = new MemoryStream();
+            stream.Write(utf8Bom, 0, utf8Bom.Length);
+            stream.Write(json, 0, json.Length);
+            stream.Position = 0;
+
+            var options = new JsonSerializerOptions
+            {
+                DefaultBufferSize = 32
+            };
+
+            Test result = await JsonSerializer.DeserializeAsync<Test>(stream, options);
+            Assert.Equal("Hello", result.Value);
+        }
+
+        private class Test
+        {
+            public string Value { get; set; }
         }
 
         private class Chunk : ReadOnlySequenceSegment<byte>
@@ -390,7 +415,7 @@ namespace System.Text.Json.Serialization.Tests
             void ITestObject.Initialize(INestedObject nested)
             {
                 nested.Initialize();
-                A = new() { { "a", (TNested)nested }, { "b", (TNested)nested } };
+                A = new Dictionary<string, TNested>() { { "a", (TNested)nested }, { "b", (TNested)nested } };
             }
 
             void ITestObject.Verify()

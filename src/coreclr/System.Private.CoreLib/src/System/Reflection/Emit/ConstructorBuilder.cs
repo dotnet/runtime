@@ -23,7 +23,7 @@ namespace System.Reflection.Emit
 
             m_methodBuilder.GetMethodSignature().InternalGetSignature(out _);
 
-            int dummy = m_methodBuilder.MetadataToken;
+            _ = m_methodBuilder.MetadataToken; // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
         }
 
         internal ConstructorBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,

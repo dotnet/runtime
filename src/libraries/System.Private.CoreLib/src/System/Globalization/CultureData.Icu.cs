@@ -50,7 +50,11 @@ namespace System.Globalization
             index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
             if (index >= 0)
             {
-                _sName = string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
+                // Use original culture name if alternateSortName is not set, which is possible even if the normalized
+                // culture name has "@collation=".
+                // "zh-TW-u-co-zhuyin" is a good example. The term "u-co-" means the following part will be the sort name
+                // and it will be treated in ICU as "zh-TW@collation=zhuyin".
+                _sName = alternateSortName.Length == 0 ? realNameBuffer : string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
             }
             else
             {
@@ -205,7 +209,7 @@ namespace System.Globalization
         }
 
         // no support to lookup by region name, other than the hard-coded list in CultureData
-        private static CultureData? IcuGetCultureDataFromRegionName(string? regionName) => null;
+        private static CultureData? IcuGetCultureDataFromRegionName() => null;
 
         private string IcuGetLanguageDisplayName(string cultureName) => IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
 
@@ -427,7 +431,7 @@ namespace System.Globalization
             {
                 char c = subject[i];
 
-                if ((uint)(c - 'A') <= ('Z' - 'A') || (uint)(c - 'a') <= ('z' - 'a') || (uint)(c - '0') <= ('9' - '0') || c == '\0')
+                if (char.IsAsciiLetterOrDigit(c) || c == '\0')
                 {
                     continue;
                 }

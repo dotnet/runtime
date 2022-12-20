@@ -12,17 +12,7 @@ namespace System.Diagnostics
 
         private ulong _s0, _s1, _s2, _s3;
 
-        public static RandomNumberGenerator Current
-        {
-            get
-            {
-                if (t_random == null)
-                {
-                    t_random = new RandomNumberGenerator();
-                }
-                return t_random;
-            }
-        }
+        public static RandomNumberGenerator Current => t_random ??= new RandomNumberGenerator();
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
@@ -51,7 +41,7 @@ namespace System.Diagnostics
             while ((_s0 | _s1 | _s2 | _s3) == 0);
         }
 
-        private ulong Rol64(ulong x, int k) => (x << k) | (x >> (64 - k));
+        private static ulong Rol64(ulong x, int k) => (x << k) | (x >> (64 - k));
 
         public long Next()
         {

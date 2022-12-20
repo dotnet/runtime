@@ -10,4 +10,7 @@
   <ItemGroup>
     <Compile Include="ICustomMarshaler.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
 </Project>

@@ -12,11 +12,11 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegEnumKeyExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static partial int RegEnumKeyEx(
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "RegEnumKeyExW", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial int RegEnumKeyEx(
             SafeRegistryHandle hKey,
             int dwIndex,
-            [Out] char[] lpName,
+            ref char lpName,
             ref int lpcbName,
             int[]? lpReserved,
             [Out] char[]? lpClass,

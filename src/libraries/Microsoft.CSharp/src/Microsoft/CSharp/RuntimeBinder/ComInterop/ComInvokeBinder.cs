@@ -110,17 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             get { return EnsureVariable(ref _propertyPutDispId, typeof(int), "propertyPutDispId"); }
         }
 
-        private ParameterExpression ParamVariantsVariable
-        {
-            get
-            {
-                if (_paramVariants == null)
-                {
-                    _paramVariants = Expression.Variable(VariantArray.GetStructType(_args.Length), "paramVariants");
-                }
-                return _paramVariants;
-            }
-        }
+        private ParameterExpression ParamVariantsVariable => _paramVariants ??= Expression.Variable(VariantArray.GetStructType(_args.Length), "paramVariants");
 
         private static ParameterExpression EnsureVariable(ref ParameterExpression var, Type type, string name)
         {
@@ -140,10 +130,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             if (isByRef)
             {
                 // Null just means that null was supplied.
-                if (marshalType == null)
-                {
-                    marshalType = mo.Expression.Type;
-                }
+                marshalType ??= mo.Expression.Type;
                 marshalType = marshalType.MakeByRefType();
             }
             return marshalType;

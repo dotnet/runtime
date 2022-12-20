@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     [Serializable]
-    public struct RuntimeFieldHandle : ISerializable
+    public struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         private readonly IntPtr value;
 
@@ -58,6 +58,10 @@ namespace System
             return value.GetHashCode();
         }
 
+        public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeFieldHandle value) => value.Value;
+
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right)
         {
             return left.Equals(right);
@@ -71,7 +75,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SetValueInternal(FieldInfo fi, object? obj, object? value);
 
-        internal static void SetValue(RuntimeFieldInfo field, object? obj, object? value, RuntimeType? fieldType, FieldAttributes fieldAttr, RuntimeType? declaringType, ref bool domainInitialized)
+        internal static void SetValue(RuntimeFieldInfo field, object? obj, object? value, RuntimeType? _, FieldAttributes _1, RuntimeType? _2, ref bool _3)
         {
             SetValueInternal(field, obj, value);
         }

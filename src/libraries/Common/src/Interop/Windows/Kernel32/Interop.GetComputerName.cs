@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Runtime.InteropServices;
 
@@ -9,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "GetComputerNameW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "GetComputerNameW")]
         private static unsafe partial int GetComputerName(char* lpBuffer, uint* nSize);
 
         // maximum length of the NETBIOS name (not including NULL)

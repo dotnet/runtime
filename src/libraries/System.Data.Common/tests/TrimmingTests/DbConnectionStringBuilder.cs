@@ -136,7 +136,7 @@ namespace DbConnectionStringBuilderTrimmingTests
     {
         public string FullName => null;
         public IComponent Component => throw new NotImplementedException();
-        public IContainer Container => throw new NotImplementedException();
+        public IContainer Container => null;
         public bool DesignMode => throw new NotImplementedException();
         public string Name { get => "Test Component Name"; set => throw new NotImplementedException(); }
         public object GetService(Type serviceType) => null;

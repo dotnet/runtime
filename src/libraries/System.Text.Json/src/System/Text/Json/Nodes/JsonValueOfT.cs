@@ -61,7 +61,7 @@ namespace System.Text.Json.Nodes
                 return true;
             }
 
-            if (_value is JsonElement jsonElement)
+            if (_value is JsonElement)
             {
                 return TryConvertJsonElement<T>(out value);
             }

@@ -10,24 +10,38 @@
       <__TestRunHtmlLog Condition="'$(__TestRunHtmlLog)' == ''">$(__LogsDir)\TestRun.html</__TestRunHtmlLog>
       <__TestRunXmlLog Condition="'$(__TestRunXmlLog)' == ''">$(__LogsDir)\TestRun.xml</__TestRunXmlLog>
   </PropertyGroup>
-  <Target Name="FindTestDirectories">
+
+  <Target Name="FindLegacyTestDirectories">
     <ItemGroup>
-      <AllTestAssemblies Include="$(BaseOutputPathWithConfig)\**\*.XUnitWrapper.dll" />
-      <TestAssemblies Include="@(AllTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')" />
+      <LegacyTestAssemblies Include="$(BaseOutputPathWithConfig)\**\*.XUnitWrapper.dll" />
+      <TestAssemblies Include="@(LegacyTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')" />
     </ItemGroup>
 
-    <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir)\*\ before they can be run, Do a clean Test Run"
-            Condition="'@(AllTestAssemblies)' == ''" />
-
-    <Message Text= "AllTestAssemblies= @(AllTestAssemblies)"/>
+    <Message Text= "LegacyTestAssemblies= @(LegacyTestAssemblies)"/>
     <Message Text= "TestAssemblies= @(TestAssemblies)"/>
     <Message Text= "_SkipTestAssemblies= @(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')"/>
   </Target>
 
-  <Target Name="RunTests"
-          DependsOnTargets="FindTestDirectories"
-          Condition="'$(SkipTests)' != 'True'">
+  <Target Name="FindMergedTestDirectories">
+    <ItemGroup>
+      <_MergedTestAssemblyMarkers Include="$(BaseOutputPathWithConfig)\**\*.MergedTestAssembly" />
+      <MergedTestWrapperScripts Include="$([System.IO.Path]::ChangeExtension('%(_MergedTestAssemblyMarkers.Identity)', '.$(TestScriptExtension)'))" />
+      <MergedTestWrapperScripts Update="@(MergedTestWrapperScripts)">
+        <RedirectOutputToFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.log'))</RedirectOutputToFile>
+        <TestResultsXmlFile>$([System.IO.Path]::ChangeExtension('%(MergedTestWrapperScripts.Identity)', '.testResults.xml'))</TestResultsXmlFile>
+        <RelativeResultsPath>$([System.IO.Path]::GetRelativePath('$(TestBinDir)', $([System.IO.Path]::GetDirectoryName('%(MergedTestWrapperScripts.Identity)'))))</RelativeResultsPath>
+      </MergedTestWrapperScripts>
+      <MergedTestWrapperScripts Update="@(MergedTestWrapperScripts)">
+        <TestResultsCopyTo>$(__LogsDir)\$([MSBuild]::ValueOrDefault('%(MergedTestWrapperScripts.RelativeResultsPath)', '').Replace('/', '.').Replace('\', '.')).testRun.xml</TestResultsCopyTo>
+      </MergedTestWrapperScripts>
+    </ItemGroup>
+  </Target>
 
+  <Target Name="PrepareTestsToRun"
+          DependsOnTargets="FindLegacyTestDirectories;FindMergedTestDirectories">
+
+    <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir)\*\ before they can be run, Do a clean Test Run"
+            Condition="'@(LegacyTestAssemblies)' == '' and '@(MergedTestWrapperScripts)' == ''" />
 
     <PropertyGroup>
       <ExcludeTraits Condition="'$(ExcludeTraits)'==''">category=outerloop;category=failing</ExcludeTraits>
@@ -52,10 +66,6 @@
 
       <!-- Color output doesn't work well when capturing the output in the CI system -->
       <XunitArgs>$(XunitArgs) -nocolor</XunitArgs>
-
-      <CorerunExecutable Condition="'$(RunningOnUnix)' == 'true'"  >$(CORE_ROOT)\corerun</CorerunExecutable>
-      <CorerunExecutable Condition="'$(RunningOnUnix)' != 'true'">$(CORE_ROOT)\corerun.exe</CorerunExecutable>
-      <CorerunExecutable Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator'"> $(DotnetRoot)/dotnet</CorerunExecutable>
     </PropertyGroup>
 
     <!-- Work around cmd command length limit by using relative paths
@@ -66,14 +76,41 @@
       <TestAssemblies Remove="@(TestAssemblies)" />
       <TestAssemblies Include="@(_TestAssembliesRelative)" />
     </ItemGroup>
+  </Target>
 
+  <Target Name="RunSingleMergedTest">
+    <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(TargetOS)' != 'windows'" />
+    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile)" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
+    </Exec>
+    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="'$(MergedTestExitCode)' == '0'" />
+    <Message Importance="High" Text="Error running test group '$(TestWrapperScript)' - exit code $(MergedTestExitCode)" Condition="'$(MergedTestExitCode)' != '0'" />
+  </Target>
+
+  <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">
+    <ItemGroup>
+      <_ProjectsToBuild Include="$(MSBuildThisFileFullPath)">
+        <AdditionalProperties>TestWrapperScript=%(MergedTestWrapperScripts.Identity);RedirectOutputToFile=%(MergedTestWrapperScripts.RedirectOutputToFile);TestResultsXmlFile=%(MergedTestWrapperScripts.TestResultsXmlFile);TestResultsCopyTo=%(MergedTestWrapperScripts.TestResultsCopyTo)</AdditionalProperties>
+      </_ProjectsToBuild>
+    </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="RunSingleMergedTest" BuildInParallel="true" Condition="'@(MergedTestWrapperScripts)' != ''" />
+  </Target>
+
+  <Target Name="RunLegacyTests" DependsOnTargets="PrepareTestsToRun">
+      <!-- Run xunit with dotnet.
+           We set roll-forward LatestMajor so that dotnet doesn't choose some old runtime that comes from
+           the era when xunit.console.dll was built. -->
     <PropertyGroup>
-      <XunitCommandLine>$(CorerunExecutable) $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
+      <XunitCommandLine>$(DotNetCli) --roll-forward latestmajor $(XunitConsoleRunner) @(TestAssemblies->'%(Identity)', ' ') $(XunitArgs)</XunitCommandLine>
     </PropertyGroup>
 
     <Exec Command="$(XunitCommandLine)"
-          WorkingDirectory="$(BaseOutputPathWithConfig)"/>
-
+          WorkingDirectory="$(BaseOutputPathWithConfig)"
+          Condition="'@(TestAssemblies)' != ''" />
   </Target>
 
+  <Target Name="RunTests" DependsOnTargets="RunMergedTests;RunLegacyTests" Condition="'$(SkipTests)' != 'True'">
+    <!-- TODO - merged reporting? -->
+  </Target>
 </Project>

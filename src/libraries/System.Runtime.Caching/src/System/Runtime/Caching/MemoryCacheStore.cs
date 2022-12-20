@@ -26,7 +26,7 @@ namespace System.Runtime.Caching
         private volatile bool _useInsertBlock;
         private readonly MemoryCache _cache;
         private readonly Counters _perfCounters;
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _countersSupported => !OperatingSystem.IsBrowser();
 #else
@@ -211,10 +211,7 @@ namespace System.Runtime.Caching
 
             // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
-            if (toBeReleasedEntry != null)
-            {
-                toBeReleasedEntry.Release(_cache, CacheEntryRemovedReason.Expired);
-            }
+            toBeReleasedEntry?.Release(_cache, CacheEntryRemovedReason.Expired);
             return existingEntry;
         }
 
@@ -370,10 +367,7 @@ namespace System.Runtime.Caching
 
             // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
-            if (existingEntry != null)
-            {
-                existingEntry.Release(_cache, reason);
-            }
+            existingEntry?.Release(_cache, reason);
         }
 
         internal long TrimInternal(int percent)

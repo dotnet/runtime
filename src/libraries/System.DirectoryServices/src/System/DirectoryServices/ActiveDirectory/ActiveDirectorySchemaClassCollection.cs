@@ -79,10 +79,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int Add(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
-            {
-                throw new ArgumentNullException(nameof(schemaClass));
-            }
+            ArgumentNullException.ThrowIfNull(schemaClass);
 
             if (!schemaClass.isBound)
             {
@@ -101,10 +98,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySchemaClass[] schemaClasses)
         {
-            if (schemaClasses == null)
-            {
-                throw new ArgumentNullException(nameof(schemaClasses));
-            }
+            ArgumentNullException.ThrowIfNull(schemaClasses);
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
@@ -122,10 +116,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySchemaClassCollection schemaClasses)
         {
-            if (schemaClasses == null)
-            {
-                throw new ArgumentNullException(nameof(schemaClasses));
-            }
+            ArgumentNullException.ThrowIfNull(schemaClasses);
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
@@ -144,10 +135,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ReadOnlyActiveDirectorySchemaClassCollection schemaClasses)
         {
-            if (schemaClasses == null)
-            {
-                throw new ArgumentNullException(nameof(schemaClasses));
-            }
+            ArgumentNullException.ThrowIfNull(schemaClasses);
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
@@ -166,10 +154,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Remove(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
-            {
-                throw new ArgumentNullException(nameof(schemaClass));
-            }
+            ArgumentNullException.ThrowIfNull(schemaClass);
 
             if (!schemaClass.isBound)
             {
@@ -190,10 +175,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Insert(int index, ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
-            {
-                throw new ArgumentNullException(nameof(schemaClass));
-            }
+            ArgumentNullException.ThrowIfNull(schemaClass);
 
             if (!schemaClass.isBound)
             {
@@ -212,10 +194,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
-            {
-                throw new ArgumentNullException(nameof(schemaClass));
-            }
+            ArgumentNullException.ThrowIfNull(schemaClass);
 
             if (!schemaClass.isBound)
             {
@@ -241,10 +220,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
-            {
-                throw new ArgumentNullException(nameof(schemaClass));
-            }
+            ArgumentNullException.ThrowIfNull(schemaClass);
 
             if (!schemaClass.isBound)
             {
@@ -267,10 +243,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 try
                 {
@@ -286,16 +259,13 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnInsertComplete(int index, object value)
 #pragma warning restore CS8765
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 try
                 {
@@ -308,16 +278,13 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnRemoveComplete(int index, object value)
 #pragma warning restore CS8765
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 // because this collection can contain values from the superior classes,
                 // these values would not exist in the classEntry
@@ -343,7 +310,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnSetComplete(int index, object oldValue, object newValue)
 #pragma warning restore CS8765
         {
@@ -358,10 +325,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         protected override void OnValidate(object value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!(value is ActiveDirectorySchemaClass))
             {

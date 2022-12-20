@@ -23,6 +23,19 @@ steps:
     - script: make run MONO_ARCH=arm64 DEPLOY_AND_RUN=false
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
       displayName: Build HelloAndroid sample app
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/publish/apk/bin/HelloAndroid.apk
+        includeRootFolder: true
+        displayName: Android Mono Artifacts
+        artifactName: AndroidMonoarm64
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+    - script: rm -r -f $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp
+      workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
+      displayName: clean bindir
+    
   - ${{ if eq(parameters.osGroup, 'iOS') }}:
     - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false
       env:
@@ -37,13 +50,12 @@ steps:
         artifactName:  ${{ parameters.artifactName }}
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
-          includeRootFolder: true
-          displayName: iOS Sample App NoLLVM
-          artifactName: iOSSampleAppNoLLVM
-          archiveExtension: '.tar.gz'
-          archiveType: tar
-          tarCompression: gz
+        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
+        includeRootFolder: true
+        displayName: iOS Sample App NoLLVM
+        artifactName: iOSSampleAppNoLLVM
+        archiveExtension: '.zip'
+        archiveType: zip
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
@@ -60,31 +72,9 @@ steps:
         artifactName:  ${{ parameters.artifactName }}
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
-          includeRootFolder: true
-          displayName: iOS Sample App LLVM
-          artifactName: iOSSampleAppLLVM
-          archiveExtension: '.tar.gz'
-          archiveType: tar
-          tarCompression: gz
-
-  - template: /eng/pipelines/common/upload-artifact-step.yml
-    parameters:
-      osGroup: ${{ parameters.osGroup }}
-      osSubgroup: ${{ parameters.osSubgroup }}
-      archType: ${{ parameters.archType }}
-      buildConfig: ${{ parameters.buildConfig }}
-      runtimeFlavor: ${{ parameters.runtimeFlavor }}
-      helixQueues: ${{ parameters.helixQueues }}
-      targetRid: ${{ parameters.targetRid }}
-      nameSuffix: ${{ parameters.nameSuffix }}
-      platform: ${{ parameters.platform }}
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      rootFolder:  ${{ parameters.rootFolder }}
-      includeRootFolder:  ${{ parameters.includeRootFolder }}
-      displayName:  ${{ parameters.displayName }}
-      artifactName:  ${{ parameters.artifactName }}
-      archiveExtension:  ${{ parameters.archiveExtension }}
-      archiveType:  ${{ parameters.archiveType }}
-      tarCompression:  ${{ parameters.tarCompression }}
-  
+        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
+        includeRootFolder: true
+        displayName: iOS Sample App LLVM
+        artifactName: iOSSampleAppLLVM
+        archiveExtension: '.zip'
+        archiveType: zip

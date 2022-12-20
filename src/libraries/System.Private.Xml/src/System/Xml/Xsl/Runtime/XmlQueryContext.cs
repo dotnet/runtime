@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,11 +13,10 @@ using System.Xml.XPath;
 using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using System.Xml.Xsl.Xslt;
+using System.Reflection;
 
 namespace System.Xml.Xsl.Runtime
 {
-    using Reflection;
-
     /// <summary>
     /// The context of a query consists of all user-provided information which influences the operation of the
     /// query. The context manages the following information:
@@ -31,18 +29,18 @@ namespace System.Xml.Xsl.Runtime
     public sealed class XmlQueryContext
     {
         private readonly XmlQueryRuntime _runtime;
-        private readonly XPathNavigator _defaultDataSource;
+        private readonly XPathNavigator? _defaultDataSource;
         private readonly XmlResolver _dataSources;
         private readonly Hashtable _dataSourceCache;
-        private readonly XsltArgumentList _argList;
-        private XmlExtensionFunctionTable _extFuncsLate;
-        private readonly WhitespaceRuleLookup _wsRules;
+        private readonly XsltArgumentList? _argList;
+        private XmlExtensionFunctionTable? _extFuncsLate;
+        private readonly WhitespaceRuleLookup? _wsRules;
         private readonly QueryReaderSettings _readerSettings; // If we create reader out of stream we will use these settings
 
         /// <summary>
         /// This constructor is internal so that external users cannot construct it (and therefore we do not have to test it separately).
         /// </summary>
-        internal XmlQueryContext(XmlQueryRuntime runtime, object defaultDataSource, XmlResolver dataSources, XsltArgumentList argList, WhitespaceRuleLookup wsRules)
+        internal XmlQueryContext(XmlQueryRuntime runtime, object defaultDataSource, XmlResolver dataSources, XsltArgumentList? argList, WhitespaceRuleLookup? wsRules)
         {
             _runtime = runtime;
             _dataSources = dataSources;
@@ -61,13 +59,13 @@ namespace System.Xml.Xsl.Runtime
                 _readerSettings = new QueryReaderSettings(new NameTable());
             }
 
-            if (defaultDataSource is string)
+            if (defaultDataSource is string s)
             {
                 // Load the default document from a Uri
-                _defaultDataSource = GetDataSource(defaultDataSource as string, null);
+                _defaultDataSource = GetDataSource(s, null);
 
                 if (_defaultDataSource == null)
-                    throw new XslTransformException(SR.XmlIl_UnknownDocument, defaultDataSource as string);
+                    throw new XslTransformException(SR.XmlIl_UnknownDocument, s);
             }
             else if (defaultDataSource != null)
             {
@@ -92,9 +90,9 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Returns the name table used by the default data source, or null if there is no default data source.
         /// </summary>
-        public XmlNameTable DefaultNameTable
+        public XmlNameTable? DefaultNameTable
         {
-            get { return _defaultDataSource != null ? _defaultDataSource.NameTable : null; }
+            get { return _defaultDataSource?.NameTable; }
         }
 
         /// <summary>
@@ -117,11 +115,11 @@ namespace System.Xml.Xsl.Runtime
         /// If the resolver returns a stream or reader, create an instance of XPathDocument.  If the resolver returns an
         /// XPathNavigator, return the navigator.  Throw an exception if no data source was found.
         /// </summary>
-        public XPathNavigator GetDataSource(string uriRelative, string uriBase)
+        public XPathNavigator? GetDataSource(string uriRelative, string? uriBase)
         {
-            object input;
-            Uri uriResolvedBase, uriResolved;
-            XPathNavigator nav = null;
+            object? input;
+            Uri? uriResolvedBase, uriResolved;
+            XPathNavigator? nav = null;
 
             try
             {
@@ -134,13 +132,13 @@ namespace System.Xml.Xsl.Runtime
                 if (nav == null)
                 {
                     // Get the entity from the resolver and ensure it is cached as a document
-                    input = _dataSources.GetEntity(uriResolved, null, null);
+                    input = _dataSources.GetEntity(uriResolved!, null, null);
 
                     if (input != null)
                     {
                         // Construct a document from the entity and add the document to the cache
                         nav = ConstructDocument(input, uriRelative, uriResolved);
-                        _dataSourceCache.Add(uriResolved, nav);
+                        _dataSourceCache.Add(uriResolved!, nav);
                     }
                 }
             }
@@ -164,14 +162,14 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Ensure that "dataSource" is cached as an XPathDocument and return a navigator over the document.
         /// </summary>
-        private XPathNavigator ConstructDocument(object dataSource, string uriRelative, Uri uriResolved)
+        private XPathNavigator? ConstructDocument(object dataSource, string? uriRelative, Uri? uriResolved)
         {
             Debug.Assert(dataSource != null, "GetType() below assumes dataSource is not null");
-            Stream stream = dataSource as Stream;
+            Stream? stream = dataSource as Stream;
             if (stream != null)
             {
                 // Create document from stream
-                XmlReader reader = _readerSettings.CreateReader(stream, uriResolved != null ? uriResolved.ToString() : null);
+                XmlReader reader = _readerSettings.CreateReader(stream, uriResolved?.ToString());
 
                 try
                 {
@@ -184,18 +182,18 @@ namespace System.Xml.Xsl.Runtime
                     reader.Close();
                 }
             }
-            else if (dataSource is XmlReader)
+            else if (dataSource is XmlReader reader)
             {
                 // Create document from reader
                 // Create WhitespaceRuleReader if whitespace should be stripped
-                return new XPathDocument(WhitespaceRuleReader.CreateReader(dataSource as XmlReader, _wsRules), XmlSpace.Preserve).CreateNavigator();
+                return new XPathDocument(WhitespaceRuleReader.CreateReader(reader, _wsRules), XmlSpace.Preserve).CreateNavigator();
             }
-            else if (dataSource is IXPathNavigable)
+            else if (dataSource is IXPathNavigable xPathNavigable)
             {
                 if (_wsRules != null)
                     throw new XslTransformException(SR.XmlIl_CantStripNav, string.Empty);
 
-                return (dataSource as IXPathNavigable).CreateNavigator();
+                return xPathNavigable.CreateNavigator();
             }
 
             Debug.Assert(uriRelative != null, "Relative URI should not be null");
@@ -211,9 +209,9 @@ namespace System.Xml.Xsl.Runtime
         /// Get a named parameter from the external argument list.  Return null if no argument list was provided, or if
         /// there is no parameter by that name.
         /// </summary>
-        public object GetParameter(string localName, string namespaceUri)
+        public object? GetParameter(string localName, string namespaceUri)
         {
-            return (_argList != null) ? _argList.GetParam(localName, namespaceUri) : null;
+            return _argList?.GetParam(localName, namespaceUri);
         }
 
 
@@ -226,9 +224,9 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = XsltArgumentList.ExtensionObjectSuppresion)]
-        public object GetLateBoundObject(string namespaceUri)
+        public object? GetLateBoundObject(string namespaceUri)
         {
-            return (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
+            return _argList?.GetExtensionObject(namespaceUri);
         }
 
         /// <summary>
@@ -237,7 +235,7 @@ namespace System.Xml.Xsl.Runtime
         [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public bool LateBoundFunctionExists(string name, string namespaceUri)
         {
-            object instance;
+            object? instance;
 
             if (_argList == null)
                 return false;
@@ -256,20 +254,19 @@ namespace System.Xml.Xsl.Runtime
         [RequiresUnreferencedCode(Scripts.ExtensionFunctionCannotBeStaticallyAnalyzed)]
         public IList<XPathItem> InvokeXsltLateBoundFunction(string name, string namespaceUri, IList<XPathItem>[] args)
         {
-            object instance;
+            object? instance;
             object[] objActualArgs;
             XmlQueryType xmlTypeFormalArg;
             Type clrTypeFormalArg;
-            object objRet;
+            object? objRet;
 
             // Get external object instance from argument list (throw if either the list or the instance doesn't exist)
-            instance = (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
+            instance = _argList?.GetExtensionObject(namespaceUri);
             if (instance == null)
                 throw new XslTransformException(SR.XmlIl_UnknownExtObj, namespaceUri);
 
             // Bind to a method on the instance object
-            if (_extFuncsLate == null)
-                _extFuncsLate = new XmlExtensionFunctionTable();
+            _extFuncsLate ??= new XmlExtensionFunctionTable();
 
             // Bind to the instance, looking for a matching method (throws if no matching method)
             XmlExtensionFunction extFunc = _extFuncsLate.Bind(name, namespaceUri, args.Length, instance.GetType(), XmlQueryRuntime.LateBoundFlags);
@@ -308,7 +305,7 @@ namespace System.Xml.Xsl.Runtime
                 // 4. Change the Clr representation to the Clr type of the formal argument
                 clrTypeFormalArg = extFunc.GetClrArgumentType(i);
                 if (xmlTypeFormalArg.TypeCode == XmlTypeCode.Item || !clrTypeFormalArg.IsAssignableFrom(objActualArgs[i].GetType()))
-                    objActualArgs[i] = _runtime.ChangeTypeXsltArgument(xmlTypeFormalArg, objActualArgs[i], clrTypeFormalArg);
+                    objActualArgs[i] = XmlQueryRuntime.ChangeTypeXsltArgument(xmlTypeFormalArg, objActualArgs[i], clrTypeFormalArg);
             }
 
             // 1. Invoke the late bound method
@@ -331,10 +328,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void OnXsltMessageEncountered(string message)
         {
-            XsltMessageEncounteredEventHandler onMessage = (_argList != null) ? _argList.xsltMessageEncountered : null;
-
-            if (onMessage != null)
-                onMessage(this, new XmlILQueryEventArgs(message));
+            _argList?.xsltMessageEncountered?.Invoke(this, new XmlILQueryEventArgs(message));
         }
     }
 

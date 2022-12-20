@@ -15,7 +15,7 @@ namespace System.IO
     {
         public static bool DirectoryExists(string? fullPath)
         {
-            return DirectoryExists(fullPath, out int lastError);
+            return DirectoryExists(fullPath, out _);
         }
 
         private static bool DirectoryExists(string? path, out int lastError)
@@ -58,7 +58,7 @@ namespace System.IO
             {
                 if (!Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
-                    errorCode = Marshal.GetLastWin32Error();
+                    errorCode = Marshal.GetLastPInvokeError();
 
                     if (!IsPathUnreachableError(errorCode))
                     {
@@ -84,7 +84,7 @@ namespace System.IO
                         {
                             if (handle.IsInvalid)
                             {
-                                errorCode = Marshal.GetLastWin32Error();
+                                errorCode = Marshal.GetLastPInvokeError();
                             }
                             else
                             {

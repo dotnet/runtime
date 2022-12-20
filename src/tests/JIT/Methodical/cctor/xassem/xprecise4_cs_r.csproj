@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
@@ -11,6 +11,6 @@
     <Compile Include="xprecise4.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="testlib.csproj" />
+    <ProjectReference Include="testlib_xassem.csproj" />
   </ItemGroup>
 </Project>

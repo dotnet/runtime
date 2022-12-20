@@ -11,7 +11,7 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class procfs
+    internal static partial class @procfs
     {
         private const string MapsFileName = "/maps";
 
@@ -61,10 +61,8 @@ internal static partial class Interop
                 // Not a continuation, commit any current modules and create a new one.
                 CommitCurrentModule();
 
-                module = new ProcessModule
+                module = new ProcessModule(parsedLine.Path, Path.GetFileName(parsedLine.Path))
                 {
-                    FileName = parsedLine.Path,
-                    ModuleName = Path.GetFileName(parsedLine.Path),
                     ModuleMemorySize = parsedLine.Size,
                     EntryPointAddress = IntPtr.Zero // unknown
                 };
@@ -146,16 +144,8 @@ internal static partial class Interop
 
             static bool HasReadAndExecFlags(string s, ref int start, ref int end)
             {
-                bool sawRead = false, sawExec = false;
-                for (int i = start; i < end; i++)
-                {
-                    if (s[i] == 'r')
-                        sawRead = true;
-                    else if (s[i] == 'x')
-                        sawExec = true;
-                }
-
-                return sawRead & sawExec;
+                ReadOnlySpan<char> span = s.AsSpan(start, end - start);
+                return span.Contains('r') && span.Contains('x');
             }
         }
     }

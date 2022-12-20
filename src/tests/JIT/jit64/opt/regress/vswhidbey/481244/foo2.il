@@ -11,11 +11,10 @@
   .ver 2:0:0:0
 }
 .assembly extern xunit.core {}
-.assembly foo
+.assembly 'foo2'
 {
 }
 
-.module foo.exe
 
 
 

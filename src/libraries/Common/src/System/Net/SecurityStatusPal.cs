@@ -33,6 +33,7 @@ namespace System.Net
         CredentialsNeeded,
         Renegotiate,
         TryAgain,
+        HandshakeStarted,
 
         // Errors
         OutOfMemory,
@@ -70,6 +71,8 @@ namespace System.Net
         BadBinding,
         DowngradeDetected,
         ApplicationProtocolMismatch,
-        NoRenegotiation
+        NoRenegotiation,
+        KeySetDoesNotExist,
+        ContextExpiredError
     }
 }

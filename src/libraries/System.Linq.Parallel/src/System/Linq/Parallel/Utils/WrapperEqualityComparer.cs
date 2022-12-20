@@ -21,17 +21,8 @@ namespace System.Linq.Parallel
     {
         private readonly IEqualityComparer<T> _comparer;
 
-        internal WrapperEqualityComparer(IEqualityComparer<T>? comparer)
-        {
-            if (comparer == null)
-            {
-                _comparer = EqualityComparer<T>.Default;
-            }
-            else
-            {
-                _comparer = comparer;
-            }
-        }
+        internal WrapperEqualityComparer(IEqualityComparer<T>? comparer) =>
+            _comparer = comparer ?? EqualityComparer<T>.Default;
 
         public bool Equals(Wrapper<T> x, Wrapper<T> y)
         {

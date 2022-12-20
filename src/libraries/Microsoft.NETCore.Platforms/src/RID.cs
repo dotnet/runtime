@@ -62,7 +62,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             bool omitVersionDelimiter = true;
             RIDPart parseState = RIDPart.Base;
 
-            int partStart = 0, partLength = 0;
+            int partStart = 0, partLength;
 
             // qualifier is indistinguishable from arch so we cannot distinguish it for parsing purposes
             Debug.Assert(ArchitectureDelimiter == QualifierDelimiter);

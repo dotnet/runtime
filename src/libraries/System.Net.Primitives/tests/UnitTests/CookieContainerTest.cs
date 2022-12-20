@@ -866,6 +866,51 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Throws<CookieException>(() => container.SetCookies(uri, cookie));
         }
 
+        [Theory]
+        [InlineData("example.com", "example.com"  )]
+        [InlineData("example.com", ".example.com" )]
+        [InlineData(".example.com", "example.com" )]
+        [InlineData(".example.com", ".example.com")]
+        public void SetCookies_DomainCheckSuccess_IgnoresLeadingDot(params string[] domains)
+        {
+            var uri = new Uri($"https://{domains[0].Trim('.')}/", UriKind.Absolute);
+            var container = new CookieContainer();
+
+            // First HTTP response...
+            container.SetCookies(uri, $"foo=bar; Path=/; Domain={domains[0]}");
+
+            // Second HTTP response...
+            container.SetCookies(uri, $"foo=baz; Path=/; Domain={domains[1]}");
+
+            CookieCollection acceptedCookies = container.GetCookies(uri);
+            Assert.Equal(1, acceptedCookies.Count);
+            Assert.Equal(domains[1], acceptedCookies[0].Domain);
+        }
+
+        [Theory]
+        [InlineData("test.example.com", "example.com")]
+        [InlineData("test.example.com", ".example.com")]
+        [InlineData("example.com", "test.example.com")]
+        [InlineData(".example.com", "test.example.com")]
+        public void SetCookies_DomainCheckFailure_IgnoresLeadingDot(params string[] domains)
+        {
+            var uri = new Uri($"https://test.example.com/", UriKind.Absolute);
+            var container = new CookieContainer();
+
+            // First HTTP response...
+            container.SetCookies(uri, $"foo=bar; Path=/; Domain={domains[0]}");
+
+            // Second HTTP response...
+            container.SetCookies(uri, $"foo=baz; Path=/; Domain={domains[1]}");
+
+            CookieCollection acceptedCookies = container.GetCookies(uri);
+            Assert.Equal(2, acceptedCookies.Count);
+            foreach (Cookie cookie in acceptedCookies)
+            {
+                Assert.Contains(cookie.Domain, domains);
+            }
+        }
+
         // Test default-path calculation as defined in
         // https://tools.ietf.org/html/rfc6265#section-5.1.4
         public static readonly TheoryData<string, string> DefaultPathData = new TheoryData<string, string>()

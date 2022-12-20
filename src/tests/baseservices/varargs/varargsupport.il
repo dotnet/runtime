@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly 'vafilt'
+.assembly 'varargsupport'
 {
   
   
@@ -60,7 +60,7 @@
     } 
 
     
-    .method public static int32  Main(class System.String[] args) il managed
+    .method public static int32  Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

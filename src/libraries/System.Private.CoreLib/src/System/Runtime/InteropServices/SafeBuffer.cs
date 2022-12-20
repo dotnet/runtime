@@ -65,7 +65,6 @@
 // assignments in a static class constructor are under a lock implicitly.
 
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices
@@ -153,7 +152,9 @@ namespace System.Runtime.InteropServices
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
+#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/42761
             pointer = null;
+#pragma warning restore IDE0059
 
             bool junk = false;
             DangerousAddRef(ref junk);
@@ -214,12 +215,10 @@ namespace System.Runtime.InteropServices
         public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(array);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -303,12 +302,10 @@ namespace System.Runtime.InteropServices
         public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(array);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -408,7 +405,9 @@ namespace System.Runtime.InteropServices
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
 
-            return (uint)Unsafe.SizeOf<T>();
+#pragma warning disable 8500 // sizeof of managed types
+            return (uint)sizeof(T);
+#pragma warning restore 8500
         }
     }
 }

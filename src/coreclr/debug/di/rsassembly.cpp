@@ -12,9 +12,6 @@
 
 #include "check.h"
 
-#include <tlhelp32.h>
-#include "wtsapi32.h"
-
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
 #endif
@@ -184,7 +181,7 @@ HRESULT CordbAssembly::EnumerateModules(ICorDebugModuleEnum **ppModules)
             IID_ICorDebugModuleEnum,
             pEnum.GetAddr());
 
-        // this will build up an auxillary list. Don't need pEnum after this.
+        // this will build up an auxiliary list. Don't need pEnum after this.
         hr = pModEnum->Init(pEnum, this);
         IfFailThrow(hr);
 
@@ -202,7 +199,7 @@ HRESULT CordbAssembly::EnumerateModules(ICorDebugModuleEnum **ppModules)
  */
 HRESULT CordbAssembly::GetCodeBase(ULONG32 cchName,
                     ULONG32 *pcchName,
-                    __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                    _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -232,7 +229,7 @@ HRESULT CordbAssembly::GetCodeBase(ULONG32 cchName,
 //
 HRESULT CordbAssembly::GetName(ULONG32 cchName,
                                ULONG32 *pcchName,
-                               __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                               _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);

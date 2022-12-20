@@ -109,17 +109,7 @@ namespace System.Net.Http
         }
 #endif
 
-        public HttpContentHeaders Headers
-        {
-            get
-            {
-                if (_headers == null)
-                {
-                    _headers = new HttpContentHeaders(this);
-                }
-                return _headers;
-            }
-        }
+        public HttpContentHeaders Headers => _headers ??= new HttpContentHeaders(this);
 
         private bool IsBuffered
         {
@@ -192,8 +182,8 @@ namespace System.Net.Http
                 {
                     // Remove at most a single set of quotes.
                     if (charset.Length > 2 &&
-                        charset[0] == '\"' &&
-                        charset[charset.Length - 1] == '\"')
+                        charset.StartsWith('\"') &&
+                        charset.EndsWith('\"'))
                     {
                         encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
                     }
@@ -361,11 +351,7 @@ namespace System.Net.Http
         public void CopyTo(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
+            ArgumentNullException.ThrowIfNull(stream);
             try
             {
                 if (TryGetBuffer(out ArraySegment<byte> buffer))
@@ -395,11 +381,7 @@ namespace System.Net.Http
         public Task CopyToAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
+            ArgumentNullException.ThrowIfNull(stream);
             try
             {
                 return WaitAsync(InternalCopyToAsync(stream, context, cancellationToken));
@@ -606,7 +588,7 @@ namespace System.Net.Http
             // again; just return null.
             if (_canCalculateLength)
             {
-                long length = 0;
+                long length;
                 if (TryComputeLength(out length))
                 {
                     return length;
@@ -703,10 +685,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private void CheckTaskNotNull(Task task)

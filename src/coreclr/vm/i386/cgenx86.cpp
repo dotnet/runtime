@@ -289,8 +289,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState.GetRetAddr(), m_MachState.esp()));
 
-    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
-
 #ifdef FEATURE_EH_FUNCLETS
 
     pRD->IsCallerContextValid = FALSE;
@@ -306,6 +304,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
         InsureInit(false, pUnwoundState);
 
+        pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
         pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
         pRD->pCurrentContext->Esp = pRD->SP        = pUnwoundState->esp();
 
@@ -325,6 +324,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
 #endif // DACCESS_COMPILE
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->pCurrentContext->Eip = pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->pCurrentContext->Esp = pRD->SP = (DWORD) m_MachState.esp();
 
@@ -401,6 +401,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pEbx = (DWORD*) m_MachState.pEbx();
     pRD->pEbp = (DWORD*) m_MachState.pEbp();
 
+    pRD->PCTAddr = dac_cast<TADDR>(m_MachState.pRetAddr());
     pRD->ControlPC = m_MachState.GetRetAddr();
     pRD->SP  = (DWORD) m_MachState.esp();
 
@@ -931,58 +932,6 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 #ifndef DACCESS_COMPILE
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-//-------------------------------------------------------------------------
-// One-time creation of special prestub to initialize UMEntryThunks.
-//-------------------------------------------------------------------------
-Stub *GenerateUMThunkPrestub()
-{
-    CONTRACT(Stub*)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    CodeLabel* rgRareLabels[] = { psl->NewCodeLabel(),
-                                  psl->NewCodeLabel(),
-                                  psl->NewCodeLabel()
-                                };
-
-
-    CodeLabel* rgRejoinLabels[] = { psl->NewCodeLabel(),
-                                    psl->NewCodeLabel(),
-                                    psl->NewCodeLabel()
-                                };
-
-    // emit the initial prolog
-    psl->EmitComMethodStubProlog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
-
-    // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
-    psl->X86EmitIndexRegLoad(kECX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
-
-    // The call conv is a __stdcall
-    psl->X86EmitPushReg(kECX);
-
-    // call UMEntryThunk::DoRunTimeInit
-    psl->X86EmitCall(psl->NewExternalCodeLabel((LPVOID)UMEntryThunk::DoRunTimeInit), 4);
-
-    // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
-    psl->X86EmitIndexRegLoad(kEAX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
-
-    //    lea eax, [eax + UMEntryThunk.m_code]  // point to fixedup UMEntryThunk
-    psl->X86EmitOp(0x8d, kEAX, kEAX,
-                   UMEntryThunk::GetCodeOffset() + UMEntryThunkCode::GetEntryPointOffset());
-
-    psl->EmitComMethodStubEpilog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
-
-    RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-}
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
-
 Stub *GenerateInitPInvokeFrameHelper()
 {
     CONTRACT(Stub*)
@@ -1058,7 +1007,7 @@ extern "C" VOID STDCALL StubRareDisableTHROWWorker(Thread *pThread)
     // when we start executing here, we are actually in cooperative mode.  But we
     // haven't synchronized with the barrier to reentry yet.  So we are in a highly
     // dangerous mode.  If we call managed code, we will potentially be active in
-    // the GC heap, even as GC's are occuring!
+    // the GC heap, even as GC's are occurring!
 
     // We must do the following in this order, because otherwise we would be constructing
     // the exception for the abort without synchronizing with the GC.  Also, we have no
@@ -1157,6 +1106,31 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
 }
 #pragma warning(pop)
 
+#pragma warning(push)
+#pragma warning(disable: 4035)
+extern "C" DWORD __stdcall avx512StateSupport()
+{
+    // No CONTRACT
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    __asm
+    {
+        mov     ecx, 0                  ; Specify xcr0
+        xgetbv                          ; result in EDX:EAX
+        and eax, 0E6H
+        cmp eax, 0E6H                  ; check OS has enabled XMM, YMM and ZMM state support
+        jne     not_supported
+        mov     eax, 1
+        jmp     done
+    not_supported:
+        mov     eax, 0
+    done:
+    }
+}
+#pragma warning(pop)
+
+
 #else // !TARGET_UNIX
 
 void __cpuid(int cpuInfo[4], int function_id)
@@ -1193,6 +1167,18 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 
+extern "C" DWORD __stdcall avx512StateSupport()
+{
+    DWORD eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "edx" /* registers that are clobbered*/
+        );
+    // check OS has enabled XMM, YMM and ZMM state support
+    return ((eax & 0x0E6) == 0x0E6) ? 1 : 0;
+}
+
 #endif // !TARGET_UNIX
 
 void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
@@ -1208,7 +1194,7 @@ void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTarget
     m_jmp        = X86_INSTR_JMP_REL32;
     m_execstub   = (BYTE*) ((pTargetCode) - (4+((BYTE*)&pEntryThunkCodeRX->m_execstub)));
 
-    FlushInstructionCache(GetCurrentProcess(),pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode));
+    ClrFlushInstructionCache(pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
 }
 
 void UMEntryThunkCode::Poison()
@@ -1223,7 +1209,7 @@ void UMEntryThunkCode::Poison()
     // mov ecx, imm32
     pThisRW->m_movEAX = 0xb9;
 
-    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode));
+    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
 }
 
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
@@ -1235,63 +1221,6 @@ UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
         return NULL;
     }
     return *(UMEntryThunk**)( 1 + (BYTE*)pCallback );
-}
-
-BOOL DoesSlotCallPrestub(PCODE pCode)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(pCode != NULL);
-        PRECONDITION(pCode != GetPreStubEntryPoint());
-    } CONTRACTL_END;
-
-    // x86 has the following possible sequences for prestub logic:
-    // 1. slot -> temporary entrypoint -> prestub
-    // 2. slot -> precode -> prestub
-    // 3. slot -> precode -> jumprel32 (NGEN case) -> prestub
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, TRUE) != NULL)
-    {
-        return TRUE;
-    }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    if (!IS_ALIGNED(pCode, PRECODE_ALIGNMENT))
-    {
-        return FALSE;
-    }
-
-#ifdef HAS_FIXUP_PRECODE
-    if (*PTR_BYTE(pCode) == X86_INSTR_CALL_REL32)
-    {
-        // Note that call could have been patched to jmp in the meantime
-        pCode = rel32Decode(pCode+1);
-
-        // NGEN case
-        if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-            pCode = rel32Decode(pCode+1);
-        }
-
-        return pCode == (TADDR)PrecodeFixupThunk;
-    }
-#endif
-
-    if (*PTR_BYTE(pCode) != X86_INSTR_MOV_EAX_IMM32 ||
-        *PTR_BYTE(pCode+5) != X86_INSTR_MOV_RM_R ||
-        *PTR_BYTE(pCode+7) != X86_INSTR_JMP_REL32)
-    {
-        return FALSE;
-    }
-    pCode = rel32Decode(pCode+8);
-
-    // NGEN case
-    if (*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32) {
-        pCode = rel32Decode(pCode+1);
-    }
-
-    return pCode == GetPreStubEntryPoint();
 }
 
 #ifdef FEATURE_READYTORUN
@@ -1343,7 +1272,7 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     }
     CONTRACTL_END;
 
-    // Move an an argument into the second argument register and jump to a target function.
+    // Move an argument into the second argument register and jump to a target function.
 
     *p++ = 0xBA; // mov edx, XXXXXX
     *(INT32 *)p = (INT32)arg;

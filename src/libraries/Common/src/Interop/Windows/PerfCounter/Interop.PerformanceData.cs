@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class PerfCounter
     {
-        [GeneratedDllImport(Libraries.Advapi32, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static partial uint PerfStopProvider(
             IntPtr hProvider
         );
@@ -53,39 +53,35 @@ internal static partial class Interop
             internal uint InstanceNameSize;
         }
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
-        [DllImport(Libraries.Advapi32, ExactSpelling = true)]
-        internal static extern uint PerfStartProvider(
+        [LibraryImport(Libraries.Advapi32)]
+        internal static partial uint PerfStartProvider(
             ref Guid ProviderGuid,
             PERFLIBREQUEST ControlCallback,
             out SafePerfProviderHandle phProvider
         );
 
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
-        [DllImport(Libraries.Advapi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
-        internal static extern unsafe PerfCounterSetInstanceStruct* PerfCreateInstance(
+        [LibraryImport(Libraries.Advapi32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial PerfCounterSetInstanceStruct* PerfCreateInstance(
             SafePerfProviderHandle hProvider,
             ref Guid CounterSetGuid,
             string szInstanceName,
             uint dwInstance
         );
-#pragma warning restore DLLIMPORTGENANALYZER015
 
-        [GeneratedDllImport(Libraries.Advapi32, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfSetCounterSetInfo(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInfoStruct* pTemplate,
             uint dwTemplateSize
         );
 
-        [GeneratedDllImport(Libraries.Advapi32, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfDeleteInstance(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInstanceStruct* InstanceBlock
         );
 
-        [GeneratedDllImport(Libraries.Advapi32, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32)]
         internal static unsafe partial uint PerfSetCounterRefValue(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInstanceStruct* pInstance,

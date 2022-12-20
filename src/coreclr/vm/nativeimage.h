@@ -60,6 +60,10 @@ class ReadyToRunInfo;
 class PEAssembly;
 class PEImage;
 
+#ifndef DACCESS_COMPILE
+ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *m_pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker);
+#endif
+
 // This class represents a  ReadyToRun image with native OS-specific envelope. As of today,
 // this file format is used as the compiled native code cache in composite R2R Crossgen2
 // build mode. Moving forward we plan to add support for OS-specific native executables
@@ -81,15 +85,16 @@ private:
     IMDInternalImport *m_pManifestMetadata;
     PEImageLayout *m_pImageLayout;
     PTR_Assembly *m_pNativeMetadataAssemblyRefMap;
+    PTR_ModuleBase m_pNativeManifestModule;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
-    IMAGE_DATA_DIRECTORY *m_pComponentAssemblyMvids;
     uint32_t m_componentAssemblyCount;
     uint32_t m_manifestAssemblyCount;
     SHash<AssemblyNameIndexHashTraits> m_assemblySimpleNameToIndexMap;
     
     Crst m_eagerFixupsLock;
     bool m_eagerFixupsHaveRun;
+    bool m_readyToRunCodeDisabled;
 
 private:
     NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
@@ -124,6 +129,18 @@ public:
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(LPCUTF8 assemblySimpleName);
 
     void CheckAssemblyMvid(Assembly *assembly) const;
+
+    void DisableAllR2RCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_readyToRunCodeDisabled = true;
+    }
+
+    bool ReadyToRunCodeDisabled()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_readyToRunCodeDisabled;
+    }
 
 private:
     IMDInternalImport *LoadManifestMetadata();

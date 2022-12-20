@@ -23,10 +23,7 @@ namespace System.ComponentModel.Design
 
         public void AddRange(DesignerVerb?[] value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -36,10 +33,7 @@ namespace System.ComponentModel.Design
 
         public void AddRange(DesignerVerbCollection value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)

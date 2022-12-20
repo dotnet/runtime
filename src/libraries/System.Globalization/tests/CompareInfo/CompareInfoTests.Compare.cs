@@ -184,7 +184,7 @@ namespace System.Globalization.Tests
             // Turkish
             yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.None, 1 };
             // Android has its own ICU, which doesn't work well with tr
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
                 yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
@@ -495,7 +495,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestIgnoreKanaAndWidthCases()
         {
-            for (char c = '\uFF41'; c <= '\uFF5A'; c++) // Full width 'ａ' to `ｚ`
+            for (char c = '\uFF41'; c <= '\uFF5A'; c++)
             {
                 Assert.False(string.Equals(new string(c, 1), new string((char) (c - 0x20), 1), StringComparison.InvariantCulture), $"Expected '{(int)c:x4}' != '{c - 0x20:x4}'");
                 Assert.True(string.Equals(new string(c, 1), new string((char) (c - 0x20), 1), StringComparison.InvariantCultureIgnoreCase), $"Expected '{(int)c:x4}' == '{c - 0x20:x4}'");

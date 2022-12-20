@@ -29,7 +29,7 @@ namespace System.Security.Cryptography
                 {
                     EccKeyFormatHelper.ReadSubjectPublicKeyInfo(
                         keyBlob,
-                        out int localRead,
+                        out _,
                         out ECParameters key);
                     return key;
                 }
@@ -37,8 +37,8 @@ namespace System.Security.Cryptography
                 {
                     EccKeyFormatHelper.ReadEncryptedPkcs8(
                         keyBlob,
-                        ExportPassword,
-                        out int localRead,
+                        (ReadOnlySpan<char>)ExportPassword,
+                        out _,
                         out ECParameters key);
                     return key;
                 }
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
             {
                 const string ExportPassword = "DotnetExportPassphrase";
                 byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(secPrivateKey, exportPrivate: true, password: ExportPassword);
-                EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, ExportPassword, out _, out ecParameters);
+                EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, (ReadOnlySpan<char>)ExportPassword, out _, out ecParameters);
                 CryptographicOperations.ZeroMemory(keyBlob);
             }
         }

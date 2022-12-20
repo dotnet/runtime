@@ -82,7 +82,7 @@ namespace System.Diagnostics.Tests
             p.WaitForExit(); // This ensures async event handlers are finished processing.
 
             const string Expected = RemotelyInvokable.TestConsoleApp + " started error stream" + RemotelyInvokable.TestConsoleApp + " closed error stream";
-            Assert.Equal(Expected, sb.ToString());
+            AssertExtensions.Equal(Expected, sb.ToString());
             Assert.Equal(invokeRequired ? 3 : 0, invokeCalled);
         }
 

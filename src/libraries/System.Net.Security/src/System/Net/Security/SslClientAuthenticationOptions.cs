@@ -50,10 +50,12 @@ namespace System.Net.Security
             get => _encryptionPolicy;
             set
             {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 if (value != EncryptionPolicy.RequireEncryption && value != EncryptionPolicy.AllowNoEncryption && value != EncryptionPolicy.NoEncryption)
                 {
                     throw new ArgumentException(SR.Format(SR.net_invalid_enum, nameof(EncryptionPolicy)), nameof(value));
                 }
+#pragma warning restore SYSLIB0040
 
                 _encryptionPolicy = value;
             }
@@ -71,5 +73,13 @@ namespace System.Net.Security
         /// Use extreme caution when changing this setting.
         /// </summary>
         public CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets an optional customized policy for remote certificate
+        /// validation. If not <see langword="null"/>,
+        /// <see cref="CertificateRevocationCheckMode"/> and <see cref="SslCertificateTrust"/>
+        /// are ignored.
+        /// </summary>
+        public X509ChainPolicy? CertificateChainPolicy { get; set; }
     }
 }

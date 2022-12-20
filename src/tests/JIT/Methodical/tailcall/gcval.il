@@ -9,20 +9,20 @@
 }
 .assembly gcval { }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_compat_gcval
 {
-  .class private sequential ansi sealed beforefieldinit LargeVT
+  .class public sequential ansi sealed beforefieldinit LargeVT
          extends [mscorlib]System.ValueType
   {
     .field private int32[] 'value'
-    .method private hidebysig static value class JitTest.LargeVT 
+    .method private hidebysig static value class JitTest_compat_gcval.LargeVT 
             callee(int32 retcode) il managed
     {
       // Code size       33 (0x21)
       .maxstack  8
-      .locals (value class JitTest.LargeVT lv)
+      .locals (value class JitTest_compat_gcval.LargeVT lv)
       ldloca.s   lv
-      initobj    JitTest.LargeVT
+      initobj    JitTest_compat_gcval.LargeVT
       ldloca.s   lv
       ldc.i4.1
       newarr     [mscorlib]System.Int32
@@ -30,22 +30,22 @@
       ldc.i4.0
       ldarg.0
       stelem.i4
-      stfld      int32[] JitTest.LargeVT::'value'
+      stfld      int32[] JitTest_compat_gcval.LargeVT::'value'
       ldloc.0
       ret
     } // end of method LargeVT::callee
 
-    .method private hidebysig static value class JitTest.LargeVT 
+    .method private hidebysig static value class JitTest_compat_gcval.LargeVT 
             caller(int32 retcode) il managed
     {
 		// Code size       11 (0xb)
 		.maxstack  8
 		ldarg.0
-		tail. call value class JitTest.LargeVT JitTest.LargeVT::callee(int32)
+		tail. call value class JitTest_compat_gcval.LargeVT JitTest_compat_gcval.LargeVT::callee(int32)
 		ret
     } // end of method LargeVT::caller
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -56,12 +56,12 @@
       .maxstack  2
       .locals (int32 V_0,
                int32 V_1,
-               value class JitTest.LargeVT V_2)
+               value class JitTest_compat_gcval.LargeVT V_2)
       IL_0000:  ldc.i4.s   100
-      IL_0002:  call       value class JitTest.LargeVT JitTest.LargeVT::caller(int32)
+      IL_0002:  call       value class JitTest_compat_gcval.LargeVT JitTest_compat_gcval.LargeVT::caller(int32)
       IL_0007:  stloc.2
       IL_0008:  ldloca.s   V_2
-      IL_000a:  ldfld      int32[] JitTest.LargeVT::'value'
+      IL_000a:  ldfld      int32[] JitTest_compat_gcval.LargeVT::'value'
       IL_000f:  ldc.i4.0
       IL_0010:  ldelem.i4
       IL_0011:  stloc.0
@@ -84,6 +84,6 @@
 
   } // end of class LargeVT
 
-} // end of namespace JitTest
+} // end of namespace JitTest_compat_gcval
 
 //*********** DISASSEMBLY COMPLETE ***********************

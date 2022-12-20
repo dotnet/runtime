@@ -14,6 +14,7 @@ internal static partial class Interop
     internal static partial class Process
     {
         private const ulong SecondsToNanoseconds = 1000000000;
+        private const ulong MicroSecondsToNanoSeconds = 1000;
 
         // Constants from sys/sysctl.h
         private const int KERN_PROC_PATHNAME = 12;
@@ -74,7 +75,7 @@ internal static partial class Interop
         /// Gets executable name for process given it's PID
         /// </summary>
         /// <param name="pid">The PID of the process</param>
-        public static unsafe string? GetProcPath(int pid)
+        public static unsafe string GetProcPath(int pid)
         {
             Span<int> sysctlName = stackalloc int[] { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, pid };
             byte* pBuffer = null;
@@ -83,7 +84,7 @@ internal static partial class Interop
             try
             {
                 Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
-                return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength - 1);
+                return System.Text.Encoding.UTF8.GetString(pBuffer, bytesLength - 1);
             }
             finally
             {
@@ -102,10 +103,7 @@ internal static partial class Interop
         public static unsafe ProcessInfo GetProcessInfoById(int pid)
         {
             // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             ProcessInfo info;
 
@@ -122,7 +120,7 @@ internal static partial class Interop
                 // Get the process information for the specified pid
                 info = new ProcessInfo();
 
-                info.ProcessName = Marshal.PtrToStringAnsi((IntPtr)kinfo->ki_comm)!;
+                info.ProcessName = Marshal.PtrToStringUTF8((IntPtr)kinfo->ki_comm)!;
                 info.BasePriority = kinfo->ki_nice;
                 info.VirtualBytes = (long)kinfo->ki_size;
                 info.WorkingSet = kinfo->ki_rssize;
@@ -135,7 +133,7 @@ internal static partial class Interop
                         _processId = pid,
                         _threadId = (ulong)process[i].ki_tid,
                         _basePriority = process[i].ki_nice,
-                        _startAddress = (IntPtr)process[i].ki_tdaddr
+                        _startAddress = process[i].ki_tdaddr
                     };
                     info._threadInfoList.Add(ti);
                 }
@@ -171,8 +169,8 @@ internal static partial class Interop
                     {
                         ret.startTime = (int)info->ki_start.tv_sec;
                         ret.nice = info->ki_nice;
-                        ret.userTime = (ulong)info->ki_rusage.ru_utime.tv_sec * SecondsToNanoseconds + (ulong)info->ki_rusage.ru_utime.tv_usec;
-                        ret.systemTime = (ulong)info->ki_rusage.ru_stime.tv_sec * SecondsToNanoseconds + (ulong)info->ki_rusage.ru_stime.tv_usec;
+                        ret.userTime = (ulong)info->ki_rusage.ru_utime.tv_sec * SecondsToNanoseconds + (ulong)info->ki_rusage.ru_utime.tv_usec * MicroSecondsToNanoSeconds;
+                        ret.systemTime = (ulong)info->ki_rusage.ru_stime.tv_sec * SecondsToNanoseconds + (ulong)info->ki_rusage.ru_stime.tv_usec * MicroSecondsToNanoSeconds;
                     }
                     else
                     {
@@ -183,8 +181,8 @@ internal static partial class Interop
                             {
                                 ret.startTime = (int)list[i].ki_start.tv_sec;
                                 ret.nice = list[i].ki_nice;
-                                ret.userTime = (ulong)list[i].ki_rusage.ru_utime.tv_sec * SecondsToNanoseconds + (ulong)list[i].ki_rusage.ru_utime.tv_usec;
-                                ret.systemTime = (ulong)list[i].ki_rusage.ru_stime.tv_sec * SecondsToNanoseconds + (ulong)list[i].ki_rusage.ru_stime.tv_usec;
+                                ret.userTime = (ulong)list[i].ki_rusage.ru_utime.tv_sec * SecondsToNanoseconds + (ulong)list[i].ki_rusage.ru_utime.tv_usec * MicroSecondsToNanoSeconds;
+                                ret.systemTime = (ulong)list[i].ki_rusage.ru_stime.tv_sec * SecondsToNanoseconds + (ulong)list[i].ki_rusage.ru_stime.tv_usec * MicroSecondsToNanoSeconds;
                                 break;
                             }
                         }

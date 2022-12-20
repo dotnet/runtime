@@ -60,13 +60,13 @@ namespace ILVerification.Tests
             {
                 if (mparams[1] == "InvalidType")
                 {
-                    var verificationErros = new List<VerifierError>();
+                    var verificationErrors = new List<VerifierError>();
                     foreach (var expectedError in mparams[2].Split('@'))
                     {
-                        verificationErros.Add((VerifierError)Enum.Parse(typeof(VerifierError), expectedError));
+                        verificationErrors.Add((VerifierError)Enum.Parse(typeof(VerifierError), expectedError));
                     }
                     var newItem = new InvalidTypeTestCase { MetadataToken = MetadataTokens.GetToken(typeDefinitionHandle) };
-                    newItem.ExpectedVerifierErrors = verificationErros;
+                    newItem.ExpectedVerifierErrors = verificationErrors;
                     return newItem;
                 }
                 return null;
@@ -139,13 +139,13 @@ namespace ILVerification.Tests
                 if (mparams.Length == 3 && mparams[1] == "Invalid")
                 {
                     var expectedErrors = mparams[2].Split('.');
-                    var verificationErros = new List<VerifierError>();
+                    var verificationErrors = new List<VerifierError>();
 
                     foreach (var item in expectedErrors)
                     {
                         if (Enum.TryParse(item, out VerifierError expectedError))
                         {
-                            verificationErros.Add(expectedError);
+                            verificationErrors.Add(expectedError);
                         }
                     }
 
@@ -153,7 +153,7 @@ namespace ILVerification.Tests
 
                     if (expectedErrors.Length > 0)
                     {
-                        newItem.ExpectedVerifierErrors = verificationErros;
+                        newItem.ExpectedVerifierErrors = verificationErrors;
                     }
 
                     return newItem;
@@ -269,19 +269,34 @@ namespace ILVerification.Tests
             return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName)).Name));
         }
 
-        private sealed class TestResolver : ResolverBase
+        private sealed class TestResolver : IResolver
         {
+            Dictionary<string, PEReader> _resolverCache = new Dictionary<string, PEReader>();
             Dictionary<string, string> _simpleNameToPathMap;
+
             public TestResolver(Dictionary<string, string> simpleNameToPathMap)
             {
                 _simpleNameToPathMap = simpleNameToPathMap;
             }
 
-            protected override PEReader ResolveCore(string simpleName)
+            PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+                => Resolve(assemblyName.Name);
+
+            PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+                => Resolve(Path.GetFileNameWithoutExtension(fileName));
+
+            public PEReader Resolve(string simpleName)
             {
+                if (_resolverCache.TryGetValue(simpleName, out PEReader peReader))
+                {
+                    return peReader;
+                }
+
                 if (_simpleNameToPathMap.TryGetValue(simpleName, out string path))
                 {
-                    return new PEReader(File.OpenRead(path));
+                    var result = new PEReader(File.OpenRead(path));
+                    _resolverCache.Add(simpleName, result);
+                    return result;
                 }
 
                 return null;

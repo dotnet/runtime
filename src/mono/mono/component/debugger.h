@@ -172,7 +172,7 @@ typedef struct _DebuggerTlsData DebuggerTlsData;
 
 typedef struct MonoComponentDebugger {
 	MonoComponent component;
-	void (*init) (MonoDefaults *mono_defaults);
+	void (*init) (void);
 	void (*user_break) (void);
 	void (*parse_options) (char *options);
 	void (*breakpoint_hit) (void *sigctx);
@@ -196,10 +196,11 @@ typedef struct MonoComponentDebugger {
 	//HotReload
 	void (*send_enc_delta) (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 
+	//wasi
+	void (*receive_and_process_command_from_debugger_agent) (void);
+	gboolean (*debugger_enabled) (void);
 } MonoComponentDebugger;
 
-
-extern MonoDefaults *mdbg_mono_defaults;
 
 #define DE_ERR_NONE 0
 // WARNING WARNING WARNING

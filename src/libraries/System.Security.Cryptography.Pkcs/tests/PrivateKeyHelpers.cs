@@ -18,9 +18,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     RSA copy = RSA.Create();
 
                     copy.ImportEncryptedPkcs8PrivateKey(
-                        nameof(MakeExportable),
+                        (ReadOnlySpan<char>)nameof(MakeExportable),
                         rsa.ExportEncryptedPkcs8PrivateKey(
-                            nameof(MakeExportable),
+                            (ReadOnlySpan<char>)nameof(MakeExportable),
                             new PbeParameters(
                                 PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                                 HashAlgorithmName.SHA1,
@@ -46,9 +46,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     DSA copy = DSA.Create();
 
                     copy.ImportEncryptedPkcs8PrivateKey(
-                        nameof(MakeExportable),
+                        (ReadOnlySpan<char>)nameof(MakeExportable),
                         dsa.ExportEncryptedPkcs8PrivateKey(
-                            nameof(MakeExportable),
+                            (ReadOnlySpan<char>)nameof(MakeExportable),
                             new PbeParameters(
                                 PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                                 HashAlgorithmName.SHA1,
@@ -74,9 +74,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     ECDsa copy = ECDsa.Create();
 
                     copy.ImportEncryptedPkcs8PrivateKey(
-                        nameof(MakeExportable),
+                        (ReadOnlySpan<char>)nameof(MakeExportable),
                         ecdsa.ExportEncryptedPkcs8PrivateKey(
-                            nameof(MakeExportable),
+                            (ReadOnlySpan<char>)nameof(MakeExportable),
                             new PbeParameters(
                                 PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                                 HashAlgorithmName.SHA1,

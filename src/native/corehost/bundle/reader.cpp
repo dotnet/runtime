@@ -54,7 +54,7 @@ size_t reader_t::read_path_length()
 {
     size_t length = 0;
 
-    int8_t first_byte = read();
+    int8_t first_byte = read_byte();
 
     // If the high bit is set, it means there are more bytes to read.
     if ((first_byte & 0x80) == 0)
@@ -63,7 +63,7 @@ size_t reader_t::read_path_length()
     }
     else
     {
-        int8_t second_byte = read();
+        int8_t second_byte = read_byte();
 
         if (second_byte & 0x80)
         {

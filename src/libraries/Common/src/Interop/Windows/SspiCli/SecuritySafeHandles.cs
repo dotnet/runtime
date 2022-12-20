@@ -49,9 +49,7 @@ namespace System.Net.Security
 
         internal static int EnumeratePackages(out int pkgnum, out SafeFreeContextBuffer pkgArray)
         {
-            int res = -1;
-            SafeFreeContextBuffer_SECURITY? pkgArray_SECURITY = null;
-            res = Interop.SspiCli.EnumerateSecurityPackagesW(out pkgnum, out pkgArray_SECURITY);
+            int res = Interop.SspiCli.EnumerateSecurityPackagesW(out pkgnum, out SafeFreeContextBuffer_SECURITY? pkgArray_SECURITY);
             pkgArray = pkgArray_SECURITY;
 
             if (res != 0)
@@ -173,11 +171,13 @@ namespace System.Net.Security
     {
 #endif
 
+        internal DateTime _expiry;
         internal Interop.SspiCli.CredHandle _handle;    //should be always used as by ref in PInvokes parameters
 
         protected SafeFreeCredentials() : base(IntPtr.Zero, true)
         {
             _handle = default;
+            _expiry = DateTime.MaxValue;
         }
 
         public override bool IsInvalid
@@ -185,13 +185,7 @@ namespace System.Net.Security
             get { return IsClosed || _handle.IsZero; }
         }
 
-#if DEBUG
-        public new IntPtr DangerousGetHandle()
-        {
-            Debug.Fail("This method should never be called for this type");
-            throw NotImplemented.ByDesign;
-        }
-#endif
+        public DateTime Expiry => _expiry;
 
         public static unsafe int AcquireDefaultCredential(
             string package,
@@ -214,7 +208,7 @@ namespace System.Net.Security
                             ref outCredential._handle,
                             out timeStamp);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -230,11 +224,8 @@ namespace System.Net.Security
             ref SafeSspiAuthDataHandle authdata,
             out SafeFreeCredentials outCredential)
         {
-            int errorCode = -1;
-            long timeStamp;
-
             outCredential = new SafeFreeCredential_SECURITY();
-            errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+            int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
                             null,
                             package,
                             (int)intent,
@@ -243,7 +234,7 @@ namespace System.Net.Security
                             null,
                             null,
                             ref outCredential._handle,
-                            out timeStamp);
+                            out _);
 
             if (errorCode != 0)
             {
@@ -260,7 +251,6 @@ namespace System.Net.Security
             out SafeFreeCredentials outCredential)
         {
             int errorCode = -1;
-            long timeStamp;
 
             outCredential = new SafeFreeCredential_SECURITY();
 
@@ -273,9 +263,9 @@ namespace System.Net.Security
                                 null,
                                 null,
                                 ref outCredential._handle,
-                                out timeStamp);
+                                out _);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -306,7 +296,7 @@ namespace System.Net.Security
                                 ref outCredential._handle,
                                 out timeStamp);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Verbose(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"{nameof(Interop.SspiCli.AcquireCredentialsHandleW)} returns 0x{errorCode:x}, handle = {outCredential}");
 
             if (errorCode != 0)
             {
@@ -354,10 +344,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (inCredentials == null)
-            {
-                throw new ArgumentNullException(nameof(inCredentials));
-            }
+            ArgumentNullException.ThrowIfNull(inCredentials);
 
             Debug.Assert(inSecBuffers.Count <= 3);
             Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Count);
@@ -454,7 +441,10 @@ namespace System.Net.Security
                             // incorrect arguments to InitializeSecurityContextW in cases where an "contextHandle" was
                             // already present and non-zero.
                             if (isContextAbsent)
+                            {
+                                refContext?.Dispose();
                                 refContext = new SafeDeleteSslContext();
+                            }
                         }
 
                         if (targetName == null || targetName.Length == 0)
@@ -485,9 +475,13 @@ namespace System.Net.Security
                             // Get unmanaged buffer with index 0 as the only one passed into PInvoke.
                             outSecBuffer.size = outUnmanagedBuffer.cbBuffer;
                             outSecBuffer.type = outUnmanagedBuffer.BufferType;
-                            outSecBuffer.token = outSecBuffer.size > 0 ?
-                                new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).ToArray() :
-                                null;
+
+                            if (isSspiAllocated)
+                            {
+                                outSecBuffer.token = outSecBuffer.size > 0 ?
+                                    new Span<byte>((byte*)outUnmanagedBuffer.pvBuffer, outUnmanagedBuffer.cbBuffer).ToArray() :
+                                    null;
+                            }
 
                             if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                             {
@@ -671,10 +665,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (inCredentials == null)
-            {
-                throw new ArgumentNullException(nameof(inCredentials));
-            }
+            ArgumentNullException.ThrowIfNull(inCredentials);
 
             Debug.Assert(inSecBuffers.Count <= 3);
             Interop.SspiCli.SecBufferDesc inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(inSecBuffers.Count);
@@ -795,9 +786,13 @@ namespace System.Net.Security
 
                         outSecBuffer.size = outUnmanagedBuffer[index].cbBuffer;
                         outSecBuffer.type = outUnmanagedBuffer[index].BufferType;
-                        outSecBuffer.token = outSecBuffer.size > 0 ?
-                                    new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[0].cbBuffer).ToArray() :
-                                    null;
+
+                        if (isSspiAllocated)
+                        {
+                            outSecBuffer.token = outSecBuffer.size > 0 ?
+                                        new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[0].cbBuffer).ToArray() :
+                                        null;
+                        }
 
                         if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                         {
@@ -968,25 +963,22 @@ namespace System.Net.Security
 
         internal static unsafe int CompleteAuthToken(
             ref SafeDeleteSslContext? refContext,
-            in SecurityBuffer inSecBuffer)
+            in InputSecurityBuffer inSecBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"refContext = {refContext}, inSecBuffer = {inSecBuffer}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"refContext = {refContext}");
 
             var inSecurityBufferDescriptor = new Interop.SspiCli.SecBufferDesc(1);
             int errorCode = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
             Interop.SspiCli.SecBuffer inUnmanagedBuffer = default;
             inSecurityBufferDescriptor.pBuffers = &inUnmanagedBuffer;
-            fixed (byte* pinnedToken = inSecBuffer.token)
+            fixed (byte* pinnedToken = inSecBuffer.Token)
             {
-                inUnmanagedBuffer.cbBuffer = inSecBuffer.size;
-                inUnmanagedBuffer.BufferType = inSecBuffer.type;
-
-                // Use the unmanaged token if it's not null; otherwise use the managed buffer.
+                Debug.Assert(inSecBuffer.UnmanagedToken != null);
+                inUnmanagedBuffer.cbBuffer = inSecBuffer.Token.Length;
+                inUnmanagedBuffer.BufferType = inSecBuffer.Type;
                 inUnmanagedBuffer.pvBuffer =
-                    inSecBuffer.unmanagedToken != null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
-                    inSecBuffer.token == null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
-                    (IntPtr)(pinnedToken + inSecBuffer.offset);
+                    inSecBuffer.Token.IsEmpty ? IntPtr.Zero : (IntPtr)pinnedToken;
 
                 Interop.SspiCli.CredHandle contextHandle = refContext != null ? refContext._handle : default;
                 if (refContext == null || refContext.IsInvalid)
@@ -1125,15 +1117,18 @@ namespace System.Net.Security
                 return status;
             }
 
+            bool refAdded = false;
             try
             {
-                bool ignore = false;
-                phContext.DangerousAddRef(ref ignore);
+                phContext.DangerousAddRef(ref refAdded);
                 status = Interop.SspiCli.QueryContextAttributesW(ref phContext._handle, contextAttribute, buffer);
             }
             finally
             {
-                phContext.DangerousRelease();
+                if (refAdded)
+                {
+                    phContext.DangerousRelease();
+                }
             }
 
             if (status == 0 && refHandle != null)

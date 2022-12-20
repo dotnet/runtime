@@ -3,13 +3,16 @@
 
 import cwraps from "./cwraps";
 import { Module } from "./imports";
-import { VoidPtr, ManagedPointer, NativePointer } from "./types";
+import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
+import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types";
+import { _zero_region } from "./memory";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
 let _scratch_root_free_indices: Int32Array | null = null;
 let _scratch_root_free_indices_count = 0;
 const _scratch_root_free_instances: WasmRoot<any>[] = [];
+const _external_root_free_instances: WasmExternalRoot<any>[] = [];
 
 /**
  * Allocates a block of memory that can safely contain pointers into the managed heap.
@@ -30,7 +33,7 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBuffer(offset, capacity, true, name);
+    return new WasmRootBufferImpl(offset, capacity, true, name);
 }
 
 /**
@@ -49,7 +52,27 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
 
     _zero_region(offset, capacityBytes);
 
-    return new WasmRootBuffer(offset, capacity, false, name);
+    return new WasmRootBufferImpl(offset, capacity, false, name);
+}
+
+/**
+ * Allocates a WasmRoot pointing to a root provided and controlled by external code. Typicaly on managed stack.
+ * Releasing this root will not de-allocate the root space. You still need to call .release().
+ */
+export function mono_wasm_new_external_root<T extends MonoObject>(address: VoidPtr | MonoObjectRef): WasmRoot<T> {
+    let result: WasmExternalRoot<T>;
+
+    if (!address)
+        throw new Error("address must be a location in the native heap");
+
+    if (_external_root_free_instances.length > 0) {
+        result = _external_root_free_instances.pop()!;
+        result._set_address(address);
+    } else {
+        result = new WasmExternalRoot<T>(address);
+    }
+
+    return result;
 }
 
 /**
@@ -59,7 +82,7 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
  * The result object has get() and set(value) methods, along with a .value property.
  * When you are done using the root you must call its .release() method.
  */
-export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(value: T | undefined = undefined): WasmRoot<T> {
+export function mono_wasm_new_root<T extends MonoObject>(value: T | undefined = undefined): WasmRoot<T> {
     let result: WasmRoot<T>;
 
     if (_scratch_root_free_instances.length > 0) {
@@ -68,7 +91,7 @@ export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(val
         const index = _mono_wasm_claim_scratch_index();
         const buffer = _scratch_root_buffer;
 
-        result = new WasmRoot(buffer!, index);
+        result = new WasmJsOwnedRoot(buffer!, index);
     }
 
     if (value !== undefined) {
@@ -89,7 +112,7 @@ export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(val
  * mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
  * Each root must be released with its release method, or using the mono_wasm_release_roots API.
  */
-export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(count_or_values: number | T[]): WasmRoot<T>[] {
+export function mono_wasm_new_roots<T extends MonoObject>(count_or_values: number | T[]): WasmRoot<T>[] {
     let result;
 
     if (Array.isArray(count_or_values)) {
@@ -116,18 +139,11 @@ export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(co
  */
 export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
     for (let i = 0; i < args.length; i++) {
-        if (!args[i])
+        if (is_nullish(args[i]))
             continue;
 
         args[i].release();
     }
-}
-
-function _zero_region(byteOffset: VoidPtr, sizeBytes: number) {
-    if (((<any>byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
-        Module.HEAP32.fill(0, <any>byteOffset >>> 2, sizeBytes >>> 2);
-    else
-        Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
 }
 
 function _mono_wasm_release_scratch_index(index: number) {
@@ -140,7 +156,7 @@ function _mono_wasm_release_scratch_index(index: number) {
 }
 
 function _mono_wasm_claim_scratch_index() {
-    if (!_scratch_root_buffer || !_scratch_root_free_indices) {
+    if (is_nullish(_scratch_root_buffer) || !_scratch_root_free_indices) {
         _scratch_root_buffer = mono_wasm_new_root_buffer(maxScratchRoots, "js roots");
 
         _scratch_root_free_indices = new Int32Array(maxScratchRoots);
@@ -157,8 +173,7 @@ function _mono_wasm_claim_scratch_index() {
     return result;
 }
 
-
-export class WasmRootBuffer {
+export class WasmRootBufferImpl implements WasmRootBuffer {
     private __count: number;
     private length: number;
     private __offset: VoidPtr;
@@ -186,7 +201,7 @@ export class WasmRootBuffer {
             this._throw_index_out_of_range();
     }
 
-    get_address(index: number): NativePointer {
+    get_address(index: number): MonoObjectRef {
         this._check_in_range(index);
         return <any>this.__offset + (index * 4);
     }
@@ -202,21 +217,27 @@ export class WasmRootBuffer {
     get(index: number): ManagedPointer {
         this._check_in_range(index);
         const offset = this.get_address_32(index);
-        return <any>Module.HEAP32[offset];
+        return <any>Module.HEAPU32[offset];
     }
 
     set(index: number, value: ManagedPointer): ManagedPointer {
-        const offset = this.get_address_32(index);
-        Module.HEAP32[offset] = <any>value;
+        const address = this.get_address(index);
+        cwraps.mono_wasm_write_managed_pointer_unsafe(address, value);
         return value;
     }
 
+    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void {
+        const destinationAddress = this.get_address(index);
+        cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
+    }
+
     _unsafe_get(index: number): number {
-        return Module.HEAP32[this.__offset32 + index];
+        return Module.HEAPU32[this.__offset32 + index];
     }
 
     _unsafe_set(index: number, value: ManagedPointer | NativePointer): void {
-        Module.HEAP32[this.__offset32 + index] = <any>value;
+        const address = <any>this.__offset + index;
+        cwraps.mono_wasm_write_managed_pointer_unsafe(<VoidPtr><any>address, <ManagedPointer>value);
     }
 
     clear(): void {
@@ -239,7 +260,7 @@ export class WasmRootBuffer {
     }
 }
 
-export class WasmRoot<T extends ManagedPointer | NativePointer> {
+class WasmJsOwnedRoot<T extends MonoObject> implements WasmRoot<T> {
     private __buffer: WasmRootBuffer;
     private __index: number;
 
@@ -248,7 +269,7 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
         this.__index = index;
     }
 
-    get_address(): NativePointer {
+    get_address(): MonoObjectRef {
         return this.__buffer.get_address(this.__index);
     }
 
@@ -256,14 +277,41 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
         return this.__buffer.get_address_32(this.__index);
     }
 
+    get address(): MonoObjectRef {
+        return this.__buffer.get_address(this.__index);
+    }
+
     get(): T {
-        const result = this.__buffer._unsafe_get(this.__index);
+        const result = (<WasmRootBufferImpl>this.__buffer)._unsafe_get(this.__index);
         return <any>result;
     }
 
     set(value: T): T {
-        this.__buffer._unsafe_set(this.__index, value);
+        const destinationAddress = this.__buffer.get_address(this.__index);
+        cwraps.mono_wasm_write_managed_pointer_unsafe(destinationAddress, <ManagedPointer>value);
         return value;
+    }
+
+    copy_from(source: WasmRoot<T>): void {
+        const sourceAddress = source.address;
+        const destinationAddress = this.address;
+        cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
+    }
+
+    copy_to(destination: WasmRoot<T>): void {
+        const sourceAddress = this.address;
+        const destinationAddress = destination.address;
+        cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
+    }
+
+    copy_from_address(source: MonoObjectRef): void {
+        const destinationAddress = this.address;
+        cwraps.mono_wasm_copy_managed_pointer(destinationAddress, source);
+    }
+
+    copy_to_address(destination: MonoObjectRef): void {
+        const sourceAddress = this.address;
+        cwraps.mono_wasm_copy_managed_pointer(destination, sourceAddress);
     }
 
     get value(): T {
@@ -275,11 +323,14 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     valueOf(): T {
-        return this.get();
+        throw new Error("Implicit conversion of roots to pointers is no longer supported. Use .value or .address as appropriate");
     }
 
     clear(): void {
-        this.set(<any>0);
+        // .set performs an expensive write barrier, and that is not necessary in most cases
+        //  for clear since clearing a root cannot cause new objects to survive a GC
+        const address32 = this.__buffer.get_address_32(this.__index);
+        Module.HEAPU32[address32] = 0;
     }
 
     release(): void {
@@ -298,6 +349,92 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     toString(): string {
-        return `[root @${this.get_address()}]`;
+        return `[root @${this.address}]`;
+    }
+}
+
+class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
+    private __external_address: MonoObjectRef = MonoObjectRefNull;
+    private __external_address_32: number = <any>0;
+
+    constructor(address: NativePointer | ManagedPointer) {
+        this._set_address(address);
+    }
+
+    _set_address(address: NativePointer | ManagedPointer): void {
+        this.__external_address = <MonoObjectRef><any>address;
+        this.__external_address_32 = <number><any>address >>> 2;
+    }
+
+    get address(): MonoObjectRef {
+        return <MonoObjectRef><any>this.__external_address;
+    }
+
+    get_address(): MonoObjectRef {
+        return <MonoObjectRef><any>this.__external_address;
+    }
+
+    get_address_32(): number {
+        return this.__external_address_32;
+    }
+
+    get(): T {
+        const result = Module.HEAPU32[this.__external_address_32];
+        return <any>result;
+    }
+
+    set(value: T): T {
+        cwraps.mono_wasm_write_managed_pointer_unsafe(this.__external_address, <ManagedPointer>value);
+        return value;
+    }
+
+    copy_from(source: WasmRoot<T>): void {
+        const sourceAddress = source.address;
+        const destinationAddress = this.__external_address;
+        cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
+    }
+
+    copy_to(destination: WasmRoot<T>): void {
+        const sourceAddress = this.__external_address;
+        const destinationAddress = destination.address;
+        cwraps.mono_wasm_copy_managed_pointer(destinationAddress, sourceAddress);
+    }
+
+    copy_from_address(source: MonoObjectRef): void {
+        const destinationAddress = this.__external_address;
+        cwraps.mono_wasm_copy_managed_pointer(destinationAddress, source);
+    }
+
+    copy_to_address(destination: MonoObjectRef): void {
+        const sourceAddress = this.__external_address;
+        cwraps.mono_wasm_copy_managed_pointer(destination, sourceAddress);
+    }
+
+    get value(): T {
+        return this.get();
+    }
+
+    set value(value: T) {
+        this.set(value);
+    }
+
+    valueOf(): T {
+        throw new Error("Implicit conversion of roots to pointers is no longer supported. Use .value or .address as appropriate");
+    }
+
+    clear(): void {
+        // .set performs an expensive write barrier, and that is not necessary in most cases
+        //  for clear since clearing a root cannot cause new objects to survive a GC
+        Module.HEAPU32[<any>this.__external_address >>> 2] = 0;
+    }
+
+    release(): void {
+        const maxPooledInstances = 128;
+        if (_external_root_free_instances.length < maxPooledInstances)
+            _external_root_free_instances.push(this);
+    }
+
+    toString(): string {
+        return `[external root @${this.address}]`;
     }
 }

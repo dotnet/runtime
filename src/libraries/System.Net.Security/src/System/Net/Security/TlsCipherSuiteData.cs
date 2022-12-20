@@ -23,10 +23,9 @@ namespace System.Net.Security
                 s_tlsLookup.Count == LookupCount,
                 $"Lookup dictionary was of size {s_tlsLookup.Count} instead of {LookupCount}");
 
-            foreach (object? value in Enum.GetValues(typeof(TlsCipherSuite)))
+            foreach (TlsCipherSuite value in Enum.GetValues<TlsCipherSuite>())
             {
-                TlsCipherSuite val = (TlsCipherSuite)value!;
-                Debug.Assert(s_tlsLookup.ContainsKey(val), $"No mapping found for {val} ({(int)val})");
+                Debug.Assert(s_tlsLookup.ContainsKey(value), $"No mapping found for {value} ({value:X})");
             }
         }
 

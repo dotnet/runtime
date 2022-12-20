@@ -2,25 +2,21 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseAppHost>false</UseAppHost>
     <RollForward>Major</RollForward>
     <DefineConstants>ILVERIFY;$(DefineConstants)</DefineConstants>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="..\ILVerification\ILVerification.projitems" />
 
   <ItemGroup>
-    <Compile Include="..\Common\CommandLine\CommandLineException.cs">
-      <Link>CommandLine\CommandLineException.cs</Link>
-    </Compile>
-    <Compile Include="..\Common\CommandLine\CommandLineHelpers.cs">
-      <Link>CommandLine\CommandLineHelpers.cs</Link>
-    </Compile>
+    <Compile Include="..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 </Project>

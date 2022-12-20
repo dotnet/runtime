@@ -78,9 +78,7 @@ namespace System.Net.Http
         /// <returns>true if the next line was read successfully, or false if all characters have been read.</returns>
         public bool ReadLine()
         {
-            int startIndex;
-            int length;
-            return ReadLine(out startIndex, out length);
+            return ReadLine(out _, out _);
         }
 
         /// <summary>
@@ -93,30 +91,22 @@ namespace System.Net.Http
         {
             Debug.Assert(_buffer != null);
 
-            int i = _position;
+            int pos = _position;
 
-            while (i < _length)
+            int newline = _buffer.AsSpan(pos, _length - pos).IndexOf("\r\n".AsSpan());
+            if (newline >= 0)
             {
-                char ch = _buffer[i];
-                if (ch == '\r')
-                {
-                    int next = i + 1;
-                    if (next < _length && _buffer[next] == '\n')
-                    {
-                        startIndex = _position;
-                        length = i - _position;
-                        _position = i + 2;
-                        return true;
-                    }
-                }
-                i++;
+                startIndex = pos;
+                length = newline;
+                _position = pos + newline + 2;
+                return true;
             }
 
-            if (i > _position)
+            if (pos < _length)
             {
-                startIndex = _position;
-                length = i - _position;
-                _position = i;
+                startIndex = pos;
+                length = _length - pos;
+                _position = _length;
                 return true;
             }
 

@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public DotNetBuilder(string basePath, string builtDotnet, string name)
         {
-            _path = Path.Combine(basePath, name);
+            _path = name == null ? basePath : Path.Combine(basePath, name);
             Directory.CreateDirectory(_path);
 
             _repoDirectories = new RepoDirectoriesProvider(builtDotnet: _path);
@@ -163,7 +163,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public DotNetBuilder AddFramework(
             string name,
             string version,
-            Action<RuntimeConfig> runtimeConfigCustomizer)
+            Action<RuntimeConfig> runtimeConfigCustomizer,
+            Action<string> frameworkCustomizer = null)
         {
             // ./shared/<name>/<version> - create a mock of effectively empty non-root framework
             string path = Path.Combine(_path, "shared", name, version);
@@ -174,20 +175,23 @@ namespace Microsoft.DotNet.CoreSetup.Test
             runtimeConfigCustomizer(runtimeConfig);
             runtimeConfig.Save();
 
+            if (frameworkCustomizer is not null)
+                frameworkCustomizer(path);
+
             return this;
         }
 
         public DotNetBuilder AddMockSDK(
-            string version,
-            string MNAVersion)
+            string sdkVersion,
+            string runtimeVersion)
         {
-            string path = Path.Combine(_path, "sdk", version);
+            string path = Path.Combine(_path, "sdk", sdkVersion);
             Directory.CreateDirectory(path);
 
             using var _ = File.Create(Path.Combine(path, "dotnet.dll"));
 
             RuntimeConfig dotnetRuntimeConfig = new RuntimeConfig(Path.Combine(path, "dotnet.runtimeconfig.json"));
-            dotnetRuntimeConfig.WithFramework(new RuntimeConfig.Framework("Microsoft.NETCore.App", MNAVersion));
+            dotnetRuntimeConfig.WithFramework(new RuntimeConfig.Framework("Microsoft.NETCore.App", runtimeVersion));
             dotnetRuntimeConfig.Save();
 
             return this;

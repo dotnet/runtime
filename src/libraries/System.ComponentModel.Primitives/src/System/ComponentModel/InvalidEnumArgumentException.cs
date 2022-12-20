@@ -49,10 +49,7 @@ namespace System.ComponentModel
                                 invalidValue,
                                 enumClass?.Name), argumentName)
         {
-            if (enumClass == null)
-            {
-                throw new ArgumentNullException(nameof(enumClass));
-            }
+            ArgumentNullException.ThrowIfNull(enumClass);
         }
 
         /// <summary>

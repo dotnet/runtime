@@ -24,8 +24,18 @@ namespace System.IO.Pipelines
             {
                 _pipeWriter.Complete();
             }
-            base.Dispose(disposing);
         }
+
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+        public override ValueTask DisposeAsync()
+        {
+            if (!LeaveOpen)
+            {
+                return _pipeWriter.CompleteAsync();
+            }
+            return default;
+        }
+#endif
 
         internal bool LeaveOpen { get; set; }
 
@@ -63,7 +73,7 @@ namespace System.IO.Pipelines
         {
             if (buffer is null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
             }
 
             ValueTask<FlushResult> valueTask = _pipeWriter.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);

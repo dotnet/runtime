@@ -12,15 +12,10 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Data.SqlTypes
 {
     [XmlSchemaProvider("GetXsdType")]
-    public struct SqlBinary : INullable, IComparable, IXmlSerializable
+    public struct SqlBinary : INullable, IComparable, IXmlSerializable, IEquatable<SqlBinary>
     {
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
         private byte[]? _value;
-
-        private SqlBinary(bool fNull)
-        {
-            _value = null;
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref='SqlBinary'/> class with a binary object to be stored.
@@ -42,8 +37,9 @@ namespace System.Data.SqlTypes
         /// <summary>
         /// Initializes a new instance of the <see cref='SqlBinary'/> class with a binary object to be stored.  This constructor will not copy the value.
         /// </summary>
-        internal SqlBinary(byte[]? value, bool ignored)
+        private SqlBinary(byte[]? value, bool copy)
         {
+            Debug.Assert(!copy);
             // if value is null, this generates a SqlBinary.Null
             _value = value;
         }
@@ -338,10 +334,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlBinary)
+            if (value is SqlBinary i)
             {
-                SqlBinary i = (SqlBinary)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlBinary));
@@ -362,20 +356,15 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            if (!(value is SqlBinary))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SqlBinary other && Equals(other);
 
-            SqlBinary i = (SqlBinary)value;
-
-            if (i.IsNull || IsNull)
-                return (i.IsNull && IsNull);
-            else
-                return (this == i).Value;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(SqlBinary other) =>
+            other.IsNull || IsNull ? other.IsNull && IsNull :
+            (this == other).Value;
 
         // Hash a byte array.
         // Trailing zeroes/spaces would affect the hash value, so caller needs to
@@ -471,10 +460,15 @@ namespace System.Data.SqlTypes
             return new XmlQualifiedName("base64Binary", XmlSchema.Namespace);
         }
 
+        public static SqlBinary WrapBytes(byte[] bytes)
+        {
+            return new SqlBinary(bytes, copy: false);
+        }
+
         /// <summary>
         /// Represents a null value that can be assigned to the <see cref='Value'/> property of an
         /// instance of the <see cref='SqlBinary'/> class.
         /// </summary>
-        public static readonly SqlBinary Null = new SqlBinary(true);
+        public static readonly SqlBinary Null = new SqlBinary(null, copy: false);
     } // SqlBinary
 } // namespace System.Data.SqlTypes

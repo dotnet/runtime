@@ -8,9 +8,9 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'filter' { }
+.assembly 'filter_seh_Boxing' { }
 .assembly extern xunit.core {}
-.namespace SinCalc
+.namespace SinCalc_filter_seh_il
 {
   .class auto ansi MistakeException extends [mscorlib]System.Exception
   {
@@ -25,7 +25,7 @@
       IL_000b:  ldarg.0
       IL_000c:  ldarg.s   m
       IL_000e:  box       [mscorlib]System.Double
-      IL_0013:  stfld      class System.Object SinCalc.MistakeException::mistake
+      IL_0013:  stfld      class System.Object SinCalc_filter_seh_il.MistakeException::mistake
       IL_0018:  ret
     } // end of method 'MistakeException::.ctor'
 
@@ -35,7 +35,7 @@
       .maxstack  8
       IL_0000:  ldstr      "Mistake is "
       IL_0005:  ldarg.0
-      IL_0006:  ldfld      class System.Object SinCalc.MistakeException::mistake
+      IL_0006:  ldfld      class System.Object SinCalc_filter_seh_il.MistakeException::mistake
       IL_000b:  callvirt   instance class System.String [mscorlib]System.Object::ToString()
       IL_0010:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
@@ -44,7 +44,7 @@
 
   } // end of class 'MistakeException'
 
-  .class auto ansi SinCalc extends [mscorlib]System.Object
+  .class public auto ansi SinCalc_filter_seh_il extends [mscorlib]System.Object
   {
     .field static family class System.Object PI
     .method family hidebysig static class System.Object 
@@ -155,7 +155,7 @@
 
       IL_00df:  ldloc.1
       IL_00e0:  ret
-    } // end of method 'SinCalc::mySin'
+    } // end of method 'SinCalc_filter_seh_il::mySin'
 
     .method family hidebysig static class System.Object 
             CalcAndCheck(class System.Object Angle,
@@ -180,7 +180,7 @@
       IL_0021:  box       [mscorlib]System.Double
       IL_0026:  stloc.1
       IL_0027:  ldarg.0
-      IL_0028:  call       class System.Object SinCalc.SinCalc::mySin(class System.Object)
+      IL_0028:  call       class System.Object SinCalc_filter_seh_il.SinCalc_filter_seh_il::mySin(class System.Object)
       IL_002d:  unbox      [mscorlib]System.Double
       IL_0032:  ldind.r8
       IL_0033:  stloc.3
@@ -208,7 +208,7 @@
       IL_0066:  ldind.r8
       IL_0067:  sub
       IL_0068:  call       float64 [mscorlib]System.Math::Abs(float64)
-      IL_006d:  newobj     instance void SinCalc.MistakeException::.ctor(float64)
+      IL_006d:  newobj     instance void SinCalc_filter_seh_il.MistakeException::.ctor(float64)
       IL_0072:  throw
 
       IL_0073:  ldloc.1
@@ -232,7 +232,7 @@
       IL_009d:  ldind.r8
       IL_009e:  sub
       IL_009f:  call       float64 [mscorlib]System.Math::Abs(float64)
-      IL_00a4:  newobj     instance void SinCalc.MistakeException::.ctor(float64)
+      IL_00a4:  newobj     instance void SinCalc_filter_seh_il.MistakeException::.ctor(float64)
       IL_00a9:  throw
 
       IL_00aa:  ldloc.2
@@ -256,14 +256,14 @@
       IL_00d4:  ldind.r8
       IL_00d5:  sub
       IL_00d6:  call       float64 [mscorlib]System.Math::Abs(float64)
-      IL_00db:  newobj     instance void SinCalc.MistakeException::.ctor(float64)
+      IL_00db:  newobj     instance void SinCalc_filter_seh_il.MistakeException::.ctor(float64)
       IL_00e0:  throw
 
       IL_00e1:  ldloc.1
       IL_00e2:  ret
-    } // end of method 'SinCalc::CalcAndCheck'
+    } // end of method 'SinCalc_filter_seh_il::CalcAndCheck'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -277,7 +277,7 @@
                [3] class System.Object total1,
                [4] class System.Object total2,
                [5] class System.Object total3,
-               [6] class SinCalc.MistakeException ex,
+               [6] class SinCalc_filter_seh_il.MistakeException ex,
                [7] float64 V_7,
                [8] int32 V_8,
                [9] class System.String[] V_9)
@@ -381,7 +381,7 @@
         .try
         {
         	FILTER_TRY:
-	          IL_0126:  ldsfld     class System.Object SinCalc.SinCalc::PI
+	          IL_0126:  ldsfld     class System.Object SinCalc_filter_seh_il.SinCalc_filter_seh_il::PI
 	          IL_012b:  unbox      [mscorlib]System.Double
 	          IL_0130:  ldind.r8
 	          IL_0131:  ldloc.0
@@ -427,7 +427,7 @@
 	          IL_0194:  stloc.s    V_7
 	          IL_0196:  ldloc.s   V_7
 	          IL_0198:  box       [mscorlib]System.Double
-	          IL_019d:  call       class System.Object SinCalc.SinCalc::CalcAndCheck(class System.Object,
+	          IL_019d:  call       class System.Object SinCalc_filter_seh_il.SinCalc_filter_seh_il::CalcAndCheck(class System.Object,
 	                                                                                 class System.Object)
 	          IL_01a2:  unbox      [mscorlib]System.Double
 	          IL_01a7:  ldind.r8
@@ -490,12 +490,12 @@
           IL_01be:  leave.s    IL_01fe
 	    	.try FILTER_TRY to FILTER_FILTER filter FILTER_FILTER handler FILTER_HANDLER to FILTER_END
         }  // end .try
-        catch SinCalc.MistakeException 
+        catch SinCalc_filter_seh_il.MistakeException 
         {
           IL_01c0:  stloc.s    ex
           IL_01c2:  ldstr      "Mistake is "
           IL_01c7:  ldloc.s    ex
-          IL_01c9:  ldfld      class System.Object SinCalc.MistakeException::mistake
+          IL_01c9:  ldfld      class System.Object SinCalc_filter_seh_il.MistakeException::mistake
           IL_01ce:  callvirt   instance class System.String [mscorlib]System.Object::ToString()
           IL_01d3:  call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                    class System.String)
@@ -504,7 +504,7 @@
           IL_01de:  unbox      [mscorlib]System.Double
           IL_01e3:  ldind.r8
           IL_01e4:  ldloc.s    ex
-          IL_01e6:  ldfld      class System.Object SinCalc.MistakeException::mistake
+          IL_01e6:  ldfld      class System.Object SinCalc_filter_seh_il.MistakeException::mistake
           IL_01eb:  unbox      [mscorlib]System.Double
           IL_01f0:  ldind.r8
           IL_01f1:  add
@@ -578,7 +578,7 @@
       IL_0280:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_0285:  ldc.i4    0x64
       IL_0286:  ret
-    } // end of method 'SinCalc::Main'
+    } // end of method 'SinCalc_filter_seh_il::Main'
 
     .method public hidebysig specialname rtspecialname static 
             void .cctor() il managed
@@ -589,9 +589,9 @@
       IL_0009:  stloc.0
       IL_000a:  ldloc.s   V_0
       IL_000c:  box       [mscorlib]System.Double
-      IL_0011:  stsfld     class System.Object SinCalc.SinCalc::PI
+      IL_0011:  stsfld     class System.Object SinCalc_filter_seh_il.SinCalc_filter_seh_il::PI
       IL_0016:  ret
-    } // end of method 'SinCalc::.cctor'
+    } // end of method 'SinCalc_filter_seh_il::.cctor'
 
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() il managed
@@ -600,9 +600,9 @@
       IL_0000:  ldarg.0
       IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
       IL_0006:  ret
-    } // end of method 'SinCalc::.ctor'
+    } // end of method 'SinCalc_filter_seh_il::.ctor'
 
-  } // end of class 'SinCalc'
+  } // end of class 'SinCalc_filter_seh_il'
 
-} // end of namespace 'SinCalc'
+} // end of namespace 'SinCalc_filter_seh_il'
 

@@ -1204,7 +1204,7 @@ namespace System.ServiceModel.Syndication.Tests
 
         public PropertyCollection ExtendedProperties
         {
-            get => _extendedProperties ?? (_extendedProperties = new PropertyCollection());
+            get => _extendedProperties ??= new PropertyCollection();
         }
 
         public virtual void InsertChildAfter(XmlDiffNode child, XmlDiffNode newChild)

@@ -1,19 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-using System.Diagnostics;
-#endif
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// EventPayload class holds the list of parameters and their corresponding values for user defined types passed to
@@ -37,8 +29,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (key == null)
-                    throw new System.ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
 
                 int position = 0;
                 foreach (string name in m_names)
@@ -77,8 +68,7 @@ namespace System.Diagnostics.Tracing
 
         public bool ContainsKey(string key)
         {
-            if (key == null)
-                throw new System.ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             foreach (string item in m_names)
             {
@@ -123,8 +113,7 @@ namespace System.Diagnostics.Tracing
 
         public bool TryGetValue(string key, [MaybeNullWhen(false)] out object? value)
         {
-            if (key == null)
-                throw new System.ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             int position = 0;
             foreach (string name in m_names)

@@ -152,7 +152,7 @@ namespace MonoTests.System.Drawing.Imaging
         {
             Assert.Equal(MetafileType.Emf, header.Type);
             Assert.Equal(65536, header.Version);
-            // extactly the filesize
+            // exactly the filesize
             Assert.Equal(20456, header.MetafileSize);
 
             Assert.Equal(0, header.Bounds.X);
@@ -441,21 +441,21 @@ namespace MonoTests.System.Drawing.Imaging
                     g.MultiplyTransform(m);
                     // check
                     float[] elements = g.Transform.Elements;
-                    Assert.Equal(-1f, elements[0], 5);
-                    Assert.Equal(0f, elements[1], 5);
-                    Assert.Equal(0f, elements[2], 5);
-                    Assert.Equal(-1f, elements[3], 5);
-                    Assert.Equal(-2f, elements[4], 5);
-                    Assert.Equal(-3f, elements[5], 5);
+                    Assert.Equal(-1.0, elements[0], 5);
+                    Assert.Equal(0.0, elements[1], 5);
+                    Assert.Equal(0.0, elements[2], 5);
+                    Assert.Equal(-1.0, elements[3], 5);
+                    Assert.Equal(-2.0, elements[4], 5);
+                    Assert.Equal(-3.0, elements[5], 5);
 
                     g.Transform = m;
                     elements = g.Transform.Elements;
-                    Assert.Equal(0f, elements[0], 5);
-                    Assert.Equal(0.5f, elements[1], 5);
-                    Assert.Equal(-2f, elements[2], 5);
-                    Assert.Equal(0f, elements[3], 5);
-                    Assert.Equal(-4f, elements[4], 5);
-                    Assert.Equal(-1f, elements[5], 5);
+                    Assert.Equal(0.0, elements[0], 5);
+                    Assert.Equal(0.5, elements[1], 5);
+                    Assert.Equal(-2.0, elements[2], 5);
+                    Assert.Equal(0.0, elements[3], 5);
+                    Assert.Equal(-4.0, elements[4], 5);
+                    Assert.Equal(-1.0, elements[5], 5);
 
                     g.ResetTransform();
                     Assert.True(g.Transform.IsIdentity);

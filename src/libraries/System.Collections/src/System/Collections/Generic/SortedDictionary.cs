@@ -30,10 +30,7 @@ namespace System.Collections.Generic
 
         public SortedDictionary(IDictionary<TKey, TValue> dictionary, IComparer<TKey>? comparer)
         {
-            if (dictionary == null)
-            {
-                throw new ArgumentNullException(nameof(dictionary));
-            }
+            ArgumentNullException.ThrowIfNull(dictionary);
 
             var keyValuePairComparer = new KeyValuePairComparer(comparer);
 
@@ -159,14 +156,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public KeyCollection Keys
-        {
-            get
-            {
-                if (_keys == null) _keys = new KeyCollection(this);
-                return _keys;
-            }
-        }
+        public KeyCollection Keys => _keys ??= new KeyCollection(this);
 
         ICollection<TKey> IDictionary<TKey, TValue>.Keys
         {
@@ -184,14 +174,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public ValueCollection Values
-        {
-            get
-            {
-                if (_values == null) _values = new ValueCollection(this);
-                return _values;
-            }
-        }
+        public ValueCollection Values => _values ??= new ValueCollection(this);
 
         ICollection<TValue> IDictionary<TKey, TValue>.Values
         {
@@ -211,10 +194,8 @@ namespace System.Collections.Generic
 
         public void Add(TKey key, TValue value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
+
             _set.Add(new KeyValuePair<TKey, TValue>(key, value));
         }
 
@@ -225,10 +206,7 @@ namespace System.Collections.Generic
 
         public bool ContainsKey(TKey key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             return _set.Contains(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
         }
@@ -281,20 +259,14 @@ namespace System.Collections.Generic
 
         public bool Remove(TKey key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             return _set.Remove(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
         }
 
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
             if (node == null)
@@ -377,13 +349,12 @@ namespace System.Collections.Generic
 
         void IDictionary.Add(object key, object? value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
-            if (value == null && default(TValue) != null)
-                throw new ArgumentNullException(nameof(value));
+            if (default(TValue) != null)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
 
             try
             {
@@ -415,10 +386,7 @@ namespace System.Collections.Generic
 
         private static bool IsCompatibleKey(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             return (key is TKey);
         }
@@ -570,10 +538,8 @@ namespace System.Collections.Generic
 
             public KeyCollection(SortedDictionary<TKey, TValue> dictionary)
             {
-                if (dictionary == null)
-                {
-                    throw new ArgumentNullException(nameof(dictionary));
-                }
+                ArgumentNullException.ThrowIfNull(dictionary);
+
                 _dictionary = dictionary;
             }
 
@@ -594,15 +560,9 @@ namespace System.Collections.Generic
 
             public void CopyTo(TKey[] array, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
+                ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < Count)
                 {
@@ -614,10 +574,7 @@ namespace System.Collections.Generic
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
+                ArgumentNullException.ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {
@@ -629,10 +586,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {
@@ -652,7 +606,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     }
                 }
             }
@@ -677,7 +631,7 @@ namespace System.Collections.Generic
                 throw new NotSupportedException(SR.NotSupported_KeyCollectionSet);
             }
 
-            bool ICollection<TKey>.Contains(TKey item)
+            public bool Contains(TKey item)
             {
                 return _dictionary.ContainsKey(item);
             }
@@ -752,10 +706,8 @@ namespace System.Collections.Generic
 
             public ValueCollection(SortedDictionary<TKey, TValue> dictionary)
             {
-                if (dictionary == null)
-                {
-                    throw new ArgumentNullException(nameof(dictionary));
-                }
+                ArgumentNullException.ThrowIfNull(dictionary);
+
                 _dictionary = dictionary;
             }
 
@@ -776,15 +728,9 @@ namespace System.Collections.Generic
 
             public void CopyTo(TValue[] array, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
+                ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < Count)
                 {
@@ -796,10 +742,7 @@ namespace System.Collections.Generic
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
+                ArgumentNullException.ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {
@@ -811,10 +754,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {
@@ -834,7 +774,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     }
                 }
             }
@@ -933,14 +873,7 @@ namespace System.Collections.Generic
 
             public KeyValuePairComparer(IComparer<TKey>? keyComparer)
             {
-                if (keyComparer == null)
-                {
-                    this.keyComparer = Comparer<TKey>.Default;
-                }
-                else
-                {
-                    this.keyComparer = keyComparer;
-                }
+                this.keyComparer = keyComparer ?? Comparer<TKey>.Default;
             }
 
             public override int Compare(KeyValuePair<TKey, TValue> x, KeyValuePair<TKey, TValue> y)

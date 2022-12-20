@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.Odbc
 {
     internal sealed class OdbcConnectionHandle : OdbcHandle
@@ -41,7 +39,7 @@ namespace System.Data.Odbc
             //a odbc 3.0 feature.  The ConnectionTimeout on the managed providers represents
             //the login timeout, nothing more.
             int connectionTimeout = connection.ConnectionTimeout;
-            retcode = SetConnectionAttribute2(ODBC32.SQL_ATTR.LOGIN_TIMEOUT, (IntPtr)connectionTimeout, (int)ODBC32.SQL_IS.UINTEGER);
+            SetConnectionAttribute2(ODBC32.SQL_ATTR.LOGIN_TIMEOUT, (IntPtr)connectionTimeout, (int)ODBC32.SQL_IS.UINTEGER);
 
             string connectionString = constr.UsersConnectionString(false);
 
@@ -195,8 +193,7 @@ namespace System.Data.Odbc
             try { }
             finally
             {
-                short cbActualSize;
-                retcode = Interop.Odbc.SQLDriverConnectW(this, ADP.PtrZero, connectionString, ODBC32.SQL_NTS, ADP.PtrZero, 0, out cbActualSize, (short)ODBC32.SQL_DRIVER.NOPROMPT);
+                retcode = Interop.Odbc.SQLDriverConnectW(this, ADP.PtrZero, connectionString, ODBC32.SQL_NTS, ADP.PtrZero, 0, out _, (short)ODBC32.SQL_DRIVER.NOPROMPT);
                 switch (retcode)
                 {
                     case ODBC32.SQLRETURN.SUCCESS:
@@ -212,14 +209,13 @@ namespace System.Data.Odbc
         protected override bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
-            ODBC32.SQLRETURN retcode;
 
             // must call complete the transaction rollback, change handle state, and disconnect the connection
-            retcode = CompleteTransaction(ODBC32.SQL_ROLLBACK, handle);
+            CompleteTransaction(ODBC32.SQL_ROLLBACK, handle);
 
             if ((HandleState.Connected == _handleState) || (HandleState.TransactionInProgress == _handleState))
             {
-                retcode = Interop.Odbc.SQLDisconnect(handle);
+                Interop.Odbc.SQLDisconnect(handle);
                 _handleState = HandleState.Allocated;
             }
             Debug.Assert(HandleState.Allocated == _handleState, "not expected HandleState.Allocated");

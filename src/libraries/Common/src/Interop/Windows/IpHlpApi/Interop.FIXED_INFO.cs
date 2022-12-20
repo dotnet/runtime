@@ -12,21 +12,34 @@ internal static partial class Interop
         public const int MAX_DOMAIN_NAME_LEN = 128;
         public const int MAX_SCOPE_ID_LEN = 256;
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        public struct FIXED_INFO
+        [StructLayout(LayoutKind.Sequential)]
+        public unsafe struct FIXED_INFO
         {
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_HOSTNAME_LEN + 4)]
-            public string hostName;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_DOMAIN_NAME_LEN + 4)]
-            public string domainName;
+            private fixed byte _hostName[MAX_HOSTNAME_LEN + 4];
+            public string HostName => CreateString(ref _hostName[0], MAX_HOSTNAME_LEN + 4);
+
+            private fixed byte _domainName[MAX_DOMAIN_NAME_LEN + 4];
+            public string DomainName => CreateString(ref _domainName[0], MAX_DOMAIN_NAME_LEN + 4);
+
             public IntPtr currentDnsServer; // IpAddressList*
             public IP_ADDR_STRING DnsServerList;
             public uint nodeType;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_SCOPE_ID_LEN + 4)]
-            public string scopeId;
-            public bool enableRouting;
-            public bool enableProxy;
-            public bool enableDns;
+
+            private fixed byte _scopeId[MAX_SCOPE_ID_LEN + 4];
+            public string ScopeId => CreateString(ref _scopeId[0], MAX_SCOPE_ID_LEN + 4);
+
+            public uint enableRouting;
+            public uint enableProxy;
+            public uint enableDns;
+
+            private static string CreateString(ref byte firstByte, int maxLength)
+            {
+                fixed (byte* ptr = &firstByte)
+                {
+                    int terminator = new ReadOnlySpan<byte>(ptr, maxLength).IndexOf((byte)0);
+                    return Marshal.PtrToStringAnsi((IntPtr)ptr, (terminator >= 0) ? terminator : maxLength);
+                }
+            }
         }
     }
 }

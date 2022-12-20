@@ -10,10 +10,10 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyCreate")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyCreate")]
         internal static partial SafeEvpPKeyHandle EvpPkeyCreate();
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial SafeEvpPKeyHandle CryptoNative_EvpPKeyDuplicate(
             SafeEvpPKeyHandle currentKey,
             EvpAlgorithmId algorithmId);
@@ -37,22 +37,22 @@ internal static partial class Interop
             return pkey;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
         internal static partial void EvpPkeyDestroy(IntPtr pkey);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeySize")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeySize")]
         internal static partial int EvpPKeySize(SafeEvpPKeyHandle pkey);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         internal static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle);
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial SafeEvpPKeyHandle CryptoNative_DecodeSubjectPublicKeyInfo(
             byte* buf,
             int len,
             int algId);
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial SafeEvpPKeyHandle CryptoNative_DecodePkcs8PrivateKey(
             byte* buf,
             int len,
@@ -104,22 +104,32 @@ internal static partial class Interop
             return handle;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_GetPkcs8PrivateKeySize(IntPtr pkey);
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_GetPkcs8PrivateKeySize(IntPtr pkey, out int p8size);
 
         private static int GetPkcs8PrivateKeySize(IntPtr pkey)
         {
-            int ret = CryptoNative_GetPkcs8PrivateKeySize(pkey);
+            const int Success = 1;
+            const int Error = -1;
+            const int MissingPrivateKey = -2;
 
-            if (ret < 0)
+            int ret = CryptoNative_GetPkcs8PrivateKeySize(pkey, out int p8size);
+
+            switch (ret)
             {
-                throw CreateOpenSslCryptographicException();
+                case Success:
+                    return p8size;
+                case Error:
+                    throw CreateOpenSslCryptographicException();
+                case MissingPrivateKey:
+                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                default:
+                    Debug.Fail($"Unexpected return '{ret}' value from {nameof(CryptoNative_GetPkcs8PrivateKeySize)}.");
+                    throw new CryptographicException();
             }
-
-            return ret;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_EncodePkcs8PrivateKey(IntPtr pkey, byte* buf);
 
         internal static ArraySegment<byte> RentEncodePkcs8PrivateKey(SafeEvpPKeyHandle pkey)
@@ -155,7 +165,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_GetSubjectPublicKeyInfoSize(IntPtr pkey);
 
         private static int GetSubjectPublicKeyInfoSize(IntPtr pkey)
@@ -170,7 +180,7 @@ internal static partial class Interop
             return ret;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative)]
+        [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial int CryptoNative_EncodeSubjectPublicKeyInfo(IntPtr pkey, byte* buf);
 
         internal static ArraySegment<byte> RentEncodeSubjectPublicKeyInfo(SafeEvpPKeyHandle pkey)

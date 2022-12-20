@@ -219,10 +219,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_collection == null)
-                    {
-                        _collection = _sequence.ToArray();
-                    }
+                    _collection ??= _sequence.ToArray();
 
                     return _collection[index];
                 }

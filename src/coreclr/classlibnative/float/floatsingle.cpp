@@ -8,18 +8,6 @@
 
 #include "floatsingle.h"
 
-// Windows x86 and Windows ARM/ARM64 may not define _isnanf() or _copysignf() but they do
-// define _isnan() and _copysign(). We will redirect the macros to these other functions if
-// the macro is not defined for the platform. This has the side effect of a possible implicit
-// upcasting for arguments passed in and an explicit downcasting for the _copysign() call.
-#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
-
-#if !defined(_copysignf)
-#define _copysignf   (float)_copysign
-#endif
-
-#endif
-
 // The default compilation mode is /fp:precise, which disables floating-point intrinsics. This
 // default compilation mode has previously caused performance regressions in floating-point code.
 // We enable /fp:fast semantics for the majority of the math functions, as it will speed up performance
@@ -39,15 +27,6 @@
 #pragma float_control(push)
 #pragma float_control(precise, off)
 #endif
-
-/*=====================================Abs=====================================
-**
-==============================================================================*/
-FCIMPL1_V(float, COMSingle::Abs, float x)
-    FCALL_CONTRACT;
-
-    return fabsf(x);
-FCIMPLEND
 
 /*=====================================Acos=====================================
 **

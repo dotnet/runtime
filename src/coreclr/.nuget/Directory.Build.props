@@ -17,6 +17,11 @@
     <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
+  
+  <!-- CoreCLR nuget packages shouldn't be published during servicing. -->
+  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageIndex Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" Include="$(PackageIndexFile)" />
@@ -27,9 +32,6 @@
     This is a legacy setting as we tend to use symbol packages for symbol indexing and we don't use
     transport packages to flow dependencies anymore -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">false</CreatePackedPackage>
-
-    <!-- indicates that lib prefix is not added to library names for Unix-like operating systems -->
-    <SkipLibraryPrefixFromUnix>true</SkipLibraryPrefixFromUnix>
 
     <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;OSX;Android;Linux;FreeBSD;NetBSD;illumos;Solaris</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>

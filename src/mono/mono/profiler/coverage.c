@@ -68,7 +68,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
 
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 
 #include <mono/utils/atomic.h>
 #include <mono/utils/hazard-pointer.h>

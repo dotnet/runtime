@@ -47,10 +47,7 @@ namespace System.Data.ProviderBase
             foreach (KeyValuePair<DbConnectionPoolKey, DbConnectionPoolGroup> entry in connectionPoolGroups)
             {
                 DbConnectionPoolGroup poolGroup = entry.Value;
-                if (null != poolGroup)
-                {
-                    poolGroup.Clear();
-                }
+                poolGroup?.Clear();
             }
         }
 
@@ -59,10 +56,7 @@ namespace System.Data.ProviderBase
             ADP.CheckArgumentNull(connection, nameof(connection));
 
             DbConnectionPoolGroup? poolGroup = GetConnectionPoolGroup(connection);
-            if (null != poolGroup)
-            {
-                poolGroup.Clear();
-            }
+            poolGroup?.Clear();
         }
 
         public void ClearPool(DbConnectionPoolKey key)
@@ -94,10 +88,7 @@ namespace System.Data.ProviderBase
             DbConnectionPoolKey poolKey = poolGroup.PoolKey;
 
             DbConnectionInternal? newConnection = CreateConnection(connectionOptions, poolKey, poolGroupProviderInfo, null, owningConnection, userOptions);
-            if (null != newConnection)
-            {
-                newConnection.MakeNonPooledObject(owningConnection);
-            }
+            newConnection?.MakeNonPooledObject(owningConnection);
             return newConnection;
         }
 
@@ -107,10 +98,7 @@ namespace System.Data.ProviderBase
             DbConnectionPoolGroupProviderInfo poolGroupProviderInfo = pool.PoolGroup.ProviderInfo!;
 
             DbConnectionInternal? newConnection = CreateConnection(options, poolKey, poolGroupProviderInfo, pool, owningObject, userOptions);
-            if (null != newConnection)
-            {
-                newConnection.MakePooledConnection(pool);
-            }
+            newConnection?.MakePooledConnection(pool);
             return newConnection;
         }
 
@@ -144,7 +132,7 @@ namespace System.Data.ProviderBase
         private static Task<DbConnectionInternal?> GetCompletedTask()
         {
             Debug.Assert(Monitor.IsEntered(s_pendingOpenNonPooled), $"Expected {nameof(s_pendingOpenNonPooled)} lock to be held.");
-            return s_completedTask ?? (s_completedTask = Task.FromResult<DbConnectionInternal?>(null));
+            return s_completedTask ??= Task.FromResult<DbConnectionInternal?>(null);
         }
 
         private DbConnectionPool? GetConnectionPool(DbConnection owningObject, DbConnectionPoolGroup connectionPoolGroup)
@@ -386,23 +374,13 @@ namespace System.Data.ProviderBase
             // if two threads happen to hit this at the same time.  One will be GC'd
             if (metaDataFactory == null)
             {
-                bool allowCache = false;
-                metaDataFactory = CreateMetaDataFactory(internalConnection, out allowCache);
-                if (allowCache)
-                {
-                    connectionPoolGroup.MetaDataFactory = metaDataFactory;
-                }
+                metaDataFactory = CreateMetaDataFactory(internalConnection);
+                connectionPoolGroup.MetaDataFactory = metaDataFactory;
             }
             return metaDataFactory;
         }
 
-        protected virtual DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
-        {
-            // providers that support GetSchema must override this with a method that creates a meta data
-            // factory appropriate for them.
-            cacheMetaDataFactory = false;
-            throw ADP.NotSupported();
-        }
+        protected abstract DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection);
 
         protected abstract DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool? pool, DbConnection? owningConnection);
 

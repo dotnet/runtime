@@ -11,7 +11,9 @@ namespace System.Collections.Generic
 
         public CollectionDebugView(ICollection<T> collection)
         {
-            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+            ArgumentNullException.ThrowIfNull(collection);
+
+            _collection = collection;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

@@ -127,7 +127,7 @@
      _Success_(return != FALSE) BOOL
      PathCanonicalizeA(_Out_writes_(MAX_PATH) LPSTR pszBuf, LPCSTR pszPath) :
         pszBuf is only guaranteed to be NULL-terminated when TRUE is returned,
-        and FALSE indiates failure. In common practice, callers check for zero
+        and FALSE indicates failure. In common practice, callers check for zero
         vs. non-zero returns, so it is preferable to express the success
         criteria in terms of zero/non-zero, not checked for exactly TRUE.
 
@@ -260,7 +260,7 @@ enum __SAL_YesNo {_SAL_notpresent, _SAL_no, _SAL_maybe, _SAL_yes, _SAL_default};
 // Only applicable with functions that have  _Success_ or _Return_type_succss_.
 #define _Always_(annos)                  _Always_impl_(annos _SAL_nop_impl_)
 
-// Usable on a function defintion. Asserts that a function declaration is
+// Usable on a function definition. Asserts that a function declaration is
 // in scope, and its annotations are to be used. There are no other annotations
 // allowed on the function definition.
 #define _Use_decl_annotations_         _Use_decl_anno_impl_
@@ -838,7 +838,7 @@ enum __SAL_YesNo {_SAL_notpresent, _SAL_no, _SAL_maybe, _SAL_yes, _SAL_default};
 
 
 // 'out' with buffer size
-// e.g. void GetIndeces( _Out_cap_(cIndeces) int* rgIndeces, size_t cIndices );
+// e.g. void GetIndices( _Out_cap_(cIndices) int* rgIndices, size_t cIndices );
 // buffer capacity is described by another parameter
 #define _Out_cap_(size)                   _SAL1_1_Source_(_Out_cap_, (size), _Pre_cap_(size)           _Post_valid_impl_)
 #define _Out_opt_cap_(size)               _SAL1_1_Source_(_Out_opt_cap_, (size), _Pre_opt_cap_(size)       _Post_valid_impl_)
@@ -921,7 +921,7 @@ enum __SAL_YesNo {_SAL_notpresent, _SAL_no, _SAL_maybe, _SAL_yes, _SAL_default};
 
 
 // 'inout' buffers with initialized elements before and after the call
-// e.g. void ModifyIndices( _Inout_count_(cIndices) int* rgIndeces, size_t cIndices );
+// e.g. void ModifyIndices( _Inout_count_(cIndices) int* rgIndices, size_t cIndices );
 #define _Inout_count_(size)               _SAL1_1_Source_(_Inout_count_, (size), _Prepost_count_(size))
 #define _Inout_opt_count_(size)           _SAL1_1_Source_(_Inout_opt_count_, (size), _Prepost_opt_count_(size))
 #define _Inout_bytecount_(size)           _SAL1_1_Source_(_Inout_bytecount_, (size), _Prepost_bytecount_(size))
@@ -933,7 +933,7 @@ enum __SAL_YesNo {_SAL_notpresent, _SAL_no, _SAL_maybe, _SAL_yes, _SAL_default};
 #define _Inout_opt_bytecount_c_(size)     _SAL1_1_Source_(_Inout_opt_bytecount_c_, (size), _Prepost_opt_bytecount_c_(size))
 
 // nullterminated 'inout' buffers with initialized elements before and after the call
-// e.g. void ModifyIndices( _Inout_count_(cIndices) int* rgIndeces, size_t cIndices );
+// e.g. void ModifyIndices( _Inout_count_(cIndices) int* rgIndices, size_t cIndices );
 #define _Inout_z_count_(size)               _SAL1_1_Source_(_Inout_z_count_, (size), _Prepost_z_ _Prepost_count_(size))
 #define _Inout_opt_z_count_(size)           _SAL1_1_Source_(_Inout_opt_z_count_, (size), _Prepost_z_ _Prepost_opt_count_(size))
 #define _Inout_z_bytecount_(size)           _SAL1_1_Source_(_Inout_z_bytecount_, (size), _Prepost_z_ _Prepost_bytecount_(size))
@@ -2416,7 +2416,7 @@ extern "C" {
     /*
      __readonly l
      __notreadonly l
-     __mabyereadonly l
+     __maybereadonly l
 
      Annotates a location l. States that location l is not modified after
      this point.  If the annotation is placed on the precondition state of
@@ -2648,12 +2648,6 @@ buffer, use the table in the buffer annotations section.
 -------------------------------------------------------------------------------
 */
 
-// These macros conflict with c++ headers.
-#ifndef PAL_STDCPP_COMPAT
-#define __in                                                     _SAL1_Source_(__in, (), _In_)
-#define __out                                                    _SAL1_Source_(__out, (), _Out_)
-#endif // !PAL_STDCPP_COMPAT
-
 #define __ecount(size)                                           _SAL1_Source_(__ecount, (size), __notnull __elem_writableTo(size))
 #define __bcount(size)                                           _SAL1_Source_(__bcount, (size), __notnull __byte_writableTo(size))
 #define __in_ecount(size)                                        _SAL1_Source_(__in_ecount, (size), _In_reads_(size))
@@ -2867,6 +2861,10 @@ of each annotation, see the advanced annotations section.
 #define __data_entrypoint(category)          __inner_data_entrypoint(category)
 #define __useHeader                          _Use_decl_anno_impl_
 #define __on_failure(annotes)                _On_failure_impl_(annotes _SAL_nop_impl_)
+
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
 
 #ifndef __fallthrough // [
 #if __has_cpp_attribute(fallthrough)

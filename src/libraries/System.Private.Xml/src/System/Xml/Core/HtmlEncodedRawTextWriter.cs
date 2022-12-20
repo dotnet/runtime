@@ -4,14 +4,9 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify HtmlRawTextWriterGenerator.ttinclude
 
-#nullable disable
-using System;
 using System.IO;
-using System.Text;
-using System.Xml;
-using System.Xml.Schema;
 using System.Diagnostics;
-using MS.Internal.Xml;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -24,11 +19,8 @@ namespace System.Xml
         private bool _endsWithAmpersand;
         private byte[] _uriEscapingBuffer;
 
-        private string _mediaType;
+        private string? _mediaType;
         private bool _doNotEscapeUriAttributes;
-
-        protected static TernaryTreeReadOnly _elementPropertySearch;
-        protected static TernaryTreeReadOnly _attributePropertySearch;
 
         private const int StackIncrement = 10;
 
@@ -53,11 +45,11 @@ namespace System.Xml
         }
 
         /// Html rules allow public ID without system ID and always output "html"
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             Debug.Assert(name != null && name.Length > 0);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             RawText("<!DOCTYPE ");
 
@@ -100,7 +92,7 @@ namespace System.Xml
         }
 
         // For the HTML element, it should call this method with ns and prefix as String.Empty
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
 
@@ -110,9 +102,9 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
-                _currentElementProperties = (ElementProperties)_elementPropertySearch.FindCaseInsensitiveString(localName);
+                _currentElementProperties = TernaryTreeReadOnly.FindElementProperty(localName);
                 base._bufChars[_bufPos++] = (char)'<';
                 base.RawText(localName);
                 base._attrEndPos = _bufPos;
@@ -150,7 +142,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
                 if ((_currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
@@ -175,7 +167,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
                 if ((_currentElementProperties & ElementProperties.EMPTY) == 0)
                 {
@@ -291,7 +283,7 @@ namespace System.Xml
         //          output amp;
         //     }
         //
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
 
@@ -299,7 +291,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
                 if (base._attrEndPos == _bufPos)
                 {
@@ -309,7 +301,7 @@ namespace System.Xml
 
                 if ((_currentElementProperties & (ElementProperties.BOOL_PARENT | ElementProperties.URI_PARENT | ElementProperties.NAME_PARENT)) != 0)
                 {
-                    _currentAttributeProperties = (AttributeProperties)_attributePropertySearch.FindCaseInsensitiveString(localName) &
+                    _currentAttributeProperties = TernaryTreeReadOnly.FindAttributeProperty(localName) &
                                                  (AttributeProperties)_currentElementProperties;
 
                     if ((_currentAttributeProperties & AttributeProperties.BOOLEAN) != 0)
@@ -350,7 +342,7 @@ namespace System.Xml
                     _endsWithAmpersand = false;
                 }
 
-                if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+                if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
                 base._bufChars[_bufPos++] = (char)'"';
             }
@@ -359,11 +351,11 @@ namespace System.Xml
         }
 
         // HTML PI's use ">" to terminate rather than "?>".
-        public override void WriteProcessingInstruction(string target, string text)
+        public override void WriteProcessingInstruction(string target, string? text)
         {
             Debug.Assert(target != null && target.Length != 0 && text != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _bufChars[base._bufPos++] = (char)'<';
             _bufChars[base._bufPos++] = (char)'?';
@@ -381,7 +373,7 @@ namespace System.Xml
         }
 
         // Serialize either attribute or element text using HTML rules.
-        public override unsafe void WriteString(string text)
+        public override unsafe void WriteString(string? text)
         {
             Debug.Assert(text != null);
 
@@ -441,18 +433,13 @@ namespace System.Xml
         // Private methods
         //
 
+        [MemberNotNull(nameof(_elementScope))]
+        [MemberNotNull(nameof(_uriEscapingBuffer))]
         private void Init(XmlWriterSettings settings)
         {
             Debug.Assert((int)ElementProperties.URI_PARENT == (int)AttributeProperties.URI);
             Debug.Assert((int)ElementProperties.BOOL_PARENT == (int)AttributeProperties.BOOLEAN);
             Debug.Assert((int)ElementProperties.NAME_PARENT == (int)AttributeProperties.NAME);
-
-            if (_elementPropertySearch == null)
-            {
-                // _elementPropertySearch should be init last for the mutli thread safe situation.
-                _attributePropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlAttributes);
-                _elementPropertySearch = new TernaryTreeReadOnly(HtmlTernaryTree.htmlElements);
-            }
 
             _elementScope = new ByteStack(StackIncrement);
             _uriEscapingBuffer = new byte[5];
@@ -466,15 +453,12 @@ namespace System.Xml
         {
             base.RawText("<META http-equiv=\"Content-Type\"");
 
-            if (_mediaType == null)
-            {
-                _mediaType = "text/html";
-            }
+            _mediaType ??= "text/html";
 
             base.RawText(" content=\"");
             base.RawText(_mediaType);
             base.RawText("; charset=");
-            base.RawText(base._encoding.WebName);
+            base.RawText(base._encoding!.WebName);
             base.RawText("\">");
         }
 
@@ -660,7 +644,7 @@ namespace System.Xml
                         pDstEnd = pDstBegin + _bufLen;
                     }
 
-                    while (pDst < pDstEnd && (XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80))
+                    while (pDst < pDstEnd && XmlCharType.IsAttributeValueChar((char)(ch = *pSrc)) && ch < 0x80)
                     {
                         *pDst++ = (char)ch;
                         pSrc++;
@@ -819,7 +803,7 @@ namespace System.Xml
         /// <summary>
         /// Serialize the document type declaration.
         /// </summary>
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             base.WriteDocType(name, pubid, sysid, subset);
 
@@ -827,11 +811,11 @@ namespace System.Xml
             _endBlockPos = base._bufPos;
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
 
-            if (_trackTextContent && _inTextContent != false) { ChangeTextContentMark(false); }
+            if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             base._elementScope.Push((byte)base._currentElementProperties);
 
@@ -839,7 +823,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                base._currentElementProperties = (ElementProperties)_elementPropertySearch.FindCaseInsensitiveString(localName);
+                base._currentElementProperties = TernaryTreeReadOnly.FindElementProperty(localName);
 
                 if (_endBlockPos == base._bufPos && (base._currentElementProperties & ElementProperties.BLOCK_WS) != 0)
                 {
@@ -890,7 +874,7 @@ namespace System.Xml
             }
         }
 
-        internal override void WriteEndElement(string prefix, string localName, string ns)
+        internal override void WriteEndElement(string? prefix, string localName, string? ns)
         {
             bool isBlockWs;
             Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
@@ -922,7 +906,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             if (_newLineOnAttributes)
             {
@@ -944,6 +928,7 @@ namespace System.Xml
         //
         // Private methods
         //
+        [MemberNotNull(nameof(_indentChars))]
         private void Init(XmlWriterSettings settings)
         {
             _indentLevel = 0;

@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private readonly ExclusionFilters _filters;
 
         private Timer? _timer;
-        private bool _timerInitialzed;
+        private bool _timerInitialized;
         private object _timerLock = new();
         private Func<Timer> _timerFactory;
         private bool _disposed;
@@ -133,10 +133,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <exception cref="ArgumentNullException">When <paramref name="filter" /> is null</exception>
         public IChangeToken CreateFileChangeToken(string filter)
         {
-            if (filter == null)
-            {
-                throw new ArgumentNullException(nameof(filter));
-            }
+            ThrowHelper.ThrowIfNull(filter);
 
             filter = NormalizePath(filter);
 
@@ -159,7 +156,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             if (UseActivePolling)
             {
-                LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialzed, ref _timerLock, _timerFactory);
+                LazyInitializer.EnsureInitialized(ref _timer, ref _timerInitialized, ref _timerLock, _timerFactory);
             }
 
             IChangeToken changeToken;
@@ -439,7 +436,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        private static string NormalizePath(string filter) => filter = filter.Replace('\\', '/');
+        private static string NormalizePath(string filter) => filter.Replace('\\', '/');
 
         private static bool IsDirectoryPath(string path)
         {

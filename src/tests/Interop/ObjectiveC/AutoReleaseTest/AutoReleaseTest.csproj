@@ -3,15 +3,13 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">true</CLRTestTargetUnsupported>
+    <AutoreleasePoolSupport>true</AutoreleasePoolSupport>
   </PropertyGroup>
-  <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Threading.Thread.EnableAutoreleasePool" Value="true" Trim="true" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="./CMakeLists.txt" />
+    <CMakeProjectReference Include="./CMakeLists.txt" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

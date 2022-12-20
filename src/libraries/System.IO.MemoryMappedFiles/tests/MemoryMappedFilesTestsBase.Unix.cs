@@ -31,8 +31,11 @@ namespace System.IO.MemoryMappedFiles.Tests
             return pageSize;
         });
 
-        [DllImport("libc", SetLastError = true)]
-        private static extern int sysconf(int name);
+        [LibraryImport("libc", SetLastError = true)]
+        private static partial int sysconf(int name);
+
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        protected static partial int mkfifo(string path, int mode);
 
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>
         protected static void AssertInheritability(SafeHandle handle, HandleInheritability inheritability)

@@ -69,10 +69,18 @@ namespace System
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static bool TreatControlCAsInput { get { throw null; } set { } }
-        public static int WindowHeight { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static int WindowHeight { get { throw null; } set { } }
         public static int WindowLeft { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public static int WindowTop { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
-        public static int WindowWidth { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static int WindowWidth { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -147,7 +155,10 @@ namespace System
         public static void SetOut(System.IO.TextWriter newOut) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void SetWindowPosition(int left, int top) { }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void SetWindowSize(int width, int height) { }
         public static void Write(bool value) { }
         public static void Write(char value) { }
@@ -160,10 +171,10 @@ namespace System
         public static void Write(object? value) { }
         public static void Write(float value) { }
         public static void Write(string? value) { }
-        public static void Write(string format, object? arg0) { }
-        public static void Write(string format, object? arg0, object? arg1) { }
-        public static void Write(string format, object? arg0, object? arg1, object? arg2) { }
-        public static void Write(string format, params object?[]? arg) { }
+        public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
+        public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
+        public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
+        public static void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[]? arg) { }
         [System.CLSCompliantAttribute(false)]
         public static void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
@@ -180,10 +191,10 @@ namespace System
         public static void WriteLine(object? value) { }
         public static void WriteLine(float value) { }
         public static void WriteLine(string? value) { }
-        public static void WriteLine(string format, object? arg0) { }
-        public static void WriteLine(string format, object? arg0, object? arg1) { }
-        public static void WriteLine(string format, object? arg0, object? arg1, object? arg2) { }
-        public static void WriteLine(string format, params object?[]? arg) { }
+        public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
+        public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
+        public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
+        public static void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[]? arg) { }
         [System.CLSCompliantAttribute(false)]
         public static void WriteLine(uint value) { }
         [System.CLSCompliantAttribute(false)]

@@ -14,9 +14,11 @@ namespace System.Net.NetworkInformation.Tests
         public const int PingTimeout = 10 * 1000;
 
         public const string PayloadAsString = "'Post hoc ergo propter hoc'. 'After it, therefore because of it'. It means one thing follows the other, therefore it was caused by the other. But it's not always true. In fact it's hardly ever true.";
-        public static readonly byte[] PayloadAsBytes = Encoding.UTF8.GetBytes(TestSettings.PayloadAsString);
 
-        public static readonly byte[] PayloadAsBytesShort = Encoding.UTF8.GetBytes("ABCDEF0123456789");
+        // By default, FreeBSD supports buffer only up to 56 bytes
+        public static readonly byte[] PayloadAsBytes = Encoding.UTF8.GetBytes(OperatingSystem.IsFreeBSD() ? TestSettings.PayloadAsString.Substring(0, 55) : TestSettings.PayloadAsString);
+
+        public static readonly byte[] PayloadAsBytesShort = "ABCDEF0123456789"u8.ToArray();
 
         public static IPAddress[] GetLocalIPAddresses()
         {
