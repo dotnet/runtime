@@ -2397,6 +2397,291 @@ static const char* const RegNames[] =
 
 void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 {
+    const BYTE*       insAdr      = addr - writeableOffset;
+
+    unsigned int opcode = code & 0x7f;
+    assert((opcode & 0x3) == 0x3);
+
+    bool disOpcode = !emitComp->opts.disDiffable;
+    bool disAddr   = emitComp->opts.disAddr;
+    if (disAddr)
+    {
+        printf("  0x%llx", insAdr);
+    }
+
+    printf("  ");
+
+    if (disOpcode)
+    {
+        printf("%08X  ", code);
+    }
+
+    switch (opcode)
+    {
+        case 0x37: // LUI
+        {
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            int imm20 = (code >> 12) & 0xfffff;
+            if (imm20 & 0x80000)
+            {
+                imm20 |= 0xfff00000;
+            }
+            printf("lui          %s, %d\n", rd, imm20);
+            return;
+        }
+        case 0x17: // AUIPC
+        {
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            int imm20 = (code >> 12) & 0xfffff;
+            if (imm20 & 0x80000)
+            {
+                imm20 |= 0xfff00000;
+            }
+            printf("auipc        %s, %d\n", rd, imm20);
+            return;
+        }
+        case 0x13:
+        {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            int imm12 = (code >> 20) & 0xfff;
+            if (imm12 & 0x800)
+            {
+                imm12 |= 0xfffff000;
+            }
+            switch (opcode2)
+            {
+                case 0x0: // ADDI
+                    printf("addi         %s, %s, %d\n", rd, rs1, imm12);
+                    return;
+                case 0x1: // SLLI 
+                    printf("slli         %s, %s, %d\n", rd, rs1, imm12 & 0x1f);
+                    return;
+                case 0x2: // SLTI
+                    printf("slti         %s, %s, %d\n", rd, rs1, imm12);
+                    return;
+                case 0x3: // SLTIU
+                    printf("sltiu        %s, %s, %d\n", rd, rs1, imm12);
+                    return;
+                case 0x4: // XORI
+                    printf("xori         %s, %s, %d\n", rd, rs1, imm12);
+                    return;
+                case 0x5: // SRLI & SRAI 
+                    if (((code >> 30) & 0x1) == 0)
+                    {
+                        printf("srli         %s, %s, %d\n", rd, rs1, imm12 & 0x1f);
+                    }
+                    else
+                    {
+                        printf("srai         %s, %s, %d\n", rd, rs1, imm12 & 0x1f);
+                    }
+                    return;
+                case 0x6: // ORI
+                    printf("ori          %s, %s, %d\n", rd, rs1, imm12);
+                    return;
+                case 0x7: // ANDI 
+                    printf("andi         %s, %s, %d\n", rd, rs1, imm12);
+                    return;
+                default:
+                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                    return;
+
+            }
+            
+        }
+        case 0x33:
+        {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            switch (opcode2)
+            {
+                case 0x0: // ADD & SUB
+                    if (((code >> 30) & 0x1) == 0)
+                    {
+                        printf("add          %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else
+                    {
+                        printf("sub          %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    return;
+                case 0x1: // SLL 
+                    printf("sll          %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x2: // SLT
+                    printf("slt          %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x3: // SLTU
+                    printf("sltu         %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x4: // XOR
+                    printf("xor          %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x5: // SRL & SRA
+                    if (((code >> 30) & 0x1) == 0)
+                    {
+                        printf("srl          %s, %s, %d\n", rd, rs1, rs2);
+                    }
+                    else
+                    {
+                        printf("sra          %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    return;
+                case 0x6: // OR
+                    printf("or           %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x7: // AND 
+                    printf("and          %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                default:
+                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                    return;
+
+            }
+        }
+        case 0x23:
+        {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            int offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
+            if (offset & 0x800)
+            {
+                offset |= 0xfffff000;
+            }
+
+            switch(opcode2)
+            {
+                case 0: // SB
+                    printf("sb           %s, %d(%s)\n", rs2, offset, rs1);
+                    return;
+                case 1: // SH
+                    printf("sh           %s, %d(%s)\n", rs2, offset, rs1);
+                    return;
+                case 2: // SW
+                    printf("sw           %s, %d(%s)\n", rs2, offset, rs1);
+                    return;
+                case 3: // SD
+                    printf("sd           %s, %d(%s)\n", rs2, offset, rs1);
+                    return;
+                default:
+                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                    return;
+            }
+        }
+        case 0x63:
+        {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            int offset = (((code >> 31) & 0x1) << 12) |
+                         (((code >> 7) & 0x1) << 11) |
+                         (((code >> 25) & 0x3f) << 5) |
+                         (((code >> 8) & 0xf) << 1);
+            if (offset & 0x800)
+            {
+                offset |= 0xfffff000;
+            }
+            switch (opcode2)
+            {
+                case 0: // BEQ
+                    printf("beq          %s, %s, %d\n", rs1, rs2, offset);
+                    return;
+                case 1: // BNE
+                    printf("bne          %s, %s, %d\n", rs1, rs2, offset);
+                    return;
+                case 4: // BLT
+                    printf("blt          %s, %s, %d\n", rs1, rs2, offset);
+                    return;
+                case 5: // BGE
+                    printf("bge          %s, %s, %d\n", rs1, rs2, offset);
+                    return;
+                case 6: // BLTU
+                    printf("bltu         %s, %s, %d\n", rs1, rs2, offset);
+                    return;
+                case 7: // BGEU
+                    printf("bgeu         %s, %s, %d\n", rs1, rs2, offset);
+                    return;
+                default:
+                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                    return;
+            }
+        }
+        case 0x03:
+        {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            int offset = ((code >> 20) & 0xfff);
+            if (offset & 0x800)
+            {
+                offset |= 0xfffff000;
+            }
+
+            switch(opcode2)
+            {
+                case 0: // LB
+                    printf("lb           %s, %d(%s)\n", rd, offset, rs1);
+                    return;
+                case 1: // LH
+                    printf("lh           %s, %d(%s)\n", rd, offset, rs1);
+                    return;
+                case 2: // LW
+                    printf("lw           %s, %d(%s)\n", rd, offset, rs1);
+                    return;
+                case 3: // LD
+                    printf("ld           %s, %d(%s)\n", rd, offset, rs1);
+                    return;
+                case 4: // LBU
+                    printf("lbu          %s, %d(%s)\n", rd, offset, rs1);
+                    return;
+                case 5: // LHU
+                    printf("lhu          %s, %d(%s)\n", rd, offset, rs1);
+                    return;
+                case 6: // LWU
+                    printf("lwu          %s, %d(%s)\n", rd, offset, rs1);
+                    return;
+                default:
+                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                    return;
+            }
+
+        }
+        case 0x67:
+        {
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            int offset = ((code >> 20) & 0xfff);
+            if (offset & 0x800)
+            {
+                offset |= 0xfffff000;
+            }
+            printf("jalr         %s, %d(%s)\n", rd, offset, rs1);
+            return;
+        }
+        case 0x6f:
+        {
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            int offset = (((code >> 31) & 0x1) << 20) |
+                         (((code >> 12) & 0xff) << 12) |
+                         (((code >> 20) & 0x1) << 11) |
+                         (((code >> 21) & 0x3ff) << 1);
+            if (offset & 0x80000)
+            {
+                offset |= 0xfff00000;
+            }
+            printf("jal          %s, %d\n", rd, offset);
+            return;
+        }
+
+        default:
+            printf("Not implemented instruction: 0x%08X\n", code);
+            _ASSERTE(!"TODO RISCV64 NYI");
+    }
+
     _ASSERTE(!"TODO RISCV64 NYI");
 }
 
