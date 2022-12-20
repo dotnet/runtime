@@ -14181,6 +14181,12 @@ is_direct_pinvoke_parsable (char *direct_pinvoke)
 	return TRUE;
 }
 
+typedef enum {
+	DIRECT_PINVOKE_SKIP,
+	DIRECT_PINVOKE_PARSED,
+	DIRECT_PINVOKE_ERR,
+} DirectPInvokeParsedResult;
+
 //---------------------------------------------------------------------------------------
 //
 // parsed_direct_pinvoke parses the direct pinvoke for the module_name and entrypoint_name
@@ -14198,16 +14204,15 @@ is_direct_pinvoke_parsable (char *direct_pinvoke)
 //  ** entrypoint_name_ptr - the pointer to the entrypoint name string
 //
 // Return Value:
-//  gboolean pertaining to whether or not the direct pinvoke was successfully split
-//  into the respective module_name and entrypoint_name.
-//  processing is considered to have failed if there was a problem splitting the direct
-//  pinvoke with the '!' delimiter.
+//  enum pertaining to whether or not the direct pinvoke entry should be skipped, was
+//  successfully split into the respective module_name and entrypoint_name, or if
+//  an error has occurred.
 //
 
-static gboolean
+static DirectPInvokeParsedResult
 parsed_direct_pinvoke (MonoAotCompile *acfg, char *dpi, char **module_name_ptr, char **entrypoint_name_ptr)
 {
-	gboolean parsed = FALSE;
+	DirectPInvokeParsedResult res = DIRECT_PINVOKE_SKIP;
 	char *direct_pinvoke = g_strdup (dpi);
 	if (!direct_pinvoke)
 		goto early_exit;
@@ -14218,19 +14223,20 @@ parsed_direct_pinvoke (MonoAotCompile *acfg, char *dpi, char **module_name_ptr, 
 	char **direct_pinvoke_split = g_strsplit(direct_pinvoke, "!", 2);
 	if (!direct_pinvoke_split) {
 		aot_printerrf (acfg, "Failed to split the provided 'direct_pinvoke' AOT option '%s' with delimiter '!'\n", direct_pinvoke);
+		res = DIRECT_PINVOKE_ERR;
 		goto cleanup;
 	}
 
 	*module_name_ptr = direct_pinvoke_split[0];
 	*entrypoint_name_ptr = direct_pinvoke_split[1];
-	parsed = TRUE;
+	res = DIRECT_PINVOKE_PARSED;
 	g_strfreev(direct_pinvoke_split);
 
 cleanup:
 	g_free (direct_pinvoke);
 
 early_exit:
-	return parsed;
+	return res;
 }
 
 //---------------------------------------------------------------------------------------
@@ -14245,15 +14251,20 @@ early_exit:
 //  ** module_name_ptr - the pointer to the module name (assumed not NULL)
 //  ** entrypoint_name_ptr - the pointer to the entrypoint name
 //
+// Return Value:
+//  gboolean corresponding to whether or not the direct_pinvoke was successfully added
+//  or if an error occurred.
+//
 
-static void
+static gboolean
 add_direct_pinvoke (MonoAotCompile *acfg, char **module_name_ptr, char **entrypoint_name_ptr)
 {
+	gboolean success = TRUE;
 	// MODULE
 	// All entrypoints from the library are direct
 	if (!*entrypoint_name_ptr) {
 		g_hash_table_insert (acfg->direct_pinvokes, *module_name_ptr, NULL);
-		goto early_exit;
+		goto cleanup;
 	}
 
 	// MODULE!ENTRYPOINT
@@ -14261,17 +14272,23 @@ add_direct_pinvoke (MonoAotCompile *acfg, char **module_name_ptr, char **entrypo
 	if (g_hash_table_lookup_extended (acfg->direct_pinvokes, *module_name_ptr, NULL, (gpointer *)&entrypoints)) {
 		// All entrypoints from the library are direct
 		if (!entrypoints)
-			goto early_exit;
+			goto cleanup;
 
 		g_hash_table_insert (entrypoints, *entrypoint_name_ptr, NULL);
 	} else {
 		entrypoints = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+		if (!entrypoints) {
+			aot_printerrf (acfg, "Failed to allocate new entrypoints HashTable.\n");
+			success = FALSE;
+			goto cleanup;
+		}
 		g_hash_table_insert (entrypoints, *entrypoint_name_ptr, NULL);
 		g_hash_table_insert (acfg->direct_pinvokes, *module_name_ptr, entrypoints);
 	}
 
-early_exit:
+cleanup:
 	entrypoints,*module_name_ptr,*entrypoint_name_ptr = NULL;
+	return success;
 }
 
 //---------------------------------------------------------------------------------------
@@ -14303,19 +14320,30 @@ early_exit:
 //  * acfg - the MonoAotCompiler instance
 //  * dpi (direct pinvoke) - the string passed in specifying a direct pinvoke
 //
+// Return Value:
+//  gboolean corresponding to whether the specified direct pinvoke was successfully
+//  processed (regardless of it being added or skipped) or if an error occurred.
+//
 //  Note - There are no extensive format checks, and is intended to behave akin to
 //  ConfigurablePInvokePolicy AddDirectPInvoke in NativeAOT
 //
 
-static void
+static gboolean
 process_specified_direct_pinvokes (MonoAotCompile *acfg, char *dpi)
 {
 	if (is_direct_pinvoke_parsable (dpi)) {
 		char *module;
 		char *entrypoint;
-		if (parsed_direct_pinvoke (acfg, dpi, &module, &entrypoint))
-			add_direct_pinvoke (acfg, &module, &entrypoint);
+		switch (parsed_direct_pinvoke (acfg, dpi, &module, &entrypoint)) {
+		case DIRECT_PINVOKE_ERR:
+			return FALSE;
+		case DIRECT_PINVOKE_PARSED:
+			return add_direct_pinvoke (acfg, &module, &entrypoint);
+		default:
+			break;
+		}
 	}
+	return TRUE;
 }
 
 static int
@@ -14410,11 +14438,15 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		return 1;
 	}
 
+	gboolean added_direct_pinvoke = TRUE;
 	if (acfg->aot_opts.direct_pinvokes) {
 		GList *l;
 
-		for (l = acfg->aot_opts.direct_pinvokes; l; l = l->next)
+		for (l = acfg->aot_opts.direct_pinvokes; l; l = l->next) {
 			process_specified_direct_pinvokes (acfg, (char*)l->data);
+			if (!added_direct_pinvoke)
+				return 1;
+		}
 	}
 	if (acfg->aot_opts.direct_pinvoke_lists) {
 		GList *l;
@@ -14429,7 +14461,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 			char *line = NULL;
 			size_t line_len = 0;
-			while (getline (&line, &line_len, direct_pinvoke_list_file) != -1) {
+			while (getline (&line, &line_len, direct_pinvoke_list_file) != -1 && added_direct_pinvoke) {
 				int len = strlen (line);
 
 				if (len == 0)
@@ -14440,11 +14472,13 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 				char *direct_pinvoke = g_malloc (sizeof(char) * (len + 1));
 				memcpy (direct_pinvoke, line, len);
-				process_specified_direct_pinvokes (acfg, direct_pinvoke);
+				added_direct_pinvoke = process_specified_direct_pinvokes (acfg, direct_pinvoke);
 				g_free (direct_pinvoke);
 			}
 
 			fclose (direct_pinvoke_list_file);
+			if (!added_direct_pinvoke)
+				return 1;
 		}
 	}
 
