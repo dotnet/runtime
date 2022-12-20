@@ -2885,6 +2885,14 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
  */
 
 #if HOST_BROWSER
+/*
+ * For the jiterpreter, we want to record a hit count for interp_entry wrappers that can
+ *  be jitted, but not for ones that can't. As a result we need to put this in its own
+ *  macro instead of in INTERP_ENTRY_BASE, so that the generic wrappers don't have to
+ *  call it on every invocation.
+ * Once this gets called a few hundred times, the wrapper will be jitted so we'll stop
+ *  paying the cost of the hit counter and the entry will become faster.
+ */
 #define INTERP_ENTRY_UPDATE_HIT_COUNT(_method) \
 	if (mono_opt_jiterpreter_interp_entry_enabled) \
 		mono_interp_record_interp_entry (_method)

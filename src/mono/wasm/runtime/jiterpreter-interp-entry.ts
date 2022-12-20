@@ -167,6 +167,8 @@ export function mono_interp_jit_wasm_entry_trampoline (
     // We start by creating a function pointer for this interp_entry trampoline, but instead of
     //  compiling it right away, we make it point to the default implementation for that signature
     // This gives us time to wait before jitting it so we can jit multiple trampolines at once.
+    // Some entry wrappers are also only called a few dozen times, so it's valuable to wait
+    //  until a wrapper is called a lot before wasting time/memory jitting it.
     const defaultImplementationFn = fnTable.get(defaultImplementation);
     info.result = addWasmFunctionPointer(defaultImplementationFn);
 
