@@ -121,7 +121,6 @@ int64_t SystemNative_GetBootTimeTicks(void)
 
 double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
-#ifdef HAVE_GETRUSAGE
     uint64_t kernelTime = 0;
     uint64_t userTime = 0;
 
@@ -170,9 +169,4 @@ double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     previousCpuInfo->lastRecordedKernelTime = kernelTime;
 
     return cpuUtilization;
-#else
-    (void)previousCpuInfo; // unused
-    assert(false);
-    return 0;
-#endif
 }

@@ -189,7 +189,7 @@ jobs:
       # TODO: Uncomment once there is HW deployed to service Win11 ARM64 queue
       # - Windows.11.Arm64.Open
 
-    # Browser WebAssembly
+    # Browser/WASI WebAssembly
     - ${{ if in(parameters.platform, 'Browser_wasm', 'wasi_wasm') }}:
       - Ubuntu.1804.Amd64.Open
 

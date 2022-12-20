@@ -352,7 +352,8 @@ intptr_t SystemNative_Dup(intptr_t oldfd)
     // do CLOEXEC here too
     fcntl(result, F_SETFD, FD_CLOEXEC);
 #else
-    // https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-rationale.md#why-no-dup
+    // The main use cases for dup are setting up the classic Unix dance of setting up file descriptors in advance of performing a fork. Since WASI has no fork, these don't apply.
+    // https://github.com/bytecodealliance/wasmtime/blob/b2fefe77148582a9b8013e34fe5808ada82b6efc/docs/WASI-rationale.md#why-no-dup
     result = oldfd;
 #endif
     return result;
