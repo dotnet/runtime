@@ -12880,7 +12880,8 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
         all_heaps_committed += hp->free_regions[kind].get_size_committed_in_free();
     }
     // we desire a certain fraction of the total committed free space on the global list
-    const float desired_fraction_in_global = 0.2f;
+    // the amount we use corresponds to one heap's/worth of commit
+    const float desired_fraction_in_global = 1.0/n_heaps;
     size_t desired_in_global = (size_t)((all_heaps_committed + global_free_regions[kind].get_size_committed_in_free())*desired_fraction_in_global);
 
     // remove regions from the per-heap free lists until we achieve that
@@ -20633,18 +20634,11 @@ bool gc_heap::try_get_new_free_region()
     }
     else
     {
-        region = allocate_new_region (__this, 0, false);
+        region = get_free_region (0);
         if (region)
         {
-            if (init_table_for_region (0, region))
-            {
-                return_free_region (region);
-                dprintf (REGIONS_LOG, ("h%d got a new empty region %p", heap_number, region));
-            }
-            else
-            {
-                region = 0;
-            }
+            return_free_region (region);
+            dprintf (REGIONS_LOG, ("h%d got a new empty region %p", heap_number, region));
         }
     }
 
