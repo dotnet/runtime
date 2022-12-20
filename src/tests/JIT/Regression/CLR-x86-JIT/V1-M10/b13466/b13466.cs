@@ -30,10 +30,8 @@ namespace Default
             return i;
         }
 
-        public
-        static
         [Fact]
-        int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             func(0, 0, null, null);
             return 100;

@@ -18,7 +18,7 @@
 
    ldc.i4.0
    newarr [mscorlib]System.String
-   call int32 switchdefaultonly1::MainX(string[])
+   call int32 Runtime_32059::MainX(string[])
    ret
 }
 

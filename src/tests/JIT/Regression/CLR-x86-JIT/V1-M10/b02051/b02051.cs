@@ -8,10 +8,8 @@ namespace DefaultNamespace
     using System;
     public class JITcrash
     {
-        public
-        static
         [Fact]
-        int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             UInt32 x = (0xFFFFFFFF);
             Int64 y = x;

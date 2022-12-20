@@ -17,7 +17,7 @@ public class Program
         int testCount = 0;
         foreach (MethodInfo mi in typeof(Program)
             .GetMethods()
-            .Where(m => m.Name.StartsWith("Test")))
+            .Where(m => m.Name.StartsWith("Test") && m.Name != "TestEntryPoint"))
         {
             mi.Invoke(null, null);
             testCount++;

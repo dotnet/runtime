@@ -13,7 +13,7 @@ public class AA
     static void Static3(int param1)
     {
         if (m_bFlag)
-            Main();
+            TestEntryPoint();
         else
             m_ax[param1, param1] = null;
     }
