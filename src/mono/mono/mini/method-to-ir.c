@@ -4322,15 +4322,9 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 #endif
 
 	/* range checking */
-	if (COMPILE_LLVM (cfg)) {
-		// null checking in LLVM to address https://github.com/dotnet/runtime/issues/79022
-		MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, bounds_reg,
-				    		arr->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
-	} else {
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg,
-			       		arr->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
-	}
-	
+	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, bounds_reg,
+				       arr->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
+
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, low1_reg,
 				       bounds_reg, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
 	MONO_EMIT_NEW_BIALU (cfg, OP_PSUB, realidx1_reg, index1, low1_reg);
