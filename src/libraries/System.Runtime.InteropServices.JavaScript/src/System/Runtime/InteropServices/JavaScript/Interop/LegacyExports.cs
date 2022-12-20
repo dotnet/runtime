@@ -215,14 +215,14 @@ namespace System.Runtime.InteropServices.JavaScript
                 uriType = Type.GetType(sb.ToString());
             }
             // See: https://devblogs.microsoft.com/dotnet/customizing-trimming-in-net-core-5/
-            if (uriType == null) throw new InvalidProgramException(SR.Format(SR.UriTypeMissing));
+            if (uriType == null) throw new InvalidOperationException(SR.UriTypeMissing);
             try
             {
                 result = Activator.CreateInstance(uriType, uri);
             }
             catch (MissingMethodException ex)
             {
-                throw new MissingMethodException(SR.Format(SR.UriConstructorMissing), ex);
+                throw new MissingMethodException(SR.UriConstructorMissing, ex);
             }
         }
 

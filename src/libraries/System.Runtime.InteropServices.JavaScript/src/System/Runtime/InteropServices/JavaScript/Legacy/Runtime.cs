@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void AssertInFlight(this JSObject self, int expectedInFlightCount)
         {
-            if (self.InFlightCounter != expectedInFlightCount) throw new InvalidProgramException(SR.Format(SR.UnsupportedLegacyMarshlerType, self.JSHandle, expectedInFlightCount, self.InFlightCounter));
+            if (self.InFlightCounter != expectedInFlightCount) throw new InvalidOperationException(SR.Format(SR.UnsupportedLegacyMarshlerType, self.JSHandle, expectedInFlightCount, self.InFlightCounter));
         }
     }
 }

@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     case TypeCode.UInt64:
                         return MarshalType.ENUM64;
                     default:
-                        throw new ArgumentException(SR.Format(SR.UnsupportedEnumType, type.FullName));
+                        throw new ArgumentException(SR.Format(SR.UnsupportedEnumType, type.FullName), nameof(type));
                 }
             }
 
@@ -69,7 +69,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (type.IsArray)
             {
                 if (!type.IsSZArray)
-                    throw new ArgumentException(SR.Format(SR.UnsupportedArrayType, type.FullName));
+                    throw new ArgumentException(SR.Format(SR.UnsupportedArrayType, type.FullName), nameof(type));
 
                 var elementType = type.GetElementType();
                 switch (Type.GetTypeCode(elementType))
@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     case TypeCode.Double:
                         return MarshalType.ARRAY_DOUBLE;
                     default:
-                        throw new ArgumentException(SR.Format(SR.UnsupportedElementType, elementType));
+                        throw new ArgumentException(SR.Format(SR.UnsupportedElementType, elementType), nameof(type));
                 }
             }
             else if (type == typeof(IntPtr))
@@ -115,9 +115,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return MarshalType.OBJECT;
         }
 
-        public static char GetCallSignatureCharacterForMarshalType(MarshalType t, char? defaultValue)
+        public static char GetCallSignatureCharacterForMarshalType(MarshalType type, char? defaultValue)
         {
-            switch (t)
+            switch (type)
             {
                 case MarshalType.BOOL:
                     return 'b';
@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (defaultValue.HasValue)
                         return defaultValue.Value;
                     else
-                        throw new InvalidProgramException(SR.Format(SR.UnsupportedLegacyMarshlerType, t));
+                        throw new ArgumentException(SR.Format(SR.UnsupportedLegacyMarshlerType, type), nameof(type));
             }
         }
 

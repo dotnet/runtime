@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // source has to be instantiated.
             if (span == null)
             {
-                throw new System.ArgumentException(SR.Format(SR.ArgumentCannotBeNull, nameof(span)));
+                throw new System.ArgumentException(SR.Format(SR.ArgumentCannotBeNull, nameof(span)), nameof(span));
             }
 
             ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);
