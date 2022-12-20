@@ -104,7 +104,7 @@ if(NOT HOST_DARWIN)
   ac_check_funcs (getentropy)
 endif()
 
-if(NOT HOST_WASI)
+if(NOT DISABLE_THREADS)
   find_package(Threads)
 endif()
 # Needed to find pthread_ symbols
