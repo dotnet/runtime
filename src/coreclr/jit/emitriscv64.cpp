@@ -969,8 +969,207 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return 0;
+    unsigned char callInstrSize = sizeof(code_t); // 4 bytes
+    regMaskTP     gcrefRegs;
+    regMaskTP     byrefRegs;
+
+    VARSET_TP GCvars(VarSetOps::UninitVal());
+
+    // Is this a "fat" call descriptor?
+    if (id->idIsLargeCall())
+    {
+        instrDescCGCA* idCall = (instrDescCGCA*)id;
+        gcrefRegs             = idCall->idcGcrefRegs;
+        byrefRegs             = idCall->idcByrefRegs;
+        VarSetOps::Assign(emitComp, GCvars, idCall->idcGCvars);
+    }
+    else
+    {
+        assert(!id->idIsLargeDsp());
+        assert(!id->idIsLargeCns());
+
+        gcrefRegs = emitDecodeCallGCregs(id);
+        byrefRegs = 0;
+        VarSetOps::AssignNoCopy(emitComp, GCvars, VarSetOps::MakeEmpty(emitComp));
+    }
+
+    /* We update the GC info before the call as the variables cannot be
+        used by the call. Killing variables before the call helps with
+        boundary conditions if the call is CORINFO_HELP_THROW - see bug 50029.
+        If we ever track aliased variables (which could be used by the
+        call), we would have to keep them alive past the call. */
+
+    emitUpdateLiveGCvars(GCvars, dst);
+#ifdef DEBUG
+    // NOTEADD:
+    // Output any delta in GC variable info, corresponding to the before-call GC var updates done above.
+    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+    {
+        emitDispGCVarDelta(); // define in emit.cpp
+    }
+#endif // DEBUG
+
+    assert(id->idIns() == INS_jalr);
+    if (id->idIsCallRegPtr())
+    { // EC_INDIR_R
+        code = emitInsCode(id->idIns());
+        code |= (code_t)id->idReg4() << 7;
+        code |= (code_t)id->idReg3() << 15;
+        // the offset default is 0;
+        emitOutput_Instr(dst, code);
+    }
+    else if (id->idIsReloc())
+    {
+        // pc + offset_32bits
+        //
+        //   auipc t2, addr-hi20
+        //   jalr r0/1,t2,addr-lo12
+
+        emitOutput_Instr(dst, 0x00000397);
+
+        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
+
+        int reg2 = ((int)addr & 1) + 10;
+        addr     = addr ^ 1;
+
+        assert(isValidSimm32(addr - (ssize_t)dst));
+        assert((addr & 1) == 0);
+
+        dst += 4;
+        emitGCregDeadUpd(REG_T2, dst);
+
+#ifdef DEBUG
+        code = emitInsCode(INS_auipc);
+        assert((code | (7 << 7)) == 0x00000397);
+        assert((int)REG_T2 == 7);
+        code = emitInsCode(INS_jalr);
+        assert(code == 0x00000067);
+#endif
+        emitOutput_Instr(dst, 0x00000067 | (7 << 15) | reg2 << 7);
+
+        emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_JALR);
+        // TODO CHECK HOW TO PATCH RELOCATION ADDRESS
+    }
+    else
+    {
+        // lui  t2, dst_offset_lo32-hi
+        // ori  t2, t2, dst_offset_lo32-lo
+        // ori  t3, x0, dst_offset_hi32-lo
+        // or   t2, t2, t3
+        // jalr t2
+
+        ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
+        assert((imm >> 32) <= 0xff);
+
+        int reg2 = (int)(imm & 1);
+        imm -= reg2;
+
+        code = emitInsCode(INS_lui);
+        code |= (code_t)REG_T2 << 7;
+        code |= ((code_t)((imm + 0x800) >> 12) & 0xfffff) << 12;
+
+        emitOutput_Instr(dst, code);
+        dst += 4;
+        emitGCregDeadUpd(REG_T2, dst);
+
+        code = emitInsCode(INS_ori);
+        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)(imm & 0xfff) << 20;
+        emitOutput_Instr(dst, code);
+        dst += 4;
+
+        code = emitInsCode(INS_ori);
+        code |= (code_t)REG_T3 << 7;
+        code |= ((imm >> 32) & 0xff) << 20;
+        emitOutput_Instr(dst, code);
+        dst += 4;
+        emitGCregDeadUpd(REG_T3, dst);
+
+        code = emitInsCode(INS_slli);
+        code |= (code_t)REG_T3 << 7;
+        code |= (code_t)REG_T3 << 15;
+        code |= (code_t)(32 << 20);
+        emitOutput_Instr(dst, code);
+        dst += 4;
+
+        code = emitInsCode(INS_or);
+        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)REG_T3 << 20;
+        emitOutput_Instr(dst, code);
+        dst += 4;
+
+        code = emitInsCode(INS_jalr);
+        code |= (code_t)reg2 << 7;
+        code |= (code_t)REG_T2 << 15;
+        // the offset default is 0;
+        emitOutput_Instr(dst, code);
+    }
+
+    dst += 4;
+
+    // If the method returns a GC ref, mark INTRET (A0) appropriately.
+    if (id->idGCref() == GCT_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (id->idGCref() == GCT_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark INTRET_1 (A1) appropriately
+    if (id->idIsLargeCall())
+    {
+        instrDescCGCA* idCall = (instrDescCGCA*)id;
+        if (idCall->idSecondGCref() == GCT_GCREF)
+        {
+            gcrefRegs |= RBM_INTRET_1;
+        }
+        else if (idCall->idSecondGCref() == GCT_BYREF)
+        {
+            byrefRegs |= RBM_INTRET_1;
+        }
+    }
+
+    // If the GC register set has changed, report the new set.
+    if (gcrefRegs != emitThisGCrefRegs)
+    {
+        emitUpdateLiveGCregs(GCT_GCREF, gcrefRegs, dst);
+    }
+    // If the Byref register set has changed, report the new set.
+    if (byrefRegs != emitThisByrefRegs)
+    {
+        emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, dst);
+    }
+
+    // Some helper calls may be marked as not requiring GC info to be recorded.
+    if (!id->idIsNoGC())
+    {
+        // On RISCV64, as on AMD64 and LOONGARCH64, we don't change the stack pointer to push/pop args.
+        // So we're not really doing a "stack pop" here (note that "args" is 0), but we use this mechanism
+        // to record the call for GC info purposes.  (It might be best to use an alternate call,
+        // and protect "emitStackPop" under the EMIT_TRACK_STACK_DEPTH preprocessor variable.)
+        emitStackPop(dst, /*isCall*/ true, callInstrSize, /*args*/ 0);
+
+        // Do we need to record a call location for GC purposes?
+        //
+        if (!emitFullGCinfo)
+        {
+            emitRecordGCcall(dst, callInstrSize);
+        }
+    }
+    if (id->idIsCallRegPtr())
+    {
+        callInstrSize = 1 << 2;
+    }
+    else
+    {
+        callInstrSize = id->idIsReloc() ? (2 << 2) : (6 << 2); // INS_OPTS_C: 2/6-ins.
+    }
+
+    return callInstrSize;
 }
 
 void emitter::emitJumpDistBind() // TODO NEED TO CHECK WHAT NUMBERS MEAN
@@ -1397,8 +1596,11 @@ AGAIN:
 
 /*static*/ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return 0;
+    assert(sizeof(code_t) == 4);
+    BYTE* dstRW       = dst + writeableOffset;
+    *((code_t*)dstRW) = code;
+
+    return sizeof(code_t);
 }
 
 /*****************************************************************************

@@ -105,10 +105,10 @@ static bool isValidSimm20(ssize_t value)
     return -(((int)1) << 19) <= value && value < (((int)1) << 19);
 };
 
-// Returns true if 'value' is a legal signed immediate 38 bit encoding.
-static bool isValidSimm38(ssize_t value)
+// Returns true if 'value' is a legal signed immediate 32 bit encoding.
+static bool isValidSimm32(ssize_t value)
 {
-    return -(((ssize_t)1) << 37) <= value && value < (((ssize_t)1) << 37);
+    return -(((ssize_t)1) << 31) <= value && value < (((ssize_t)1) << 31);
 };
 
 // Returns the number of bits used by the given 'size'.
