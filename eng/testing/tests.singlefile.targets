@@ -82,6 +82,13 @@
     </ItemGroup>
   </Target>
 
+  <!--
+    Use init-compiler.sh to locate the compiler toolchain which was resolved for rest of the build.
+    This target is essentially an override hook which is called before `SetupOSSpecificProps` in
+    `Microsoft.NETCore.Native.Unix.targets`. Note that the input is `CppCompilerAndLinker`
+    and the output is `CppLinker`, because from `SetupOSSpecificProps` onwards, we only use `CppLinker`
+    (when alternative compiler, i.e. gcc, is not selected)
+  -->
   <Target Name="LocateNativeCompiler"
           Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
