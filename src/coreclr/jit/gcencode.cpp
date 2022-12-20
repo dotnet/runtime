@@ -3570,7 +3570,7 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf = printf;
+    gcDump.gcPrintf       = printf;
 #endif
 
     printf("Method info block:\n");
@@ -3589,7 +3589,7 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf = printf;
+    gcDump.gcPrintf       = printf;
 #endif
 
     return gcDump.DumpGCTable(table, header, methodSize, verifyGCTables);
@@ -3607,7 +3607,7 @@ void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, uns
 #ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
 #else
-    gcDump.gcPrintf = printf;
+    gcDump.gcPrintf       = printf;
 #endif
 
     gcDump.DumpPtrsInFrame((PTR_CBYTE)infoBlock, (const BYTE*)codeBlock, offs, verifyGCTables);
