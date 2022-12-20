@@ -78,6 +78,13 @@ Returns 1 on success, 0 otherwise
 PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* targetHost);
 
 /*
+Check if the local certificate has been sent to the peer during the TLS handshake.
+
+Returns true if the local certificate has been sent to the peer, false otherwise.
+*/
+PALEXPORT bool AndroidCryptoNative_SSLStreamIsLocalCertificateUsed(SSLStream* sslStream);
+
+/*
 Start or continue the TLS handshake
 */
 PALEXPORT PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamHandshake(SSLStream* sslStream);
