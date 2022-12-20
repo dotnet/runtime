@@ -42,7 +42,7 @@ namespace System.Reflection.Emit
     internal sealed class RuntimeGenericTypeParameterBuilder : GenericTypeParameterBuilder
     {
 #region Sync with MonoReflectionGenericParam in object-internals.h
-        private TypeBuilder tbuilder;
+        private RuntimeTypeBuilder tbuilder;
         private RuntimeMethodBuilder? mbuilder;
         private string name;
         private int index;
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
 #endregion
 
         [DynamicDependency(nameof(attrs))]  // Automatically keeps all previous fields too due to StructLayout
-        internal RuntimeGenericTypeParameterBuilder(TypeBuilder tbuilder, RuntimeMethodBuilder? mbuilder, string name, int index)
+        internal RuntimeGenericTypeParameterBuilder(RuntimeTypeBuilder tbuilder, RuntimeMethodBuilder? mbuilder, string name, int index)
         {
             this.tbuilder = tbuilder;
             this.mbuilder = mbuilder;

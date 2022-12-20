@@ -59,10 +59,10 @@ namespace System.Reflection.Emit
         internal int num_methods;
         internal RuntimeMethodBuilder[]? methods;
         internal RuntimeConstructorBuilder[]? ctors;
-        internal PropertyBuilder[]? properties;
+        internal RuntimePropertyBuilder[]? properties;
         internal int num_fields;
         internal RuntimeFieldBuilder[]? fields;
-        internal EventBuilder[]? events;
+        internal RuntimeEventBuilder[]? events;
         private CustomAttributeBuilder[]? cattrs;
         internal RuntimeTypeBuilder[]? subtypes;
         internal TypeAttributes attrs;
@@ -71,7 +71,7 @@ namespace System.Reflection.Emit
         private int class_size;
         private PackingSize packing_size;
         private IntPtr generic_container;
-        private GenericTypeParameterBuilder[]? generic_params;
+        private RuntimeGenericTypeParameterBuilder[]? generic_params;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
@@ -316,7 +316,7 @@ namespace System.Reflection.Emit
                 ConstructorBuilder? found = null;
                 int count = 0;
 
-                foreach (ConstructorBuilder cb in ctors)
+                foreach (RuntimeConstructorBuilder cb in ctors)
                 {
                     if (callConvention != CallingConventions.Any && cb.CallingConvention != callConvention)
                         continue;
@@ -710,7 +710,7 @@ namespace System.Reflection.Emit
             // value type.
             if (fields != null)
             {
-                foreach (FieldBuilder fb in fields)
+                foreach (RuntimeFieldBuilder fb in fields)
                 {
                     if (fb == null)
                         continue;
@@ -865,7 +865,7 @@ namespace System.Reflection.Emit
                     }
 
                     if (ctors != null) {
-                        foreach (ConstructorBuilder ctor in ctors)
+                        foreach (RuntimeConstructorBuilder ctor in ctors)
                             ctor.GenerateDebugInfo (symbolWriter);
                     }
 
@@ -891,11 +891,11 @@ namespace System.Reflection.Emit
         {
             if (ctors == null)
                 return Array.Empty<ConstructorInfo>();
-            List<ConstructorInfo> result = new List<ConstructorInfo>();
+            List<RuntimeConstructorBuilder> result = new List<RuntimeConstructorBuilder>();
             bool match;
             MethodAttributes mattrs;
 
-            foreach (ConstructorBuilder c in ctors)
+            foreach (RuntimeConstructorBuilder c in ctors)
             {
                 match = false;
                 mattrs = c.Attributes;

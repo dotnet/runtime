@@ -160,29 +160,29 @@ namespace System.Reflection.Emit
 
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
-            Module? module = type?.Module;
+            Module module = type.Module;
             if (module is not ModuleBuilder moduleBuilder)
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
-            return moduleBuilder.GetConstructor(type!, constructor);
+            return moduleBuilder.GetConstructor(type, constructor);
         }
 
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
-            Module? module = type?.Module;
+            Module module = type.Module;
             if (module is not ModuleBuilder moduleBuilder)
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
-            return moduleBuilder.GetField(type!, field);
+            return moduleBuilder.GetField(type, field);
         }
 
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
-            Module? module = type?.Module;
+            Module module = type.Module;
             if (module is not ModuleBuilder moduleBuilder)
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
-            return moduleBuilder.GetMethod(type!, method);
+            return moduleBuilder.GetMethod(type, method);
         }
 
         public virtual bool IsCreated()

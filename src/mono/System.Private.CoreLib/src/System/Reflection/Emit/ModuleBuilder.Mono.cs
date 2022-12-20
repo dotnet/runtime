@@ -73,7 +73,7 @@ namespace System.Reflection.Emit
 #endregion
 
         private byte[] guid;
-        private TypeBuilder? global_type;
+        private RuntimeTypeBuilder? global_type;
         private bool global_type_created;
         // name_cache keys are display names
         private Dictionary<ITypeName, RuntimeTypeBuilder> name_cache;

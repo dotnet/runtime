@@ -281,7 +281,17 @@ namespace System.Reflection.Emit
             AssemblyLoadContext? _,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            return DefineDynamicAssembly(name, access, assemblyAttributes);
+            ArgumentNullException.ThrowIfNull(name);
+
+            AssemblyBuilder ab = new RuntimeAssemblyBuilder(name, access);
+
+            if (assemblyAttributes != null)
+            {
+                foreach (CustomAttributeBuilder attr in assemblyAttributes)
+                    ab.SetCustomAttribute(attr);
+            }
+
+            return ab;
         }
 
         public override ModuleBuilder? GetDynamicModule(string name)
