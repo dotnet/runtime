@@ -83,7 +83,7 @@
   </Target>
 
   <Target Name="LocateNativeCompiler"
-          Condition="'$(TestNativeAot)' == 'true' and '$(TargetOS)' != 'windows'"
+          Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
       <PropertyGroup>
         <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
