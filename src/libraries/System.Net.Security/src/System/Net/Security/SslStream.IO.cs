@@ -175,7 +175,7 @@ namespace System.Net.Security
             }
 
             // Write is different since we do not do anything special in Dispose
-            if (Interlocked.Exchange(ref _nestedWrite, (int)StreamUse.InUse) == (int)StreamUse.NotInUse)
+            if (Interlocked.Exchange(ref _nestedWrite, (int)StreamUse.InUse) != (int)StreamUse.NotInUse)
             {
                 _nestedRead = (int)StreamUse.NotInUse;
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
