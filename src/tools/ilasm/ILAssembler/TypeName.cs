@@ -7,5 +7,5 @@ using System.Text;
 
 namespace ILAssembler
 {
-    internal record TypeName(TypeName? ContainingTypeName, string DottedName);
+    internal sealed record TypeName(TypeName? ContainingTypeName, string DottedName);
 }

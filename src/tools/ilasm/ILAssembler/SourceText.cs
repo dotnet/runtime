@@ -3,4 +3,4 @@
 
 namespace ILAssembler;
 
-public record SourceText(string Text, string? Path);
+public record SourceText(string Text, string Path);

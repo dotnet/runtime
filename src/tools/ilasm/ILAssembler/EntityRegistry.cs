@@ -22,7 +22,7 @@ namespace ILAssembler
         private readonly Dictionary<string, ModuleReferenceEntity> _seenModuleRefs = new();
         private readonly Dictionary<BlobBuilder, TypeSpecificationEntity> _seenTypeSpecs = new(new BlobBuilderContentEqualityComparer());
 
-        private class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
+        private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
             public bool Equals(BlobBuilder x, BlobBuilder y) => x.ContentEquals(y);
 
@@ -36,6 +36,14 @@ namespace ILAssembler
             System_Object,
             System_ValueType,
             System_Enum
+        }
+
+        public EntityRegistry()
+        {
+            ModuleType = GetOrCreateTypeDefinition(null, "", "<Module>", moduleType =>
+            {
+                moduleType.BaseType = null;
+            });
         }
 
         public TypeEntity? ResolveImplicitBaseType(WellKnownBaseType? type)
@@ -79,6 +87,8 @@ namespace ILAssembler
                 return _systemEnum ??= ResolveFromCoreAssembly("System.Enum");
             }
         }
+
+        public TypeDefinitionEntity ModuleType { get; }
 
         private TypeEntity ResolveFromCoreAssembly(string typeName)
         {
@@ -217,6 +227,36 @@ namespace ILAssembler
             return (TypeReferenceEntity)scope;
         }
 
+        public static MethodDefinitionEntity CreateUnrecordedMethodDefinition(TypeDefinitionEntity containingType, string name)
+        {
+            return new MethodDefinitionEntity(containingType, name);
+        }
+
+        public bool TryRecordMethodDefinition(MethodDefinitionEntity methodDef)
+        {
+            if (methodDef.MethodSignature is null)
+            {
+                throw new ArgumentException("The method signature must be defined before recording the method definition, to enable detecting duplicate methods.");
+            }
+            bool allowDuplicate = (methodDef.MethodAttributes & MethodAttributes.MemberAccessMask) == MethodAttributes.PrivateScope;
+            if (!allowDuplicate)
+            {
+                foreach (var method in methodDef.ContainingType.Methods)
+                {
+                    if (methodDef.Name == method.Name
+                        && methodDef.MethodSignature.ContentEquals(method.MethodSignature!)
+                        && (method.MethodAttributes & MethodAttributes.MemberAccessMask) != MethodAttributes.PrivateScope)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            RecordEntityInTable(TableIndex.MethodDef, methodDef);
+            methodDef.ContainingType.Methods.Add(methodDef);
+            return true;
+        }
+
         public abstract class EntityBase : IHasHandle
         {
             public EntityHandle Handle { get; private set; }
@@ -311,6 +351,8 @@ namespace ILAssembler
             // COMPAT: Save the list of generic parameter constraints here to ensure we can match ILASM's emit order for generic parameter constraints exactly.
             public List<GenericParameterConstraintEntity> GenericParameterConstraints { get; } = new();
 
+            public List<MethodDefinitionEntity> Methods { get; } = new();
+
             public string ReflectionNotation { get; }
         }
 
@@ -390,6 +432,34 @@ namespace ILAssembler
             }
 
             public string Name { get; }
+        }
+
+        public sealed class MethodDefinitionEntity : EntityBase, IHasHandle
+        {
+            public MethodDefinitionEntity(TypeDefinitionEntity containingType, string name)
+            {
+                ContainingType = containingType;
+                Name = name;
+            }
+
+            public TypeDefinitionEntity ContainingType { get; }
+            public string Name { get; }
+
+            public MethodAttributes MethodAttributes { get; set; }
+
+            public NamedElementList<GenericParameterEntity> GenericParameters { get; } = new();
+
+            // COMPAT: Save the list of generic parameter constraints here to ensure we can match ILASM's emit order for generic parameter constraints exactly.
+            public List<GenericParameterConstraintEntity> GenericParameterConstraints { get; } = new();
+
+            public BlobBuilder? MethodSignature { get; set; }
+
+            public BlobBuilder? LocalsSignature { get; set; }
+
+            public BlobBuilder? MethodBody { get; set; }
+
+            public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
+            public MethodImplAttributes ImplementationAttributes { get; set; }
         }
     }
 }

@@ -11,7 +11,7 @@ namespace ILAssembler
         string Name { get; }
     }
 
-    internal class NamedElementList<T> : IList<T>
+    internal sealed class NamedElementList<T> : IList<T>
         where T : INamed
     {
         private readonly List<T> _elements = new();

@@ -2,15 +2,15 @@ grammar CIL;
 
 import Instructions;
 
-ID: [A-Za-z_][A-Za-z0-9_]*;
+tokens { IncludedFileEof, SyntheticIncludedFileEof }
+
 INT32: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 INT64: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
 FLOAT64: '-'? [0-9]+ ('.' [0-9]+ | [eE] '-'? [0-9]+);
 HEXBYTE: [0-9A-Fa-f][0-9A-Fa-f];
 DCOLON: '::';
 ELLIPSIS: '..';
-QSTRING: '"' (~('"' | '\\') | '\\' ('"' | '\\'))* '"';
-SQSTRING: '\'' (~('\'' | '\\') | '\\' ('\'' | '\\'))* '\'';
+NULL: 'null';
 NULLREF: 'nullref';
 HASH: '.hash';
 CHAR: 'char';
@@ -22,16 +22,112 @@ INT32_: 'int32';
 INT64_: 'int64';
 FLOAT32: 'float32';
 FLOAT64_: 'float64';
-UNSIGNED: 'unsigned';
-UINT8: 'uint8';
-UINT16: 'uint16';
-UINT32: 'uint32';
-UINT64: 'uint64';
+fragment UNSIGNED: 'unsigned';
+UINT8: 'uint8' | (UNSIGNED INT8);
+UINT16: 'uint16' | (UNSIGNED INT16);
+UINT32: 'uint32' | (UNSIGNED INT32_);
+UINT64: 'uint64' | (UNSIGNED INT64_);
+INT: 'int';
+UINT: 'uint' | (UNSIGNED 'int');
 TYPE: 'type';
 OBJECT: 'object';
 MODULE: '.module';
+VALUE: 'value';
+VALUETYPE: 'valuetype';
+VOID: 'void';
+ENUM: 'enum';
+CUSTOM: 'custom';
+FIXED: 'fixed';
+SYSSTRING: 'systring';
+ARRAY: 'array';
+VARIANT: 'variant';
+CURRENCY: 'currency';
+SYSCHAR: 'syschar';
+ERROR: 'error';
+DECIMAL: 'decimal';
+DATE: 'date';
+BSTR: 'bstr';
+LPSTR: 'lpstr';
+LPWSTR: 'lpwstr';
+LPTSTR: 'lptstr';
+OBJECTREF: 'objectref';
+IUNKNOWN: 'iunknown';
+IDISPATCH: 'idispatch';
+STRUCT: 'struct';
+INTERFACE: 'interface';
+SAFEARRAY: 'safearray';
+NESTEDSTRUCT: 'nested' STRUCT;
+VARIANTBOOL: VARIANT BOOL;
+BYVALSTR: 'byvalstr';
+ANSI: 'ansi';
+ANSIBSTR: ANSI BSTR;
+TBSTR: 'tbstr';
+METHOD: 'method';
+ANY: 'any';
+LPSTRUCT: 'lpstruct';
+VECTOR: 'vector';
+HRESULT: 'hresult';
+CARRAY: 'carray';
+USERDEFINED: 'userdefined';
+RECORD: 'record';
+FILETIME: 'filetime';
+BLOB: 'blob';
+STREAM: 'stream';
+STORAGE: 'storage';
+STREAMED_OBJECT: 'streamed_object';
+STORED_OBJECT: 'stored_object';
+BLOB_OBJECT: 'blob_object';
+CF: 'cf';
+CLSID: 'clsid';
+INSTANCE: 'instance';
+EXPLICIT: 'explicit';
+DEFAULT: 'default';
+VARARG: 'vararg';
+UNMANAGED: 'unmanaged';
+CDECL: 'cdecl';
+STDCALL: 'stdcall';
+THISCALL: 'thiscall';
+FASTCALL: 'fastcall';
+TYPE_PARAMETER: '!';
+METHOD_TYPE_PARAMETER: '!' '!';
+TYPEDREF: 'typedref';
+NATIVE_INT: 'native' 'int';
+NATIVE_UINT: ('native' 'unsigned' 'int') | ('native' 'uint');
 
-WHITESPACE: [ \r\n] -> skip;
+THIS: '.this';
+BASE: '.base';
+NESTER: '.nester';
+REF: '&';
+ARRAY_TYPE_NO_BOUNDS: '[' ']';
+PTR: '*';
+
+QSTRING: '"' (~('"' | '\\') | '\\' ('"' | '\\'))* '"';
+SQSTRING: '\'' (~('\'' | '\\') | '\\' ('\'' | '\\'))* '\'';
+DOT: '.';
+PLUS: '+';
+
+PP_DEFINE: '#define';
+PP_UNDEF: '#undef';
+PP_IFDEF: '#ifdef';
+PP_IFNDEF: '#ifndef';
+PP_ELSE: '#else';
+PP_ENDIF: '#endif';
+PP_INCLUDE: '#include';
+
+// ID needs to be last to ensure it doesn't take priority over other token types
+fragment IDSTART: [A-Za-z_#$@];
+fragment IDCONT: [A-Za-z0-9_#?$@`];
+DOTTEDNAME: (ID DOT)+ ID;
+ID: IDSTART IDCONT*;
+
+id: ID | SQSTRING;
+dottedName: DOTTEDNAME | ((ID '.')* ID);
+compQstring: (QSTRING PLUS)* QSTRING;
+
+
+WS: [ \t\r\n] -> skip;
+SINGLE_LINE_COMMENT: '//' ~[\r\n]* -> skip;
+COMMENT: '/*' .*? '*/' -> skip;
 
 decls: decl+;
 
@@ -85,9 +181,6 @@ languageDecl:
 
 typelist: '.typelist' '{' (className)* '}';
 
-id: ID | SQSTRING;
-dottedName: (ID '.')* ID;
-
 int32: INT32;
 int64: INT64 | INT32;
 
@@ -96,9 +189,19 @@ float64:
 	| FLOAT32 '(' int32 ')'
 	| FLOAT64_ '(' int64 ')';
 
-intOrWildcard: int32 | '*';
+intOrWildcard: int32 | PTR;
 
-compQstring: (QSTRING '+')* QSTRING;
+/* TODO: Handle in custom lexer and have this in the grammar just for completeness */
+compControl:
+	PP_DEFINE ID
+	| PP_DEFINE ID QSTRING
+	| PP_UNDEF ID
+	| PP_IFDEF ID
+	| PP_IFNDEF ID
+	| PP_ELSE
+	| PP_ENDIF
+	| PP_INCLUDE QSTRING;
+
 
 /*  Aliasing of types, type specs, methods, fields and custom attributes */
 typedefDecl:
@@ -107,18 +210,6 @@ typedefDecl:
 	| '.typedef' memberRef 'as' dottedName
 	| '.typedef' customDescr 'as' dottedName
 	| '.typedef' customDescrWithOwner 'as' dottedName;
-
-/* TODO: Handle in custom lexer and have this in the grammar just for completeness */
-compControl:
-	'#define' dottedName
-	| '#define' dottedName compQstring
-	| '#undef' dottedName
-	| '#ifdef' dottedName
-	| '#ifndef' dottedName
-	| '#else'
-	| '#endif'
-	| '#include' QSTRING
-	| ';';
 
 /* Custom attribute declarations  */
 customDescr:
@@ -149,10 +240,11 @@ customBlobNVPairs: (
 
 fieldOrProp: 'field' | 'property';
 
-seralizType: seralizTypeElement ('[' ']')?;
+seralizType: seralizTypeElement (ARRAY_TYPE_NO_BOUNDS)?;
 
 seralizTypeElement:
 	simpleType
+	| dottedName /* typedef */
 	| TYPE
 	| OBJECT
 	| 'enum' 'class' SQSTRING
@@ -180,10 +272,9 @@ vtableDecl: '.vtable' '=' '(' bytes ')' /* deprecated */;
 /*  Namespace and class declaration  */
 nameSpaceHead: '.namespace' dottedName;
 
-classHead: '.class' classAttr* dottedName typarsClause extendsClause implClause;
+classHead:
+	'.class' classAttr* dottedName typarsClause extendsClause implClause;
 
-VALUE: 'value';
-ENUM: 'enum';
 
 classAttr:
 	'public'
@@ -217,7 +308,7 @@ extendsClause: /* EMPTY */ | 'extends' typeSpec;
 
 implClause: /* EMPTY */ | 'implements' implList;
 
-classDecls: /* EMPTY */ | classDecls classDecl;
+classDecls: classDecl*;
 
 implList: implList ',' typeSpec | typeSpec;
 
@@ -333,15 +424,11 @@ sigArg:
 	| paramAttr type marshalClause id;
 
 /*  Class referencing  */
-THIS: '.this';
-BASE: '.base';
-NESTER: '.nester';
-THIS_MODULE: '*';
 
 className:
 	'[' dottedName ']' slashedName
 	| '[' mdtoken ']' slashedName
-	| '[' THIS_MODULE ']' slashedName
+	| '[' PTR ']' slashedName
 	| '[' MODULE dottedName ']' slashedName
 	| slashedName
 	| mdtoken
@@ -364,76 +451,74 @@ typeSpec:
 /*  Native types for marshaling signatures  */
 nativeType:
 	/* EMPTY */
-	| nativeTypeElement (
-		'*'
-		| '[' ']'
-		| '[' int32 ']'
-		| '[' int32 '+' int32 ']'
-		| '[' '+' int32 ']'
-	)*;
+	| nativeTypeElement nativeTypeArrayPointerInfo*;
+
+nativeTypeArrayPointerInfo:
+	PTR # PointerNativeType
+	| ARRAY_TYPE_NO_BOUNDS # PointerArrayTypeNoSizeData
+	| '[' int32 ']' # PointerArrayTypeSize
+	| '[' int32 PLUS int32 ']' # PointerArrayTypeSizeParamIndex
+	| '[' PLUS int32 ']' # PointerArrayTypeParamIndex
+    ;
 
 nativeTypeElement:
 	/* EMPTY */
-	| 'custom' '(' compQstring ',' compQstring ',' compQstring ',' compQstring ')'
-	| 'custom' '(' compQstring ',' compQstring ')'
-	| 'fixed' 'sysstring' '[' int32 ']'
-	| 'fixed' 'array' '[' int32 ']' nativeType
-	| 'variant'
-	| 'currency'
-	| 'syschar'
-	| 'void'
-	| BOOL
-	| INT8
-	| INT16
-	| INT32_
-	| INT64_
-	| FLOAT32
-	| FLOAT64_
-	| 'error'
-	| UNSIGNED INT8
-	| UNSIGNED INT16
-	| UNSIGNED INT32_
-	| UNSIGNED INT64_
-	| UINT8
-	| UINT16
-	| UINT32
-	| UINT64
-	| 'decimal'
-	| 'date'
-	| 'bstr'
-	| 'lpstr'
-	| 'lpwstr'
-	| 'lptstr'
-	| 'objectref'
-	| 'iunknown' iidParamIndex
-	| 'idispatch' iidParamIndex
-	| 'struct'
-	| 'interface' iidParamIndex
-	| 'safearray' variantType
-	| 'safearray' variantType ',' compQstring
-	| 'int'
-	| UNSIGNED 'int'
-	| 'uint'
-	| 'nested' 'struct'
-	| 'byvalstr'
-	| 'ansi' 'bstr'
-	| 'tbstr'
-	| 'variant' BOOL
-	| 'method'
-	| 'as' 'any'
-	| 'lpstruct'
+	| marshalType=CUSTOM '(' compQstring ',' compQstring ',' compQstring ',' compQstring ')'
+	| marshalType=CUSTOM '(' compQstring ',' compQstring ')'
+	| FIXED marshalType=SYSSTRING '[' int32 ']'
+	| FIXED marshalType=ARRAY '[' int32 ']' nativeType
+	| marshalType=VARIANT
+	| marshalType=CURRENCY
+	| marshalType=SYSCHAR
+	| marshalType=VOID
+	| marshalType=BOOL
+	| marshalType=INT8
+	| marshalType=INT16
+	| marshalType=INT32_
+	| marshalType=INT64_
+	| marshalType=FLOAT32
+	| marshalType=FLOAT64_
+	| marshalType=ERROR
+	| marshalType=UINT8
+	| marshalType=UINT16
+	| marshalType=UINT32
+	| marshalType=UINT64
+	| marshalType=DECIMAL
+	| marshalType=DATE
+	| marshalType=BSTR
+	| marshalType=LPSTR
+	| marshalType=LPWSTR
+	| marshalType=LPTSTR
+	| marshalType=OBJECTREF
+	| marshalType=IUNKNOWN iidParamIndex
+	| marshalType=IDISPATCH iidParamIndex
+	| marshalType=STRUCT
+	| marshalType=INTERFACE iidParamIndex
+	| marshalType=SAFEARRAY variantType
+	| marshalType=SAFEARRAY variantType ',' compQstring
+	| marshalType=INT
+	| marshalType=UINT
+	| marshalType=NESTEDSTRUCT
+	| marshalType=BYVALSTR
+	| marshalType=ANSIBSTR
+	| marshalType=TBSTR
+	| marshalType=VARIANTBOOL
+	| marshalType=METHOD
+	| marshalType=LPSTRUCT
+	| 'as' marshalType=ANY
 	| dottedName /* typedef */;
 
 iidParamIndex: /* EMPTY */ | '(' 'iidparam' '=' int32 ')';
 
-variantType: variantTypeElement ('[' ']' | 'vector' | '&')*;
+variantType:
+	/*EMPTY */
+	| variantTypeElement (ARRAY_TYPE_NO_BOUNDS | VECTOR | REF)*;
 
 variantTypeElement:
-	/* EMPTY */
-	| 'null'
-	| 'variant'
-	| 'currency'
-	| 'void'
+	NULL
+	| VARIANT
+	| CURRENCY
+	| VOID
 	| BOOL
 	| INT8
 	| INT16
@@ -441,72 +526,65 @@ variantTypeElement:
 	| INT64_
 	| FLOAT32
 	| FLOAT64_
-	| UNSIGNED INT8
-	| UNSIGNED INT16
-	| UNSIGNED INT32_
-	| UNSIGNED INT64_
 	| UINT8
 	| UINT16
 	| UINT32
 	| UINT64
-	| '*'
-	| 'decimal'
-	| 'date'
-	| 'bstr'
-	| 'lpstr'
-	| 'lpwstr'
-	| 'iunknown'
-	| 'idispatch'
-	| 'safearray'
-	| 'int'
-	| UNSIGNED 'int'
-	| 'uint'
-	| 'error'
-	| 'hresult'
-	| 'carray'
-	| 'userdefined'
-	| 'record'
-	| 'filetime'
-	| 'blob'
-	| 'stream'
-	| 'storage'
-	| 'streamed_object'
-	| 'stored_object'
-	| 'blob_object'
-	| 'cf'
-	| 'clsid';
+	| PTR
+	| DECIMAL
+	| DATE
+	| BSTR
+	| LPSTR
+	| LPWSTR
+	| IUNKNOWN
+	| IDISPATCH
+	| SAFEARRAY
+	| INT
+	| UINT
+	| ERROR
+	| HRESULT
+	| CARRAY
+	| USERDEFINED
+	| RECORD
+	| FILETIME
+	| BLOB
+	| STREAM
+	| STORAGE
+	| STREAMED_OBJECT
+	| STORED_OBJECT
+	| BLOB_OBJECT
+	| CF
+	| CLSID;
 
 /*  Managed types for signatures  */
-type:
-	elementType typeModifiers*;
+type: elementType typeModifiers*;
 
 typeModifiers:
-    '[' ']' # SZArrayModifier
-    | bounds # ArrayModifier
-    | '&' # ByRefModifier
-    | '*' #PtrModifier
-    | 'pinned' #PinnedModifier
-    | 'modreq' '(' typeSpec ')' # RequiredModifier
-    | 'modopt' '(' typeSpec ')' # OptionalModifier
-    | typeArgs # GenericArgumentsModifier
-    ;
+	'[' ']'						# SZArrayModifier
+	| bounds					# ArrayModifier
+	| REF						# ByRefModifier
+	| PTR  				# PtrModifier
+	| 'pinned'					# PinnedModifier
+	| 'modreq' '(' typeSpec ')'	# RequiredModifier
+	| 'modopt' '(' typeSpec ')'	# OptionalModifier
+	| typeArgs					# GenericArgumentsModifier;
 
 elementType:
 	'class' className
 	| OBJECT
-	| 'value' 'class' className
-	| 'valuetype' className
-	| 'method' callConv type '*' sigArgs
-	| '!' '!' int32
-	| '!' int32
-	| '!' '!' dottedName
-	| '!' dottedName
-	| 'typedref'
-	| 'void'
-	| 'native' 'int'
-	| 'native' UNSIGNED 'int'
-	| 'native' 'uint'
+	| VALUE 'class' className
+	| VALUETYPE className
+	| 'method' callConv type PTR sigArgs
+	| METHOD_TYPE_PARAMETER int32
+	| TYPE_PARAMETER int32
+	| METHOD_TYPE_PARAMETER dottedName
+	| TYPE_PARAMETER dottedName
+	| TYPEDREF
+	| VOID
+	| NATIVE_INT
+	| NATIVE_UINT
 	| simpleType
+	| dottedName /* typedef */
 	| ELLIPSIS type;
 
 simpleType:
@@ -519,15 +597,10 @@ simpleType:
 	| INT64_
 	| FLOAT32
 	| FLOAT64_
-	| UNSIGNED INT8
-	| UNSIGNED INT16
-	| UNSIGNED INT32_
-	| UNSIGNED INT64_
 	| UINT8
 	| UINT16
 	| UINT32
-	| UINT64
-	| dottedName /* typedef */;
+	| UINT64;
 
 bound:
 	| ELLIPSIS
@@ -593,20 +666,20 @@ methodRef:
 	| dottedName /* typeDef */;
 
 callConv:
-	'instance' callConv
-	| 'explicit' callConv
+	INSTANCE callConv
+	| EXPLICIT callConv
 	| callKind
 	| 'callconv' '(' int32 ')';
 
 callKind:
 	/* EMPTY */
-	| 'default'
-	| 'vararg'
-	| 'unmanaged' 'cdecl'
-	| 'unmanaged' 'stdcall'
-	| 'unmanaged' 'thiscall'
-	| 'unmanaged' 'fastcall'
-	| 'unmanaged';
+	| DEFAULT
+	| VARARG
+	| UNMANAGED CDECL
+	| UNMANAGED STDCALL
+	| UNMANAGED THISCALL
+	| UNMANAGED FASTCALL
+	| UNMANAGED;
 
 mdtoken: 'mdtoken' '(' int32 ')';
 
@@ -623,14 +696,13 @@ typeList: (typeSpec ',')* typeSpec;
 typarsClause: /* EMPTY */ | '<' typars '>';
 
 typarAttrib:
-	covariant='+'
-	| contravariant='-'
-	| class='class'
-	| valuetype='valuetype'
-	| byrefLike='byreflike'
-	| ctor='.ctor'
-	| 'flags' '(' flags=int32 ')'
-    ;
+	covariant = PLUS
+	| contravariant = '-'
+	| class = 'class'
+	| valuetype = VALUETYPE
+	| byrefLike = 'byreflike'
+	| ctor = '.ctor'
+	| 'flags' '(' flags = int32 ')';
 
 typarAttribs: typarAttrib*;
 
@@ -646,7 +718,7 @@ genArityNotEmpty: '<' '[' int32 ']' '>';
 
 /*  Class body declarations  */
 classDecl:
-	methodHead methodDecls '}'
+	methodHead '{' methodDecls '}'
 	| classHead '{' classDecls '}'
 	| eventHead '{' eventDecls '}'
 	| propHead '{' propDecls '}'
@@ -744,44 +816,39 @@ marshalClause: /* EMPTY */ | 'marshal' '(' marshalBlob ')';
 
 marshalBlob: nativeType | '{' hexbytes '}';
 
-marshalBlobHead: '{';
-
 paramAttr: paramAttrElement*;
 
 paramAttrElement:
-	'[' 'in' ']'
-	| '[' 'out' ']'
-	| '[' 'opt' ']'
+	'[' in = 'in' ']'
+	| '[' out = 'out' ']'
+	| '[' opt = 'opt' ']'
 	| '[' int32 ']';
 
 methodHead:
-	'.method' methAttr callConv paramAttr type marshalClause methodName typarsClause sigArgs
-		implAttr '{';
+	'.method' (methAttr | pinvImpl)* callConv paramAttr type marshalClause methodName typarsClause sigArgs
+		implAttr*;
 
-methAttr:
-	/* EMPTY */
-	| methAttr 'static'
-	| methAttr 'public'
-	| methAttr 'private'
-	| methAttr 'family'
-	| methAttr 'final'
-	| methAttr 'specialname'
-	| methAttr 'virtual'
-	| methAttr 'strict'
-	| methAttr 'abstract'
-	| methAttr 'assembly'
-	| methAttr 'famandassem'
-	| methAttr 'famorassem'
-	| methAttr 'privatescope'
-	| methAttr 'hidebysig'
-	| methAttr 'newslot'
-	| methAttr 'rtspecialname'
-	| methAttr 'unmanagedexp'
-	| methAttr 'reqsecobj'
-	| methAttr 'flags' '(' int32 ')'
-	| methAttr 'pinvokeimpl' '(' compQstring 'as' compQstring pinvAttr* ')'
-	| methAttr 'pinvokeimpl' '(' compQstring pinvAttr* ')'
-	| methAttr 'pinvokeimpl' '(' pinvAttr* ')';
+methAttr: 'static'
+	| 'public'
+	| 'private'
+	| 'family'
+	| 'final'
+	| 'specialname'
+	| 'virtual'
+	| 'strict'
+	| 'abstract'
+	| 'assembly'
+	| 'famandassem'
+	| 'famorassem'
+	| 'privatescope'
+	| 'hidebysig'
+	| 'newslot'
+	| 'rtspecialname'
+	| 'unmanagedexp'
+	| 'reqsecobj'
+	| 'flags' '(' int32 ')';
+
+pinvImpl: 'pinvokeimpl' '(' (compQstring ('as' compQstring)?)? pinvAttr* ')';
 
 pinvAttr:
 	'nomangle'
@@ -803,26 +870,25 @@ pinvAttr:
 methodName: '.ctor' | '.cctor' | dottedName;
 
 implAttr:
-	/* EMPTY */
-	| implAttr 'native'
-	| implAttr 'cil'
-	| implAttr 'optil'
-	| implAttr 'managed'
-	| implAttr 'unmanaged'
-	| implAttr 'forwardref'
-	| implAttr 'preservesig'
-	| implAttr 'runtime'
-	| implAttr 'internalcall'
-	| implAttr 'synchronized'
-	| implAttr 'noinlining'
-	| implAttr 'aggressiveinlining'
-	| implAttr 'nooptimization'
-	| implAttr 'aggressiveoptimization'
-	| implAttr 'flags' '(' int32 ')';
+	'native'
+	| 'cil'
+	| 'optil'
+	| 'managed'
+	| 'unmanaged'
+	| 'forwardref'
+	| 'preservesig'
+	| 'runtime'
+	| 'internalcall'
+	| 'synchronized'
+	| 'noinlining'
+	| 'aggressiveinlining'
+	| 'nooptimization'
+	| 'aggressiveoptimization'
+	| 'flags' '(' int32 ')';
 
 localsHead: '.locals';
 
-methodDecls: /* EMPTY */ | methodDecls methodDecl;
+methodDecls: methodDecl*;
 
 methodDecl:
 	'.emitbyte' int32
@@ -904,8 +970,8 @@ ddItemList: ddItem ',' ddItemList | ddItem;
 ddItemCount: /* EMPTY */ | '[' int32 ']';
 
 ddItem:
-	CHAR '*' '(' compQstring ')'
-	| '&' '(' id ')'
+	CHAR PTR '(' compQstring ')'
+	| REF '(' id ')'
 	| 'bytearray' '(' bytes ')'
 	| FLOAT32 '(' float64 ')' ddItemCount
 	| FLOAT64_ '(' float64 ')' ddItemCount
@@ -930,10 +996,6 @@ fieldSerInit:
 	| INT32_ '(' int32 ')'
 	| INT16 '(' int32 ')'
 	| INT8 '(' int32 ')'
-	| UNSIGNED INT64_ '(' int64 ')'
-	| UNSIGNED INT32_ '(' int32 ')'
-	| UNSIGNED INT16 '(' int32 ')'
-	| UNSIGNED INT8 '(' int32 ')'
 	| UINT64 '(' int64 ')'
 	| UINT32 '(' int32 ')'
 	| UINT16 '(' int32 ')'
@@ -967,10 +1029,6 @@ serInit:
 	| UINT32 '[' int32 ']' '(' i32seq ')'
 	| UINT16 '[' int32 ']' '(' i16seq ')'
 	| UINT8 '[' int32 ']' '(' i8seq ')'
-	| UNSIGNED INT64_ '[' int32 ']' '(' i64seq ')'
-	| UNSIGNED INT32_ '[' int32 ']' '(' i32seq ')'
-	| UNSIGNED INT16 '[' int32 ']' '(' i16seq ')'
-	| UNSIGNED INT8 '[' int32 ']' '(' i8seq ')'
 	| CHAR '[' int32 ']' '(' i16seq ')'
 	| BOOL '[' int32 ']' '(' boolSeq ')'
 	| STRING '[' int32 ']' '(' sqstringSeq ')'
