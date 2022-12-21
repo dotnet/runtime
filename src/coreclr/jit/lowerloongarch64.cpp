@@ -408,9 +408,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
             src->ChangeOper(GT_OBJ);
             src->AsObj()->SetAddr(lclAddr);
-            src->AsObj()->SetLayout(layout);
-            src->AsObj()->gtBlkOpKind     = GenTreeBlk::BlkOpKindInvalid;
-            src->AsObj()->gtBlkOpGcUnsafe = false;
+            src->AsObj()->Initialize(layout);
 
             BlockRange().InsertBefore(src, lclAddr);
         }
@@ -787,6 +785,17 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
+}
+
+//------------------------------------------------------------------------
+// ContainCheckSelect : determine whether the source of a select should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckSelect(GenTreeOp* node)
+{
+    noway_assert(!"GT_SELECT nodes are not supported on loongarch64");
 }
 
 //------------------------------------------------------------------------

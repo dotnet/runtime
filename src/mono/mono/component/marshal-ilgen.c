@@ -39,7 +39,7 @@ static void ilgen_init_internal (void);
 static int
 emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMarshalSpec *spec, int conv_arg,
-		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweigth_cb);
+		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweight_cb);
 
 static void ilgen_install_callbacks_mono (IlgenCallbacksToMono *callbacks);
 
@@ -2723,7 +2723,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static int
 emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMarshalSpec *spec, int conv_arg,
-		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweigth_cb)
+		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweight_cb)
 {
 	if (spec && spec->native == MONO_NATIVE_CUSTOM)
 		return emit_marshal_custom_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);
@@ -2785,7 +2785,7 @@ emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_FNPTR:
-		return lightweigth_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return lightweight_cb->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_GENERICINST:
 		if (mono_type_generic_inst_is_valuetype (t))
 			return emit_marshal_vtype_ilgen (m, argnum, t, spec, conv_arg, conv_arg_type, action);

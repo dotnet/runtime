@@ -1041,9 +1041,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\StringNormalizationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StringSplitOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.CaseConversion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Transcoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Trimming.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Utility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Utility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIEncoding.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIUtility.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIUtility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\CodePageDataItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderExceptionFallback.cs" />
@@ -2235,8 +2239,9 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" Condition="'$(TargetsAndroid)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" Condition="'$(TargetsAndroid)' != 'true' and '$(IsiOSLike)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Android.cs" Condition="'$(TargetsAndroid)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.Logcat.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
       <Link>Common\Interop\Android\Interop.Logcat.cs</Link>
     </Compile>
@@ -2309,8 +2314,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetPid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs" Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
@@ -2329,6 +2332,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(IsMobileLike)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs" Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
@@ -2524,8 +2529,5 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryNegationOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryPlusOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureMono)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Mono.cs" />
   </ItemGroup>
 </Project>

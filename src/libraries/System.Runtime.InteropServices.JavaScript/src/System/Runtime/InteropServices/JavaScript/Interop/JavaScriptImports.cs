@@ -7,7 +7,6 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal static unsafe partial class JavaScriptImports
     {
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void MarshalPromise(Span<JSMarshalerArgument> arguments)
         {
             fixed (JSMarshalerArgument* ptr = arguments)
@@ -23,7 +22,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         #region legacy
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static object GetGlobalObject(string? str = null)
         {
             int exception;
@@ -36,7 +34,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObj;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr CreateCSOwnedObject(string typeName, object[] parms)
         {
             Interop.Runtime.CreateCSOwnedObjectRef(typeName, parms, out int exception, out object res);

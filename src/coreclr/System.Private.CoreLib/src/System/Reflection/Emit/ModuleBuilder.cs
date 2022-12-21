@@ -573,7 +573,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Types might be removed")]
         private Type? GetTypeNoLock(string className, bool throwOnError, bool ignoreCase)
         {
-            // public API to to a type. The reason that we need this function override from module
+            // public API to a type. The reason that we need this function override from module
             // is because clients might need to get foo[] when foo is being built. For example, if
             // foo class contains a data member of type foo[].
             // This API first delegate to the Module.GetType implementation. If succeeded, great!
@@ -799,7 +799,7 @@ namespace System.Reflection.Emit
                 // Global methods must be static.
                 if ((attributes & MethodAttributes.Static) == 0)
                 {
-                    throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
+                    throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
                 }
 
                 return _globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
@@ -829,7 +829,7 @@ namespace System.Reflection.Emit
             ArgumentException.ThrowIfNullOrEmpty(name);
             if ((attributes & MethodAttributes.Static) == 0)
             {
-                throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
+                throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
             }
 
             return _globalTypeBuilder.DefineMethod(name, attributes, callingConvention,

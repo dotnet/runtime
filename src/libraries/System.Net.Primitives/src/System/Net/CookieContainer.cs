@@ -183,10 +183,7 @@ namespace System.Net
             }
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 m_maxCookieSize = value;
             }
         }
@@ -614,13 +611,15 @@ namespace System.Net
             }
 
             // Test for "127.###.###.###" without using regex.
-            string[] ipParts = host.Split('.');
-            if (ipParts != null && ipParts.Length == 4 && ipParts[0] == "127")
+            ReadOnlySpan<char> hostSpan = host;
+            Span<Range> ipParts = stackalloc Range[5];
+            ipParts = ipParts.Slice(0, hostSpan.Split(ipParts, '.'));
+            if (ipParts.Length == 4 && hostSpan[ipParts[0]] is "127")
             {
                 int i;
                 for (i = 1; i < ipParts.Length; i++)
                 {
-                    string part = ipParts[i];
+                    ReadOnlySpan<char> part = hostSpan[ipParts[i]];
                     switch (part.Length)
                     {
                         case 3:

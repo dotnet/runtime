@@ -41,6 +41,9 @@ jiterp_insert_entry_points (void *td);
 void
 mono_jiterp_register_jit_call_thunk (void *cinfo, WasmJitCallThunk thunk);
 
+extern void
+mono_interp_record_interp_entry (void *fn_ptr);
+
 // jiterpreter-interp-entry.ts
 // HACK: Pass void* so that this header can include safely in files without definition for InterpMethod
 extern gpointer
@@ -82,6 +85,41 @@ extern void
 mono_jiterp_do_jit_call_indirect (
 	gpointer cb, gpointer arg, gboolean *out_thrown
 );
+
+#ifdef __MONO_MINI_INTERPRETER_INTERNALS_H__
+
+typedef struct {
+	InterpMethod *rmethod;
+	ThreadContext *context;
+	gpointer orig_domain;
+	gpointer attach_cookie;
+} JiterpEntryDataHeader;
+
+// we optimize delegate calls by attempting to cache the delegate invoke
+//  target - this will improve performance when the same delegate is invoked
+//  repeatedly inside a loop
+typedef struct {
+	MonoDelegate *delegate_invoke_is_for;
+	MonoMethod *delegate_invoke;
+	InterpMethod *delegate_invoke_rmethod;
+} JiterpEntryDataCache;
+
+// jitted interp_entry wrappers use custom tracking data structures
+//  that are allocated in the heap, one per wrapper
+// FIXME: For thread safety we need to make these thread-local or stack-allocated
+// Note that if we stack allocate these the cache will need to move somewhere else
+typedef struct {
+	// We split the cache out from the important data so that when
+	//  jiterp_interp_entry copies the important data it doesn't have
+	//  to also copy the cache. This reduces overhead slightly
+	JiterpEntryDataHeader header;
+	JiterpEntryDataCache cache;
+} JiterpEntryData;
+
+void
+mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
+
+#endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 
 extern WasmDoJitCall jiterpreter_do_jit_call;
 

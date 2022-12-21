@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0x84875418 {}
+.assembly 'b27917' {}
 .class ILGEN_0x84875418 {
 
 .method static int32 main() {

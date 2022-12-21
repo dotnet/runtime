@@ -9,11 +9,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ConvertToInt64.Vector128Single.cs" />
-    <Compile Include="ConvertToInt64WithTruncation.Vector128Single.cs" />
-    <Compile Include="ConvertScalarToVector128Single.Single.cs" />
-    <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
     <Compile Include="Program.Sse1.X64.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

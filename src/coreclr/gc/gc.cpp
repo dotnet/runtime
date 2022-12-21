@@ -2336,9 +2336,6 @@ size_t      gc_heap::heap_hard_limit_oh[total_oh_count];
 
 size_t      gc_heap::regions_range = 0;
 
-size_t      gc_heap::heap_hard_limit_for_heap = 0;
-size_t      gc_heap::heap_hard_limit_for_bookkeeping = 0;
-
 #endif //USE_REGIONS
 
 bool        affinity_config_specified_p = false;
@@ -6956,10 +6953,6 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 
         if (heap_hard_limit_oh[soh] != 0)
         {
-#ifdef USE_REGIONS
-            assert (heap_hard_limit_for_heap == 0);
-            assert (heap_hard_limit_for_bookkeeping == 0);
-#endif //USE_REGIONS
             if ((bucket < total_oh_count) && (committed_by_oh[bucket] + size) > heap_hard_limit_oh[bucket])
             {
                 exceeded_p = true;
@@ -6967,23 +6960,9 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         }
         else
         {
-            size_t base;
-            size_t limit;
-#ifdef USE_REGIONS
-            if (h_number < 0)
-            {
-                base = current_total_committed_bookkeeping;
-                limit = heap_hard_limit_for_bookkeeping;
-            }
-            else
-            {
-                base = current_total_committed - current_total_committed_bookkeeping;
-                limit = heap_hard_limit_for_heap;
-            }
-#else
-            base = current_total_committed;
-            limit = heap_hard_limit;
-#endif //USE_REGIONS
+            size_t base = current_total_committed;
+            size_t limit = heap_hard_limit;
+
             if ((base + size) > limit)
             {
                 dprintf (1, ("%zd + %zd = %zd > limit %zd ", base, size, (base + size), limit));
@@ -11339,12 +11318,6 @@ void gc_heap::clear_region_info (heap_segment* region)
                         seg_deleted);
 
     bgc_verify_mark_array_cleared (region);
-
-    if (dt_high_memory_load_p())
-    {
-        decommit_mark_array_by_seg (region);
-        region->flags &= ~(heap_segment_flags_ma_committed);
-    }
 #endif //BACKGROUND_GC
 }
 
@@ -13575,13 +13548,17 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         gc_log = CreateLogFile(GCConfig::GetLogFile(), false);
 
         if (gc_log == NULL)
+        {
+            GCToEEInterface::LogErrorToHost("Cannot create log file");
             return E_FAIL;
+        }
 
         // GCLogFileSize in MBs.
         gc_log_file_size = static_cast<size_t>(GCConfig::GetLogFileSize());
 
         if (gc_log_file_size <= 0 || gc_log_file_size > 500)
         {
+            GCToEEInterface::LogErrorToHost("Invalid log file size (valid size needs to be larger than 0 and smaller than 500)");
             fclose (gc_log);
             return E_FAIL;
         }
@@ -13591,7 +13568,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         if (!gc_log_buffer)
         {
             fclose(gc_log);
-            return E_FAIL;
+            return E_OUTOFMEMORY;
         }
 
         memset (gc_log_buffer, '*', gc_log_buffer_size);
@@ -13606,13 +13583,16 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         gc_config_log = CreateLogFile(GCConfig::GetConfigLogFile(), true);
 
         if (gc_config_log == NULL)
+        {
+            GCToEEInterface::LogErrorToHost("Cannot create log file");
             return E_FAIL;
+        }
 
         gc_config_log_buffer = new (nothrow) uint8_t [gc_config_log_buffer_size];
         if (!gc_config_log_buffer)
         {
             fclose(gc_config_log);
-            return E_FAIL;
+            return E_OUTOFMEMORY;
         }
 
         compact_ratio = static_cast<int>(GCConfig::GetCompactRatio());
@@ -13663,26 +13643,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     GCConfig::SetConcurrentGC(false);
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
-
-#ifdef USE_REGIONS
-    if (gc_heap::heap_hard_limit && gc_heap::heap_hard_limit_oh[soh] == 0)
-    {
-        size_t gc_region_size = (size_t)1 << min_segment_size_shr;
-        size_t sizes[total_bookkeeping_elements];
-        size_t bookkeeping_size_per_region = 0;
-        uint8_t* temp_lowest_address = (uint8_t*)gc_region_size;
-        gc_heap::get_card_table_element_sizes(temp_lowest_address, temp_lowest_address + gc_region_size, sizes);
-        for (int i = 0; i < total_bookkeeping_elements; i++)
-        {
-            bookkeeping_size_per_region += sizes[i];
-        }
-        size_t total_size_per_region = gc_region_size + bookkeeping_size_per_region;
-        size_t max_region_count = gc_heap::heap_hard_limit / total_size_per_region; // implictly rounded down
-        gc_heap::heap_hard_limit_for_heap = max_region_count * gc_region_size;
-        gc_heap::heap_hard_limit_for_bookkeeping = max_region_count * bookkeeping_size_per_region;
-        dprintf (REGIONS_LOG, ("bookkeeping_size_per_region = %zd", bookkeeping_size_per_region));
-    }
-#endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
     // leave the first page to contain only segment info
@@ -13739,6 +13699,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     else
     {
         assert (!"cannot use regions without specifying the range!!!");
+        GCToEEInterface::LogErrorToHost("Cannot use regions without specifying the range (using DOTNET_GCRegionRange)");
         return E_FAIL;
     }
 #else //USE_REGIONS
@@ -13862,6 +13823,7 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     if (!init_semi_shared())
     {
+        GCToEEInterface::LogErrorToHost("PER_HEAP_ISOLATED data members initialization failed");
         hres = E_FAIL;
     }
 
@@ -14441,6 +14403,8 @@ gc_heap::init_gc_heap (int h_number)
 #endif //CARD_BUNDLE
 
 #ifdef BACKGROUND_GC
+    background_saved_highest_address = nullptr;
+    background_saved_lowest_address = nullptr;
     if (gc_can_use_concurrent)
         mark_array = translate_mark_array (card_table_mark_array (&g_gc_card_table[card_word (card_of (g_gc_lowest_address))]));
     else
@@ -20361,20 +20325,17 @@ bool gc_heap::try_get_new_free_region()
 bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 {
 #ifdef BACKGROUND_GC
-        if (is_bgc_in_progress())
+        dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
+            heap_segment_mem (region), mark_array));
+        if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
+            !commit_mark_array_new_seg (__this, region))
         {
-            dprintf (GC_TABLE_LOG, ("new seg %p, mark_array is %p",
-                heap_segment_mem (region), mark_array));
-            if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
-                !commit_mark_array_new_seg (__this, region))
-            {
-                dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %p-%p",
-                    get_region_start (region), heap_segment_reserved (region)));
+            dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
+                get_region_start (region), heap_segment_reserved (region)));
 
-                // We don't have memory to commit the mark array so we cannot use the new region.
-                global_region_allocator.delete_region (get_region_start (region));
-                return false;
-            }
+            // We don't have memory to commit the mark array so we cannot use the new region.
+            global_region_allocator.delete_region (get_region_start (region));
+            return false;
         }
         if ((region->flags & heap_segment_flags_ma_committed) != 0)
         {
@@ -21750,6 +21711,7 @@ void gc_heap::gc1()
 
     if (!(settings.concurrent))
     {
+        rearrange_uoh_segments();
 #ifdef USE_REGIONS
         initGCShadow();
         distribute_free_regions();
@@ -21771,7 +21733,6 @@ void gc_heap::gc1()
         }
 #endif //USE_REGIONS
 
-        rearrange_uoh_segments();
         update_end_ngc_time();
         update_end_gc_time_per_heap();
         add_to_history_per_heap();
@@ -21785,7 +21746,7 @@ void gc_heap::gc1()
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
 #ifdef USE_REGIONS
-    if (!(settings.concurrent))
+    if (!(settings.concurrent) && (settings.condemned_generation == max_generation))
     {
         last_gc_before_oom = FALSE;
     }
@@ -45178,6 +45139,9 @@ HRESULT GCHeap::Init(size_t hn)
 //System wide initialization
 HRESULT GCHeap::Initialize()
 {
+#ifndef TRACE_GC
+    STRESS_LOG_VA (1, (ThreadStressLog::gcLoggingIsOffMsg()));
+#endif
     HRESULT hr = S_OK;
 
     qpf = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
@@ -45556,6 +45520,7 @@ HRESULT GCHeap::Initialize()
 
     if (!WaitForGCEvent->CreateManualEventNoThrow(TRUE))
     {
+        GCToEEInterface::LogErrorToHost("Creation of WaitForGCEvent failed");
         return E_FAIL;
     }
 
@@ -45637,9 +45602,15 @@ HRESULT GCHeap::Initialize()
         int hb_info_size_per_node = hb_info_size_per_proc * procs_per_numa_node;
         uint8_t* numa_mem = (uint8_t*)GCToOSInterface::VirtualReserve (hb_info_size_per_node, 0, 0, numa_node_index);
         if (!numa_mem)
+        {
+            GCToEEInterface::LogErrorToHost("Reservation of numa_mem failed");
             return E_FAIL;
+        }
         if (!GCToOSInterface::VirtualCommit (numa_mem, hb_info_size_per_node, numa_node_index))
+        {
+            GCToEEInterface::LogErrorToHost("Commit of numa_mem failed");
             return E_FAIL;
+        }
 
         heap_balance_info_proc* hb_info_procs = (heap_balance_info_proc*)numa_mem;
         hb_info_numa_nodes[numa_node_index].hb_info_procs = hb_info_procs;
