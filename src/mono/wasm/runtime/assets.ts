@@ -72,11 +72,12 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(typeof asset.name === "string", "asset name must be string");
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
             if (!skipInstantiateByAssetTypes[asset.behavior]) {
                 expected_instantiated_assets_count++;
             }
             if (!skipDownloadsByAssetTypes[asset.behavior]) {
-                const headersOnly = skipBufferByAssetTypes[asset.behavior];// `response.arrayBuffer()` can't be called twice. Some usecases are calling it on response in the instantiation.
+                const headersOnly = skipBufferByAssetTypes[asset.behavior];// `response.arrayBuffer()` can't be called twice. Some use-cases are calling it on response in the instantiation.
                 expected_downloaded_assets_count++;
                 if (asset.pendingDownload) {
                     asset.pendingDownloadInternal = asset.pendingDownload;
