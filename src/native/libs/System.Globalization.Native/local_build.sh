@@ -10,17 +10,24 @@
 
 # Currently, only Linux is supported
 
-SHIM_SOURCE_DIR=$1/native/src
-INTERMEDIATE_OUTPUT_PATH=$2
+SHIM_SOURCE_DIR="$1"/native/src
+INTERMEDIATE_OUTPUT_PATH="$2"
 
 if [ -d "$SHIM_SOURCE_DIR" ]; then
     LOCAL_SHIM_DIR="$INTERMEDIATE_OUTPUT_PATH"/libs/System.Globalization.Native/build
-    mkdir -p "$LOCAL_SHIM_DIR" && cd "$LOCAL_SHIM_DIR"
-    if [ $? -ne 0 ]; then echo "local_build.sh::ERROR: Cannot use local build directory"; exit 1; fi
-    cmake -S "$SHIM_SOURCE_DIR/libs/System.Globalization.Native/" -DLOCAL_BUILD:STRING=1 -DCLR_CMAKE_TARGET_UNIX:STRING=1
-    if [ $? -ne 0 ]; then echo "local_build.sh::ERROR: cmake failed"; exit 1; fi
-    make -j
-    if [ $? -ne 0 ]; then echo "local_build.sh::ERROR: Build failed"; exit 1; fi
-fi
 
-exit 0
+    if ! { mkdir -p "$LOCAL_SHIM_DIR" && cd "$LOCAL_SHIM_DIR"; }; then
+        echo "local_build.sh::ERROR: Cannot use local build directory"
+        exit 1
+    fi
+
+    if ! cmake -S "$SHIM_SOURCE_DIR/libs/System.Globalization.Native/" -DLOCAL_BUILD:STRING=1 -DCLR_CMAKE_TARGET_UNIX:STRING=1; then
+        echo "local_build.sh::ERROR: cmake failed"
+        exit 1
+    fi
+
+    if ! make -j; then
+        echo "local_build.sh::ERROR: Build failed"
+        exit 1
+    fi
+fi
