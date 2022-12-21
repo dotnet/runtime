@@ -3,13 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using System.Xml.Linq;
 
 namespace ILAssembler
 {
@@ -456,7 +453,11 @@ namespace ILAssembler
 
             public BlobBuilder? LocalsSignature { get; set; }
 
-            public BlobBuilder? MethodBody { get; set; }
+            public InstructionEncoder MethodBody { get; } = new(new BlobBuilder(), new ControlFlowBuilder());
+
+            public MethodBodyAttributes BodyAttributes { get; set; }
+
+            public int MaxStack { get; set; }
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
             public MethodImplAttributes ImplementationAttributes { get; set; }

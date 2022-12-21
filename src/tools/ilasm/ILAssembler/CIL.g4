@@ -93,6 +93,7 @@ METHOD_TYPE_PARAMETER: '!' '!';
 TYPEDREF: 'typedref';
 NATIVE_INT: 'native' 'int';
 NATIVE_UINT: ('native' 'unsigned' 'int') | ('native' 'uint');
+PARAM: '.param';
 
 THIS: '.this';
 BASE: '.base';
@@ -134,7 +135,7 @@ decls: decl+;
 decl:
 	classHead '{' classDecls '}'
 	| nameSpaceHead '{' decls '}'
-	| methodHead methodDecls '}'
+	| methodHead '{' methodDecls '}'
 	| fieldDecl
 	| dataDecl
 	| vtableDecl
@@ -379,8 +380,6 @@ instr_tok: INSTR_TOK;
 
 instr_switch: INSTR_SWITCH;
 
-instr_r_head: instr_r '(';
-
 instr:
 	instr_none
 	| instr_var int32
@@ -389,7 +388,7 @@ instr:
 	| instr_i8 int64
 	| instr_r float64
 	| instr_r int64
-	| instr_r_head bytes ')'
+	| instr_r '(' bytes ')'
 	| instr_brtarget int32
 	| instr_brtarget id
 	| instr_method methodRef
@@ -735,10 +734,10 @@ classDecl:
 		callConv type typeSpec '::' methodName genArity sigArgs
 	| languageDecl
 	| compControl
-	| '.param' TYPE '[' int32 ']'
-	| '.param' TYPE dottedName
-	| '.param' 'constraint' '[' int32 ']' ',' typeSpec
-	| '.param' 'constraint' dottedName ',' typeSpec
+	| PARAM TYPE '[' int32 ']'
+	| PARAM TYPE dottedName
+	| PARAM 'constraint' '[' int32 ']' ',' typeSpec
+	| PARAM 'constraint' dottedName ',' typeSpec
 	| '.interfaceimpl' TYPE typeSpec customDescr;
 
 /*  Field declaration  */
@@ -886,18 +885,25 @@ implAttr:
 	| 'aggressiveoptimization'
 	| 'flags' '(' int32 ')';
 
-localsHead: '.locals';
+EMITBYTE: '.emitbyte';
+MAXSTACK: '.maxstack';
+ENTRYPOINT: '.entrypoint';
+ZEROINIT: '.zeroinit';
+LOCALS: '.locals';
+EXPORT: '.export';
+OVERRIDE: '.override';
+VTENTRY: '.vtentry';
 
 methodDecls: methodDecl*;
 
 methodDecl:
-	'.emitbyte' int32
+	EMITBYTE int32
 	| sehBlock
-	| '.maxstack' int32
-	| localsHead sigArgs
-	| localsHead 'init' sigArgs
-	| '.entrypoint'
-	| '.zeroinit'
+	| MAXSTACK int32
+	| LOCALS sigArgs
+	| LOCALS 'init' sigArgs
+	| ENTRYPOINT
+	| ZEROINIT
 	| dataDecl
 	| instr
 	| id ':'
@@ -906,17 +912,17 @@ methodDecl:
 	| languageDecl
 	| customAttrDecl
 	| compControl
-	| '.export' '[' int32 ']'
-	| '.export' '[' int32 ']' 'as' id
-	| '.vtentry' int32 ':' int32
-	| '.override' typeSpec '::' methodName
-	| '.override' 'method' callConv type typeSpec '::' methodName genArity sigArgs
+	| EXPORT '[' int32 ']'
+	| EXPORT '[' int32 ']' 'as' id
+	| VTENTRY int32 ':' int32
+	| OVERRIDE typeSpec '::' methodName
+	| OVERRIDE 'method' callConv type typeSpec '::' methodName genArity sigArgs
 	| scopeBlock
-	| '.param' TYPE '[' int32 ']'
-	| '.param' TYPE dottedName
-	| '.param' 'constraint' '[' int32 ']' ',' typeSpec
-	| '.param' 'constraint' dottedName ',' typeSpec
-	| '.param' '[' int32 ']' initOpt;
+	| PARAM TYPE '[' int32 ']'
+	| PARAM TYPE dottedName
+	| PARAM 'constraint' '[' int32 ']' ',' typeSpec
+	| PARAM 'constraint' dottedName ',' typeSpec
+	| PARAM '[' int32 ']' initOpt;
 
 scopeBlock: '{' methodDecls '}';
 

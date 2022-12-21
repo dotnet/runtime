@@ -43,6 +43,31 @@ namespace ILAssembler
 
             public static Literal<SentinelValue> Result { get; } = new(Instance);
         }
+
+        public sealed record Flag<T>(T Value, bool ShouldAppend = true) : GrammarResult
+            where T : struct, Enum
+        {
+            private readonly T _groupMask;
+            public Flag(T value, bool shouldAppend, T groupMask)
+                : this(value, shouldAppend)
+            {
+                _groupMask = groupMask;
+            }
+            public Flag(T value, T groupMask)
+                : this(value)
+            {
+                _groupMask = groupMask;
+            }
+
+            public static T operator |(T lhs, Flag<T> rhs)
+            {
+                if (!rhs.ShouldAppend)
+                {
+                    return rhs.Value;
+                }
+                return (T)(object)(((int)(object)lhs & (~(int)(object)rhs._groupMask)) | (int)(object)rhs.Value);
+            }
+        }
     }
 
     internal sealed class GrammarVisitor : ICILVisitor<GrammarResult>
@@ -175,7 +200,7 @@ namespace ILAssembler
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitClassAttr(CILParser.ClassAttrContext context) => VisitClassAttr(context);
 
-        public GrammarResult.Literal<(FlagsValue<TypeAttributes> Attribute, EntityRegistry.WellKnownBaseType? FallbackBase, bool RequireSealed)> VisitClassAttr(CILParser.ClassAttrContext context)
+        public GrammarResult.Literal<(GrammarResult.Flag<TypeAttributes> Attribute, EntityRegistry.WellKnownBaseType? FallbackBase, bool RequireSealed)> VisitClassAttr(CILParser.ClassAttrContext context)
         {
             if (context.int32() is CILParser.Int32Context int32)
             {
@@ -198,7 +223,7 @@ namespace ILAssembler
                 value &= unchecked((int)~0xC0000000);
                 // COMPAT: When explicit flags are provided they always supercede previously set flags
                 // (other than the sentinel values)
-                return new((new((TypeAttributes)value, shouldAppend: false), fallbackBase, requireSealed));
+                return new((new((TypeAttributes)value, ShouldAppend: false), fallbackBase, requireSealed));
             }
 
             if (context.ENUM() is not null)
@@ -216,7 +241,21 @@ namespace ILAssembler
             return new((new((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true)), null, false));
         }
 
-        private EntityRegistry.MethodDefinitionEntity? _currentMethod;
+        private sealed class CurrentMethodContext
+        {
+            public CurrentMethodContext(EntityRegistry.MethodDefinitionEntity definition)
+            {
+                Definition = definition;
+            }
+
+            public EntityRegistry.MethodDefinitionEntity Definition { get; }
+
+            public Dictionary<string, LabelHandle> Labels { get; } = new();
+
+            public sealed record ExternalSource(string FileName, int StartLine, int StartColumn, int? EndLine, int? EndColumn);
+        }
+
+        private CurrentMethodContext? _currentMethod;
 
         public GrammarResult VisitClassDecl(CILParser.ClassDeclContext context)
         {
@@ -228,7 +267,7 @@ namespace ILAssembler
             }
             else if (context.methodHead() is CILParser.MethodHeadContext methodHead)
             {
-                _currentMethod = VisitMethodHead(methodHead).Value;
+                _currentMethod = new(VisitMethodHead(methodHead).Value);
                 VisitMethodDecls(context.methodDecls());
                 _currentMethod = null;
             }
@@ -596,6 +635,12 @@ namespace ILAssembler
                 VisitClassDecls(context.classDecls());
                 _currentTypeDefinition.Pop();
                 return GrammarResult.SentinelValue.Result;
+            }
+            if (context.methodHead() is CILParser.MethodHeadContext methodHead)
+            {
+                _currentMethod = VisitMethodHead(methodHead).Value;
+                VisitMethodDecls(context.methodDecls());
+                _currentMethod = null;
             }
             throw new NotImplementedException();
         }
@@ -1027,25 +1072,119 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitImagebase(CILParser.ImagebaseContext context) => VisitImagebase(context);
         public GrammarResult.Literal<long> VisitImagebase(CILParser.ImagebaseContext context) => VisitInt64(context.int64());
 
-        public GrammarResult VisitImplAttr(CILParser.ImplAttrContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitImplAttr(ILAssembler.CILParser.ImplAttrContext context) => VisitImplAttr(context);
+        public GrammarResult.Flag<MethodImplAttributes> VisitImplAttr(CILParser.ImplAttrContext context)
+        {
+            if (context.int32() is CILParser.Int32Context int32)
+            {
+                return new((MethodImplAttributes)VisitInt32(int32).Value, ShouldAppend: false);
+            }
+            string attribute = context.GetText();
+            return attribute switch
+            {
+                "native" => new(MethodImplAttributes.Native, MethodImplAttributes.CodeTypeMask),
+                "cil" => new(MethodImplAttributes.IL, MethodImplAttributes.CodeTypeMask),
+                "optil" => new(MethodImplAttributes.OPTIL, MethodImplAttributes.CodeTypeMask),
+                "managed" => new(MethodImplAttributes.Managed, MethodImplAttributes.ManagedMask),
+                "unmanaged" => new(MethodImplAttributes.Unmanaged, MethodImplAttributes.ManagedMask),
+                "forwardref" => new(MethodImplAttributes.ForwardRef),
+                "preservesig" => new(MethodImplAttributes.PreserveSig),
+                "runtime" => new(MethodImplAttributes.Runtime, MethodImplAttributes.CodeTypeMask),
+                "internalcall" => new(MethodImplAttributes.InternalCall),
+                "synchronized" => new(MethodImplAttributes.Synchronized),
+                "noinlining" => new(MethodImplAttributes.NoInlining),
+                "aggressiveinlining" => new(MethodImplAttributes.AggressiveInlining),
+                "nooptimization" => new(MethodImplAttributes.NoOptimization),
+                "aggressiveoptimization" => new((MethodImplAttributes)0x0200),
+                _ => throw new InvalidOperationException("unreachable"),
+            };
+        }
+
         public GrammarResult VisitImplClause(CILParser.ImplClauseContext context) => throw new NotImplementedException();
         public GrammarResult VisitImplList(CILParser.ImplListContext context) => throw new NotImplementedException();
         public GrammarResult VisitInitOpt(CILParser.InitOptContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr(CILParser.InstrContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_brtarget(CILParser.Instr_brtargetContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_field(CILParser.Instr_fieldContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_i(CILParser.Instr_iContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_i8(CILParser.Instr_i8Context context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_method(CILParser.Instr_methodContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_none(CILParser.Instr_noneContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_r(CILParser.Instr_rContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_r_head(CILParser.Instr_r_headContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_sig(CILParser.Instr_sigContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_string(CILParser.Instr_stringContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_switch(CILParser.Instr_switchContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_tok(CILParser.Instr_tokContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_type(CILParser.Instr_typeContext context) => throw new NotImplementedException();
-        public GrammarResult VisitInstr_var(CILParser.Instr_varContext context) => throw new NotImplementedException();
+#pragma warning disable CA1822 // Mark members as static
+        public GrammarResult VisitInstr(CILParser.InstrContext context)
+        {
+            var instrContext = context.GetRuleContext<ParserRuleContext>(0);
+            ILOpCode opcode = ((GrammarResult.Literal<ILOpCode>)instrContext.Accept(this)).Value;
+            switch (instrContext.RuleIndex)
+            {
+                case CILParser.RULE_instr_brtarget:
+                    {
+                        ParserRuleContext argument = context.GetRuleContext<ParserRuleContext>(1);
+                        if (argument is CILParser.IdContext id)
+                        {
+                            string label = VisitId(id).Value;
+                            if (!_currentMethod!.Labels.TryGetValue(label, out var handle))
+                            {
+                                _currentMethod.Labels.Add(label, handle = _currentMethod.Definition.MethodBody.DefineLabel());
+                            }
+                            _currentMethod.Definition.MethodBody.Branch(opcode, handle);
+                        }
+                    }
+                    break;
+                case CILParser.RULE_instr_field:
+                    break;
+                case CILParser.RULE_instr_i:
+                    break;
+                case CILParser.RULE_instr_i8:
+                    break;
+                case CILParser.RULE_instr_method:
+                    break;
+                case CILParser.RULE_instr_none:
+                    break;
+                case CILParser.RULE_instr_r:
+                    break;
+                case CILParser.RULE_instr_sig:
+                    break;
+                case CILParser.RULE_instr_string:
+                    break;
+                case CILParser.RULE_instr_switch:
+                    break;
+                case CILParser.RULE_instr_tok:
+                    break;
+                case CILParser.RULE_instr_type:
+                    break;
+                case CILParser.RULE_instr_var:
+                    break;
+            }
+            throw new NotImplementedException();
+        }
+
+        public GrammarResult.Literal<ILOpCode> VisitInstr_brtarget(CILParser.Instr_brtargetContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_field(CILParser.Instr_fieldContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_i(CILParser.Instr_iContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_i8(CILParser.Instr_i8Context context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_method(CILParser.Instr_methodContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_none(CILParser.Instr_noneContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_r(CILParser.Instr_rContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_sig(CILParser.Instr_sigContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_string(CILParser.Instr_stringContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_switch(CILParser.Instr_switchContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_tok(CILParser.Instr_tokContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_type(CILParser.Instr_typeContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+        public GrammarResult.Literal<ILOpCode> VisitInstr_var(CILParser.Instr_varContext context) => new(ParseOpCodeFromToken(((ITerminalNode)context.children[0]).Symbol));
+#pragma warning restore CA1822 // Mark members as static
+        private static ILOpCode ParseOpCodeFromToken(IToken token)
+        {
+            return (ILOpCode)Enum.Parse(typeof(ILOpCode), token.Text.Replace('.', '_'), ignoreCase: true);
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr(CILParser.InstrContext context) => VisitInstr(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_brtarget(CILParser.Instr_brtargetContext context) => VisitInstr_brtarget(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_field(CILParser.Instr_fieldContext context) => VisitInstr_field(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_i(CILParser.Instr_iContext context) => VisitInstr_i(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_i8(CILParser.Instr_i8Context context) => VisitInstr_i8(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_method(CILParser.Instr_methodContext context) => VisitInstr_method(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_none(CILParser.Instr_noneContext context) => VisitInstr_none(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_r(CILParser.Instr_rContext context) => VisitInstr_r(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_sig(CILParser.Instr_sigContext context) => VisitInstr_sig(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_string(CILParser.Instr_stringContext context) => VisitInstr_string(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_switch(CILParser.Instr_switchContext context) => VisitInstr_switch(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_tok(CILParser.Instr_tokContext context) => VisitInstr_tok(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_type(CILParser.Instr_typeContext context) => VisitInstr_type(context);
+        GrammarResult ICILVisitor<GrammarResult>.VisitInstr_var(CILParser.Instr_varContext context) => VisitInstr_var(context);
 
         private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result)
         {
@@ -1170,10 +1309,72 @@ namespace ILAssembler
         }
 
         public GrammarResult VisitMemberRef(CILParser.MemberRefContext context) => throw new NotImplementedException();
-        public GrammarResult VisitMethAttr(CILParser.MethAttrContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitMethAttr(CILParser.MethAttrContext context) => VisitMethAttr(context);
+        public GrammarResult.Flag<MethodAttributes> VisitMethAttr(CILParser.MethAttrContext context)
+        {
+            if (context.int32() is CILParser.Int32Context int32)
+            {
+                return new((MethodAttributes)VisitInt32(int32).Value, ShouldAppend: false);
+            }
+            string attribute = context.GetText();
+            return attribute switch
+            {
+                "static" => new(MethodAttributes.Static),
+                "public" => new(MethodAttributes.Public, MethodAttributes.MemberAccessMask),
+                "private" => new(MethodAttributes.Private, MethodAttributes.MemberAccessMask),
+                "family" => new(MethodAttributes.Family, MethodAttributes.MemberAccessMask),
+                "final" => new(MethodAttributes.Final),
+                "specialname" => new(MethodAttributes.SpecialName),
+                "virtual" => new(MethodAttributes.Virtual),
+                "strict" => new(MethodAttributes.CheckAccessOnOverride),
+                "abstract" => new(MethodAttributes.Abstract),
+                "assembly" => new(MethodAttributes.Assembly, MethodAttributes.MemberAccessMask),
+                "famandassem" => new(MethodAttributes.FamANDAssem, MethodAttributes.MemberAccessMask),
+                "famorassem" => new(MethodAttributes.FamORAssem, MethodAttributes.MemberAccessMask),
+                "privatescope" => new(MethodAttributes.PrivateScope, MethodAttributes.MemberAccessMask),
+                "hidebysig" => new(MethodAttributes.HideBySig),
+                "newslot" => new(MethodAttributes.NewSlot),
+                "rtspecialname" => new(0), // COMPAT: Rtspecialname is ignored
+                "unmanagedexp" => new(MethodAttributes.UnmanagedExport),
+                "reqsecobj" => new(MethodAttributes.RequireSecObject),
+                _ => throw new InvalidOperationException("unreachable"),
+            };
+        }
 
-        public GrammarResult VisitMethodDecl(CILParser.MethodDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitMethodDecls(CILParser.MethodDeclsContext context) => throw new NotImplementedException();
+        public GrammarResult VisitMethodDecl(CILParser.MethodDeclContext context)
+        {
+            Debug.Assert(_currentMethod is not null);
+            var currentMethod = _currentMethod!;
+            if (context.EMITBYTE() is not null)
+            {
+                currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)VisitInt32(context.GetChild<CILParser.Int32Context>(0)).Value);
+            }
+            else if (context.ZEROINIT() is not null)
+            {
+                currentMethod.Definition.BodyAttributes = MethodBodyAttributes.InitLocals;
+            }
+            else if (context.MAXSTACK() is not null)
+            {
+                currentMethod.Definition.MaxStack = VisitInt32(context.GetChild<CILParser.Int32Context>(0)).Value;
+            }
+            else if (context.ChildCount == 2 && context.GetChild(0) is CILParser.IdContext labelId)
+            {
+                string labelName = VisitId(labelId).Value;
+                if (!currentMethod.Labels.TryGetValue(labelName, out var label))
+                {
+                    label = currentMethod.Definition.MethodBody.DefineLabel();
+                }
+                currentMethod.Definition.MethodBody.MarkLabel(label);
+            }
+        }
+        public GrammarResult VisitMethodDecls(CILParser.MethodDeclsContext context)
+        {
+            foreach (var decl in context.methodDecl())
+            {
+                VisitMethodDecl(decl);
+            }
+            return GrammarResult.SentinelValue.Result;
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMethodHead(CILParser.MethodHeadContext context) => VisitMethodHead(context);
         public GrammarResult.Literal<EntityRegistry.MethodDefinitionEntity> VisitMethodHead(CILParser.MethodHeadContext context)
@@ -1187,14 +1388,18 @@ namespace ILAssembler
 
             // Set the current method for type parameter and signature parsing
             // so we can resolve generic parameters correctly.
-            _currentMethod = methodDefinition;
+            _currentMethod = new(methodDefinition);
             var typeParameters = VisitTyparsClause(context.typarsClause()).Value;
             if (typeParameters.Length != 0)
             {
                 sigHeader |= (byte)SignatureAttributes.Generic;
             }
-            MethodAttributes methodAttrs = 0;
-            // TODO: Parse method attributes
+            methodDefinition.MethodAttributes = context.methAttr().Aggregate((MethodAttributes)0, (acc, attr) => acc | VisitMethAttr(attr));
+
+            if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.Abstract) && !methodDefinition.ContainingType.Attributes.HasFlag(TypeAttributes.Abstract))
+            {
+                // TODO:Emit error
+            }
 
             (EntityRegistry.ModuleReferenceEntity Module, string? EntryPoint, MethodImportAttributes Attributes)? pInvokeInformation = null;
             foreach (var pInvokeInfo in context.pinvImpl())
@@ -1209,9 +1414,8 @@ namespace ILAssembler
             }
             methodDefinition.MethodImportInformation = pInvokeInformation;
 
-            // TODO: Validate parsed header
             SignatureHeader parsedHeader = new(sigHeader);
-            if (methodAttrs.HasFlag(MethodAttributes.Static) && (parsedHeader.IsInstance || parsedHeader.HasExplicitThis))
+            if (methodDefinition.MethodAttributes.HasFlag(MethodAttributes.Static) && (parsedHeader.IsInstance || parsedHeader.HasExplicitThis))
             {
                 // Error on static + instance.
             }
@@ -1252,7 +1456,11 @@ namespace ILAssembler
             _currentMethod = null;
             methodDefinition.MethodSignature = methodSignature;
 
-            // TODO: Parse the implementation attributes.
+            methodDefinition.ImplementationAttributes = context.implAttr().Aggregate((MethodImplAttributes)0, (acc, attr) => acc | VisitImplAttr(attr));
+            if (!_entityRegistry.TryRecordMethodDefinition(methodDefinition))
+            {
+                // TODO: Report duplicate method
+            }
 
             return new(methodDefinition);
         }
@@ -1567,71 +1775,63 @@ namespace ILAssembler
             ParameterAttributes attributes = 0;
             foreach (var element in context.paramAttrElement())
             {
-                FlagsValue<ParameterAttributes> attr = VisitParamAttrElement(element).Value;
-                if (attr.ShouldAppend)
-                {
-                    attributes |= attr.Value;
-                }
-                else
-                {
-                    attributes = attr.Value;
-                }
+                attributes |= VisitParamAttrElement(element);
             }
             return new(attributes);
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitParamAttrElement(CILParser.ParamAttrElementContext context) => VisitParamAttrElement(context);
-        public GrammarResult.Literal<FlagsValue<ParameterAttributes>> VisitParamAttrElement(CILParser.ParamAttrElementContext context)
+        public GrammarResult.Flag<ParameterAttributes> VisitParamAttrElement(CILParser.ParamAttrElementContext context)
         {
             if (context.int32() is CILParser.Int32Context int32)
             {
-                return new(new((ParameterAttributes)(VisitInt32(int32).Value + 1), shouldAppend: false));
+                return new((ParameterAttributes)(VisitInt32(int32).Value + 1), ShouldAppend: false);
             }
-            return new(context switch
+            return context switch
             {
                 { @in: not null } => new(ParameterAttributes.In),
                 { @out: not null } => new(ParameterAttributes.Out),
                 { opt: not null } => new(ParameterAttributes.Optional),
                 _ => throw new InvalidOperationException("unreachable")
-            });
+            };
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitPinvAttr(CILParser.PinvAttrContext context) => VisitPinvAttr(context);
-        public GrammarResult.Literal<FlagsValue<MethodImportAttributes>> VisitPinvAttr(CILParser.PinvAttrContext context)
+        public GrammarResult.Flag<MethodImportAttributes> VisitPinvAttr(CILParser.PinvAttrContext context)
         {
             if (context.int32() is CILParser.Int32Context int32)
             {
-                return new(new((MethodImportAttributes)VisitInt32(int32).Value, shouldAppend: false));
+                return new((MethodImportAttributes)VisitInt32(int32).Value, ShouldAppend: false);
             }
             switch(context.GetText())
             {
                 case "nomangle":
-                    return new(new(MethodImportAttributes.ExactSpelling));
+                    return new(MethodImportAttributes.ExactSpelling);
                 case "ansi":
-                    return new(new(MethodImportAttributes.CharSetAnsi));
+                    return new(MethodImportAttributes.CharSetAnsi);
                 case "unicode":
-                    return new(new(MethodImportAttributes.CharSetUnicode));
+                    return new(MethodImportAttributes.CharSetUnicode);
                 case "autochar":
-                    return new(new(MethodImportAttributes.CharSetAuto));
+                    return new(MethodImportAttributes.CharSetAuto);
                 case "lasterr":
-                    return new(new(MethodImportAttributes.SetLastError));
+                    return new(MethodImportAttributes.SetLastError);
                 case "winapi":
-                    return new(new(MethodImportAttributes.CallingConventionWinApi));
+                    return new(MethodImportAttributes.CallingConventionWinApi);
                 case "cdecl":
-                    return new(new(MethodImportAttributes.CallingConventionCDecl));
+                    return new(MethodImportAttributes.CallingConventionCDecl);
                 case "stdcall":
-                    return new(new(MethodImportAttributes.CallingConventionStdCall));
+                    return new(MethodImportAttributes.CallingConventionStdCall);
                 case "thiscall":
-                    return new(new(MethodImportAttributes.CallingConventionThisCall));
+                    return new(MethodImportAttributes.CallingConventionThisCall);
                 case "fastcall":
-                    return new(new(MethodImportAttributes.CallingConventionFastCall));
+                    return new(MethodImportAttributes.CallingConventionFastCall);
                 case "bestfit:on":
-                    return new(new(MethodImportAttributes.BestFitMappingEnable));
+                    return new(MethodImportAttributes.BestFitMappingEnable);
                 case "bestfit:off":
-                    return new(new(MethodImportAttributes.BestFitMappingDisable));
+                    return new(MethodImportAttributes.BestFitMappingDisable);
                 case "charmaperror:on":
-                    return new(new(MethodImportAttributes.ThrowOnUnmappableCharEnable));
+                    return new(MethodImportAttributes.ThrowOnUnmappableCharEnable);
                 case "charmaperror:off":
-                    return new(new(MethodImportAttributes.ThrowOnUnmappableCharDisable));
+                    return new(MethodImportAttributes.ThrowOnUnmappableCharDisable);
                 default:
                     throw new InvalidOperationException("unreachable");
             }
@@ -1643,15 +1843,7 @@ namespace ILAssembler
             MethodImportAttributes attrs = MethodImportAttributes.None;
             foreach (var attr in context.pinvAttr())
             {
-                var val = VisitPinvAttr(attr).Value;
-                if (val.ShouldAppend)
-                {
-                    attrs |= val.Value;
-                }
-                else
-                {
-                    attrs = val.Value;
-                }
+                attrs |= VisitPinvAttr(attr);
             }
             var names = context.compQstring();
             string? moduleName = names.Length > 0 ? VisitCompQstring(names[0]).Value : null;
@@ -1855,36 +2047,27 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTyparAttrib(CILParser.TyparAttribContext context) => VisitTyparAttrib(context);
-        public GrammarResult.Literal<FlagsValue<GenericParameterAttributes>> VisitTyparAttrib(CILParser.TyparAttribContext context)
+        public GrammarResult.Flag<GenericParameterAttributes> VisitTyparAttrib(CILParser.TyparAttribContext context)
         {
             return context switch
             {
-                { covariant: not null } => new(new(GenericParameterAttributes.Covariant)),
-                { contravariant: not null } => new(new(GenericParameterAttributes.Contravariant)),
-                { @class: not null } => new(new(GenericParameterAttributes.ReferenceTypeConstraint)),
-                { valuetype: not null } => new(new(GenericParameterAttributes.NotNullableValueTypeConstraint)),
-                { byrefLike: not null } => new(new((GenericParameterAttributes)0x0020)),
-                { ctor: not null } => new(new(GenericParameterAttributes.DefaultConstructorConstraint)),
-                { flags: CILParser.Int32Context int32 } => new(new((GenericParameterAttributes)VisitInt32(int32).Value)),
+                { covariant: not null } => new(GenericParameterAttributes.Covariant),
+                { contravariant: not null } => new(GenericParameterAttributes.Contravariant),
+                { @class: not null } => new(GenericParameterAttributes.ReferenceTypeConstraint),
+                { valuetype: not null } => new(GenericParameterAttributes.NotNullableValueTypeConstraint),
+                { byrefLike: not null } => new((GenericParameterAttributes)0x0020),
+                { ctor: not null } => new(GenericParameterAttributes.DefaultConstructorConstraint),
+                { flags: CILParser.Int32Context int32 } => new((GenericParameterAttributes)VisitInt32(int32).Value),
                 _ => throw new InvalidOperationException("unreachable")
             };
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitTyparAttribs(CILParser.TyparAttribsContext context) => VisitTyparAttribs(context);
 
-        public GrammarResult.Literal<GenericParameterAttributes> VisitTyparAttribs(CILParser.TyparAttribsContext context)
-        {
-            return new(context.typarAttrib()
+        public GrammarResult.Literal<GenericParameterAttributes> VisitTyparAttribs(CILParser.TyparAttribsContext context) =>
+            new(context.typarAttrib()
                 .Select(VisitTyparAttrib)
                 .Aggregate(
-                    (GenericParameterAttributes)0, (agg, attr) =>
-                {
-                    if (attr.Value.ShouldAppend)
-                    {
-                        return agg | attr.Value.Value;
-                    }
-                    return attr.Value.Value;
-                }));
-        }
+                    (GenericParameterAttributes)0, (agg, attr) => agg | attr));
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTypars(CILParser.TyparsContext context) => VisitTypars(context);
         public GrammarResult.Sequence<EntityRegistry.GenericParameterEntity> VisitTypars(CILParser.TyparsContext context)
@@ -2152,26 +2335,5 @@ namespace ILAssembler
         public GrammarResult VisitPointerNativeType(CILParser.PointerNativeTypeContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitPointerArrayTypeSizeParamIndex(CILParser.PointerArrayTypeSizeParamIndexContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitPointerArrayTypeNoSizeData(CILParser.PointerArrayTypeNoSizeDataContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-
-        internal struct FlagsValue<TEnum> where TEnum : struct, Enum
-        {
-            private const int ShouldAppendFlag = unchecked((int)0x80000000);
-            private int _value;
-
-            public FlagsValue(TEnum value, bool shouldAppend = true)
-            {
-                int underlyingValue = (int)(object)value;
-                Debug.Assert((underlyingValue & ShouldAppendFlag) == 0, "The top bit is not used by any current ECMA-355 flag.");
-                _value = underlyingValue;
-                if (shouldAppend)
-                {
-                    _value = underlyingValue & ShouldAppendFlag;
-                }
-            }
-
-            public TEnum Value => (TEnum)(object)(_value & ~ShouldAppendFlag);
-
-            public bool ShouldAppend => (_value & ShouldAppendFlag) != 0;
-        }
     }
 }
