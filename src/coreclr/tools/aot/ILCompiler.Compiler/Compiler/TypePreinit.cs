@@ -2573,19 +2573,7 @@ namespace ILCompiler
         /// </summary>
         public sealed class TypeLoaderAwarePreinitializationPolicy : TypePreinitializationPolicy
         {
-            public override bool CanPreinitialize(DefType type)
-            {
-                // If the type has a canonical form the runtime type loader could create
-                // a new type sharing code with this one. They need to agree on how
-                // initialization happens. We can't preinitialize runtime-created
-                // generic types at compile time - they need a functioning cctor
-                // to initialize themselves.
-                if (type.ConvertToCanonForm(CanonicalFormKind.Specific)
-                    .IsCanonicalSubtype(CanonicalFormKind.Any))
-                    return false;
-
-                return true;
-            }
+            public override bool CanPreinitialize(DefType type) => true;
 
             public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type) => false;
         }
