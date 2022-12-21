@@ -67,6 +67,11 @@ export async function mono_download_assets(): Promise<void> {
         // start fetching and instantiating all assets in parallel
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;
+            mono_assert(typeof asset === "object", "asset must be object");
+            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
+            mono_assert(typeof asset.name === "string", "asset name must be string");
+            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             if (!skipInstantiateByAssetTypes[asset.behavior]) {
                 expected_instantiated_assets_count++;
             }
@@ -103,6 +108,7 @@ export async function mono_download_assets(): Promise<void> {
                 if (assetWithBuffer.buffer) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
                         const url = asset.pendingDownloadInternal!.url;
+                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
                         const data = new Uint8Array(asset.buffer!);
                         asset.pendingDownloadInternal = null as any; // GC
                         asset.pendingDownload = null as any; // GC
@@ -294,7 +300,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
                     : asset.name;
             }
             else if (asset.behavior === "resource") {
-                const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
+                const path = asset.culture && asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
                 attemptUrl = assemblyRootFolder
                     ? (assemblyRootFolder + "/" + path)
                     : path;
@@ -422,7 +428,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
             Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
-        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
+        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }
     endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++actual_instantiated_assets_count;
