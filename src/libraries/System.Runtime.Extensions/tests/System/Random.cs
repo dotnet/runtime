@@ -646,10 +646,10 @@ namespace System.Tests
                 }, buffer);
 
                 Assert.Equal(0.717046f, randOuter.NextSingle());
+                Assert.Equal(0.67567915f, randOuter.NextSingle());
                 Assert.Equal(0.72646743f, randOuter.NextSingle());
+                Assert.Equal(0.3635164f, randOuter.NextSingle());
                 Assert.Equal(0.56246036f, randOuter.NextSingle());
-                Assert.Equal(0.15159088f, randOuter.NextSingle());
-                Assert.Equal(0.07134807f, randOuter.NextSingle());
 
                 Assert.Equal(0, randOuter.Next(0));
                 Assert.Equal(0, randOuter.Next(1));
