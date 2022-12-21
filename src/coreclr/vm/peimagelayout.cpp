@@ -775,10 +775,15 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
+    DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
+#if defined(__APPLE__) && defined(HOST_ARM64)
+    allocationType |= MEM_RESERVE_EXECUTABLE;
+#endif
+
     COUNT_T allocSize = ALIGN_UP(this->GetVirtualSize(), g_SystemInfo.dwAllocationGranularity);
-    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, PAGE_READWRITE);
     if (base == NULL && preferredBase != NULL)
-        base = ClrVirtualAlloc(NULL, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        base = ClrVirtualAlloc(NULL, allocSize, allocationType, PAGE_READWRITE);
 
     if (base == NULL)
         ThrowLastError();
@@ -819,9 +824,13 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
+        DWORD executableProtection = PAGE_EXECUTE_READ;
+#if defined(__APPLE__) && defined(HOST_ARM64)
+        executableProtection = PAGE_EXECUTE_READWRITE;
+#endif
         // Add appropriate page protection.
         DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
+            executableProtection :
             section->Characteristics & IMAGE_SCN_MEM_WRITE ?
             PAGE_READWRITE :
             PAGE_READONLY;
