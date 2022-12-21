@@ -6,8 +6,4 @@
     <RestoreNoCache>true</RestoreNoCache>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)StandaloneApp3x\StandaloneApp3x.csproj" />
-  </ItemGroup>
-  
 </Project>
