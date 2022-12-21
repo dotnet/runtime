@@ -1149,19 +1149,13 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #endif // FEATURE_MULTIREG_ARGS
     }
 
-    // We only care because we can't spill structs and qmarks involve a lot of spilling, but
-    // if we don't have qmarks, then it doesn't matter.
-    // So check for Qmark's globally once here, instead of inside the loop.
-    //
-    const bool hasStructRegArgWeCareAbout = (hasStructRegArg && comp->compQmarkUsed);
-
 #if FEATURE_FIXED_OUT_ARGS
 
     // For Arm/x64 we only care because we can't reorder a register
     // argument that uses GT_LCLHEAP.  This is an optimization to
     // save a check inside the below loop.
     //
-    const bool hasStackArgsWeCareAbout = (m_hasStackArgs && comp->compLocallocUsed);
+    const bool hasStackArgsWeCareAbout = m_hasStackArgs && comp->compLocallocUsed;
 
 #else
 
@@ -1176,11 +1170,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
     //     a GT_IND with GTF_IND_RNGCHK (only on x86) or
     //     a GT_LCLHEAP node that allocates stuff on the stack
     //
-    if (hasStackArgsWeCareAbout || hasStructRegArgWeCareAbout)
+    if (hasStackArgsWeCareAbout)
     {
         for (CallArg& arg : EarlyArgs())
         {
             GenTree* argx = arg.GetEarlyNode();
+            assert(!comp->gtTreeContainsOper(argx, GT_QMARK));
 
             // Examine the register args that are currently not marked needTmp
             //
@@ -1207,25 +1202,13 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     {
                         assert(comp->compLocallocUsed);
 
-                        // Returns WALK_ABORT if a GT_LCLHEAP node is encountered in the argx tree
-                        //
-                        if (comp->fgWalkTreePre(&argx, Compiler::fgChkLocAllocCB) == Compiler::WALK_ABORT)
+                        if (comp->gtTreeContainsOper(argx, GT_LCLHEAP))
                         {
                             SetNeedsTemp(&arg);
                             continue;
                         }
                     }
 #endif
-                }
-                if (hasStructRegArgWeCareAbout)
-                {
-                    // Returns true if a GT_QMARK node is encountered in the argx tree
-                    //
-                    if (comp->fgWalkTreePre(&argx, Compiler::fgChkQmarkCB) == Compiler::WALK_ABORT)
-                    {
-                        SetNeedsTemp(&arg);
-                        continue;
-                    }
                 }
             }
         }
@@ -14192,39 +14175,24 @@ GenTree* Compiler::fgInitThisClass()
 }
 
 #ifdef DEBUG
-/*****************************************************************************
- *
- *  Tree walk callback to make sure no GT_QMARK nodes are present in the tree,
- *  except for the allowed ? 1 : 0; pattern.
- */
-Compiler::fgWalkResult Compiler::fgAssertNoQmark(GenTree** tree, fgWalkData* data)
-{
-    if ((*tree)->OperGet() == GT_QMARK)
-    {
-        fgCheckQmarkAllowedForm(*tree);
-    }
-    return WALK_CONTINUE;
-}
 
-void Compiler::fgCheckQmarkAllowedForm(GenTree* tree)
-{
-    assert(tree->OperGet() == GT_QMARK);
-    assert(!"Qmarks beyond morph disallowed.");
-}
-
-/*****************************************************************************
- *
- *  Verify that the importer has created GT_QMARK nodes in a way we can
- *  process them. The following is allowed:
- *
- *  1. A top level qmark. Top level qmark is of the form:
- *      a) (bool) ? (void) : (void) OR
- *      b) V0N = (bool) ? (type) : (type)
- *
- *  2. Recursion is allowed at the top level, i.e., a GT_QMARK can be a child
- *     of either op1 of colon or op2 of colon but not a child of any other
- *     operator.
- */
+//------------------------------------------------------------------------
+// fgPreExpandQmarkChecks: Verify that the importer has created GT_QMARK nodes
+// in a way we can process them. The following
+//
+// Returns:
+//    Suitable phase status.
+//
+// Remarks:
+//   The following is allowed:
+//   1. A top level qmark. Top level qmark is of the form:
+//       a) (bool) ? (void) : (void) OR
+//       b) V0N = (bool) ? (type) : (type)
+//
+//   2. Recursion is allowed at the top level, i.e., a GT_QMARK can be a child
+//      of either op1 of colon or op2 of colon but not a child of any other
+//      operator.
+//
 void Compiler::fgPreExpandQmarkChecks(GenTree* expr)
 {
     GenTree* topQmark = fgGetTopLevelQmark(expr);
@@ -14233,18 +14201,34 @@ void Compiler::fgPreExpandQmarkChecks(GenTree* expr)
     // there are no qmarks within it.
     if (topQmark == nullptr)
     {
-        fgWalkTreePre(&expr, Compiler::fgAssertNoQmark, nullptr);
+        assert(!gtTreeContainsOper(expr, GT_QMARK) && "Illegal QMARK");
     }
     else
     {
         // We could probably expand the cond node also, but don't think the extra effort is necessary,
         // so let's just assert the cond node of a top level qmark doesn't have further top level qmarks.
-        fgWalkTreePre(&topQmark->AsOp()->gtOp1, Compiler::fgAssertNoQmark, nullptr);
+        assert(!gtTreeContainsOper(topQmark->AsOp()->gtOp1, GT_QMARK) && "Illegal QMARK");
 
         fgPreExpandQmarkChecks(topQmark->AsOp()->gtOp2->AsOp()->gtOp1);
         fgPreExpandQmarkChecks(topQmark->AsOp()->gtOp2->AsOp()->gtOp2);
     }
 }
+
+//------------------------------------------------------------------------
+// fgPostExpandQmarkChecks: Make sure we don't have any more GT_QMARK nodes.
+//
+void Compiler::fgPostExpandQmarkChecks()
+{
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            GenTree* expr = stmt->GetRootNode();
+            assert(!gtTreeContainsOper(expr, GT_QMARK) && "QMARKs are disallowed beyond morph");
+        }
+    }
+}
+
 #endif // DEBUG
 
 /*****************************************************************************
@@ -14704,25 +14688,6 @@ void Compiler::fgExpandQmarkNodes()
     }
     compQmarkRationalized = true;
 }
-
-#ifdef DEBUG
-/*****************************************************************************
- *
- *  Make sure we don't have any more GT_QMARK nodes.
- *
- */
-void Compiler::fgPostExpandQmarkChecks()
-{
-    for (BasicBlock* const block : Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            GenTree* expr = stmt->GetRootNode();
-            fgWalkTreePre(&expr, Compiler::fgAssertNoQmark, nullptr);
-        }
-    }
-}
-#endif
 
 //------------------------------------------------------------------------
 // fgPromoteStructs: promote structs to collections of per-field locals
