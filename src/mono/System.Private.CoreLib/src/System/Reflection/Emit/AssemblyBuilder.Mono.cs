@@ -203,9 +203,9 @@ namespace System.Reflection.Emit
         //
 #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
+#pragma warning disable CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.dynamic_assembly' is never used
         private LoaderAllocator? m_keepalive;
 
-#pragma warning disable CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.dynamic_assembly' is never used
         private UIntPtr dynamic_assembly; /* GC-tracked */
         private RuntimeModuleBuilder[] modules;
         private string? name;
