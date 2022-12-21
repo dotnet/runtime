@@ -12880,7 +12880,7 @@ void gc_heap::distribute_committed_in_free_regions(free_region_kind kind, size_t
         all_heaps_committed += hp->free_regions[kind].get_size_committed_in_free();
     }
     // we desire a certain fraction of the total committed free space on the global list
-    // the amount we use corresponds to one heap's/worth of commit
+    // the amount we use corresponds to one heap's worth of commit
     const float desired_fraction_in_global = 1.0f/n_heaps;
     size_t desired_in_global = (size_t)((all_heaps_committed + global_free_regions[kind].get_size_committed_in_free())*desired_fraction_in_global);
 
@@ -13399,6 +13399,24 @@ void gc_heap::distribute_free_regions()
         }
     }
 #endif //MULTIPLE_HEAPS
+
+    // report basic free regions as extra gen0 commit and the tails of any regions in gen0.
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        generation* gen = hp->generation_of (soh_gen0);
+        size_t extra_gen0_commit = hp->free_regions[basic_free_region].get_size_committed_in_free();
+        for (heap_segment* region = heap_segment_rw (generation_start_segment (gen)); region != nullptr; region = heap_segment_next (region))
+        {
+            extra_gen0_commit += heap_segment_committed (region) - heap_segment_allocated (region);
+        }
+        hp->get_gc_data_per_heap()->extra_gen0_committed = extra_gen0_commit;
+    }
 #endif //USE_REGIONS
 }
 
@@ -22044,6 +22062,12 @@ void gc_heap::gc1()
 #endif //FEATURE_LOH_COMPACTION
 
     decommit_ephemeral_segment_pages();
+#ifdef USE_REGIONS
+    if (!(settings.concurrent))
+    {
+        distribute_free_regions();
+    }
+#endif //USE_REGIONS
     fire_pevents();
 
     if (!(settings.concurrent))
@@ -22051,7 +22075,6 @@ void gc_heap::gc1()
         rearrange_uoh_segments();
 #ifdef USE_REGIONS
         initGCShadow();
-        distribute_free_regions();
         verify_region_to_generation_map ();
         compute_gc_and_ephemeral_range (settings.condemned_generation, true);
         stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
