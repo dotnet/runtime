@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Net.Cache;
 using System.Security;
@@ -507,7 +507,12 @@ namespace System.Net
                         "Content-Type: " + contentType + "\r\n" +
                         "\r\n";
                     formHeaderBytes = Encoding.UTF8.GetBytes(formHeader);
-                    boundaryBytes = Encoding.ASCII.GetBytes("\r\n--" + boundary + "--\r\n");
+
+                    boundaryBytes = new byte["\r\n--".Length + boundary.Length + "--\r\n".Length];
+                    "\r\n--"u8.CopyTo(boundaryBytes);
+                    "--\r\n"u8.CopyTo(boundaryBytes.AsSpan("\r\n--".Length + boundary.Length));
+                    OperationStatus conversionStatus = Ascii.FromUtf16(boundary, boundaryBytes.AsSpan("\r\n--".Length), out _);
+                    Debug.Assert(conversionStatus == OperationStatus.Done);
                 }
                 else
                 {
