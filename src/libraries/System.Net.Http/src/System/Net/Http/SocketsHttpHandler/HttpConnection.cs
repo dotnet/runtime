@@ -1582,12 +1582,10 @@ namespace System.Net.Http
             int offset = _writeOffset;
             if (s.Length <= _writeBuffer.Length - offset)
             {
-                byte[] writeBuffer = _writeBuffer;
-                foreach (char c in s)
-                {
-                    writeBuffer[offset++] = (byte)c;
-                }
-                _writeOffset = offset;
+                OperationStatus operationStatus = Ascii.FromUtf16(s, _writeBuffer.AsSpan(offset), out int bytesWritten);
+                Debug.Assert(operationStatus == OperationStatus.Done);
+                _writeOffset = offset + bytesWritten;
+
                 return Task.CompletedTask;
             }
 
@@ -1598,14 +1596,14 @@ namespace System.Net.Http
 
         private async Task WriteStringAsyncSlow(string s, bool async)
         {
+            if (!Ascii.IsValid(s))
+            {
+                throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
+            }
+
             for (int i = 0; i < s.Length; i++)
             {
-                char c = s[i];
-                if ((c & 0xFF80) != 0)
-                {
-                    throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
-                }
-                await WriteByteAsync((byte)c, async).ConfigureAwait(false);
+                await WriteByteAsync((byte)s[i], async).ConfigureAwait(false);
             }
         }
 

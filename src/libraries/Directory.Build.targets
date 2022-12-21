@@ -55,6 +55,8 @@
                                 !$(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
     <IsNETCoreAppAnalyzer Condition="'$(IsGeneratorProject)' == 'true' and
                                      $(NetCoreAppLibraryGenerator.Contains('$(MSBuildProjectName);'))">true</IsNETCoreAppAnalyzer>
+    <!-- Inbox analyzers shouldn't use the live targeting / runtime pack. They better depend on an LKG to avoid layering concerns. -->
+    <UseLocalTargetingRuntimePack Condition="'$(IsNETCoreAppAnalyzer)' == 'true'">false</UseLocalTargetingRuntimePack>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
@@ -95,8 +97,10 @@
       <RuntimePath>$(LibrariesAllBinArtifactsPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
+    <!-- Source generator projects might multi-target. Make sure that only the netstandard2.0 compiled assets get binplaced. -->
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
-                 Condition="'$(IsNETCoreAppAnalyzer)' == 'true'" />
+                 Condition="'$(IsNETCoreAppAnalyzer)' == 'true' and
+                            '$(TargetFramework)' == 'netstandard2.0'" />
 
     <!-- Setup the shared framework directory for testing -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">

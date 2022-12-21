@@ -2781,10 +2781,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("the local is used as store block src\n");
             break;
 
-        case DoNotEnregisterReason::OneAsgRetyping:
-            JITDUMP("OneAsg forbids enreg\n");
-            break;
-
         case DoNotEnregisterReason::SwizzleArg:
             JITDUMP("SwizzleArg\n");
             break;
@@ -8230,14 +8226,6 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     {
         lcl = tree->AsLclVarCommon();
     }
-    else if (tree->OperIs(GT_ADDR))
-    {
-        GenTree* const addr = tree->AsOp()->gtOp1;
-        if (addr->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-        {
-            lcl = addr->AsLclVarCommon();
-        }
-    }
 
     if (lcl == nullptr)
     {
@@ -8380,16 +8368,6 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         {
             tree->ChangeOper(GT_LCL_FLD_ADDR);
             tree->AsLclFld()->SetLclOffs(padding);
-        }
-        else
-        {
-            noway_assert(tree->OperIs(GT_ADDR));
-            GenTree* paddingTree = pComp->gtNewIconNode(padding);
-            GenTree* newAddr     = pComp->gtNewOperNode(GT_ADD, tree->gtType, tree, paddingTree);
-
-            *pTree = newAddr;
-
-            lcl->gtType = TYP_BLK;
         }
     }
 

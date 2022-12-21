@@ -86,7 +86,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     [false, "mono_wasm_enable_on_demand_gc", "void", ["number"]],
     // These two need to be lazy because they may be missing
-    [true, "mono_wasm_profiler_init_aot", "void", ["number"]],
+    [true, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_method_bound", "number", ["number", "number"]],

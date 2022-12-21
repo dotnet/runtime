@@ -372,7 +372,7 @@ MachOReader::EnumerateModules(mach_vm_address_t dyldInfoAddress)
     Trace("MOD: infoArray %p infoArrayCount %d\n", dyldInfo.infoArray, dyldInfo.infoArrayCount);
 
     // Create the dyld module info
-    if (!CreateModule(dyldInfo.dyldImageLoadAddress, dyldInfo.dyldPath))
+    if (!TryRegisterModule(dyldInfo.dyldImageLoadAddress, dyldInfo.dyldPath, true))
     {
         Trace("ERROR: Failed to read dyld header at %p\n", dyldInfo.dyldImageLoadAddress);
         return false;
@@ -393,13 +393,13 @@ MachOReader::EnumerateModules(mach_vm_address_t dyldInfoAddress)
     for (int i = 0; i < dyldInfo.infoArrayCount; i++)
     {
         // Ignore any errors and continue to next module
-        CreateModule(imageInfos[i].imageLoadAddress, imageInfos[i].imageFilePath);
+        TryRegisterModule(imageInfos[i].imageLoadAddress, imageInfos[i].imageFilePath, false);
     }
     return true;
 }
 
 bool
-MachOReader::CreateModule(const struct mach_header*	imageAddress, const char* imageFilePathAddress)
+MachOReader::TryRegisterModule(const struct mach_header* imageAddress, const char* imageFilePathAddress, bool dylinker)
 {
     std::string imagePath;
     if (!ReadString(imageFilePathAddress, imagePath))
@@ -413,6 +413,18 @@ MachOReader::CreateModule(const struct mach_header*	imageAddress, const char* im
     }
     Trace("MOD: %016llx %08x %s\n", imageAddress, module.Header().flags, imagePath.c_str());
     VisitModule(module);
+    if (dylinker)
+    {
+        // Make sure the memory for the symbol and string tables are in the core dump for our
+        // dump readers which still use this symbol to enumerate modules.
+        uint64_t dyldInfoAddress = 0;
+        if (!module.TryLookupSymbol("dyld_all_image_infos", &dyldInfoAddress))
+        {
+            Trace("ERROR: Can not find the _dyld_all_image_infos symbol\n");
+            return false;
+        }
+        Trace("MOD: dyldInfoAddress %016llx\n", dyldInfoAddress);
+    }
     return true;
 }
 
