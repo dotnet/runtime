@@ -12,6 +12,7 @@ using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifi
 namespace ComInterfaceGenerator.Unit.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/56145", TestPlatforms.Browser)]
     public class GeneratedComInterfaceAnalyzerTests
     {
         static string _usings = $$"""
@@ -22,6 +23,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             """;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56145", TestPlatforms.Browser)]
         public class InterfaceHasInterfaceTypeAttributeOnly
         {
             [Fact]
@@ -183,7 +185,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56145", TestPlatforms.Browser)]
         public class InterfaceHasGeneratedComInterfaceAttributeOnly
         {
             [Fact]
@@ -347,7 +350,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56145", TestPlatforms.Browser)]
         public class InterfaceHasGeneratedComInterfaceAttributeAndInterfaceTypeAttribute
         {
             [Fact]
@@ -543,7 +547,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56145", TestPlatforms.Browser)]
         public class PartialInterfaceHasGeneratedComInterfaceAttributeAndInterfaceTypeAttribute
         {
             [Fact]
