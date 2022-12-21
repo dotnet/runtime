@@ -2465,7 +2465,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     printf("sltiu        %s, %s, %d\n", rd, rs1, imm12);
                     return;
                 case 0x4: // XORI
-                    printf("xori         %s, %s, %d\n", rd, rs1, imm12);
+                    printf("xori         %s, %s, %x\n", rd, rs1, imm12);
                     return;
                 case 0x5: // SRLI & SRAI 
                     if (((code >> 30) & 0x1) == 0)
@@ -2478,10 +2478,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     return;
                 case 0x6: // ORI
-                    printf("ori          %s, %s, %d\n", rd, rs1, imm12);
+                    printf("ori          %s, %s, %x\n", rd, rs1, imm12);
                     return;
                 case 0x7: // ANDI 
-                    printf("andi         %s, %s, %d\n", rd, rs1, imm12);
+                    printf("andi         %s, %s, %x\n", rd, rs1, imm12);
                     return;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
