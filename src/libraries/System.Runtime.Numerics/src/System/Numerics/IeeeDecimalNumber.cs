@@ -35,7 +35,7 @@ namespace System.Numerics
     {
         // IeeeDecimalNumberBuffer
 
-        internal const int Decimal32BufferLength = 0 + 1 + 1; // TODO: X for the longest input + 1 for rounding (+1 for the null terminator)
+        internal const int Decimal32BufferLength = 112 + 1 + 1; // TODO: X for the longest input + 1 for rounding (+1 for the null terminator). I just picked 112 cause that's what Single does for now.
 
         internal unsafe ref struct IeeeDecimalNumberBuffer
         {
@@ -70,10 +70,10 @@ namespace System.Numerics
 
 #pragma warning disable CA1822
             [Conditional("DEBUG")]
-            public void CheckConsistency() // TODO do we want this?
+            public void CheckConsistency()
             {
 #if DEBUG
-                Debug.Assert(Digits[0] != '0', "Leading zeros should never be stored in a IeeeDecimalNumber");
+                Debug.Assert(Digits[0] != '0', "Leading zeros should never be stored in an IeeeDecimalNumber");
 
                 int numDigits;
                 for (numDigits = 0; numDigits < Digits.Length; numDigits++)
@@ -135,8 +135,9 @@ namespace System.Numerics
             }
         }
 
-        // IeeeDecimalNumber Parsing TODO potentially rewrite this description
+        // IeeeDecimalNumber Parsing
 
+        // TODO potentially rewrite this description
         // The Parse methods provided by the numeric classes convert a
         // string to a numeric value. The optional style parameter specifies the
         // permitted style of the numeric string. It must be a combination of bit flags
@@ -148,9 +149,14 @@ namespace System.Numerics
         // Numeric strings produced by the Format methods using the Currency,
         // Decimal, Engineering, Fixed point, General, or Number standard formats
         // (the C, D, E, F, G, and N format specifiers) are guaranteed to be parseable
-        // by the Parse methods if the NumberStyles.Any style is
+        // by the Parse methods if the NumberStyles. Any style is
         // specified. Note, however, that the Parse methods do not accept
         // NaNs or Infinities.
+
+
+        // Max and Min Exponent assuming the value is in the form 0.Mantissa x 10^Exponent
+        private const int Decimal32MaxExponent = Decimal32.MaxQExponent + Decimal32.Precision; // TODO check this
+        private const int Decimal32MinExponent = Decimal32.MinQExponent + Decimal32.Precision; // TODO check this, probably wrong
 
         [DoesNotReturn]
         internal static void ThrowFormatException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type = 0) => throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
@@ -572,70 +578,109 @@ namespace System.Numerics
         internal static unsafe Decimal32 NumberToDecimal32(ref IeeeDecimalNumberBuffer number)
         {
             number.CheckConsistency();
-            //Decimal32 result;
-            return default; // TODO figure this out after formatting
 
-            // The input value is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
-            // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
-            // We want to extract q (the exponent) and c (the significand) such that
-            // value = c * 10 ^ q
-            // Which means
-            // c = first N digits of Mantissa, where N is min(Decimal32.Precision, number.DigitsCount)
-            // - Note: If there are more than Decimal32.Precision digits in the number, we must round
-            // q = Exponent - N
-            // - Note: If Exponent - N cannot fit in q we need to adjust c and round
-
-            // Step 1: Adjust the exponent such that the value Mantissa.ExtraDigits x 10^Exponent
-/*            int q = number.Scale - 7;
-
-
-            if ((number.DigitsCount == 0) || ((q < Decimal32.MinQExponent) && number.DigitsCount))
+            if ((number.DigitsCount == 0) || (number.Scale < Decimal32MinExponent)) // TODO double check this
             {
-                result = default; // TODO are we sure this is the "right" zero to return in all these cases
+                // TODO are we sure this is the "right" zero to return in all these cases
+                return number.IsNegative ? Decimal32.NegativeZero : Decimal32.Zero;
             }
-            else if (q > Decimal32.MaxQExponent)
+            else if (number.Scale > Decimal32MaxExponent) // TODO double check this
             {
-                result = Decimal32.PositiveInfinity;
+                return number.IsNegative ? Decimal32.NegativeInfinity : Decimal32.PositiveInfinity;
             }
             else
             {
-
-
-                // Step 1: Adjust 
+                // The input value is of the form 0.Mantissa x 10^Exponent, where 'Mantissa' are
+                // the decimal digits of the mantissa and 'Exponent' is the decimal exponent.
+                // We want to extract q (the exponent) and c (the significand) such that
+                // value = c * 10 ^ q
+                // Which means
+                // c = first N digits of Mantissa, where N is min(Decimal32.Precision, number.DigitsCount)
+                // q = Exponent - N
 
                 byte* mantissa = number.GetDigitsPointer();
-                int exponent = number.Scale;
-                uint digit = *mantissa;
 
-
-                uint digitsToExtract;
-                bool needToRound;
-                if (number.DigitsCount > Decimal32.Precision)
-                {
-                    digitsToExtract = Decimal32.Precision;
-                    needToRound = true;
-                }
-                else
-                {
-                    digitsToExtract = (uint) number.DigitsCount;
-                    needToRound = false;
-                }
-
-
-                uint c = 0;
                 int q = number.Scale;
-                uint extractedDigits = 0;
-                while (true)
+                byte* mantissaPointer = number.GetDigitsPointer();
+                uint c = 0;
+
+                int i;
+                for (i = 0; i < number.DigitsCount; i++)
                 {
-                    if (
+                    if (i < Decimal32.Precision)
+                    {
+                        // We have more digits than the precision allows
+                        break;
+                    }
+
+                    q--;
                     c *= 10;
-                    q -= 1;
+                    c += (uint)(mantissa[i] - '0');
                 }
 
+                if (i < number.DigitsCount)
+                {
+                    // We have more digits than the precision allows, we might need to round up
+                    // roundUp = (next digit > 5)
+                    //        || ((next digit == 5) && (trailing digits || current digit is odd)
+                    bool roundUp = false;
 
+                    if (mantissa[i] > '5')
+                    {
+                        roundUp = true;
+                    }
+                    else if (mantissa[i] == '5')
+                    {
+
+                        if ((c & 1) == 1)
+                        {
+                            // current digit is odd, round to even regardless of whether or not we have trailing digits
+                            roundUp = true;
+
+                        }
+                        else
+                        {
+                            // Current digit is even, but there might be trailing digits that cause us to round up anyway
+                            // We might still have some additional digits, in which case they need
+                            // to be considered as part of hasZeroTail. Some examples of this are:
+                            //  * 3.0500000000000000000001e-27
+                            //  * 3.05000000000000000000001e-27
+                            // In these cases, we will have processed 3 and 0, and ended on 5. The
+                            // buffer, however, will still contain a number of trailing zeros and
+                            // a trailing non-zero number.
+
+                            bool hasZeroTail = !number.HasNonZeroTail;
+                            i++;
+                            while ((mantissa[i] != 0) && hasZeroTail)
+                            {
+                                hasZeroTail &= (mantissa[i] == '0');
+                                i++;
+                            }
+
+                            // We should either be at the end of the stream or have a non-zero tail
+                            Debug.Assert((c == 0) || !hasZeroTail);
+
+                            if (!hasZeroTail)
+                            {
+                                // If the next digit is 5 with a non-zero tail we must round up
+                                roundUp = true;
+                            }
+                        }
+
+                    }
+
+                    if (roundUp)
+                    {
+                        if (++c > Decimal32.MaxSignificand)
+                        {
+                            // We have rounded up to Infinity, return early
+                            return number.IsNegative ? Decimal32.NegativeInfinity : Decimal32.PositiveInfinity;
+                        }
+                    }
                 }
-
-                return number.IsNegative ? Decimal32.Negate(result) : result;*/
+                Debug.Assert(q >= Decimal32.MinQExponent && q <= Decimal32.MaxQExponent);
+                return new Decimal32(number.IsNegative, (sbyte)q, c);
+            }
         }
 
         internal enum ParsingStatus // No ParsingStatus.Overflow because these types can represent infinity

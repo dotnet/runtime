@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -49,9 +50,8 @@ namespace System.Numerics
         internal const sbyte MaxQExponent = EMax - Precision + 1;
         internal const sbyte MinQExponent = EMin - Precision + 1;
 
-        // TODO I think these might be useless in Decimal
-        /*        internal const uint MinTrailingSignificand = 0x0000_0000;
-                internal const uint MaxTrailingSignificand = 0x000F_FFFF; // TODO double check this, might be artificially bounded below this*/
+        internal const int MaxSignificand = 9999999;
+        internal const int MinSignificand = -9999999;
 
         // Constants representing the private bit-representation for various default values.
         // See either IEEE-754 2019 section 3.5 or https://en.wikipedia.org/wiki/Decimal32_floating-point_format for a breakdown of the encoding.
@@ -195,9 +195,17 @@ namespace System.Numerics
         }
 
         private Decimal32(bool sign, uint combination, uint trailing_sig) => _value = (uint)(((sign ? 1 : 0) << SignShift) + (combination << CombinationShift) + trailing_sig); // TODO do we need this?
-        private Decimal32(bool sign, uint q, uint sig)
+
+        // Constructs a Decimal32 representing a value in the form (-1)^s * 10^q * c, where
+        // * s is 0 or 1
+        // * q is any integer MinQExponent <= q <= MaxQExponent
+        // * c is the significand represented by a digit string of the form
+        //   `d0 d1 d2 ... dp-1`, where p is Precision. c is an integer with 0 <= c < 10^p.
+        internal Decimal32(bool s, sbyte q, uint c)
         {
-            // Edge conditions: MinQExponent <= q <= MaxQExponent, 0 <= sig <= 9999999
+            // Edge conditions: MinQExponent <= q <= MaxQExponent, 0 <= s <= 9999999
+            Debug.Assert(q >= MinQExponent && q <= MaxQExponent);
+            Debug.Assert(c <= MaxSignificand);
             _value = 0; // TODO
         }
 
