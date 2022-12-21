@@ -73,10 +73,6 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// <typeparamref name="TValue" /> is not compatible with the JSON.
         /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         public static TValue? Deserialize<TValue>(this JsonNode? node, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             if (jsonTypeInfo is null)
@@ -86,6 +82,26 @@ namespace System.Text.Json
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromNode(node, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Converts the <see cref="JsonNode"/> representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="node">The <see cref="JsonNode"/> to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        public static object? Deserialize(this JsonNode? node, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return ReadFromNodeAsObject(node, jsonTypeInfo);
         }
 
         /// <summary>

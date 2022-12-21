@@ -14,7 +14,7 @@ import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, Mono
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
-import { wrap_error_root } from "./invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
@@ -88,6 +88,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 
         _walk_exports_to_set_function(assembly, namespace, classname, methodname, signature_hash, bound_fn);
         endMeasure(mark, MeasuredBlock.bindCsFunction, js_fqn);
+        wrap_no_error_root(is_exception, resultRoot);
     }
     catch (ex: any) {
         Module.printErr(ex.toString());

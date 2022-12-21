@@ -56,10 +56,9 @@ static void assertIsContainableHWIntrinsicOp(Lowering*           lowering,
     }
 
     bool supportsRegOptional = false;
-    bool isContainable       = lowering->TryGetContainableHWIntrinsicOp(containingNode, &node, &supportsRegOptional);
+    bool isContainable       = lowering->IsContainableHWIntrinsicOp(containingNode, node, &supportsRegOptional);
 
     assert(isContainable || supportsRegOptional);
-    assert(node == containedNode);
 #endif // DEBUG
 }
 
@@ -482,15 +481,40 @@ void CodeGen::genHWIntrinsic_R_RM(
         break;
 
         case OperandKind::Reg:
+        {
+            regNumber rmOpReg = rmOpDesc.GetReg();
+
             if (emit->IsMovInstruction(ins))
             {
-                emit->emitIns_Mov(ins, attr, reg, rmOp->GetRegNum(), /* canSkip */ false);
+                emit->emitIns_Mov(ins, attr, reg, rmOpReg, /* canSkip */ false);
             }
             else
             {
-                emit->emitIns_R_R(ins, attr, reg, rmOp->GetRegNum());
+                if (varTypeIsIntegral(rmOp) && ((node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128) ||
+                                                (node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256)))
+                {
+                    // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
+                    //
+                    // This is one of the only instructions where it supports taking integer types from
+                    // a SIMD register or directly as a scalar from memory. Most other instructions, in
+                    // comparison, take such values from general-purpose registers instead.
+                    //
+                    // Because of this, we removed the CreateScalarUnsafe and tried to contain op1 directly
+                    // that failed and we either didn't get marked regOptional or we did and didn't get spilled
+                    //
+                    // As such, we need to emulate the removed CreateScalarUnsafe to ensure that op1 is in a
+                    // SIMD register so the broadcast instruction can execute succesfully. We'll just move
+                    // the value into the target register and then broadcast it out from that.
+
+                    emitAttr movdAttr = emitActualTypeSize(node->GetSimdBaseType());
+                    emit->emitIns_Mov(INS_movd, movdAttr, reg, rmOpReg, /* canSkip */ false);
+                    rmOpReg = reg;
+                }
+
+                emit->emitIns_R_R(ins, attr, reg, rmOpReg);
             }
             break;
+        }
 
         default:
             unreached();
@@ -637,7 +661,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 
         case OperandKind::Reg:
         {
-            regNumber op2Reg = op2->GetRegNum();
+            regNumber op2Reg = op2Desc.GetReg();
 
             if ((op1Reg != targetReg) && (op2Reg == targetReg) && node->isRMWHWIntrinsic(compiler))
             {
@@ -715,7 +739,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_R_R(ins, simdSize, targetReg, op1Reg, op2->GetRegNum(), op3Reg);
+            emit->emitIns_SIMD_R_R_R_R(ins, simdSize, targetReg, op1Reg, op2Desc.GetReg(), op3Reg);
             break;
 
         default:
@@ -767,7 +791,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, op3->GetRegNum());
+            emit->emitIns_SIMD_R_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, op3Desc.GetReg());
             break;
 
         default:

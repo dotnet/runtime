@@ -194,6 +194,7 @@ private:
     {
         HasEagerFinalizerFlag = 0x0001,
         HasCriticalFinalizerFlag = 0x0002,
+        IsTrackedReferenceWithFinalizerFlag = 0x0004,
     };
 
 public:
@@ -267,6 +268,11 @@ public:
     bool HasCriticalFinalizer()
     {
         return (m_uFlags & HasCriticalFinalizerFlag) && !HasComponentSize();
+    }
+
+    bool IsTrackedReferenceWithFinalizer()
+    {
+        return (m_uFlags & IsTrackedReferenceWithFinalizerFlag) && !HasComponentSize();
     }
 
     bool  HasComponentSize()

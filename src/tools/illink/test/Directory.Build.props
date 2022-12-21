@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <RunAnalyzers>false</RunAnalyzers>
-    <TargetFramework>$(NetCoreAppTestsCurrent)</TargetFramework>
     <Nullable>disable</Nullable>
     <LinkerTestDir>$(MSBuildThisFileDirectory)</LinkerTestDir>
   </PropertyGroup>

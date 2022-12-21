@@ -129,9 +129,11 @@ namespace ILCompiler
             _reader.ReadEndElement();
         }
 
+        protected virtual bool ShouldProcessTypes => true;
+
         private void ProcessType(ModuleDesc assembly)
         {
-            if (ShouldProcessElement())
+            if (ShouldProcessTypes && ShouldProcessElement())
             {
                 string typeName = _reader.GetAttribute("fullname");
 

@@ -434,7 +434,7 @@ namespace System.Linq
         /// </exception>
         public static ParallelQuery<TResult> Repeat<TResult>(TResult element, int count)
         {
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             return new RepeatEnumerable<TResult>(element, count);
         }
@@ -5905,7 +5905,7 @@ namespace System.Linq
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             // @PERF: there are obvious optimization opportunities for indexable data sources,
             //          since we can just seek to the element requested.

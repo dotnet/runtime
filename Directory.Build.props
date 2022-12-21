@@ -325,6 +325,34 @@
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
+
+  <!-- Define test projects and companions -->
+  <PropertyGroup Condition="$(MSBuildProjectFullPath.Contains('$([System.IO.Path]::DirectorySeparatorChar)tests$([System.IO.Path]::DirectorySeparatorChar)'))">
+    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
+    <IsTrimmingTestProject Condition="$(MSBuildProjectName.EndsWith('.TrimmingTests'))">true</IsTrimmingTestProject>
+    <IsNativeAotTestProject Condition="$(MSBuildProjectName.EndsWith('.NativeAotTests'))">true</IsNativeAotTestProject>
+    <IsPublishedAppTestProject Condition="'$(IsTrimmingTestProject)' == 'true' or '$(IsNativeAotTestProject)' == 'true'">true</IsPublishedAppTestProject>
+    <IsTestSupportProject Condition="'$(IsTestProject)' != 'true' and '$(IsPublishedAppTestProject)' != 'true'">true</IsTestSupportProject>
+
+    <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
+    <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">false</IsShipping>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Treat as a generator project if either the parent or the parent parent directory is named gen. -->
+    <IsGeneratorProject Condition="$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)')) == 'gen' or
+                                   $([System.IO.Path]::GetFileName('$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))')) == 'gen'">true</IsGeneratorProject>
+    <IsSourceProject Condition="'$(IsSourceProject)' == '' and
+                                '$(IsReferenceAssemblyProject)' != 'true' and
+                                '$(IsGeneratorProject)' != 'true' and
+                                '$(IsTestProject)' != 'true' and
+                                '$(IsPublishedAppTestProject)' != 'true' and
+                                '$(IsTestSupportProject)' != 'true' and
+                                '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true' and
+                                '$(MSBuildProjectExtension)' != '.pkgproj' and
+                                '$(UsingMicrosoftNoTargetsSdk)' != 'true' and
+                                '$(UsingMicrosoftTraversalSdk)' != 'true'">true</IsSourceProject>
+  </PropertyGroup>
   
   <PropertyGroup Condition="'$(IsReferenceAssemblyProject)' == 'true'">
     <!-- Reference assemblies are special and don't initialize fields or have empty finalizers, etc. -->
@@ -340,6 +368,8 @@
     <!-- No symbols are produced for ref assemblies, but some parts of the SDK still expect pdbs, so we explicitly tell it there are none. -->
     <!-- Must be set after importing Arcade to override its defaults. -->
     <DebugType>none</DebugType>
+    <!-- Don't try to publish PDBs for ref assemblies that have none. -->
+    <PublishWindowsPdb>false</PublishWindowsPdb>
   </PropertyGroup>
 
   <!-- All reference assemblies should have a ReferenceAssemblyAttribute and the 0x70 flag which prevents them from loading. -->
@@ -350,6 +380,25 @@
       <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
     </AssemblyAttribute>
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
+    <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
+    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
+    <!-- To suppress warnings about resetting the assembly version.-->
+    <AssemblyVersion />
+    <!-- Enforce extended rules around API usages in analyzers and generators to ensure our generators follow best practices. -->
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <!-- Warnings that should be disabled in our test projects. -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">
+    <!-- don't warn on usage of BinaryFormatter from test projects -->
+    <NoWarn>$(NoWarn);SYSLIB0011</NoWarn>
+    <!-- don't warn about unnecessary trim warning suppressions. can be removed with preview 6. -->
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
+    <!-- allow nullable annotated files to be incorporated into tests without warning -->
+    <Nullable Condition="'$(Nullable)' == '' and '$(Language)' == 'C#'">annotations</Nullable>
+  </PropertyGroup>
 
   <PropertyGroup>
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
