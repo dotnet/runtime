@@ -9,8 +9,6 @@ namespace System
 {
     public static partial class Environment
     {
-        internal static int CurrentNativeThreadId => ManagedThreadId.Current;
-
         public static long TickCount64 => (long)RuntimeImports.RhpGetTickCount64();
 
         [DoesNotReturn]

@@ -1,6 +1,7 @@
-CONFIG=Debug
-MONO_ARCH=x64
-DOTNET := ../../../../../dotnet.sh
+TOP=../../../../../
+CONFIG?=Debug
+MONO_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
+DOTNET:=$(TOP)dotnet.sh
 
 run-sim:
 	$(DOTNET) publish -c $(CONFIG) /p:TargetOS=iOSSimulator /p:TargetArchitecture=$(MONO_ARCH) \

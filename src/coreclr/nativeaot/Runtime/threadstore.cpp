@@ -415,20 +415,9 @@ COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, (void* thread))
 
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
-EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread;
-DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
-{
-    { 0 },                              // m_rgbAllocContextBuffer
-    Thread::TSF_Unknown,                // m_ThreadStateFlags
-    TOP_OF_STACK_MARKER,                // m_pTransitionFrame
-    TOP_OF_STACK_MARKER,                // m_pDeferredTransitionFrame
-    0,                                  // m_pCachedTransitionFrame
-    0,                                  // m_pNext
-    INVALID_HANDLE_VALUE,               // m_hPalThread
-    0,                                  // m_ppvHijackedReturnAddressLocation
-    0,                                  // m_pvHijackedReturnAddress
-    0,                                  // all other fields are initialized by zeroes
-};
+#ifndef _MSC_VER
+__thread ThreadBuffer tls_CurrentThread;
+#endif
 
 EXTERN_C ThreadBuffer* RhpGetThread()
 {

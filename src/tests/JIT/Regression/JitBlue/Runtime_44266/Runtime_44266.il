@@ -6,7 +6,7 @@
 
 .assembly extern System.Console {}
 .assembly extern legacy library mscorlib {}
-.assembly byrefsubbyref1 { }
+.assembly 'Runtime_44266' { }
 .class a extends [mscorlib]System.Object
 {
   .field static class ctest S_1
