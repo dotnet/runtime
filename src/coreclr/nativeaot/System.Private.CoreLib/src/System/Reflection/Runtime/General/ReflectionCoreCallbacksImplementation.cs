@@ -430,17 +430,17 @@ namespace System.Reflection.Runtime.General
 
         private class EnumUnderlyingTypeComparer : IComparer<object>
         {
-            public static EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
+            public readonly static EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
 
             public int Compare(object? x, object? y)
                 => x switch
                 {
-                    byte b => b.CompareTo((byte)y!),
-                    sbyte sb => sb.CompareTo((sbyte)y!),
-                    short s => s.CompareTo((short)y!),
-                    ushort us => us.CompareTo((ushort)y!),
                     int i => i.CompareTo((int)y!),
                     uint ui => ui.CompareTo((uint)y!),
+                    byte b => b.CompareTo((byte)y!),
+                    ushort us => us.CompareTo((ushort)y!),
+                    short s => s.CompareTo((short)y!),
+                    sbyte sb => sb.CompareTo((sbyte)y!),
                     long l => l.CompareTo((long)y!),
                     _ => ((ulong)x!).CompareTo((ulong)y!),
                 };
