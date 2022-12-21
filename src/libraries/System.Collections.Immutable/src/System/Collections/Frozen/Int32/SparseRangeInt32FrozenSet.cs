@@ -5,7 +5,10 @@ using System.Collections.Generic;
 
 namespace System.Collections.Frozen
 {
-    /// <summary>Provides a frozen set to use when the value is an <see cref="int"/> and the default comparer is used and the items are in a contiguous range.</summary>
+    /// <summary>Provides a frozen set to use when the value is an <see cref="int"/>, the default comparer is used, and the items are not in a contiguous range.</summary>
+    /// <remarks>
+    /// No hashing here, just a direct lookup into a bit vector.
+    /// </remarks>
     internal sealed class SparseRangeInt32FrozenSet : FrozenSetInternalBase<int, SparseRangeInt32FrozenSet.GSW>
     {
         private readonly int[] _items;
@@ -19,15 +22,15 @@ namespace System.Collections.Frozen
         {
             _items = entries;
             _min = _items[0];
-            var max = _items[_items.Length - 1];
+            int max = _items[_items.Length - 1];
             _numBits = (uint)(max - _min + 1);
 
             _bits = new ulong[(_numBits + 63) / 64];
-            for (int i = 0; i < _items.Length; i++)
+            for (int i = 0; i < entries.Length; i++)
             {
-                var bit = (uint)(_items[i] - _min);
-                var index = bit / 64;
-                var mask = 1UL << (int)(bit % 64);
+                uint bit = (uint)(entries[i] - _min);
+                uint index = bit / 64;
+                ulong mask = 1UL << (int)(bit % 64);
 
                 _bits[index] |= mask;
             }
@@ -39,11 +42,11 @@ namespace System.Collections.Frozen
 
         private protected override int FindItemIndex(int item)
         {
-            var bit = (uint)(item - _min);
+            uint bit = (uint)(item - _min);
             if (bit < _numBits)
             {
-                var index = bit / 64;
-                var mask = 1UL << (int)(bit % 64);
+                uint index = bit / 64;
+                ulong mask = 1UL << (int)(bit % 64);
 
                 if ((_bits[index] & mask) != 0UL)
                 {

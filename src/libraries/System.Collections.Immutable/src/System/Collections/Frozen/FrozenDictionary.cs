@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
@@ -23,10 +24,6 @@ namespace System.Collections.Frozen
     /// </remarks>
     public static class FrozenDictionary
     {
-        // TODO: these need to be tuned through benchmarks to find the right values
-        private const int MaxItemsInSmallDictionary = 3;
-        private const int MaxItemsInSmallInt32Dictionary = 8;
-
         /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
         /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
         /// <param name="comparer">The comparer implementation to use to compare keys for equality. If null, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
@@ -109,38 +106,94 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
                 {
-                    if (typeof(TKey) == typeof(int))
+#if NET7_0_OR_GREATER
+                    static FrozenDictionary<TKey, TValue> PickIntegerDictionary<TInt>(Dictionary<TKey, TValue> source)
+                        where TInt : struct, IBinaryInteger<TInt>
                     {
-                        var k = (int[])(object)source.Keys.ToArray();
-                        var v = source.Values.ToArray();
+                        TInt[] keys = (TInt[])(object)source.Keys.ToArray();
+                        TValue[] values = source.Values.ToArray();
 
-                        Array.Sort(k, v);
+                        Array.Sort(keys, values);
 
-                        var min = k[0];
-                        var max = k[k.Length - 1];
+                        TInt min = keys[0];
+                        TInt max = keys[^1];
+                        ulong range = ulong.CreateTruncating(max - min);
 
-                        if (max - min + 1 == k.Length)
+                        if (keys.Length <= Constants.MaxItemsInSmallIntegerFrozenCollection)
                         {
-                            return (FrozenDictionary<TKey, TValue>)(object)new ClosedRangeInt32FrozenDictionary<TValue>(k, v);
+                            return (FrozenDictionary<TKey, TValue>)(object)new SmallIntegerFrozenDictionary<TInt, TValue>(keys, values);
                         }
-                        else if (k.Length <= MaxItemsInSmallInt32Dictionary)
+                        else if (typeof(TInt) == typeof(int))
                         {
-                            return (FrozenDictionary<TKey, TValue>)(object)new SmallInt32FrozenDictionary<TValue>(k, v);
+                            return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
                         }
-
-                        // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
-                        // the underlying FrozenHashtable's Int32 index as the keys themselves, avoiding the need to store the
-                        // same keys yet again.
-                        return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
+                        else
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new IntegerFrozenDictionary<TInt, TValue>((Dictionary<TInt, TValue>)(object)source);
+                        }
                     }
 
-                    return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
+                    if (typeof(TKey) == typeof(int))
+                    {
+                        return PickIntegerDictionary<int>(source);
+                    }
+                    else if (typeof(TKey) == typeof(uint))
+                    {
+                        return PickIntegerDictionary<uint>(source);
+                    }
+                    else if (typeof(TKey) == typeof(long))
+                    {
+                        return PickIntegerDictionary<long>(source);
+                    }
+                    else if (typeof(TKey) == typeof(ulong))
+                    {
+                        return PickIntegerDictionary<ulong>(source);
+                    }
+                    else if (typeof(TKey) == typeof(short))
+                    {
+                        return PickIntegerDictionary<short>(source);
+                    }
+                    else if (typeof(TKey) == typeof(ushort))
+                    {
+                        return PickIntegerDictionary<ushort>(source);
+                    }
+                    else if (typeof(TKey) == typeof(byte))
+                    {
+                        return PickIntegerDictionary<byte>(source);
+                    }
+                    else if (typeof(TKey) == typeof(sbyte))
+                    {
+                        return PickIntegerDictionary<sbyte>(source);
+                    }
+
+#else
+
+                    if (typeof(TKey) == typeof(int))
+                    {
+                        int[] keys = (int[])(object)source.Keys.ToArray();
+                        TValue[] values = source.Values.ToArray();
+
+                        Array.Sort(keys, values);
+
+                        int min = keys[0];
+                        int max = keys[keys.Length - 1];
+                        int range = max - min + 1;
+
+                        if (keys.Length <= Constants.MaxItemsInSmallIntegerFrozenCollection)
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new SmallInt32FrozenDictionary<TValue>(keys, values);
+                        }
+                        else
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
+                        }
+                    }
+#endif
+                    else
+                    {
+                        return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
+                    }
                 }
-            }
-            else if (source.Count <= MaxItemsInSmallDictionary)
-            {
-                // use the specialized dictionary for low item counts
-                return new SmallFrozenDictionary<TKey, TValue>(source, comparer);
             }
             else if (typeof(TKey) == typeof(string))
             {
@@ -159,6 +212,12 @@ namespace System.Collections.Frozen
 
                     return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
                 }
+            }
+
+            if (source.Count <= Constants.MaxItemsInSmallFrozenCollection)
+            {
+                // use the specialized dictionary for low item counts
+                return new SmallFrozenDictionary<TKey, TValue>(source, comparer);
             }
 
             // No special-cases apply. Use the default frozen dictionary.

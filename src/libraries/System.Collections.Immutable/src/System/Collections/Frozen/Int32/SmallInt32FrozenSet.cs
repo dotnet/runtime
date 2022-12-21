@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Collections.Frozen
 {
-    /// <summary>Provides a frozen set to use when the value is an <see cref="int"/> and the default comparer is used and the item count is small.</summary>
+    /// <summary>Provides a frozen set to use when the value is an <see cref="int"/>, the default comparer is used, and the item count is small.</summary>
     /// <remarks>
     /// No hashing here, just a straight-up linear scan through the items.
     /// </remarks>
@@ -33,11 +33,12 @@ namespace System.Collections.Frozen
         {
             if (item <= _max)
             {
-                for (int i = 0; i < _items.Length; i++)
+                int[] items = _items;
+                for (int i = 0; i < items.Length; i++)
                 {
-                    if (item <= _items[i])
+                    if (item <= items[i])
                     {
-                        if (item < _items[i])
+                        if (item < items[i])
                         {
                             break;
                         }

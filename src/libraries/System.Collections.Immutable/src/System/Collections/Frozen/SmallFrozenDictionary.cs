@@ -36,9 +36,10 @@ namespace System.Collections.Frozen
 
         private protected override ref readonly TValue GetValueRefOrNullRefCore(TKey key)
         {
-            for (int i = 0; i < _keys.Length; i++)
+            TKey[] keys = _keys;
+            for (int i = 0; i < keys.Length; i++)
             {
-                if (Comparer.Equals(_keys[i], key))
+                if (Comparer.Equals(keys[i], key))
                 {
                     return ref _values[i];
                 }

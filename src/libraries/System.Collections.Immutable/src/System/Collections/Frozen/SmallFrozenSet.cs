@@ -27,9 +27,10 @@ namespace System.Collections.Frozen
 
         private protected override int FindItemIndex(T item)
         {
-            for (int i = 0; i < _items.Length; i++)
+            T[] items = _items;
+            for (int i = 0; i < items.Length; i++)
             {
-                if (Comparer.Equals(item, _items[i]))
+                if (Comparer.Equals(item, items[i]))
                 {
                     return i;
                 }

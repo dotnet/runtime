@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Xunit;
+using System.Numerics;
 
 namespace System.Collections.Frozen.Tests
 {
@@ -288,5 +289,142 @@ namespace System.Collections.Frozen.Tests
                 }
             }
         }
+
+        [Fact]
+        public void ClosedRange_Lookup_AllItemsFoundAsExpected()
+        {
+            foreach (long start in new long[]
+                {
+                    long.MinValue,
+                    (long)int.MinValue - 1,
+                    int.MinValue,
+                    -1,
+                    0,
+                    1,
+                    int.MaxValue - 1,
+                    int.MaxValue,
+                    (long)int.MaxValue + 1,
+                    uint.MaxValue - 1,
+                    uint.MaxValue,
+                    (long)uint.MaxValue + 1,
+                    long.MaxValue - 5
+                })
+            {
+                foreach (long size in new[] { 1, 2, 5 })
+                {
+                    var original = new HashSet<long>();
+
+                    var min = start;
+                    var max = start + size - 1;
+                    for (long i = min; i != max; i++)
+                    {
+                        original.Add(i);
+                    }
+
+                    var frozen = original.ToFrozenSet();
+
+                    min = start > long.MinValue ? start - 10 : start;
+                    max = start + size - 1 < long.MaxValue ? start + size + 9 : start + size - 1;
+                    for (long i = min; i != max; i++)
+                    {
+                        Assert.Equal(original.Contains(i), frozen.Contains(i));
+                    }
+                }
+            }
+        }
+
+#if NET7_0_OR_GREATER
+        [Theory]
+        [InlineData(new int[] { 0 })]
+        [InlineData(new int[] { 0, 1 })]
+        [InlineData(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })]
+        [InlineData(new int[] { 0, 2, 4, 6, 8, 10 })]
+        [InlineData(new int[] { 1, 2, 4, 6, 8, 10 })]
+        public void FrozenIntegerSet_SanityCheck(int[] values)
+        {
+            RunIntegerSetTests<int>(values);
+            RunIntegerSetTests<uint>(values.Select(x => (uint)x).ToArray());
+            RunIntegerSetTests<long>(values.Select(x => (long)x).ToArray());
+            RunIntegerSetTests<ulong>(values.Select(x => (ulong)x).ToArray());
+            RunIntegerSetTests<short>(values.Select(x => (short)x).ToArray());
+            RunIntegerSetTests<ushort>(values.Select(x => (ushort)x).ToArray());
+            RunIntegerSetTests<byte>(values.Select(x => (byte)x).ToArray());
+            RunIntegerSetTests<sbyte>(values.Select(x => (sbyte)x).ToArray());
+        }
+
+        private void RunIntegerSetTests<T>(T[] values)
+            where T : struct, IBinaryInteger<T>
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                FrozenSet<T> s = i switch
+                {
+                    0 => s = new SmallIntegerFrozenSet<T>(values),
+                    _ => s = new SparseRangeIntegerFrozenSet<T>(values),
+                };
+
+                HashSet<T> hs = new();
+                foreach (var value in values)
+                {
+                    hs.Add(value);
+                }
+
+                Assert.Equal(values.Length, hs.Count);
+                Assert.Equal(values.Length, s.Count);
+
+                Assert.True(s.SetEquals(hs));
+                Assert.True(hs.SetEquals(s));
+
+                Assert.True(s.Overlaps(hs));
+                Assert.True(hs.Overlaps(s));
+
+                foreach (var v in hs)
+                {
+                    s.Contains(v);
+                }
+            }
+        }
+#endif
+
+#if !NET7_0_OR_GREATER
+        [Theory]
+        [InlineData(new int[] { 0 })]
+        [InlineData(new int[] { 0, 1 })]
+        [InlineData(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })]
+        [InlineData(new int[] { 0, 2, 4, 6, 8, 10 })]
+        [InlineData(new int[] { -1, 0, 2, 4, 6, 8, 10 })]
+        public void FrozenInt32Set_SanityCheck(int[] values)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                FrozenSet<int> s = i switch
+                {
+                    0 => s = new SmallInt32FrozenSet(values),
+                    1 => s = new SparseRangeInt32FrozenSet(values),
+                    _ => s = new Int32FrozenSet(values),
+                };
+
+                HashSet<int> hs = new();
+                foreach (var value in values)
+                {
+                    hs.Add(value);
+                }
+
+                Assert.Equal(values.Length, hs.Count);
+                Assert.Equal(values.Length, s.Count);
+
+                Assert.True(s.SetEquals(hs));
+                Assert.True(hs.SetEquals(s));
+
+                Assert.True(s.Overlaps(hs));
+                Assert.True(hs.Overlaps(s));
+
+                for (int v = -1; v < 12; v++)
+                {
+                    Assert.Equal(hs.Contains(v), s.Contains(v));
+                }
+            }
+        }
+#endif
     }
 }

@@ -7,26 +7,25 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
 {
-    /// <summary>Provides a frozen dictionary to use when the key is an <see cref="int"/> and the default comparer is used and the item count is small.</summary>
-    /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
+    /// <summary>Provides a frozen dictionary to use when the key is an <see cref="int"/>, the default comparer is used, and the item count is small.</summary>
     /// <remarks>
     /// No hashing here, just a straight-up linear scan through the items.
     /// </remarks>
-    internal sealed class ClosedRangeInt32FrozenDictionary<TValue> : FrozenDictionary<int, TValue>
+    internal sealed class SmallInt32FrozenDictionary<TValue> : FrozenDictionary<int, TValue>
     {
         private readonly int[] _keys;
         private readonly TValue[] _values;
-        private readonly int _min;
+        private readonly int _max;
 
         // assumes the keys are sorted
-        internal ClosedRangeInt32FrozenDictionary(int[] keys, TValue[] values)
+        internal SmallInt32FrozenDictionary(int[] keys, TValue[] values)
             : base(EqualityComparer<int>.Default)
         {
             Debug.Assert(keys.Length != 0);
 
             _keys = keys;
             _values = values;
-            _min = keys[0];
+            _max = _keys[keys.Length - 1];
         }
 
         private protected override int[] KeysCore => _keys;
@@ -37,9 +36,21 @@ namespace System.Collections.Frozen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private protected override ref readonly TValue GetValueRefOrNullRefCore(int key)
         {
-            if ((uint)(key - _min) < (uint)_values.Length)
+            if (key <= _max)
             {
-                return ref _values[key - _min];
+                int[] keys = _keys;
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    if (key <= keys[i])
+                    {
+                        if (key < keys[i])
+                        {
+                            break;
+                        }
+
+                        return ref _values[i];
+                    }
+                }
             }
 
             return ref Unsafe.NullRef<TValue>();

@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Numerics;
 
 namespace System.Collections.Frozen
 {
@@ -23,11 +24,6 @@ namespace System.Collections.Frozen
     /// </remarks>
     public static class FrozenSet
     {
-        // TODO: these need to be tuned through benchmarks to find the right values
-        private const int MaxItemsInSmallSet = 3;
-        private const int MaxItemsInSmallInt32Set = 8;
-        private const int MaxSparsenessFactorInSparseRangeInt32Set = 8;
-
         /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
         /// <param name="source">The values to use to populate the set.</param>
         /// <param name="comparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
@@ -67,40 +63,97 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<T>.Default))
                 {
-                    if (typeof(T) == typeof(int))
+#if NET7_0_OR_GREATER
+                    static FrozenSet<T> PickIntegerSet<TInt>(HashSet<T> values)
+                        where TInt : struct, IBinaryInteger<TInt>
                     {
-                        var a = (int[])(object)uniqueValues.ToArray();
-                        Array.Sort(a);
+                        TInt[] items = (TInt[])(object)values.ToArray();
+                        Array.Sort(items);
 
-                        var min = a[0];
-                        var max = a[a.Length - 1];
+                        TInt min = items[0];
+                        TInt max = items[^1];
+                        ulong range = ulong.CreateTruncating(max - min);
 
-                        if (max - min + 1 == a.Length)
+                        if ((range == (ulong)items.Length - 1) || (range <= int.MaxValue && (int)range / items.Length <= Constants.MaxSparsenessFactorInSparseRangeIntegerSet))
                         {
-                            return (FrozenSet<T>)(object)new ClosedRangeInt32FrozenSet(a);
+                            return (FrozenSet<T>)(object)new SparseRangeIntegerFrozenSet<TInt>(items);
                         }
-                        else if ((max - min + 1) / a.Length <= MaxSparsenessFactorInSparseRangeInt32Set)
+                        else if (items.Length <= Constants.MaxItemsInSmallIntegerFrozenCollection)
                         {
-                            return (FrozenSet<T>)(object)new SparseRangeInt32FrozenSet(a);
+                            return (FrozenSet<T>)(object)new SmallIntegerFrozenSet<TInt>(items);
                         }
-                        else if (a.Length <= MaxItemsInSmallInt32Set)
+                        else if (typeof(T) == typeof(int))
                         {
-                            return (FrozenSet<T>)(object)new SmallInt32FrozenSet(a);
+                            return (FrozenSet<T>)(object)new Int32FrozenSet((int[])(object)items);
                         }
-
-                        // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
-                        // the underlying FrozenHashtable's Int32 index as the values themselves, avoiding the need to store the
-                        // same values yet again.
-                        return (FrozenSet<T>)(object)new Int32FrozenSet(a);
+                        else
+                        {
+                            return (FrozenSet<T>)(object)new IntegerFrozenSet<TInt>((HashSet<TInt>)(object)values);
+                        }
                     }
 
-                    return new ValueTypeDefaultComparerFrozenSet<T>(uniqueValues);
+                    if (typeof(T) == typeof(int))
+                    {
+                        return PickIntegerSet<int>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(uint))
+                    {
+                        return PickIntegerSet<uint>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(long))
+                    {
+                        return PickIntegerSet<long>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(ulong))
+                    {
+                        return PickIntegerSet<ulong>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(short))
+                    {
+                        return PickIntegerSet<short>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(ushort))
+                    {
+                        return PickIntegerSet<ushort>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(byte))
+                    {
+                        return PickIntegerSet<byte>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(sbyte))
+                    {
+                        return PickIntegerSet<sbyte>(uniqueValues);
+                    }
+
+#else
+                    if (typeof(T) == typeof(int))
+                    {
+                        int[] items = (int[])(object)uniqueValues.ToArray();
+                        Array.Sort(items);
+
+                        int min = items[0];
+                        int max = items[items.Length - 1];
+                        int range = max - min + 1;
+
+                        if ((range == items.Length) || (range / items.Length <= Constants.MaxSparsenessFactorInSparseRangeIntegerSet))
+                        {
+                            return (FrozenSet<T>)(object)new SparseRangeInt32FrozenSet(items);
+                        }
+                        else if (items.Length <= Constants.MaxItemsInSmallFrozenCollection)
+                        {
+                            return (FrozenSet<T>)(object)new SmallInt32FrozenSet(items);
+                        }
+                        else
+                        {
+                            return (FrozenSet<T>)(object)new Int32FrozenSet(items);
+                        }
+                    }
+#endif
+                    else
+                    {
+                        return new ValueTypeDefaultComparerFrozenSet<T>(uniqueValues);
+                    }
                 }
-            }
-            else if (uniqueValues.Count <= MaxItemsInSmallSet)
-            {
-                // use the specialized set for low item counts
-                return new SmallFrozenSet<T>(uniqueValues, comparer);
             }
             else if (typeof(T) == typeof(string))
             {
@@ -124,6 +177,12 @@ namespace System.Collections.Frozen
                         return (FrozenSet<T>)(object)frozenSet;
                     }
                 }
+            }
+
+            if (uniqueValues.Count <= Constants.MaxItemsInSmallFrozenCollection)
+            {
+                // use the specialized set for low item counts
+                return new SmallFrozenSet<T>(uniqueValues, comparer);
             }
 
             // No special-cases apply. Use the default frozen set.

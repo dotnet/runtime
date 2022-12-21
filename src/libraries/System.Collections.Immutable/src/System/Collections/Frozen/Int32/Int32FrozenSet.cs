@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace System.Collections.Frozen
@@ -36,9 +35,10 @@ namespace System.Collections.Frozen
         {
             _hashTable.FindMatchingEntries(item, out int index, out int endIndex);
 
+            int[] hashCodes = _hashTable.HashCodes;
             while (index <= endIndex)
             {
-                if (item == _hashTable.HashCodes[index])
+                if (item == hashCodes[index])
                 {
                     return index;
                 }
