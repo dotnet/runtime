@@ -18,9 +18,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "..\System.Runtime\ref\System.Runtime.csproj", "{DB1922E9-EC35-44AC-9677-277B7D00595F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A80D3604-A8C8-4B23-B0D3-316E46CFE60A}"
-	ProjectSection(SolutionItems) = preProject
-		Decimal32Tests.cs = Decimal32Tests.cs
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{94F2DDDF-A2DA-4F69-9613-A92D50D84A1C}"
 EndProject
