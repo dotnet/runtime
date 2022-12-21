@@ -206,7 +206,7 @@ namespace System.Numerics
             // Edge conditions: MinQExponent <= q <= MaxQExponent, 0 <= s <= 9999999
             Debug.Assert(q >= MinQExponent && q <= MaxQExponent);
             Debug.Assert(c <= MaxSignificand);
-            _value = 0; // TODO
+            _value = s ? NegativeZeroBits : PositiveZeroBits; // TODO
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
@@ -273,37 +273,37 @@ namespace System.Numerics
         /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
         {
-            // NumberFormatInfo.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO, it won't let me call this because it's internal to System.
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO I moved this from NumberFormatInfo to IeeeDecimalNumber, is that ok?
             return IeeeDecimalNumber.ParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
         public static Decimal32 Parse(string s, IFormatProvider? provider)
         {
-            // if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); // TODO, it won't let me call this because it's internal to System.
+            if (s == null) ThrowHelper.ThrowArgumentNullException("s");
             return IeeeDecimalNumber.ParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
         public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider = null) // TODO what should the default for NumberStyles be?
         {
-            // NumberFormatInfo.ValidateParseStyleFloatingPoint(style); // TODO, it won't let me call this because it's internal to System.
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(style);
             return IeeeDecimalNumber.ParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(string, NumberStyles, IFormatProvider?)" />
         public static Decimal32 Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            // NumberFormatInfo.ValidateParseStyleFloatingPoint(style); // TODO, it won't let me call these because they are internal to System.
-            // if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(style);
+            if (s == null) ThrowHelper.ThrowArgumentNullException("s");
             return IeeeDecimalNumber.ParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
         {
-            // NumberFormatInfo.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO
-            return IeeeDecimalNumber.TryParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider), out result) == IeeeDecimalNumber.ParsingStatus.OK;
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(NumberStyles.Number);
+            return IeeeDecimalNumber.TryParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
@@ -312,22 +312,22 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
         {
-            // NumberFormatInfo.ValidateParseStyleFloatingPoint(style);  // TODO
-            return IeeeDecimalNumber.TryParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider), out result) == IeeeDecimalNumber.ParsingStatus.OK;
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(style);
+            return IeeeDecimalNumber.TryParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
         {
-            // NumberFormatInfo.ValidateParseStyleFloatingPoint(style); // TODO
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(style);
 
             if (s == null)
             {
-                result = 0;
+                result = Zero;
                 return false;
             }
 
-            return IeeeDecimalNumber.TryParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider), out result) == IeeeDecimalNumber.ParsingStatus.OK;
+            return IeeeDecimalNumber.TryParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static Decimal32 Pow(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
@@ -409,7 +409,9 @@ namespace System.Numerics
         static bool INumberBase<Decimal32>.TryConvertFromChecked<TOther>(TOther value, out Decimal32 result) => TryConvertFromChecked(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable IDE0060 // Remove unused parameter
         private static bool TryConvertFromChecked<TOther>(TOther value, out Decimal32 result)
+#pragma warning restore IDE0060 // Remove unused parameter
             where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -492,7 +494,9 @@ namespace System.Numerics
         static bool INumberBase<Decimal32>.TryConvertFromSaturating<TOther>(TOther value, out Decimal32 result) => TryConvertFromSaturating(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable IDE0060 // Remove unused parameter
         private static bool TryConvertFromSaturating<TOther>(TOther value, out Decimal32 result)
+#pragma warning restore IDE0060 // Remove unused parameter
             where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -575,7 +579,9 @@ namespace System.Numerics
         static bool INumberBase<Decimal32>.TryConvertFromTruncating<TOther>(TOther value, out Decimal32 result) => TryConvertFromTruncating(value, out result);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable IDE0060 // Remove unused parameter TODO remove this
         private static bool TryConvertFromTruncating<TOther>(TOther value, out Decimal32 result)
+#pragma warning restore IDE0060 // Remove unused parameter
             where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))

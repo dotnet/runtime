@@ -26,5 +26,11 @@ namespace System
         {
             throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
         }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentNullException(string argumentName)
+        {
+            throw new ArgumentNullException(argumentName);
+        }
     }
 }

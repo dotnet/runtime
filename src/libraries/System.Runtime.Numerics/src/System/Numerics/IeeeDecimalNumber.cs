@@ -15,22 +15,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
-/*    // Extension of ReadOnlySpan to bring in internal helpers, if needed
-    internal static partial class MemoryExtensions
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool EqualsOrdinalIgnoreCase(this ReadOnlySpan<char> span, ReadOnlySpan<char> value)
-        {
-            if (span.Length != value.Length)
-                return false;
-            if (value.Length == 0)  // span.Length == value.Length == 0
-                return true;
-            return System.Globalization.Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), span.Length);
-        }
-
-
-    }*/
-
     internal static partial class IeeeDecimalNumber
     {
         // IeeeDecimalNumberBuffer
@@ -687,6 +671,30 @@ namespace System.Numerics
         {
             OK,
             Failed
+        }
+
+        private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
+                                                   | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
+                                                   | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
+                                                   | NumberStyles.AllowThousands | NumberStyles.AllowExponent
+                                                   | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
+        internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
+        {
+            // Check for undefined flags or hex number
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
+            {
+                ThrowInvalid(style);
+
+                static void ThrowInvalid(NumberStyles value)
+                {
+                    if ((value & InvalidNumberStyles) != 0)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+                    }
+
+                    throw new ArgumentException(SR.Arg_HexStyleNotSupported);
+                }
+            }
         }
 
         // IeeeDecimalNumber Formatting
