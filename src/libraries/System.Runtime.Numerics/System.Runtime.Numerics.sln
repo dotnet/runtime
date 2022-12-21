@@ -1,4 +1,8 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.32818.431
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{A22876CA-76C0-4ABD-8658-C2B3DFDFE537}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{55FC83C5-F34D-4B4B-BEAE-497DD5653BCE}"
@@ -14,6 +18,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "..\System.Runtime\ref\System.Runtime.csproj", "{DB1922E9-EC35-44AC-9677-277B7D00595F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A80D3604-A8C8-4B23-B0D3-316E46CFE60A}"
+	ProjectSection(SolutionItems) = preProject
+		Decimal32Tests.cs = Decimal32Tests.cs
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{94F2DDDF-A2DA-4F69-9613-A92D50D84A1C}"
 EndProject
@@ -61,12 +68,12 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{A22876CA-76C0-4ABD-8658-C2B3DFDFE537} = {A80D3604-A8C8-4B23-B0D3-316E46CFE60A}
-		{2C4CBA2D-4C9D-4B83-85A4-2DF75C91B0FC} = {A80D3604-A8C8-4B23-B0D3-316E46CFE60A}
 		{55FC83C5-F34D-4B4B-BEAE-497DD5653BCE} = {94F2DDDF-A2DA-4F69-9613-A92D50D84A1C}
 		{57EC916C-15B4-46BB-AE68-B4CD8BC7076C} = {94F2DDDF-A2DA-4F69-9613-A92D50D84A1C}
 		{C91AC3B4-647B-4D7F-83CA-BE90FFFC8CF3} = {18C5FB7C-2DE7-4BED-BA2B-53776E78E1E5}
-		{DB1922E9-EC35-44AC-9677-277B7D00595F} = {18C5FB7C-2DE7-4BED-BA2B-53776E78E1E5}
 		{91F8FBEF-C085-4542-BEE4-22449D80734A} = {F6066198-D324-499F-BEB7-55DF39460AB4}
+		{2C4CBA2D-4C9D-4B83-85A4-2DF75C91B0FC} = {A80D3604-A8C8-4B23-B0D3-316E46CFE60A}
+		{DB1922E9-EC35-44AC-9677-277B7D00595F} = {18C5FB7C-2DE7-4BED-BA2B-53776E78E1E5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B7C7E4C6-78B9-4AE7-AC8B-4F08EAD0DECB}
