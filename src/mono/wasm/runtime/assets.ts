@@ -77,26 +77,7 @@ export async function mono_download_assets(): Promise<void> {
                 expected_instantiated_assets_count++;
             }
             if (!skipDownloadsByAssetTypes[asset.behavior]) {
-                const headersOnly = skipBufferByAssetTypes[asset.behavior];// `response.arrayBuffer()` can't be called twice. Some use-cases are calling it on response in the instantiation.
-                expected_downloaded_assets_count++;
-                if (asset.pendingDownload) {
-                    asset.pendingDownloadInternal = asset.pendingDownload;
-                    const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
-                        const response = await asset.pendingDownloadInternal!.response;
-                        ++actual_downloaded_assets_count;
-                        if (!headersOnly) {
-                            asset.buffer = await response.arrayBuffer();
-                        }
-                        return { asset, buffer: asset.buffer };
-                    };
-                    promises_of_assets_with_buffer.push(waitForExternalData());
-                } else {
-                    const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
-                        asset.buffer = await start_asset_download_with_retries(asset, !headersOnly);
-                        return { asset, buffer: asset.buffer };
-                    };
-                    promises_of_assets_with_buffer.push(waitForExternalData());
-                }
+                promises_of_assets_with_buffer.push(start_asset_download(asset));
             }
         }
         allDownloadsQueued.promise_control.resolve();
@@ -153,8 +134,26 @@ export async function mono_download_assets(): Promise<void> {
     }
 }
 
+export async function start_asset_download(asset: AssetEntryInternal) {
+    // `response.arrayBuffer()` can't be called twice. Some use-cases are calling it on response in the instantiation.
+    const headersOnly = skipBufferByAssetTypes[asset.behavior];
+    expected_downloaded_assets_count++;
+    if (asset.pendingDownload) {
+        asset.pendingDownloadInternal = asset.pendingDownload;
+        const response = await asset.pendingDownloadInternal!.response;
+        ++actual_downloaded_assets_count;
+        if (!headersOnly) {
+            asset.buffer = await response.arrayBuffer();
+        }
+        return { asset, buffer: asset.buffer };
+    } else {
+        asset.buffer = await start_asset_download_with_retries(asset, !headersOnly);
+        return { asset, buffer: asset.buffer };
+    }
+}
+
 // FIXME: Connection reset is probably the only good one for which we should retry
-export async function start_asset_download_with_retries(asset: AssetEntryInternal, downloadData: boolean): Promise<ArrayBuffer | undefined> {
+async function start_asset_download_with_retries(asset: AssetEntryInternal, downloadData: boolean): Promise<ArrayBuffer | undefined> {
     try {
         return await start_asset_download_with_throttle(asset, downloadData);
     } catch (err: any) {
@@ -440,7 +439,7 @@ export async function instantiate_wasm_asset(
     wasmModuleImports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback,
 ): Promise<void> {
-    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal, "Can't load dotnet.wasm");
+    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal && pendingAsset.pendingDownloadInternal.response, "Can't load dotnet.wasm");
     const response = await pendingAsset.pendingDownloadInternal.response;
     const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
     let compiledInstance: WebAssembly.Instance;
