@@ -17,7 +17,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		public partial ReferenceKind GetReferenceKind () =>
 			IsImplicitThis
-			? ((ITypeSymbol) Method.Method.ContainingSymbol).IsValueType
+			? Method.Method.ContainingType.IsValueType
 				? ReferenceKind.Ref
 				: ReferenceKind.None
 			: Method.Method.Parameters[MetadataIndex].RefKind switch {

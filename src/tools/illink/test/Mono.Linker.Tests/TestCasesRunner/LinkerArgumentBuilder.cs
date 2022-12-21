@@ -61,6 +61,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			Append ("-a");
 			Append (fileName);
+			Append ("entrypoint");
 		}
 
 		public virtual void LinkFromPublicAndFamily (string fileName)
