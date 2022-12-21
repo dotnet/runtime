@@ -732,30 +732,42 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
     return pagesAdded;
 }
 
+//
+// Check the page is really used by the application before adding it to the dump
+// On some kernels reading a region from createdump results in committing this region in the parent application
+// That leads to OOM in container environment and unnecesserally increses the size of the dump file
+// However this is an optimization: if it fails we still try to add the page to the dump
+//
 bool
 CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
 {
-    #ifdef __APPLE__
-        // this check has not been implemented yet for macos
+    #if !defined(__linux__)
+        // this check has not been implemented yet for other unix systems
         return true;
     #else
         // https://www.kernel.org/doc/Documentation/vm/pagemap.txt
         if (m_fdPagemap == -1)
         {
             // Weren't able to open pagemap file, so don't run this check
-            // Permission issues are expected on Linux kernels 4.0 and 4.1
+            // Expected on kernels 4.0 and 4.1 as we need CAP_SYS_ADMIN to open /proc/pid/pagemap
+            // On kernels after 4.2 we only need PTRACE_MODE_READ_FSCREDS as we are ok with zeroed PFNs
             return true;
         }
 
         uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-        lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
+        uint64_t seekResult = lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
+        if (seekResult != pagemapOffset)
+        {
+            int seekErrno = errno;
+            TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
+            return true;
+        }
         uint64_t value;
-        size_t res = read(m_fdPagemap, (void*)&value, sizeof(value));
-        if (res == (size_t) -1)
+        size_t readResult = read(m_fdPagemap, (void*)&value, sizeof(value));
+        if (readResult == (size_t) -1)
         {
             int readErrno = errno;
             TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
-            // still try to put this page in the dump file
             return true;
         }
 
