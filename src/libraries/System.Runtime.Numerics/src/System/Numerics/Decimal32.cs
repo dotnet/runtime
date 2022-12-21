@@ -31,15 +31,21 @@ namespace System.Numerics
 
         internal const uint CombinationMask = 0x7FF0_0000;
         internal const int CombinationShift = 20;
+        internal const int CombinationWidth = 11;
+
+        internal const uint TrailingSignificandMask = 0x000F_FFFF;
+        internal const int TrailingSignificandWidth = 20;
 
         // TODO figure out if these three are useful, I don't think they are
         internal const uint NaNMask = 0x7C00_0000;
         internal const uint InfinityMask = 0x7800_0000;
-        internal const uint TrailingSignificandMask = 0x000F_FFFF;
+
+        // Significands that have this bit set are encoded differently
+        internal const uint FiniteNumberEncodingCheckMask = 0x0080_0000;
 
         // TODO I think these might be useless in Decimal
-/*        internal const ushort MinCombination = 0x0000;
-        internal const ushort MaxCombination = 0x07FF;*/
+        /*        internal const ushort MinCombination = 0x0000;
+                internal const ushort MaxCombination = 0x07FF;*/
 
         internal const sbyte EMax = 96;
         internal const sbyte EMin = -95;
@@ -98,6 +104,7 @@ namespace System.Numerics
         // b. Combination field G0 through G10. G0-G4 == 11110 encodes infinity.
         // c. Trailing significand.
         // Note: Canonical infinity has everything after G5 set to 0.
+
         private const uint PositiveInfinityBits = 0x7800_0000;
         private const uint NegativeInfinityBits = SignMask | PositiveInfinityBits;
 
@@ -112,6 +119,7 @@ namespace System.Numerics
         // b. Combination field G0 through G10. G0-G4 == 11111 encodes NaN.
         // c. Trailing significand. Can be used to encode a payload, to distinguish different NaNs.
         // Note: Canonical NaN has G6-G10 as 0 and the encoding of the payload also canonical.
+
         private const uint QNanBits = 0x7C00_0000; // TODO I used a "positive" NaN here, should it be negative?
         private const uint SNanBits = 0x7E00_0000;
 
@@ -129,6 +137,7 @@ namespace System.Numerics
         // d. Significand. Section b. indicates an implied prefix of [100]. [100]1_1000_1001_0110_0111_1111 == 9,999,999.
         //
         // Encoded value:         9,999,999 x 10^90
+
         private const uint MaxValueBits = 0x77F8_967F;
         private const uint MinValueBits = SignMask | MaxValueBits;
 
@@ -194,19 +203,39 @@ namespace System.Numerics
             _value = value;
         }
 
-        private Decimal32(bool sign, uint combination, uint trailing_sig) => _value = (uint)(((sign ? 1 : 0) << SignShift) + (combination << CombinationShift) + trailing_sig); // TODO do we need this?
-
         // Constructs a Decimal32 representing a value in the form (-1)^s * 10^q * c, where
         // * s is 0 or 1
         // * q is any integer MinQExponent <= q <= MaxQExponent
         // * c is the significand represented by a digit string of the form
         //   `d0 d1 d2 ... dp-1`, where p is Precision. c is an integer with 0 <= c < 10^p.
-        internal Decimal32(bool s, sbyte q, uint c)
+        internal Decimal32(bool sign, sbyte q, uint c)
         {
-            // Edge conditions: MinQExponent <= q <= MaxQExponent, 0 <= s <= 9999999
             Debug.Assert(q >= MinQExponent && q <= MaxQExponent);
+            Debug.Assert(q + ExponentBias >= 0);
             Debug.Assert(c <= MaxSignificand);
-            _value = s ? NegativeZeroBits : PositiveZeroBits; // TODO
+
+            uint trailing_sig = c & TrailingSignificandMask;
+
+            // Two types of combination encodings for finite numbers
+            uint combination = 0;
+
+            if ((c & FiniteNumberEncodingCheckMask) == 0)
+            {
+                // We are encoding a significand that has the most significand 4 bits set to 0xyz
+                combination |= (uint)(q + ExponentBias) << 3;
+                combination |= 0b0111 & (c >> TrailingSignificandWidth); // combination = (biased_exponent, xyz)
+
+
+            }
+            else
+            {
+                // We are encoding a significand that has the most significand 4 bits set to 100x
+                combination |= 0b11 << (CombinationWidth - 2);
+                combination |= (uint)(q + ExponentBias) << 1;
+                combination |= 0b0001 & (c >> CombinationShift); // combination = (11, biased_exponent, x)
+            }
+
+            _value = (uint)(((sign ? 1 : 0) << SignShift) + (combination << CombinationShift) + trailing_sig);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
