@@ -87,6 +87,64 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
+        /// Given a UInt64 that represents four ASCII UTF-16 characters, returns the invariant
+        /// uppercase representation of those characters. Requires the input value to contain
+        /// four ASCII UTF-16 characters in machine endianness.
+        /// </summary>
+        /// <remarks>
+        /// This is a branchless implementation.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong ConvertAllAsciiCharsInUInt64ToUppercase(ulong value)
+        {
+            // ASSUMPTION: Caller has validated that input value is ASCII.
+            Debug.Assert(AllCharsInUInt64AreAscii(value));
+
+            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'a'
+            ulong lowerIndicator = value + 0x0080_0080_0080_0080ul - 0x0061_0061_0061_0061ul;
+
+            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value > 'z'
+            ulong upperIndicator = value + 0x0080_0080_0080_0080ul - 0x007B_007B_007B_007Bul;
+
+            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'a' and <= 'z'
+            ulong combinedIndicator = (lowerIndicator ^ upperIndicator);
+
+            // the 0x20 bit of each word of 'mask' will be set iff the word has value >= 'a' and <= 'z'
+            ulong mask = (combinedIndicator & 0x0080_0080_0080_0080ul) >> 2;
+
+            return value ^ mask; // bit flip lowercase letters [a-z] => [A-Z]
+        }
+
+        /// <summary>
+        /// Given a UInt64 that represents four ASCII UTF-16 characters, returns the invariant
+        /// lowercase representation of those characters. Requires the input value to contain
+        /// four ASCII UTF-16 characters in machine endianness.
+        /// </summary>
+        /// <remarks>
+        /// This is a branchless implementation.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong ConvertAllAsciiCharsInUInt64ToLowercase(ulong value)
+        {
+            // ASSUMPTION: Caller has validated that input value is ASCII.
+            Debug.Assert(AllCharsInUInt64AreAscii(value));
+
+            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
+            ulong lowerIndicator = value + 0x0080_0080_0080_0080ul - 0x0041_0041_0041_0041ul;
+
+            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value > 'Z'
+            ulong upperIndicator = value + 0x0080_0080_0080_0080ul - 0x005B_005B_005B_005Bul;
+
+            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'a' and <= 'z'
+            ulong combinedIndicator = (lowerIndicator ^ upperIndicator);
+
+            // the 0x20 bit of each word of 'mask' will be set iff the word has value >= 'a' and <= 'z'
+            ulong mask = (combinedIndicator & 0x0080_0080_0080_0080ul) >> 2;
+
+            return value ^ mask; // bit flip uppercase letters [A-Z] => [a-z]
+        }
+
+        /// <summary>
         /// Given a UInt32 that represents two ASCII UTF-16 characters, returns true iff
         /// the input contains one or more lowercase ASCII characters.
         /// </summary>
@@ -255,46 +313,6 @@ namespace System.Text.Unicode
 
             // Compare two lowercased vectors
             return (lcVec1 ^ lcVec2) == Vector128<sbyte>.Zero;
-        }
-
-        /// <summary>
-        /// Convert Vector128 that represent 8 ASCII UTF-16 characters to lowercase
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<ushort> Vector128AsciiToLowercase(Vector128<ushort> vec)
-        {
-            // ASSUMPTION: Caller has validated that input values are ASCII.
-            Debug.Assert(AllCharsInVector128AreAscii(vec));
-
-            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
-            Vector128<sbyte> lowIndicator1 = Vector128.Create((sbyte)(0x80 - 'A')) + vec.AsSByte();
-
-            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
-            Vector128<sbyte> combIndicator1 = Vector128.LessThan(
-                Vector128.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator1);
-
-            // Add the lowercase indicator (0x20 bit) to all A-Z letters
-            return Vector128.AndNot(Vector128.Create((sbyte)0x20), combIndicator1).AsUInt16() + vec;
-        }
-
-        /// <summary>
-        /// Convert Vector128 that represent 8 ASCII UTF-16 characters to uppercase
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector128<ushort> Vector128AsciiToUppercase(Vector128<ushort> vec)
-        {
-            // ASSUMPTION: Caller has validated that input values are ASCII.
-            Debug.Assert(AllCharsInVector128AreAscii(vec));
-
-            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'a'
-            Vector128<sbyte> lowIndicator1 = Vector128.Create((sbyte)(0x80 - 'a')) + vec.AsSByte();
-
-            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'a' and <= 'z'
-            Vector128<sbyte> combIndicator1 = Vector128.LessThan(
-                Vector128.Create(unchecked((sbyte)(('z' - 'a') - 0x80))), lowIndicator1);
-
-            // Drop the lowercase indicator (0x20 bit) from all a-z letters
-            return vec - Vector128.AndNot(Vector128.Create((sbyte)0x20), combIndicator1).AsUInt16();
         }
     }
 }
