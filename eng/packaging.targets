@@ -99,7 +99,7 @@
     <NETStandardCompatError Include="netcoreapp2.0"
                             Supported="$(NetCoreAppMinimum)"
                             Condition="$(TargetFrameworks.Contains('netstandard2.')) and
-                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)')))" />
+                                       ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppPrevious)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)')))" />
     <NETStandardCompatError Include="net461"
                             Supported="$(NetFrameworkMinimum)"
                             Condition="$(TargetFrameworks.Contains('netstandard2.0')) and

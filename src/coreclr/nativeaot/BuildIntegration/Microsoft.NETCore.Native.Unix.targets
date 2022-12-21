@@ -140,10 +140,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'OSX'">
-      <ObjCopyName Condition="'$(CppCompilerAndLinker)' != 'clang'">objcopy</ObjCopyName>
-      <ObjCopyName Condition="'$(CppCompilerAndLinker)' == 'clang'">llvm-objcopy</ObjCopyName>
+      <ObjCopyName Condition="!$(CppCompilerAndLinker.Contains('clang'))">objcopy</ObjCopyName>
+      <ObjCopyName Condition="$(CppCompilerAndLinker.Contains('clang'))">llvm-objcopy</ObjCopyName>
       <ObjCopyNameAlternative />
-      <ObjCopyNameAlternative Condition="'$(CppCompilerAndLinker)' == 'clang'">objcopy</ObjCopyNameAlternative>
+      <ObjCopyNameAlternative Condition="$(CppCompilerAndLinker.Contains('clang'))">objcopy</ObjCopyNameAlternative>
     </PropertyGroup>
 
     <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
