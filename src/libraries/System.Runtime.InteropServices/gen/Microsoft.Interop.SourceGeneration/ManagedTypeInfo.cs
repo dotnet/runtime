@@ -15,7 +15,7 @@ namespace Microsoft.Interop
         private TypeSyntax? _syntax;
         public TypeSyntax Syntax => _syntax ??= SyntaxFactory.ParseTypeName(FullTypeName);
 
-        public virtual bool Equals(ManagedTypeInfo other)
+        public virtual bool Equals(ManagedTypeInfo? other)
         {
             return other is not null
                 && Syntax.IsEquivalentTo(other.Syntax)
