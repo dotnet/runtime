@@ -20325,22 +20325,31 @@ bool gc_heap::try_get_new_free_region()
 bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 {
 #ifdef BACKGROUND_GC
-        dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
-            heap_segment_mem (region), mark_array));
-        if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
-            !commit_mark_array_new_seg (__this, region))
-        {
-            dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
-                get_region_start (region), heap_segment_reserved (region)));
+    dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
+        heap_segment_mem (region), mark_array));
+    if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
+        !commit_mark_array_new_seg (__this, region))
+    {
+        dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
+            get_region_start (region), heap_segment_reserved (region)));
 
-            // We don't have memory to commit the mark array so we cannot use the new region.
-            global_region_allocator.delete_region (get_region_start (region));
-            return false;
-        }
-        if ((region->flags & heap_segment_flags_ma_committed) != 0)
-        {
-            bgc_verify_mark_array_cleared (region, true);
-        }
+        // We don't have memory to commit the mark array so we cannot use the new region.
+        int h_number =
+#ifdef MULTIPLE_HEAPS
+            heap_number;
+#else
+            0;
+#endif
+        gc_oh_num oh = gen_to_oh (gen_number);
+        size_t size = heap_segment_committed(region) - heap_segment_mem (region);
+        virtual_decommit(heap_segment_mem (region), size, oh, h_number);
+        global_region_allocator.delete_region (get_region_start (region));
+        return false;
+    }
+    if ((region->flags & heap_segment_flags_ma_committed) != 0)
+    {
+        bgc_verify_mark_array_cleared (region, true);
+    }
 #endif //BACKGROUND_GC
 
     if (gen_number <= max_generation)
