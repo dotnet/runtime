@@ -11,7 +11,7 @@
 {
   
 }
-.class M
+.class public M
 {
   .method public instance void .ctor()
   {

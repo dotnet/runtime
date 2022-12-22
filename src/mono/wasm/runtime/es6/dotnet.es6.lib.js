@@ -80,6 +80,7 @@ const linked_functions = [
 
     // jiterpreter.c / interp.c / transform.c
     "mono_interp_tier_prepare_jiterpreter",
+    "mono_interp_record_interp_entry",
     "mono_interp_jit_wasm_entry_trampoline",
     "mono_interp_jit_wasm_jit_call_trampoline",
     "mono_interp_invoke_wasm_jit_call_trampoline",

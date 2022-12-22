@@ -2,11 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-  </PropertyGroup>
-  <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
+    <WarningsNotAsErrors>CS0649</WarningsNotAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="struct5_2.cs" />
+    <Compile Include="test79022.cs" />
   </ItemGroup>
 </Project>

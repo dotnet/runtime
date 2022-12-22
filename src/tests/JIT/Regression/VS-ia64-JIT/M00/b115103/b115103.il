@@ -9,8 +9,8 @@
 }
 .assembly 'b115103' {}
 .assembly extern xunit.core {}
-.class Test_b115103 {
-.method static int32 Main() {
+.class public Test_b115103 {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )
