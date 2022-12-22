@@ -9061,6 +9061,12 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 	}
 }
 
+static inline gboolean
+is_direct_pinvoke_enabled (const MonoAotCompile *acfg)
+{
+	return acfg->aot_opts.direct_pinvoke || acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists;
+}
+
 /*
  * compile_method:
  *
@@ -9163,7 +9169,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags = (JitFlags)(flags | JIT_FLAG_LLVM_ONLY | JIT_FLAG_EXPLICIT_NULL_CHECKS);
 	if (acfg->aot_opts.no_direct_calls)
 		flags = (JitFlags)(flags | JIT_FLAG_NO_DIRECT_ICALLS);
-	if (acfg->aot_opts.direct_pinvoke || acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists)
+	if (is_direct_pinvoke_enabled (acfg))
 		flags = (JitFlags)(flags | JIT_FLAG_DIRECT_PINVOKE);
 	if (acfg->aot_opts.interp)
 		flags = (JitFlags)(flags | JIT_FLAG_INTERP);
@@ -14204,34 +14210,34 @@ is_direct_pinvoke_parsable (const char *direct_pinvoke)
 //
 
 static gboolean
-parsed_direct_pinvoke (MonoAotCompile *acfg, char *direct_pinvoke, char **module_name_ptr, char **entrypoint_name_ptr)
+parsed_direct_pinvoke (MonoAotCompile *acfg, const char *direct_pinvoke, char **module_name_ptr, char **entrypoint_name_ptr)
 {
-	gboolean parsed = TRUE;
+	gboolean parsed = FALSE;
+
+	*module_name_ptr = NULL;
+	*entrypoint_name_ptr = NULL;
 
 	char **direct_pinvoke_split = g_strsplit (direct_pinvoke, "!", 2);
-	if (!direct_pinvoke_split) {
-		aot_printerrf (acfg, "Failed to split the provided 'direct_pinvoke' AOT option '%s' with delimiter '!'\n", direct_pinvoke);
-		parsed = FALSE;
-		goto early_exit;
+	if (direct_pinvoke_split) {
+		*module_name_ptr = g_strdup (direct_pinvoke_split [0]);
+		*entrypoint_name_ptr = g_strdup (direct_pinvoke_split [1]);
+
+		// ENTRYPOINT can be NULL if Direct PInvoke is just MODULE
+		if (*module_name_ptr && (!direct_pinvoke_split [1] || *entrypoint_name_ptr))
+			parsed = TRUE;
+
+		g_strfreev (direct_pinvoke_split);
 	}
 
-	*module_name_ptr = g_strdup (direct_pinvoke_split[0]);
-	if (!*module_name_ptr) {
-		aot_printerrf (acfg, "Failed to strdup the module name portion of direct pinvoke '%s'.\n", direct_pinvoke);
-		parsed = FALSE;
+	if (!parsed) {
+		aot_printerrf (acfg, "Failed to parse the specified direct pinvoke '%s'. 'g_strsplit' or 'g_strdup' failed, possible due to insufficient memory.\n", direct_pinvoke);
+		g_free (*module_name_ptr);
+		*module_name_ptr = NULL;
+
+		g_free (*entrypoint_name_ptr);
+		*entrypoint_name_ptr = NULL;
 	}
 
-	// ENTRYPOINT can be NULL if Direct PInvoke is just MODULE
-	*entrypoint_name_ptr = g_strdup (direct_pinvoke_split[1]);
-	if (direct_pinvoke_split[1] && !*entrypoint_name_ptr) {
-		aot_printerrf (acfg, "Failed to strdup the entrypoint name portion of direct pinvoke '%s'.\n", direct_pinvoke);
-		parsed = FALSE;
-	}
-
-	g_strfreev (direct_pinvoke_split);
-	direct_pinvoke_split = NULL;
-
-early_exit:
 	return parsed;
 }
 
@@ -14262,24 +14268,30 @@ add_direct_pinvoke (MonoAotCompile *acfg, char **module_name_ptr, char **entrypo
 	// If there is an entry for the module
 	if (g_hash_table_lookup_extended (acfg->direct_pinvokes, *module_name_ptr, NULL, (gpointer *)&entrypoints)) {
 		// Not all entrypoints are direct, if specifying a new entrypoint
-		if (entrypoints && *entrypoint_name_ptr && !g_hash_table_contains (entrypoints, *entrypoint_name_ptr))
+		if (entrypoints && *entrypoint_name_ptr && !g_hash_table_contains (entrypoints, *entrypoint_name_ptr)) {
 			g_hash_table_insert (entrypoints, *entrypoint_name_ptr, NULL);
+			*entrypoint_name_ptr = NULL;
+		}
 	// New entry for module, All entrypoints are direct
 	} else if (!*entrypoint_name_ptr) {
 		g_hash_table_insert (acfg->direct_pinvokes, *module_name_ptr, NULL);
+		*module_name_ptr = NULL;
 	// New entry for module, specifying an entrypoint
 	} else {
 		entrypoints = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 		if (!entrypoints) {
 			aot_printerrf (acfg, "Failed to allocate new entrypoints HashTable.\n");
-			g_free (*module_name_ptr);
-			g_free (*entrypoint_name_ptr);
 			success = FALSE;
 		} else {
 			g_hash_table_insert (entrypoints, *entrypoint_name_ptr, NULL);
 			g_hash_table_insert (acfg->direct_pinvokes, *module_name_ptr, entrypoints);
+			*entrypoint_name_ptr = NULL;
+			*module_name_ptr = NULL;
 		}
 	}
+
+	g_free (*module_name_ptr);
+	g_free (*entrypoint_name_ptr);
 
 	*module_name_ptr = NULL;
 	*entrypoint_name_ptr = NULL;
@@ -14330,8 +14342,7 @@ process_specified_direct_pinvokes (MonoAotCompile *acfg, const char *dpi)
 	char *direct_pinvoke = g_strdup (dpi);
 	if (direct_pinvoke && g_strstrip (direct_pinvoke)) {
 		if (is_direct_pinvoke_parsable (direct_pinvoke)) {
-			char *module;
-			char *entrypoint;
+			char *module, *entrypoint;
 			if (parsed_direct_pinvoke (acfg, direct_pinvoke, &module, &entrypoint))
 				result = add_direct_pinvoke (acfg, &module, &entrypoint);
 		} else {
@@ -14425,7 +14436,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 #endif
 
-	if ((acfg->aot_opts.direct_pinvoke || acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists) && !acfg->aot_opts.static_link) {
+	if ((is_direct_pinvoke_enabled (acfg)) && !acfg->aot_opts.static_link) {
 		aot_printerrf (acfg, "The 'direct-pinvoke' flag, 'direct-pinvokes', and 'direct-pinvoke-lists' AOT options also require the 'static' AOT option.\n");
 		return 1;
 	}
@@ -14436,18 +14447,14 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	gboolean added_direct_pinvoke = TRUE;
 	if (acfg->aot_opts.direct_pinvokes) {
-		GList *l;
-
-		for (l = acfg->aot_opts.direct_pinvokes; l; l = l->next) {
-			process_specified_direct_pinvokes (acfg, (char*)l->data);
+		for (GList *l = acfg->aot_opts.direct_pinvokes; l; l = l->next) {
+			added_direct_pinvoke = process_specified_direct_pinvokes (acfg, (char*)l->data);
 			if (!added_direct_pinvoke)
 				return 1;
 		}
 	}
 	if (acfg->aot_opts.direct_pinvoke_lists) {
-		GList *l;
-
-		for (l = acfg->aot_opts.direct_pinvoke_lists; l; l = l->next) {
+		for (GList *l = acfg->aot_opts.direct_pinvoke_lists; l; l = l->next) {
 			char *direct_pinvoke_list = (char*)l->data;
 			FILE *direct_pinvoke_list_file = fopen (direct_pinvoke_list, "r");
 			if (!direct_pinvoke_list_file) {
