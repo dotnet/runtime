@@ -776,7 +776,10 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
     DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
-#if defined(__APPLE__) && defined(HOST_ARM64)
+#ifdef HOST_UNIX
+    // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
+    // This is required on MacOS and otherwise will allow us to place native R2R code close to the
+    // coreclr library and thus improve performance by avoiding jump stubs in managed code.
     allocationType |= MEM_RESERVE_EXECUTABLE;
 #endif
 
