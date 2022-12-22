@@ -76,7 +76,9 @@ mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int
 	 */
 	uint32_t st [4];
 
-	if (offset > raw_data_len)
+	if (G_UNLIKELY (offset < 0))
+		return offset;
+	if ((uint32_t)offset > raw_data_len)
 		return -1;
 	memcpy (st, raw_data + offset, sizeof (st));
 	t->st_virtual_size = GUINT32_FROM_LE (st [0]);
