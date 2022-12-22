@@ -1759,12 +1759,6 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
                         logging.info("")
 
-                    smallest = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
-                    logging.debug("Smallest {} contexts with binary differences:".format(len(smallest)))
-                    for diff in smallest:
-                        logging.debug(diff["Context"])
-                    logging.debug("")
-
                     if base_metrics is not None and diff_metrics is not None:
                         base_bytes = int(base_metrics["Overall"]["Diffed code bytes"])
                         diff_bytes = int(diff_metrics["Overall"]["Diffed code bytes"])
@@ -2117,14 +2111,25 @@ superpmi.py asmdiffs -target_os {2} -target_arch {3} -arch {1}
             # available without needing to disassemble all, so pick a subset of
             # interesting diffs to pass to jit-analyze.
 
+            def display_subset(message, subset):
+                logging.debug(message.format(len(subset)))
+                for diff in subset:
+                    logging.debug(diff["Context"])
+                logging.debug("")
+
             # 20 smallest method contexts with diffs
             smallest_contexts = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
+            display_subset("Smallest {} contexts with binary differences:", smallest_contexts)
+
             # Order by byte-wise improvement, largest improvements first
             by_diff_size = sorted(diffs, key=lambda r: int(r["Diff size"]) - int(r["Base size"]))
             # 20 top improvements, byte-wise
             top_improvements_bytes = by_diff_size[:20]
             # 20 top regressions, byte-wise
             top_regressions_bytes = by_diff_size[-20:]
+
+            display_subset("Top {} improvements, byte-wise:", top_improvements_bytes)
+            display_subset("Top {} regressions, byte-wise:", top_regressions_bytes)
 
             # Order by percentage-wise size improvement, largest improvements first
             def diff_pct(r):
@@ -2138,7 +2143,16 @@ superpmi.py asmdiffs -target_os {2} -target_arch {3} -arch {1}
             top_improvements_pct = by_diff_size_pct[:20]
             top_regressions_pct = by_diff_size_pct[-20:]
 
-            contexts = smallest_contexts + top_improvements_bytes + top_regressions_bytes + top_improvements_pct + top_regressions_pct
+            display_subset("Top {} improvements, percentage-wise:", top_improvements_pct)
+            display_subset("Top {} regressions, percentage-wise:", top_regressions_pct)
+            
+            # 20 contexts without size diffs (possibly GC info diffs), sorted by size
+            zero_size_diffs = filter(lambda r: int(r["Diff size"]) == int(r["Base size"]), diffs)
+            smallest_zero_size_contexts = sorted(zero_size_diffs, key=lambda r: int(r["Context size"]))[:20]
+
+            display_subset("Smallest {} zero sized diffs:", smallest_zero_size_contexts)
+
+            contexts = smallest_contexts + top_improvements_bytes + top_regressions_bytes + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts
 
         final_contexts_indices = list(set(int(r["Context"]) for r in contexts))
         final_contexts_indices.sort()
