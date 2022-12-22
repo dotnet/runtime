@@ -114,12 +114,7 @@ namespace System.Reflection.PortableExecutable
             }
 
             // We allow NUL characters to allow for padding for backward compat purposes.
-            if (pdbPath.Length == 0 ||
-#if NETCOREAPP
-                pdbPath.StartsWith('\0'))
-#else
-                pdbPath[0] == '\0')
-#endif
+            if (pdbPath.Length == 0 || pdbPath[0] == '\0')
             {
                 Throw.InvalidArgument(SR.ExpectedNonEmptyString, nameof(pdbPath));
             }
