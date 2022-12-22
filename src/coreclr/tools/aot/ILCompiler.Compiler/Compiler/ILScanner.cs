@@ -671,9 +671,9 @@ namespace ILCompiler
 
             public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type)
             {
-                Debug.Assert(type.ConvertToCanonForm(CanonicalFormKind.Specific) == type);
+                // The form we're asking about should be canonical, but may not be normalized
                 Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
-                return !_canonFormsWithCctorChecks.Contains(type);
+                return !_canonFormsWithCctorChecks.Contains(type.NormalizeInstantiation());
             }
         }
     }

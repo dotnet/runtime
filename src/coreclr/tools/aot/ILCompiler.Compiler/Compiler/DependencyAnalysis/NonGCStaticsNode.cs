@@ -74,24 +74,23 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public bool HasCCtorContext
+        public static bool TypeHasCctorContext(PreinitializationManager preinitializationManager, MetadataType type)
         {
-            get
-            {
-                // If the type has a lazy static constructor, we need the cctor context.
-                if (_preinitializationManager.HasLazyStaticConstructor(_type))
-                    return true;
+            // If the type has a lazy static constructor, we need the cctor context.
+            if (preinitializationManager.HasLazyStaticConstructor(type))
+                return true;
 
-                // If the type has a canonical form and accessing the base from a canonical
-                // context requires a cctor check, we need the cctor context.
-                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                if (canonType != _type && _preinitializationManager.HasLazyStaticConstructor(canonType))
-                    return true;
+            // If the type has a canonical form and accessing the base from a canonical
+            // context requires a cctor check, we need the cctor context.
+            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (canonType != type && preinitializationManager.HasLazyStaticConstructor(canonType))
+                return true;
 
-                // Otherwise no cctor context needed.
-                return false;
-            }
+            // Otherwise no cctor context needed.
+            return false;
         }
+
+        public bool HasCCtorContext => TypeHasCctorContext(_preinitializationManager, _type);
 
         public bool HasLazyStaticConstructor => _preinitializationManager.HasLazyStaticConstructor(_type);
 

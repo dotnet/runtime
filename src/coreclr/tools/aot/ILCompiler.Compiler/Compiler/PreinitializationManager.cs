@@ -151,7 +151,15 @@ namespace ILCompiler
 
             protected override TypePreinit.PreinitializationInfo CreateValueFromKey(MetadataType key)
             {
-                return TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, key);
+                var info = TypePreinit.ScanType(_compilationGroup, _ilProvider, _policy, key);
+
+                // We either successfully preinitialized or
+                // the type doesn't have a canonical form or
+                // the policy doesn't allow treating canonical forms of this type as preinitialized
+                Debug.Assert(info.IsPreinitialized ||
+                    (key.ConvertToCanonForm(CanonicalFormKind.Specific) is DefType canonType && (key == canonType || !_policy.CanPreinitializeAllConcreteFormsForCanonForm(canonType))));
+
+                return info;
             }
         }
         private PreinitializationInfoHashtable _preinitHashTable;
