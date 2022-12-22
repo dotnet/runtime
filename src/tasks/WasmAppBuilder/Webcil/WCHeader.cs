@@ -26,4 +26,7 @@ public unsafe struct WCHeader
     public uint pe_cli_header_rva;
     public uint pe_cli_header_size;
     // 16 bytes
+    public uint pe_debug_rva;
+    public uint pe_debug_size;
+    // 24 bytes
 }

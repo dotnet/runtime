@@ -60,20 +60,27 @@ struct WebcilHeader {
 	uint32_t pe_cli_header_rva;
 	uint32_t pe_cli_header_size;
 	// 16 bytes
+
+    uint32_t pe_debug_rva;
+    uint32_t pe_debug_size;
+    // 24 bytes
 };
 ```
 
 The Webcil header starts with the magic characters 'W' 'C' followed by the version (must be 0).
 Then a reserved byte that must be 0 followed by a count of the section headers and 2 more reserved bytes.
 
-The last 2 integers are a subset of the PE Header data directory specifying the RVA and size of the CLI header.
+The next pairs of integers are a subset of the PE Header data directory specifying the RVA and size
+of the CLI header, as well as the directory entry for the PE debug directory.
 
 
 ### Section header table
 
 Immediately following the Webcil header is a sequence (whose length is given by `coff_sections`
-above) of section headers giving their virtual address and virtual size, as well as the offset in the Webcil
-file and the size in the file.
+above) of section headers giving their virtual address and virtual size, as well as the offset in
+the Webcil file and the size in the file.  This is a subset of the PE section header that includes
+enough information to correctly interpret the RVAs from the webcil header and from the .NET
+metadata. Other information (such as the section names) are not included.
 
 ``` c
 struct SectionHeader {

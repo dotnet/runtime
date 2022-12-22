@@ -26,6 +26,10 @@ typedef struct MonoWebCilHeader {
 	uint32_t pe_cli_header_rva;
 	uint32_t pe_cli_header_size;
 	// 16 bytes
+
+	uint32_t pe_debug_rva;
+	uint32_t pe_debug_size;
+	// 24 bytes
 } MonoWebCilHeader;
 
 static gboolean
@@ -37,30 +41,67 @@ webcil_image_match (MonoImage *image)
 	return FALSE;
 }
 
+/*
+ * Fills the MonoDotNetHeader with data from the given raw_data+offset
+ * by reading the webcil header.
+ * most of MonoDotNetHeader is unused and left uninitialized (assumed zero);
+ */
+static int32_t
+do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header)
+{
+	MonoWebCilHeader wcheader;
+	if (offset + sizeof (MonoWebCilHeader) > raw_data_len)
+		return -1;
+	memcpy (&wcheader, raw_data + offset, sizeof (wcheader));
+
+	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'C' && wcheader.version == MONO_WEBCIL_VERSION))
+		return -1;
+
+	memset (header, 0, sizeof(MonoDotNetHeader));
+	header->coff.coff_sections = GUINT16_FROM_LE (wcheader.coff_sections);
+	header->datadir.pe_cli_header.rva = GUINT32_FROM_LE (wcheader.pe_cli_header_rva);
+	header->datadir.pe_cli_header.size = GUINT32_FROM_LE (wcheader.pe_cli_header_size);
+	header->datadir.pe_debug.rva = GUINT32_FROM_LE (wcheader.pe_debug_rva);
+	header->datadir.pe_debug.size = GUINT32_FROM_LE (wcheader.pe_debug_size);
+
+	offset += sizeof (wcheader);
+	return offset;
+}
+
+int32_t
+mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoSectionTable *t)
+{
+	/* WebCIL section table entries are a subset of a PE section
+	 * header. Initialize just the parts we have.
+	 */
+	uint32_t st [4];
+
+	if (offset > raw_data_len)
+		return -1;
+	memcpy (st, raw_data + offset, sizeof (st));
+	t->st_virtual_size = GUINT32_FROM_LE (st [0]);
+	t->st_virtual_address = GUINT32_FROM_LE (st [1]);
+	t->st_raw_data_size = GUINT32_FROM_LE (st [2]);
+	t->st_raw_data_ptr = GUINT32_FROM_LE (st [3]);
+	offset += sizeof(st);
+	return offset;
+}
+
+
 static gboolean
 webcil_image_load_pe_data (MonoImage *image)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
-	MonoWebCilHeader wcheader;
-	gint32 offset = 0;
-	int i, top;
-	char d [16 * 8];
-	char *p;
+	int32_t offset = 0;
+	int top;
 
 	iinfo = image->image_info;
 	header = &iinfo->cli_header;
 
-	if (offset + sizeof (MonoWebCilHeader) > image->raw_data_len)
+	offset = do_load_header (image->raw_data, image->raw_data_len, offset, header);
+	if (offset == -1)
 		goto invalid_image;
-	memcpy (&wcheader, image->raw_data + offset, sizeof (wcheader));
-	
-	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'C' && wcheader.version == MONO_WEBCIL_VERSION))
-		goto invalid_image;
-	
-	header->coff.coff_sections = GUINT16_FROM_LE (wcheader.coff_sections);
-	header->datadir.pe_cli_header.rva = GUINT32_FROM_LE (wcheader.pe_cli_header_rva);
-	header->datadir.pe_cli_header.size = GUINT32_FROM_LE (wcheader.pe_cli_header_size);
 
 	top = iinfo->cli_header.coff.coff_sections;
 
@@ -68,20 +109,11 @@ webcil_image_load_pe_data (MonoImage *image)
 	iinfo->cli_section_tables = g_new0 (MonoSectionTable, top);
 	iinfo->cli_sections = g_new0 (void *, top);
 
-	offset += sizeof (wcheader);
-	g_assert (top < 8);
-	p = d;
-	memcpy (d, image->raw_data + offset, top * 16);
-	for (i = 0; i < top; i++) {
+	for (int i = 0; i < top; i++) {
 		MonoSectionTable *t = &iinfo->cli_section_tables [i];
-		guint32 st [4];
-
-		memcpy (st, p, sizeof (st));
-		t->st_virtual_size = GUINT32_FROM_LE (st [0]);
-		t->st_virtual_address = GUINT32_FROM_LE (st [1]);
-		t->st_raw_data_size = GUINT32_FROM_LE (st [2]);
-		t->st_raw_data_ptr = GUINT32_FROM_LE (st [3]);
-		p += 16;
+		offset = mono_webcil_load_section_table (image->raw_data, image->raw_data_len, offset, t);
+		if (offset == -1)
+			goto invalid_image;
 	}
 
 	return TRUE;
@@ -124,4 +156,10 @@ void
 mono_webcil_loader_install (void)
 {
 	mono_install_image_loader (&webcil_loader);
+}
+
+int32_t
+mono_webcil_load_cli_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header)
+{
+	return do_load_header (raw_data, raw_data_len, offset, header);
 }

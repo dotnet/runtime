@@ -76,6 +76,8 @@ public class WebcilWriter
         header.reserved1 = 0;
         header.pe_cli_header_rva = (uint)peHeader.CorHeaderTableDirectory.RelativeVirtualAddress;
         header.pe_cli_header_size = (uint)peHeader.CorHeaderTableDirectory.Size;
+        header.pe_debug_rva = (uint)peHeader.DebugTableDirectory.RelativeVirtualAddress;
+        header.pe_debug_size = (uint)peHeader.DebugTableDirectory.Size;
 
         // current logical position in the output file
         FilePosition pos = SizeOfHeader();
@@ -83,7 +85,6 @@ public class WebcilWriter
         // initially it's after all the section headers
         FilePosition curSectionPos = pos + sizeof(CoffSectionHeaderBuilder) * coffHeader.NumberOfSections;
 
-        // TODO: write the sections, but adjust the raw data ptr to the offset after the WCHeader.
         ImmutableArray<CoffSectionHeaderBuilder>.Builder headerBuilder = ImmutableArray.CreateBuilder<CoffSectionHeaderBuilder>(coffHeader.NumberOfSections);
         foreach (var sectionHeader in sections)
         {
