@@ -948,7 +948,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (entries.Length > 0)
             {
                 var codeView = entries[0];
-                if (codeView.Type == DebugDirectoryEntryType.CodeView)
+                if (codeView.Type == DebugDirectoryEntryType.CodeView && false) // FIXME: implement this
                 {
                     codeViewData = wcReader.ReadCodeViewDebugDirectoryData(codeView);
                 }
