@@ -82,11 +82,16 @@ namespace System.Formats.Tar
             {
                 _isDisposed = true;
 
-                if (!_leaveOpen && _dataStreamsToDispose?.Count > 0)
+                if (!_leaveOpen)
                 {
-                    foreach (Stream s in _dataStreamsToDispose)
+                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
+
+                    if (_dataStreamsToDispose?.Count > 0)
                     {
-                        await s.DisposeAsync().ConfigureAwait(false);
+                        foreach (Stream s in _dataStreamsToDispose)
+                        {
+                            await s.DisposeAsync().ConfigureAwait(false);
+                        }
                     }
                 }
             }
