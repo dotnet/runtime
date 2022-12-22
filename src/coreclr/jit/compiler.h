@@ -8006,10 +8006,6 @@ public:
     // not all JIT Helper calls follow the standard ABI on the target architecture.
     regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper);
 
-    // If "tree" is a indirection (GT_IND, or GT_OBJ) whose arg is an ADDR, whose arg is a LCL_VAR, return that LCL_VAR
-    // node, else NULL.
-    static GenTreeLclVar* fgIsIndirOfAddrOfLocal(GenTree* tree);
-
     // This map is indexed by GT_OBJ nodes that are address of promoted struct variables, which
     // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this
     // table, one may assume that all the (tracked) field vars die at this GT_OBJ.  Otherwise,
