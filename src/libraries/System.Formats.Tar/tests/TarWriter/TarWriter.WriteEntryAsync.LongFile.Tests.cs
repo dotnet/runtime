@@ -76,6 +76,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(size, dataStream.Position);
 
             Assert.Null(await reader.GetNextEntryAsync());
+            tarFile.Close();
         }
     }
 }
