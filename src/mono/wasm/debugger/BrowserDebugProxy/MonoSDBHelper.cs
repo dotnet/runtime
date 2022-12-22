@@ -855,7 +855,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 asm = store.GetAssemblyByName(assemblyName);
                 if (asm == null)
                 {
-                    asm = new AssemblyInfo(logger);
+                    asm = AssemblyInfo.WithoutDebugInfo(logger);
                     logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }

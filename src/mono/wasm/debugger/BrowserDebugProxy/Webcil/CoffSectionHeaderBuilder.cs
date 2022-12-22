@@ -3,7 +3,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace Microsoft.WebAssembly.Build.Tasks.WebCil;
+namespace Microsoft.WebAssembly.Diagnostics.Webcil;
 
 /// <summary>
 /// This is System.Reflection.PortableExecutable.CoffHeader, but with a public constructor so that
