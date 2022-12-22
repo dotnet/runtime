@@ -256,8 +256,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // start is 0-based index from LSB, length is number of bits
 DWORD ExtractBits(DWORD dw, DWORD start, DWORD length)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return 0;
+    return (dw >> start) & ((1 << length) - 1);
 }
 
 // Dump the unwind data.
@@ -275,7 +274,370 @@ void DumpUnwindInfo(Compiler*         comp,
                     const BYTE* const pHeader,
                     ULONG             unwindBlockSize)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    printf("Unwind Info%s:\n", isHotCode ? "" : " COLD");
+
+    // pHeader is not guaranteed to be aligned. We put four 0xFF end codes at the end
+    // to provide padding, and round down to get a multiple of 4 bytes in size.
+    DWORD UNALIGNED* pdw = (DWORD UNALIGNED*)pHeader;
+    DWORD dw;
+
+    dw = *pdw++;
+
+    DWORD codeWords      = ExtractBits(dw, 27, 5);
+    DWORD epilogCount    = ExtractBits(dw, 22, 5);
+    DWORD EBit           = ExtractBits(dw, 21, 1);
+    DWORD XBit           = ExtractBits(dw, 20, 1);
+    DWORD Vers           = ExtractBits(dw, 18, 2);
+    DWORD functionLength = ExtractBits(dw, 0, 18);
+
+    printf("  >> Start offset   : 0x%06x (not in unwind data)\n", comp->dspOffset(startOffset));
+    printf("  >>   End offset   : 0x%06x (not in unwind data)\n", comp->dspOffset(endOffset));
+    printf("  Code Words        : %u\n", codeWords);
+    printf("  Epilog Count      : %u\n", epilogCount);
+    printf("  E bit             : %u\n", EBit);
+    printf("  X bit             : %u\n", XBit);
+    printf("  Vers              : %u\n", Vers);
+    printf("  Function Length   : %u (0x%05x) Actual length = %u (0x%06x)\n", functionLength, functionLength,
+           functionLength * 4, functionLength * 4);
+
+    assert(functionLength * 4 == endOffset - startOffset);
+
+    if (codeWords == 0 && epilogCount == 0)
+    {
+        // We have an extension word specifying a larger number of Code Words or Epilog Counts
+        // than can be specified in the header word.
+
+        dw = *pdw++;
+
+        codeWords   = ExtractBits(dw, 16, 8);
+        epilogCount = ExtractBits(dw, 0, 16);
+        assert((dw & 0xF0000000) == 0); // reserved field should be zero
+
+        printf("  ---- Extension word ----\n");
+        printf("  Extended Code Words        : %u\n", codeWords);
+        printf("  Extended Epilog Count      : %u\n", epilogCount);
+    }
+
+    bool epilogStartAt[1024] = {}; // One byte per possible epilog start index; initialized to false
+
+    if (EBit == 0)
+    {
+        // We have an array of epilog scopes
+
+        printf("  ---- Epilog scopes ----\n");
+        if (epilogCount == 0)
+        {
+            printf("  No epilogs\n");
+        }
+        else
+        {
+            for (DWORD scope = 0; scope < epilogCount; scope++)
+            {
+                dw = *pdw++;
+
+                DWORD epilogStartOffset = ExtractBits(dw, 0, 18);
+                DWORD res               = ExtractBits(dw, 18, 4);
+                DWORD epilogStartIndex  = ExtractBits(dw, 22, 10);
+
+                // Note that epilogStartOffset for a funclet is the offset from the beginning
+                // of the current funclet, not the offset from the beginning of the main function.
+                // To help find it when looking through JitDump output, also show the offset from
+                // the beginning of the main function.
+                DWORD epilogStartOffsetFromMainFunctionBegin = epilogStartOffset * 4 + startOffset;
+
+                assert(res == 0);
+
+                printf("  ---- Scope %d\n", scope);
+                printf("  Epilog Start Offset        : %u (0x%05x) Actual offset = %u (0x%06x) Offset from main "
+                       "function begin = %u (0x%06x)\n",
+                       comp->dspOffset(epilogStartOffset), comp->dspOffset(epilogStartOffset),
+                       comp->dspOffset(epilogStartOffset * 4), comp->dspOffset(epilogStartOffset * 4),
+                       comp->dspOffset(epilogStartOffsetFromMainFunctionBegin),
+                       comp->dspOffset(epilogStartOffsetFromMainFunctionBegin));
+                printf("  Epilog Start Index         : %u (0x%02x)\n", epilogStartIndex, epilogStartIndex);
+
+                epilogStartAt[epilogStartIndex] = true; // an epilog starts at this offset in the unwind codes
+            }
+        }
+    }
+    else
+    {
+        printf("  --- One epilog, unwind codes at %u\n", epilogCount);
+        assert(epilogCount < ArrLen(epilogStartAt));
+        epilogStartAt[epilogCount] = true; // the one and only epilog starts its unwind codes at this offset
+    }
+
+    // Dump the unwind codes
+
+    printf("  ---- Unwind codes ----\n");
+
+    DWORD countOfUnwindCodes = codeWords * 4;
+    PBYTE pUnwindCode        = (PBYTE)pdw;
+    BYTE  b1, b2, b3, b4;
+    DWORD x, z;
+    for (DWORD i = 0; i < countOfUnwindCodes; i++)
+    {
+        // Does this byte start an epilog sequence? If so, note that fact.
+        if (epilogStartAt[i])
+        {
+            printf("    ---- Epilog start at index %u ----\n", i);
+        }
+
+        b1 = *pUnwindCode++;
+
+        if ((b1 & 0xE0) == 0)
+        {
+            // alloc_s: 000xxxxx: allocate small stack with size < 128 (2^5 * 16)
+            // TODO-Review:should say size < 512
+            x = b1 & 0x1F;
+            printf("    %02X          alloc_s #%u (0x%02X); addi.d sp, sp, -%u (0x%03X)\n", b1, x, x, x * 16, x * 16);
+        }
+#if 0
+        else if ((b1 & 0xE0) == 0x20)
+        {
+            // save_s0s1_x: 001zzzzz: save <s0,s1> pair at [sp-#Z*8]!, pre-indexed offset >= -248
+            z = b1 & 0x1F;
+            printf("    %02X          save_s0s1_x #%u (0x%02X); Two sd %s, %s, [sp, #-%u]!\n", b1, z, z,
+                   getRegName(REG_S0), getRegName(REG_S1), z * 8);
+        }
+        else if ((b1 & 0xF0) == 0x40)
+        {
+            // save_fpra: 0100zzzz | zzzzzzzz: save <fp,ra> pair at [sp+#Z*8], offset <= 4080
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            i++;
+
+            z = ((DWORD)(b1 & 0xF) << 8) | (DWORD)b2;
+            printf("    %02X %02X          save_fpra #%u (0x%03X); Two sd %s, %s, [sp, #%u]\n", b1, b2, z, z, getRegName(REG_FP),
+                   getRegName(REG_RA), z * 8);
+        }
+        else if ((b1 & 0xF0) == 0x80)
+        {
+            // save_fpra_x: 1000zzzz | zzzzzzzz: save <fp,ra> pair at [sp-(#Z+1)*8]!, pre-indexed offset >= -32768
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            i++;
+
+            z = ((DWORD)(b1 & 0xF) << 8) | (DWORD)b2;
+            printf("    %02X %02X          save_fpra_x #%u (0x%03X); Two sd %s, %s, [sp, #-%u]!\n", b1, b2, z, z,
+                   getRegName(REG_FP), getRegName(REG_RA), (z + 1) * 8);
+        }
+#endif
+        else if ((b1 & 0xF8) == 0xC0)
+        {
+            // alloc_m: 11000xxx | xxxxxxxx: allocate large stack with size < 2k (2^7 * 16)
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            i++;
+
+            x = ((DWORD)(b1 & 0x7) << 8) | (DWORD)b2;
+
+            printf("    %02X %02X       alloc_m #%u (0x%03X); addi.d sp, sp, -%u (0x%04X)\n", b1, b2, x, x, x * 16,
+                   x * 16);
+        }
+        else if (b1 == 0xD0)
+        {
+            // save_reg: 11010000 | 000xxxxx | zzzzzzzz: save reg r(1 + #X) at [sp + #Z * 8], offset <= 2047
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i += 2;
+
+            x = (DWORD)b2;
+            z = (DWORD)b3;
+
+            printf("    %02X %02X %02X      save_reg X#%u Z#%u (0x%02X); st.d %s, sp, %u\n", b1, b2, b3, x, z, z,
+                   getRegName(REG_RA + x), z * 8);
+        }
+#if 0
+        else if (b1 == 0xC8)
+        {
+            // save_regp: 11001000 | 0xxxzzzz | zzzzzzzz: save s(0 + #X) pair at [sp + #Z * 8], offset <= 4080
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i += 2;
+
+            x = (DWORD)(b2 >> 4);
+            z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
+
+            printf("    %02X %02X %02X      save_regp X#%u Z#%u (0x%02X); Two sd %s, %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
+                   getRegName(REG_S0 + x), getRegName(REG_S0 + x + 1), z * 8);
+        }
+        else if (b1 == 0xCC)
+        {
+            // save_regp_x: 11001100 | 0xxxzzzz | zzzzzzzz: save pair s(0 + #X) at [sp - (#Z + 1) * 8]!, pre-indexed offset >=
+            // -32768
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i+= 2;
+
+            x = (DWORD)(b2 >> 4);
+            z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
+
+            printf("    %02X %02X %02X      save_regp_x X#%u Z#%u (0x%02X); Two sd %s, %s, [sp, #-%u]!\n", b1, b2, b3, x, z, z,
+                   getRegName(REG_S0 + x), getRegName(REG_S0 + x + 1), (z + 1) * 8);
+        }
+        else if ((b1 & 0xFE) == 0xD4)
+        {
+            // save_reg_x: 1101010x | xxxzzzzz: save reg s(0 + #X) at [sp - (#Z + 1) * 8]!, pre-indexed offset >= -16384
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            i++;
+
+            x = ((DWORD)(b1 & 0x1) << 3) | (DWORD)(b2 >> 5);
+            z = (DWORD)(b2 & 0x1F);
+
+            printf("    %02X %02X       save_reg_x X#%u Z#%u (0x%02X); sd %s, [sp, #-%u]!\n", b1, b2, x, z, z,
+                   getRegName(REG_S0 + x), (z + 1) * 8);
+        }
+        else if (b1 == 0xD6)
+        {
+            // save_rapair: 11010110 | 0xxxzzzz | zzzzzzzz: save pair <s0 + #X, ra> at [sp + #Z * 8], offset <= 32767
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i += 2;
+
+            x = (DWORD)(b2 >> 4);
+            z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
+
+            printf("    %02X %02X %02X      save_lrpair X#%u Z#%u (0x%02X); Two sd %s, %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
+                   getRegName(REG_S0 + x), getRegName(REG_RA), z * 8);
+        }
+        else if (b1 == 0xD8)
+        {
+            // save_fregp: 11011000 | 0xxxzzzz | zzzzzzzz : save pair f(24 + #X) at [sp + #Z * 8], offset <= 32767
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i += 2;
+
+            x = (DWORD)(b2 >> 4);
+            z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
+
+            printf("    %02X %02X %02X      save_fregp X#%u Z#%u (0x%02X); Two sdc1 %s, %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
+                   getRegName(REG_F24 + x, true), getRegName(REG_F24 + x + 1, true), z * 8);
+        }
+        else if (b1 == 0xDA)
+        {
+            // save_fregp_x: 11011010 | 0xxxzzzz | zzzzzzzz : save pair f(24 + #X), at [sp - (#Z + 1) * 8]!, pre-indexed offset >=
+            // -32768
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i += 2;
+
+            x = (DWORD)(b2 >> 4);
+            z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
+
+            printf("    %02X %02X %02X      save_fregp_x X#%u Z#%u (0x%02X); Two sdc1 %s, %s, [sp, #-%u]!\n", b1, b2, b3, x, z, z,
+                   getRegName(REG_F24 + x, true), getRegName(REG_F24 + x + 1, true), (z + 1) * 8);
+        }
+#endif
+        else if (b1 == 0xDC)
+        {
+            // save_freg: 11011100 | 0xxxzzzz | zzzzzzzz : save reg f(24 + #X) at [sp + #Z * 8], offset <= 2047
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i += 2;
+
+            x = (DWORD)(b2 >> 4);
+            z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
+
+            printf("    %02X %02X %02X      save_freg X#%u Z#%u (0x%02X); fst.d %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
+                   getRegName(REG_F24 + x), z * 8);
+        }
+#if 0
+        else if (b1 == 0xDE)
+        {
+            // save_freg_x: 11011110 | xxxzzzzz : save reg f(24 + #X) at [sp - (#Z + 1) * 8]!, pre - indexed offset >=
+            // -16384
+            assert(i + 1 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            i++;
+
+            x = (DWORD)(b2 >> 5);
+            z = (DWORD)(b2 & 0x1F);
+
+            printf("    %02X %02X       save_freg_x X#%u Z#%u (0x%02X); sdc1 %s, [sp, #-%u]!\n", b1, b2, x, z, z,
+                   getRegName(REG_F24 + x, true), (z + 1) * 8);
+        }
+#endif
+        else if (b1 == 0xE0)
+        {
+            // alloc_l: 11100000 | xxxxxxxx | xxxxxxxx | xxxxxxxx : allocate large stack with size < 256M (2^24 * 16)
+            assert(i + 3 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            b4 = *pUnwindCode++;
+            i += 3;
+
+            x = ((DWORD)b2 << 16) | ((DWORD)b3 << 8) | (DWORD)b4;
+
+            printf("    %02X %02X %02X %02X alloc_l %u (0x%06X); addi.d sp, sp, -%u (%06X)\n", b1, b2, b3, b4, x, x,
+                   x * 16, x * 16);
+        }
+        else if (b1 == 0xE1)
+        {
+            // set_fp: 11100001 : set up $29 : with : move fp, sp
+
+            printf("    %02X          set_fp; move %s, sp\n", b1, getRegName(REG_FP));
+        }
+        else if (b1 == 0xE2)
+        {
+            // add_fp: 11100010 | 000xxxxx | xxxxxxxx : set up fp with : addi.d fp, sp, #x * 8
+            assert(i + 2 < countOfUnwindCodes);
+            b2 = *pUnwindCode++;
+            b3 = *pUnwindCode++;
+            i += 2;
+
+            x = ((DWORD)(b2 & 0x1F) << 8) | (DWORD)b3;
+
+            printf("    %02X %02X %02X      add_fp %u (0x%02X); addi.d %s, sp, #%u\n", b1, b2, b3, x, x,
+                   getRegName(REG_FP), x * 8);
+        }
+        else if (b1 == 0xE3)
+        {
+            // nop: 11100011: no unwind operation is required.
+
+            printf("    %02X          nop\n", b1);
+        }
+        else if (b1 == 0xE4)
+        {
+            // end: 11100100 : end of unwind code
+
+            printf("    %02X          end\n", b1);
+        }
+        else if (b1 == 0xE5)
+        {
+            // end_c: 11100101 : end of unwind code in current chained scope.
+
+            printf("    %02X          end_c\n", b1);
+        }
+        else if (b1 == 0xE6)
+        {
+            // save_next: 11100110 : save next non - volatile Int or FP register pair.
+
+            printf("    %02X          save_next\n", b1);
+        }
+        else
+        {
+            printf("===========[loongarch64] Unknown / reserved unwind code: %02X\n", b1);
+            // Unknown / reserved unwind code
+            assert(!"Internal error decoding unwind codes");
+        }
+    }
+
+    pdw += codeWords;
+    assert((PBYTE)pdw == pUnwindCode);
+    assert((PBYTE)pdw == pHeader + unwindBlockSize);
+
+    assert(XBit == 0); // We don't handle the case where exception data is present, such as the Exception Handler RVA
+
+    printf("\n");
 }
 
 #endif // DEBUG
@@ -426,12 +788,34 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(compFuncInfoCount > 0);
+    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    {
+        unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
+    }
 }
 
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // Verify that the JIT enum is in sync with the JIT-EE interface enum
+    static_assert_no_msg(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
+    static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
+    static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
+
+#if defined(FEATURE_CFI_SUPPORT)
+    if (generateCFIUnwindCodes())
+    {
+        unwindEmitFuncCFI(func, pHotCode, pColdCode);
+        return;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+    func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
+
+    if (func->uwiCold != NULL)
+    {
+        func->uwiCold->Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, false);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -496,7 +880,15 @@ void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
 // This is in contrast to the prolog unwind codes, which are added in reverse order.
 void UnwindPrologCodes::AddHeaderWord(DWORD d)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(-1 <= upcHeaderSlot);
+    assert(upcHeaderSlot + 4 < upcCodeSlot); // Don't collide with the unwind codes that are already there!
+
+    // Store it byte-by-byte in little-endian format. We've already ensured there is enough space
+    // in SetFinalSize().
+    upcMem[++upcHeaderSlot] = (BYTE)d;
+    upcMem[++upcHeaderSlot] = (BYTE)(d >> 8);
+    upcMem[++upcHeaderSlot] = (BYTE)(d >> 16);
+    upcMem[++upcHeaderSlot] = (BYTE)(d >> 24);
 }
 
 // AppendEpilog: copy the epilog bytes to the next epilog bytes slot
@@ -508,7 +900,14 @@ void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
 // GetFinalInfo: return a pointer to the final unwind info to hand to the VM, and the size of this info in bytes
 void UnwindPrologCodes::GetFinalInfo(/* OUT */ BYTE** ppUnwindBlock, /* OUT */ ULONG* pUnwindBlockSize)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(upcHeaderSlot + 1 == upcCodeSlot); // We better have filled in the header before asking for the final data!
+
+    *ppUnwindBlock = &upcMem[upcUnwindBlockSlot];
+
+    // We put 4 'end' codes at the end for padding, so we can ensure we have an
+    // unwind block that is a multiple of 4 bytes in size. Subtract off three 'end'
+    // codes (leave one), and then align the size up to a multiple of 4.
+    *pUnwindBlockSize = AlignUp((UINT)(upcMemSize - upcUnwindBlockSlot - 3), sizeof(DWORD));
 }
 
 int UnwindPrologCodes::Match(UnwindEpilogInfo* pEpi)
@@ -672,7 +1071,7 @@ void UnwindEpilogInfo::CaptureEmitLocation()
 
 void UnwindEpilogInfo::FinalizeOffset()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    epiStartOffset = epiEmitLocation->CodeOffset(uwiComp->GetEmitter());
 }
 
 #ifdef DEBUG
@@ -710,7 +1109,20 @@ UnwindFragmentInfo::UnwindFragmentInfo(Compiler* comp, emitLocation* emitLoc, bo
 
 void UnwindFragmentInfo::FinalizeOffset()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    if (ufiEmitLoc == NULL)
+    {
+        // NULL emit location means the beginning of the code. This is to handle the first fragment prolog.
+        ufiStartOffset = 0;
+    }
+    else
+    {
+        ufiStartOffset = ufiEmitLoc->CodeOffset(uwiComp->GetEmitter());
+    }
+
+    for (UnwindEpilogInfo* pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+    {
+        pEpi->FinalizeOffset();
+    }
 }
 
 void UnwindFragmentInfo::AddEpilog()
@@ -932,7 +1344,125 @@ void UnwindFragmentInfo::MergeCodes()
 
 void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(ufiInitialized == UFI_INITIALIZED_PATTERN);
+
+#ifdef DEBUG
+    if (0 && uwiComp->verbose)
+    {
+        printf("*************** Before fragment #%d finalize\n", ufiNum);
+        Dump();
+    }
+#endif
+
+    // Compute the header
+
+    noway_assert((functionLength & 3) == 0);
+    DWORD headerFunctionLength = functionLength / 4;
+
+    DWORD headerVers = 0; // Version of the unwind info is zero. No other version number is currently defined.
+    DWORD headerXBit = 0; // We never generate "exception data", but the VM might add some.
+    DWORD headerEBit;
+    DWORD headerEpilogCount; // This depends on how we set headerEBit.
+    DWORD headerCodeWords;
+    DWORD headerExtendedEpilogCount = 0; // This depends on how we set headerEBit.
+    DWORD headerExtendedCodeWords   = 0;
+
+    if (ufiSetEBit)
+    {
+        headerEBit        = 1;
+        headerEpilogCount = ufiEpilogList->GetStartIndex(); // probably zero -- the start of the prolog codes!
+        headerCodeWords   = ufiCodeWords;
+    }
+    else
+    {
+        headerEBit = 0;
+
+        if (ufiNeedExtendedCodeWordsEpilogCount)
+        {
+            headerEpilogCount         = 0;
+            headerCodeWords           = 0;
+            headerExtendedEpilogCount = ufiEpilogScopes;
+            headerExtendedCodeWords   = ufiCodeWords;
+        }
+        else
+        {
+            headerEpilogCount = ufiEpilogScopes;
+            headerCodeWords   = ufiCodeWords;
+        }
+    }
+
+    // Start writing the header
+
+    noway_assert(headerFunctionLength <=
+                 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits, we have an internal error
+
+    if ((headerEpilogCount > UW_MAX_EPILOG_COUNT) || (headerCodeWords > UW_MAX_CODE_WORDS_COUNT))
+    {
+        IMPL_LIMITATION("unwind data too large");
+    }
+
+    DWORD header = headerFunctionLength | (headerVers << 18) | (headerXBit << 20) | (headerEBit << 21) |
+                   (headerEpilogCount << 22) | (headerCodeWords << 27);
+
+    ufiPrologCodes.AddHeaderWord(header);
+
+    // Construct the second header word, if needed
+
+    if (ufiNeedExtendedCodeWordsEpilogCount)
+    {
+        noway_assert(headerEBit == 0);
+        noway_assert(headerEpilogCount == 0);
+        noway_assert(headerCodeWords == 0);
+        noway_assert((headerExtendedEpilogCount > UW_MAX_EPILOG_COUNT) ||
+                     (headerExtendedCodeWords > UW_MAX_CODE_WORDS_COUNT));
+
+        if ((headerExtendedEpilogCount > UW_MAX_EXTENDED_EPILOG_COUNT) ||
+            (headerExtendedCodeWords > UW_MAX_EXTENDED_CODE_WORDS_COUNT))
+        {
+            IMPL_LIMITATION("unwind data too large");
+        }
+
+        DWORD header2 = headerExtendedEpilogCount | (headerExtendedCodeWords << 16);
+
+        ufiPrologCodes.AddHeaderWord(header2);
+    }
+
+    // Construct the epilog scope words, if needed
+
+    if (!ufiSetEBit)
+    {
+        for (UnwindEpilogInfo* pEpi = ufiEpilogList; pEpi != NULL; pEpi = pEpi->epiNext)
+        {
+            // The epilog must strictly follow the prolog. The prolog is in the first fragment of
+            // the hot section. If this epilog is at the start of a fragment, it can't be the
+            // first fragment in the hot section. We actually don't know if we're processing
+            // the hot or cold section (or a funclet), so we can't distinguish these cases. Thus,
+            // we just assert that the epilog starts within the fragment.
+            assert(pEpi->GetStartOffset() >= GetStartOffset());
+
+            // We report the offset of an epilog as the offset from the beginning of the function/funclet fragment,
+            // NOT the offset from the beginning of the main function.
+            DWORD headerEpilogStartOffset = pEpi->GetStartOffset() - GetStartOffset();
+
+            noway_assert((headerEpilogStartOffset & 3) == 0);
+            headerEpilogStartOffset /= 4; // The unwind data stores the actual offset divided by 4 (since the low 2 bits
+                                          // of the actual offset is always zero)
+
+            DWORD headerEpilogStartIndex = pEpi->GetStartIndex();
+
+            if ((headerEpilogStartOffset > UW_MAX_EPILOG_START_OFFSET) ||
+                (headerEpilogStartIndex > UW_MAX_EPILOG_START_INDEX))
+            {
+                IMPL_LIMITATION("unwind data too large");
+            }
+
+            DWORD epilogScopeWord = headerEpilogStartOffset | (headerEpilogStartIndex << 22);
+
+            ufiPrologCodes.AddHeaderWord(epilogScopeWord);
+        }
+    }
+
+    // The unwind code words are already here, following the header, so we're done!
 }
 
 void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
@@ -968,7 +1498,82 @@ void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
 void UnwindFragmentInfo::Allocate(
     CorJitFuncKind funKind, void* pHotCode, void* pColdCode, UNATIVE_OFFSET funcEndOffset, bool isHotCode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    UNATIVE_OFFSET startOffset;
+    UNATIVE_OFFSET endOffset;
+    UNATIVE_OFFSET codeSize;
+
+    // We don't support hot/cold splitting with EH, so if there is cold code, this
+    // better not be a funclet!
+    // TODO-CQ: support funclets in cold code
+
+    noway_assert(isHotCode || funKind == CORJIT_FUNC_ROOT);
+
+    // Compute the final size, and start and end offsets of the fragment
+
+    startOffset = GetStartOffset();
+
+    if (ufiNext == NULL)
+    {
+        // This is the last fragment, so the fragment extends to the end of the function/fragment.
+        assert(funcEndOffset != 0);
+        endOffset = funcEndOffset;
+    }
+    else
+    {
+        // The fragment length is all the code between the beginning of this fragment
+        // and the beginning of the next fragment. Note that all fragments have had their
+        // offsets computed before any fragment is allocated.
+        endOffset = ufiNext->GetStartOffset();
+    }
+
+    assert(endOffset > startOffset);
+    codeSize = endOffset - startOffset;
+
+    // Finalize the fragment unwind block to hand to the VM
+
+    Finalize(codeSize);
+
+    // Get the final unwind information and hand it to the VM
+
+    ULONG unwindBlockSize;
+    BYTE* pUnwindBlock;
+
+    GetFinalInfo(&pUnwindBlock, &unwindBlockSize);
+
+#ifdef DEBUG
+    if (uwiComp->opts.dspUnwind)
+    {
+        DumpUnwindInfo(uwiComp, isHotCode, startOffset, endOffset, pUnwindBlock, unwindBlockSize);
+    }
+#endif // DEBUG
+
+    // Adjust for cold or hot code:
+    // 1. The VM doesn't want the cold code pointer unless this is cold code.
+    // 2. The startOffset and endOffset need to be from the base of the hot section for hot code
+    //    and from the base of the cold section for cold code
+
+    if (isHotCode)
+    {
+        assert(endOffset <= uwiComp->info.compTotalHotCodeSize);
+        pColdCode = NULL;
+    }
+    else
+    {
+        assert(startOffset >= uwiComp->info.compTotalHotCodeSize);
+        startOffset -= uwiComp->info.compTotalHotCodeSize;
+        endOffset -= uwiComp->info.compTotalHotCodeSize;
+    }
+
+#ifdef DEBUG
+    if (uwiComp->verbose)
+    {
+        if (ufiNum != 1)
+            printf("unwindEmit: fragment #%d:\n", ufiNum);
+    }
+#endif // DEBUG
+
+    uwiComp->eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, unwindBlockSize, pUnwindBlock,
+                               funKind);
 }
 
 #ifdef DEBUG
@@ -1161,7 +1766,34 @@ void UnwindInfo::Reserve(bool isFunclet, bool isHotCode)
 
 void UnwindInfo::Allocate(CorJitFuncKind funKind, void* pHotCode, void* pColdCode, bool isHotCode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+
+    UnwindFragmentInfo* pFrag;
+
+    // First, finalize all the offsets (the location of the beginning of fragments, and epilogs),
+    // so a fragment can use the finalized offset of the subsequent fragment to determine its code size.
+
+    UNATIVE_OFFSET endOffset;
+
+    if (uwiEndLoc == NULL)
+    {
+        assert(uwiComp->info.compNativeCodeSize != 0);
+        endOffset = uwiComp->info.compNativeCodeSize;
+    }
+    else
+    {
+        endOffset = uwiEndLoc->CodeOffset(uwiComp->GetEmitter());
+    }
+
+    for (pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+    {
+        pFrag->FinalizeOffset();
+    }
+
+    for (pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
+    {
+        pFrag->Allocate(funKind, pHotCode, pColdCode, endOffset, isHotCode);
+    }
 }
 
 void UnwindInfo::AddEpilog()

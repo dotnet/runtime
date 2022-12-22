@@ -3662,7 +3662,66 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
                                       unsigned prologSize,
                                       unsigned epilogSize DEBUGARG(void* codePtr))
 {
-    NYI("unimplemented on RISCV64 yet");
+    IAllocator*    allowZeroAlloc = new (compiler, CMK_GC) CompIAllocator(compiler->getAllocatorGC());
+    GcInfoEncoder* gcInfoEncoder  = new (compiler, CMK_GC)
+        GcInfoEncoder(compiler->info.compCompHnd, compiler->info.compMethodInfo, allowZeroAlloc, NOMEM);
+    assert(gcInfoEncoder != nullptr);
+
+    // Follow the code pattern of the x86 gc info encoder (genCreateAndStoreGCInfoJIT32).
+    gcInfo.gcInfoBlockHdrSave(gcInfoEncoder, codeSize, prologSize);
+
+    // We keep the call count for the second call to gcMakeRegPtrTable() below.
+    unsigned callCnt = 0;
+
+    // First we figure out the encoder ID's for the stack slots and registers.
+    gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_ASSIGN_SLOTS, &callCnt);
+
+    // Now we've requested all the slots we'll need; "finalize" these (make more compact data structures for them).
+    gcInfoEncoder->FinalizeSlotIds();
+
+    // Now we can actually use those slot ID's to declare live ranges.
+    gcInfo.gcMakeRegPtrTable(gcInfoEncoder, codeSize, prologSize, GCInfo::MAKE_REG_PTR_MODE_DO_WORK, &callCnt);
+
+    if (compiler->opts.compDbgEnC)
+    {
+        // what we have to preserve is called the "frame header" (see comments in VM\eetwain.cpp)
+        // which is:
+        //  -return address
+        //  -saved off RBP
+        //  -saved 'this' pointer and bool for synchronized methods
+
+        // 4 slots for RBP + return address + RSI + RDI
+        int preservedAreaSize = 4 * REGSIZE_BYTES;
+
+        if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
+        {
+            if (!(compiler->info.compFlags & CORINFO_FLG_STATIC))
+            {
+                preservedAreaSize += REGSIZE_BYTES;
+            }
+
+            preservedAreaSize += 1; // bool for synchronized methods
+        }
+
+        // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
+        // frame
+        gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
+    }
+
+    if (compiler->opts.IsReversePInvoke())
+    {
+        unsigned reversePInvokeFrameVarNumber = compiler->lvaReversePInvokeFrameVar;
+        assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM);
+        const LclVarDsc* reversePInvokeFrameVar = compiler->lvaGetDesc(reversePInvokeFrameVarNumber);
+        gcInfoEncoder->SetReversePInvokeFrameSlot(reversePInvokeFrameVar->GetStackOffset());
+    }
+
+    gcInfoEncoder->Build();
+
+    // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
+    // let's save the values anyway for debugging purposes
+    compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
+    compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
 }
 
 //------------------------------------------------------------------------

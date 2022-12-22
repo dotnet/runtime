@@ -2192,7 +2192,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 ins  = id->idIns();
                 code = emitInsCode(ins);
-                if (ins == INS_jal)
+                if (ins == INS_jal || ins == INS_j)
                 {
                     code |= ((imm >> 12) & 0xff)  << 12;
                     code |= ((imm >> 11)  & 0x1)  << 20;
@@ -2711,10 +2711,10 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    // LA implements this similar by `emitter::emitDisInsName`.
-    // For LA maybe the `emitDispIns` is over complicate.
+    // RISCV64 implements this similar by `emitter::emitDisInsName`.
+    // For RISCV64 maybe the `emitDispIns` is over complicate.
     // The `emitter::emitDisInsName` is focused on the most important for debugging.
-    NYI_RISCV64("LA not used the emitter::emitDispIns");
+    NYI_RISCV64("RISCV64 not used the emitter::emitDispIns");
 }
 
 /*****************************************************************************

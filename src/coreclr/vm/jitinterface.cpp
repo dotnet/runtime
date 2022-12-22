@@ -11253,7 +11253,12 @@ void CEEJitInfo::allocUnwindInfo (
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
 
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"TODO RISCV64 NYI");
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
+
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
+
+;
 
 #endif
 

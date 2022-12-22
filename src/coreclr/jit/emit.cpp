@@ -4082,6 +4082,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
 
         printf("\n");
 
+#if !defined(TARGET_RISCV64)
         if (displayInstructions)
         {
             instrDesc*     id  = emitFirstInstrDesc(ig->igData);
@@ -4104,6 +4105,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
                         break;
                     }
 #endif
+                    fprintf(stderr, "[CLAMP] emitDispIns\n");
                     emitDispIns(id, false, true, false, ofs, nullptr, 0, ig);
 
                     ofs += id->idCodeSize();
@@ -4114,6 +4116,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
                 printf("\n");
             }
         }
+#endif // !TARGET_RISCV64
     }
 }
 
