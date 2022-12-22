@@ -118,7 +118,7 @@ namespace System.Reflection.PortableExecutable
 #if NETCOREAPP
                 pdbPath.StartsWith('\0'))
 #else
-                pdbPath.Length > 0 && pdbPath[0] == '\0')
+                pdbPath[0] == '\0')
 #endif
             {
                 Throw.InvalidArgument(SR.ExpectedNonEmptyString, nameof(pdbPath));
