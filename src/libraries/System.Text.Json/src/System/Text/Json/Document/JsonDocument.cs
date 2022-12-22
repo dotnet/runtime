@@ -21,7 +21,7 @@ namespace System.Text.Json
     /// </remarks>
     public sealed partial class JsonDocument : IDisposable
     {
-        private ReadOnlyMemory<byte> _utf8Json;
+        private readonly ReadOnlyMemory<byte> _utf8Json;
         private MetadataDb _parsedData;
 
         private byte[]? _extraRentedArrayPoolBytes;
@@ -41,7 +41,11 @@ namespace System.Text.Json
             PooledByteBufferWriter? extraPooledByteBufferWriter = null,
             bool isDisposable = true)
         {
-            Debug.Assert(!utf8Json.IsEmpty);
+            if (utf8Json.IsEmpty)
+            {
+                // replaces debug assertion with runtime check.
+                throw new ArgumentException();
+            }
 
             // Both rented values better be null if we're not disposable.
             Debug.Assert(isDisposable ||
@@ -60,32 +64,7 @@ namespace System.Text.Json
         /// <inheritdoc />
         public void Dispose()
         {
-            int length = _utf8Json.Length;
-            if (length == 0 || !IsDisposable)
-            {
-                return;
-            }
-
-            _parsedData.Dispose();
-            _utf8Json = ReadOnlyMemory<byte>.Empty;
-
-            if (_extraRentedArrayPoolBytes != null)
-            {
-                byte[]? extraRentedBytes = Interlocked.Exchange<byte[]?>(ref _extraRentedArrayPoolBytes, null);
-
-                if (extraRentedBytes != null)
-                {
-                    // When "extra rented bytes exist" it contains the document,
-                    // and thus needs to be cleared before being returned.
-                    extraRentedBytes.AsSpan(0, length).Clear();
-                    ArrayPool<byte>.Shared.Return(extraRentedBytes);
-                }
-            }
-            else if (_extraPooledByteBufferWriter != null)
-            {
-                PooledByteBufferWriter? extraBufferWriter = Interlocked.Exchange<PooledByteBufferWriter?>(ref _extraPooledByteBufferWriter, null);
-                extraBufferWriter?.Dispose();
-            }
+            // Make no-op, disables clearing of the _utf8Json buffer
         }
 
         /// <summary>
@@ -1059,6 +1038,7 @@ namespace System.Text.Json
 
         private void CheckNotDisposed()
         {
+            // Given the other changes in this class, this should never be true.
             if (_utf8Json.IsEmpty)
             {
                 ThrowHelper.ThrowObjectDisposedException_JsonDocument();

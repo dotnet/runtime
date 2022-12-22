@@ -1723,67 +1723,67 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [Fact]
-        public static void CheckUseAfterDispose()
-        {
-            var buffer = new ArrayBufferWriter<byte>(1024);
-            using (JsonDocument doc = JsonDocument.Parse("{\"First\":1}", default))
-            {
-                JsonElement root = doc.RootElement;
-                JsonProperty property = root.EnumerateObject().First();
-                doc.Dispose();
+        //[Fact]
+        //public static void CheckUseAfterDispose()
+        //{
+        //    var buffer = new ArrayBufferWriter<byte>(1024);
+        //    using (JsonDocument doc = JsonDocument.Parse("{\"First\":1}", default))
+        //    {
+        //        JsonElement root = doc.RootElement;
+        //        JsonProperty property = root.EnumerateObject().First();
+        //        doc.Dispose();
 
-                Assert.Throws<ObjectDisposedException>(() => root.ValueKind);
-                Assert.Throws<ObjectDisposedException>(() => root.GetArrayLength());
-                Assert.Throws<ObjectDisposedException>(() => root.EnumerateArray());
-                Assert.Throws<ObjectDisposedException>(() => root.EnumerateObject());
-                Assert.Throws<ObjectDisposedException>(() => root.GetDouble());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetDouble(out double _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetSByte());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetSByte(out sbyte _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetByte());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetByte(out byte _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetInt16());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetInt16(out short _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetUInt16());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt16(out ushort _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetInt32());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetInt32(out int _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetUInt32());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt32(out uint _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetInt64());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetInt64(out long _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetUInt64());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt64(out ulong _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetString());
-                const string ThrowsAnyway = "throws-anyway";
-                Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(ThrowsAnyway));
-                Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
-                Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
-                Assert.Throws<ObjectDisposedException>(() => root.GetBytesFromBase64());
-                Assert.Throws<ObjectDisposedException>(() => root.TryGetBytesFromBase64(out byte[] _));
-                Assert.Throws<ObjectDisposedException>(() => root.GetBoolean());
-                Assert.Throws<ObjectDisposedException>(() => root.GetRawText());
+        //        Assert.Throws<ObjectDisposedException>(() => root.ValueKind);
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetArrayLength());
+        //        Assert.Throws<ObjectDisposedException>(() => root.EnumerateArray());
+        //        Assert.Throws<ObjectDisposedException>(() => root.EnumerateObject());
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetDouble());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetDouble(out double _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetSByte());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetSByte(out sbyte _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetByte());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetByte(out byte _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetInt16());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetInt16(out short _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetUInt16());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt16(out ushort _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetInt32());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetInt32(out int _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetUInt32());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt32(out uint _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetInt64());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetInt64(out long _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetUInt64());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetUInt64(out ulong _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetString());
+        //        const string ThrowsAnyway = "throws-anyway";
+        //        Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(ThrowsAnyway));
+        //        Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(ThrowsAnyway.AsSpan()));
+        //        Assert.Throws<ObjectDisposedException>(() => root.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetBytesFromBase64());
+        //        Assert.Throws<ObjectDisposedException>(() => root.TryGetBytesFromBase64(out byte[] _));
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetBoolean());
+        //        Assert.Throws<ObjectDisposedException>(() => root.GetRawText());
 
-                Assert.Throws<ObjectDisposedException>(() =>
-                {
-                    using var writer = new Utf8JsonWriter(buffer);
-                    root.WriteTo(writer);
-                });
+        //        Assert.Throws<ObjectDisposedException>(() =>
+        //        {
+        //            using var writer = new Utf8JsonWriter(buffer);
+        //            root.WriteTo(writer);
+        //        });
 
-                Assert.Throws<ObjectDisposedException>(() =>
-                {
-                    using var writer = new Utf8JsonWriter(buffer);
-                    doc.WriteTo(writer);
-                });
+        //        Assert.Throws<ObjectDisposedException>(() =>
+        //        {
+        //            using var writer = new Utf8JsonWriter(buffer);
+        //            doc.WriteTo(writer);
+        //        });
 
-                Assert.Throws<ObjectDisposedException>(() =>
-                {
-                    using var writer = new Utf8JsonWriter(buffer);
-                    property.WriteTo(writer);
-                });
-            }
-        }
+        //        Assert.Throws<ObjectDisposedException>(() =>
+        //        {
+        //            using var writer = new Utf8JsonWriter(buffer);
+        //            property.WriteTo(writer);
+        //        });
+        //    }
+        //}
 
         [Fact]
         public static void CheckUseDefault()

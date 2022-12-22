@@ -8,32 +8,32 @@ namespace System.Text.Json.Tests
 {
     public static class JsonElementCloneTests
     {
-        [Fact]
-        public static void CloneTwiceFromSameDocument()
-        {
-            string json = "[[]]";
-            JsonElement root;
-            JsonElement clone;
-            JsonElement clone2;
+        //[Fact]
+        //public static void CloneTwiceFromSameDocument()
+        //{
+        //    string json = "[[]]";
+        //    JsonElement root;
+        //    JsonElement clone;
+        //    JsonElement clone2;
 
-            using (JsonDocument doc = JsonDocument.Parse(json))
-            {
-                root = doc.RootElement;
-                clone = root.Clone();
-                clone2 = root.Clone();
+        //    using (JsonDocument doc = JsonDocument.Parse(json))
+        //    {
+        //        root = doc.RootElement;
+        //        clone = root.Clone();
+        //        clone2 = root.Clone();
 
-                Assert.Equal(json, clone.GetRawText());
-                Assert.NotSame(doc, clone.SniffDocument());
-                Assert.NotSame(doc, clone2.SniffDocument());
-            }
+        //        Assert.Equal(json, clone.GetRawText());
+        //        Assert.NotSame(doc, clone.SniffDocument());
+        //        Assert.NotSame(doc, clone2.SniffDocument());
+        //    }
 
-            // After document Dispose
-            Assert.Equal(json, clone.GetRawText());
-            Assert.Equal(json, clone2.GetRawText());
-            Assert.NotSame(clone.SniffDocument(), clone2.SniffDocument());
+        //    // After document Dispose
+        //    Assert.Equal(json, clone.GetRawText());
+        //    Assert.Equal(json, clone2.GetRawText());
+        //    Assert.NotSame(clone.SniffDocument(), clone2.SniffDocument());
 
-            Assert.Throws<ObjectDisposedException>(() => root.GetRawText());
-        }
+        //    Assert.Throws<ObjectDisposedException>(() => root.GetRawText());
+        //}
 
         [Fact]
         public static void CloneInnerElementFromClonedElement()
