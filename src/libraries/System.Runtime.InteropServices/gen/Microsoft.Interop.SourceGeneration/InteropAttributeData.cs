@@ -21,7 +21,8 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Common data for all source-generated-interop trigger attributes
+    /// Common data for all source-generated-interop trigger attributes.
+    /// This type and derived types should not have any reference that would keep a compilation alive.
     /// </summary>
     public record InteropAttributeData
     {
@@ -37,8 +38,14 @@ namespace Microsoft.Interop
     /// Common data for all source-generated-interop trigger attributes that also includes a reference to the Roslyn symbol for StringMarshallingCustomType.
     /// See <seealso cref="InteropAttributeData"/> for a type that doesn't keep a compilation alive.
     /// </summary>
-    public record InteropAttributeCompilationData : InteropAttributeData
+    public record InteropAttributeCompilationData
     {
+        /// <summary>
+        /// Value set by the user on the original declaration.
+        /// </summary>
+        public InteropAttributeMember IsUserDefined { get; init; }
+        public bool SetLastError { get; init; }
+        public StringMarshalling StringMarshalling { get; init; }
         public INamedTypeSymbol? StringMarshallingCustomType { get; init; }
     }
 
