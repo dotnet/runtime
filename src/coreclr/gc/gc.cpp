@@ -41072,6 +41072,12 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
             if (!use_large_pages_p)
             {
                 decommit_succeeded_p = virtual_decommit(page_start, size, recorded_committed_free_bucket);
+#ifdef MULTIPLE_HEAPS
+                gc_heap* hp = heap_segment_heap (region);
+#else
+                gc_heap* hp = __this;
+#endif
+                hp->decommit_mark_array_by_seg (region);
                 dprintf(REGIONS_LOG, ("decommitted region %p(%p-%p) (%zu bytes) - success: %d",
                     region,
                     page_start,
