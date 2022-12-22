@@ -29,7 +29,7 @@ namespace System
             //     See <http://creativecommons.org/publicdomain/zero/1.0/>.
 
             // Next(int maxValue), Next(int minValue, int maxValue), NextInt64(long maxValue) and NextInt64(int minValue, int maxValue)
-            // are based on the algorithm from https://arxiv.org/pdf/1805.10941.pdf:
+            // are based on the algorithm from https://arxiv.org/pdf/1805.10941.pdf and https://github.com/lemire/fastrange:
             //
             //     Written in 2018 by Daniel Lemire
 
