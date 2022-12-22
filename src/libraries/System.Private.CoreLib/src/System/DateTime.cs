@@ -190,7 +190,7 @@ namespace System
         /// </param>
         public DateTime(DateOnly date, TimeOnly time)
         {
-            _dateData = (ulong)(date._dayNumber * TimeSpan.TicksPerDay + time.Ticks);
+            _dateData = (ulong)(date.DayNumber * TimeSpan.TicksPerDay + time.Ticks);
         }
 
         /// <summary>
