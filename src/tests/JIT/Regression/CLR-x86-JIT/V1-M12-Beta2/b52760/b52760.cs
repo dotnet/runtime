@@ -6,14 +6,14 @@ namespace Test
 {
     using System;
 
-    class CC
+    public class CC
     {
         static ulong AA_Static1()
         {
             ulong loc = 10;
             return loc *= loc;
         }
-        static int Main()
+        public static int Main()
         {
             AA_Static1();
             return 100;

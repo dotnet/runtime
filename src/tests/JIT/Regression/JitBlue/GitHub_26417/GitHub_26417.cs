@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class GitHub_26417
+public class GitHub_26417
 {
     static int   _a;
 
@@ -30,7 +30,7 @@ class GitHub_26417
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         int result = 100;
         try {

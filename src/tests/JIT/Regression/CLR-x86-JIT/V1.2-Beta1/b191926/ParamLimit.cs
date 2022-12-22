@@ -3,7 +3,7 @@
 //
 
 using System;
-class f8192
+public class f8192
 {
     public static void Callee(
         int a1,

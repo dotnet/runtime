@@ -12,9 +12,9 @@ struct S0
     public sbyte F2;
 }
 
-class GitHub_12398
+public class GitHub_12398
 {
-    static int Main()
+    public static int Main()
     {
         int result = 100;
         if (TestBinary() != 0) {

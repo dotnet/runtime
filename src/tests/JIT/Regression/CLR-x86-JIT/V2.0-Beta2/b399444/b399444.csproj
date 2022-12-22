@@ -4,9 +4,12 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
+    <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
     <DebugType>PdbOnly</DebugType>
+    <NoStandardLib>True</NoStandardLib>
+    <Noconfig>True</Noconfig>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="struct5_2.cs" />
+    <Compile Include="Repro.cs" />
   </ItemGroup>
 </Project>
