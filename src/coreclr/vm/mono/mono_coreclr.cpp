@@ -535,30 +535,21 @@ extern "C" EXPORT_API MonoClassField* EXPORT_CC mono_class_get_field_from_name(M
 {
     CONTRACTL
     {
-    GC_NOTRIGGER;
+    GC_TRIGGERS;
     PRECONDITION(klass != NULL);
     }
     CONTRACTL_END;
 
-    while (klass)
+    MonoClass_clr* mt = reinterpret_cast<MonoClass_clr*>(klass);
+    FieldDesc* retVal = NULL;
+    // FindField only checks the fields of the current class and not inherited ones.
+    while (retVal == NULL && mt != NULL)
     {
-        MonoClass_clr* mt = reinterpret_cast<MonoClass_clr*>(klass);
-
-        ApproxFieldDescIterator fieldDescIterator(mt, ApproxFieldDescIterator::ALL_FIELDS);
-        FieldDesc* pField;
-
-        while ((pField = fieldDescIterator.Next()) != NULL)
-        {
-            if(strcmp(pField->GetName(), name) == 0)
-            {
-                return (MonoClassField*)pField;
-            }
-        }
-
-        klass = mono_class_get_parent(klass);
+        retVal = MemberLoader::FindField(mt, name, NULL, NULL, NULL);
+        mt = mt->GetParentMethodTable();
     }
 
-    return NULL;
+    return (MonoClassField*)retVal;
 }
 
 thread_local ThreadLocalPoolAllocator<ApproxFieldDescIterator,5> g_ApproxFieldDescIteratorAlloc;
@@ -2327,8 +2318,9 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_metadata_signature_equal(MonoMetho
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_metadata_type_equal (MonoType * t1, MonoType * t2)
 {
-    ASSERT_NOT_IMPLEMENTED;
-    return FALSE;
+    MonoType_clr* type1 = (MonoType_clr*)t1;
+    MonoType_clr* type2 = (MonoType_clr*)t2;
+    return type1->IsEquivalentTo(*type2);
 }
 
 extern "C" EXPORT_API char* EXPORT_CC mono_method_full_name(MonoMethod* method, gboolean signature)
