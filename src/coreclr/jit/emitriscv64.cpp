@@ -987,7 +987,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         }
         else
         {
-            id->idCodeSize(32); // TODO NEED TO CHECK LATER
+            id->idCodeSize(24); // TODO NEED TO CHECK LATER // UPDATED BASED on CALLINSTRSIZE in emitOutputCall 6 << 2
         }
     }
 
@@ -1108,6 +1108,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         // lui  t2, dst_offset_lo32-hi
         // ori  t2, t2, dst_offset_lo32-lo
         // ori  t3, x0, dst_offset_hi32-lo
+        // ori  t3, t3, 32
         // or   t2, t2, t3
         // jalr t2
 
@@ -2456,7 +2457,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     printf("addi         %s, %s, %d\n", rd, rs1, imm12);
                     return;
                 case 0x1: // SLLI 
-                    printf("slli         %s, %s, %d\n", rd, rs1, imm12 & 0x1f);
+                    printf("slli         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
                     return;
                 case 0x2: // SLTI
                     printf("slti         %s, %s, %d\n", rd, rs1, imm12);
@@ -2470,11 +2471,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x5: // SRLI & SRAI 
                     if (((code >> 30) & 0x1) == 0)
                     {
-                        printf("srli         %s, %s, %d\n", rd, rs1, imm12 & 0x1f);
+                        printf("srli         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
                     }
                     else
                     {
-                        printf("srai         %s, %s, %d\n", rd, rs1, imm12 & 0x1f);
+                        printf("srai         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
                     }
                     return;
                 case 0x6: // ORI
