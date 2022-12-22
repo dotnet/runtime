@@ -3683,6 +3683,11 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
             BlockRange().InsertBefore(objStore, addr);
             LowerNode(objStore);
+
+            JITDUMP("lowering store lcl var/field (after):\n");
+            DISPTREERANGE(BlockRange(), objStore);
+            JITDUMP("\n");
+
             return;
         }
     }
@@ -3702,6 +3707,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
 
     LowerStoreLoc(lclStore);
+
     JITDUMP("lowering store lcl var/field (after):\n");
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
