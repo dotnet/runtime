@@ -885,7 +885,71 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 
 void CodeGen::genSimpleReturn(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    GenTree*  op1        = treeNode->gtGetOp1();
+    var_types targetType = treeNode->TypeGet();
+
+    assert(targetType != TYP_STRUCT);
+    assert(targetType != TYP_VOID);
+
+    regNumber retReg = varTypeUsesFloatArgReg(treeNode) ? REG_FLOATRET : REG_INTRET;
+
+    bool movRequired = (op1->GetRegNum() != retReg);
+
+    if (!movRequired)
+    {
+        if (op1->OperGet() == GT_LCL_VAR)
+        {
+            GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
+            bool                 isRegCandidate = compiler->lvaTable[lcl->GetLclNum()].lvIsRegCandidate();
+            if (isRegCandidate && ((op1->gtFlags & GTF_SPILLED) == 0))
+            {
+                // We may need to generate a zero-extending mov instruction to load the value from this GT_LCL_VAR
+
+                unsigned   lclNum  = lcl->GetLclNum();
+                LclVarDsc* varDsc  = &(compiler->lvaTable[lclNum]);
+                var_types  op1Type = genActualType(op1->TypeGet());
+                var_types  lclType = genActualType(varDsc->TypeGet());
+
+                if (genTypeSize(op1Type) < genTypeSize(lclType))
+                {
+                    movRequired = true;
+                }
+            }
+        }
+    }
+    if (movRequired)
+    {
+        emitAttr attr = emitActualTypeSize(targetType);
+        if (varTypeUsesFloatArgReg(treeNode))
+        {
+            if (attr == EA_4BYTE)
+            {
+                GetEmitter()->emitIns_R_R_R(INS_fmin_s, attr, retReg, op1->GetRegNum(), op1->GetRegNum()); // TODO FIND BETTER WAY TO MOVE FLOAT REGISTERS
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R_R(INS_fmin_d, attr, retReg, op1->GetRegNum(), op1->GetRegNum()); // TODO FIND BETTER WAY TO MOVE FLOAT REGISTERS
+            }
+        }
+        else
+        {
+            if (attr == EA_4BYTE)
+            {
+                if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, retReg, op1->GetRegNum(), 32);
+                    GetEmitter()->emitIns_R_R_I(INS_srli, EA_PTRSIZE, retReg, retReg, 32);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_addiw, attr, retReg, op1->GetRegNum(), 0);
+                }
+            }
+            else
+                GetEmitter()->emitIns_R_R_I(INS_addi, attr, retReg, op1->GetRegNum(), 0);
+        }
+    }
 }
 
 /***********************************************************************************************

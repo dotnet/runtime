@@ -41,7 +41,7 @@ struct ArgLocDesc
 
     int     m_byteStackIndex;     // Stack offset in bytes (or -1)
     int     m_byteStackSize;      // Stack size in bytes
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     int     m_structFields;       // Struct field info when using Float-register except two-doubles case.
 #endif
 
@@ -1798,9 +1798,129 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_RISCV64)
-// #error TODO RISCV64
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return TransitionBlock::InvalidOffset;
+
+    int cFPRegs = 0;
+    int flags = 0;
+
+    switch (argType)
+    {
+
+    case ELEMENT_TYPE_R4:
+        // 32-bit floating point argument.
+        cFPRegs = 1;
+        break;
+
+    case ELEMENT_TYPE_R8:
+        // 64-bit floating point argument.
+        cFPRegs = 1;
+        break;
+
+    case ELEMENT_TYPE_VALUETYPE:
+    {
+        // Handle struct which containing floats or doubles that can be passed
+        // in FP registers if possible.
+
+        // Composite greater than 16bytes should be passed by reference
+        if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+        {
+            argSize = sizeof(TADDR);
+        }
+        else
+        {
+            MethodTable* pMethodTable = nullptr;
+
+            if (!thValueType.IsTypeDesc())
+                pMethodTable = thValueType.AsMethodTable();
+            else
+            {
+                _ASSERTE(thValueType.IsNativeValueType());
+                pMethodTable = thValueType.AsNativeValueType();
+            }
+            _ASSERTE(pMethodTable != nullptr);
+            flags = MethodTable::GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+            if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
+            {
+                cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
+            }
+        }
+
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
+    const bool isFloatHfa = thValueType.IsFloatHfa();
+    const int cbArg = StackElemSize(argSize, isValueType, isFloatHfa);
+
+    if (cFPRegs > 0 && !this->IsVarArg())
+    {
+        if (flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
+        {
+            assert(cFPRegs == 1);
+            assert((STRUCT_FLOAT_FIELD_FIRST == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)) || (STRUCT_FLOAT_FIELD_SECOND == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)));
+
+            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (m_idxGenReg + 1 <= NUM_ARGUMENT_REGISTERS))
+            {
+                m_argLocDescForStructInRegs.Init();
+                m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
+                m_argLocDescForStructInRegs.m_cFloatReg = 1;
+                int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+                m_idxFPReg += 1;
+
+                m_argLocDescForStructInRegs.m_structFields = flags;
+
+                m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
+                m_argLocDescForStructInRegs.m_cGenReg = 1;
+                m_idxGenReg += 1;
+
+                m_hasArgLocDescForStructInRegs = true;
+
+                return argOfs;
+            }
+        }
+        else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
+        {
+            int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+            if (flags == STRUCT_FLOAT_FIELD_ONLY_TWO) // struct with two float-fields.
+            {
+                m_argLocDescForStructInRegs.Init();
+                m_hasArgLocDescForStructInRegs = true;
+                m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
+                assert(cFPRegs == 2);
+                m_argLocDescForStructInRegs.m_cFloatReg = 2;
+                assert(argSize == 8);
+                m_argLocDescForStructInRegs.m_structFields = STRUCT_FLOAT_FIELD_ONLY_TWO;
+            }
+            m_idxFPReg += cFPRegs;
+            return argOfs;
+        }
+    }
+
+    {
+        const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+        if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS)
+        {
+            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
+            m_idxGenReg += regSlots;
+            return argOfs;
+        }
+        else if (m_idxGenReg < NUM_ARGUMENT_REGISTERS)
+        {
+            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
+            m_ofsStack += (m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS)*8;
+            assert(m_ofsStack == 8);
+            m_idxGenReg = NUM_ARGUMENT_REGISTERS;
+            return argOfs;
+        }
+    }
+
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+    m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
+
+    return argOfs;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
     return TransitionBlock::InvalidOffset;
@@ -1923,6 +2043,15 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 
                 MethodTable *pMethodTable = thValueType.AsMethodTable();
                 flags = (MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                break;
+            }
+#elif defined(TARGET_RISCV64)
+            if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
+            {
+                assert(!thValueType.IsTypeDesc());
+
+                MethodTable *pMethodTable = thValueType.AsMethodTable();
+                flags = (MethodTable::GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #else

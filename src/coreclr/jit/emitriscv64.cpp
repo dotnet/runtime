@@ -493,7 +493,7 @@ void emitter::emitIns_R_R_I(
     {
         code |= reg1 << 20;          // rs2
         code |= reg2 << 15;          // rs1
-        code |= imm << 25;           // imm
+        code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7);           // imm
     }
     else if (INS_beq <= ins && INS_bgeu >= ins)
     {
@@ -2446,11 +2446,11 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char* rd = RegNames[(code >> 7) & 0x1f];
             const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            int imm12 = (code >> 20) & 0xfff;
-            if (imm12 & 0x800)
-            {
-                imm12 |= 0xfffff000;
-            }
+            int imm12 = (((int)code) >> 20); // & 0xfff;
+            //if (imm12 & 0x800)
+            //{
+            //    imm12 |= 0xfffff000;
+            //}
             switch (opcode2)
             {
                 case 0x0: // ADDI
@@ -2466,7 +2466,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     printf("sltiu        %s, %s, %d\n", rd, rs1, imm12);
                     return;
                 case 0x4: // XORI
-                    printf("xori         %s, %s, %x\n", rd, rs1, imm12);
+                    printf("xori         %s, %s, 0x%x\n", rd, rs1, imm12);
                     return;
                 case 0x5: // SRLI & SRAI 
                     if (((code >> 30) & 0x1) == 0)
@@ -2479,10 +2479,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     return;
                 case 0x6: // ORI
-                    printf("ori          %s, %s, %x\n", rd, rs1, imm12);
+                    printf("ori          %s, %s, 0x%x\n", rd, rs1, imm12);
                     return;
                 case 0x7: // ANDI 
-                    printf("andi         %s, %s, %x\n", rd, rs1, imm12);
+                    printf("andi         %s, %s, 0x%x\n", rd, rs1, imm12);
                     return;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
@@ -2524,7 +2524,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x5: // SRL & SRA
                     if (((code >> 30) & 0x1) == 0)
                     {
-                        printf("srl          %s, %s, %d\n", rd, rs1, rs2);
+                        printf("srl          %s, %s, %s\n", rd, rs1, rs2);
                     }
                     else
                     {
