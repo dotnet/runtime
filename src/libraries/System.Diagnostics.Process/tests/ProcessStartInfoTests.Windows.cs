@@ -13,31 +13,27 @@ namespace System.Diagnostics.Tests
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles
             => IsAdmin_IsNotNano_RemoteExecutorIsSupported && WindowsTestFileShare.CanShareFiles;
 
-        [ConditionalTheory(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
+        [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
-        [InlineData(false, -1)]
-        [InlineData(true, RemoteExecutor.SuccessExitCode)]
-        public void TestUserNetworkCredentialsPropertiesOnWindows(bool authorizeUserToAccessTestFile, int expectedExitCode)
+        public void TestUserNetworkCredentialsPropertiesOnWindows()
         {
-            string testFilePath = GetTestFilePath();
-            Assert.False(string.IsNullOrWhiteSpace(testFilePath), $"Path to test file should not be empty: {testFilePath}");
-
-            string testFilePathRoot = Path.GetPathRoot(testFilePath);
             const string ShareName = "testForDotNet";
+            const string TestFileContent = "42";
+            const string UncPathEnvVar = nameof(UncPathEnvVar);
+
+            string testFilePath = GetTestFilePath();
+            File.WriteAllText(testFilePath, TestFileContent);
+
             using WindowsTestFileShare fileShare = new WindowsTestFileShare(ShareName, Path.GetDirectoryName(testFilePath));
             string testFileUncPath = $"\\\\{Environment.MachineName}\\{ShareName}\\{Path.GetFileName(testFilePath)}";
-            string testFileContent = "42";
-            File.WriteAllText(testFilePath, testFileContent);
 
-            const string LocalPath = nameof(LocalPath);
-            const string UncPath = nameof(UncPath);
-            using Process p = CreateProcess(() =>
+            using Process process = CreateProcess(() =>
             {
                 try
                 {
-                    // Read file content using network credentials and output it for assertion comparison
-                    _ = File.ReadAllText(Environment.GetEnvironmentVariable(UncPath));
+                    Assert.Equal(TestFileContent, File.ReadAllText(Environment.GetEnvironmentVariable(UncPathEnvVar)));
+
                     return RemoteExecutor.SuccessExitCode;
                 }
                 catch (Exception ex) when (ex is SecurityException or UnauthorizedAccessException)
@@ -45,21 +41,19 @@ namespace System.Diagnostics.Tests
                     return -1;
                 }
             });
-            p.StartInfo.Environment[LocalPath] = testFilePath;
-            p.StartInfo.Environment[UncPath] = testFileUncPath;
-            p.StartInfo.UseCredentialsForNetworkingOnly = true;
+            process.StartInfo.Environment[UncPathEnvVar] = testFileUncPath;
+            process.StartInfo.UseCredentialsForNetworkingOnly = true;
 
-            using var processInfo = CreateUserAndExecute(p, Setup, Cleanup);
+            using TestProcessState processInfo = CreateUserAndExecute(process, Setup, Cleanup);
 
-            string processUserName = Helpers.GetProcessUserName(p);
-            Assert.True(p.WaitForExit(WaitInMS));
+            Assert.Equal(Environment.UserName, Helpers.GetProcessUserName(process));
 
-            Assert.Equal(expectedExitCode, p.ExitCode);
-            Assert.Equal(Environment.UserName, processUserName);
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
 
             void Setup(string username, string _)
             {
-                if (authorizeUserToAccessTestFile && PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
+                if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
                     SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: true);
                 }
@@ -67,12 +61,11 @@ namespace System.Diagnostics.Tests
 
             void Cleanup(string username, string _)
             {
-                if (authorizeUserToAccessTestFile && PlatformDetection.IsNotWindowsServerCore)
+                if (PlatformDetection.IsNotWindowsServerCore)
                 {
                     // remove the access
                     SetAccessControl(username, testFilePath, Path.GetDirectoryName(testFilePath), add: false);
                 }
             }
         }
-    }
 }
