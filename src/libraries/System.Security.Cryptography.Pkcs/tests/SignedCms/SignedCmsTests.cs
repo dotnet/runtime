@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -1611,6 +1612,49 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(verifySignatureOnly: true);
         }
 
+        [Fact]
+        public static void AddCertificate_CollectionContainsAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+
+            signedCms.Decode(SignedDocuments.CmsWithAttributeCertificate);
+            signedCms.CheckSignature(true);
+
+            int countBefore = CountCertificateChoices(SignedDocuments.CmsWithAttributeCertificate);
+            int certCount = signedCms.Certificates.Count;
+
+            using (ECDsa ec = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new("CN=test", ec, HashAlgorithmName.SHA256);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now))
+                {
+                    signedCms.AddCertificate(cert);
+                    byte[] reEncoded = signedCms.Encode();
+                    int countAfter = CountCertificateChoices(reEncoded);
+                    Assert.Equal(countBefore + 1, countAfter);
+
+                    signedCms = new SignedCms();
+                    signedCms.Decode(reEncoded);
+                    signedCms.CheckSignature(true);
+                }
+            }
+        }
+
+        [Fact]
+        public static void RemoveCertificate_CollectionContainsAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+
+            signedCms.Decode(SignedDocuments.CmsWithAttributeCertificate);
+            int countBefore = CountCertificateChoices(SignedDocuments.CmsWithAttributeCertificate);
+
+            signedCms.RemoveCertificate(signedCms.Certificates[0]);
+            byte[] reEncoded = signedCms.Encode();
+            int countAfter = CountCertificateChoices(reEncoded);
+            Assert.Equal(countBefore - 1, countAfter);
+        }
+
         private static void CheckNoSignature(byte[] encoded, bool badOid=false)
         {
             SignedCms cms = new SignedCms();
@@ -1629,6 +1673,37 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 // Assert.NoThrow
                 cms.CheckHash();
             }
+        }
+
+        public static int CountCertificateChoices(byte[] encoded)
+        {
+            AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
+            reader = reader.ReadSequence();
+            reader.ReadObjectIdentifier();
+            reader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+            reader = reader.ReadSequence();
+
+            reader.ReadInteger(); // version
+            reader.ReadSetOf(); // digestAlgorithms
+            reader.ReadSequence(); // encapsulatedContentInfo
+
+            Asn1Tag expectedTag = new Asn1Tag(TagClass.ContextSpecific, 0, true); // certificates[0]
+
+            if (reader.PeekTag() == expectedTag)
+            {
+                AsnReader certs = reader.ReadSetOf(expectedTag);
+                int count = 0;
+
+                while (certs.HasData)
+                {
+                    certs.ReadEncodedValue();
+                    count++;
+                }
+
+                return count;
+            }
+
+            return 0;
         }
     }
 }

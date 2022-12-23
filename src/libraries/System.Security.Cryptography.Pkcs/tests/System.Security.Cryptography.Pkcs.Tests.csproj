@@ -77,4 +77,7 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('net48'))">
     <Reference Include="System.Security" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
+  </ItemGroup>
 </Project>
