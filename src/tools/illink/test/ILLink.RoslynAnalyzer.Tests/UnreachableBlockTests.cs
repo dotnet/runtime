@@ -21,11 +21,5 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
-
-		[Fact (Skip = "ILLink analyzers don't support constant propagation https://github.com/dotnet/linker/issues/2715")]
-		public Task CompilerGeneratedCodeSubstitutions ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
 	}
 }
