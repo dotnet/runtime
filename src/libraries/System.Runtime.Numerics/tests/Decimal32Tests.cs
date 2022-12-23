@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -29,95 +30,109 @@ namespace System.Numerics.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
 
-            yield return new object[] { "-123", defaultStyle, null, -123.0f };
-            yield return new object[] { "0", defaultStyle, null, 0.0f };
-            yield return new object[] { "123", defaultStyle, null, 123.0f };
-            yield return new object[] { "  123  ", defaultStyle, null, 123.0f };
-            yield return new object[] { (567.89f).ToString(), defaultStyle, null, 567.89f };
-            yield return new object[] { (-567.89f).ToString(), defaultStyle, null, -567.89f };
-            yield return new object[] { "1E23", defaultStyle, null, 1E23f };
+            //                                                          Decimal32(sign, q, c) = -1^sign * 10^q * c
+            yield return new object[] { "-123", defaultStyle, null, new Decimal32(true, 0, 123) };
+            yield return new object[] { "0", defaultStyle, null, Decimal32.Zero }; // TODO what kind of zero do we want to store here?
+            yield return new object[] { "123", defaultStyle, null, new Decimal32(false, 0, 123) };
+            yield return new object[] { "  123  ", defaultStyle, null, new Decimal32(false, 0, 123) };
+            yield return new object[] { "567.89", defaultStyle, null, new Decimal32(false, -2, 56789) };
+            yield return new object[] { "-567.89", defaultStyle, null, new Decimal32(true, 0, 123) };
+            yield return new object[] { "1E23", defaultStyle, null, new Decimal32(false, 23, 1) };
 
-            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, 0.234f };
-            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 234.0f };
-            yield return new object[] { new string('0', 13) + "65504" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 65504f };
-            yield return new object[] { new string('0', 14) + "65504" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 65504f };
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, new Decimal32(false, -3, 234) };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(false, 0, 234) };
+            yield return new object[] { new string('0', 72) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(false, 38, 3) }; // could be wrong
+            yield return new object[] { new string('0', 73) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(false, 38, 3) }; // could be wrong
 
-            // 2^11 + 1. Not exactly representable
-            yield return new object[] { "2049.0", defaultStyle, invariantFormat, 2048.0f };
-            yield return new object[] { "2049.000000000000001", defaultStyle, invariantFormat, 2050.0f };
-            yield return new object[] { "2049.0000000000000001", defaultStyle, invariantFormat, 2050.0f };
-            yield return new object[] { "2049.00000000000000001", defaultStyle, invariantFormat, 2050.0f };
-            yield return new object[] { "5.000000000000000004", defaultStyle, invariantFormat, 5.0f };
-            yield return new object[] { "5.0000000000000000004", defaultStyle, invariantFormat, 5.0f };
-            yield return new object[] { "5.004", defaultStyle, invariantFormat, 5.004f };
-            yield return new object[] { "5.004000000000000000", defaultStyle, invariantFormat, 5.004f };
-            yield return new object[] { "5.0040000000000000000", defaultStyle, invariantFormat, 5.004f };
-            yield return new object[] { "5.040", defaultStyle, invariantFormat, 5.04f };
+            // 10^7 + 5. Not exactly representable
+            yield return new object[] { "10000005.0", defaultStyle, invariantFormat, new Decimal32(false, 1, 1000000) };
+            yield return new object[] { "10000005.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, new Decimal32(false, 1, 1000001) };
+            yield return new object[] { "10000005.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, new Decimal32(false, 1, 1000001) };
+            yield return new object[] { "10000005.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, new Decimal32(false, 1, 1000001) };
+            yield return new object[] { "5.005", defaultStyle, invariantFormat, new Decimal32(false, -3, 5005) };
+            yield return new object[] { "5.050", defaultStyle, invariantFormat, new Decimal32(false, -3, 5050) };
+            yield return new object[] { "5.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, new Decimal32(false, -6, 5000000) };
+            yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, new Decimal32(false, -6, 5000000) };
+            yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, new Decimal32(false, -6, 5000000) };
+            yield return new object[] { "5.005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -6, 5050000) };
+            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -6, 5050000) };
+            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -6, 5005000) };
 
-            yield return new object[] { "5004.000000000000000", defaultStyle, invariantFormat, 5004.0f };
-            yield return new object[] { "50040.0", defaultStyle, invariantFormat, 50040.0f };
-            yield return new object[] { "5004", defaultStyle, invariantFormat, 5004.0f };
-            yield return new object[] { "050040", defaultStyle, invariantFormat, 50040.0f };
-            yield return new object[] { "0.000000000000000000", defaultStyle, invariantFormat, 0.0f };
-            yield return new object[] { "0.005", defaultStyle, invariantFormat, 0.005f };
-            yield return new object[] { "0.0400", defaultStyle, invariantFormat, 0.04f };
-            yield return new object[] { "1200e0", defaultStyle, invariantFormat, 1200.0f };
-            yield return new object[] { "120100e-4", defaultStyle, invariantFormat, 12.01f };
-            yield return new object[] { "12010.00e-4", defaultStyle, invariantFormat, 1.201f };
-            yield return new object[] { "12000e-4", defaultStyle, invariantFormat, 1.2f };
-            yield return new object[] { "1200", defaultStyle, invariantFormat, 1200.0f };
+            yield return new object[] { "5005.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -3, 5005000) };
+            yield return new object[] { "50050.0", defaultStyle, invariantFormat, new Decimal32(false, -1, 500500) };
+            yield return new object[] { "5005", defaultStyle, invariantFormat, new Decimal32(false, 0, 5005) };
+            yield return new object[] { "050050", defaultStyle, invariantFormat, new Decimal32(false, 0, 50050) };
+            yield return new object[] { "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, Decimal32.Zero };
+            yield return new object[] { "0.005", defaultStyle, invariantFormat, new Decimal32(false, -3, 5) };
+            yield return new object[] { "0.0500", defaultStyle, invariantFormat, new Decimal32(false, -4, 500) };
+            yield return new object[] { "6250000000000000000000000000000000e-12", defaultStyle, invariantFormat, new Decimal32(false, 15, 6250000) };
+            yield return new object[] { "6250000e0", defaultStyle, invariantFormat, new Decimal32(false, 0, 6250000) };
+            yield return new object[] { "6250100e-5", defaultStyle, invariantFormat, new Decimal32(false, -5, 6250100) };
+            yield return new object[] { "625010.00e-4", defaultStyle, invariantFormat, new Decimal32(false, -5, 6250100) };
+            yield return new object[] { "62500e-4", defaultStyle, invariantFormat, new Decimal32(false, -4, 62500) };
+            yield return new object[] { "62500", defaultStyle, invariantFormat, new Decimal32(false, 0, 62500) };
 
-            yield return new object[] { (123.1f).ToString(), NumberStyles.AllowDecimalPoint, null, 123.1f };
-            yield return new object[] { (1000.0f).ToString("N0"), NumberStyles.AllowThousands, null, 1000.0f };
+            yield return new object[] { "123.1", NumberStyles.AllowDecimalPoint, null, new Decimal32(false, -1, 1231) };
+            yield return new object[] { "1000.0", NumberStyles.AllowThousands, null, new Decimal32(false, -1, 10000) };
 
-            yield return new object[] { "123", NumberStyles.Any, emptyFormat, 123.0f };
-            yield return new object[] { (123.567f).ToString(), NumberStyles.Any, emptyFormat, 123.567f };
-            yield return new object[] { "123", NumberStyles.Float, emptyFormat, 123.0f };
-            yield return new object[] { "$1,000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, 1000.0f };
-            yield return new object[] { "$1000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, 1000.0f };
-            yield return new object[] { "123.123", NumberStyles.Float, decimalSeparatorFormat, 123.123f };
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, decimalSeparatorFormat, -123.0f };
+            yield return new object[] { "123", NumberStyles.Any, emptyFormat, new Decimal32(false, 0, 123) };
+            yield return new object[] { "123.567", NumberStyles.Any, emptyFormat, new Decimal32(false, -3, 123567) };
+            yield return new object[] { "123", NumberStyles.Float, emptyFormat, new Decimal32(false, 0, 123) };
+            yield return new object[] { "$1,000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, new Decimal32(false, 0, 1000) };
+            yield return new object[] { "$1000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, new Decimal32(false, 0, 1000) };
+            yield return new object[] { "123.123", NumberStyles.Float, decimalSeparatorFormat, new Decimal32(false, -3, 123123) };
+            yield return new object[] { "(123)", NumberStyles.AllowParentheses, decimalSeparatorFormat, new Decimal32(false, 0, 123) };
 
-            yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, float.NaN };
-            yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, float.PositiveInfinity };
-            yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, float.NegativeInfinity };
+            yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, Decimal32.NaN };
+            yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, Decimal32.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, Decimal32.NegativeInfinity };
         }
 
-        [Theory]
+        private static void AssertEqualAndSameQuantum(Decimal32 expected, Decimal32 result)
+        {
+            Assert.Equal(expected, result);
+            Assert.True(Decimal32.SameQuantum(expected, result));
+        }
+
+        private static void AssertEqualAndSameQuantumOrBothNan(Decimal32 expected, Decimal32 result)
+        {
+            Assert.True((expected.Equals(result) && Decimal32.SameQuantum(expected, result)) || (Decimal32.IsNaN(expected) && Decimal32.IsNaN(result)));
+        }
+
+            [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse(string value, NumberStyles style, IFormatProvider provider, float expectedFloat)
+        public static void Parse(string value, NumberStyles style, IFormatProvider provider, Decimal32 expected)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
-            Half result;
-            Half expected = (Half)expectedFloat;
+            Decimal32 result;
             if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
             {
                 // Use Parse(string) or Parse(string, IFormatProvider)
                 if (isDefaultProvider)
                 {
-                    Assert.True(Half.TryParse(value, out result));
-                    Assert.True(expected.Equals(result));
+                    Assert.True(Decimal32.TryParse(value, out result));
+                    AssertEqualAndSameQuantum(expected, result);
 
-                    Assert.Equal(expected, Half.Parse(value));
+                    AssertEqualAndSameQuantum(expected, Decimal32.Parse(value));
                 }
 
-                Assert.True(expected.Equals(Half.Parse(value, provider: provider)));
+                AssertEqualAndSameQuantum(expected, Decimal32.Parse(value, provider: provider));
             }
 
             // Use Parse(string, NumberStyles, IFormatProvider)
-            Assert.True(Half.TryParse(value, style, provider, out result));
-            Assert.True(expected.Equals(result) || (Half.IsNaN(expected) && Half.IsNaN(result)));
+            Assert.True(Decimal32.TryParse(value, style, provider, out result));
 
-            Assert.True(expected.Equals(Half.Parse(value, style, provider)) || (Half.IsNaN(expected) && Half.IsNaN(result)));
+            AssertEqualAndSameQuantumOrBothNan(expected, result);
+            AssertEqualAndSameQuantumOrBothNan(expected, Decimal32.Parse(value, style, provider));
 
             if (isDefaultProvider)
             {
                 // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
-                Assert.True(Half.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
-                Assert.True(expected.Equals(result));
+                Assert.True(Decimal32.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
+                AssertEqualAndSameQuantum(expected, result);
 
-                Assert.True(expected.Equals(Half.Parse(value, style)));
-                Assert.True(expected.Equals(Half.Parse(value, style, NumberFormatInfo.CurrentInfo)));
+                AssertEqualAndSameQuantum(expected, Decimal32.Parse(value));
+                AssertEqualAndSameQuantum(expected, Decimal32.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
         }
 
@@ -152,35 +167,35 @@ namespace System.Numerics.Tests
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
-            Half result;
+            Decimal32 result;
             if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None && (style & NumberStyles.AllowLeadingWhite) == (style & NumberStyles.AllowTrailingWhite))
             {
                 // Use Parse(string) or Parse(string, IFormatProvider)
                 if (isDefaultProvider)
                 {
-                    Assert.False(Half.TryParse(value, out result));
-                    Assert.Equal(default(Half), result);
+                    Assert.False(Decimal32.TryParse(value, out result));
+                    Assert.Equal(default(Decimal32), result);
 
-                    Assert.Throws(exceptionType, () => Half.Parse(value));
+                    Assert.Throws(exceptionType, () => Decimal32.Parse(value));
                 }
 
-                Assert.Throws(exceptionType, () => Half.Parse(value, provider: provider));
+                Assert.Throws(exceptionType, () => Decimal32.Parse(value, provider: provider));
             }
 
             // Use Parse(string, NumberStyles, IFormatProvider)
-            Assert.False(Half.TryParse(value, style, provider, out result));
-            Assert.Equal(default(Half), result);
+            Assert.False(Decimal32.TryParse(value, style, provider, out result));
+            Assert.Equal(default(Decimal32), result);
 
-            Assert.Throws(exceptionType, () => Half.Parse(value, style, provider));
+            Assert.Throws(exceptionType, () => Decimal32.Parse(value, style, provider));
 
             if (isDefaultProvider)
             {
                 // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
-                Assert.False(Half.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
-                Assert.Equal(default(Half), result);
+                Assert.False(Decimal32.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
+                Assert.Equal(default(Decimal32), result);
 
-                Assert.Throws(exceptionType, () => Half.Parse(value, style));
-                Assert.Throws(exceptionType, () => Half.Parse(value, style, NumberFormatInfo.CurrentInfo));
+                Assert.Throws(exceptionType, () => Decimal32.Parse(value, style));
+                Assert.Throws(exceptionType, () => Decimal32.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
         }
 
@@ -193,40 +208,39 @@ namespace System.Numerics.Tests
 
             const NumberStyles DefaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
-            yield return new object[] { "-123", 1, 3, DefaultStyle, null, (float)123 };
-            yield return new object[] { "-123", 0, 3, DefaultStyle, null, (float)-12 };
-            yield return new object[] { "1E23", 0, 3, DefaultStyle, null, (float)1E2 };
-            yield return new object[] { "123", 0, 2, NumberStyles.Float, new NumberFormatInfo(), (float)12 };
-            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$", CurrencyGroupSeparator = "," }, (float)10 };
-            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, (float)123 };
-            yield return new object[] { "-Infinity", 1, 8, NumberStyles.Any, NumberFormatInfo.InvariantInfo, float.PositiveInfinity };
+            yield return new object[] { "-123", 1, 3, DefaultStyle, null, new Decimal32(false, 0, 123) };
+            yield return new object[] { "-123", 0, 3, DefaultStyle, null, new Decimal32(true, 0, 12) };
+            yield return new object[] { "1E23", 0, 3, DefaultStyle, null, new Decimal32(false, 2, 1) };
+            yield return new object[] { "123", 0, 2, NumberStyles.Float, new NumberFormatInfo(), new Decimal32(false, 0, 12) };
+            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$", CurrencyGroupSeparator = "," }, new Decimal32(false, 0, 10) };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, new Decimal32(false, 0, 123) };
+            yield return new object[] { "-Infinity", 1, 8, NumberStyles.Any, NumberFormatInfo.InvariantInfo, Decimal32.PositiveInfinity };
         }
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
-        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expectedFloat)
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, Decimal32 expected)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
-            Half result;
-            Half expected = (Half)expectedFloat;
+            Decimal32 result;
             if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
             {
                 // Use Parse(string) or Parse(string, IFormatProvider)
                 if (isDefaultProvider)
                 {
-                    Assert.True(Half.TryParse(value.AsSpan(offset, count), out result));
-                    Assert.Equal(expected, result);
+                    Assert.True(Decimal32.TryParse(value.AsSpan(offset, count), out result));
+                    AssertEqualAndSameQuantum(expected, result);
 
-                    Assert.Equal(expected, Half.Parse(value.AsSpan(offset, count)));
+                    AssertEqualAndSameQuantum(expected, Decimal32.Parse(value.AsSpan(offset, count)));
                 }
 
-                Assert.Equal(expected, Half.Parse(value.AsSpan(offset, count), provider: provider));
+                AssertEqualAndSameQuantum(expected, Decimal32.Parse(value.AsSpan(offset, count), provider: provider));
             }
 
-            Assert.True(expected.Equals(Half.Parse(value.AsSpan(offset, count), style, provider)) || (Half.IsNaN(expected) && Half.IsNaN(Half.Parse(value.AsSpan(offset, count), style, provider))));
+            AssertEqualAndSameQuantumOrBothNan(expected, Decimal32.Parse(value.AsSpan(offset, count), style, provider));
 
-            Assert.True(Half.TryParse(value.AsSpan(offset, count), style, provider, out result));
-            Assert.True(expected.Equals(result) || (Half.IsNaN(expected) && Half.IsNaN(result)));
+            Assert.True(Decimal32.TryParse(value.AsSpan(offset, count), style, provider, out result));
+            AssertEqualAndSameQuantumOrBothNan(expected, result);
         }
 
         [Theory]
@@ -238,7 +252,7 @@ namespace System.Numerics.Tests
                 Assert.Throws(exceptionType, () => float.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(float.TryParse(value.AsSpan(), style, provider, out float result));
-                Assert.Equal(0, result);
+                Assert.Equal(0, result); // TODO is this right?
             }
         }
     }

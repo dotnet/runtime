@@ -52,7 +52,6 @@ namespace System.Numerics
                 CheckConsistency();
             }
 
-#pragma warning disable CA1822
             [Conditional("DEBUG")]
             public void CheckConsistency()
             {
@@ -76,15 +75,12 @@ namespace System.Numerics
                 Debug.Assert(numDigits < Digits.Length, "Null terminator not found in IeeeDecimalNumber");
 #endif // DEBUG
             }
-#pragma warning restore CA1822
 
-#pragma warning disable CA1822 // TODO I don't know why this is required, it isn't for Number.NumberBuffer.cs
             public byte* GetDigitsPointer() // TODO this is complaining that the method could be static, but it is wrong
             {
                 // This is safe to do since we are a ref struct
                 return (byte*)(Unsafe.AsPointer(ref Digits[0]));
             }
-#pragma warning restore CA1822
 
             //
             // Code coverage note: This only exists so that Number displays nicely in the VS watch window. So yes, I know it works.

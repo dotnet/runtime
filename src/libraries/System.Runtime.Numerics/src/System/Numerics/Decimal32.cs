@@ -23,6 +23,9 @@ namespace System.Numerics
           IDecimalFloatingPointIeee754<Decimal32>,
           IMinMaxValue<Decimal32>
     {
+
+        private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands; // TODO is this correct?
+
         // Constants for manipulating the private bit-representation
         // TODO I think adding masks that help us "triage" the type of encoding will be useful.
 
@@ -32,16 +35,22 @@ namespace System.Numerics
         internal const uint CombinationMask = 0x7FF0_0000;
         internal const int CombinationShift = 20;
         internal const int CombinationWidth = 11;
+        internal const ushort ShiftedCombinationMask = (ushort)(CombinationMask >> CombinationShift);
 
         internal const uint TrailingSignificandMask = 0x000F_FFFF;
         internal const int TrailingSignificandWidth = 20;
 
         // TODO figure out if these three are useful, I don't think they are
+        internal const uint ClassificationMask = 0x7C00_0000;
         internal const uint NaNMask = 0x7C00_0000;
         internal const uint InfinityMask = 0x7800_0000;
 
-        // Significands that have this bit set are encoded differently
-        internal const uint FiniteNumberEncodingCheckMask = 0x0080_0000;
+
+        // Significands are encoded based on this bit
+        internal const uint SignificandEncodingTypeMask = 0x0080_0000;
+
+        // Finite numbers are classified based on these bits
+        internal const uint FiniteNumberClassifictionMask = 0x6000_0000;
 
         // TODO I think these might be useless in Decimal
         /*        internal const ushort MinCombination = 0x0000;
@@ -219,7 +228,7 @@ namespace System.Numerics
             // Two types of combination encodings for finite numbers
             uint combination = 0;
 
-            if ((c & FiniteNumberEncodingCheckMask) == 0)
+            if ((c & SignificandEncodingTypeMask) == 0)
             {
                 // We are encoding a significand that has the most significand 4 bits set to 0xyz
                 combination |= (uint)(q + ExponentBias) << 3;
@@ -236,6 +245,87 @@ namespace System.Numerics
             }
 
             _value = (uint)(((sign ? 1 : 0) << SignShift) + (combination << CombinationShift) + trailing_sig);
+        }
+
+        internal byte BiasedExponent
+        {
+            get
+            {
+                Debug.Assert(IsFinite(this));
+                uint bits = _value;
+                return ExtractBiasedExponentFromBits(bits);
+            }
+        }
+
+        internal sbyte Exponent
+        {
+            get
+            {
+                Debug.Assert(IsFinite(this));
+                return (sbyte)(BiasedExponent - ExponentBias);
+            }
+        }
+
+        internal uint Significand
+        {
+            get
+            {
+                Debug.Assert(IsFinite(this));
+                return ExtractSignificandFromBits(_value);
+            }
+        }
+
+        internal uint TrailingSignificand
+        {
+            get
+            {
+                Debug.Assert(IsFinite(this)); // TODO NaN and Inf might want to use this
+                return _value & TrailingSignificandMask;
+            }
+        }
+
+        // returns garbage for infinity and NaN, TODO maybe fix this
+        internal static byte ExtractBiasedExponentFromBits(uint bits)
+        {
+            ushort combination = (ushort)((bits >> CombinationShift) & ShiftedCombinationMask);
+
+            // Two types of encodings for finite numbers
+            if ((bits & FiniteNumberClassifictionMask) == FiniteNumberClassifictionMask)
+            {
+                // G0 and G1 are 11, exponent is stored in G2:G(CombinationWidth - 1)
+                return (byte)(combination >> 1);
+            }
+            else
+            {
+                // G0 and G1 are not 11, exponent is stored in G0:G(CombinationWidth - 3)
+                return (byte)(combination >> 3);
+            }
+        }
+
+        internal static uint ExtractSignificandFromBits(uint bits)
+        {
+            ushort combination = (ushort)((bits >> CombinationShift) & ShiftedCombinationMask);
+
+            // Two types of encodings for finite numbers
+            uint significand;
+            if ((bits & FiniteNumberClassifictionMask) == FiniteNumberClassifictionMask)
+            {
+                // G0 and G1 are 11, 4 MSBs of significand are 100x, where x is G(CombinationWidth)
+                significand = (uint)(0b1000 | (combination & 0b1));
+            }
+            else
+            {
+                // G0 and G1 are not 11, 4 MSBs of significand are 0xyz, where G(CombinationWidth - 2):G(CombinationWidth)
+                significand = (uint)(combination & 0b111);
+            }
+            significand <<= TrailingSignificandWidth;
+            significand += bits & TrailingSignificandMask;
+            return significand;
+        }
+
+        private static uint StripSign(Decimal32 value)
+        {
+            return value._value & ~SignMask;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
@@ -272,11 +362,17 @@ namespace System.Numerics
         public static bool IsCanonical(Decimal32 value) => throw new NotImplementedException();
         public static bool IsComplexNumber(Decimal32 value) => throw new NotImplementedException();
         public static bool IsEvenInteger(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsFinite(Decimal32 value) => throw new NotImplementedException();
+        public static bool IsFinite(Decimal32 value)
+        {
+            return StripSign(value) < PositiveInfinityBits;
+        }
         public static bool IsImaginaryNumber(Decimal32 value) => throw new NotImplementedException();
         public static bool IsInfinity(Decimal32 value) => throw new NotImplementedException();
         public static bool IsInteger(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsNaN(Decimal32 value) => throw new NotImplementedException();
+        public static bool IsNaN(Decimal32 value)
+        {
+            return (value._value & ClassificationMask) == NaNMask;
+        }
         public static bool IsNegative(Decimal32 value) => throw new NotImplementedException();
         public static bool IsNegativeInfinity(Decimal32 value) => throw new NotImplementedException();
         public static bool IsNormal(Decimal32 value) => throw new NotImplementedException();
@@ -285,7 +381,10 @@ namespace System.Numerics
         public static bool IsPositiveInfinity(Decimal32 value) => throw new NotImplementedException();
         public static bool IsRealNumber(Decimal32 value) => throw new NotImplementedException();
         public static bool IsSubnormal(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsZero(Decimal32 value) => throw new NotImplementedException();
+        public static bool IsZero(Decimal32 value)
+        {
+            return value.Significand == 0;
+        }
         public static Decimal32 Log(Decimal32 x) => throw new NotImplementedException();
         public static Decimal32 Log(Decimal32 x, Decimal32 newBase) => throw new NotImplementedException();
         public static Decimal32 Log10(Decimal32 x) => throw new NotImplementedException();
@@ -299,10 +398,21 @@ namespace System.Numerics
         // Parsing (INumberBase, IParsable, ISpanParsable)
         //
 
+        /// <summary>
+        /// Parses a <see cref="Decimal32"/> from a <see cref="string"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <returns>The equivalent <see cref="Decimal32"/> value representing the input string. If the input exceeds Decimal32's range, a <see cref="Decimal32.PositiveInfinity"/> or <see cref="Decimal32.NegativeInfinity"/> is returned. </returns>
+        public static Decimal32 Parse(string s)
+        {
+            if (s == null) ThrowHelper.ThrowArgumentNullException("s");
+            return IeeeDecimalNumber.ParseDecimal32(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
+        }
+
         /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
         {
-            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO I moved this from NumberFormatInfo to IeeeDecimalNumber, is that ok?
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO I copied this from NumberFormatInfo to IeeeDecimalNumber, is that ok?
             return IeeeDecimalNumber.ParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
@@ -314,7 +424,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
-        public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider = null) // TODO what should the default for NumberStyles be?
+        public static Decimal32 Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
             IeeeDecimalNumber.ValidateParseStyleFloatingPoint(style);
             return IeeeDecimalNumber.ParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider));
@@ -326,6 +436,33 @@ namespace System.Numerics
             IeeeDecimalNumber.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException("s");
             return IeeeDecimalNumber.ParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal32"/> from a <see cref="string"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="Decimal32"/> value representing the input string if the parse was successful. If the input exceeds Decimal32's range, a <see cref="Decimal32.PositiveInfinity"/> or <see cref="Decimal32.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal32"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        public static bool TryParse([NotNullWhen(true)] string? s, out Decimal32 result)
+        {
+            if (s == null)
+            {
+                result = default;
+                return false;
+            }
+            return TryParse(s, DefaultParseStyle, provider: null, out result);
+        }
+
+        /// <summary>
+        /// Tries to parse a <see cref="Decimal32"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="result">The equivalent <see cref="Decimal32"/> value representing the input string if the parse was successful. If the input exceeds Decimal32's range, a <see cref="Decimal32.PositiveInfinity"/> or <see cref="Decimal32.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Decimal32"/> value is returned.</param>
+        /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
+        public static bool TryParse(ReadOnlySpan<char> s, out Decimal32 result)
+        {
+            return TryParse(s, DefaultParseStyle, provider: null, out result);
         }
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
@@ -360,11 +497,19 @@ namespace System.Numerics
         }
 
         public static Decimal32 Pow(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
-        public static Decimal32 Quantize(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+        public static Decimal32 Quantize(Decimal32 x, Decimal32 y)
+        {
+            throw new NotImplementedException();
+        }
         public static Decimal32 Quantum(Decimal32 x) => throw new NotImplementedException();
         public static Decimal32 RootN(Decimal32 x, int n) => throw new NotImplementedException();
         public static Decimal32 Round(Decimal32 x, int digits, MidpointRounding mode) => throw new NotImplementedException();
-        public static bool SameQuantum(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+        public static bool SameQuantum(Decimal32 x, Decimal32 y)
+        {
+            return x.Exponent == y.Exponent
+                || (IsInfinity(x) && IsInfinity(y))
+                || (IsNaN(x) && IsNaN(y));
+        }
         public static Decimal32 ScaleB(Decimal32 x, int n) => throw new NotImplementedException();
         public static Decimal32 Sin(Decimal32 x) => throw new NotImplementedException();
         public static (Decimal32 Sin, Decimal32 Cos) SinCos(Decimal32 x) => throw new NotImplementedException();
@@ -935,7 +1080,11 @@ namespace System.Numerics
 
         public int CompareTo(Decimal32 other) => throw new NotImplementedException();
         public int CompareTo(object? obj) => throw new NotImplementedException();
-        public bool Equals(Decimal32 other) => throw new NotImplementedException();
+        public bool Equals(Decimal32 other)
+        {
+            return this == other
+                || (IsNaN(this) && IsNaN(other));
+        }
         public int GetExponentByteCount() => throw new NotImplementedException();
         public int GetExponentShortestBitLength() => throw new NotImplementedException();
         public int GetSignificandBitLength() => throw new NotImplementedException();
@@ -956,7 +1105,70 @@ namespace System.Numerics
         public static Decimal32 operator *(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
         public static Decimal32 operator /(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
         public static Decimal32 operator %(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static bool operator ==(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        // Fast access for 10^n where n is 0:(Precision - 1)
+        private static readonly uint[] s_powers10 = new uint[] {
+                1,
+                10,
+                100,
+                1000,
+                10000,
+                100000,
+                1000000
+            };
+
+        public static bool operator ==(Decimal32 left, Decimal32 right) // TODO we can probably do this faster
+        {
+            if (IsNaN(left) || IsNaN(right))
+            {
+                // IEEE defines that NaN is not equal to anything, including itself.
+                return false;
+            }
+
+            if (IsZero(left) && IsZero(right))
+            {
+                // IEEE defines that positive and negative zero are equivalent.
+                return true;
+            }
+            // IEEE defines that two values of the same cohort are numerically equivalent,
+
+            uint leftSignificand = left.Significand;
+            uint rightSignificand = right.Significand;
+            sbyte leftQ = left.Exponent;
+            sbyte rightQ = right.Exponent;
+            int diffQ = leftQ - rightQ;
+
+            bool sameNumericalValue = false;
+            if (int.Abs(diffQ) < Precision) // If diffQ is >= Precision, the non-zero finite values have exponents too far apart for them to possibly be equal
+            {
+                try
+                {
+                    if (diffQ < 0)
+                    {
+                        // leftQ is smaller than rightQ, scale leftSignificand
+                        leftSignificand = checked(leftSignificand * s_powers10[int.Abs(diffQ)]);
+                    }
+                    else
+                    {
+                        // rightQ is smaller than (or equal to) leftQ, scale rightSignificand
+                        rightSignificand = checked(rightSignificand * s_powers10[diffQ]);
+                    }
+                }
+                catch
+                {
+                    // multiplication overflowed, return false
+                    return false;
+                }
+
+                if (leftSignificand == rightSignificand)
+                {
+                    sameNumericalValue = true;
+                }
+            }
+
+            bool sameSign = IsPositive(left) == IsPositive(right);
+            return sameNumericalValue && sameSign;
+        }
         public static bool operator !=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
         public static bool operator <(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
         public static bool operator >(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
