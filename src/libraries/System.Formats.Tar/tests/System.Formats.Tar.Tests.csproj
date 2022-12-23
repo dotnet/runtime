@@ -68,9 +68,9 @@
     <Compile Include="TarWriter\TarWriter.WriteEntry.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Ustar.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.V7.Tests.cs" />
-    <Compile Include="WrappedStream.cs" Link="WrappedStream.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" Link="Common\System\IO\ReparsePointUtilities.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedStream.cs" Link="Common\System\IO\WrappedStream.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <!-- Windows specific files -->

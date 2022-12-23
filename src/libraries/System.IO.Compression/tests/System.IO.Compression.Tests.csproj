@@ -17,7 +17,6 @@
     <Compile Include="CompressionStreamUnitTests.Deflate.cs" />
     <Compile Include="CompressionStreamUnitTests.Gzip.cs" />
     <Compile Include="Utilities\StripHeaderAndFooter.cs" />
-    <Compile Include="Utilities\WrappedStream.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ZipArchive\zip_CreateTests.cs" />
     <Compile Include="ZipArchive\zip_CreateTests.Comments.cs" />
@@ -36,6 +35,7 @@
     <Compile Include="$(CommonTestPath)System\IO\Compression\LocalMemoryStream.cs" Link="Common\System\IO\Compression\LocalMemoryStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\StreamHelpers.cs" Link="Common\System\IO\Compression\StreamHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\WrappedStream.cs" Link="Common\System\IO\WrappedStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs" Link="Common\System\IO\Compression\ZipTestHelper.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
