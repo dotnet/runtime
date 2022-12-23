@@ -1002,7 +1002,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             this.asmMetadataReader = asmMetadataReader;
             Name = name;
-            logger.LogDebug($"Info: loading AssemblyInfo with name {Name}");
+            logger.LogTrace($"Info: loading AssemblyInfo with name {Name}");
             this.pdbMetadataReader = pdbMetadataReader;
             Populate();
         }
