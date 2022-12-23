@@ -14,7 +14,7 @@
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <RdXmlFile Include="default.rd.xml" />
+    <_DirectivesFile Include="default.rd.xml" />
   </ItemGroup>
   <Import Project="$(CommonTestPath)System\Net\Security\Kerberos\System.Net.Security.Kerberos.Shared.projitems" />
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">

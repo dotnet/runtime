@@ -71,7 +71,7 @@ If compiler cannot detect types used by the aplication, an rd.xml file can be su
 For that, file `rd.xml` should be created and following lines added to project file
 ```xml
 <ItemGroup>
-  <RdXmlFile Include="rd.xml" />
+  <_DirectivesFile Include="rd.xml" />
 </ItemGroup>
 ```
 

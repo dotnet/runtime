@@ -37,7 +37,7 @@
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestNativeAot)' == 'true'" />
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
-    <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
+    <_DirectivesFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
 
     <!-- Tests are doing private reflection. -->
     <IlcArg Include="--nometadatablocking" />

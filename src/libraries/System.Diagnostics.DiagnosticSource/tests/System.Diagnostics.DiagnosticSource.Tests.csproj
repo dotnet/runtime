@@ -7,7 +7,7 @@
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);MEMORYMARSHAL_SUPPORT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <RdXmlFile Include="default.rd.xml" />
+    <_DirectivesFile Include="default.rd.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />

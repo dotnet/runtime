@@ -4,7 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <RdXmlFile Include="default.rd.xml" />
+    <_DirectivesFile Include="default.rd.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CreateTests.cs" />

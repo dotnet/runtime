@@ -8,7 +8,7 @@
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
-    <RdXmlFile Include="default.rd.xml" />
+    <_DirectivesFile Include="default.rd.xml" />
   </ItemGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>

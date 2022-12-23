@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RdXmlFile Include="default.rd.xml" />
+    <_DirectivesFile Include="default.rd.xml" />
   </ItemGroup>
 
   <ItemGroup>

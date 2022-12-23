@@ -8,7 +8,7 @@
     <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
-    <RdXmlFile Include="..\default.rd.xml" />
+    <_DirectivesFile Include="..\default.rd.xml" />
   </ItemGroup>
   <ItemGroup>
     <!-- Include tests from System.Globalization.Tests -->
