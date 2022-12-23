@@ -1121,6 +1121,48 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="key">The key of the element to add.</param>
         /// <param name="valueFactory">The function used to generate a value for the key</param>
+        /// <param name="added">When this method retuns, <paramref name="added"/> is set to true
+        /// when the key was added to the dictionary, otherwise false.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="OverflowException">The dictionary contains too many
+        /// elements.</exception>
+        /// <returns>The value for the key.  This will be either the existing value for the key if the
+        /// key is already in the dictionary, or the new value for the key as returned by valueFactory
+        /// if the key was not in the dictionary.</returns>
+        public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory, out bool added)
+        {
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
+            if (valueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
+            }
+
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
+
+            added = false;
+
+            if (!TryGetValueInternal(key, hashcode, out TValue? resultingValue))
+            {
+                added = TryAddInternal(key, hashcode, valueFactory(key), updateIfExists: false, acquireLock: true, out resultingValue);
+            }
+
+            return resultingValue;
+        }
+
+        /// <summary>
+        /// Adds a key/value pair to the <see cref="ConcurrentDictionary{TKey,TValue}"/>
+        /// if the key does not already exist.
+        /// </summary>
+        /// <param name="key">The key of the element to add.</param>
+        /// <param name="valueFactory">The function used to generate a value for the key</param>
         /// <param name="factoryArgument">An argument value to pass into <paramref name="valueFactory"/>.</param>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
@@ -1159,6 +1201,49 @@ namespace System.Collections.Concurrent
         /// if the key does not already exist.
         /// </summary>
         /// <param name="key">The key of the element to add.</param>
+        /// <param name="valueFactory">The function used to generate a value for the key</param>
+        /// <param name="factoryArgument">An argument value to pass into <paramref name="valueFactory"/>.</param>
+        /// <param name="added">When this method retuns, <paramref name="added"/> is set to true
+        /// when the key was added to the dictionary, otherwise false.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="OverflowException">The dictionary contains too many
+        /// elements.</exception>
+        /// <returns>The value for the key.  This will be either the existing value for the key if the
+        /// key is already in the dictionary, or the new value for the key as returned by valueFactory
+        /// if the key was not in the dictionary.</returns>
+        public TValue GetOrAdd<TArg>(TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument, out bool added)
+        {
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
+            if (valueFactory is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(valueFactory));
+            }
+
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
+
+            added = false;
+
+            if (!TryGetValueInternal(key, hashcode, out TValue? resultingValue))
+            {
+                added = TryAddInternal(key, hashcode, valueFactory(key, factoryArgument), updateIfExists: false, acquireLock: true, out resultingValue);
+            }
+
+            return resultingValue;
+        }
+
+        /// <summary>
+        /// Adds a key/value pair to the <see cref="ConcurrentDictionary{TKey,TValue}"/>
+        /// if the key does not already exist.
+        /// </summary>
+        /// <param name="key">The key of the element to add.</param>
         /// <param name="value">the value to be added, if the key does not already exist</param>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
@@ -1183,6 +1268,41 @@ namespace System.Collections.Concurrent
 
             return resultingValue;
         }
+
+        /// <summary>
+        /// Adds a key/value pair to the <see cref="ConcurrentDictionary{TKey,TValue}"/>
+        /// if the key does not already exist.
+        /// </summary>
+        /// <param name="key">The key of the element to add.</param>
+        /// <param name="value">the value to be added, if the key does not already exist</param>
+        /// <param name="added">When this method retuns, <paramref name="added"/> is set to true
+        /// when the key was added to the dictionary, otherwise false.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference
+        /// (Nothing in Visual Basic).</exception>
+        /// <exception cref="OverflowException">The dictionary contains too many
+        /// elements.</exception>
+        /// <returns>The value for the key.  This will be either the existing value for the key if the
+        /// key is already in the dictionary, or the new value if the key was not in the dictionary.</returns>
+        public TValue GetOrAdd(TKey key, TValue value, out bool added)
+        {
+            if (key is null)
+            {
+                ThrowHelper.ThrowKeyNullException();
+            }
+
+            IEqualityComparer<TKey>? comparer = _comparer;
+            int hashcode = comparer is null ? key.GetHashCode() : comparer.GetHashCode(key);
+
+            added = false;
+
+            if (!TryGetValueInternal(key, hashcode, out TValue? resultingValue))
+            {
+                added = TryAddInternal(key, hashcode, value, updateIfExists: false, acquireLock: true, out resultingValue);
+            }
+
+            return resultingValue;
+        }
+
 
         /// <summary>
         /// Adds a key/value pair to the <see cref="ConcurrentDictionary{TKey,TValue}"/> if the key does not already
