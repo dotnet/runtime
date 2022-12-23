@@ -47,6 +47,83 @@ namespace Internal.Runtime.TypeLoader
         }
 #endif
 
+        private unsafe IntPtr GVMLookupForSlotWorker(RuntimeTypeHandle type, RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature methodNameAndSignature)
+        {
+            bool slotChanged = false;
+
+            IntPtr resolution = IntPtr.Zero;
+            IntPtr functionPointer;
+            IntPtr genericDictionary;
+
+            bool lookForDefaultImplementations = false;
+
+        again:
+            while (!type.IsNull())
+            {
+                string methodName = methodNameAndSignature.Name;
+                RuntimeSignature methodSignature = methodNameAndSignature.Signature;
+                if (TryGetGenericVirtualTargetForTypeAndSlot(type, ref declaringType, genericArguments, ref methodName, ref methodSignature, lookForDefaultImplementations, out functionPointer, out genericDictionary, out slotChanged))
+                {
+                    methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);
+
+                    if (!slotChanged)
+                        resolution = FunctionPointerOps.GetGenericMethodFunctionPointer(functionPointer, genericDictionary);
+                    break;
+                }
+
+                bool success = RuntimeAugments.TryGetBaseType(type, out type);
+                Debug.Assert(success);
+            }
+
+            // If the current slot to examine has changed, restart the lookup.
+            // This happens when there is an interface call.
+            if (slotChanged)
+            {
+                return GVMLookupForSlotWorker(type, declaringType, genericArguments, methodNameAndSignature);
+            }
+
+            if (resolution == IntPtr.Zero
+                && !lookForDefaultImplementations
+                && declaringType.IsInterface())
+            {
+                lookForDefaultImplementations = true;
+                goto again;
+            }
+
+            if (resolution == IntPtr.Zero)
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("Generic virtual method pointer lookup failure.");
+                sb.AppendLine();
+                sb.AppendLine("Declaring type: " + RuntimeAugments.GetLastResortString(declaringType));
+                sb.AppendLine("Target type: " + RuntimeAugments.GetLastResortString(type));
+                sb.AppendLine("Method name: " + methodNameAndSignature.Name);
+                sb.AppendLine("Instantiation:");
+                for (int i = 0; i < genericArguments.Length; i++)
+                {
+                    sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + RuntimeAugments.GetLastResortString(genericArguments[i]));
+                }
+
+                Environment.FailFast(sb.ToString());
+            }
+
+            return resolution;
+        }
+
+        internal unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle type, RuntimeMethodHandle slot)
+        {
+            RuntimeTypeHandle declaringTypeHandle;
+            MethodNameAndSignature nameAndSignature;
+            RuntimeTypeHandle[] genericMethodArgs;
+            if (!TryGetRuntimeMethodHandleComponents(slot, out declaringTypeHandle, out nameAndSignature, out genericMethodArgs))
+            {
+                Debug.Assert(false);
+                return IntPtr.Zero;
+            }
+
+            return GVMLookupForSlotWorker(type, declaringTypeHandle, genericMethodArgs, nameAndSignature);
+        }
+
         public bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, bool lookForDefaultImplementation, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
         {
             MethodNameAndSignature methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);
