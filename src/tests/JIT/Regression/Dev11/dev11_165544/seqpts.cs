@@ -27,9 +27,9 @@ struct BigCopy
     }
 }
 
-static class Repro
+public static class Repro
 {
-    static int Main(string[] args)
+    public static int Main()
     {
         BigCopy b1, b2, b3;
         b1.gc = "me";

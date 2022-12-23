@@ -65,11 +65,36 @@ void DumpPrimToConsoleBare(MethodContext* mc, CorInfoType prim, DWORDLONG classH
             printf("byref");
             return;
         case CORINFO_TYPE_VALUECLASS:
-            printf("valueclass %s", mc->repGetClassName((CORINFO_CLASS_HANDLE)classHandle));
-            return;
         case CORINFO_TYPE_CLASS:
-            printf("class %s", mc->repGetClassName((CORINFO_CLASS_HANDLE)classHandle));
+        {
+            CORINFO_CLASS_HANDLE cls = (CORINFO_CLASS_HANDLE)classHandle;
+            unsigned arrayRank = mc->repGetArrayRank(cls);
+            if (arrayRank > 0)
+            {
+                CORINFO_CLASS_HANDLE childCls;
+                CorInfoType          childType = mc->repGetChildType(cls, &childCls);
+                DumpPrimToConsoleBare(mc, childType, (DWORDLONG)childCls);
+
+                printf("[");
+                for (unsigned i = 1; i < arrayRank; i++)
+                {
+                    printf(",");
+                }
+                printf("]");
+            }
+            else
+            {
+                char className[256];
+                mc->repPrintClassName((CORINFO_CLASS_HANDLE)classHandle, className, sizeof(className));
+
+                printf(
+                    "%s %s",
+                    prim == CORINFO_TYPE_VALUECLASS ? "valueclass" : "class",
+                    className);
+            }
+
             return;
+        }
         case CORINFO_TYPE_REFANY:
             printf("refany");
             return;
@@ -909,8 +934,7 @@ char* DumpAttributeToConsoleBare(DWORD attribute)
 #define ifPrint(s, t)                                                                                                  \
     else if ((s & attribute) == s)                                                                                     \
     {                                                                                                                  \
-        printf(t);                                                                                                     \
-        printf(" ");                                                                                                   \
+        printf("%s ", t);                                                                                              \
     }
 
     if (0)
@@ -931,19 +955,15 @@ void DumpIL(MethodContext* mc)
 
     mc->repCompileMethod(&cmi, &flags, &os);
 
-    const char* moduleName = nullptr;
-    const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
-    const char* className  = mc->repGetClassName(mc->repGetMethodClass(cmi.ftn));
-
     printf("// ProcessName - '%s'\n", mc->cr->repProcessName());
     printf(".assembly extern mscorlib{}\n");
-    printf(".assembly %s{}\n", moduleName);
-    printf(".class %s\n", className);
+    printf(".assembly dumped_asm\n");
+    printf(".class %s\n", getClassName(mc, mc->repGetMethodClass(cmi.ftn)).c_str());
     printf("{\n");
     printf("   .method ");
     DumpAttributeToConsoleBare(mc->repGetMethodAttribs(cmi.ftn));
     DumpPrimToConsoleBare(mc, cmi.args.retType, CastHandle(cmi.args.retTypeClass));
-    printf(" %s(", methodName);
+    printf(" %s(", getMethodName(mc, cmi.ftn).c_str());
     DumpSigToConsoleBare(mc, &cmi.args);
     printf(")\n");
     printf("   {\n");

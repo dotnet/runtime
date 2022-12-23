@@ -10,10 +10,10 @@ namespace Test
     {
         public static sbyte m_sb = 0;
     }
-    struct CC
+    public struct CC
     {
         float Method1() { return 0; }
-        static int Main()
+        public static int Main()
         {
             CC[] cc = new CC[10];
             byte[] ab = new byte[10];

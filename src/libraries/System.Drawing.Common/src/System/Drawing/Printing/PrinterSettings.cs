@@ -234,7 +234,7 @@ namespace System.Drawing.Printing
         {
             get
             {
-                return GetDeviceCaps(Interop.Gdi32.DeviceCapability.TECHNOLOGY, Interop.Gdi32.DeviceTechnology.DT_RASPRINTER) == Interop.Gdi32.DeviceTechnology.DT_PLOTTER;
+                return GetDeviceCaps(Interop.Gdi32.DeviceCapability.TECHNOLOGY) == Interop.Gdi32.DeviceTechnology.DT_PLOTTER;
             }
         }
 
@@ -371,7 +371,7 @@ namespace System.Drawing.Printing
             get { return _printRange; }
             set
             {
-                if (!Enum.IsDefined(typeof(PrintRange), value))
+                if (!Enum.IsDefined(value))
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PrintRange));
 
                 _printRange = value;
@@ -792,7 +792,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private int GetDeviceCaps(Interop.Gdi32.DeviceCapability capability, int defaultValue)
+        private int GetDeviceCaps(Interop.Gdi32.DeviceCapability capability)
         {
             using (DeviceContext dc = CreateInformationContext(DefaultPageSettings))
             {

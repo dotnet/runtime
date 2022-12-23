@@ -310,8 +310,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public static Guid GetGuid(Type eventSourceType)
         {
-            if (eventSourceType == null)
-                throw new ArgumentNullException(nameof(eventSourceType));
+            ArgumentNullException.ThrowIfNull(eventSourceType);
 
             EventSourceAttribute? attrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute));
             string name = eventSourceType.Name;
@@ -393,8 +392,7 @@ namespace System.Diagnostics.Tracing
                 return null;
             }
 
-            if (eventSourceType == null)
-                throw new ArgumentNullException(nameof(eventSourceType));
+            ArgumentNullException.ThrowIfNull(eventSourceType);
 
             byte[]? manifestBytes = EventSource.CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
             return (manifestBytes == null) ? null : Encoding.UTF8.GetString(manifestBytes, 0, manifestBytes.Length);
@@ -442,10 +440,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            if (eventSource is null)
-            {
-                throw new ArgumentNullException(nameof(eventSource));
-            }
+            ArgumentNullException.ThrowIfNull(eventSource);
 
             // User-defined EventCommands should not conflict with the reserved commands.
             if ((int)command <= (int)EventCommand.Update && (int)command != (int)EventCommand.SendManifest)
@@ -1623,8 +1618,7 @@ namespace System.Diagnostics.Tracing
 
         private static string GetName(Type eventSourceType, EventManifestOptions flags)
         {
-            if (eventSourceType == null)
-                throw new ArgumentNullException(nameof(eventSourceType));
+            ArgumentNullException.ThrowIfNull(eventSourceType);
 
             EventSourceAttribute? attrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
             if (attrib != null && attrib.Name != null)
@@ -2807,8 +2801,13 @@ namespace System.Diagnostics.Tracing
         // Today, we only send the manifest to ETW, custom listeners don't get it.
         private unsafe void SendManifest(byte[]? rawManifest)
         {
-            if (rawManifest == null)
+            if (rawManifest == null
+                // Don't send the manifest for NativeRuntimeEventSource, it is conceptually
+                // an extension of the native coreclr provider
+                || m_name.Equals("Microsoft-Windows-DotNETRuntime"))
+            {
                 return;
+            }
 
             Debug.Assert(!SelfDescribingEvents);
 
@@ -4057,10 +4056,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
         {
-            if (eventSource is null)
-            {
-                throw new ArgumentNullException(nameof(eventSource));
-            }
+            ArgumentNullException.ThrowIfNull(eventSource);
 
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
@@ -4078,10 +4074,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void DisableEvents(EventSource eventSource)
         {
-            if (eventSource is null)
-            {
-                throw new ArgumentNullException(nameof(eventSource));
-            }
+            ArgumentNullException.ThrowIfNull(eventSource);
 
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
 

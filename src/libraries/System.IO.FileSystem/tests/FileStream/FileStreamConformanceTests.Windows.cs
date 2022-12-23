@@ -74,7 +74,7 @@ namespace System.IO.Tests
         private static extern bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
     }
 
-    [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
+    [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specific
     [Collection(nameof(DisableParallelization))] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
     [ConditionalClass(typeof(WindowsTestFileShare), nameof(WindowsTestFileShare.CanShareFiles))]

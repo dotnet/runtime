@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { auto }
-.assembly calldef { }
-.module calldef.exe
+.assembly 'b409748' { }
 .method public static vararg void Foo(int32)
 {
    ret
 }
+.class public auto ansi Test_b409748 extends [mscorlib] System.Object {
 .method public static int32 Exec()
 {
    .entrypoint
@@ -17,4 +17,5 @@
 
    ldc.i4 100
    ret
+}
 }

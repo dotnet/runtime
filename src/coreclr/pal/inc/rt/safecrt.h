@@ -383,7 +383,6 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tcsnset_s      _wcsnset_s
 #define _tcstok_s       wcstok_s
 #define _tmakepath_s    _wmakepath_s
-#define _tsplitpath_s   _wsplitpath_s
 #define _stprintf_s     swprintf_s
 #define _tscanf_s       wscanf_s
 #define _tsscanf_s      swscanf_s
@@ -1370,13 +1369,13 @@ errno_t __cdecl _wmakepath_s(WCHAR *_Dst, size_t _SizeInWords, const WCHAR *_Dri
         } while (*p != 0);
 
         p = p - 1;
-        if (*p != L'/' && *p != L'\\')
+        if (*p != L'/')
         {
             if(++written >= _SizeInWords)
             {
                 goto error_return;
             }
-            *d++ = L'\\';
+            *d++ = L'/';
         }
     }
 
@@ -1432,224 +1431,6 @@ error_return:
 }
 #endif
 
-/* _wsplitpath_s */
-_SAFECRT__EXTERN_C
-errno_t __cdecl _wsplitpath_s(
-    const WCHAR *_Path,
-    WCHAR *_Drive, size_t _DriveSize,
-    WCHAR *_Dir, size_t _DirSize,
-    WCHAR *_Filename, size_t _FilenameSize,
-    WCHAR *_Ext, size_t _ExtSize
-);
-
-/* no C++ overload for _wsplitpath_s */
-
-#if _SAFECRT_USE_INLINES || _SAFECRT_IMPL
-
-_SAFECRT__INLINE
-errno_t __cdecl _wsplitpath_s(
-    const WCHAR *_Path,
-    WCHAR *_Drive, size_t _DriveSize,
-    WCHAR *_Dir, size_t _DirSize,
-    WCHAR *_Filename, size_t _FilenameSize,
-    WCHAR *_Ext, size_t _ExtSize
-)
-{
-    const WCHAR *tmp;
-    const WCHAR *last_slash;
-    const WCHAR *dot;
-    int drive_set = 0;
-    size_t length = 0;
-    int bEinval = 0;
-
-    /* validation section */
-    _SAFECRT__VALIDATE_POINTER(_Path);
-    if ((_Drive == nullptr && _DriveSize != 0) || (_Drive != nullptr && _DriveSize == 0))
-    {
-        goto error_einval;
-    }
-    if ((_Dir == nullptr && _DirSize != 0) || (_Dir != nullptr && _DirSize == 0))
-    {
-        goto error_einval;
-    }
-    if ((_Filename == nullptr && _FilenameSize != 0) || (_Filename != nullptr && _FilenameSize == 0))
-    {
-        goto error_einval;
-    }
-    if ((_Ext == nullptr && _ExtSize != 0) || (_Ext != nullptr && _ExtSize == 0))
-    {
-        goto error_einval;
-    }
-
-    /* check if _Path begins with the longpath prefix */
-    if (_Path[0] == L'\\' && _Path[1] == L'\\' && _Path[2] == L'?' && _Path[3] == L'\\')
-    {
-        _Path += 4;
-    }
-
-    /* extract drive letter and ':', if any */
-    if (!drive_set)
-    {
-        size_t skip = _MAX_DRIVE - 2;
-        tmp = _Path;
-        while (skip > 0 && *tmp != 0)
-        {
-            skip--;
-            tmp++;
-        }
-        if (*tmp == L':')
-        {
-            if (_Drive != nullptr)
-            {
-                if (_DriveSize < _MAX_DRIVE)
-                {
-                    goto error_erange;
-                }
-                wcsncpy_s(_Drive, _DriveSize, _Path, _MAX_DRIVE - 1);
-            }
-            _Path = tmp + 1;
-        }
-        else
-        {
-            if (_Drive != nullptr)
-            {
-                _SAFECRT__RESET_STRING(_Drive, _DriveSize);
-            }
-        }
-    }
-
-    /* extract path string, if any. _Path now points to the first character
-     * of the path, if any, or the filename or extension, if no path was
-     * specified.  Scan ahead for the last occurrence, if any, of a '/' or
-     * '\' path separator character.  If none is found, there is no path.
-     * We will also note the last '.' character found, if any, to aid in
-     * handling the extension.
-     */
-    last_slash = nullptr;
-    dot = nullptr;
-    tmp = _Path;
-    for (; *tmp != 0; ++tmp)
-    {
-        {
-            if (*tmp == L'/' || *tmp == L'\\')
-            {
-                /* point to one beyond for later copy */
-                last_slash = tmp + 1;
-            }
-            else if (*tmp == L'.')
-            {
-                dot = tmp;
-            }
-        }
-    }
-
-    if (last_slash != nullptr)
-    {
-        /* found a path - copy up through last_slash or max characters
-         * allowed, whichever is smaller
-         */
-        if (_Dir != nullptr) {
-            length = (size_t)(last_slash - _Path);
-            if (_DirSize <= length)
-            {
-                goto error_erange;
-            }
-            wcsncpy_s(_Dir, _DirSize, _Path, length);
-        }
-        _Path = last_slash;
-    }
-    else
-    {
-        /* there is no path */
-        if (_Dir != nullptr)
-        {
-            _SAFECRT__RESET_STRING(_Dir, _DirSize);
-        }
-    }
-
-    /* extract file name and extension, if any.  Path now points to the
-     * first character of the file name, if any, or the extension if no
-     * file name was given.  Dot points to the '.' beginning the extension,
-     * if any.
-     */
-    if (dot != nullptr && (dot >= _Path))
-    {
-        /* found the marker for an extension - copy the file name up to the '.' */
-        if (_Filename)
-        {
-            length = (size_t)(dot - _Path);
-            if (_FilenameSize <= length)
-            {
-                goto error_erange;
-            }
-            wcsncpy_s(_Filename, _FilenameSize, _Path, length);
-        }
-        /* now we can get the extension - remember that tmp still points
-         * to the terminating nullptr character of path.
-         */
-        if (_Ext)
-        {
-            length = (size_t)(tmp - dot);
-            if (_ExtSize <= length)
-            {
-                goto error_erange;
-            }
-            wcsncpy_s(_Ext, _ExtSize, dot, length);
-        }
-    }
-    else
-    {
-        /* found no extension, give empty extension and copy rest of
-         * string into fname.
-         */
-        if (_Filename)
-        {
-            length = (size_t)(tmp - _Path);
-            if (_FilenameSize <= length)
-            {
-                goto error_erange;
-            }
-            wcsncpy_s(_Filename, _FilenameSize, _Path, length);
-        }
-        if (_Ext)
-        {
-            _SAFECRT__RESET_STRING(_Ext, _ExtSize);
-        }
-    }
-
-    return 0;
-
-error_einval:
-    bEinval = 1;
-
-error_erange:
-    if (_Drive != nullptr && _DriveSize > 0)
-    {
-        _SAFECRT__RESET_STRING(_Drive, _DriveSize);
-    }
-    if (_Dir != nullptr && _DirSize > 0)
-    {
-        _SAFECRT__RESET_STRING(_Dir, _DirSize);
-    }
-    if (_Filename != nullptr && _FilenameSize > 0)
-    {
-        _SAFECRT__RESET_STRING(_Filename, _FilenameSize);
-    }
-    if (_Ext != nullptr && _ExtSize > 0)
-    {
-        _SAFECRT__RESET_STRING(_Ext, _ExtSize);
-    }
-
-    if (bEinval)
-    {
-        _SAFECRT__RETURN_EINVAL;
-    }
-
-    _SAFECRT__RETURN_BUFFER_TOO_SMALL(_Strings, _StringSizes);
-    /* should never happen, but compiler can't tell */
-    return EINVAL;
-}
-#endif
 
 /* vsprintf_s */
 /*

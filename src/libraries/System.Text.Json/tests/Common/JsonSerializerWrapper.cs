@@ -25,11 +25,15 @@ namespace System.Text.Json.Serialization.Tests
 
         public abstract Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo);
 
+        public abstract Task<string> SerializeWrapper(object value, JsonTypeInfo jsonTypeInfo);
+
         public abstract Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null);
 
         public abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null);
 
         public abstract Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo);
+
+        public abstract Task<object> DeserializeWrapper(string value, JsonTypeInfo jsonTypeInfo);
 
         public abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context);
     }

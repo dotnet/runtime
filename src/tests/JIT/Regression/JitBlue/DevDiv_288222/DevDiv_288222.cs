@@ -10,7 +10,7 @@ using System.Numerics;
 // The failure mode is that the size was not being set for a "this" pointer
 // with SIMD type.
 
-internal class Program
+public class Program
 {
     // Declare a delegate type for calling the Vector2.CopyTo method.
     public delegate void CopyToDelegate(float[] array, int start);
@@ -21,7 +21,7 @@ internal class Program
         doCopy(array, start);
     }
 
-    private static int Main(string[] args)
+    public static int Main()
     {
         try
         {

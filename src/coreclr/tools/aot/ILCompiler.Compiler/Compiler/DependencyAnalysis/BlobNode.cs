@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             _alignment = alignment;
         }
 
-        public override ObjectNodeSection Section => _section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _section;
         public override bool StaticDependenciesAreComputed => true;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

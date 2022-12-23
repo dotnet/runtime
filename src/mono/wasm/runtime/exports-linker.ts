@@ -7,6 +7,9 @@ import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
 import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, mono_wasm_invoke_import } from "./invoke-js";
+import { mono_interp_tier_prepare_jiterpreter } from "./jiterpreter";
+import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
+import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue, mono_jiterp_do_jit_call_indirect } from "./jiterpreter-jit-call";
 import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 import {
     mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_with_args_ref, mono_wasm_get_object_property_ref, mono_wasm_set_object_property_ref,
@@ -52,7 +55,15 @@ export function export_linker(): any {
         // mono-threads-wasm.c
         schedule_background_exec,
 
-        // interp.c
+        // interp.c and jiterpreter.c
+        mono_interp_tier_prepare_jiterpreter,
+        mono_interp_record_interp_entry,
+        mono_interp_jit_wasm_entry_trampoline,
+        mono_interp_jit_wasm_jit_call_trampoline,
+        mono_interp_invoke_wasm_jit_call_trampoline,
+        mono_interp_flush_jitcall_queue,
+        mono_jiterp_do_jit_call_indirect,
+
         mono_wasm_profiler_enter,
         mono_wasm_profiler_leave,
 

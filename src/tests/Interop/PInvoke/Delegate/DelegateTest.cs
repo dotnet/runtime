@@ -119,7 +119,7 @@ class DelegateTest
         Assert.Throws<MarshalDirectiveException>(() => MarshalDelegateAsInterface(TestFunction));
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         try
         {

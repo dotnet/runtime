@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace N
 {
-    class C
+    public class C
     {
         // Simple search loop: should move the "return true" out of the loop
         static bool Simple(int[] values)
@@ -424,7 +424,7 @@ namespace N
             return (result == target);
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             int[] has5 = new int[] { 1, 2, 3, 4, 5 };
             int[] no5 = new int[] { 6, 7, 8, 9 };

@@ -21,9 +21,9 @@ namespace Runtime_1241
         }
     }
 
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             int returnVal = 100;
 

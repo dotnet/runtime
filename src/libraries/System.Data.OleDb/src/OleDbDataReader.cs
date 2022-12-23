@@ -1183,11 +1183,11 @@ namespace System.Data.OleDb
             Exception? e;
             if (null != _command)
             {
-                e = OleDbConnection.ProcessResults(hr, _connection, _command);
+                e = OleDbConnection.ProcessResults(hr, _connection);
             }
             else
             {
-                e = OleDbConnection.ProcessResults(hr, _connection, _connection);
+                e = OleDbConnection.ProcessResults(hr, _connection);
             }
             if (null != e)
             { throw e; }
@@ -1255,7 +1255,7 @@ namespace System.Data.OleDb
                     }
                     if (null != connection)
                     {
-                        Exception? e = OleDbConnection.ProcessResults(hr, connection, command);
+                        Exception? e = OleDbConnection.ProcessResults(hr, connection);
                         if (null != e)
                         {
                             OleDbException? excep = (e as OleDbException);

@@ -5216,8 +5216,9 @@ namespace System.Threading.Tasks
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
-        public static Task<TResult> FromResult<TResult>(TResult result)
+        public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
+#pragma warning disable 8500 // address of / sizeof of managed types
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
             // To give back a cached task, we need to be able to evaluate the incoming result value, and we need to avoid as
             // much overhead as possible when doing so, as this function is invoked as part of the return path from every async
@@ -5229,43 +5230,42 @@ namespace System.Threading.Tasks
                 // null reference types and default(Nullable<T>)
                 return Task<TResult>.s_defaultResultTask;
             }
-            else if (typeof(TResult).IsValueType) // help the JIT avoid the value type branches for ref types
+
+            // For Boolean, we cache all possible values.
+            if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
             {
-                // For Boolean, we cache all possible values.
-                if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
+                Task<bool> task = *(bool*)&result ? TaskCache.s_trueTask : TaskCache.s_falseTask;
+                return *(Task<TResult>*)&task;
+            }
+
+            // For Int32, we cache a range of common values, [-1,9).
+            if (typeof(TResult) == typeof(int))
+            {
+                // Compare to constants to avoid static field access if outside of cached range.
+                int value = *(int*)&result;
+                if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
                 {
-                    bool value = (bool)(object)result!;
-                    Task<bool> task = value ? TaskCache.s_trueTask : TaskCache.s_falseTask;
-                    return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
+                    Task<int> task = TaskCache.s_int32Tasks[value - TaskCache.InclusiveInt32Min];
+                    return *(Task<TResult>*)&task;
                 }
-                // For Int32, we cache a range of common values, [-1,9).
-                else if (typeof(TResult) == typeof(int))
-                {
-                    // Compare to constants to avoid static field access if outside of cached range.
-                    int value = (int)(object)result!;
-                    if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
-                    {
-                        Task<int> task = TaskCache.s_int32Tasks[value - TaskCache.InclusiveInt32Min];
-                        return Unsafe.As<Task<TResult>>(task); // Unsafe.As avoids a type check we know will succeed
-                    }
-                }
+            }
+            else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
+            {
                 // For other value types, we special-case default(TResult) if we can easily compare bit patterns to default/0.
-                else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
+                // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
+                // so we only need to confirm that this TResult has the same bits as default(TResult).
+                if ((sizeof(TResult) == sizeof(byte) && *(byte*)&result == default(byte)) ||
+                    (sizeof(TResult) == sizeof(ushort) && *(ushort*)&result == default(ushort)) ||
+                    (sizeof(TResult) == sizeof(uint) && *(uint*)&result == default) ||
+                    (sizeof(TResult) == sizeof(ulong) && *(ulong*)&result == default))
                 {
-                    // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
-                    // so we only need to confirm that this TResult has the same bits as default(TResult).
-                    if ((Unsafe.SizeOf<TResult>() == sizeof(byte) && Unsafe.As<TResult, byte>(ref result) == default(byte)) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(ushort) && Unsafe.As<TResult, ushort>(ref result) == default(ushort)) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(uint) && Unsafe.As<TResult, uint>(ref result) == default) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(ulong) && Unsafe.As<TResult, ulong>(ref result) == default))
-                    {
-                        return Task<TResult>.s_defaultResultTask;
-                    }
+                    return Task<TResult>.s_defaultResultTask;
                 }
             }
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
+#pragma warning restore 8500
         }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed exceptionally with the specified exception.</summary>

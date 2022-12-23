@@ -48,10 +48,10 @@ namespace System.Collections.Frozen
         }
 
         /// <inheritdoc />
-        private protected override ImmutableArray<string> KeysCore => new ImmutableArray<string>(_keys);
+        private protected override string[] KeysCore => _keys;
 
         /// <inheritdoc />
-        private protected override ImmutableArray<TValue> ValuesCore => new ImmutableArray<TValue>(_values);
+        private protected override TValue[] ValuesCore => _values;
 
         /// <inheritdoc />
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_keys, _values);

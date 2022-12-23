@@ -4,7 +4,7 @@
 using System;
 public class test
 {
-    public static int Main(String[] args)
+    public static int Main()
     {
         bool flag = false;
         for (int i = 1; i <= -1; i++)

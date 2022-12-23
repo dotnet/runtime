@@ -7,8 +7,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly bug { }
+.assembly 'b32551a' { }
 
+.class public auto ansi Test_b32551a extends [mscorlib] System.Object {
 .method public static int32 main() il managed {
   .entrypoint
   .maxstack 8
@@ -25,4 +26,5 @@
   s:
 ldc.i4 100
   ret
+}
 }

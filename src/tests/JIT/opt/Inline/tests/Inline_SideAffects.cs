@@ -22,7 +22,7 @@ namespace Inline_SideAffects
             s_i += 3;
             return false;
         }
-        private static int Main(string[] args)
+        private static int Main()
         {
             if ((Foo_Inline()) && (Bar_Inline()))
             {

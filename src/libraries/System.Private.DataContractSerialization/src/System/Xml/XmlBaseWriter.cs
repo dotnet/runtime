@@ -530,7 +530,7 @@ namespace System.Xml
             element.LocalName = localName;
         }
 
-        private void PreStartElementAsyncCheck(string? prefix, string localName, string? ns, XmlDictionaryString? xNs)
+        private void PreStartElementAsyncCheck(string localName)
         {
             if (IsClosed)
                 ThrowClosed();
@@ -590,7 +590,7 @@ namespace System.Xml
 
         public override Task WriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
         {
-            PreStartElementAsyncCheck(prefix, localName, namespaceUri, null);
+            PreStartElementAsyncCheck(localName);
             return StartElementAndWriteStartElementAsync(prefix, localName, namespaceUri);
         }
 
@@ -750,27 +750,20 @@ namespace System.Xml
 
         private static void VerifyWhitespace(char ch)
         {
-            if (!IsWhitespace(ch))
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
+            if (!XmlConverter.IsWhitespace(ch))
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
         private static void VerifyWhitespace(string s)
         {
-            for (int i = 0; i < s.Length; i++)
-                if (!IsWhitespace(s[i]))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
+            if (!XmlConverter.IsWhitespace(s))
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
         private static void VerifyWhitespace(char[] chars, int offset, int count)
         {
-            for (int i = 0; i < count; i++)
-                if (!IsWhitespace(chars[offset + i]))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
-        }
-
-        private static bool IsWhitespace(char ch)
-        {
-            return (ch == ' ' || ch == '\n' || ch == '\r' || ch == 't');
+            if (!XmlConverter.IsWhitespace(chars.AsSpan(offset, count)))
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
         protected static void EndContent()

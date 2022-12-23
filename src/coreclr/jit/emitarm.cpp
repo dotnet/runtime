@@ -4012,10 +4012,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
     }
     else
     {
-        assert(!jitStaticFldIsGlobAddr(fldHnd));
-        addr = (ssize_t)emitComp->info.compCompHnd->getFieldAddress(fldHnd, NULL);
-        if (addr == NULL)
-            NO_WAY("could not obtain address of static field");
+        assert(!"Normal statics are expected to be handled in the importer");
     }
 
     // We can use reg to load the constant address,

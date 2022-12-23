@@ -39,7 +39,8 @@ namespace System
 
         public WindowsTestAccount(string userName)
         {
-            Assert.True(PlatformDetection.IsWindowsAndElevated);
+            Assert.True(PlatformDetection.IsWindows);
+            Assert.True(PlatformDetection.IsPrivilegedProcess);
 
             _userName = userName;
             Password = GeneratePassword();

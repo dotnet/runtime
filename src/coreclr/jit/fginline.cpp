@@ -240,13 +240,6 @@ private:
             *use          = inlineCandidate;
             m_madeChanges = true;
 
-            // TODO-Inlining: We should really only propagate BBF_COPY_PROPAGATE
-            // flags here. BBF_SPLIT_GAINED includes BBF_PROF_WEIGHT, and
-            // propagating that has the effect that inlining a tree from a hot
-            // block into a block without profile weights means we suddenly
-            // start to see the inliner block as hot and treat future inline
-            // candidates more aggressively.
-            //
             if (inlineeBB != nullptr)
             {
                 // IR may potentially contain nodes that requires mandatory BB flags to be set.
@@ -391,7 +384,7 @@ private:
         }
 
         GenTree* dst = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* asg = m_compiler->gtNewBlkOpNode(dst, src, /* isVolatile */ false, /* isCopyBlock */ true);
+        GenTree* asg = m_compiler->gtNewBlkOpNode(dst, src);
 
         // If inlinee was comma, new inlinee is (, , , lcl = inlinee).
         if (inlinee->OperIs(GT_COMMA))
@@ -1608,7 +1601,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                             GenTree* op2 = argNode->AsOp()->gtOp2;
                             if (op1->IsCall() &&
                                 ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                (op2->gtOper == GT_FIELD) && ((op2->gtFlags & GTF_EXCEPT) == 0))
+                                op2->OperIs(GT_IND) && op2->gtGetOp1()->IsIconHandle() &&
+                                ((op2->gtFlags & GTF_EXCEPT) == 0))
                             {
                                 JITDUMP("\nPerforming special dce on unused arg [%06u]:"
                                         " actual arg [%06u] helper call [%06u]\n",
@@ -1750,10 +1744,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 }
                 else
                 {
-                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
-                                          gtNewIconNode(0),              // Value
-                                          false,                         // isVolatile
-                                          false);                        // not copyBlock
+                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), gtNewIconNode(0));
 
                     newStmt = gtNewStmt(tree, callDI);
                     fgInsertStmtAfter(block, afterStmt, newStmt);

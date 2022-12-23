@@ -18,10 +18,12 @@ namespace System.Text.Json.Reflection
                 throw new InvalidOperationException();
             }
 
+            Debug.Assert(a.AttributeClass != null);
+
             var namedArguments = new List<CustomAttributeNamedArgument>();
             foreach (KeyValuePair<string, TypedConstant> na in a.NamedArguments)
             {
-                var member = a.AttributeClass.BaseTypes().SelectMany(t => t.GetMembers(na.Key)).First();
+                ISymbol member = a.AttributeClass.BaseTypes().SelectMany(t => t.GetMembers(na.Key)).First();
 
                 MemberInfo memberInfo = member is IPropertySymbol
                     ? new PropertyInfoWrapper((IPropertySymbol)member, metadataLoadContext)
@@ -39,8 +41,8 @@ namespace System.Text.Json.Reflection
                     continue;
                 }
 
-                object value = ca.Kind == TypedConstantKind.Array ? ca.Values : ca.Value;
-                constructorArguments.Add(new CustomAttributeTypedArgument(ca.Type.AsType(metadataLoadContext), value));
+                object? value = ca.Kind == TypedConstantKind.Array ? ca.Values : ca.Value;
+                constructorArguments.Add(new CustomAttributeTypedArgument(ca.Type.AsType(metadataLoadContext)!, value));
             }
 
             Constructor = new ConstructorInfoWrapper(a.AttributeConstructor, metadataLoadContext);

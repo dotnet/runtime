@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Runtime_57606
+public class Runtime_57606
 {
     public struct CompositeType16Bytes
     {

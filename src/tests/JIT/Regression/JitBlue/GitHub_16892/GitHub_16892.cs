@@ -26,9 +26,9 @@ class Item
     public int GetValue() { return _value; }
 }
 
-class Program
+public class Program
 {
-    public Item[] itemArray;
+    Item[] itemArray;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     void Init()
@@ -73,7 +73,7 @@ class Program
             
     }
 
-    static int Main(string[] args)
+    public static int Main()
     {
         Program prog = new Program();
 

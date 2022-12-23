@@ -179,6 +179,7 @@ namespace System.Reflection.Emit
         //
 #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
+        private LoaderAllocator? m_keepalive;
 
         private UIntPtr dynamic_assembly; /* GC-tracked */
         private ModuleBuilder[] modules;
@@ -273,7 +274,7 @@ namespace System.Reflection.Emit
         internal static AssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
-            Assembly? callingAssembly,
+            Assembly? _ /*callingAssembly*/,
             AssemblyLoadContext? assemblyLoadContext,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
@@ -336,7 +337,7 @@ namespace System.Reflection.Emit
             if (res is TypeBuilder)
             {
                 if (throwOnError)
-                    throw new TypeLoadException(string.Format("Could not load type '{0}' from assembly '{1}'", name, this.name));
+                    throw new TypeLoadException(SR.Format(SR.ClassLoad_General, name, this.name));
                 return null;
             }
             return res;
