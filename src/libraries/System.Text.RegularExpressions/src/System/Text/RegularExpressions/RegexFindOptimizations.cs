@@ -79,7 +79,7 @@ namespace System.Text.RegularExpressions
             }
 
             // If the trie's root has at most five children, we can perform a vectorized search to find them.
-            // In this case we prefer LeadingMultiString over other potentially vecrotized modes, because this
+            // In this case we prefer LeadingMultiString over other potentially vectorized modes, because this
             // one is less prone to false positives.
             if (prefixTrie is not null && prefixTrie[TrieNode.Root].Children.Count <= 5)
             {
