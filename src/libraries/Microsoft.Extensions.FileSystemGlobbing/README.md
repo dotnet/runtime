@@ -1,5 +1,5 @@
 # Microsoft.Extensions.FileSystemGlobbing
-This assembly provides support for matching file system names/paths using [glob patterns](https://wikipedia.org/wiki/Glob).
+This assembly provides support for matching file system names/paths using [glob patterns](https://en.wikipedia.org/wiki/Glob_(programming)).
 
 The primary type is [`Matcher`](https://learn.microsoft.com/dotnet/api/microsoft.extensions.filesystemglobbing.matcher), you can `AddInclude(string)` and/or `AddExclude(string)` glob patterns and `Execute(DirectoryInfoBase)` the matcher in order to get a `PatternMatchingResult` of the specified directory.
 
