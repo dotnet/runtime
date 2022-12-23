@@ -6,7 +6,7 @@ import {
     MonoMethod, MonoObject, MonoString,
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
 } from "./types";
-import { ENVIRONMENT_IS_PTHREAD, Module } from "./imports";
+import { Module } from "./imports";
 import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 
 type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
@@ -86,7 +86,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     [false, "mono_wasm_enable_on_demand_gc", "void", ["number"]],
     // These two need to be lazy because they may be missing
-    [true, "mono_wasm_profiler_init_aot", "void", ["number"]],
+    [true, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_method_bound", "number", ["number", "number"]],
@@ -235,19 +235,19 @@ export interface t_Cwraps {
     mono_jiterp_get_offset_of_vtable_initialized_flag(): number;
     mono_jiterp_get_offset_of_array_data(): number;
     // Returns bytes written (or 0 if writing failed)
-    mono_jiterp_encode_leb52 (destination: VoidPtr, value: number, valueIsSigned: number): number;
+    mono_jiterp_encode_leb52(destination: VoidPtr, value: number, valueIsSigned: number): number;
     // Returns bytes written (or 0 if writing failed)
     // Source is the address of a 64-bit int or uint
-    mono_jiterp_encode_leb64_ref (destination: VoidPtr, source: VoidPtr, valueIsSigned: number): number;
-    mono_jiterp_type_is_byref (type: MonoType): number;
-    mono_jiterp_get_size_of_stackval (): number;
-    mono_jiterp_type_get_raw_value_size (type: MonoType): number;
-    mono_jiterp_parse_option (name: string): number;
-    mono_jiterp_get_options_as_json (): number;
-    mono_jiterp_get_options_version (): number;
-    mono_jiterp_adjust_abort_count (opcode: number, delta: number): number;
-    mono_jiterp_register_jit_call_thunk (cinfo: number, func: number): void;
-    mono_jiterp_update_jit_call_dispatcher (fn: number): void;
+    mono_jiterp_encode_leb64_ref(destination: VoidPtr, source: VoidPtr, valueIsSigned: number): number;
+    mono_jiterp_type_is_byref(type: MonoType): number;
+    mono_jiterp_get_size_of_stackval(): number;
+    mono_jiterp_type_get_raw_value_size(type: MonoType): number;
+    mono_jiterp_parse_option(name: string): number;
+    mono_jiterp_get_options_as_json(): number;
+    mono_jiterp_get_options_version(): number;
+    mono_jiterp_adjust_abort_count(opcode: number, delta: number): number;
+    mono_jiterp_register_jit_call_thunk(cinfo: number, func: number): void;
+    mono_jiterp_update_jit_call_dispatcher(fn: number): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
@@ -262,12 +262,10 @@ export const enum I52Error {
 }
 
 export function init_c_exports(): void {
-    // init_c_exports is called very early in a pthread before Module.cwrap is available
-    const alwaysLazy = !!ENVIRONMENT_IS_PTHREAD;
     for (const sig of fn_signatures) {
         const wf: any = wrapped_c_functions;
         const [lazy, name, returnType, argTypes, opts] = sig;
-        if (lazy || alwaysLazy) {
+        if (lazy) {
             // lazy init on first run
             wf[name] = function (...args: any[]) {
                 const fce = Module.cwrap(name, returnType, argTypes, opts);

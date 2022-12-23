@@ -4,6 +4,10 @@
 
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/logging.
 
+To learn about our .NET 5 feature on how to control the format of console logs check out [this documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/console-log-formatter).
+
+To learn about our .NET 6 feature on how to use a source generator to create log messages check out [this documentation](https://learn.microsoft.com/en-us/dotnet/core/extensions/logger-message-generator).
+
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
 - [x] [We consider PRs that target this library for improvements to the logging source generator](../../libraries/README.md#secondary-bars)

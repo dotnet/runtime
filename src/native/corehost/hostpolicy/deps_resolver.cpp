@@ -9,6 +9,7 @@
 #include "deps_entry.h"
 #include "deps_format.h"
 #include "deps_resolver.h"
+#include "shared_store.h"
 #include <utils.h>
 #include <fx_ver.h>
 
@@ -83,126 +84,106 @@ namespace
 
         return path.substr(name_pos + 1);
     }
+
+    // A uniqifying append helper that doesn't let two entries with the same
+    // "asset_name" be part of the "items" paths.
+    void add_tpa_asset(
+        const deps_asset_t& asset,
+        const pal::string_t& resolved_path,
+        name_to_resolved_asset_map_t* items)
+    {
+        name_to_resolved_asset_map_t::iterator existing = items->find(asset.name);
+        if (existing == items->end())
+        {
+            if (trace::is_enabled())
+            {
+                trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
+                    resolved_path.c_str(),
+                    asset.assembly_version.as_str().c_str(),
+                    asset.file_version.as_str().c_str());
+            }
+
+            items->emplace(asset.name, deps_resolved_asset_t(asset, resolved_path));
+        }
+    }
+
+    // -----------------------------------------------------------------------------
+    // Load local assemblies by priority order of their file extensions and
+    // uniquified by their simple name.
+    //
+    void get_dir_assemblies(
+        const pal::string_t& dir,
+        const pal::string_t& dir_name,
+        name_to_resolved_asset_map_t* items)
+    {
+        version_t empty;
+        trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
+
+        // Managed extensions in priority order, pick DLL over EXE and NI over IL.
+        const pal::string_t managed_ext[] = { _X(".ni.dll"), _X(".dll"), _X(".ni.exe"), _X(".exe") };
+
+        // List of files in the dir
+        std::vector<pal::string_t> files;
+        pal::readdir(dir, &files);
+
+        for (const auto& ext : managed_ext)
+        {
+            for (const auto& file : files)
+            {
+                // Nothing to do if file length is smaller than expected ext.
+                if (file.length() <= ext.length())
+                {
+                    continue;
+                }
+
+                auto file_name = file.substr(0, file.length() - ext.length());
+                auto file_ext = file.substr(file_name.length());
+
+                // Ext did not match expected ext, skip this file.
+                if (pal::strcasecmp(file_ext.c_str(), ext.c_str()))
+                {
+                    continue;
+                }
+
+                // Already added entry for this asset, by priority order skip this ext
+                if (items->count(file_name))
+                {
+                    trace::verbose(_X("Skipping %s because the %s already exists in %s assemblies"),
+                        file.c_str(),
+                        items->find(file_name)->second.asset.relative_path.c_str(),
+                        dir_name.c_str());
+
+                    continue;
+                }
+
+                // Add entry for this asset
+                pal::string_t file_path = dir;
+                if (!file_path.empty() && file_path.back() != DIR_SEPARATOR)
+                {
+                    file_path.push_back(DIR_SEPARATOR);
+                }
+                file_path.append(file);
+
+                trace::verbose(_X("Adding %s to %s assembly set from %s"),
+                    file_name.c_str(),
+                    dir_name.c_str(),
+                    file_path.c_str());
+
+                deps_asset_t asset(file_name, file, empty, empty);
+                add_tpa_asset(asset, file_path, items);
+            }
+        }
+    }
 } // end of anonymous namespace
 
-  // -----------------------------------------------------------------------------
-  // A uniqifying append helper that doesn't let two entries with the same
-  // "asset_name" be part of the "items" paths.
-  //
-void deps_resolver_t::add_tpa_asset(
-    const deps_asset_t& asset,
-    const pal::string_t& resolved_path,
-    name_to_resolved_asset_map_t* items)
-{
-    name_to_resolved_asset_map_t::iterator existing = items->find(asset.name);
-    if (existing == items->end())
-    {
-        if (trace::is_enabled())
-        {
-            trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
-                resolved_path.c_str(),
-                asset.assembly_version.as_str().c_str(),
-                asset.file_version.as_str().c_str());
-        }
-
-        items->emplace(asset.name, deps_resolved_asset_t(asset, resolved_path));
-    }
-}
-
-// -----------------------------------------------------------------------------
-// Load local assemblies by priority order of their file extensions and
-// uniquified by their simple name.
-//
-void deps_resolver_t::get_dir_assemblies(
-    const pal::string_t& dir,
-    const pal::string_t& dir_name,
-    name_to_resolved_asset_map_t* items)
-{
-    version_t empty;
-    trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
-
-    // Managed extensions in priority order, pick DLL over EXE and NI over IL.
-    const pal::string_t managed_ext[] = { _X(".ni.dll"), _X(".dll"), _X(".ni.exe"), _X(".exe") };
-
-    // List of files in the dir
-    std::vector<pal::string_t> files;
-    pal::readdir(dir, &files);
-
-    for (const auto& ext : managed_ext)
-    {
-        for (const auto& file : files)
-        {
-            // Nothing to do if file length is smaller than expected ext.
-            if (file.length() <= ext.length())
-            {
-                continue;
-            }
-
-            auto file_name = file.substr(0, file.length() - ext.length());
-            auto file_ext = file.substr(file_name.length());
-
-            // Ext did not match expected ext, skip this file.
-            if (pal::strcasecmp(file_ext.c_str(), ext.c_str()))
-            {
-                continue;
-            }
-
-            // Already added entry for this asset, by priority order skip this ext
-            if (items->count(file_name))
-            {
-                trace::verbose(_X("Skipping %s because the %s already exists in %s assemblies"),
-                    file.c_str(),
-                    items->find(file_name)->second.asset.relative_path.c_str(),
-                    dir_name.c_str());
-
-                continue;
-            }
-
-            // Add entry for this asset
-            pal::string_t file_path = dir;
-            if (!file_path.empty() && file_path.back() != DIR_SEPARATOR)
-            {
-                file_path.push_back(DIR_SEPARATOR);
-            }
-            file_path.append(file);
-
-            trace::verbose(_X("Adding %s to %s assembly set from %s"),
-                file_name.c_str(),
-                dir_name.c_str(),
-                file_path.c_str());
-
-            deps_asset_t asset(file_name, file, empty, empty);
-            add_tpa_asset(asset, file_path, items);
-        }
-    }
-}
-
 void deps_resolver_t::setup_shared_store_probes(
-    const arguments_t& args)
+    const std::vector<pal::string_t>& shared_stores)
 {
-    for (const auto& shared : args.env_shared_store)
+    for (const pal::string_t& shared : shared_stores)
     {
         if (pal::directory_exists(shared))
         {
-            // Shared Store probe: DOTNET_SHARED_STORE environment variable
             m_probes.push_back(probe_config_t::lookup(shared));
-            m_needs_file_existence_checks = true;
-        }
-    }
-
-    if (pal::directory_exists(args.dotnet_shared_store))
-    {
-        // Path relative to the location of "dotnet.exe" if it's being used to run the app
-        m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
-        m_needs_file_existence_checks = true;
-    }
-
-    for (const auto& global_shared : args.global_shared_stores)
-    {
-        if (global_shared != args.dotnet_shared_store && pal::directory_exists(global_shared))
-        {
-            // Global store probe: the global location
-            m_probes.push_back(probe_config_t::lookup(global_shared));
             m_needs_file_existence_checks = true;
         }
     }
@@ -224,11 +205,12 @@ pal::string_t deps_resolver_t::get_lookup_probe_directories()
 }
 
 void deps_resolver_t::setup_probe_config(
-    const arguments_t& args)
+    const std::vector<pal::string_t>& shared_stores,
+    const std::vector<pal::string_t>& additional_probe_paths)
 {
-    if (pal::directory_exists(args.core_servicing))
+    if (pal::directory_exists(m_core_servicing))
     {
-        pal::string_t ext_ni = args.core_servicing;
+        pal::string_t ext_ni = m_core_servicing;
         append_path(&ext_ni, get_current_arch_name());
         if (pal::directory_exists(ext_ni))
         {
@@ -237,7 +219,7 @@ void deps_resolver_t::setup_probe_config(
         }
 
         // Servicing normal probe.
-        pal::string_t ext_pkgs = args.core_servicing;
+        pal::string_t ext_pkgs = m_core_servicing;
         append_path(&ext_pkgs, _X("pkgs"));
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
 
@@ -257,11 +239,11 @@ void deps_resolver_t::setup_probe_config(
         }
     }
 
-    setup_shared_store_probes(args);
+    setup_shared_store_probes(shared_stores);
 
-    if (m_additional_probes.size() > 0)
+    if (!additional_probe_paths.empty())
     {
-        for (const auto& probe : m_additional_probes)
+        for (const auto& probe : additional_probe_paths)
         {
             // Additional paths
             m_probes.push_back(probe_config_t::lookup(probe));
@@ -272,17 +254,12 @@ void deps_resolver_t::setup_probe_config(
 
     if (trace::is_enabled())
     {
-        trace::verbose(_X("-- Listing probe configurations..."));
+        trace::verbose(_X("-- Probe configurations:"));
         for (const auto& pc : m_probes)
         {
             pc.print();
         }
     }
-}
-
-void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& probe_paths)
-{
-    m_additional_probes.assign(probe_paths.begin(), probe_paths.end());
 }
 
 /**
@@ -316,11 +293,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
         }
 
         const pal::string_t& probe_dir = config.probe_dir;
-        uint32_t search_options = deps_entry_t::search_options::none;
-        if (needs_file_existence_checks())
-        {
-            search_options |= deps_entry_t::search_options::file_existence;
-        }
+        uint32_t search_options = m_needs_file_existence_checks ? deps_entry_t::search_options::file_existence : deps_entry_t::search_options::none;
 
         if (config.is_fx())
         {
@@ -627,7 +600,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     }
 }
 
-void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
+void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps_serialized, const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
 {
     if (!m_is_framework_dependent
         || m_host_mode == host_mode_t::libhost)
@@ -646,9 +619,7 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
         return;
     }
 
-    pal::string_t additional_deps_serialized = args.additional_deps_serialized;
-
-    if (additional_deps_serialized.empty())
+    if (additional_deps_serialized == nullptr || pal::strlen(additional_deps_serialized) == 0)
     {
         return;
     }
@@ -667,7 +638,8 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
                 trace::verbose(_X("Using specified additional deps.json: '%s'"),
                     additional_deps_path.c_str());
 
-                m_additional_deps_files.push_back(additional_deps_path);
+                m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
+                    new deps_json_t(true, additional_deps_path, rid_fallback_graph)));
             }
             else
             {
@@ -723,21 +695,20 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
                     {
                         pal::string_t json_full_path = additional_deps_path_fx;
                         append_path(&json_full_path, json_file.c_str());
-                        m_additional_deps_files.push_back(json_full_path);
 
                         trace::verbose(_X("Using specified additional deps.json: '%s'"),
                             json_full_path.c_str());
+
+                        m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
+                            new deps_json_t(true, json_full_path, rid_fallback_graph)));
                     }
                 }
             }
         }
     }
 
-    for (pal::string_t json_file : m_additional_deps_files)
-    {
-        m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-            new deps_json_t(true, json_file, rid_fallback_graph)));
-    }
+    if (!m_additional_deps.empty())
+        m_needs_file_existence_checks = true;
 }
 
 void deps_resolver_t::enum_app_context_deps_files(std::function<void(const pal::string_t&)> callback)

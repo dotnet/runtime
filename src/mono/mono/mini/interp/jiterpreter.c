@@ -35,6 +35,7 @@ void jiterp_preserve_module (void);
 #include "interp-intrins.h"
 #include "tiering.h"
 
+#include <mono/utils/mono-math.h>
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/aot-runtime.h>
@@ -437,6 +438,43 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 	return 0;
 }
 
+#define JITERP_RELOP(opcode, type, op, noorder) \
+	case opcode: \
+		{ \
+			if (is_unordered) \
+				return noorder; \
+			else \
+				return ((type)lhs op (type)rhs); \
+		}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
+	gboolean is_unordered = mono_isunordered (lhs, rhs);
+	switch (opcode) {
+		JITERP_RELOP(MINT_CEQ_R4, float, ==, 0);
+		JITERP_RELOP(MINT_CEQ_R8, double, ==, 0);
+		JITERP_RELOP(MINT_CNE_R4, float, !=, 1);
+		JITERP_RELOP(MINT_CNE_R8, double, !=, 1);
+		JITERP_RELOP(MINT_CGT_R4, float, >, 0);
+		JITERP_RELOP(MINT_CGT_R8, double, >, 0);
+		JITERP_RELOP(MINT_CGE_R4, float, >=, 0);
+		JITERP_RELOP(MINT_CGE_R8, double, >=, 0);
+		JITERP_RELOP(MINT_CGT_UN_R4, float, >, 1);
+		JITERP_RELOP(MINT_CGT_UN_R8, double, >, 1);
+		JITERP_RELOP(MINT_CLT_R4, float, <, 0);
+		JITERP_RELOP(MINT_CLT_R8, double, <, 0);
+		JITERP_RELOP(MINT_CLT_UN_R4, float, <, 1);
+		JITERP_RELOP(MINT_CLT_UN_R8, double, <, 1);
+		JITERP_RELOP(MINT_CLE_R4, float, <=, 0);
+		JITERP_RELOP(MINT_CLE_R8, double, <=, 0);
+
+		default:
+			g_assert_not_reached();
+	}
+}
+
+#undef JITERP_RELOP
+
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
 mono_jiterp_get_offset_of_vtable_initialized_flag () {
@@ -518,34 +556,6 @@ mono_jiterp_adjust_abort_count (MintOpcode opcode, gint32 delta) {
 	return jiterpreter_abort_counts[opcode];
 }
 
-typedef struct {
-	InterpMethod *rmethod;
-	ThreadContext *context;
-	gpointer orig_domain;
-	gpointer attach_cookie;
-} JiterpEntryDataHeader;
-
-// we optimize delegate calls by attempting to cache the delegate invoke
-//  target - this will improve performance when the same delegate is invoked
-//  repeatedly inside a loop
-typedef struct {
-	MonoDelegate *delegate_invoke_is_for;
-	MonoMethod *delegate_invoke;
-	InterpMethod *delegate_invoke_rmethod;
-} JiterpEntryDataCache;
-
-// jitted interp_entry wrappers use custom tracking data structures
-//  that are allocated in the heap, one per wrapper
-// FIXME: For thread safety we need to make these thread-local or stack-allocated
-// Note that if we stack allocate these the cache will need to move somewhere else
-typedef struct {
-	// We split the cache out from the important data so that when
-	//  jiterp_interp_entry copies the important data it doesn't have
-	//  to also copy the cache. This reduces overhead slightly
-	JiterpEntryDataHeader header;
-	JiterpEntryDataCache cache;
-} JiterpEntryData;
-
 // at the start of a jitted interp_entry wrapper, this is called to perform initial setup
 //  like resolving the target for delegates and setting up the thread context
 // inlining this into the wrappers would make them unnecessarily big and complex
@@ -602,60 +612,6 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 	sp_args = (stackval*)context->stack_pointer;
 
 	return sp_args;
-}
-
-// after interp_entry_prologue the wrapper will set up all the argument values
-//  in the correct place and compute the stack offset, then it passes that in to this
-//  function in order to actually enter the interpreter and process the return value
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
-{
-	JiterpEntryDataHeader header;
-	MonoType *type;
-
-	// Copy the scratch buffer into a local variable. This is necessary for us to be
-	//  reentrant-safe because mono_interp_exec_method could end up hitting the trampoline
-	//  again
-	jiterp_assert(_data);
-	header = _data->header;
-
-	jiterp_assert(header.rmethod);
-	jiterp_assert(header.rmethod->method);
-	jiterp_assert(sp_args);
-
-	stackval *sp = (stackval*)header.context->stack_pointer;
-
-	InterpFrame frame = {0};
-	frame.imethod = header.rmethod;
-	frame.stack = sp;
-	frame.retval = sp;
-
-	header.context->stack_pointer = (guchar*)sp_args;
-	g_assert ((guchar*)sp_args < header.context->stack_end);
-
-	MONO_ENTER_GC_UNSAFE;
-	mono_interp_exec_method (&frame, header.context, NULL);
-	MONO_EXIT_GC_UNSAFE;
-
-	header.context->stack_pointer = (guchar*)sp;
-
-	if (header.rmethod->needs_thread_attach)
-		mono_threads_detach_coop (header.orig_domain, &header.attach_cookie);
-
-	mono_jiterp_check_pending_unwind (header.context);
-
-	if (mono_llvm_only) {
-		if (header.context->has_resume_state)
-			/* The exception will be handled in a frame above us */
-			mono_llvm_cpp_throw_exception ();
-	} else {
-		g_assert (!header.context->has_resume_state);
-	}
-
-	// The return value is at the bottom of the stack, after the locals space
-	type = header.rmethod->rtype;
-	if (type->type != MONO_TYPE_VOID)
-		mono_jiterp_stackval_to_data (type, frame.stack, res);
 }
 
 // should_abort_trace returns one of these codes depending on the opcode and current state
@@ -758,6 +714,11 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_SAFEPOINT:
 			return TRACE_ABORT;
 
+		case MINT_MOV_SRC_OFF:
+		case MINT_MOV_DST_OFF:
+			// These opcodes will turn into supported MOVs later
+			return TRACE_CONTINUE;
+
 		default:
 		if (
 			// branches
@@ -790,7 +751,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		)
 			return TRACE_CONTINUE;
 		else if (
-			(opcode >= MINT_MOV_SRC_OFF) &&
+			(opcode >= MINT_MOV_I4_I1) &&
 			(opcode <= MINT_MOV_8_4)
 		)
 			return TRACE_CONTINUE;
@@ -830,7 +791,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		else if (
 			// array operations
 			// some of these like the _I ones aren't implemented yet but are rare
-			(opcode >= MINT_LDELEM_I) &&
+			(opcode >= MINT_LDELEM_I1) &&
 			(opcode <= MINT_GETITEM_LOCALSPAN)
 		)
 			return TRACE_CONTINUE;
@@ -840,32 +801,35 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 }
 
 static gboolean
-should_generate_trace_here (InterpBasicBlock *bb, InterpInst *last_ins) {
+should_generate_trace_here (InterpBasicBlock *bb) {
 	int current_trace_length = 0;
 	// A preceding trace may have been in a branch block, but we only care whether the current
 	//  trace will have a branch block opened, because that determines whether calls and branches
 	//  will unconditionally abort the trace or not.
 	gboolean inside_branch_block = FALSE;
 
-	// We scan forward through the entire method body starting from the current block, not just
-	//  the current block (since the actual trace compiler doesn't know about block boundaries).
-	for (InterpInst *ins = bb->first_ins; (ins != NULL) && (ins != last_ins); ins = ins->next) {
-		int category = jiterp_should_abort_trace(ins, &inside_branch_block);
-		switch (category) {
-			case TRACE_ABORT: {
-				jiterpreter_abort_counts[ins->opcode]++;
-				return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
+	while (bb) {
+		// We scan forward through the entire method body starting from the current block, not just
+		//  the current block (since the actual trace compiler doesn't know about block boundaries).
+		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			int category = jiterp_should_abort_trace(ins, &inside_branch_block);
+			switch (category) {
+				case TRACE_ABORT:
+					jiterpreter_abort_counts[ins->opcode]++;
+					return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
+				case TRACE_IGNORE:
+					break;
+				default:
+					current_trace_length++;
+					break;
 			}
-			case TRACE_IGNORE:
-				break;
-			default:
-				current_trace_length++;
-				break;
+
+			// Once we know the trace is long enough we can stop scanning.
+			if (current_trace_length >= mono_opt_jiterpreter_minimum_trace_length)
+				return TRUE;
 		}
 
-		// Once we know the trace is long enough we can stop scanning.
-		if (current_trace_length >= mono_opt_jiterpreter_minimum_trace_length)
-			return TRUE;
+		bb = bb->next_bb;
 	}
 
 	return FALSE;
@@ -908,12 +872,12 @@ jiterp_insert_entry_points (void *_td)
 		//  multiple times and waste some work. At present this is unavoidable because
 		//  control flow means we can end up with two traces covering different subsets
 		//  of the same method in order to handle loops and resuming
-		gboolean should_generate = enabled && should_generate_trace_here(bb, td->last_ins);
+		gboolean should_generate = enabled && should_generate_trace_here(bb);
 
 		if (mono_opt_jiterpreter_call_resume_enabled && bb->contains_call_instruction)
 			enter_at_next = TRUE;
 
-		if (mono_opt_jiterpreter_always_generate)
+		if (mono_opt_jiterpreter_disable_heuristic)
 			should_generate = TRUE;
 
 		if (enabled && should_generate) {

@@ -22,6 +22,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
+		public Task InterfaceWithAttributeOnImplementation ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task SimpleDefaultInterfaceMethod ()
 		{
 			return RunTest (allowMissingWarnings: true);
