@@ -85,7 +85,7 @@ namespace System.IO.Strategies
         public sealed override long Position
         {
             get => _filePosition;
-            set => _filePosition = value;
+            set => Seek(value, SeekOrigin.Begin);
         }
 
         internal sealed override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
