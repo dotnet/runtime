@@ -95,6 +95,8 @@ namespace System
 
             public override int Next(int maxValue)
             {
+                Debug.Assert(maxValue >= 0);
+
                 ulong randomProduct = (ulong)(uint)maxValue * NextUInt32();
                 uint lowPart = (uint)randomProduct;
 
@@ -150,6 +152,8 @@ namespace System
 
             public override long NextInt64(long maxValue)
             {
+                Debug.Assert(maxValue >= 0);
+
                 UInt128 randomProduct = (UInt128)(ulong)maxValue * NextUInt64();
                 ulong lowPart = (ulong)randomProduct;
 

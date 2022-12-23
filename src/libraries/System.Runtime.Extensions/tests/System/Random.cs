@@ -606,23 +606,43 @@ namespace System.Tests
                     0xbe, 0x19, 0x0c, 0xf7, 0xae, 0xe2, 0xfa, 0xec, 0x8e, 0xc6, 0x22, 0xe1, 0x78, 0xb6, 0x39, 0xd1,
                 }, buffer);
 
-                Assert.Equal(0.02333050652594726, randOuter.NextDouble());
-                Assert.Equal(0.592402766665435, randOuter.NextDouble());
-                Assert.Equal(0.6658883755588669, randOuter.NextDouble());
-                Assert.Equal(0.18356709019700435, randOuter.NextDouble());
-                Assert.Equal(0.8686094193061149, randOuter.NextDouble());
-
+                Assert.Equal(50101881, randOuter.Next());
+                Assert.Equal(1272175254, randOuter.Next());
                 Assert.Equal(0, randOuter.Next(0));
                 Assert.Equal(0, randOuter.Next(1));
 
+                Assert.Equal(36, randOuter.Next(42));
+                Assert.Equal(414373255, randOuter.Next(int.MaxValue));
+
                 Assert.Equal(0, randOuter.Next(0, 0));
                 Assert.Equal(1, randOuter.Next(1, 2));
+                Assert.Equal(8, randOuter.Next(0, 42));
+                Assert.Equal(4903, randOuter.Next(42, 12345));
+                Assert.Equal(2147483643, randOuter.Next(int.MaxValue - 5, int.MaxValue));
+                Assert.Equal(241160533, randOuter.Next(int.MinValue, int.MaxValue));
+
+                Assert.Equal(7986543274318426717, randOuter.NextInt64());
+                Assert.Equal(2184762751940478242, randOuter.NextInt64());
 
                 Assert.Equal(0, randOuter.NextInt64(0));
                 Assert.Equal(0, randOuter.NextInt64(1));
+                Assert.Equal(8, randOuter.NextInt64(42));
+                Assert.Equal(4799330244130288536, randOuter.NextInt64(long.MaxValue));
 
                 Assert.Equal(0, randOuter.NextInt64(0, 0));
                 Assert.Equal(1, randOuter.NextInt64(1, 2));
+                Assert.Equal(29, randOuter.NextInt64(0, 42));
+                Assert.Equal(9575, randOuter.NextInt64(42, 12345));
+                Assert.Equal(9223372036854775802, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
+                Assert.Equal(-8248911992647668710, randOuter.NextInt64(long.MinValue, long.MaxValue));
+
+                Assert.Equal(0.4319359955262648, randOuter.NextDouble());
+                Assert.Equal(0.00939284326802925, randOuter.NextDouble());
+                Assert.Equal(0.4631264615107299, randOuter.NextDouble());
+
+                Assert.Equal(0.33326554f, randOuter.NextSingle());
+                Assert.Equal(0.85681933f, randOuter.NextSingle());
+                Assert.Equal(0.6594592f, randOuter.NextSingle());
             }
             else
             {
@@ -645,23 +665,43 @@ namespace System.Tests
                     0x65, 0xB5, 0x11, 0xF2, 0x0D, 0x3F, 0x62, 0xC8, 0x5C, 0x7C, 0x1C, 0x35, 0x34, 0x2D, 0xBC, 0x9E,
                 }, buffer);
 
-                Assert.Equal(0.717046f, randOuter.NextSingle());
-                Assert.Equal(0.67567915f, randOuter.NextSingle());
-                Assert.Equal(0.72646743f, randOuter.NextSingle());
-                Assert.Equal(0.3635164f, randOuter.NextSingle());
-                Assert.Equal(0.56246036f, randOuter.NextSingle());
-
+                Assert.Equal(1539844677, randOuter.Next());
+                Assert.Equal(1451010027, randOuter.Next());
                 Assert.Equal(0, randOuter.Next(0));
                 Assert.Equal(0, randOuter.Next(1));
 
+                Assert.Equal(23, randOuter.Next(42));
+                Assert.Equal(1109044164, randOuter.Next(int.MaxValue));
+
                 Assert.Equal(0, randOuter.Next(0, 0));
                 Assert.Equal(1, randOuter.Next(1, 2));
+                Assert.Equal(2, randOuter.Next(0, 42));
+                Assert.Equal(528, randOuter.Next(42, 12345));
+                Assert.Equal(2147483643, randOuter.Next(int.MaxValue - 5, int.MaxValue));
+                Assert.Equal(-246770113, randOuter.Next(int.MinValue, int.MaxValue));
+
+                Assert.Equal(7961633792735929777, randOuter.NextInt64());
+                Assert.Equal(1188783949680720902, randOuter.NextInt64());
 
                 Assert.Equal(0, randOuter.NextInt64(0));
                 Assert.Equal(0, randOuter.NextInt64(1));
+                Assert.Equal(17, randOuter.NextInt64(42));
+                Assert.Equal(503439193919329313, randOuter.NextInt64(long.MaxValue));
 
                 Assert.Equal(0, randOuter.NextInt64(0, 0));
                 Assert.Equal(1, randOuter.NextInt64(1, 2));
+                Assert.Equal(12, randOuter.NextInt64(0, 42));
+                Assert.Equal(7259, randOuter.NextInt64(42, 12345));
+                Assert.Equal(9223372036854775804, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
+                Assert.Equal(-2583240258377316096, randOuter.NextInt64(long.MinValue, long.MaxValue));
+
+                Assert.Equal(0.579061847136055, randOuter.NextDouble());
+                Assert.Equal(0.9242352796827912, randOuter.NextDouble());
+                Assert.Equal(0.8438290046276637, randOuter.NextDouble());
+
+                Assert.Equal(0.7578857f, randOuter.NextSingle());
+                Assert.Equal(0.5732552f, randOuter.NextSingle());
+                Assert.Equal(0.8118307f, randOuter.NextSingle());
             }
         }
 
