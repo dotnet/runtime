@@ -21,7 +21,7 @@ namespace Internal.Runtime.TypeLoader
     public sealed partial class TypeLoaderEnvironment
     {
 #if GVM_RESOLUTION_TRACE
-        private string GetTypeNameDebug(RuntimeTypeHandle rtth)
+        private static string GetTypeNameDebug(RuntimeTypeHandle rtth)
         {
             string result;
 
@@ -58,11 +58,14 @@ namespace Internal.Runtime.TypeLoader
             bool lookForDefaultImplementations = false;
 
         again:
-            while (!type.IsNull())
+            // Walk parent hierarchy attempting to resolve
+            RuntimeTypeHandle currentType = type;
+
+            while (!currentType.IsNull())
             {
                 string methodName = methodNameAndSignature.Name;
                 RuntimeSignature methodSignature = methodNameAndSignature.Signature;
-                if (TryGetGenericVirtualTargetForTypeAndSlot(type, ref declaringType, genericArguments, ref methodName, ref methodSignature, lookForDefaultImplementations, out functionPointer, out genericDictionary, out slotChanged))
+                if (TryGetGenericVirtualTargetForTypeAndSlot(currentType, ref declaringType, genericArguments, ref methodName, ref methodSignature, lookForDefaultImplementations, out functionPointer, out genericDictionary, out slotChanged))
                 {
                     methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);
 
@@ -71,7 +74,7 @@ namespace Internal.Runtime.TypeLoader
                     break;
                 }
 
-                bool success = RuntimeAugments.TryGetBaseType(type, out type);
+                bool success = RuntimeAugments.TryGetBaseType(currentType, out currentType);
                 Debug.Assert(success);
             }
 
