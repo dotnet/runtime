@@ -21,7 +21,7 @@ namespace System.Buffers.Text
         /// <param name="base64Text">The input span which contains UTF-8 encoded text in base64 that needs to be validated.</param>
         /// <param name="decodedLength">The maximum length (in bytes) if you were to decode the base 64 encoded text <paramref name="base64Text"/> within a byte span.</param>
         /// <returns>true if <paramref name="base64Text"/> is decodable; otherwise, false.</returns>
-        public static unsafe bool IsValid(ReadOnlySpan<char> base64Text, out int decodedLength)
+        public static bool IsValid(ReadOnlySpan<char> base64Text, out int decodedLength)
         {
             if (base64Text.IsEmpty)
             {
@@ -38,7 +38,7 @@ namespace System.Buffers.Text
                 while (indexOfPaddingInvalidOrWhitespace >= 0)
                 {
                     char charToValidate = base64Text[indexOfPaddingInvalidOrWhitespace];
-                    if (IsByteToBeIgnored(charToValidate))
+                    if (IsByteWhitespace(charToValidate))
                     {
                         // Chars to be ignored (e,g, whitespace...) should not count towards the length.
                         length--;
@@ -131,7 +131,7 @@ namespace System.Buffers.Text
                 while (indexOfPaddingInvalidOrWhitespace >= 0)
                 {
                     byte byteToValidate = base64TextUtf8[indexOfPaddingInvalidOrWhitespace];
-                    if (IsByteToBeIgnored(byteToValidate))
+                    if (IsByteWhitespace(byteToValidate))
                     {
                         // Bytes to be ignored (e,g, whitespace...) should not count towards the length.
                         length--;
