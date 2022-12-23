@@ -123,7 +123,7 @@ jobs:
       isSingleFile: true
       nameSuffix: NativeAOT_Checked_Libs
       buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true
-      timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
+      timeoutInMinutes: 360
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
