@@ -5,7 +5,7 @@ This assembly is only supported on Windows.
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.security.accesscontrol and https://learn.microsoft.com/dotnet/api/system.io.filesystemaclextensions.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We only consider fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
 - [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
 
 ## Deployment
