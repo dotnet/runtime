@@ -10,7 +10,7 @@ namespace System
     {
         private static readonly Lazy<bool> _canShareFiles = new Lazy<bool>(() =>
         {
-            if (!PlatformDetection.IsWindowsAndElevated)
+            if (!PlatformDetection.IsWindows || !PlatformDetection.IsPrivilegedProcess)
             {
                 return false;
             }
