@@ -95,8 +95,8 @@ namespace System
 
             public override int Next(int maxValue)
             {
-                ulong randomProduct = (ulong)maxValue * NextUInt32();
-                uint lowPart = (uint)(randomProduct & uint.MaxValue);
+                ulong randomProduct = (ulong)(uint)maxValue * NextUInt32();
+                uint lowPart = (uint)randomProduct;
 
                 if (lowPart < (uint)maxValue)
                 {
@@ -104,8 +104,8 @@ namespace System
 
                     while (lowPart < remainder)
                     {
-                        randomProduct = (ulong)maxValue * NextUInt32();
-                        lowPart = (uint)(randomProduct & uint.MaxValue);
+                        randomProduct = (ulong)(uint)maxValue * NextUInt32();
+                        lowPart = (uint)randomProduct;
                     }
                 }
 
@@ -117,16 +117,16 @@ namespace System
                 uint exclusiveRange = (uint)(maxValue - minValue);
 
                 ulong randomProduct = (ulong)exclusiveRange * NextUInt32();
-                uint lowPart = (uint)(randomProduct & uint.MaxValue);
+                uint lowPart = (uint)randomProduct;
 
-                if (lowPart < (uint)exclusiveRange)
+                if (lowPart < exclusiveRange)
                 {
-                    uint remainder = ((uint)0 - (uint)exclusiveRange) % (uint)exclusiveRange;
+                    uint remainder = ((uint)0 - exclusiveRange) % exclusiveRange;
 
                     while (lowPart < remainder)
                     {
                         randomProduct = (ulong)exclusiveRange * NextUInt32();
-                        lowPart = (uint)(randomProduct & uint.MaxValue);
+                        lowPart = (uint)randomProduct;
                     }
                 }
 
@@ -150,8 +150,8 @@ namespace System
 
             public override long NextInt64(long maxValue)
             {
-                UInt128 randomProduct = (UInt128)maxValue * NextUInt64();
-                ulong lowPart = (ulong)(randomProduct & ulong.MaxValue);
+                UInt128 randomProduct = (UInt128)(ulong)maxValue * NextUInt64();
+                ulong lowPart = (ulong)randomProduct;
 
                 if (lowPart < (ulong)maxValue)
                 {
@@ -159,8 +159,8 @@ namespace System
 
                     while (lowPart < remainder)
                     {
-                        randomProduct = (UInt128)maxValue * NextUInt64();
-                        lowPart = (ulong)(randomProduct & ulong.MaxValue);
+                        randomProduct = (UInt128)(ulong)maxValue * NextUInt64();
+                        lowPart = (ulong)randomProduct;
                     }
                 }
 
@@ -172,7 +172,7 @@ namespace System
                 ulong exclusiveRange = (ulong)(maxValue - minValue);
 
                 UInt128 randomProduct = (UInt128)exclusiveRange * NextUInt64();
-                ulong lowPart = (ulong)(randomProduct & ulong.MaxValue);
+                ulong lowPart = (ulong)randomProduct;
 
                 if (lowPart < exclusiveRange)
                 {
@@ -181,7 +181,7 @@ namespace System
                     while (lowPart < remainder)
                     {
                         randomProduct = (UInt128)exclusiveRange * NextUInt64();
-                        lowPart = (ulong)(randomProduct & ulong.MaxValue);
+                        lowPart = (ulong)randomProduct;
                     }
                 }
 
