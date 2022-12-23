@@ -487,12 +487,13 @@ namespace System.IO
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
                 }
-                else if (_strategy.IsClosed)
-                {
-                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
-                }
                 else if (!CanSeek)
                 {
+                    if(_strategy.IsClosed)
+                    {
+                        ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                    }
+
                     ThrowHelper.ThrowNotSupportedException_UnseekableStream();
                 }
 
@@ -583,7 +584,24 @@ namespace System.IO
 
         public override bool CanSeek => _strategy.CanSeek;
 
-        public override long Seek(long offset, SeekOrigin origin) => _strategy.Seek(offset, origin);
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
+            {
+                throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
+            }
+            else if (!CanSeek)
+            {
+                if (_strategy.IsClosed)
+                {
+                    ThrowHelper.ThrowObjectDisposedException_FileClosed();
+                }
+
+                ThrowHelper.ThrowNotSupportedException_UnseekableStream();
+            }
+
+            return _strategy.Seek(offset, origin);
+        }
 
         internal Task BaseFlushAsync(CancellationToken cancellationToken)
             => base.FlushAsync(cancellationToken);
