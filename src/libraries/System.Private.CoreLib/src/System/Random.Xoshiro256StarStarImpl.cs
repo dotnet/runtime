@@ -116,6 +116,8 @@ namespace System
 
             public override int Next(int minValue, int maxValue)
             {
+                Debug.Assert(minValue <= maxValue);
+
                 uint exclusiveRange = (uint)(maxValue - minValue);
 
                 ulong randomProduct = (ulong)exclusiveRange * NextUInt32();
@@ -173,6 +175,8 @@ namespace System
 
             public override long NextInt64(long minValue, long maxValue)
             {
+                Debug.Assert(minValue <= maxValue);
+
                 ulong exclusiveRange = (ulong)(maxValue - minValue);
 
                 UInt128 randomProduct = (UInt128)exclusiveRange * NextUInt64();
