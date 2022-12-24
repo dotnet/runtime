@@ -147,9 +147,8 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ValidBase64Strings_WithCharsThatMustBeIgnored))]
-        public void ValidateBytesIgnoresCharsToBeIgnoredBytes(string utf8WithByteToBeIgnored, byte[] expectedBytes, int expectedBytesConsumed)
+        public void ValidateBytesIgnoresCharsToBeIgnoredBytes(string utf8WithByteToBeIgnored, byte[] expectedBytes)
         {
-            _ = expectedBytesConsumed;
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
 
             Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));
@@ -159,9 +158,8 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ValidBase64Strings_WithCharsThatMustBeIgnored))]
-        public void ValidateBytesIgnoresCharsToBeIgnoredChars(string utf8WithByteToBeIgnored, byte[] expectedBytes, int expectedBytesConsumed)
+        public void ValidateBytesIgnoresCharsToBeIgnoredChars(string utf8WithByteToBeIgnored, byte[] expectedBytes)
         {
-            _ = expectedBytesConsumed;
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
 
             Assert.True(Base64.IsValid(utf8BytesWithByteToBeIgnored));

@@ -38,7 +38,7 @@ namespace System.Buffers.Text
                 while (indexOfPaddingInvalidOrWhitespace >= 0)
                 {
                     char charToValidate = base64Text[indexOfPaddingInvalidOrWhitespace];
-                    if (IsByteWhitespace(charToValidate))
+                    if (IsWhitespace(charToValidate))
                     {
                         // Chars to be ignored (e,g, whitespace...) should not count towards the length.
                         length--;
@@ -131,7 +131,7 @@ namespace System.Buffers.Text
                 while (indexOfPaddingInvalidOrWhitespace >= 0)
                 {
                     byte byteToValidate = base64TextUtf8[indexOfPaddingInvalidOrWhitespace];
-                    if (IsByteWhitespace(byteToValidate))
+                    if (IsWhitespace(byteToValidate))
                     {
                         // Bytes to be ignored (e,g, whitespace...) should not count towards the length.
                         length--;
