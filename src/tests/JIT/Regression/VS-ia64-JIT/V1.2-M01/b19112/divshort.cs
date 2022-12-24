@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-class foo
+public class foo
 {
 
     public static short a, b, c;

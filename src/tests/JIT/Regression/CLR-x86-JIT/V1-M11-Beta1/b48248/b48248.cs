@@ -4,7 +4,7 @@
 
 using System;
 
-struct test
+public struct test
 {
     public String str;
     public int int1;

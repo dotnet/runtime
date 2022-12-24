@@ -921,6 +921,8 @@ namespace ILCompiler.DependencyAnalysis
         private TypeDesc _type;
         private bool _isUniversalCanon;
 
+        public TypeDesc CanonType => _type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateTypeLayoutVertexNode_" + factory.NameMangler.GetMangledTypeName(_type);
 
         public NativeLayoutTemplateTypeLayoutVertexNode(NodeFactory factory, TypeDesc type)
@@ -989,7 +991,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (context.PreinitializationManager.HasLazyStaticConstructor(_type))
+            if (context.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
             }
@@ -1188,7 +1190,7 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.DictionaryLayout, dictionaryLayout.WriteVertex(factory));
             }
 
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 MethodDesc cctorMethod = _type.GetStaticConstructor();
                 MethodDesc canonCctorMethod = cctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);

@@ -28,7 +28,7 @@
 
 .namespace JitTest
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static int32 
@@ -84,7 +84,7 @@
       IL_0056:  ret
     } // end of method Test::try_index
 
-    .method private hidebysig static int32 
+    .method public hidebysig static int32 
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

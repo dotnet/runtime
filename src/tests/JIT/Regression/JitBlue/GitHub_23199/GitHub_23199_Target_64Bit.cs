@@ -6,13 +6,9 @@ using System.Runtime.CompilerServices;
 // It required GCStress=0xc and GcStressOnDirectCalls=1 to hit issues. The issues were with saving GC pointers in the return registers.
 // The GC infra has to correctly mark registers with pointers as alive and must not report registers without pointers.
 
-#if TARGET_32BIT
-using nint = System.Int32;
-#else
 using nint = System.Int64;
-#endif
 
-namespace GitHub_23199
+namespace GitHub_23199_64Bit
 {
     public class Program
     {
@@ -158,7 +154,7 @@ namespace GitHub_23199
             Console.WriteLine("TestNoPointer2 Passed");
             return a;
         }
-        
+
         struct ThirdPointer
         {
             public nint a;
@@ -185,7 +181,7 @@ namespace GitHub_23199
         }
 
 
-        static int Main()
+        public static int Main()
         {
             TestCrossgenedReturnWith2PointersStruct();
             TestTwoPointers();
