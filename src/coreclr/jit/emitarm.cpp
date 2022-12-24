@@ -6927,8 +6927,18 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 {
     if (isFloatReg(reg))
     {
-        const char* size = attr == EA_8BYTE ? "d" : "s";
-        printf("%s%s", size, emitFloatRegName(reg, attr) + 1);
+        if (attr == EA_8BYTE)
+        {
+            char     regNum[2];
+            unsigned regIndex = reg - REG_F0;
+            regIndex >>= 1;
+
+            printf("d%s", _itoa(regIndex, regNum, 10));
+        }
+        else
+        {
+            printf("s%s", emitFloatRegName(reg, attr) + 1);
+        }
     }
     else
     {
