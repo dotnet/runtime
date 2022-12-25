@@ -2215,18 +2215,18 @@ void LinearScan::checkLastUses(BasicBlock* block)
                     foundDiff = true;
                 }
 
-                if (currentRefPosition->needsConsecutive)
-                {
-                    // If this is a case of consecutive registers, refPositions are added so they get register
-                    // They may not be bbLiveIn but are just used directly as operand. Only add them in computedLive
-                    // if they were part of bbLiveIn. 
-                    if(VarSetOps::IsMember(compiler, block->bbLiveIn, varIndex))
-                    {
-                        JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
-                        VarSetOps::AddElemD(compiler, computedLive, varIndex);
-                    }
-                }
-                else
+                //if (currentRefPosition->needsConsecutive)
+                //{
+                //    // If this is a case of consecutive registers, refPositions are added so they get register
+                //    // They may not be bbLiveIn but are just used directly as operand. Only add them in computedLive
+                //    // if they were part of bbLiveIn. 
+                //    if(VarSetOps::IsMember(compiler, block->bbLiveIn, varIndex))
+                //    {
+                //        JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
+                //        VarSetOps::AddElemD(compiler, computedLive, varIndex);
+                //    }
+                //}
+                //else
                 {
                     JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
                     VarSetOps::AddElemD(compiler, computedLive, varIndex);
@@ -2786,73 +2786,101 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 //        no such ref position, no register will be allocated.
 //
 
-regNumber LinearScan::allocateReg(Interval*    currentInterval,
+regNumber LinearScan::allocateReg(Interval*    referentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
+    Interval* currentInterval = refPosition->getInterval();
+    assert(referentInterval == currentInterval);
+
     regMaskTP foundRegBit = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
     if (foundRegBit == RBM_NONE)
     {
         return REG_NA;
     }
+    regNumber regToReturn = genRegNumFromMask(foundRegBit);
 
-    regNumber  foundReg               = genRegNumFromMask(foundRegBit);
-    RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
-    Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
-    if ((assignedInterval != currentInterval) &&
-        isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
-    {
-        if (regSelector->isSpilling())
+    //do
+    //{
+        currentInterval                   = refPosition->getInterval();
+        regNumber  foundReg               = genRegNumFromMask(foundRegBit);
+        RegRecord* availablePhysRegRecord = getRegisterRecord(foundReg);
+        Interval*  assignedInterval       = availablePhysRegRecord->assignedInterval;
+        if ((assignedInterval != currentInterval) &&
+            isAssigned(availablePhysRegRecord ARM_ARG(getRegisterType(currentInterval, refPosition))))
         {
-            // We're spilling.
-            CLANG_FORMAT_COMMENT_ANCHOR;
+            if (regSelector->isSpilling())
+            {
+                // We're spilling.
+                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_ARM
-            if (currentInterval->registerType == TYP_DOUBLE)
-            {
-                assert(genIsValidDoubleReg(availablePhysRegRecord->regNum));
-                unassignDoublePhysReg(availablePhysRegRecord);
-            }
-            else if (assignedInterval->registerType == TYP_DOUBLE)
-            {
-                // Make sure we spill both halves of the double register.
-                assert(genIsValidDoubleReg(assignedInterval->assignedReg->regNum));
-                unassignPhysReg(assignedInterval->assignedReg, assignedInterval->recentRefPosition);
-            }
-            else
+                if (currentInterval->registerType == TYP_DOUBLE)
+                {
+                    assert(genIsValidDoubleReg(availablePhysRegRecord->regNum));
+                    unassignDoublePhysReg(availablePhysRegRecord);
+                }
+                else if (assignedInterval->registerType == TYP_DOUBLE)
+                {
+                    // Make sure we spill both halves of the double register.
+                    assert(genIsValidDoubleReg(assignedInterval->assignedReg->regNum));
+                    unassignPhysReg(assignedInterval->assignedReg, assignedInterval->recentRefPosition);
+                }
+                else
 #endif
-            {
-                unassignPhysReg(availablePhysRegRecord, assignedInterval->recentRefPosition);
-            }
-        }
-        else
-        {
-            // If we considered this "unassigned" because this interval's lifetime ends before
-            // the next ref, remember it.
-            // For historical reasons (due to former short-circuiting of this case), if we're reassigning
-            // the current interval to a previous assignment, we don't remember the previous interval.
-            // Note that we need to compute this condition before calling unassignPhysReg, which wil reset
-            // assignedInterval->physReg.
-            bool wasAssigned = regSelector->foundUnassignedReg() && (assignedInterval != nullptr) &&
-                               (assignedInterval->physReg == foundReg);
-            unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
-            if (regSelector->isMatchingConstant() && compiler->opts.OptimizationEnabled())
-            {
-                assert(assignedInterval->isConstant);
-                refPosition->treeNode->SetReuseRegVal();
-            }
-            else if (wasAssigned)
-            {
-                updatePreviousInterval(availablePhysRegRecord, assignedInterval, assignedInterval->registerType);
+                {
+                    unassignPhysReg(availablePhysRegRecord, assignedInterval->recentRefPosition);
+                }
             }
             else
             {
-                assert(!regSelector->isConstAvailable());
+                // If we considered this "unassigned" because this interval's lifetime ends before
+                // the next ref, remember it.
+                // For historical reasons (due to former short-circuiting of this case), if we're reassigning
+                // the current interval to a previous assignment, we don't remember the previous interval.
+                // Note that we need to compute this condition before calling unassignPhysReg, which wil reset
+                // assignedInterval->physReg.
+                bool wasAssigned = regSelector->foundUnassignedReg() && (assignedInterval != nullptr) &&
+                                   (assignedInterval->physReg == foundReg);
+                unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
+                if (regSelector->isMatchingConstant() && compiler->opts.OptimizationEnabled())
+                {
+                    assert(assignedInterval->isConstant);
+                    refPosition->treeNode->SetReuseRegVal();
+                }
+                else if (wasAssigned)
+                {
+                    updatePreviousInterval(availablePhysRegRecord, assignedInterval, assignedInterval->registerType);
+                }
+                else
+                {
+                    assert(!regSelector->isConstAvailable());
+                }
             }
         }
+
+        // At this point, we need to make sure that other `regCount` registers are available and then just allocate them
+        // to subsequent refpositions.
+        assignPhysReg(availablePhysRegRecord, currentInterval);
+        refPosition->registerAssignment = foundRegBit;
+
+
+    //    // Next iteration
+    //    foundRegBit <<= 1;
+    //    refPosition = refPosition->nextConsecutiveRefPosition;
+
+    //} while ((refPosition != nullptr) && (refPosition->needsConsecutive));
+
+    RefPosition* consecutiveRefPosition = refPosition->nextConsecutiveRefPosition;
+    while (consecutiveRefPosition != nullptr)
+    {
+        //TODO: Unassign anything else for this register.
+        foundRegBit <<= 1;
+        consecutiveRefPosition->registerAssignment = foundRegBit;
+
+        consecutiveRefPosition = consecutiveRefPosition->nextConsecutiveRefPosition;
     }
-    assignPhysReg(availablePhysRegRecord, currentInterval);
-    refPosition->registerAssignment = foundRegBit;
-    return foundReg;
+
+    return regToReturn;
 }
 
 //------------------------------------------------------------------------
@@ -3082,6 +3110,10 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     // We *must* allocate a register, and it will be a copyReg. Set that field now, so that
     // refPosition->RegOptional() will return false.
     refPosition->copyReg = true;
+    //if (refPosition->getMultiRegIdx() != 0)
+    //{
+    //    refPosition->multiRegIdx = 0;
+    //}
 
     RegisterScore registerScore = NONE;
     regNumber allocatedReg      = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
@@ -3736,6 +3768,25 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
     INDEBUG(dumpLsraAllocationEvent(killedRegs ? LSRA_EVENT_DONE_KILL_GC_REFS : LSRA_EVENT_NO_GC_KILLS, nullptr, REG_NA,
                                     nullptr));
 }
+
+#ifdef TARGET_ARM64
+regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
+{
+    regMaskTP result = candidates & m_AvailableRegs;
+    if (!refPosition->needsConsecutive)
+    {
+        return result;
+    }
+
+    // If refPosition->multiRegIdx == 0, we need to make sure we check for all the
+    // `regCount` available regs.
+    // Once we do that just allocate consecutively.
+
+    result &= (m_AvailableRegs >> (refPosition->regCount - 1));
+
+    return result;
+}
+#endif
 
 //------------------------------------------------------------------------
 // processBlockEndAllocation: Update var locations after 'currentBlock' has been allocated
@@ -4633,6 +4684,12 @@ void LinearScan::allocateRegisters()
 
     for (RefPosition& currentRefPosition : refPositions)
     {
+        //TODO: Add logic to skip past consecutive registers refPositions.
+        //if (currentRefPosition.needsConsecutive && currentRefPosition.regCount == 0)
+        //{
+        //    continue;
+        //}
+        //while (currentRefPosition)
         RefPosition* nextRefPosition = currentRefPosition.nextRefPosition;
 
         // TODO: Can we combine this with the freeing of registers below? It might
@@ -5790,7 +5847,7 @@ void LinearScan::writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumbe
     {
         assert(compiler->lvaEnregMultiRegVars);
         LclVarDsc* parentVarDsc = compiler->lvaGetDesc(lclNode);
-        assert(parentVarDsc->lvPromoted);
+        assert(parentVarDsc->lvPromoted || lclNode->IsMultiRegUse());
         unsigned regIndex = varNum - parentVarDsc->lvFieldLclStart;
         assert(regIndex < MAX_MULTIREG_COUNT);
         lclNode->SetRegNumByIdx(reg, regIndex);
@@ -6265,7 +6322,11 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
         // Insert the copy/reload after the spilled node and replace the use of the original node with a use
         // of the copy/reload.
         blockRange.InsertAfter(tree, newNode);
-        treeUse.ReplaceWith(newNode);
+
+        //if (multiRegIdx == 0)
+        {
+            treeUse.ReplaceWith(newNode);
+        }
     }
 }
 
@@ -11972,7 +12033,13 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     reverseSelect = linearScan->doReverseSelect();
 #endif // DEBUG
 
+#if defined(TARGET_ARM)
     freeCandidates = linearScan->getFreeCandidates(candidates, regType);
+#elif defined(TARGET_ARM64)
+    freeCandidates = linearScan->getFreeCandidates(candidates, refPosition);
+#else
+    freeCandidates   = linearScan->getFreeCandidates(candidates);
+#endif // TARGET_ARM
 
     // If no free candidates, then double check if refPosition is an actual ref.
     if (freeCandidates == RBM_NONE)

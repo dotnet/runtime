@@ -424,6 +424,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         instruction ins = INS_invalid;
         switch (intrin.id)
         {
+            case NI_AdvSimd_Arm64_VectorTableLookup_2:
+                ins = INS_tbl_2regs;
+                break;
+
             case NI_AdvSimd_AddWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
                 if (intrin.op1->TypeGet() == TYP_SIMD8)
@@ -489,6 +493,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         switch (intrin.id)
         {
+            case NI_AdvSimd_Arm64_VectorTableLookup_2:
+                if (intrin.op1->IsCopyOrReload())
+                {
+                    GenTree* op1 = intrin.op1->AsCopyOrReload()->gtGetOp1();
+                    assert(!op1->IsCopyOrReload());
+                    op1Reg = op1->GetRegNum();
+                }
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+
             case NI_AdvSimd_BitwiseSelect:
                 // Even though BitwiseSelect is an RMW intrinsic per se, we don't want to mark it as such
                 // since we can handle all possible allocation decisions for targetReg.

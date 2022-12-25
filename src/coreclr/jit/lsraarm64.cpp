@@ -1090,8 +1090,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             if ((intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_2))
             {
                 assert(intrin.op1->OperIs(GT_LCL_VAR));
-                BuildUse(intrin.op1, RBM_NONE, 0, /* needsConsecutive */true);
-                BuildUse(intrin.op1, RBM_NONE, 1, /* needsConsecutive */ true);
+                RefPosition* useRefPos1 = BuildUse(intrin.op1, RBM_NONE, 0, /* needsConsecutive */true);
+                useRefPos1->regCount    = 2;
+                RefPosition* useRefPos2 = BuildUse(intrin.op1, RBM_NONE, 1, /* needsConsecutive */ true);
+                useRefPos2->regCount = 0; // Explicitely set it so we can identify that this is tail.
+                useRefPos1->nextConsecutiveRefPosition = useRefPos2;
                 srcCount+=2;
             }
             else

@@ -1182,7 +1182,12 @@ private:
     /*****************************************************************************
     * Register selection
     ****************************************************************************/
-    regMaskTP getFreeCandidates(regMaskTP candidates, var_types regType)
+
+
+
+    
+#if !defined(TARGET_ARM64)
+    regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {
         regMaskTP result = candidates & m_AvailableRegs;
 #ifdef TARGET_ARM
@@ -1193,8 +1198,14 @@ private:
             result &= (m_AvailableRegs >> 1);
         }
 #endif // TARGET_ARM
+#ifdef TARGET_ARM64
+
+#endif // TARGET_ARM64
         return result;
     }
+#else
+    regMaskTP getFreeCandidates(regMaskTP candidates, RefPosition* refPosition);
+#endif
 
 #ifdef DEBUG
     class RegisterSelection;
@@ -2233,6 +2244,13 @@ public:
     // are only traversed in the forward direction, and are not moved.
     RefPosition* nextRefPosition;
 
+    // This is temporary. It will be moved to LinearScan level in a map that will store
+    // the next refposition. Below table, we are storing 2 situation of consecutive registers
+    // First being 3 consecutive registers (21, 22, 23) and (41, 42).
+    // 21  ->  22
+    // 22  ->  23
+    // 41  ->  42
+    RefPosition* nextConsecutiveRefPosition;
     // The remaining fields are common to both options
     GenTree*     treeNode;
     unsigned int bbNum;
@@ -2262,6 +2280,7 @@ public:
     // would be 0..MAX_RET_REG_COUNT-1.
     unsigned char multiRegIdx : 2;
     bool needsConsecutive;
+    unsigned char regCount : 2;
 
     // Last Use - this may be true for multiple RefPositions in the same Interval
     unsigned char lastUse : 1;
@@ -2342,6 +2361,7 @@ public:
                 RefType refType DEBUG_ARG(GenTree* buildNode))
         : referent(nullptr)
         , nextRefPosition(nullptr)
+        , nextConsecutiveRefPosition(nullptr)
         , treeNode(treeNode)
         , bbNum(bbNum)
         , nodeLocation(nodeLocation)
@@ -2349,6 +2369,7 @@ public:
         , refType(refType)
         , multiRegIdx(0)
         , needsConsecutive(false)
+        , regCount(1)
         , lastUse(false)
         , reload(false)
         , spillAfter(false)

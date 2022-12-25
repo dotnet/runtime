@@ -38,8 +38,8 @@ template <bool ForCodeGen>
 bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, unsigned multiRegIndex)
 {
     LclVarDsc* parentVarDsc = compiler->lvaGetDesc(lclNode);
-    assert(parentVarDsc->lvPromoted && (multiRegIndex < parentVarDsc->lvFieldCnt) && lclNode->IsMultiReg() &&
-           compiler->lvaEnregMultiRegVars);
+   /* assert(parentVarDsc->lvPromoted && (multiRegIndex < parentVarDsc->lvFieldCnt) && lclNode->IsMultiReg() &&
+           compiler->lvaEnregMultiRegVars);*/
     unsigned   fieldVarNum = parentVarDsc->lvFieldLclStart + multiRegIndex;
     LclVarDsc* fldVarDsc   = compiler->lvaGetDesc(fieldVarNum);
     assert(fldVarDsc->lvTracked);
