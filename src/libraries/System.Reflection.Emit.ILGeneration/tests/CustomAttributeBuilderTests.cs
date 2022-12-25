@@ -580,7 +580,6 @@ namespace System.Reflection.Emit.Tests
             if (PlatformDetection.IsRareEnumsSupported)
             {
                 yield return new object[] { Enum.GetValues(CreateEnum(typeof(char), 'a')).GetValue(0) };
-                yield return new object[] { Enum.GetValues(CreateEnum(typeof(bool), true)).GetValue(0) };
             }
         }
 
@@ -648,7 +647,6 @@ namespace System.Reflection.Emit.Tests
             if (PlatformDetection.IsRareEnumsSupported)
             {
                 yield return new object[] { CreateEnum(typeof(char), 'a'), 'a' };
-                yield return new object[] { CreateEnum(typeof(bool), false), true };
                 yield return new object[] { CreateEnum(typeof(float), 1.0f), 1.0f };
                 yield return new object[] { CreateEnum(typeof(double), 1.0), 1.0 };
                 yield return new object[] { CreateEnum(typeof(IntPtr)), (IntPtr)1 };
