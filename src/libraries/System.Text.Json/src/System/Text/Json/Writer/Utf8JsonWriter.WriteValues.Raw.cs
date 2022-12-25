@@ -82,7 +82,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="utf8Json">The raw JSON content to write.</param>
         /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
-        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or equal to <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than or equal to <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="JsonException">
         /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
         /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
@@ -141,15 +141,15 @@ namespace System.Text.Json
                 ValidateWritingValue();
             }
 
-            int len = checked((int)utf8Json.Length);
+            long utf8JsonLen = utf8Json.Length;
 
-            if (len == 0)
+            if (utf8JsonLen == 0)
             {
                 ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
             }
-            if (len == int.MaxValue)
+            if (utf8JsonLen >= int.MaxValue)
             {
-                ThrowHelper.ThrowArgumentException_ValueTooLarge(int.MaxValue);
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(utf8JsonLen);
             }
 
             if (skipInputValidation)
@@ -168,7 +168,8 @@ namespace System.Text.Json
                 _tokenType = reader.TokenType;
             }
 
-            Debug.Assert(len < int.MaxValue);
+            Debug.Assert(utf8JsonLen < int.MaxValue);
+            int len = (int)utf8JsonLen;
 
             // TODO (https://github.com/dotnet/runtime/issues/29293):
             // investigate writing this in chunks, rather than requesting one potentially long, contiguous buffer.
