@@ -245,7 +245,6 @@ namespace System
                 TypeCode.Single => Enum.IsDefinedPrimitive(this, (float)value),
                 TypeCode.Double => Enum.IsDefinedPrimitive(this, (double)value),
                 TypeCode.Char => Enum.IsDefinedPrimitive(this, (char)value),
-                TypeCode.Boolean => Enum.IsDefinedPrimitive(this, (bool)value ? (byte)1 : (byte)0),
                 _ =>
                     underlyingType == typeof(nint) ? Enum.IsDefinedPrimitive(this, (nint)value) :
                     underlyingType == typeof(nuint) ? Enum.IsDefinedPrimitive(this, (nuint)value) :

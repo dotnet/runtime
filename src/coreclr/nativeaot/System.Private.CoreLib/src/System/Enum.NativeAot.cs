@@ -91,10 +91,6 @@ namespace System
 
             switch (elementType)
             {
-                case EETypeElementType.Boolean:
-                    result = Unsafe.As<byte, bool>(ref pValue) ? 1UL : 0UL;
-                    return true;
-
                 case EETypeElementType.Char:
                     result = (ulong)(long)Unsafe.As<byte, char>(ref pValue);
                     return true;

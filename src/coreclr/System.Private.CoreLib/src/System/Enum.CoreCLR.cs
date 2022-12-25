@@ -42,7 +42,7 @@ namespace System
         {
             null,
             null,
-            (RuntimeType)typeof(bool),
+            null,
             (RuntimeType)typeof(char),
             (RuntimeType)typeof(sbyte),
             (RuntimeType)typeof(byte),
