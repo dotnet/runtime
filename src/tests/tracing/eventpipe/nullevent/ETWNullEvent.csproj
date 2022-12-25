@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RuntimeComponents Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'Android'">diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ETWNullEvent.cs" />
+    <Compile Include="..\..\..\..\libraries\System.Diagnostics.Tracing\tests\BasicEventSourceTest\LoudListener.cs" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+    <ProjectReference Include="../common/common.csproj" />
+    <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+  </ItemGroup>
+</Project>
