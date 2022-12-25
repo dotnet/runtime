@@ -122,11 +122,6 @@ namespace System.Diagnostics.Tracing
         /// Vista or above. If not a PlatformNotSupported exception will be thrown. If for some
         /// reason the ETW Register call failed a NotSupported exception will be thrown.
         /// </summary>
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="Interop.Advapi32.EventRegister(System.Guid*,Microsoft.Win32.Interop.Advapi32+EtwEnableCallback,System.Void*,System.Int64&):System.UInt32" />
-        // <SatisfiesLinkDemand Name="Win32Exception..ctor(System.Int32)" />
-        // <ReferencesCritical Name="Method: EtwEnableCallBack(Guid*, Int32, Byte, Int64, Int64, Void*, Void*):Void" Ring="1" />
-        // </SecurityKernel>
         internal unsafe void Register(EventSource eventSource)
         {
             uint status;
@@ -155,9 +150,6 @@ namespace System.Diagnostics.Tracing
             GC.SuppressFinalize(this);
         }
 
-        // <SecurityKernel Critical="True" TreatAsSafe="Does not expose critical resource" Ring="1">
-        // <ReferencesCritical Name="Method: Deregister():Void" Ring="1" />
-        // </SecurityKernel>
         protected virtual void Dispose(bool disposing)
         {
             //
@@ -217,10 +209,6 @@ namespace System.Diagnostics.Tracing
             Dispose(false);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <UsesUnsafeCode Name="Parameter filterData of type: Void*" />
-        // <UsesUnsafeCode Name="Parameter callbackContext of type: Void*" />
-        // </SecurityKernel>
         private unsafe void EtwEnableCallBack(
                         System.Guid* sourceId,
                         int controlCode,
@@ -642,26 +630,6 @@ namespace System.Diagnostics.Tracing
             s_returnCode = error;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <UsesUnsafeCode Name="Local intptrPtr of type: IntPtr*" />
-        // <UsesUnsafeCode Name="Local intptrPtr of type: Int32*" />
-        // <UsesUnsafeCode Name="Local longptr of type: Int64*" />
-        // <UsesUnsafeCode Name="Local uintptr of type: UInt32*" />
-        // <UsesUnsafeCode Name="Local ulongptr of type: UInt64*" />
-        // <UsesUnsafeCode Name="Local charptr of type: Char*" />
-        // <UsesUnsafeCode Name="Local byteptr of type: Byte*" />
-        // <UsesUnsafeCode Name="Local shortptr of type: Int16*" />
-        // <UsesUnsafeCode Name="Local sbyteptr of type: SByte*" />
-        // <UsesUnsafeCode Name="Local ushortptr of type: UInt16*" />
-        // <UsesUnsafeCode Name="Local floatptr of type: Single*" />
-        // <UsesUnsafeCode Name="Local doubleptr of type: Double*" />
-        // <UsesUnsafeCode Name="Local boolptr of type: Boolean*" />
-        // <UsesUnsafeCode Name="Local guidptr of type: Guid*" />
-        // <UsesUnsafeCode Name="Local decimalptr of type: Decimal*" />
-        // <UsesUnsafeCode Name="Local booleanptr of type: Boolean*" />
-        // <UsesUnsafeCode Name="Parameter dataDescriptor of type: EventData*" />
-        // <UsesUnsafeCode Name="Parameter dataBuffer of type: Byte*" />
-        // </SecurityKernel>
         private static unsafe object? EncodeObject(ref object? data, ref EventData* dataDescriptor, ref byte* dataBuffer, ref uint totalEventSize)
         /*++
 
@@ -887,23 +855,6 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventPayload">
         /// Payload for the ETW event.
         /// </param>
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="Interop.Advapi32.EventWrite(System.Int64,EventDescriptor&,System.UInt32,System.Void*):System.UInt32" />
-        // <UsesUnsafeCode Name="Local dataBuffer of type: Byte*" />
-        // <UsesUnsafeCode Name="Local pdata of type: Char*" />
-        // <UsesUnsafeCode Name="Local userData of type: EventData*" />
-        // <UsesUnsafeCode Name="Local userDataPtr of type: EventData*" />
-        // <UsesUnsafeCode Name="Local currentBuffer of type: Byte*" />
-        // <UsesUnsafeCode Name="Local v0 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v1 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v2 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v3 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v4 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v5 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v6 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v7 of type: Char*" />
-        // <ReferencesCritical Name="Method: EncodeObject(Object&, EventData*, Byte*):String" Ring="1" />
-        // </SecurityKernel>
         internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
@@ -1129,9 +1080,6 @@ namespace System.Diagnostics.Tracing
         /// <param name="data">
         /// pointer  do the event data
         /// </param>
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="Interop.Advapi32.EventWrite(System.Int64,EventDescriptor&,System.UInt32,System.Void*):System.UInt32" />
-        // </SecurityKernel>
         protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
         {
             if (childActivityID != null)
