@@ -8,9 +8,9 @@
   .ver 4:0:0:0
 }
 .assembly 'b28806' {}
-.class ILGEN_0x2e194c20 {
+.class public ILGEN_0x2e194c20 {
 .field static	int32 field_0x3
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	7
  .try {

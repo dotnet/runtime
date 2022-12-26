@@ -36,19 +36,6 @@ namespace System.Buffers
             *(TImpl*)&value == _e2 ||
             *(TImpl*)&value == _e3;
 
-#if MONO // Revert this once https://github.com/dotnet/runtime/pull/78015 is merged
-        internal override int IndexOfAny(ReadOnlySpan<T> span) =>
-            span.IndexOfAny(GetValues());
-
-        internal override int IndexOfAnyExcept(ReadOnlySpan<T> span) =>
-            span.IndexOfAnyExcept(GetValues());
-
-        internal override int LastIndexOfAny(ReadOnlySpan<T> span) =>
-            span.LastIndexOfAny(GetValues());
-
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
-            span.LastIndexOfAnyExcept(GetValues());
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>
             SpanHelpers.IndexOfAnyValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, _e3, span.Length);
@@ -64,6 +51,5 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
             SpanHelpers.LastIndexOfAnyExceptValueType(ref Unsafe.As<T, TImpl>(ref MemoryMarshal.GetReference(span)), _e0, _e1, _e2, _e3, span.Length);
-#endif
     }
 }

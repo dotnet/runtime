@@ -16,9 +16,9 @@ namespace DefaultNamespace
         public bool[] m_field2;
     }
 
-    class DD
+    public class DD
     {
-        public static BB m_static2 = new BB();
+        static BB m_static2 = new BB();
 
         public static int Main()
         {

@@ -6,13 +6,13 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         int[] m_anField3 = new int[100];
 
         static bool Static1(ref int[] param1) { return false; }
 
-        static int Main()
+        public static int Main()
         {
             AA local5 = new AA();
             while (AA.Static1(ref local5.m_anField3)) ;

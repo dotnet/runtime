@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace Runtime_51612
 {
-    class Program
+    public class Program
     {
         struct PassedViaReturnBuffer
         {
@@ -64,7 +64,7 @@ namespace Runtime_51612
             x.HasEspBasedFrame();
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

@@ -8,13 +8,13 @@
   .ver 4:0:0:0
 }
 .assembly 'b28597' {}
-.class ILGEN_0x443f4d38 {
+.class public ILGEN_0x443f4d38 {
 
 .field static	int16 field_0x2
 .field static	int32[] field_0x4
 .field static	int32 field_0x6
 
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	19
 
