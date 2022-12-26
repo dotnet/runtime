@@ -10,7 +10,7 @@
 .class public sequential ansi sealed beforefieldinit Program
 	extends [mscorlib]System.Object
 {
-	.method private hidebysig static 
+	.method public hidebysig static 
 		int32 Main () cil managed
 	{
 

@@ -65,6 +65,7 @@ namespace ILCompiler.DependencyAnalysis
         protected readonly TypeDesc _type;
         internal readonly EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
         internal readonly EETypeOptionalFieldsNode _optionalFieldsNode;
+        private readonly WritableDataNode _writableDataNode;
         protected bool? _mightHaveInterfaceDispatchMap;
         private bool _hasConditionalDependenciesFromMetadataManager;
 
@@ -78,6 +79,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
+            _writableDataNode = factory.Target.SupportsRelativePointers ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             factory.TypeSystemContext.EnsureLoadableType(type);
@@ -971,16 +973,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected void OutputWritableData(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            if (factory.Target.SupportsRelativePointers)
+            if (_writableDataNode != null)
             {
-                Utf8StringBuilder writableDataBlobName = new Utf8StringBuilder();
-                writableDataBlobName.Append("__writableData");
-                writableDataBlobName.Append(factory.NameMangler.GetMangledTypeName(_type));
-
-                BlobNode blob = factory.UninitializedWritableDataBlob(writableDataBlobName.ToUtf8String(),
-                    WritableData.GetSize(factory.Target.PointerSize), WritableData.GetAlignment(factory.Target.PointerSize));
-
-                objData.EmitReloc(blob, RelocType.IMAGE_REL_BASED_RELPTR32);
+                objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
             }
         }
 
@@ -1258,6 +1253,33 @@ namespace ILCompiler.DependencyAnalysis
                 return bytesEmitted / builder.TargetPointerSize;
             }
 
+        }
+
+        private sealed class WritableDataNode : ObjectNode, ISymbolDefinitionNode
+        {
+            private readonly EETypeNode _type;
+
+            public WritableDataNode(EETypeNode type) => _type = type;
+            public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.BssSection;
+            public override bool StaticDependenciesAreComputed => true;
+            public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+                => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type.Type));
+            public int Offset => 0;
+            public override bool IsShareable => true;
+            public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _type.ShouldSkipEmittingObjectNode(factory);
+
+            public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+                => new ObjectData(new byte[WritableData.GetSize(factory.Target.PointerSize)],
+                    Array.Empty<Relocation>(),
+                    WritableData.GetAlignment(factory.Target.PointerSize),
+                    new ISymbolDefinitionNode[] { this });
+
+            protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+            public override int ClassCode => -5647893;
+
+            public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+                => comparer.Compare(_type, ((WritableDataNode)other)._type);
         }
     }
 }

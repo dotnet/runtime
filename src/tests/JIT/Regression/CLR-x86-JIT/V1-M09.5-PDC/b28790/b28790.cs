@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         bool m_bField3 = false;
         static double[] m_auForward3;
@@ -39,7 +39,7 @@ namespace Test
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             double[] arg = null;
             Static4(ref arg);

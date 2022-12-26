@@ -9,7 +9,7 @@ import { mono_wasm_load_icu_data } from "./icu";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
 import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, mono_wasm_invoke_import } from "./invoke-js";
 import { mono_interp_tier_prepare_jiterpreter } from "./jiterpreter";
-import { mono_interp_jit_wasm_entry_trampoline } from "./jiterpreter-interp-entry";
+import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue, mono_jiterp_do_jit_call_indirect } from "./jiterpreter-jit-call";
 import { mono_wasm_marshal_promise } from "./marshal-to-js";
 import { mono_wasm_pthread_on_pthread_attached } from "./pthreads/worker";
@@ -72,6 +72,7 @@ export function export_linker(): any {
 
         // interp.c and jiterpreter.c
         mono_interp_tier_prepare_jiterpreter,
+        mono_interp_record_interp_entry,
         mono_interp_jit_wasm_entry_trampoline,
         mono_interp_jit_wasm_jit_call_trampoline,
         mono_interp_invoke_wasm_jit_call_trampoline,

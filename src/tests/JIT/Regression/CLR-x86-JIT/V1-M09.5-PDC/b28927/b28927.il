@@ -23,7 +23,7 @@
 .class public _ldtoken 
 {
 
-.method static int32 main()
+.method public static int32 main()
 {
 .entrypoint
 .locals	()

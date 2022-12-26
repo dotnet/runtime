@@ -55,12 +55,11 @@
         ret
 }
 
-.method public static  int32 stargi(int32) {
+.method public static  native int stargi(native int) {
 .maxstack       5
         ldarg.s 0
         starg.s 0
         ldarg.s 0
-        conv.i4
         ret
 }
 
@@ -95,9 +94,8 @@
         brfalse         FAIL
 
         ldsflda		int32 ldargs_stargs::PTR
-        call    int32 ldargs_stargs::stargi(int32)
+        call    native int ldargs_stargs::stargi(native int)
         ldsflda		int32 ldargs_stargs::PTR
-        conv.i4
         ceq
         brfalse         FAIL
 

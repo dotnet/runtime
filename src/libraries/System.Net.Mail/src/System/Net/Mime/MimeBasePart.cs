@@ -110,18 +110,7 @@ namespace System.Net.Mime
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            foreach (char c in value)
-            {
-                if (c > 0x7f)
-                {
-                    return false;
-                }
-                if (!permitCROrLF && (c == '\r' || c == '\n'))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return Ascii.IsValid(value) && (permitCROrLF || value.AsSpan().IndexOfAny('\r', '\n') < 0);
         }
 
         internal string? ContentID

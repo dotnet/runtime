@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg_1.ToManaged(out IntPtr entrypointPtr);
                 if (entrypointPtr == IntPtr.Zero)
                 {
-                    throw new MissingMethodException(SR.Format(SR.MissingEntrypoint));
+                    throw new MissingMethodException(SR.MissingManagedEntrypointHandle);
                 }
 
                 RuntimeMethodHandle methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(entrypointPtr);
@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
                 if (method == null)
                 {
-                    throw new InvalidProgramException(SR.Format(SR.EntrypointHandle));
+                    throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
                 }
 
                 arg_2.ToManaged(out string?[]? args);
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidProgramException(SR.Format(SR.ReturnTypeNotSupportedForMain, method.ReturnType.FullName));
+                    throw new InvalidOperationException(SR.Format(SR.ReturnTypeNotSupportedForMain, method.ReturnType.FullName));
                 }
                 arg_result.ToJS(result, (ref JSMarshalerArgument arg, int value) =>
                 {
@@ -154,7 +154,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.NullToManagedCallback));
+                    throw new InvalidOperationException(SR.NullToManagedCallback);
                 }
             }
             catch (Exception ex)
@@ -181,7 +181,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.NullTaskCallback));
+                    throw new InvalidOperationException(SR.NullTaskCallback);
                 }
             }
             catch (Exception ex)
@@ -206,7 +206,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidOperationException("Exception is null");
+                    throw new InvalidOperationException(SR.UnableToResolveHandleAsException);
                 }
             }
             catch (Exception ex)
@@ -243,7 +243,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
             if (len == 0)
-                throw new JSException("Profile data length is 0");
+                throw new InvalidOperationException(SR.EmptyProfileData);
 
             var arr = new byte[len];
             fixed (void* p = &buf)

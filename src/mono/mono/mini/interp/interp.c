@@ -2884,6 +2884,22 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
  * this/static * ret/void * 16 arguments -> 64 functions.
  */
 
+#if HOST_BROWSER
+/*
+ * For the jiterpreter, we want to record a hit count for interp_entry wrappers that can
+ *  be jitted, but not for ones that can't. As a result we need to put this in its own
+ *  macro instead of in INTERP_ENTRY_BASE, so that the generic wrappers don't have to
+ *  call it on every invocation.
+ * Once this gets called a few hundred times, the wrapper will be jitted so we'll stop
+ *  paying the cost of the hit counter and the entry will become faster.
+ */
+#define INTERP_ENTRY_UPDATE_HIT_COUNT(_method) \
+	if (mono_opt_jiterpreter_interp_entry_enabled) \
+		mono_interp_record_interp_entry (_method)
+#else
+#define INTERP_ENTRY_UPDATE_HIT_COUNT(_method)
+#endif
+
 #define INTERP_ENTRY_BASE(_method, _this_arg, _res) \
 	InterpEntryData data; \
 	(data).rmethod = (_method); \
@@ -2891,30 +2907,34 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	(data).this_arg = (_this_arg); \
 	(data).many_args = NULL;
 
+#define INTERP_ENTRY_BASE_WITH_HIT_COUNT(_method, _this_arg, _res) \
+	INTERP_ENTRY_BASE (_method, _this_arg, _res) \
+	INTERP_ENTRY_UPDATE_HIT_COUNT (_method);
+
 #define INTERP_ENTRY0(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY1(_this_arg, _res, _method) {	  \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY2(_this_arg, _res, _method) {  \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY3(_this_arg, _res, _method) { \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY4(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2922,7 +2942,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY5(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2931,7 +2951,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY6(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2941,7 +2961,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY7(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2952,7 +2972,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY8(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -4908,6 +4928,41 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 #endif
 			MINT_IN_BREAK;
 
+#define LDIND_OFFSET_ADD_MUL(datatype,casttype,unaligned) do { \
+	MONO_DISABLE_WARNING(4127) \
+	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
+	NULL_CHECK (ptr); \
+	ptr = (char*)ptr + (LOCAL_VAR (ip [3], mono_i) + (gint16)ip [4]) * (gint16)ip [5]; \
+	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
+		memcpy (locals + ip [1], ptr, sizeof (datatype)); \
+	else \
+		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
+	ip += 6; \
+	MONO_RESTORE_WARNING \
+} while (0)
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_I1)
+			LDIND_OFFSET_ADD_MUL(gint32, gint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_U1)
+			LDIND_OFFSET_ADD_MUL(gint32, guint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_I2)
+			LDIND_OFFSET_ADD_MUL(gint32, gint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_U2)
+			LDIND_OFFSET_ADD_MUL(gint32, guint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_I4)
+			LDIND_OFFSET_ADD_MUL(gint32, gint32, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_I8)
+#ifdef NO_UNALIGNED_ACCESS
+			LDIND_OFFSET_ADD_MUL(gint64, gint64, TRUE);
+#else
+			LDIND_OFFSET_ADD_MUL(gint64, gint64, FALSE);
+#endif
+			MINT_IN_BREAK;
+
 #define LDIND_OFFSET_IMM(datatype,casttype,unaligned) do { \
 	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
@@ -5108,6 +5163,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_I8_IMM)
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * (gint16)ip [3];
 			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_MUL_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = (LOCAL_VAR (ip [2], gint32) + (gint16)ip [3]) * (gint16)ip [4];
+			ip += 5;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_MUL_I8_IMM)
+			LOCAL_VAR (ip [1], gint64) = (LOCAL_VAR (ip [2], gint64) + (gint16)ip [3]) * (gint16)ip [4];
+			ip += 5;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_R4)
 			BINOP(float, *);

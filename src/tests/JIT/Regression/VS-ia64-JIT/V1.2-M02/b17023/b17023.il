@@ -43,7 +43,7 @@
 } // end of class Struct1
 
 
-.class private auto ansi beforefieldinit MyTest
+.class public auto ansi beforefieldinit MyTest
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  f(int32 x,

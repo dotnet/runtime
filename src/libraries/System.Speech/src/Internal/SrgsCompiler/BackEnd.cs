@@ -576,7 +576,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         string ruleName;
 
                         // Check for DYNAMIC grammars
-                        if (arc.RuleRef.Name.IndexOf("URL:DYNAMIC#", StringComparison.Ordinal) == 0)
+                        if (arc.RuleRef.Name.StartsWith("URL:DYNAMIC#", StringComparison.Ordinal))
                         {
                             ruleName = arc.RuleRef.Name.Substring(12);
                             if (fromOrg && FindInRules(ruleName) == null)
@@ -589,7 +589,7 @@ namespace System.Speech.Internal.SrgsCompiler
                                 CloneSubGraph(ruleExtra, org, extra, srcToDestHash, false);
                             }
                         }
-                        else if (arc.RuleRef.Name.IndexOf("URL:STATIC#", StringComparison.Ordinal) == 0)
+                        else if (arc.RuleRef.Name.StartsWith("URL:STATIC#", StringComparison.Ordinal))
                         {
                             ruleName = arc.RuleRef.Name.Substring(11);
                             if (fromOrg == false && FindInRules(ruleName) == null)

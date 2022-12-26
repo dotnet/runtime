@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace DefaultNamespace
 {
-    internal class bug
+    public class bug
     {
         public static int Main()
         {

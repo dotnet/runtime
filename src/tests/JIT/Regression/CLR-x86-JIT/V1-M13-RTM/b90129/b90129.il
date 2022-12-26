@@ -11,39 +11,7 @@
 }
 .assembly 'b90129'
 {
-  
-  
 }
-// MVID: {0AED659D-8C3D-40C8-B3EE-DFCFBE336622}
-
-
-.file alignment 512
-
-// Image base: 0x03550000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
-.class public auto ansi Bug222
-{
-} // end of class Bug222
-
-.class interface public abstract auto ansi Bug222Interface
-{
-} // end of class Bug222Interface
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
 
 .class public auto ansi Bug222
 {
@@ -69,7 +37,7 @@
     IL_0011:  ldc.i4.s   6
     IL_0013:  blt.s      IL_0004
 
-		ldc.i4 100
+              ldc.i4 100
     IL_0015:  ret
   } // end of method Bug222::main
 
