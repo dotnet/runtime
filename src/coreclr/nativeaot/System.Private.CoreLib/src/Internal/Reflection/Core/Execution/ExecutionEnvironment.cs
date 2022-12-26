@@ -98,9 +98,7 @@ namespace Internal.Reflection.Core.Execution
         // Other
         //==============================================================================================
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
-        public abstract EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeTypeHandle typeHandle)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>;
-
+        public abstract void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags);
         public abstract IntPtr GetDynamicInvokeThunk(MethodInvoker invoker);
 
         //==============================================================================================

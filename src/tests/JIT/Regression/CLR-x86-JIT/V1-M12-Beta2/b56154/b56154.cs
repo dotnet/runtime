@@ -16,7 +16,7 @@ namespace Test
                 Array[] a = new Array[2];
             }
         }
-        static int Main()
+        public static int Main()
         {
             byte b = 0;
             Method1(ref b);

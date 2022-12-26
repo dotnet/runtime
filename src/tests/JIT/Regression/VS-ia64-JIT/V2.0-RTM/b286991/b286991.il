@@ -10,6 +10,7 @@
 .assembly extern mscorlib {}
 .assembly 'b286991' {}
 
+.class public auto ansi Test_b286991 extends [mscorlib] System.Object {
 .method public static int32 Main()
 {
    .entrypoint
@@ -24,6 +25,7 @@
 
    ldc.i4 100
    ret
+}
 }
 
 .method public static pinvokeimpl("msvcrt.dll" cdecl)

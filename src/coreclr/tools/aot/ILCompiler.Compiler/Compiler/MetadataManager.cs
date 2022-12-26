@@ -63,6 +63,7 @@ namespace ILCompiler
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private readonly SortedSet<DefType> _typesWithStructMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
+        private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -240,7 +241,7 @@ namespace ILCompiler
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasCCtorContext)
+            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasLazyStaticConstructor)
             {
                 _cctorContextsGenerated.Add(nonGcStaticSectionNode);
             }
@@ -278,6 +279,11 @@ namespace ILCompiler
             if (obj is NativeLayoutTemplateMethodSignatureVertexNode templateMethodEntry)
             {
                 _templateMethodEntries.Add(templateMethodEntry);
+            }
+
+            if (obj is NativeLayoutTemplateTypeLayoutVertexNode typeTemplate)
+            {
+                _typeTemplates.Add(typeTemplate.CanonType);
             }
 
             if (obj is FrozenObjectNode frozenObj)
@@ -709,6 +715,11 @@ namespace ILCompiler
         public IEnumerable<MethodDesc> GetReflectableMethods()
         {
             return _reflectableMethods;
+        }
+
+        public IEnumerable<TypeDesc> GetTypeTemplates()
+        {
+            return _typeTemplates;
         }
 
         public IEnumerable<EmbeddedObjectNode> GetFrozenObjects()

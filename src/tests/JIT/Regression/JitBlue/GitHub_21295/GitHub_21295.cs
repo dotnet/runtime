@@ -14,7 +14,7 @@ sealed class D : B
     public override int F() => 44;
 }
 
-class X
+public class X
 {
     volatile static bool p;
 

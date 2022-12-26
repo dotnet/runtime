@@ -218,6 +218,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79820", TestPlatforms.Linux | TestPlatforms.Android)]
         public static void Connect_ThrowSocketException_Success()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

@@ -55,7 +55,7 @@ namespace Runtime_46239
         public int tmp2;
     }
 
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int test1<T>(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, int num, T a, T b)
@@ -151,7 +151,7 @@ namespace Runtime_46239
 
         }
 
-        static int Main()
+        public static int Main()
         {
 
             if (test<S1>() != 100)

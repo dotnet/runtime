@@ -4,9 +4,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         Test(null);
         Console.WriteLine("Test Success");

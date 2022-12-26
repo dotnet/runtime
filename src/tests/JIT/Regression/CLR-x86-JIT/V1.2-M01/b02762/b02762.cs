@@ -133,7 +133,7 @@ public class B
 
 
 
-internal class Test_b02762
+public class Test_b02762
 {
     public static int Main()
     {
