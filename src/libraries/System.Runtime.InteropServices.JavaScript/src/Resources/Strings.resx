@@ -129,21 +129,6 @@
   <data name="TypedArrayNotCorrectType" xml:space="preserve">
     <value>TypedArray is not of correct type.</value>
   </data>
-  <data name="MissingEntrypoint" xml:space="preserve">
-    <value>Missing entrypoint</value>
-  </data>
-  <data name="EntrypointHandle" xml:space="preserve">
-    <value>Can't resolve entrypoint handle</value>
-  </data>
-  <data name="ReturnTypeNotSupportedForMain" xml:space="preserve">
-    <value>Return type '{0}' from main method in not supported</value>
-  </data>
-  <data name="NullToManagedCallback" xml:space="preserve">
-    <value>ToManagedCallback is null</value>
-  </data>
-  <data name="NullTaskCallback" xml:space="preserve">
-    <value>TaskCallback is null</value>
-  </data>
   <data name="UnableCastNullToType" xml:space="preserve">
     <value>Unable to cast null to type {0}.</value>
   </data>
