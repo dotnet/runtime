@@ -4105,7 +4105,6 @@ void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstruction
                         break;
                     }
 #endif
-                    fprintf(stderr, "[CLAMP] emitDispIns\n");
                     emitDispIns(id, false, true, false, ofs, nullptr, 0, ig);
 
                     ofs += id->idCodeSize();

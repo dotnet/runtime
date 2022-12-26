@@ -277,11 +277,15 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     }
     else
     {
+        ssize_t imm3 = imm & 0x800;
+        ssize_t imm2 = imm + imm3;
+
         assert(isValidSimm20((imm + 0x800) >> 12));
         emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
 
         emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
-
+        imm2 = imm2 & 0x7ff;
+        imm  = imm3 ? imm2 - imm3 : imm2;
         reg2 = REG_RA;
     }
 
@@ -294,9 +298,9 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     id->idIns(ins);
 
     code_t code = emitInsCode(ins);
-    code |= (code_t)reg1 << 7;
+    code |= (code_t)reg1 << 20;
     code |= (code_t)reg2 << 15;
-    code |= (code_t)(imm & 0xfff) << 20;
+    code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7);
 
     id->idAddr()->iiaSetInstrEncode(code);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
@@ -803,23 +807,15 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
         {
             emitIns_R_R_I(INS_addi, size, reg, REG_R0, upper & 0xFFF);
         }
-        UINT32 lower = (imm << 32) >> 32;
-        UINT32 shift = 0;
-        for (int i = 32; i >= 0; i -= 11)
-        {
-            shift += i > 11 ? 11 : i;
-            UINT32 current = lower >> (i < 11 ? 0 : i - 11);
-            if (current != 0)
-            {
-                emitIns_R_R_I(INS_slli, size, reg, reg, shift);
-                emitIns_R_R_I(INS_addi, size, reg, reg, current & 0x7FF);
-                shift = 0;
-            }
-        }
-        if (shift)
-        {
-            emitIns_R_R_I(INS_slli, size, reg, reg, shift);
-        }
+        UINT32 lower = imm & 0xffffffff;
+        emitIns_R_R_I(INS_slli, size, reg, reg, 11);
+        emitIns_R_R_I(INS_addi, size, reg, reg, (lower >> 21) & 0x7FF);
+
+        emitIns_R_R_I(INS_slli, size, reg, reg, 11);
+        emitIns_R_R_I(INS_addi, size, reg, reg, (lower >> 10) & 0x7FF);
+
+        emitIns_R_R_I(INS_slli, size, reg, reg, 10);
+        emitIns_R_R_I(INS_addi, size, reg, reg, lower & 0x3FF);
     }
 }
 

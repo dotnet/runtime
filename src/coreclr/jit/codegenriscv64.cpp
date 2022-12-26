@@ -1922,8 +1922,12 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
 //
 int CodeGenInterface::genSPtoFPdelta() const
 {
-    NYI("unimplemented on RISCV64 yet");
-    return 0;
+    assert(isFramePointerUsed());
+
+    int delta = compiler->lvaOutgoingArgSpaceSize;
+
+    assert(delta >= 0);
+    return delta;
 }
 
 //---------------------------------------------------------------------
@@ -3821,15 +3825,8 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
     assert(compiler->compGeneratingProlog);
 
-    if (delta == 0)
-    {
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, 0);
-    }
-    else
-    {
-        assert(emitter::isValidSimm12(delta));
-        GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
-    }
+    assert(emitter::isValidSimm12(delta));
+    GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
 
     if (reportUnwindData)
     {
@@ -4208,7 +4205,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 #ifdef DEBUG
     if (compiler->opts.disAsm)
     {
-        printf("DEBUG: LOONGARCH64, frameType:%d\n\n", frameType);
+        printf("DEBUG: RISCV64, frameType:%d\n\n", frameType);
     }
 #endif
     if (frameType == 1)
