@@ -77,6 +77,7 @@ export async function mono_download_assets(): Promise<void> {
                 expected_instantiated_assets_count++;
             }
             if (!skipDownloadsByAssetTypes[asset.behavior]) {
+                expected_downloaded_assets_count++;
                 promises_of_assets_with_buffer.push(start_asset_download(asset));
             }
         }
@@ -137,7 +138,6 @@ export async function mono_download_assets(): Promise<void> {
 export async function start_asset_download(asset: AssetEntryInternal) {
     // `response.arrayBuffer()` can't be called twice. Some use-cases are calling it on response in the instantiation.
     const headersOnly = skipBufferByAssetTypes[asset.behavior];
-    expected_downloaded_assets_count++;
     if (asset.pendingDownload) {
         asset.pendingDownloadInternal = asset.pendingDownload;
         const response = await asset.pendingDownloadInternal!.response;
