@@ -157,7 +157,7 @@ NOHANDLES(ICALL(DEBUGR_2, "IsLogging", ves_icall_System_Diagnostics_Debugger_IsL
 NOHANDLES(ICALL(DEBUGR_3, "Log_icall", ves_icall_System_Diagnostics_Debugger_Log))
 
 ICALL_TYPE(EVENTPIPE, "System.Diagnostics.Tracing.EventPipeInternal", EVENTPIPE_1)
-HANDLES(EVENTPIPE_1, "CreateProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider, gconstpointer, 2, (MonoString, MonoDelegate))
+HANDLES(EVENTPIPE_1, "CreateProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider, gconstpointer, 3, (MonoString, gpointer, gpointer))
 NOHANDLES(ICALL(EVENTPIPE_2, "DefineEvent", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent))
 NOHANDLES(ICALL(EVENTPIPE_3, "DeleteProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DeleteProvider))
 NOHANDLES(ICALL(EVENTPIPE_4, "Disable", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Disable))

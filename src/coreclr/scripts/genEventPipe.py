@@ -1035,7 +1035,7 @@ create_provider (
 
     ep_return_null_if_nok (provider_name_utf8 != NULL);
 
-    EventPipeProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL, NULL);
+    EventPipeProvider *provider = ep_create_provider (provider_name_utf8, callback_func, NULL);
 
     g_free (provider_name_utf8);
     return provider;

@@ -32,6 +32,13 @@ namespace System.Diagnostics.Tracing
         Disable = -3,
     }
 
+    internal unsafe delegate void EventEnableCallback(
+        int isEnabled,
+        byte level,
+        long matchAnyKeywords,
+        long matchAllKeywords,
+        Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData);
+
     /// <summary>
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a
     /// controller callback)
@@ -66,8 +73,6 @@ namespace System.Diagnostics.Tracing
         }
 
         internal IEventProvider m_eventProvider;         // The interface that implements the specific logging mechanism functions.
-        private Interop.Advapi32.EtwEnableCallback? m_etwCallback;     // Trace Callback function
-        private long m_regHandle;                        // Trace Registration Handle
         private byte m_level;                            // Tracing Level
         private long m_anyKeywordMask;                   // Trace Enable Flags
         private long m_allKeywordMask;                   // Match all keyword
@@ -124,18 +129,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal unsafe void Register(EventSource eventSource)
         {
-            uint status;
-            m_etwCallback = new Interop.Advapi32.EtwEnableCallback(EtwEnableCallBack);
+            m_providerName = eventSource.Name;
+            m_providerId = eventSource.Guid;
 
-            status = EventRegister(eventSource, m_etwCallback);
-            if (status != 0)
-            {
-#if TARGET_WINDOWS
-                throw new ArgumentException(Interop.Kernel32.GetMessage(unchecked((int)status)));
-#else
-                throw new ArgumentException(Convert.ToString(unchecked((int)status)));
-#endif
-            }
+            m_eventProvider.EventRegister(eventSource, new EventEnableCallback(EnableCallBack));
         }
 
         //
@@ -170,15 +167,12 @@ namespace System.Diagnostics.Tracing
 
             // Do most of the work under a lock to avoid shutdown race.
 
-            long registrationHandle = 0;
             lock (EventListener.EventListenersLock)
             {
                 // Double check
                 if (m_disposed)
                     return;
 
-                registrationHandle = m_regHandle;
-                m_regHandle = 0;
                 m_disposed = true;
             }
 
@@ -191,8 +185,7 @@ namespace System.Diagnostics.Tracing
             //
             // We solve by Unregistering after releasing the EventListenerLock.
             Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
-            if (registrationHandle != 0)
-                EventUnregister(registrationHandle);
+            m_eventProvider.EventUnregister();
         }
 
         /// <summary>
@@ -209,15 +202,12 @@ namespace System.Diagnostics.Tracing
             Dispose(false);
         }
 
-        private unsafe void EtwEnableCallBack(
-                        System.Guid* sourceId,
+        private unsafe void EnableCallBack(
                         int controlCode,
                         byte setLevel,
                         long anyKeyword,
                         long allKeyword,
-                        Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData,
-                        void* callbackContext
-                        )
+                        Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
         {
             // This is an optional callback API. We will therefore ignore any failures that happen as a
             // result of turning on this provider as to not crash the app.
@@ -999,7 +989,7 @@ namespace System.Diagnostics.Tracing
                             userDataPtr[refObjPosition[7]].Ptr = (ulong)v7;
                         }
 
-                        status = m_eventProvider.EventWriteTransfer(m_regHandle, in eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
+                        status = m_eventProvider.EventWriteTransfer(in eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
                     }
                 }
                 else
@@ -1025,7 +1015,7 @@ namespace System.Diagnostics.Tracing
                         }
                     }
 
-                    status = m_eventProvider.EventWriteTransfer(m_regHandle, in eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
+                    status = m_eventProvider.EventWriteTransfer(in eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
 
                     for (int i = 0; i < refObjIndex; ++i)
                     {
@@ -1091,7 +1081,7 @@ namespace System.Diagnostics.Tracing
                                 (EventOpcode)eventDescriptor.Opcode == EventOpcode.Stop);
             }
 
-            WriteEventErrorCode status = m_eventProvider.EventWriteTransfer(m_regHandle, in eventDescriptor, eventHandle, activityID, childActivityID, dataCount, (EventData*)data);
+            WriteEventErrorCode status = m_eventProvider.EventWriteTransfer(in eventDescriptor, eventHandle, activityID, childActivityID, dataCount, (EventData*)data);
 
             if (status != 0)
             {
@@ -1110,7 +1100,6 @@ namespace System.Diagnostics.Tracing
             IntPtr data)
         {
             WriteEventErrorCode status = m_eventProvider.EventWriteTransfer(
-                m_regHandle,
                 in eventDescriptor,
                 eventHandle,
                 activityID,
@@ -1127,79 +1116,74 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
-        // These are look-alikes to the Manifest based ETW OS APIs that have been shimmed to work
-        // either with Manifest ETW or Classic ETW (if Manifest based ETW is not available).
-        private unsafe uint EventRegister(EventSource eventSource, Interop.Advapi32.EtwEnableCallback enableCallback)
-        {
-            m_providerName = eventSource.Name;
-            m_providerId = eventSource.Guid;
-            m_etwCallback = enableCallback;
-            return m_eventProvider.EventRegister(eventSource, enableCallback, null, ref m_regHandle);
-        }
-
-        private void EventUnregister(long registrationHandle) =>
-            m_eventProvider.EventUnregister(registrationHandle);
-
 #if TARGET_WINDOWS
-        private static bool m_setInformationMissing;
-
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
             void* data,
             uint dataSize)
         {
-            int status = Interop.Errors.ERROR_NOT_SUPPORTED;
-
-            if (!m_setInformationMissing)
-            {
-                try
-                {
-                    status = Interop.Advapi32.EventSetInformation(
-                        m_regHandle,
-                        eventInfoClass,
-                        data,
-                        dataSize);
-                }
-                catch (TypeLoadException)
-                {
-                    m_setInformationMissing = true;
-                }
-            }
-
-            return status;
+            return ((EtwEventProvider)m_eventProvider).SetInformation(eventInfoClass, data, dataSize);
         }
 #endif
     }
 
 #if TARGET_WINDOWS
-
     // A wrapper around the ETW-specific API calls.
     internal sealed class EtwEventProvider : IEventProvider
     {
-        // Register an event provider.
-        unsafe uint IEventProvider.EventRegister(
-            EventSource eventSource,
-            Interop.Advapi32.EtwEnableCallback enableCallback,
-            void* callbackContext,
-            ref long registrationHandle)
+        private EventEnableCallback? _enableCallback;
+        private long _registrationHandle;
+        private GCHandle _gcHandle;
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Callback(Guid* sourceId, int isEnabled, byte level,
+            long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
+            ((EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!)._enableCallback!(
+                isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+        }
+
+        // Register an event provider.
+        unsafe void IEventProvider.EventRegister(
+            EventSource eventSource,
+            EventEnableCallback enableCallback)
+        {
+            _enableCallback = enableCallback;
+
+            Debug.Assert(!_gcHandle.IsAllocated);
+            _gcHandle = GCHandle.Alloc(this);
+
+            long registrationHandle = 0;
             Guid providerId = eventSource.Guid;
-            return Interop.Advapi32.EventRegister(
-                in providerId,
-                enableCallback,
-                callbackContext,
-                ref registrationHandle);
+            uint status = Interop.Advapi32.EventRegister(
+                &providerId,
+                &Callback,
+                (void*)GCHandle.ToIntPtr(_gcHandle),
+                &registrationHandle);
+            if (status != 0)
+            {
+                throw new ArgumentException(Interop.Kernel32.GetMessage((int)status));
+            }
+            Debug.Assert(_registrationHandle == 0);
+            _registrationHandle = registrationHandle;
         }
 
         // Unregister an event provider.
-        uint IEventProvider.EventUnregister(long registrationHandle)
+        void IEventProvider.EventUnregister()
         {
-            return Interop.Advapi32.EventUnregister(registrationHandle);
+            if (_registrationHandle != 0)
+            {
+                Interop.Advapi32.EventUnregister(_registrationHandle);
+                _registrationHandle = 0;
+            }
+            if (_gcHandle.IsAllocated)
+            {
+                _gcHandle.Free();
+            }
         }
 
         // Write an event.
         unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
-            long registrationHandle,
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,
@@ -1208,7 +1192,7 @@ namespace System.Diagnostics.Tracing
             EventProvider.EventData* userData)
         {
             int error = Interop.Advapi32.EventWriteTransfer(
-                registrationHandle,
+                _registrationHandle,
                 in eventDescriptor,
                 activityId,
                 relatedActivityId,
@@ -1241,27 +1225,51 @@ namespace System.Diagnostics.Tracing
         {
             throw new System.NotSupportedException();
         }
-    }
 
+
+        private static bool s_setInformationMissing;
+
+        internal unsafe int SetInformation(
+            Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
+            void* data,
+            uint dataSize)
+        {
+            int status = Interop.Errors.ERROR_NOT_SUPPORTED;
+
+            if (!s_setInformationMissing)
+            {
+                try
+                {
+                    status = Interop.Advapi32.EventSetInformation(
+                        _registrationHandle,
+                        eventInfoClass,
+                        data,
+                        dataSize);
+                }
+                catch (TypeLoadException)
+                {
+                    s_setInformationMissing = true;
+                }
+            }
+
+            return status;
+        }
+    }
 #endif
+
     internal sealed class NoOpEventProvider : IEventProvider
     {
-        unsafe uint IEventProvider.EventRegister(
+        void IEventProvider.EventRegister(
             EventSource eventSource,
-            Interop.Advapi32.EtwEnableCallback enableCallback,
-            void* callbackContext,
-            ref long registrationHandle)
+            EventEnableCallback enableCallback)
         {
-            return 0;
         }
 
-        uint IEventProvider.EventUnregister(long registrationHandle)
+        void IEventProvider.EventUnregister()
         {
-            return 0;
         }
 
         unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
-            long registrationHandle,
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,

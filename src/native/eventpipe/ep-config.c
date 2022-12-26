@@ -173,7 +173,7 @@ ep_config_init (EventPipeConfiguration *config)
 	ep_raise_error_if_nok (ep_rt_provider_list_is_valid (&config->provider_list));
 
 	EP_LOCK_ENTER (section1)
-		config->config_provider = provider_create_register (ep_config_get_default_provider_name_utf8 (), NULL, NULL, NULL, provider_callback_data_queue);
+		config->config_provider = provider_create_register (ep_config_get_default_provider_name_utf8 (), NULL, NULL, provider_callback_data_queue);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (config->config_provider != NULL);
@@ -239,7 +239,6 @@ ep_config_create_provider (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
@@ -250,7 +249,7 @@ ep_config_create_provider (
 
 	EventPipeProvider *provider = NULL;
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (config, provider_name, callback_func, callback_data_free_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (config, provider_name, callback_func, callback_data, provider_callback_data_queue);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -461,7 +460,6 @@ config_create_provider (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
@@ -470,7 +468,7 @@ config_create_provider (
 
 	ep_requires_lock_held ();
 
-	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data_free_func, callback_data);
+	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data);
 	ep_raise_error_if_nok (provider != NULL);
 
 	config_register_provider (config, provider, provider_callback_data_queue);

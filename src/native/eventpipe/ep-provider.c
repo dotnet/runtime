@@ -166,7 +166,6 @@ ep_provider_alloc (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data)
 {
 	EP_ASSERT (config != NULL);
@@ -187,7 +186,6 @@ ep_provider_alloc (
 	instance->keywords = 0;
 	instance->provider_level = EP_EVENT_LEVEL_CRITICAL;
 	instance->callback_func = callback_func;
-	instance->callback_data_free_func = callback_data_free_func;
 	instance->callback_data = callback_data;
 	instance->config = config;
 	instance->delete_deferred = false;
@@ -208,9 +206,6 @@ ep_provider_free (EventPipeProvider * provider)
 	ep_return_void_if_nok (provider != NULL);
 
 	ep_requires_lock_not_held ();
-
-	if (provider->callback_data_free_func)
-		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
 
 	if (!ep_rt_event_list_is_empty (&provider->event_list)) {
 		EP_LOCK_ENTER (section1)
@@ -291,13 +286,7 @@ ep_provider_set_delete_deferred (
 	EP_ASSERT (provider != NULL);
 	provider->delete_deferred = deferred;
 
-	// EventSources will be collected once they ungregister themselves,
-	// so we can't call back in to them.
-	if (provider->callback_func && provider->callback_data_free_func)
-		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
-
 	provider->callback_func = NULL;
-	provider->callback_data_free_func = NULL;
 	provider->callback_data = NULL;
 }
 
@@ -440,12 +429,11 @@ EventPipeProvider *
 provider_create_register (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	ep_requires_lock_held ();
-	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data_free_func, callback_data, provider_callback_data_queue);
+	return config_create_provider (ep_config_get (), provider_name, callback_func, callback_data, provider_callback_data_queue);
 }
 
 void
@@ -463,9 +451,6 @@ provider_free (EventPipeProvider * provider)
 	ep_return_void_if_nok (provider != NULL);
 
 	ep_requires_lock_held ();
-
-	if (provider->callback_data_free_func)
-		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
 
 	if (!ep_rt_event_list_is_empty (&provider->event_list))
 		ep_rt_event_list_free (&provider->event_list, event_free_func);
