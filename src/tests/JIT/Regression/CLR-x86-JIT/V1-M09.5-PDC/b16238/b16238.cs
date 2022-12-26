@@ -30,7 +30,7 @@ namespace DefaultNamespace
         }
     }
 
-    class BB
+    public class BB
     {
 #pragma warning disable 0414
         public uint m_field1 = 91;

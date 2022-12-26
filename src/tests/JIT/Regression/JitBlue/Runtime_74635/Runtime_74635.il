@@ -13,7 +13,7 @@
 #define EXPECTED "0"
 #define THRASHED "1"
 
-.class Runtime_74635 extends [System.Runtime]System.Object
+.class public Runtime_74635 extends [System.Runtime]System.Object
 {
   .method public static int32 Main()
   {

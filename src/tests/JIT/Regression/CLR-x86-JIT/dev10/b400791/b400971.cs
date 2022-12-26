@@ -8,7 +8,7 @@
 
 using System;
 
-class ByRef_GCHole
+public class ByRef_GCHole
 {
     static volatile int returnCode = 0;
     ~ByRef_GCHole()
@@ -37,7 +37,7 @@ class ByRef_GCHole
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         ByRef_GCHole h;
 

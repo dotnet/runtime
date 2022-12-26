@@ -89,7 +89,8 @@ namespace ILCompiler
 
             private void ProcessAncestorType(TypeDesc ancestorType, Instantiation typeContext)
             {
-                ForEachEmbeddedGenericFormal(ancestorType, typeContext, Instantiation.Empty);
+                var embeddingState = new EmbeddingStateList(this);
+                ForEachEmbeddedGenericFormal(ancestorType, typeContext, Instantiation.Empty, ref embeddingState);
             }
 
             private void LookForVirtualOverrides(EcmaMethod method)
@@ -281,7 +282,8 @@ namespace ILCompiler
             /// </summary>
             private void ProcessTypeReference(TypeDesc typeReference, Instantiation typeContext, Instantiation methodContext)
             {
-                ForEachEmbeddedGenericFormal(typeReference, typeContext, methodContext);
+                var embeddingState = new EmbeddingStateList(this);
+                ForEachEmbeddedGenericFormal(typeReference, typeContext, methodContext, ref embeddingState);
             }
 
             /// <summary>

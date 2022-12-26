@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 
-class Program
+public class Program
 {
     // CompareEqual  
 
@@ -936,7 +936,7 @@ class Program
         return result;
     }
 
-    static int Main()
+    public static int Main()
     {
         var result = 100;
 
