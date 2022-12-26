@@ -35,5 +35,6 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Web.HttpUtility" />
   </ItemGroup>
 </Project>

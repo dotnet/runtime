@@ -12,6 +12,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace System.Net
 {
@@ -1175,7 +1176,7 @@ namespace System.Net
         [return: NotNullIfNotNull(nameof(str))]
         private static string? UrlEncode(string? str) =>
             str is null ? null :
-            WebUtility.UrlEncode(str);
+            HttpUtility.UrlEncode(str);
 
         private void InvokeOperationCompleted(AsyncOperation asyncOp, SendOrPostCallback callback, AsyncCompletedEventArgs eventArgs)
         {
