@@ -57,7 +57,8 @@ private:
     vm_map_t m_task;                                // the mach task for the process
 #else
     bool m_canUseProcVmReadSyscall;
-    int m_fd;                                       // /proc/<pid>/mem handle
+    int m_fdMem;                                    // /proc/<pid>/mem handle
+    int m_fdPagemap;                                // /proc/<pid>/pagemap handle
 #endif
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
 #ifdef __APPLE__
@@ -147,8 +148,9 @@ private:
     void InsertMemoryBackedRegion(const MemoryRegion& region);
     void InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
-    bool ValidRegion(const MemoryRegion& region);
     void CombineMemoryRegions();
+    bool PageCanBeRead(uint64_t start);
+    bool PageMappedToPhysicalMemory(uint64_t start);
     void Trace(const char* format, ...);
     void TraceVerbose(const char* format, ...);
 };

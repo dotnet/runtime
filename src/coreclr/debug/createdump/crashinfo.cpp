@@ -26,7 +26,7 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_task = 0;
 #else
     m_auxvValues.fill(0);
-    m_fd = -1;
+    m_fdMem = -1;
 #endif
 }
 
@@ -627,73 +627,105 @@ CrashInfo::InsertMemoryBackedRegion(const MemoryRegion& region)
 void
 CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 {
-    // First check if the full memory region can be added without conflicts and is fully valid.
-    const auto& found = m_memoryRegions.find(region);
-    if (found == m_memoryRegions.end())
+    // Check if the new region overlaps with the previously added ones
+    const auto& conflictingRegion = m_memoryRegions.find(region);
+    const bool hasConflict = conflictingRegion != m_memoryRegions.end();
+    if (hasConflict && conflictingRegion->Contains(region))
     {
-        // If the region is valid, add the full memory region
-        if (ValidRegion(region)) {
-            m_memoryRegions.insert(region);
-            return;
-        }
+        // The region is contained in the one we added before
+        // Nothing to do
+        return;
     }
-    else
-    {
-        // If the memory region is wholly contained in region found and both have the
-        // same backed by memory state, we're done.
-        if (found->Contains(region) && (found->IsBackedByMemory() == region.IsBackedByMemory())) {
-            return;
-        }
-    }
-    // Either part of the region was invalid, part of it hasn't been added or the backed
-    // by memory state is different.
-    uint64_t start = region.StartAddress();
 
-    // The region overlaps/conflicts with one already in the set so add one page at a
-    // time to avoid the overlapping pages.
+    // Go page by page and split the region into valid sub-regions
+    uint64_t pageStart = region.StartAddress();
     uint64_t numberPages = region.Size() / PAGE_SIZE;
-
-    for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
+    uint64_t subRegionStart, subRegionEnd;
+    int pagesAdded = 0;
+    subRegionStart = subRegionEnd = pageStart;
+    for (size_t p = 0; p < numberPages; p++, pageStart += PAGE_SIZE)
     {
-        MemoryRegion memoryRegionPage(region.Flags(), start, start + PAGE_SIZE);
+        MemoryRegion page(region.Flags(), pageStart, pageStart + PAGE_SIZE);
 
-        const auto& found = m_memoryRegions.find(memoryRegionPage);
-        if (found == m_memoryRegions.end())
+        // avoid searching for conflicts if we know we don't have one
+        const bool pageHasConflicts = hasConflict && m_memoryRegions.find(page) != m_memoryRegions.end();
+        // avoid validating the page if it conflicts: we won't add it in any case
+        const bool pageIsValid = !pageHasConflicts && PageMappedToPhysicalMemory(pageStart) && PageCanBeRead(pageStart);
+
+        if (pageIsValid)
         {
-            // All the single pages added here will be combined in CombineMemoryRegions()
-            if (ValidRegion(memoryRegionPage)) {
-                m_memoryRegions.insert(memoryRegionPage);
+            subRegionEnd = page.EndAddress();
+            pagesAdded++;
+        }
+        else
+        {
+            // the next page is not valid thus sub-region is complete
+            if (subRegionStart != subRegionEnd)
+            {
+                m_memoryRegions.insert(MemoryRegion(region.Flags(), subRegionStart, subRegionEnd));
             }
+            subRegionStart = subRegionEnd = page.EndAddress();
         }
-        else {
-            assert(found->IsBackedByMemory() || !region.IsBackedByMemory());
-        }
+    }
+    // add the last sub-region if it's not empty
+    if (subRegionStart != subRegionEnd)
+    {
+        m_memoryRegions.insert(MemoryRegion(region.Flags(), subRegionStart, subRegionEnd));
     }
 }
 
 //
-// Validates a memory region
+// Check the page is really used by the application before adding it to the dump
+// On some kernels reading a region from createdump results in committing this region in the parent application
+// That leads to OOM in container environment and unnecesserally increses the size of the dump file
+// However this is an optimization: if it fails we still try to add the page to the dump
 //
 bool
-CrashInfo::ValidRegion(const MemoryRegion& region)
+CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
 {
-    if (region.IsBackedByMemory())
-    {
-        uint64_t start = region.StartAddress();
-
-        uint64_t numberPages = region.Size() / PAGE_SIZE;
-        for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE)
+    #if !defined(__linux__)
+        // this check has not been implemented yet for other unix systems
+        return true;
+    #else
+        // https://www.kernel.org/doc/Documentation/vm/pagemap.txt
+        if (m_fdPagemap == -1)
         {
-            BYTE buffer[1];
-            size_t read;
-
-            if (!ReadProcessMemory((void*)start, buffer, 1, &read))
-            {
-                return false;
-            }
+            // Weren't able to open pagemap file, so don't run this check
+            // Expected on kernels 4.0 and 4.1 as we need CAP_SYS_ADMIN to open /proc/pid/pagemap
+            // On kernels after 4.2 we only need PTRACE_MODE_READ_FSCREDS as we are ok with zeroed PFNs
+            return true;
         }
-    }
-    return true;
+
+        uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
+        uint64_t seekResult = lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
+        if (seekResult != pagemapOffset)
+        {
+            int seekErrno = errno;
+            TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
+            return true;
+        }
+        uint64_t value;
+        size_t readResult = read(m_fdPagemap, (void*)&value, sizeof(value));
+        if (readResult == (size_t) -1)
+        {
+            int readErrno = errno;
+            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
+            return true;
+        }
+
+        bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;
+        bool is_page_swapped = (value & ((uint64_t)1 << 62)) != 0;
+        TRACE_VERBOSE("Pagemap value for %" PRIA PRIx ", pagemap offset %" PRIA PRIx " is %" PRIA PRIx " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
+        return is_page_present || is_page_swapped;
+    #endif
+}
+
+bool
+CrashInfo::PageCanBeRead(uint64_t start)
+{
+    BYTE buffer[1];
+    size_t read;
+    return ReadProcessMemory((void*)start, buffer, 1, &read);
 }
 
 //

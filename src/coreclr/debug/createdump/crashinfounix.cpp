@@ -17,12 +17,21 @@ CrashInfo::Initialize()
     char memPath[128];
     _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
 
-    m_fd = open(memPath, O_RDONLY);
-    if (m_fd == -1)
+    m_fdMem = open(memPath, O_RDONLY);
+    if (m_fdMem == -1)
     {
         printf_error("open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
         return false;
     }
+
+    char pagemapPath[128];
+    _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%lu/pagemap", m_pid);
+    m_fdPagemap = open(pagemapPath, O_RDONLY);
+    if (m_fdPagemap == -1)
+    {
+        TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+    }
+
     // Get the process info
     if (!GetStatus(m_pid, &m_ppid, &m_tgid, &m_name))
     {
@@ -45,10 +54,15 @@ CrashInfo::CleanupAndResumeProcess()
             waitpid(thread->Tid(), &waitStatus, __WALL);
         }
     }
-    if (m_fd != -1)
+    if (m_fdMem != -1)
     {
-        close(m_fd);
-        m_fd = -1;
+        close(m_fdMem);
+        m_fdMem = -1;
+    }
+    if (m_fdPagemap != -1)
+    {
+        close(m_fdPagemap);
+        m_fdPagemap = -1;
     }
 }
 
@@ -394,8 +408,8 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         // After all, the use of process_vm_readv is largely as a
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
-        assert(m_fd != -1);
-        *read = pread64(m_fd, buffer, size, (off64_t)address);
+        assert(m_fdMem != -1);
+        *read = pread64(m_fdMem, buffer, size, (off64_t)address);
     }
 
     if (*read == (size_t)-1)
