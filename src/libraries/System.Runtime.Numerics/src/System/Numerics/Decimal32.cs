@@ -426,14 +426,14 @@ namespace System.Numerics
         public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
         {
             IeeeDecimalNumber.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO I copied this from NumberFormatInfo to IeeeDecimalNumber, is that ok?
-            return IeeeDecimalNumber.ParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
+            return IeeeDecimalNumber.ParseDecimal32(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
         public static Decimal32 Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException("s");
-            return IeeeDecimalNumber.ParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
+            return IeeeDecimalNumber.ParseDecimal32(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
