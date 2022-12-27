@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal class ReproBoxProblem
+public class ReproBoxProblem
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         Console.WriteLine(DoOp(77.5, 77.5));
         return 100;

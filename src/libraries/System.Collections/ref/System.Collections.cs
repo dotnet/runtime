@@ -42,15 +42,6 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
-    public static partial class CollectionExtensions
-    {
-        public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
-        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
-        public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
-        public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
-        public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
-        public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
-    }
     public sealed partial class LinkedListNode<T>
     {
         public LinkedListNode(T value) { }
@@ -122,6 +113,7 @@ namespace System.Collections.Generic
         public System.Collections.Generic.PriorityQueue<TElement, TPriority>.UnorderedItemsCollection UnorderedItems { get { throw null; } }
         public void Clear() { }
         public TElement Dequeue() { throw null; }
+        public TElement DequeueEnqueue(TElement element, TPriority priority) { throw null; }
         public void Enqueue(TElement element, TPriority priority) { }
         public TElement EnqueueDequeue(TElement element, TPriority priority) { throw null; }
         public void EnqueueRange(System.Collections.Generic.IEnumerable<(TElement Element, TPriority Priority)> items) { }
@@ -217,7 +209,7 @@ namespace System.Collections.Generic
             public System.Collections.Generic.SortedDictionary<TKey, TValue>.KeyCollection.Enumerator GetEnumerator() { throw null; }
             void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
             void System.Collections.Generic.ICollection<TKey>.Clear() { }
-            bool System.Collections.Generic.ICollection<TKey>.Contains(TKey item) { throw null; }
+            public bool Contains(TKey item) { throw null; }
             bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) { throw null; }
             System.Collections.Generic.IEnumerator<TKey> System.Collections.Generic.IEnumerable<TKey>.GetEnumerator() { throw null; }
             void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
@@ -411,6 +403,18 @@ namespace System.Collections.Generic
 #endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Collections.Generic
 {
+    public static partial class CollectionExtensions
+    {
+        public static void AddRange<T>(this System.Collections.Generic.List<T> list, System.ReadOnlySpan<T> source) { }
+        public static void CopyTo<T>(this System.Collections.Generic.List<T> list, System.Span<T> destination) { }
+        public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
+        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
+        public static void InsertRange<T>(this System.Collections.Generic.List<T> list, int index, System.ReadOnlySpan<T> source) { }
+        public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
+    }
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer
     {
         protected Comparer() { }
@@ -496,7 +500,7 @@ namespace System.Collections.Generic
             public System.Collections.Generic.Dictionary<TKey, TValue>.KeyCollection.Enumerator GetEnumerator() { throw null; }
             void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
             void System.Collections.Generic.ICollection<TKey>.Clear() { }
-            bool System.Collections.Generic.ICollection<TKey>.Contains(TKey item) { throw null; }
+            public bool Contains(TKey item) { throw null; }
             bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) { throw null; }
             System.Collections.Generic.IEnumerator<TKey> System.Collections.Generic.IEnumerable<TKey>.GetEnumerator() { throw null; }
             void System.Collections.ICollection.CopyTo(System.Array array, int index) { }

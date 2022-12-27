@@ -194,7 +194,12 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
         PTR_MethodTable pMethodTable = pMD->GetMethodTable();
 
         // Standard fast check
-        if (!pMethodTable->ValidateWithPossibleAV())
+        if ((pMethodTable == NULL) || dac_cast<TADDR>(pMethodTable) == (TADDR)-1)
+        {
+            retval = FALSE;
+        }
+
+        if (retval && !pMethodTable->ValidateWithPossibleAV())
         {
             retval = FALSE;
         }
@@ -1112,6 +1117,12 @@ HRESULT ClrDataAccess::GetTieredVersions(
                 case NativeCodeVersion::OptimizationTierOptimized:
                     nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
                     break;
+                case NativeCodeVersion::OptimizationTier0Instrumented:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_QuickJittedInstrumented;
+                    break;
+                case NativeCodeVersion::OptimizationTier1Instrumented:
+                    nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1Instrumented;
+                    break;
                 }
             }
             else if (pMD->IsJitOptimizationDisabled())
@@ -1328,7 +1339,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
                     nChars > 0 && nChars <= ARRAY_SIZE(path))
                 {
                     WCHAR* pFile = path + nChars - 1;
-                    while ((pFile >= path) && (*pFile != W('\\')))
+                    while ((pFile >= path) && (*pFile != DIRECTORY_SEPARATOR_CHAR_W))
                     {
                         pFile--;
                     }
@@ -2208,13 +2219,14 @@ HRESULT ClrDataAccess::GetAppDomainList(unsigned int count, CLRDATA_ADDRESS valu
 {
     SOSDacEnter();
 
-    AppDomainIterator ai(FALSE);
+    AppDomain* appDomain = AppDomain::GetCurrentDomain();
     unsigned int i = 0;
-    while (ai.Next() && (i < count))
+    if (appDomain != NULL && i < count)
     {
         if (values)
-            values[i] = HOST_CDADDR(ai.GetDomain());
-        i++;
+            values[0] = HOST_CDADDR(appDomain);
+
+        i = 1;
     }
 
     if (fetched)
@@ -2234,8 +2246,7 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 
     // Get an accurate count of appdomains.
     adsData->DomainCount = 0;
-    AppDomainIterator ai(FALSE);
-    while (ai.Next())
+    if (AppDomain::GetCurrentDomain() != NULL)
         adsData->DomainCount++;
 
     SOSDacLeave();
@@ -2696,13 +2707,27 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
 
     detailsData->lowest_address = PTR_CDADDR(g_lowest_address);
     detailsData->highest_address = PTR_CDADDR(g_highest_address);
-    detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
+    if (IsBackgroundGCEnabled())
+    {
+        detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
+        detailsData->mark_array = (CLRDATA_ADDRESS)*g_gcDacGlobals->mark_array;
+        detailsData->next_sweep_obj = (CLRDATA_ADDRESS)*g_gcDacGlobals->next_sweep_obj;
+        detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_lowest_address;
+        detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_highest_address;
+    }
+    else
+    {
+        detailsData->current_c_gc_state = 0;
+        detailsData->mark_array = -1;
+        detailsData->next_sweep_obj = 0;
+        detailsData->background_saved_lowest_address = 0;
+        detailsData->background_saved_highest_address = 0;
+    }
 
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)*g_gcDacGlobals->alloc_allocated;
     detailsData->ephemeral_heap_segment = (CLRDATA_ADDRESS)*g_gcDacGlobals->ephemeral_heap_segment;
     detailsData->card_table = PTR_CDADDR(g_card_table);
-    detailsData->mark_array = (CLRDATA_ADDRESS)*g_gcDacGlobals->mark_array;
-    detailsData->next_sweep_obj = (CLRDATA_ADDRESS)*g_gcDacGlobals->next_sweep_obj;
+
     if (IsRegionGCEnabled())
     {
         // with regions, we don't have these variables anymore
@@ -2712,11 +2737,17 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
     }
     else
     {
-        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
-        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
+        if (IsBackgroundGCEnabled())
+        {
+            detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_seg;
+            detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)*g_gcDacGlobals->saved_sweep_ephemeral_start;
+        }
+        else
+        {
+            detailsData->saved_sweep_ephemeral_seg = 0;
+            detailsData->saved_sweep_ephemeral_start = 0;
+        }
     }
-    detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_lowest_address;
-    detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)*g_gcDacGlobals->background_saved_highest_address;
 
     // get bounds for the different generations
     for (unsigned int i=0; i < DAC_NUMBERGENERATIONS; i++)
@@ -3210,9 +3241,6 @@ HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-                            HNDTYPE_WEAK_NATIVE_COM
-#endif // FEATURE_COMINTEROP
                             };
 
     return GetHandleEnumForTypes(types, ARRAY_SIZE(types), ppHandleEnum);
@@ -3251,9 +3279,6 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-                            HNDTYPE_WEAK_NATIVE_COM
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                             };
 
     DacHandleWalker *walker = new DacHandleWalker();

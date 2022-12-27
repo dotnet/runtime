@@ -273,6 +273,23 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
+        [InlineData("\u00ecz/T", 0, 0)]                                              // scalar code-path
+        [InlineData("z/Ta123\u00ec", 4, 3)]
+        [InlineData("\u00ecz/TpH7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
+        [InlineData("z/TpH7sqEkerqMweH1uSw\u00ec==", 20, 15)]
+        [InlineData("\u00ecz/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
+        [InlineData("z/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u00ec==", 44, 33)]
+        public void BasicDecodingNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
+        {
+            Span<byte> source = Encoding.UTF8.GetBytes(inputString);
+            Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
+
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, decodedByteCount);
+        }
+
+        [Theory]
         [InlineData("AQID", 3)]
         [InlineData("AQIDBAUG", 6)]
         public void BasicDecodingWithFinalBlockFalseKnownInputDone(string inputString, int expectedWritten)

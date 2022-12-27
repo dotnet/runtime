@@ -519,7 +519,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a value indicating whether this method is a static constructor.
         /// </summary>
-        public bool IsStaticConstructor
+        public virtual bool IsStaticConstructor
         {
             get
             {

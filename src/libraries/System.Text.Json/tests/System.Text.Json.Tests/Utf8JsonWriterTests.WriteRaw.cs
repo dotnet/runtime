@@ -516,7 +516,7 @@ namespace System.Text.Json.Tests
 
             for (int i = 1; i < maxLength - 1; i++)
             {
-                sb.Append('的'); // Non-UTF-8 character than will expand during transcoding
+                sb.Append('\u7684'); // Non-UTF-8 character than will expand during transcoding
             }
 
             sb.Append('"');

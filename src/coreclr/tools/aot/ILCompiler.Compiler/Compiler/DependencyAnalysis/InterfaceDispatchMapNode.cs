@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             // Pointer arrays also follow the same path
             Debug.Assert(!type.IsArrayTypeWithoutGenericInterfaces());
             Debug.Assert(MightHaveInterfaceDispatchMap(type, factory));
+            Debug.Assert(type.ConvertToCanonForm(CanonicalFormKind.Specific) == type);
 
             _type = type;
         }
@@ -38,15 +39,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_type.Context.Target.IsWindows)
-                    return ObjectNodeSection.FoldableReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.FoldableReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

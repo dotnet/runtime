@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct BB
+    public struct BB
     {
         float[] m_afField1;
 
@@ -15,7 +15,7 @@ namespace Test
 
         static bool Static1(float[] param1) { return false; }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

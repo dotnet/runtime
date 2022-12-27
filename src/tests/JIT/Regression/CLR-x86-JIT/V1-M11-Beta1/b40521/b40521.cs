@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static void Method1()
         {

@@ -662,7 +662,7 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx)
     if (paramIdx == 0)
         paramString.Set(W("return value"));
     else
-        paramString.Printf(W("parameter #%u"), paramIdx);
+        paramString.Printf("parameter #%u", paramIdx);
 
     SString errorString(W("Unknown error."));
     errorString.LoadResource(CCompRC::Error, resID);

@@ -21,7 +21,7 @@ namespace DefaultNamespace
 
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             Bug b = new Bug();
             b.runTest();

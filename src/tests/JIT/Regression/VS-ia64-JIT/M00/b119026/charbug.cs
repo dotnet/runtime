@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-class test
+public class test
 {
     static sbyte si8;
     static char sc;
-    static int Main()
+    public static int Main()
     {
         sbyte i8 = -1;
         char c = (char)i8;

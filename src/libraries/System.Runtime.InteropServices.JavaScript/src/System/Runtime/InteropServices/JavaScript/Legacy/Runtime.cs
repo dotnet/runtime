@@ -9,8 +9,6 @@ namespace System.Runtime.InteropServices.JavaScript
     [Obsolete]
     public static class Runtime
     {
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExports", "System.Runtime.InteropServices.JavaScript")]
         public static object GetGlobalObject(string str)
             => JavaScriptImports.GetGlobalObject(str);
 
@@ -34,8 +32,6 @@ namespace System.Runtime.InteropServices.JavaScript
         ///     valuews.
         ///   </para>
         /// </returns>
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
         public static object Invoke(this JSObject self, string method, params object?[] args)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -51,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
         ///   Returns the named property from the object, or throws a JSException on error.
         /// </summary>
         /// <param name="self">thisArg</param>
-        /// <param name="name">The name of the property to lookup</param>
+        /// <param name="name">The name of the property to lookup.</param>
         /// <remarks>
         ///   This method can raise a JSException if fetching the property in Javascript raises an exception.
         /// </remarks>
@@ -70,8 +66,6 @@ namespace System.Runtime.InteropServices.JavaScript
         ///     valuews.
         ///   </para>
         /// </returns>
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
         public static object GetObjectProperty(this JSObject self, string name)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -90,14 +84,12 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <remarks>
         /// </remarks>
         /// <param name="self">thisArg</param>
-        /// <param name="name">The name of the property to lookup</param>
+        /// <param name="name">The name of the property to lookup.</param>
         /// <param name="value">The value can be a primitive type (int, double, string, bool), an
         /// array that will be surfaced as a typed ArrayBuffer (byte[], sbyte[], short[], ushort[],
         /// float[], double[]) </param>
         /// <param name="createIfNotExists">Defaults to <see langword="true"/> and creates the property on the javascript object if not found, if set to <see langword="false"/> it will not create the property if it does not exist.  If the property exists, the value is updated with the provided value.</param>
         /// <param name="hasOwnProperty"></param>
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
         public static void SetObjectProperty(this JSObject self, string name, object? value, bool createIfNotExists = true, bool hasOwnProperty = false)
         {
             ArgumentNullException.ThrowIfNull(self);
@@ -105,7 +97,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             Interop.Runtime.SetObjectPropertyRef(self.JSHandle, name, in value, createIfNotExists, hasOwnProperty, out int exception, out object res);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{self.JSHandle}'): {res}");
+                throw new JSException(SR.Format(SR.ErrorLegacySettingProperty, name, self.JSHandle, res));
         }
 
         public static void AssertNotDisposed(this JSObject self)
@@ -115,7 +107,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void AssertInFlight(this JSObject self, int expectedInFlightCount)
         {
-            if (self.InFlightCounter != expectedInFlightCount) throw new InvalidProgramException($"Invalid InFlightCounter for JSObject {self.JSHandle}, expected: {expectedInFlightCount}, actual: {self.InFlightCounter}");
+            if (self.InFlightCounter != expectedInFlightCount) throw new InvalidOperationException(SR.Format(SR.UnsupportedLegacyMarshlerType, self.JSHandle, expectedInFlightCount, self.InFlightCounter));
         }
     }
 }

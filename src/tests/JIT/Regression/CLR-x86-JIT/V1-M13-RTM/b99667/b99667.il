@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly simple {}
+.assembly 'b99667' {}
 .assembly extern mscorlib { }
 .assembly extern System.Console
 {
@@ -9,11 +9,13 @@
   .ver 4:0:0:0
 }
 
+.class public auto ansi Test_b99667 extends [mscorlib] System.Object {
 .method public static int32 main()
 {
     .entrypoint
     ldc.i4.s 100
     ret
+}
 }
 
 .method public static valuetype [mscorlib]System.DateTime 

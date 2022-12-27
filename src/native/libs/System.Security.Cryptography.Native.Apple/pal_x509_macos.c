@@ -384,8 +384,10 @@ int32_t AppleCryptoNative_X509CopyWithPrivateKey(SecCertificateRef cert,
     }
 
     SecKeychainRef keyKeychain = NULL;
-
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     OSStatus status = SecKeychainItemCopyKeychain((SecKeychainItemRef)privateKey, &keyKeychain);
+#pragma clang diagnostic pop
     SecKeychainItemRef itemCopy = NULL;
 
     // This only happens with an ephemeral key, so the keychain we're adding it to is temporary.
@@ -536,7 +538,10 @@ int32_t AppleCryptoNative_X509MoveToKeychain(SecCertificateRef cert,
 
     SecKeychainRef curKeychain = NULL;
     SecKeyRef importedKey = NULL;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     OSStatus status = SecKeychainItemCopyKeychain((SecKeychainItemRef)cert, &curKeychain);
+#pragma clang diagnostic pop
 
     if (status == errSecNoSuchKeychain)
     {
@@ -559,7 +564,10 @@ int32_t AppleCryptoNative_X509MoveToKeychain(SecCertificateRef cert,
 
     if (status == noErr && privateKey != NULL)
     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         status = SecKeychainItemCopyKeychain((SecKeychainItemRef)privateKey, &curKeychain);
+#pragma clang diagnostic pop
 
         if (status == errSecNoSuchKeychain)
         {

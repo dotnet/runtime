@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,7 +8,7 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <Compile Include="Program.Vector128.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

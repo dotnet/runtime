@@ -1,11 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <cstdint>
-#include <cstddef>
-#include <cassert>
-#include <memory>
-#include <mutex>
 #include <pthread.h>
 #include <errno.h>
 #include "config.gc.h"
@@ -280,7 +275,7 @@ bool GCEvent::CreateManualEventNoThrow(bool initialState)
 bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
 {
     assert(m_impl == nullptr);
-    std::unique_ptr<GCEvent::Impl> event(new (std::nothrow) GCEvent::Impl(false, initialState));
+    GCEvent::Impl* event(new (nothrow) GCEvent::Impl(false, initialState));
     if (!event)
     {
         return false;
@@ -288,17 +283,18 @@ bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
 
     if (!event->Initialize())
     {
+        delete event;
         return false;
     }
 
-    m_impl = event.release();
+    m_impl = event;
     return true;
 }
 
 bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
 {
     assert(m_impl == nullptr);
-    std::unique_ptr<GCEvent::Impl> event(new (std::nothrow) GCEvent::Impl(true, initialState));
+    GCEvent::Impl* event(new (nothrow) GCEvent::Impl(true, initialState));
     if (!event)
     {
         return false;
@@ -306,10 +302,10 @@ bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
 
     if (!event->Initialize())
     {
+        delete event;
         return false;
     }
 
-    m_impl = event.release();
+    m_impl = event;
     return true;
 }
-

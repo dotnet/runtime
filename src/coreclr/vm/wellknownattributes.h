@@ -22,7 +22,6 @@ enum class WellKnownAttribute : DWORD
     DefaultDllImportSearchPaths,
     Guid,
     LCIDConversion,
-    IDispatchImpl,
     ImportedFromTypeLib,
     Intrinsic,
     IsByRefLike,
@@ -77,8 +76,6 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.GuidAttribute";
         case WellKnownAttribute::LCIDConversion:
             return "System.Runtime.InteropServices.LCIDConversionAttribute";
-        case WellKnownAttribute::IDispatchImpl:
-            return "System.Runtime.InteropServices.IDispatchImplAttribute";
         case WellKnownAttribute::ImportedFromTypeLib:
             return "System.Runtime.InteropServices.ImportedFromTypeLibAttribute";
         case WellKnownAttribute::Intrinsic:

@@ -7,7 +7,7 @@ using System;
 // On x86 we need to report enclosed handler
 // live-in locals as live into any enclosing filter.
 //
-// Run with optimized codegen and COMPlus_GCStress=0x4
+// Run with optimized codegen and DOTNET_GCStress=0x4
 
 class DisposableObject : IDisposable
 {
@@ -17,7 +17,7 @@ class DisposableObject : IDisposable
     }
 }
 
-class Program
+public class Program
 {
     public static bool IsExpectedException(Exception e)
     {
@@ -31,7 +31,7 @@ class Program
         return new DisposableObject();
     }
     
-    static int Main(string[] args)
+    public static int Main()
     {
         int result = 0;
 

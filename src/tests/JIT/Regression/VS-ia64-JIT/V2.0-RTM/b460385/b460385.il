@@ -11,7 +11,7 @@
 .assembly 'b460385' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
-.class FullProof {
+.class public FullProof {
 
 .method static int32 Test() {
 .maxstack 47

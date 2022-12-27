@@ -232,6 +232,8 @@ namespace System.Diagnostics
         public string FileName { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool LoadUserProfile { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public bool UseCredentialsForNetworkingOnly { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public System.Security.SecureString? Password { get { throw null; } set { } }

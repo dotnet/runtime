@@ -1778,21 +1778,25 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
             // relocatable values tend to come down as a CNS_INT of native int type
             // so the line between these two opcodes is kind of blurry
-            GenTreeIntConCommon* con    = tree->AsIntConCommon();
-            ssize_t              cnsVal = con->IconValue();
+            GenTreeIntCon* con    = tree->AsIntCon();
+            ssize_t        cnsVal = con->IconValue();
 
-            // if (con->ImmedValNeedsReloc(compiler))
-            if (con->ImmedValNeedsReloc(compiler) && compiler->opts.compReloc)
+            emitAttr attr = emitActualTypeSize(targetType);
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
+            if (con->ImmedValNeedsReloc(compiler))
             {
-                // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
-                assert(compiler->opts.compReloc);
-                GetEmitter()->emitIns_R_AI(INS_bl, EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
-                regSet.verifyRegUsed(targetReg);
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
-            else
+
+            if (targetType == TYP_BYREF)
             {
-                genSetRegToIcon(targetReg, cnsVal, targetType);
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
+
+            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+            regSet.verifyRegUsed(targetReg);
         }
         break;
 
@@ -2366,7 +2370,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         {
             regCnt = tree->ExtractTempReg();
         }
-        genSetRegToIcon(regCnt, amount, ((unsigned int)amount == amount) ? TYP_INT : TYP_LONG);
+        instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
 
     if (compiler->info.compInitMem)
@@ -5662,23 +5666,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     }
 }
 
-//------------------------------------------------------------------------
-// genSetRegToIcon: Generate code that will set the given register to the integer constant.
-//
-void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type)
-{
-    // Reg cannot be a FP reg
-    assert(!genIsValidFloatReg(reg));
-
-    // The only TYP_REF constant that can come this path is a managed 'null' since it is not
-    // relocatable.  Other ref type constants (e.g. string objects) go through a different
-    // code path.
-    noway_assert((type != TYP_REF) || (val == 0));
-
-    GetEmitter()->emitIns_I_la(emitActualTypeSize(type), reg, val);
-    regSet.verifyRegUsed(reg);
-}
-
 //---------------------------------------------------------------------
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
 //
@@ -5703,7 +5690,8 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     {
         noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
         // initReg = #GlobalSecurityCookieVal; [frame.GSSecurityCookie] = initReg
-        genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, compiler->gsGlobalSecurityCookieVal);
+
         GetEmitter()->emitIns_S_R(INS_st_d, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
     else
@@ -5762,7 +5750,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     {
         // load the GS cookie constant into a reg
         //
-        genSetRegToIcon(regGSConst, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSConst, compiler->gsGlobalSecurityCookieVal);
     }
     else
     {
@@ -6780,7 +6768,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
         // REG_R21 = element size
-        CodeGen::genSetRegToIcon(REG_R21, (ssize_t)node->gtElemSize, TYP_INT);
+        instGen_Set_Reg_To_Imm(EA_4BYTE, REG_R21, (ssize_t)node->gtElemSize);
 
         // dest = index * REG_R21 + base
         instruction ins;

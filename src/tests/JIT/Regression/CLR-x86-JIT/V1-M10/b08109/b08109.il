@@ -10,9 +10,9 @@
 .assembly b08109
 {
 }
-.class ILGEN_941132142 {
+.class public ILGEN_941132142 {
  //  spew2 /L16 /d10
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	11
  .locals ( float64, int32, float64, float32, int32, float64, int32, int64, int64, int64, int32, int32, int32, float32, int32, int64)

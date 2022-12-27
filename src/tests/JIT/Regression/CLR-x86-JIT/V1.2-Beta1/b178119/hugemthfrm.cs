@@ -96,7 +96,7 @@ struct Struct_128Kbytes
 
 }
 
-class bug178119
+public class bug178119
 {
     public static int foo1()
     {
@@ -132,7 +132,7 @@ class bug178119
         return result;
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         Console.WriteLine(foo1());
         return 100;

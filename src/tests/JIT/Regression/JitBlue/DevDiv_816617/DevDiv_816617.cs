@@ -4,11 +4,11 @@
 
 using System;
 
-static class Repro
+public static class Repro
 {
     static double NegativeZero = -0.0;
 
-    static int Main()
+    public static int Main()
     {
         // This testcase ensures that we explicitly add Negative zero
         // and Positive Zero producing Positive Zero(0x00000000 000000000)

@@ -50,7 +50,7 @@ namespace System.Text
                 EncodingInfo [] encodingInfoList = new EncodingInfo[codePagesCount];
 
                 CodePageIndex codePageIndex = default;
-                Span<byte> pCodePageIndex = new Span<byte>(&codePageIndex, Unsafe.SizeOf<CodePageIndex>());
+                Span<byte> pCodePageIndex = new Span<byte>(&codePageIndex, sizeof(CodePageIndex));
 
                 for (int i = 0; i < codePagesCount; i++)
                 {

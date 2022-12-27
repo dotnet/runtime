@@ -16,7 +16,6 @@ namespace System.Xml
         private const int bufferLength = 512;
         private const int maxBytesPerChar = 3;
         private Encoding? _encoding;
-        private static readonly UTF8Encoding s_UTF8Encoding = new UTF8Encoding(false, true);
 
         protected XmlStreamNodeWriter()
         {
@@ -362,7 +361,7 @@ namespace System.Xml
             if (chars == charsMax)
                 return charCount;
 
-            return (int)(chars - (charsMax - charCount)) + (_encoding ?? s_UTF8Encoding).GetByteCount(chars, (int)(charsMax - chars));
+            return (int)(chars - (charsMax - charCount)) + (_encoding ?? DataContractSerializer.ValidatingUTF8).GetByteCount(chars, (int)(charsMax - chars));
         }
 
         protected unsafe int UnsafeGetUTF8Chars(char* chars, int charCount, byte[] buffer, int offset)
@@ -397,7 +396,7 @@ namespace System.Xml
                             chars++;
                         }
 
-                        bytes += (_encoding ?? s_UTF8Encoding).GetBytes(charsStart, (int)(chars - charsStart), bytes, (int)(bytesMax - bytes));
+                        bytes += (_encoding ?? DataContractSerializer.ValidatingUTF8).GetBytes(charsStart, (int)(chars - charsStart), bytes, (int)(bytesMax - bytes));
 
                         if (chars >= charsMax)
                             break;

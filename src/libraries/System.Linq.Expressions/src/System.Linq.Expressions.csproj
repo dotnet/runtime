@@ -103,7 +103,6 @@
     <Compile Include="System\Runtime\CompilerServices\TrueReadOnlyCollection.cs" />
     <Compile Include="System\Dynamic\Utils\CachedReflectionInfo.cs" />
     <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
-    <Compile Include="System\Dynamic\Utils\EmptyReadOnlyCollection.cs" />
     <Compile Include="System\Dynamic\UpdateDelegates.Generated.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
