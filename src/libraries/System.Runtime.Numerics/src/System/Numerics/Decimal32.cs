@@ -422,10 +422,23 @@ namespace System.Numerics
             return IeeeDecimalNumber.ParseDecimal32(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
         }
 
+        /// <summary>
+        /// Parses a <see cref="Decimal32"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
+        /// </summary>
+        /// <param name="s">The input to be parsed.</param>
+        /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
+        /// <returns>The equivalent <see cref="Decimal32"/> value representing the input string. If the input exceeds Decimal32's range, a <see cref="Decimal32.PositiveInfinity"/> or <see cref="Decimal32.NegativeInfinity"/> is returned. </returns>
+        public static Decimal32 Parse(string s, NumberStyles style)
+        {
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(style);
+            if (s == null) ThrowHelper.ThrowArgumentNullException("s");
+            return IeeeDecimalNumber.ParseDecimal32(s, style, NumberFormatInfo.CurrentInfo);
+        }
+
         /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
         public static Decimal32 Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
         {
-            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(NumberStyles.Number); // TODO I copied this from NumberFormatInfo to IeeeDecimalNumber, is that ok?
+            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(DefaultParseStyle); // TODO I copied this from NumberFormatInfo to IeeeDecimalNumber, is that ok?
             return IeeeDecimalNumber.ParseDecimal32(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
         }
 
@@ -479,14 +492,10 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
-        {
-            IeeeDecimalNumber.ValidateParseStyleFloatingPoint(NumberStyles.Number);
-            return IeeeDecimalNumber.TryParseDecimal32(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider), out result);
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => TryParse(s, DefaultParseStyle, provider, out result);
 
         /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
-        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => TryParse(s, NumberStyles.Number, provider, out result);
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result) => TryParse(s, DefaultParseStyle, provider, out result);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out Decimal32 result)
