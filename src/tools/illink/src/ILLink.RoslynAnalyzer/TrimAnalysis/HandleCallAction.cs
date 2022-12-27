@@ -77,8 +77,8 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
-		// TODO: Does the analyzer need to do something here?
-		private partial void MarkStaticConstructor (TypeProxy type) { }
+		private partial void MarkStaticConstructor (TypeProxy type)
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext, type.Type, BindingFlags.Static, parameterCount: 0);
 
 		private partial void MarkEventsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
 			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForEventsOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);
