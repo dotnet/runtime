@@ -37,18 +37,10 @@ class Thread;
 // can be retrieved via GetInterruptedContext()
 #define INTERRUPTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
-enum SyncRequestResult
-{
-    TryAgain,
-    SuccessUnmanaged,
-    SuccessManaged,
-};
-
 typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 
 struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
-
 
 // Also defined in ExceptionHandling.cs, layouts must match.
 // When adding new fields to this struct, ensure they get properly initialized in the exception handling
@@ -94,7 +86,6 @@ struct ThreadBuffer
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
-    PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
     EEThreadId              m_threadId;                             // OS thread ID
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
     NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
@@ -105,7 +96,6 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-
 };
 
 struct ReversePInvokeFrame
@@ -212,11 +202,7 @@ public:
     void                SetSuppressGcStress();
     void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
-
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
-
-    PTR_UInt8           GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset);
-
     void                PushExInfo(ExInfo * pExInfo);
     void                ValidateExInfoPop(ExInfo * pExInfo, void * limitSP);
     void                ValidateExInfoStack();
