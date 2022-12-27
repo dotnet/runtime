@@ -745,11 +745,11 @@ T Exponential<T, TFloat>(T exponent) where
 Another example of polymorphic maths calculating the exponential using the Taylor series,
 usable for calculating the exponential of a matrix.
 
-### II.14.3 Enums (page 177)
+### II.14.3 Enums (page 168)
 
-We deleted enum support for bool as underlying type (see [issue 79224](https://github.com/dotnet/runtime/issues/79224)).
+Enum support for bool as underlying type was deleted (see [issue 79224](https://github.com/dotnet/runtime/issues/79224)).
 
-### II.15.2 Static, Instance and Virtual Methods (page 168)
+### II.15.2 Static, Instance and Virtual Methods (page 177)
 
 (Clarify first paragraph)
 
