@@ -251,7 +251,6 @@ namespace System.Numerics
         {
             get
             {
-                Debug.Assert(IsFinite(this));
                 uint bits = _value;
                 return ExtractBiasedExponentFromBits(bits);
             }
@@ -261,7 +260,6 @@ namespace System.Numerics
         {
             get
             {
-                Debug.Assert(IsFinite(this));
                 return (sbyte)(BiasedExponent - ExponentBias);
             }
         }
@@ -270,7 +268,6 @@ namespace System.Numerics
         {
             get
             {
-                Debug.Assert(IsFinite(this));
                 return ExtractSignificandFromBits(_value);
             }
         }
@@ -302,6 +299,7 @@ namespace System.Numerics
             }
         }
 
+        // TODO this returns garbage for Inf and NaN
         internal static uint ExtractSignificandFromBits(uint bits)
         {
             ushort combination = (ushort)((bits >> CombinationShift) & ShiftedCombinationMask);
@@ -367,18 +365,33 @@ namespace System.Numerics
             return StripSign(value) < PositiveInfinityBits;
         }
         public static bool IsImaginaryNumber(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsInfinity(Decimal32 value) => throw new NotImplementedException();
+        public static bool IsInfinity(Decimal32 value)
+        {
+            return (value._value & ClassificationMask) == InfinityMask;
+        }
         public static bool IsInteger(Decimal32 value) => throw new NotImplementedException();
         public static bool IsNaN(Decimal32 value)
         {
             return (value._value & ClassificationMask) == NaNMask;
         }
-        public static bool IsNegative(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsNegativeInfinity(Decimal32 value) => throw new NotImplementedException();
+        public static bool IsNegative(Decimal32 value)
+        {
+            return (int)(value._value) < 0;
+        }
+        public static bool IsNegativeInfinity(Decimal32 value)
+        {
+            return IsInfinity(value) && IsNegative(value);
+        }
         public static bool IsNormal(Decimal32 value) => throw new NotImplementedException();
         public static bool IsOddInteger(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsPositive(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsPositiveInfinity(Decimal32 value) => throw new NotImplementedException();
+        public static bool IsPositive(Decimal32 value)
+        {
+            return (int)(value._value) >= 0;
+        }
+        public static bool IsPositiveInfinity(Decimal32 value)
+        {
+            return IsInfinity(value) && IsPositive(value);
+        }
         public static bool IsRealNumber(Decimal32 value) => throw new NotImplementedException();
         public static bool IsSubnormal(Decimal32 value) => throw new NotImplementedException();
         public static bool IsZero(Decimal32 value)
@@ -1130,7 +1143,22 @@ namespace System.Numerics
                 // IEEE defines that positive and negative zero are equivalent.
                 return true;
             }
-            // IEEE defines that two values of the same cohort are numerically equivalent,
+
+            bool sameSign = IsPositive(left) == IsPositive(right);
+
+            if (IsInfinity(left) || IsInfinity(right))
+            {
+                if (IsInfinity(left) && IsInfinity(right) && sameSign)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            // IEEE defines that two values of the same cohort are numerically equivalent
 
             uint leftSignificand = left.Significand;
             uint rightSignificand = right.Significand;
@@ -1166,7 +1194,6 @@ namespace System.Numerics
                 }
             }
 
-            bool sameSign = IsPositive(left) == IsPositive(right);
             return sameNumericalValue && sameSign;
         }
         public static bool operator !=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
@@ -1185,7 +1212,24 @@ namespace System.Numerics
             throw new NotImplementedException();
         }
 
-        public string ToString(string? format, IFormatProvider? formatProvider) => throw new NotImplementedException();
+        public string ToString(string? format, IFormatProvider? formatProvider)
+        {
+            // Temporary Formatting for debugging
+            if (IsNaN(this))
+            {
+                return "NaN";
+            }
+            else if (IsPositiveInfinity(this))
+            {
+                return "Infinity";
+            }
+            else if (IsNegativeInfinity(this))
+            {
+                return "-Infinity";
+            }
+
+            return (IsPositive(this) ? "" : "-") + Significand.ToString() + "E" + Exponent.ToString();
+        }
 
         // IEEE 754 specifies NaNs to be propagated
         internal static Decimal32 Negate(Decimal32 value)

@@ -587,7 +587,7 @@ namespace System.Numerics
                 int i;
                 for (i = 0; i < number.DigitsCount; i++)
                 {
-                    if (i < Decimal32.Precision)
+                    if (i >= Decimal32.Precision)
                     {
                         // We have more digits than the precision allows
                         break;

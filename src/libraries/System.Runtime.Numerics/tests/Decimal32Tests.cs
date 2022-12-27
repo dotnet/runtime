@@ -36,7 +36,7 @@ namespace System.Numerics.Tests
             yield return new object[] { "123", defaultStyle, null, new Decimal32(false, 0, 123) };
             yield return new object[] { "  123  ", defaultStyle, null, new Decimal32(false, 0, 123) };
             yield return new object[] { "567.89", defaultStyle, null, new Decimal32(false, -2, 56789) };
-            yield return new object[] { "-567.89", defaultStyle, null, new Decimal32(true, 0, 123) };
+            yield return new object[] { "-567.89", defaultStyle, null, new Decimal32(true, -2, 56789) };
             yield return new object[] { "1E23", defaultStyle, null, new Decimal32(false, 23, 1) };
 
             yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, new Decimal32(false, -3, 234) };
@@ -96,10 +96,13 @@ namespace System.Numerics.Tests
 
         private static void AssertEqualAndSameQuantumOrBothNan(Decimal32 expected, Decimal32 result)
         {
-            Assert.True((expected.Equals(result) && Decimal32.SameQuantum(expected, result)) || (Decimal32.IsNaN(expected) && Decimal32.IsNaN(result)));
+            if (!(Decimal32.IsNaN(expected) && Decimal32.IsNaN(result)))
+            {
+                AssertEqualAndSameQuantum(expected, result);
+            }
         }
 
-            [Theory]
+        [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse(string value, NumberStyles style, IFormatProvider provider, Decimal32 expected)
         {
