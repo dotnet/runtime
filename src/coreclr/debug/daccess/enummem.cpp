@@ -345,6 +345,9 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerHeap(IN CLRDataEnumMemoryFlags fla
     // Dump the Debugger object data needed
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pDebugger->EnumMemoryRegions(flags); )
 
+    // Dump the frozen segments
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( status = EnumMemCollectFrozenHeap(); );
+
     // now dump the memory get dragged in by using DAC API implicitly.
     m_dumpStats.m_cbImplicitly = m_instances.DumpAllInstances(m_enumMemCb);
 
@@ -1582,6 +1585,57 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
     return status;
 }
 
+HRESULT ClrDataAccess::EnumMemCollectFrozenHeap()
+{
+    SUPPORTS_DAC;
+
+    HRESULT hr = S_OK;
+
+    struct DacpGcHeapData heap;
+    IfFailRet(GetGCHeapData(&heap));
+    if (heap.bServerMode)
+    {
+        unsigned int heapCount = GCHeapCount();
+        CLRDATA_ADDRESS* heaps = (CLRDATA_ADDRESS*)alloca(heapCount * sizeof(CLRDATA_ADDRESS*));
+        IfFailRet(GetServerHeaps(heaps, m_pTarget));
+        for (unsigned int heapNum = 0; heapNum < heapCount; heapNum++)
+        {
+            struct DacpGcHeapDetails heap_detail;
+            IfFailRet(ServerGCHeapDetails(heaps[heapNum], &heap_detail));
+            IfFailRet(EnumMemCollectFrozenSegments(heap_detail.generation_table[2].start_segment));
+        }
+    }
+    else
+    {
+        struct DacpGcHeapDetails heap_detail;
+        IfFailRet(GetGCHeapStaticData(&heap_detail));
+        IfFailRet(EnumMemCollectFrozenSegments(heap_detail.generation_table[2].start_segment));
+    }
+
+    return hr;
+}
+
+HRESULT ClrDataAccess::EnumMemCollectFrozenSegments(CLRDATA_ADDRESS segment)
+{
+    SUPPORTS_DAC;
+
+    HRESULT hr = S_OK;
+
+    const size_t heap_segment_flags_readonly = 1;
+
+    while (segment)
+    {
+        struct DacpHeapSegmentData heap_segment;
+        IfFailRet(GetHeapSegmentData(segment, &heap_segment));
+        if (heap_segment.flags & heap_segment_flags_readonly)
+        {
+            ReportMem((TADDR)heap_segment.mem, (TSIZE_T)(heap_segment.allocated - heap_segment.mem));
+        }
+        segment = heap_segment.next;
+    }
+
+    return hr;
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
