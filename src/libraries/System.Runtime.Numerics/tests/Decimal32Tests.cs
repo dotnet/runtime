@@ -124,6 +124,9 @@ namespace System.Numerics.Tests
                     AssertEqualAndSameQuantum(expected, Decimal32.Parse(value));
                 }
 
+                Assert.True(Decimal32.TryParse(value, provider: provider, out result));
+                AssertEqualAndSameQuantum(expected, result);
+
                 AssertEqualAndSameQuantum(expected, Decimal32.Parse(value, provider: provider));
             }
 
@@ -140,6 +143,7 @@ namespace System.Numerics.Tests
                 AssertEqualAndSameQuantum(expected, result);
 
                 AssertEqualAndSameQuantum(expected, Decimal32.Parse(value));
+                AssertEqualAndSameQuantum(expected, Decimal32.Parse(value, style));
                 AssertEqualAndSameQuantum(expected, Decimal32.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
         }
@@ -186,6 +190,9 @@ namespace System.Numerics.Tests
 
                     Assert.Throws(exceptionType, () => Decimal32.Parse(value));
                 }
+
+                Assert.False(Decimal32.TryParse(value, provider: provider, out result));
+                Assert.Equal(default(Decimal32), result);
 
                 Assert.Throws(exceptionType, () => Decimal32.Parse(value, provider: provider));
             }
@@ -242,6 +249,9 @@ namespace System.Numerics.Tests
                     AssertEqualAndSameQuantum(expected, Decimal32.Parse(value.AsSpan(offset, count)));
                 }
 
+                Assert.True(Decimal32.TryParse(value.AsSpan(offset, count), provider: provider, out result));
+                AssertEqualAndSameQuantum(expected, result);
+
                 AssertEqualAndSameQuantum(expected, Decimal32.Parse(value.AsSpan(offset, count), provider: provider));
             }
 
@@ -257,10 +267,10 @@ namespace System.Numerics.Tests
         {
             if (value != null)
             {
-                Assert.Throws(exceptionType, () => float.Parse(value.AsSpan(), style, provider));
+                Assert.Throws(exceptionType, () => Decimal32.Parse(value.AsSpan(), style, provider));
 
-                Assert.False(float.TryParse(value.AsSpan(), style, provider, out float result));
-                Assert.Equal(0, result); // TODO is this right?
+                Assert.False(Decimal32.TryParse(value.AsSpan(), style, provider, out Decimal32 result));
+                Assert.Equal(default(Decimal32), result); // TODO is this right?
             }
         }
     }
