@@ -3057,7 +3057,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             break;
 
         case GT_ASG:
-        case GT_ADDR:
             // Note that this is a weak check - the "op1" location node can be a COMMA.
             assert(!op1->CanCSE());
             break;
@@ -3150,12 +3149,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
         return GenTree::VisitResult::Continue;
     });
-
-    // Addresses of locals never need GTF_GLOB_REF
-    if (tree->OperIs(GT_ADDR) && tree->IsLocalAddrExpr())
-    {
-        expectedFlags &= ~GTF_GLOB_REF;
-    }
 
     fgDebugCheckFlagsHelper(tree, actualFlags, expectedFlags);
 }

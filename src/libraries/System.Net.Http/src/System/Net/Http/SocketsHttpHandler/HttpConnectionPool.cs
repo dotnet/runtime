@@ -98,6 +98,15 @@ namespace System.Net.Http
         private SemaphoreSlim? _http3ConnectionCreateLock;
         internal readonly byte[]? _http3EncodedAuthorityHostHeader;
 
+        // These settings are advertised by the server via SETTINGS_MAX_HEADER_LIST_SIZE and SETTINGS_MAX_FIELD_SECTION_SIZE.
+        // If we had previous connections to the same host in this pool, memorize the last value seen.
+        // This value is used as an initial value for new connections before they have a chance to observe the SETTINGS frame.
+        // Doing so avoids immediately exceeding the server limit on the first request, potentially causing the connection to be torn down.
+        // 0 means there were no previous connections, or they hadn't advertised this limit.
+        // There is no need to lock when updating these values - we're only interested in saving _a_ value, not necessarily the min/max/last.
+        internal uint _lastSeenHttp2MaxHeaderListSize;
+        internal uint _lastSeenHttp3MaxHeaderListSize;
+
         /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
         private readonly byte[]? _hostHeaderValueBytes;
         /// <summary>Options specialized and cached for this pool and its key.</summary>
@@ -621,7 +630,7 @@ namespace System.Net.Http
                 // We are done with the HTTP2 connection attempt, no point to cancel it.
                 Volatile.Write(ref waiter.ConnectionCancellationTokenSource, null);
 
-                // We don't care if this fails; that means the request was previously canceled or handeled by a different connection.
+                // We don't care if this fails; that means the request was previously canceled or handled by a different connection.
                 waiter.TrySetResult(null);
 
                 lock (SyncObj)

@@ -222,7 +222,7 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
         *Prefix = PFF_PREFIX_LONGLONG;
     }
 #endif
-    if ((*Fmt)[0] == 'I')
+    if ((*Fmt)[0] == 'I' || (*Fmt)[0] == 'z')
     {
         /* grab prefix of 'I64' for __int64 */
         if ((*Fmt)[1] == '6' && (*Fmt)[2] == '4')

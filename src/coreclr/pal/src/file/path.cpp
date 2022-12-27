@@ -73,7 +73,7 @@ GetFullPathNameA(
     }
 
     /* find out if lpFileName is a partial or full path */
-    if ('\\' == *lpFileName || '/' == *lpFileName)
+    if ('/' == *lpFileName)
     {
         fullPath = TRUE;
     }
@@ -112,8 +112,6 @@ GetFullPathNameA(
     }
 
     unixPathBuf = unixPath.OpenStringBuffer(unixPath.GetCount());
-    /* do conversion to Unix path */
-    FILEDosToUnixPathA( unixPathBuf );
 
     /* now we can canonicalize this */
     FILECanonicalizePath(unixPathBuf);
@@ -433,57 +431,6 @@ GetTempPathW(
 }
 
 
-
-/*++
-Function:
-  FileDosToUnixPathA
-
-Abstract:
-  Change a DOS path to a Unix path.
-
-  Replaces '\' by '/'
-
-Parameter:
-  IN/OUT lpPath: path to be modified
---*/
-void
-FILEDosToUnixPathA(
-       LPSTR lpPath)
-{
-    LPSTR p;
-
-    TRACE("Original DOS path = [%s]\n", lpPath);
-
-    if (!lpPath)
-    {
-        return;
-    }
-
-    for (p = lpPath; *p; p++)
-    {
-        /* Replace \ with / */
-        if (*p == '\\')
-        {
-            *p = '/';
-        }
-    }
-
-    TRACE("Resulting Unix path = [%s]\n", lpPath);
-}
-
-void
-FILEDosToUnixPathA(
-       PathCharString&  lpPath)
-{
-
-    SIZE_T len = lpPath.GetCount();
-    LPSTR lpPathBuf = lpPath.OpenStringBuffer(len);
-    FILEDosToUnixPathA(lpPathBuf);
-    lpPath.CloseBuffer(len);
-
-}
-
-
 /*++
 Function:
   FILEGetDirectoryFromFullPathA
@@ -506,7 +453,7 @@ DWORD FILEGetDirectoryFromFullPathA( LPCSTR lpFullPath,
 
     /* look for the first path separator backwards */
     lpDirEnd = lpFullPath + full_len - 1;
-    while( lpDirEnd >= lpFullPath && *lpDirEnd != '/' && *lpDirEnd != '\\')
+    while( lpDirEnd >= lpFullPath && *lpDirEnd != '/')
     --lpDirEnd;
 
     dir_len = lpDirEnd - lpFullPath + 1; /* +1 for fencepost */
@@ -734,7 +681,7 @@ SearchPathW(
 
     /* special case : if file name contains absolute path, don't search the
        provided path */
-    if('\\' == lpFileName[0] || '/' == lpFileName[0])
+    if(L'/' == lpFileName[0])
     {
         /* Canonicalize the path to deal with back-to-back '/', etc. */
         length = MAX_LONGPATH; //Use it for first try

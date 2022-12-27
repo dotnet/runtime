@@ -86,7 +86,7 @@ namespace System.Net.Http.Headers
             return _entityTag.GetHashCode();
         }
 
-        public static RangeConditionHeaderValue Parse(string? input)
+        public static RangeConditionHeaderValue Parse(string input)
         {
             int index = 0;
             return (RangeConditionHeaderValue)GenericHeaderParser.RangeConditionParser.ParseValue(

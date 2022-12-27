@@ -448,7 +448,7 @@ namespace System.Text.Json.Serialization.Tests
                 Schema = 2,
                 SmtpId = 3,
                 Emojies = 4,
-                ꀀ = 5,
+                \uA000 = 5,
                 YiIt_2 = 6
             };
 
@@ -466,7 +466,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, obj.Schema);
             Assert.Equal(3, obj.SmtpId);
             Assert.Equal(4, obj.Emojies);
-            Assert.Equal(5, obj.ꀀ);
+            Assert.Equal(5, obj.\uA000);
             Assert.Equal(6, obj.YiIt_2);
         }
 
@@ -484,14 +484,14 @@ namespace System.Text.Json.Serialization.Tests
             public int SmtpId { get; set; }
 
             [JsonPropertyOrder(4)]
-            [JsonPropertyName("😀😁")] // Invalid C# property name. Unicode:\uD83D\uDE00\uD83D\uDE01
+            [JsonPropertyName("\uD83D\uDE00\uD83D\uDE01")] // Invalid C# property name. Unicode:\uD83D\uDE00\uD83D\uDE01
             public int Emojies { get; set; }
 
             [JsonPropertyOrder(5)]
-            public int ꀀ { get; set; } // Valid C# property name. Unicode:\uA000
+            public int \uA000 { get; set; } // Valid C# property name. Unicode:\uA000
 
             [JsonPropertyOrder(6)]
-            [JsonPropertyName("\uA000_2")] // Valid C# property name: ꀀ_2
+            [JsonPropertyName("\uA000_2")] // Valid C# property name: \uA000_2
             public int YiIt_2 { get; set; }
         }
     }

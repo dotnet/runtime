@@ -39,7 +39,7 @@ namespace System.Linq.Tests
         public void WrapsEnumerableInExpression()
         {
             int[] source = { 1, 2, 3 };
-            IQueryable<int> query = (source).AsQueryable();
+            IQueryable<int> query = source.AsQueryable();
             var exp = (ConstantExpression)query.Expression;
             Assert.Equal(source, (IEnumerable<int>)exp.Value);
         }

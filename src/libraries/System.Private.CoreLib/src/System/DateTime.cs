@@ -1345,7 +1345,7 @@ namespace System
         // are needed rather than redoing the computations for each.
         //
         // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
-        //   Cassio Neri, Lorenz Schneiderhttps - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
+        //   Cassio Neri, Lorenz Schneider - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
         internal void GetDate(out int year, out int month, out int day)
         {
             // y100 = number of whole 100-year periods since 3/1/0000

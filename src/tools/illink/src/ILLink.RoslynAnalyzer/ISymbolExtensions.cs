@@ -170,7 +170,7 @@ namespace ILLink.RoslynAnalyzer
 		}
 
 		public static bool IsConstructor ([NotNullWhen (returnValue: true)] this ISymbol? symbol)
-			=> (symbol as IMethodSymbol)?.MethodKind == MethodKind.Constructor;
+			=> (symbol as IMethodSymbol)?.MethodKind is MethodKind.Constructor or MethodKind.StaticConstructor;
 
 		public static bool IsStaticConstructor ([NotNullWhen (returnValue: true)] this ISymbol? symbol)
 			=> (symbol as IMethodSymbol)?.MethodKind == MethodKind.StaticConstructor;

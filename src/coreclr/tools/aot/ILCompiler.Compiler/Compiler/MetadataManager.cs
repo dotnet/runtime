@@ -49,6 +49,7 @@ namespace ILCompiler
         protected readonly ManifestResourceBlockingPolicy _resourceBlockingPolicy;
         protected readonly DynamicInvokeThunkGenerationPolicy _dynamicInvokeThunkGenerationPolicy;
 
+        private readonly List<InterfaceDispatchCellNode> _interfaceDispatchCells = new List<InterfaceDispatchCellNode>();
         private readonly SortedSet<NonGCStaticsNode> _cctorContextsGenerated = new SortedSet<NonGCStaticsNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
@@ -56,11 +57,13 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
+        private readonly SortedSet<EmbeddedObjectNode> _frozenObjects = new SortedSet<EmbeddedObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private readonly SortedSet<DefType> _typesWithStructMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
+        private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -238,7 +241,7 @@ namespace ILCompiler
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasCCtorContext)
+            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasLazyStaticConstructor)
             {
                 _cctorContextsGenerated.Add(nonGcStaticSectionNode);
             }
@@ -258,6 +261,11 @@ namespace ILCompiler
                     _reflectableMethods.Add(method);
             }
 
+            if (obj is InterfaceDispatchCellNode dispatchCell)
+            {
+                _interfaceDispatchCells.Add(dispatchCell);
+            }
+
             if (obj is StructMarshallingDataNode structMarshallingDataNode)
             {
                 _typesWithStructMarshalling.Add(structMarshallingDataNode.Type);
@@ -271,6 +279,21 @@ namespace ILCompiler
             if (obj is NativeLayoutTemplateMethodSignatureVertexNode templateMethodEntry)
             {
                 _templateMethodEntries.Add(templateMethodEntry);
+            }
+
+            if (obj is NativeLayoutTemplateTypeLayoutVertexNode typeTemplate)
+            {
+                _typeTemplates.Add(typeTemplate.CanonType);
+            }
+
+            if (obj is FrozenObjectNode frozenObj)
+            {
+                _frozenObjects.Add(frozenObj);
+            }
+
+            if (obj is FrozenStringNode frozenStr)
+            {
+                _frozenObjects.Add(frozenStr);
             }
         }
 
@@ -654,6 +677,11 @@ namespace ILCompiler
             return _stackTraceMappings;
         }
 
+        internal IEnumerable<InterfaceDispatchCellNode> GetInterfaceDispatchCells()
+        {
+            return _interfaceDispatchCells;
+        }
+
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
         {
             return _cctorContextsGenerated;
@@ -687,6 +715,16 @@ namespace ILCompiler
         public IEnumerable<MethodDesc> GetReflectableMethods()
         {
             return _reflectableMethods;
+        }
+
+        public IEnumerable<TypeDesc> GetTypeTemplates()
+        {
+            return _typeTemplates;
+        }
+
+        public IEnumerable<EmbeddedObjectNode> GetFrozenObjects()
+        {
+            return _frozenObjects;
         }
 
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()

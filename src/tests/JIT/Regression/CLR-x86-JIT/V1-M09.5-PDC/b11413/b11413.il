@@ -11,8 +11,8 @@
 {
 }
 
-.class ILGEN_382872040 {
-.method static int32 main() {
+.class public ILGEN_382872040 {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
  .locals ( float32, int32, int32, float32, int32, int32, int32, int32, int32, float32, float32, float32, int32, int64, int64, int32, int64, float64)

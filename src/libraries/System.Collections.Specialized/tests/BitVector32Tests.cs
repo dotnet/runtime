@@ -429,9 +429,9 @@ namespace System.Collections.Specialized.Tests
         [InlineData(0)]
         public static void CreateSection_InvalidMaximumTest(short maxvalue)
         {
-            AssertExtensions.Throws<ArgumentException>("maxValue", () => BitVector32.CreateSection(maxvalue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maxValue", () => BitVector32.CreateSection(maxvalue));
             BitVector32.Section valid = BitVector32.CreateSection(1);
-            AssertExtensions.Throws<ArgumentException>("maxValue", () => BitVector32.CreateSection(maxvalue, valid));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maxValue", () => BitVector32.CreateSection(maxvalue, valid));
         }
 
         [Theory]

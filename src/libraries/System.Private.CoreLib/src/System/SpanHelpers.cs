@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
+#pragma warning disable 8500 // sizeof of managed types
+
 namespace System
 {
     internal static partial class SpanHelpers
@@ -413,7 +415,7 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            if (Avx2.IsSupported && remainder >= Vector256<int>.Count)
+            if (Avx2.IsSupported && remainder >= Vector256<int>.Count * 2)
             {
                 nint lastOffset = remainder - Vector256<int>.Count;
                 do
@@ -443,7 +445,7 @@ namespace System
 
                 remainder = lastOffset + Vector256<int>.Count - offset;
             }
-            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<int>.Count)
+            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<int>.Count * 2)
             {
                 nint lastOffset = remainder - Vector128<int>.Count;
                 do
@@ -488,7 +490,7 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            if (Avx2.IsSupported && remainder >= Vector256<long>.Count)
+            if (Avx2.IsSupported && remainder >= Vector256<long>.Count * 2)
             {
                 nint lastOffset = remainder - Vector256<long>.Count;
                 do
@@ -518,7 +520,7 @@ namespace System
 
                 remainder = lastOffset + Vector256<long>.Count - offset;
             }
-            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<long>.Count)
+            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<long>.Count * 2)
             {
                 nint lastOffset = remainder - Vector128<long>.Count;
                 do
@@ -557,28 +559,28 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Reverse<T>(ref T elements, nuint length)
+        public static unsafe void Reverse<T>(ref T elements, nuint length)
         {
             Debug.Assert(length > 1);
 
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                if (sizeof(T) == sizeof(byte))
                 {
                     Reverse(ref Unsafe.As<T, byte>(ref elements), length);
                     return;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                else if (sizeof(T) == sizeof(char))
                 {
                     Reverse(ref Unsafe.As<T, char>(ref elements), length);
                     return;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                else if (sizeof(T) == sizeof(int))
                 {
                     Reverse(ref Unsafe.As<T, int>(ref elements), length);
                     return;
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                else if (sizeof(T) == sizeof(long))
                 {
                     Reverse(ref Unsafe.As<T, long>(ref elements), length);
                     return;
