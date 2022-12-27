@@ -41,8 +41,12 @@ namespace System.Numerics.Tests
 
             yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, new Decimal32(false, -3, 234) };
             yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(false, 0, 234) };
-            yield return new object[] { new string('0', 72) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(false, 38, 3) }; // could be wrong
-            yield return new object[] { new string('0', 73) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(false, 38, 3) }; // could be wrong
+            yield return new object[] { new string('0', 72) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(false, 32, 3000000) }; // could be wrong
+            yield return new object[] { new string('0', 73) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, new Decimal32(false, 32, 3000000) }; // could be wrong
+
+            // Trailing zeros add sig figs and should be accounted for
+            yield return new object[] { "1.000", defaultStyle, null, new Decimal32(false, -3, 1000) };
+            yield return new object[] { "1.0000000", defaultStyle, null, new Decimal32(false, -6, 1000000) };
 
             // 10^7 + 5. Not exactly representable
             yield return new object[] { "10000005.0", defaultStyle, invariantFormat, new Decimal32(false, 1, 1000000) };
@@ -54,8 +58,8 @@ namespace System.Numerics.Tests
             yield return new object[] { "5.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, new Decimal32(false, -6, 5000000) };
             yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, new Decimal32(false, -6, 5000000) };
             yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, new Decimal32(false, -6, 5000000) };
-            yield return new object[] { "5.005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -6, 5050000) };
-            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -6, 5050000) };
+            yield return new object[] { "5.005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -6, 5005000) };
+            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -6, 5005000) };
             yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -6, 5005000) };
 
             yield return new object[] { "5005.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, new Decimal32(false, -3, 5005000) };
@@ -73,7 +77,8 @@ namespace System.Numerics.Tests
             yield return new object[] { "62500", defaultStyle, invariantFormat, new Decimal32(false, 0, 62500) };
 
             yield return new object[] { "123.1", NumberStyles.AllowDecimalPoint, null, new Decimal32(false, -1, 1231) };
-            yield return new object[] { "1000.0", NumberStyles.AllowThousands, null, new Decimal32(false, -1, 10000) };
+            yield return new object[] { "1,000", NumberStyles.AllowThousands, null, new Decimal32(false, 0, 1000) };
+            yield return new object[] { "1,000.0", NumberStyles.AllowThousands | NumberStyles.AllowDecimalPoint, null, new Decimal32(false, -1, 10000) };
 
             yield return new object[] { "123", NumberStyles.Any, emptyFormat, new Decimal32(false, 0, 123) };
             yield return new object[] { "123.567", NumberStyles.Any, emptyFormat, new Decimal32(false, -3, 123567) };
@@ -81,7 +86,7 @@ namespace System.Numerics.Tests
             yield return new object[] { "$1,000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, new Decimal32(false, 0, 1000) };
             yield return new object[] { "$1000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, new Decimal32(false, 0, 1000) };
             yield return new object[] { "123.123", NumberStyles.Float, decimalSeparatorFormat, new Decimal32(false, -3, 123123) };
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, decimalSeparatorFormat, new Decimal32(false, 0, 123) };
+            yield return new object[] { "(123)", NumberStyles.AllowParentheses, decimalSeparatorFormat, new Decimal32(true, 0, 123) }; // TODO HalfTests and SingleTests have this output -123, but I'm not exactly sure why
 
             yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, Decimal32.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, Decimal32.PositiveInfinity };

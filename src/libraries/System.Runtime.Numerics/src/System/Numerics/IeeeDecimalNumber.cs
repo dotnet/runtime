@@ -330,7 +330,7 @@ namespace System.Numerics
             int digCount = 0;
             int digEnd = 0;
             int maxDigCount = number.Digits.Length - 1;
-            int numberOfTrailingZeros = 0;
+            // int numberOfTrailingZeros = 0;
 
             while (true)
             {
@@ -368,14 +368,15 @@ namespace System.Numerics
                         if (digCount < maxDigCount)
                         {
                             // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part for floating point numbers, so we keep a count of the number of trailing zeros and update digCount later
-                            if (ch == '0')
+                            // Note: I deleted this case because we care about trailing zeros for IEEE decimals
+                            /* if (ch == '0')
                             {
                                 numberOfTrailingZeros++;
                             }
                             else
                             {
                                 numberOfTrailingZeros = 0;
-                            }
+                            }*/
                         }
                         digCount++;
                         state |= StateNonZero;
@@ -451,14 +452,15 @@ namespace System.Numerics
                 if (/*number.Kind == NumberBufferKind.FloatingPoint && // <- this will always be true */!number.HasNonZeroTail)
                 {
                     // Adjust the number buffer for trailing zeros
-                    int numberOfFractionalDigits = digEnd - number.Scale;
+                    // Note: I deleted this case because we care about trailing zeros for IEEE decimals
+                    /*int numberOfFractionalDigits = digEnd - number.Scale;
                     if (numberOfFractionalDigits > 0)
                     {
                         numberOfTrailingZeros = Math.Min(numberOfTrailingZeros, numberOfFractionalDigits);
                         Debug.Assert(numberOfTrailingZeros >= 0);
                         number.DigitsCount = digEnd - numberOfTrailingZeros;
                         number.Digits[number.DigitsCount] = (byte)('\0');
-                    }
+                    }*/
                 }
 
                 while (true)
@@ -638,7 +640,7 @@ namespace System.Numerics
                             }
 
                             // We should either be at the end of the stream or have a non-zero tail
-                            Debug.Assert((c == 0) || !hasZeroTail);
+                            Debug.Assert((mantissa[i] == 0) || !hasZeroTail);
 
                             if (!hasZeroTail)
                             {
