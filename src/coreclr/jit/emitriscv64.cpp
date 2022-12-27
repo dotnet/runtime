@@ -983,7 +983,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         }
         else
         {
-            id->idCodeSize(24); // TODO NEED TO CHECK LATER // UPDATED BASED on CALLINSTRSIZE in emitOutputCall 6 << 2
+            id->idCodeSize(36); // TODO NEED TO CHECK LATER // UPDATED BASED on CALLINSTRSIZE in emitOutputCall 6 << 2
         }
     }
 
@@ -1101,12 +1101,16 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     }
     else
     {
-        // lui  t2, dst_offset_lo32-hi
-        // ori  t2, t2, dst_offset_lo32-lo
-        // ori  t3, x0, dst_offset_hi32-lo
-        // ori  t3, t3, 32
-        // or   t2, t2, t3
+        // lui  t2, dst_offset_hi32-hi
+        // addi t2, t2, dst_offset_hi32-lo
+        // slli t2, t2, 11
+        // addi t2, t2, dst_offset_low32-hi
+        // slli t2, t2, 11
+        // addi t2, t2, dst_offset_low32-md
+        // slli t2, t2, 10
+        // addi t2, t2, dst_offset_low32-lo
         // jalr t2
+
 
         ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
         assert((imm >> 32) <= 0xff);
@@ -1114,39 +1118,63 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         int reg2 = (int)(imm & 1);
         imm -= reg2;
 
+        UINT32 upper = imm >> 32;
         code = emitInsCode(INS_lui);
         code |= (code_t)REG_T2 << 7;
-        code |= ((code_t)((imm + 0x800) >> 12) & 0xfffff) << 12;
-
+        code |= ((code_t)((upper + 0x800) >> 12) & 0xfffff) << 12;
         emitOutput_Instr(dst, code);
         dst += 4;
+
         emitGCregDeadUpd(REG_T2, dst);
 
-        code = emitInsCode(INS_ori);
+        code = emitInsCode(INS_addi);
         code |= (code_t)REG_T2 << 7;
         code |= (code_t)REG_T2 << 15;
-        code |= (code_t)(imm & 0xfff) << 20;
+        code |= (code_t)(upper & 0xfff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
-
-        code = emitInsCode(INS_ori);
-        code |= (code_t)REG_T3 << 7;
-        code |= ((imm >> 32) & 0xff) << 20;
-        emitOutput_Instr(dst, code);
-        dst += 4;
-        emitGCregDeadUpd(REG_T3, dst);
 
         code = emitInsCode(INS_slli);
-        code |= (code_t)REG_T3 << 7;
-        code |= (code_t)REG_T3 << 15;
-        code |= (code_t)(32 << 20);
+        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)(11 << 20);
         emitOutput_Instr(dst, code);
         dst += 4;
 
-        code = emitInsCode(INS_or);
+        UINT32 lower = imm & 0xffffffff;
+
+        code = emitInsCode(INS_addi);
         code |= (code_t)REG_T2 << 7;
         code |= (code_t)REG_T2 << 15;
-        code |= (code_t)REG_T3 << 20;
+        code |= ((lower >> 21) & 0x7ff) << 20;
+        emitOutput_Instr(dst, code);
+        dst += 4;
+
+        code = emitInsCode(INS_slli);
+        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)(11 << 20);
+        emitOutput_Instr(dst, code);
+        dst += 4;
+
+        code = emitInsCode(INS_addi);
+        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_T2 << 15;
+        code |= ((lower >> 10) & 0x7ff) << 20;
+        emitOutput_Instr(dst, code);
+        dst += 4;
+
+        code = emitInsCode(INS_slli);
+        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_T2 << 15;
+        code |= (code_t)(10 << 20);
+        emitOutput_Instr(dst, code);
+        dst += 4;
+
+        code = emitInsCode(INS_addi);
+        code |= (code_t)REG_T2 << 7;
+        code |= (code_t)REG_T2 << 15;
+        code |= (lower & 0x3ff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
@@ -1216,7 +1244,8 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     }
     else
     {
-        callInstrSize = id->idIsReloc() ? (2 << 2) : (6 << 2); // INS_OPTS_C: 2/6-ins.
+        callInstrSize = id->idIsReloc() ? (2 << 2) : (9 << 2); // INS_OPTS_C: 2/9-ins.
+
     }
 
     return callInstrSize;
@@ -2211,9 +2240,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     code |= ((code_t)id->idReg1()) << 15;
                     code |= ((code_t)id->idReg2()) << 20;
-                    code |= ((imm >> 11) & 0x1)  << 7;
                     code |= ((imm >> 1)  & 0xf)  << 8;
                     code |= ((imm >> 5)  & 0x3f) << 25;
+                    code |= ((imm >> 11) & 0x1)  << 7;
                     code |= ((imm >> 12) & 0x1)  << 31;
                 }
                 else
@@ -2475,10 +2504,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     return;
                 case 0x6: // ORI
-                    printf("ori          %s, %s, 0x%x\n", rd, rs1, imm12);
+                    printf("ori          %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
                     return;
                 case 0x7: // ANDI 
-                    printf("andi         %s, %s, 0x%x\n", rd, rs1, imm12);
+                    printf("andi         %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
                     return;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);

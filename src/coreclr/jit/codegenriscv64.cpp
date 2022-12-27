@@ -3964,7 +3964,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             callType   = emitter::EC_FUNC_TOKEN;
             callTarget = REG_NA;
 
-            ssize_t imm = 5 << 2;
+            ssize_t imm = 10 << 2;
             if (compiler->opts.compReloc)
             {
                 imm = 3 << 2;
