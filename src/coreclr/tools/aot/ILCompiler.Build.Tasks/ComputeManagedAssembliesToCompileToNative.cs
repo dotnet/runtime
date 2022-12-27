@@ -36,7 +36,6 @@ namespace Build.Tasks
         /// The set of NativeAOT-specific framework assemblies we currently need to use which will replace the same-named ones
         /// in the app's closure.
         /// </summary>
-        [Required]
         public ITaskItem[] FrameworkAssemblies
         {
             get;
@@ -98,9 +97,12 @@ namespace Build.Tasks
                 nativeAotFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
             }
 
-            foreach (ITaskItem taskItem in FrameworkAssemblies)
+            if (FrameworkAssemblies != null)
             {
-                nativeAotFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
+                foreach (ITaskItem taskItem in FrameworkAssemblies)
+                {
+                    nativeAotFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
+                }
             }
 
             foreach (ITaskItem taskItem in Assemblies)
@@ -129,12 +131,15 @@ namespace Build.Tasks
                     // There are two instances of WindowsBase.dll, one small one, in the NativeAOT framework
                     // and real one in WindowsDesktop SDK. We want to make sure that if both are present,
                     // we will use the one from WindowsDesktop SDK, and not from NativeAOT framework.
-                    foreach (ITaskItem taskItemToSkip in FrameworkAssemblies)
+                    if (FrameworkAssemblies != null)
                     {
-                        if (Path.GetFileName(taskItemToSkip.ItemSpec) == assemblyFileName)
+                        foreach (ITaskItem taskItemToSkip in FrameworkAssemblies)
                         {
-                            assembliesToSkipPublish.Add(taskItemToSkip);
-                            break;
+                            if (Path.GetFileName(taskItemToSkip.ItemSpec) == assemblyFileName)
+                            {
+                                assembliesToSkipPublish.Add(taskItemToSkip);
+                                break;
+                            }
                         }
                     }
 

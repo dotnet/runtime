@@ -643,6 +643,10 @@
       Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->
     <DisableUnsupportedError>true</DisableUnsupportedError>
 
+    <!-- NativeAot test compilation should reference the framework, in addition to
+         libraries that ship with ILC. -->
+    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
