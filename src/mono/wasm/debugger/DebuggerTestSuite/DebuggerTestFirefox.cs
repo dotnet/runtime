@@ -14,7 +14,7 @@ namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
-    private new TimeSpan TestTimeout => base.TestTimeout * 4;
+    private new TimeSpan TestTimeout => base.TestTimeout * 5;
     internal FirefoxInspectorClient _client;
     public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html"):base(testOutput, driver)
     {
