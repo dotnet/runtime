@@ -6929,11 +6929,18 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
     {
         if (attr == EA_8BYTE)
         {
-            char     regNum[2];
             unsigned regIndex = reg - REG_F0;
             regIndex >>= 1;
 
-            printf("d%s", _itoa(regIndex, regNum, 10));
+            if (regIndex < 10)
+            {
+                printf("d%c", regIndex + '0');
+            }
+            else
+            {
+                assert(regIndex < 100);
+                printf("d%c%c", (regIndex / 10), (regIndex % 10));
+            }
         }
         else
         {
