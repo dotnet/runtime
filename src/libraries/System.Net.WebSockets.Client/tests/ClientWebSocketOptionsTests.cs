@@ -50,7 +50,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_SetNull_ConnectsSuccessfully(Uri server)
         {
-            for (int i = 0; i < 1; i++) // Connect and disconnect multiple times to exercise shared handler on netcoreapp
+            for (int i = 0; i < 3; i++) // Connect and disconnect multiple times to exercise shared handler on netcoreapp
             {
                 var ws = await WebSocketHelper.Retry(_output, async () =>
                 {

@@ -36,17 +36,17 @@ namespace System.Net.WebSockets.Client.Tests
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-    public sealed class InvokerMemorySendReceiveOuterSslTest : InvokerMemorySendReceiveOuterTest
+    public sealed class InvokerMemorySendReceiveRemoteSslTest : InvokerMemorySendReceiveRemoteTest
     {
-        public InvokerMemorySendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        public InvokerMemorySendReceiveRemoteSslTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseSsl => true;
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-    public class InvokerMemorySendReceiveOuterTest : InvokerMemorySendReceiveTest
+    public class InvokerMemorySendReceiveRemoteTest : InvokerMemorySendReceiveTest
     {
-        public InvokerMemorySendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+        public InvokerMemorySendReceiveRemoteTest(ITestOutputHelper output) : base(output) { }
 
         protected override bool UseRemoteServer => true;
     }
@@ -79,17 +79,17 @@ namespace System.Net.WebSockets.Client.Tests
     // TODO: add HTTP/2 when https://corefx-net-http2.azurewebsites.net will support extended connect
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-    public sealed class HttpClientMemorySendReceiveOuterSslTest : HttpClientMemorySendReceiveOuterTest
+    public sealed class HttpClientMemorySendReceiveRemoteSslTest : HttpClientMemorySendReceiveRemoteTest
     {
-        public HttpClientMemorySendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        public HttpClientMemorySendReceiveRemoteSslTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseSsl => true;
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-    public class HttpClientMemorySendReceiveOuterTest : HttpClientMemorySendReceiveTest
+    public class HttpClientMemorySendReceiveRemoteTest : HttpClientMemorySendReceiveTest
     {
-        public HttpClientMemorySendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+        public HttpClientMemorySendReceiveRemoteTest(ITestOutputHelper output) : base(output) { }
 
         protected override bool UseRemoteServer => true;
     }
@@ -121,16 +121,16 @@ namespace System.Net.WebSockets.Client.Tests
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
-    public sealed class NoInvokerMemorySendReceiveOuterSslTest : NoInvokerMemorySendReceiveOuterTest
+    public sealed class NoInvokerMemorySendReceiveRemoteSslTest : NoInvokerMemorySendReceiveRemoteTest
     {
-        public NoInvokerMemorySendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        public NoInvokerMemorySendReceiveRemoteSslTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseSsl => true;
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-    public class NoInvokerMemorySendReceiveOuterTest : MemorySendReceiveTest
+    public class NoInvokerMemorySendReceiveRemoteTest : MemorySendReceiveTest
     {
-        public NoInvokerMemorySendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+        public NoInvokerMemorySendReceiveRemoteTest(ITestOutputHelper output) : base(output) { }
 
         protected override bool UseRemoteServer => true;
     }
@@ -179,17 +179,17 @@ namespace System.Net.WebSockets.Client.Tests
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-    public sealed class InvokerArraySegmentSendReceiveOuterSslTest : InvokerArraySegmentSendReceiveOuterTest
+    public sealed class InvokerArraySegmentSendReceiveRemoteSslTest : InvokerArraySegmentSendReceiveRemoteTest
     {
-        public InvokerArraySegmentSendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        public InvokerArraySegmentSendReceiveRemoteSslTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseSsl => true;
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-    public class InvokerArraySegmentSendReceiveOuterTest : InvokerArraySegmentSendReceiveTest
+    public class InvokerArraySegmentSendReceiveRemoteTest : InvokerArraySegmentSendReceiveTest
     {
-        public InvokerArraySegmentSendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+        public InvokerArraySegmentSendReceiveRemoteTest(ITestOutputHelper output) : base(output) { }
 
         protected override bool UseRemoteServer => true;
     }
@@ -223,17 +223,17 @@ namespace System.Net.WebSockets.Client.Tests
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-    public sealed class HttpClientArraySegmentSendReceiveOuterSslTest : HttpClientArraySegmentSendReceiveOuterTest
+    public sealed class HttpClientArraySegmentSendReceiveRemoteSslTest : HttpClientArraySegmentSendReceiveRemoteTest
     {
-        public HttpClientArraySegmentSendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        public HttpClientArraySegmentSendReceiveRemoteSslTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseSsl => true;
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Custom invoker is ignored on Browser")]
-    public class HttpClientArraySegmentSendReceiveOuterTest : HttpClientArraySegmentSendReceiveTest
+    public class HttpClientArraySegmentSendReceiveRemoteTest : HttpClientArraySegmentSendReceiveTest
     {
-        public HttpClientArraySegmentSendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+        public HttpClientArraySegmentSendReceiveRemoteTest(ITestOutputHelper output) : base(output) { }
 
         protected override bool UseRemoteServer => true;
     }
@@ -264,16 +264,16 @@ namespace System.Net.WebSockets.Client.Tests
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
     [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
-    public sealed class NoInvokerArraySegmentSendReceiveOuterSslTest : NoInvokerArraySegmentSendReceiveOuterTest
+    public sealed class NoInvokerArraySegmentSendReceiveRemoteSslTest : NoInvokerArraySegmentSendReceiveRemoteTest
     {
-        public NoInvokerArraySegmentSendReceiveOuterSslTest(ITestOutputHelper output) : base(output) { }
+        public NoInvokerArraySegmentSendReceiveRemoteSslTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseSsl => true;
     }
 
     [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
-    public class NoInvokerArraySegmentSendReceiveOuterTest : ArraySegmentSendReceiveTest
+    public class NoInvokerArraySegmentSendReceiveRemoteTest : ArraySegmentSendReceiveTest
     {
-        public NoInvokerArraySegmentSendReceiveOuterTest(ITestOutputHelper output) : base(output) { }
+        public NoInvokerArraySegmentSendReceiveRemoteTest(ITestOutputHelper output) : base(output) { }
 
         protected override bool UseRemoteServer => true;
     }

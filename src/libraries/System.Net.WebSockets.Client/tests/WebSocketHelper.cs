@@ -179,7 +179,7 @@ namespace System.Net.WebSockets.Client.Tests
                     }
 
                     int offset = result.Count;
-                    await websocket.SendAsync(new ArraySegment<byte>(buffer, 0, offset), result.MessageType, true, CancellationToken.None);
+                    await websocket.SendAsync(new ArraySegment<byte>(buffer, 0, offset), result.MessageType, result.EndOfMessage, CancellationToken.None);
                 }
                 await connection.DisposeAsync();
             });
