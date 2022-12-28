@@ -159,22 +159,34 @@ void ThreadStore::DetachCurrentThread()
         return;
     }
 
+    // unregister from OS notifications
+    // this can return false if detach notification is spurious and does not belong to this thread.
     if (!PalDetachThread(pDetachingThread))
     {
         return;
     }
 
+    // run pre-mortem callbacks while we still can run managed code and not holding locks.
+    if (g_threadExitCallback != NULL)
     {
-        // remove the thread from the list.
-        // Note that when process is shutting down, the threads may be rudely terminated,
-        // possibly while holding the threadstore lock. That is ok, since the process will soon be gone.
+        g_threadExitCallback();
+    }
+
+    // the following makes the thread no longer able to run managed code or participate in GC.
+    // we need to hold threadstore lock while doing that.
+    {
         ThreadStore* pTS = GetThreadStore();
+        // Note that when process is shutting down, the threads may be rudely terminated,
+        // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
         ReaderWriterLock::WriteHolder write(&pTS->m_Lock);
         ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
+        // remove the thread from the list of managed threads.
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
     }
 
+    // post-mortem clean up of native data structures.
     pDetachingThread->Destroy();
 }
 
@@ -183,7 +195,7 @@ void ThreadStore::DetachCurrentThread()
 // released.  This way, the GC always enumerates a consistent set of threads each time
 // it enumerates threads between SuspendAllThreads and ResumeAllThreads.
 //
-// @TODO:  Investigate if this requirement is actually necessary.  Threads already may
+// @TODO: Investigate if this requirement is actually necessary.  Threads already may
 // not enter managed code during GC, so if new threads are added to the thread store,
 // but haven't yet entered managed code, is that really a problem?
 //

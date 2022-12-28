@@ -443,31 +443,17 @@ static void UninitDLL()
 #endif // PROFILE_STARTUP
 }
 
+#ifdef _WIN32
+
 // This is set to the thread that initiates and performs the shutdown and needs to run
-// while other threads are rudely terminated. So far this is a Windows-specific concern.
-// On POSIX OSes a process typically lives as long as any of its threads lives or until
-// the process is terminated via `exit()` or a signal.
-// Thus there is no distinction between threads and g_threadPerformingShutdown is never set.
-volatile Thread* g_threadPerformingShutdown = NULL;
+// after other threads are rudely terminated. So far this is a Windows-specific concern.
+// 
+// On POSIX OSes a process typically lives as long as any of its threads are alive or until
+// the process is terminated via `exit()` or a signal. Thus there is no such distinction
+// between threads.
+Thread* g_threadPerformingShutdown = NULL;
 
-static void DllThreadDetach()
-{
-    // BEWARE: loader lock is held here!
-
-    // Should have already received a call to FiberDetach for this thread's "home" fiber.
-    Thread* pCurrentThread = ThreadStore::GetCurrentThreadIfAvailable();
-    if (pCurrentThread != NULL && !pCurrentThread->IsDetached())
-    {
-        // Once shutdown starts, RuntimeThreadShutdown callbacks are ignored, implying that
-        // it is no longer guaranteed that exiting threads will be detached.
-        if (g_threadPerformingShutdown != NULL)
-        {
-            ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
-            RhFailFast();
-        }
-    }
-}
-
+#endif
 void RuntimeThreadShutdown(void* thread)
 {
     // Note: loader lock is normally *not* held here!
@@ -475,16 +461,9 @@ void RuntimeThreadShutdown(void* thread)
     // that is made for the single thread that runs the final stages of orderly process
     // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
     // process is being torn down via an ExitProcess call).
+    // In such case we do not detach.
 
-    UNREFERENCED_PARAMETER(thread);
-
-#ifdef TARGET_UNIX
-    // Some Linux toolset versions call thread-local destructors during shutdown on a wrong thread.
-    if ((Thread*)thread != ThreadStore::GetCurrentThread())
-    {
-        return;
-    }
-#else
+#ifdef _WIN32
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
     // Do not try detaching the thread that performs the shutdown.
@@ -495,7 +474,12 @@ void RuntimeThreadShutdown(void* thread)
         // in inconsistent state, so we would be risking blocking the process from exiting.
         return;
     }
-
+#else
+    // Some Linux toolset versions call thread-local destructors during shutdown on a wrong thread.
+    if ((Thread*)thread != ThreadStore::GetCurrentThread())
+    {
+        return;
+    }
 #endif
 
     ThreadStore::DetachCurrentThread();
@@ -513,15 +497,6 @@ extern "C" bool RhInitialize()
     PopulateDebugHeaders();
 
     return true;
-}
-
-//
-// Called from a managed executable once Main returns or by threads that call Environment.Exit().
-// There's not a lot here at the moment since we're always about to let
-// the OS tear the process down anyway.
-//
-COOP_PINVOKE_HELPER(void, RhpShutdown, ())
-{
 }
 
 #ifdef _WIN32
@@ -543,17 +518,31 @@ EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, uint32_t dwReason, v
     case DLL_PROCESS_DETACH:
         if (pvReserved == nullptr)
         {
+            Thread* currentThread = ThreadStore::RawGetCurrentThread();
             // The process is exiting and the current thread is performing the shutdown.
             // At this point some threads may have been terminated rudely.
-            // It would not be a good idea for the current thread to wait on any locks or run managed code.
-            g_threadPerformingShutdown = ThreadStore::RawGetCurrentThread();
+            // It would not be a good idea for the current thread to wait on any locks
+            // or run managed code, so we do not detach it.
+            ASSERT(!currentThread->IsDetached());
+            g_threadPerformingShutdown = currentThread;
         }
 
         UninitDLL();
         break;
 
     case DLL_THREAD_DETACH:
-        DllThreadDetach();
+        // BEWARE: loader lock is held here!
+
+        // Should have already received a call to FiberDetach for this thread's "home" fiber.
+        Thread* pCurrentThread = ThreadStore::GetCurrentThreadIfAvailable();
+        if (pCurrentThread != NULL &&
+            pCurrentThread != g_threadPerformingShutdown &&
+            !pCurrentThread->IsDetached())
+        {
+            ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
+            RhFailFast();
+        }
+
         break;
     }
 

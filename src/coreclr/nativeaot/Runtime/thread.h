@@ -172,13 +172,16 @@ private:
     void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
 
 public:
-
-    void Detach(); // First phase of thread destructor, executed with thread store lock taken
-    void Destroy(); // Second phase of thread destructor, executed without thread store lock taken
+    // First phase of thread destructor, disposes stuff related to GC.
+    // Executed with thread store lock taken so GC cannot happen.
+    void Detach();
+    // Second phase of thread destructor.
+    // Executed without thread store lock taken.
+    void Destroy();
 
     bool                IsInitialized();
 
-    gc_alloc_context *  GetAllocContext();  // @TODO: I would prefer to not expose this in this way
+    gc_alloc_context *  GetAllocContext();
 
 #ifndef DACCESS_COMPILE
     uint64_t            GetPalThreadIdForLogging();

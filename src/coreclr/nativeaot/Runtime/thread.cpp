@@ -339,12 +339,8 @@ bool Thread::IsCurrentThread()
 
 void Thread::Detach()
 {
-    // Thread::Destroy is called when the thread's "home" fiber dies.  We mark the thread as "detached" here
-    // so that we can validate, in our DLL_THREAD_DETACH handler, that the thread was already destroyed at that
-    // point.
-    SetDetached();
-
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
+    SetDetached();
 }
 
 void Thread::Destroy()
