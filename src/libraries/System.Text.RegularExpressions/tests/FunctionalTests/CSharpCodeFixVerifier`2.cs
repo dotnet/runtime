@@ -25,13 +25,24 @@ namespace System.Text.RegularExpressions.Tests
             await VerifyCodeFixAsync(source, source, references);
         }
 
-        public static async Task VerifyCodeFixAsync(string source, string fixedSource, ReferenceAssemblies? references = null)
+        public static async Task VerifyCodeFixAsync(string source, string fixedSource, ReferenceAssemblies? references = null, int expectedNumberOfIterations = -1)
         {
             Test test = new Test(references)
             {
                 TestCode = source,
                 FixedCode = fixedSource,
             };
+            
+            // By default, one fix iteration is expected per diagnostic, unless
+            // input and output sources are identical.
+            // in some cases, we may offer the diagnostic (based on cursory analysis)
+            // but be unable to make the fix when requested.
+            // Such test cases need to indicate that an iteration is expected
+            // even though no fix is made.
+            if (expectedNumberOfIterations > 0)
+            {
+                test.NumberOfIncrementalIterations = expectedNumberOfIterations;
+            }
 
             await test.RunAsync(CancellationToken.None);
         }

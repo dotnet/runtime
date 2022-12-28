@@ -182,6 +182,59 @@ public class Program
             }.RunAsync();
         }
 
+        [Fact]
+        public async Task CodeFixSupportsInvalidPatternFromWhichOptionsCanBeParsed()
+        {
+            string pattern = ".{99999999999}"; // throws during real parse
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = [|Regex.IsMatch("""", @""{pattern}"")|];
+    }}
+}}";
+
+            string fixedSource = @$"using System.Text;
+using System.Text.RegularExpressions;
+
+public partial class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = MyRegex().IsMatch("""");
+    }}
+
+    [GeneratedRegex(@""{pattern}"")]
+    private static partial Regex MyRegex();
+}}";
+            // We successfully offer the diagnostic and make the fix despite the pattern
+            // being invalid, because it was valid enough to parse out any options in the pattern.
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixRejectsInvalidPatternFromWhichOptionsCannotBeParsed()
+        {
+            string pattern = "\\g"; // throws during pre-parse for options
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = [|Regex.IsMatch("""", @""{pattern}"")|];
+    }}
+}}";
+            // We offer a diagnostic in this case, based on cursory analysis; but when
+            // we attempt the fix, we cannot proceed. So there will be one iteration, even
+            // though no fix is made.
+            await VerifyCS.VerifyCodeFixAsync(test, test, references: null, expectedNumberOfIterations: 1);
+        }
+
         public static IEnumerable<object[]> ConstantPatternTestData()
         {
             foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
@@ -890,6 +943,35 @@ partial class Program
     }
 
     [GeneratedRegex(""a|b\\s\\n2"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task UnnecessaryChangesAvoidedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main(System.String[] args) // remains upper case String
+    {
+        Regex regex = (Regex)[|new Regex(""foo"")|]; // cast remains
+    }
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main(System.String[] args) // remains upper case String
+    {
+        Regex regex = (Regex)MyRegex(); // cast remains
+    }
+
+    [GeneratedRegex(""foo"")]
     private static partial Regex MyRegex();
 }";
 
