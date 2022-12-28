@@ -443,6 +443,12 @@ static void UninitDLL()
 #endif // PROFILE_STARTUP
 }
 
+// This is set to the thread that initiates and performs the shutdown and needs to run
+// while other threads are rudely terminated.
+// 
+// On many POSIX OSes a process lives as long as any thread lives or until
+// the process is terminated via `exit()` or a signal.
+// Thus there is no distinction between threads and this is never set.
 volatile Thread* g_threadPerformingShutdown = NULL;
 
 static void DllThreadDetach()
@@ -483,9 +489,10 @@ void RuntimeThreadShutdown(void* thread)
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
     // Do not do shutdown for the thread that performs the shutdown.
-    // other threads could be terminated before it and could leave TLS locked
-    if ((Thread*)thread == g_threadPerformingShutdown)
+    // other threads could already be terminated rudely and could leave TLS locked
+    if (g_threadPerformingShutdown != nullptr)
     {
+        ASSERT(g_threadPerformingShutdown == thread);
         return;
     }
 
@@ -509,17 +516,12 @@ extern "C" bool RhInitialize()
 }
 
 //
-// Currently called only from a managed executable once Main returns, this routine does whatever is needed to
-// cleanup managed state before exiting. There's not a lot here at the moment since we're always about to let
+// Called from a managed executable once Main returns or by threads that call Environment.Exit().
+// There's not a lot here at the moment since we're always about to let
 // the OS tear the process down anyway.
-//
-// @TODO: Eventually we'll probably have a hosting API and explicit shutdown request. When that happens we'll
-// something more sophisticated here since we won't be able to rely on the OS cleaning up after us.
 //
 COOP_PINVOKE_HELPER(void, RhpShutdown, ())
 {
-    // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
-    g_threadPerformingShutdown = ThreadStore::RawGetCurrentThread();
 }
 
 #ifdef _WIN32
@@ -539,6 +541,14 @@ EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, uint32_t dwReason, v
     break;
 
     case DLL_PROCESS_DETACH:
+        if (pvReserved == nullptr)
+        {
+            // The process is exiting and the current thread is performing the shutdown.
+            // At this point some threads may have been terminated rudely.
+            // It would not be a good idea for the current thread to wait on any locks or run managed code.
+            g_threadPerformingShutdown = ThreadStore::RawGetCurrentThread();
+        }
+
         UninitDLL();
         break;
 
