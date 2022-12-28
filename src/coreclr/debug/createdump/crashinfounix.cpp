@@ -24,12 +24,21 @@ CrashInfo::Initialize()
         return false;
     }
 
-    char pagemapPath[128];
-    _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%lu/pagemap", m_pid);
-    m_fdPagemap = open(pagemapPath, O_RDONLY);
-    if (m_fdPagemap == -1)
+    char* disablePagemapUse = getenv("COMPlus_DbgDisablePagemapUse");
+    if (disablePagemapUse != nullptr && strcmp(disablePagemapUse, "1") == 0)
     {
-        TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        TRACE("DbgDisablePagemapUse detected, will skip checking page for committed memory in memory enumeration.\n");
+        m_fdPagemap = -1;
+    }
+    else
+    {
+        char pagemapPath[128];
+        _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%lu/pagemap", m_pid);
+        m_fdPagemap = open(pagemapPath, O_RDONLY);
+        if (m_fdPagemap == -1)
+        {
+            TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        }
     }
 
     // Get the process info
