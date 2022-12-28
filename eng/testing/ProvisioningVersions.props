@@ -52,7 +52,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
-    <FirefoxRevision>97.0.1</FirefoxRevision>
+    <FirefoxRevision>108.0.1</FirefoxRevision>
     <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
     <FirefoxBinaryName>firefox</FirefoxBinaryName>
   </PropertyGroup>
