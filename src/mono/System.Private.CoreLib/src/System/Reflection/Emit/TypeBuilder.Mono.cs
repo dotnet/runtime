@@ -773,7 +773,7 @@ namespace System.Reflection.Emit
                 bool is_concrete = !IsAbstract;
                 for (int i = 0; i < num_methods; ++i)
                 {
-                    RuntimeMethodBuilder mb = (RuntimeMethodBuilder)(methods[i]);
+                    RuntimeMethodBuilder mb = (methods[i]);
                     if (is_concrete && mb.IsAbstract)
                         throw new InvalidOperationException("Type is concrete but has abstract method " + mb);
                     mb.check_override();
@@ -891,7 +891,7 @@ namespace System.Reflection.Emit
         {
             if (ctors == null)
                 return Array.Empty<ConstructorInfo>();
-            List<RuntimeConstructorBuilder> result = new List<RuntimeConstructorBuilder>();
+            List<ConstructorInfo> result = new List<ConstructorInfo>();
             bool match;
             MethodAttributes mattrs;
 

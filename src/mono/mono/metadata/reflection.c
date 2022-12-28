@@ -69,7 +69,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (missing, "System.Reflection", "Missing");
 static GENERATE_GET_CLASS_WITH_CACHE (method_body, "System.Reflection", "RuntimeMethodBody");
 static GENERATE_GET_CLASS_WITH_CACHE (local_variable_info, "System.Reflection", "RuntimeLocalVariableInfo");
 static GENERATE_GET_CLASS_WITH_CACHE (exception_handling_clause, "System.Reflection", "RuntimeExceptionHandlingClause");
-static GENERATE_GET_CLASS_WITH_CACHE (type_builder, "System.Reflection.Emit", "TypeBuilder");
+static GENERATE_GET_CLASS_WITH_CACHE (type_builder, "System.Reflection.Emit", "RuntimeTypeBuilder");
 static GENERATE_GET_CLASS_WITH_CACHE (dbnull, "System", "DBNull");
 
 
@@ -2493,17 +2493,17 @@ mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
 	MonoClass *klass = mono_handle_class (obj);
 
 	const char *klass_name = m_class_get_name (klass);
-	if (strcmp (klass_name, "MethodBuilder") == 0) {
+	if (strcmp (klass_name, "RuntimeMethodBuilder") == 0) {
 		MonoReflectionMethodBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionMethodBuilder, obj);
 
 		token = MONO_HANDLE_GETVAL (mb, table_idx) | MONO_TOKEN_METHOD_DEF;
-	} else if (strcmp (klass_name, "ConstructorBuilder") == 0) {
+	} else if (strcmp (klass_name, "RuntimeConstructorBuilder") == 0) {
 		MonoReflectionCtorBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionCtorBuilder, obj);
 
 		token = MONO_HANDLE_GETVAL (mb, table_idx) | MONO_TOKEN_METHOD_DEF;
-	} else if (strcmp (klass_name, "FieldBuilder") == 0) {
+	} else if (strcmp (klass_name, "RuntimeFieldBuilder") == 0) {
 		g_assert_not_reached ();
-	} else if (strcmp (klass_name, "TypeBuilder") == 0) {
+	} else if (strcmp (klass_name, "RuntimeTypeBuilder") == 0) {
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, obj);
 		token = MONO_HANDLE_GETVAL (tb, table_idx) | MONO_TOKEN_TYPE_DEF;
 	} else if (strcmp (klass_name, "RuntimeType") == 0) {
@@ -2551,7 +2551,7 @@ mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
 		MonoMethod *method = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionMethod, member_impl), method);
 
 		token = mono_method_get_param_token (method, position);
-	} else if (strcmp (klass_name, "RuntimeModule") == 0 || strcmp (klass_name, "ModuleBuilder") == 0) {
+	} else if (strcmp (klass_name, "RuntimeModule") == 0 || strcmp (klass_name, "RuntimeModuleBuilder") == 0) {
 		MonoReflectionModuleHandle m = MONO_HANDLE_CAST (MonoReflectionModule, obj);
 
 		token = MONO_HANDLE_GETVAL (m, token);
@@ -2713,7 +2713,7 @@ MonoReflectionMethodHandle
 ves_icall_RuntimeMethodInfo_MakeGenericMethod_impl (MonoReflectionMethodHandle rmethod, MonoArrayHandle types, MonoError *error)
 {
 	error_init (error);
-	g_assert (0 != strcmp (m_class_get_name (mono_handle_class (rmethod)), "MethodBuilder"));
+	g_assert (0 != strcmp (m_class_get_name (mono_handle_class (rmethod)), "RuntimeMethodBuilder"));
 
 	MonoMethod *method = MONO_HANDLE_GETVAL (rmethod, method);
 	MonoMethod *imethod = reflection_bind_generic_method_parameters (method, types, error);
@@ -3185,7 +3185,7 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	 * need a TypeBuilder so use mono_class_get_ref_info (klass).
 	 */
 	g_assert (mono_class_has_ref_info (klass));
-	g_assert (!strcmp (m_class_get_name (mono_object_class (&mono_class_get_ref_info_raw (klass)->type.object)), "TypeBuilder")); /* FIXME use handles */
+	g_assert (!strcmp (m_class_get_name (mono_object_class (&mono_class_get_ref_info_raw (klass)->type.object)), "RuntimeTypeBuilder")); /* FIXME use handles */
 
 	params [0] = mono_type_get_object_checked (m_class_get_byval_arg (oklass), error);
 	return_val_if_nok (error, FALSE);

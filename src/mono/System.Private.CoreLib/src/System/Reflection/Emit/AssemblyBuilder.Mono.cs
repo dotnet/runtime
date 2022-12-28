@@ -171,7 +171,6 @@ namespace System.Reflection.Emit
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
     public partial class AssemblyBuilder
     {
         [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
@@ -196,6 +195,7 @@ namespace System.Reflection.Emit
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     internal sealed partial class RuntimeAssemblyBuilder : AssemblyBuilder
     {
         //
@@ -203,7 +203,7 @@ namespace System.Reflection.Emit
         //
 #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
-#pragma warning disable CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.dynamic_assembly' is never used
+//#pragma warning disable CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.dynamic_assembly' is never used
         private LoaderAllocator? m_keepalive;
 
         private UIntPtr dynamic_assembly; /* GC-tracked */
@@ -214,7 +214,7 @@ namespace System.Reflection.Emit
         private string? culture;
         private byte[]? public_key_token;
         private Module[]? loaded_modules;
-#pragma warning restore CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.loaded_modules' is never used
+//#pragma warning restore CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.loaded_modules' is never used
         private uint access;
 #endregion
 
@@ -282,17 +282,7 @@ namespace System.Reflection.Emit
             AssemblyLoadContext? _,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            AssemblyBuilder ab = new RuntimeAssemblyBuilder(name, access);
-
-            if (assemblyAttributes != null)
-            {
-                foreach (CustomAttributeBuilder attr in assemblyAttributes)
-                    ab.SetCustomAttribute(attr);
-            }
-
-            return ab;
+            return DefineDynamicAssembly(name, access, assemblyAttributes);
         }
 
         public override ModuleBuilder? GetDynamicModule(string name)
