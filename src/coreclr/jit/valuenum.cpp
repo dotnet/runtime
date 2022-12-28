@@ -3690,6 +3690,7 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
     target_size_t nuint    = 0;
     float         float32  = 0;
     double        float64  = 0;
+    simd8_t       simd8    = {};
     unsigned char bytes[8] = {};
 
     switch (srcType)
@@ -3719,6 +3720,12 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
             float64 = ConstantValue<double>(arg0VN);
             memcpy(bytes, &float64, sizeof(float64));
             break;
+#if defined(FEATURE_SIMD)
+        case TYP_SIMD8:
+            simd8 = ConstantValue<simd8_t>(arg0VN);
+            memcpy(bytes, &simd8, sizeof(simd8));
+            break;
+#endif // FEATURE_SIMD
         default:
             unreached();
     }
@@ -3759,6 +3766,11 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
         case TYP_DOUBLE:
             memcpy(&float64, bytes, sizeof(float64));
             return VNForDoubleCon(float64);
+#if defined(FEATURE_SIMD)
+        case TYP_SIMD8:
+            memcpy(&simd8, bytes, sizeof(simd8));
+            return VNForSimd8Con(simd8);
+#endif // FEATURE_SIMD
         default:
             unreached();
     }
@@ -9583,56 +9595,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
         ValueNumPair op1Xvnp;
         vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
 
-        ValueNum addrVN       = ValueNumStore::NoVN;
-        bool     isMemoryLoad = tree->OperIsMemoryLoad();
-
-        if (isMemoryLoad)
-        {
-            // Currently the only SIMD operation with MemoryLoad semantics is SIMDIntrinsicInitArray
-            // and it has to be handled specially since it has an optional op2
-            //
-            assert(tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray);
-
-            // rationalize rewrites this as an explicit load with op1 as the base address
-            assert(tree->OperIsImplicitIndir());
-
-            ValueNumPair op2vnp;
-            if (tree->GetOperandCount() != 2)
-            {
-                // No op2 means that we have an impicit index of zero
-                op2vnp = ValueNumPair(vnStore->VNZeroForType(TYP_INT), vnStore->VNZeroForType(TYP_INT));
-
-                excSetPair = op1Xvnp;
-            }
-            else // We have an explicit index in op2
-            {
-                ValueNumPair op2Xvnp;
-                vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
-
-                excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-            }
-
-            assert(vnStore->VNFuncArity(simdFunc) == 2);
-            addrVN = vnStore->VNForFunc(TYP_BYREF, simdFunc, op1vnp.GetLiberal(), op2vnp.GetLiberal());
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Treating GT_SIMD %s as a ByrefExposed load , addrVN is ",
-                       simdIntrinsicNames[tree->GetSIMDIntrinsicId()]);
-                vnPrint(addrVN, 0);
-            }
-#endif // DEBUG
-
-            // The address could point anywhere, so it is an ByrefExposed load.
-            //
-            ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
-            tree->gtVNPair.SetLiberal(loadVN);
-            tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-            tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSetPair);
-            fgValueNumberAddExceptionSetForIndirection(tree, tree->Op(1));
-            return;
-        }
+        ValueNum addrVN = ValueNumStore::NoVN;
 
         if (tree->GetOperandCount() == 1)
         {
