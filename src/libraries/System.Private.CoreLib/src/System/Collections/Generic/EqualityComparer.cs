@@ -261,7 +261,6 @@ namespace System.Collections.Generic
             GetType().GetHashCode();
     }
 
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public static class EqualityComparer
     {
         /// <summary>
@@ -307,10 +306,7 @@ namespace System.Collections.Generic
             new DictionaryEqualityComparer<TDictionary, TKey, TValue>(keyComparer, valueComparer);
     }
 
-    [Serializable]
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    // Needs to be public to support binary serialization compatibility
-    public sealed partial class EnumerableEqualityComparer<TEnumerable, T> : EqualityComparer<TEnumerable>
+    internal sealed partial class EnumerableEqualityComparer<TEnumerable, T> : EqualityComparer<TEnumerable>
         where TEnumerable : IEnumerable<T>
     {
         private readonly IEqualityComparer<T> _elementComparer;
@@ -395,10 +391,7 @@ namespace System.Collections.Generic
             _elementComparer.GetHashCode());
     }
 
-    [Serializable]
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    // Needs to be public to support binary serialization compatibility
-    public sealed partial class SetEqualityComparer<TSet, T> : EqualityComparer<TSet>
+    internal sealed partial class SetEqualityComparer<TSet, T> : EqualityComparer<TSet>
         where TSet : IReadOnlySet<T>
     {
         private readonly IEqualityComparer<T> _elementComparer;
@@ -463,10 +456,7 @@ namespace System.Collections.Generic
             _elementComparer.GetHashCode());
     }
 
-    [Serializable]
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    // Needs to be public to support binary serialization compatibility
-    public sealed partial class DictionaryEqualityComparer<TDictionary, TKey, TValue> : EqualityComparer<TDictionary>
+    internal sealed partial class DictionaryEqualityComparer<TDictionary, TKey, TValue> : EqualityComparer<TDictionary>
         where TDictionary : IReadOnlyDictionary<TKey, TValue>
     {
         private readonly IEqualityComparer<TKey> _keyComparer;

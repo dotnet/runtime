@@ -154,7 +154,6 @@ namespace System.Collections.Generic
         }
     }
 
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public static partial class ComparerFactory
     {
         /// <summary>
@@ -171,10 +170,7 @@ namespace System.Collections.Generic
             new EnumerableComparer<TEnumerable, T>(elementComparer);
     }
 
-    [Serializable]
-    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    // Needs to be public to support binary serialization compatibility
-    public sealed partial class EnumerableComparer<TEnumerable, T> : Comparer<TEnumerable>
+    internal sealed partial class EnumerableComparer<TEnumerable, T> : Comparer<TEnumerable>
         where TEnumerable : IEnumerable<T>
     {
         private readonly IComparer<T> _elementComparer;
