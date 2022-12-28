@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -77,11 +78,13 @@ namespace ILAssembler
         private readonly EntityRegistry _entityRegistry = new();
         private readonly IReadOnlyDictionary<string, SourceText> _documents;
         private readonly Options _options;
+        private readonly MetadataBuilder _metadataBuilder;
 
-        public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options)
+        public GrammarVisitor(IReadOnlyDictionary<string, SourceText> documents, Options options, MetadataBuilder metadataBuilder)
         {
             _documents = documents;
             _options = options;
+            _metadataBuilder = metadataBuilder;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -188,7 +191,9 @@ namespace ILAssembler
             });
         }
 
-        public GrammarResult VisitCatchClause(CILParser.CatchClauseContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitCatchClause(CILParser.CatchClauseContext context) => VisitCatchClause(context);
+        public GrammarResult.Literal<EntityRegistry.TypeEntity> VisitCatchClause(CILParser.CatchClauseContext context) => VisitTypeSpec(context.typeSpec());
+
         public GrammarResult VisitCaValue(CILParser.CaValueContext context) => throw new NotImplementedException();
         public GrammarResult VisitChildren(IRuleNode node)
         {
@@ -252,7 +257,11 @@ namespace ILAssembler
 
             public Dictionary<string, LabelHandle> Labels { get; } = new();
 
-            public sealed record ExternalSource(string FileName, int StartLine, int StartColumn, int? EndLine, int? EndColumn);
+            public Dictionary<string, int> ArgumentNames { get; } = new();
+
+            public List<Dictionary<string, int>> LocalsScopes { get; } = new();
+
+            public List<SignatureArg> AllLocals { get; } = new();
         }
 
         private CurrentMethodContext? _currentMethod;
@@ -638,14 +647,21 @@ namespace ILAssembler
             }
             if (context.methodHead() is CILParser.MethodHeadContext methodHead)
             {
-                _currentMethod = VisitMethodHead(methodHead).Value;
+                _currentMethod = new(VisitMethodHead(methodHead).Value);
                 VisitMethodDecls(context.methodDecls());
                 _currentMethod = null;
             }
             throw new NotImplementedException();
         }
 
-        public GrammarResult VisitDecls(CILParser.DeclsContext context) => throw new NotImplementedException();
+        public GrammarResult VisitDecls(CILParser.DeclsContext context)
+        {
+            foreach (var decl in context.decl())
+            {
+                _ = VisitDecl(decl);
+            }
+            return GrammarResult.SentinelValue.Result;
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitDottedName(CILParser.DottedNameContext context)
         {
@@ -720,9 +736,9 @@ namespace ILAssembler
                     {
                         blob.WriteByte((byte)SignatureTypeCode.GenericMethodParameter);
                         bool foundParameter = false;
-                        for (int i = 0; i < _currentMethod.GenericParameters.Count; i++)
+                        for (int i = 0; i < _currentMethod.Definition.GenericParameters.Count; i++)
                         {
-                            EntityRegistry.GenericParameterEntity? genericParameter = _currentMethod.GenericParameters[i];
+                            EntityRegistry.GenericParameterEntity? genericParameter = _currentMethod.Definition.GenericParameters[i];
                             if (genericParameter.Name == dottedName)
                             {
                                 foundParameter = true;
@@ -880,11 +896,36 @@ namespace ILAssembler
             }
             return new(builder.MoveToImmutable().SerializeSequence());
         }
-        public GrammarResult VisitFaultClause(CILParser.FaultClauseContext context) => throw new NotImplementedException();
+
+        public GrammarResult VisitFaultClause(CILParser.FaultClauseContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitFieldAttr(CILParser.FieldAttrContext context) => throw new NotImplementedException();
         public GrammarResult VisitFieldDecl(CILParser.FieldDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitFieldInit(CILParser.FieldInitContext context) => throw new NotImplementedException();
         public GrammarResult VisitFieldOrProp(CILParser.FieldOrPropContext context) => throw new NotImplementedException();
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitFieldRef(CILParser.FieldRefContext context) => VisitFieldRef(context);
+        public GrammarResult.Literal<EntityRegistry.EntityBase> VisitFieldRef(CILParser.FieldRefContext context)
+        {
+            if (context.type() is not CILParser.TypeContext type)
+            {
+                // TODO: typedef
+                throw new NotImplementedException();
+            }
+
+            var fieldTypeSig = VisitType(type).Value;
+            EntityRegistry.TypeEntity definingType = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
+            if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
+            {
+                definingType = VisitTypeSpec(typeSpec).Value;
+            }
+
+            var name = VisitDottedName(context.dottedName()).Value;
+
+            var fieldSig = new BlobBuilder(fieldTypeSig.Count + 1);
+            fieldSig.WriteByte((byte)SignatureKind.Field);
+            fieldTypeSig.WriteContentTo(fieldSig);
+            return new(EntityRegistry.CreateUnrecordedMemberReference(definingType, name, fieldSig));
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitFieldSerInit(CILParser.FieldSerInitContext context) => VisitFieldSerInit(context);
         public GrammarResult.FormattedBlob VisitFieldSerInit(CILParser.FieldSerInitContext context)
@@ -965,11 +1006,34 @@ namespace ILAssembler
         public GrammarResult VisitFileAttr(CILParser.FileAttrContext context) => throw new NotImplementedException();
         public GrammarResult VisitFileDecl(CILParser.FileDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitFileEntry(CILParser.FileEntryContext context) => throw new NotImplementedException();
-        public GrammarResult VisitFilterClause(CILParser.FilterClauseContext context) => throw new NotImplementedException();
-        public GrammarResult VisitFilterHead(CILParser.FilterHeadContext context) => throw new NotImplementedException();
-        public GrammarResult VisitFinallyClause(CILParser.FinallyClauseContext context) => throw new NotImplementedException();
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitFloat64(CILParser.Float64Context context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitFilterClause(CILParser.FilterClauseContext context) => VisitFilterClause(context);
+        public GrammarResult.Literal<LabelHandle> VisitFilterClause(CILParser.FilterClauseContext context)
+        {
+            if (context.scopeBlock() is CILParser.ScopeBlockContext scopeBlock)
+            {
+                LabelHandle start = _currentMethod!.Definition.MethodBody.DefineLabel();
+                _currentMethod.Definition.MethodBody.MarkLabel(start);
+                _ = VisitScopeBlock(scopeBlock);
+                return new(start);
+            }
+            if (context.id() is CILParser.IdContext id)
+            {
+                var start = _currentMethod!.Labels.TryGetValue(VisitId(id).Value, out LabelHandle startLabel) ? startLabel : _currentMethod.Labels[VisitId(id).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
+                return new(start);
+            }
+            if (context.int32() is CILParser.Int32Context offset)
+            {
+                var start = _currentMethod!.Definition.MethodBody.DefineLabel();
+                _currentMethod.Definition.MethodBody.MarkLabel(start, VisitInt32(offset).Value);
+                return new(start);
+            }
+            throw new InvalidOperationException("unreachable");
+        }
+
+        public GrammarResult VisitFinallyClause(CILParser.FinallyClauseContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitFloat64(CILParser.Float64Context context) => VisitFloat64(context);
         public GrammarResult.Literal<double> VisitFloat64(CILParser.Float64Context context)
         {
             if (context.FLOAT64() is ITerminalNode float64)
@@ -990,13 +1054,46 @@ namespace ILAssembler
             else if (context.int64() is CILParser.Int64Context int64)
             {
                 long value = VisitInt64(int64).Value;
-                return new(Unsafe.As<long, double>(ref value));
+                return new(BitConverter.Int64BitsToDouble(value));
             }
             throw new InvalidOperationException("unreachable");
         }
-        public GrammarResult VisitGenArity(CILParser.GenArityContext context) => throw new NotImplementedException();
-        public GrammarResult VisitGenArityNotEmpty(CILParser.GenArityNotEmptyContext context) => throw new NotImplementedException();
-        public GrammarResult VisitHandlerBlock(CILParser.HandlerBlockContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitGenArity(CILParser.GenArityContext context) => VisitGenArity(context);
+        public GrammarResult.Literal<int> VisitGenArity(CILParser.GenArityContext context)
+            => context.genArityNotEmpty() is CILParser.GenArityNotEmptyContext genArity ? VisitGenArityNotEmpty(genArity) : new(0);
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitGenArityNotEmpty(CILParser.GenArityNotEmptyContext context) => VisitGenArityNotEmpty(context);
+        public GrammarResult.Literal<int> VisitGenArityNotEmpty(CILParser.GenArityNotEmptyContext context) => VisitInt32(context.int32());
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitHandlerBlock(CILParser.HandlerBlockContext context) => VisitHandlerBlock(context);
+
+        public GrammarResult.Literal<(LabelHandle Start, LabelHandle End)> VisitHandlerBlock(CILParser.HandlerBlockContext context)
+        {
+            if (context.scopeBlock() is CILParser.ScopeBlockContext scopeBlock)
+            {
+                LabelHandle start = _currentMethod!.Definition.MethodBody.DefineLabel();
+                _currentMethod.Definition.MethodBody.MarkLabel(start);
+                _ = VisitScopeBlock(scopeBlock);
+                LabelHandle end = _currentMethod.Definition.MethodBody.DefineLabel();
+                _currentMethod.Definition.MethodBody.MarkLabel(end);
+                return new((start, end));
+            }
+            if (context.id() is CILParser.IdContext[] ids)
+            {
+                var start = _currentMethod!.Labels.TryGetValue(VisitId(ids[0]).Value, out LabelHandle startLabel) ? startLabel : _currentMethod.Labels[VisitId(ids[0]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
+                var end = _currentMethod!.Labels.TryGetValue(VisitId(ids[1]).Value, out LabelHandle endLabel) ? endLabel : _currentMethod.Labels[VisitId(ids[1]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
+                return new((start, end));
+            }
+            if (context.int32() is CILParser.Int32Context[] offsets)
+            {
+                var start = _currentMethod!.Definition.MethodBody.DefineLabel();
+                var end = _currentMethod.Definition.MethodBody.DefineLabel();
+                _currentMethod.Definition.MethodBody.MarkLabel(start, VisitInt32(offsets[0]).Value);
+                _currentMethod.Definition.MethodBody.MarkLabel(end, VisitInt32(offsets[1]).Value);
+                return new((start, end));
+            }
+            throw new InvalidOperationException("unreachable");
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitHexbytes(CILParser.HexbytesContext context)
         {
@@ -1122,31 +1219,257 @@ namespace ILAssembler
                             }
                             _currentMethod.Definition.MethodBody.Branch(opcode, handle);
                         }
+                        if (argument is CILParser.Int32Context int32)
+                        {
+                            int offset = VisitInt32(int32).Value;
+                            LabelHandle label = _currentMethod!.Definition.MethodBody.DefineLabel();
+                            _currentMethod.Definition.MethodBody.Branch(opcode, label);
+                            _currentMethod.Definition.MethodBody.MarkLabel(label, _currentMethod.Definition.MethodBody.Offset + offset);
+                        }
                     }
                     break;
                 case CILParser.RULE_instr_field:
                     break;
                 case CILParser.RULE_instr_i:
+                    {
+                        int arg = VisitInt32(context.int32()).Value;
+                        if (opcode == ILOpCode.Ldc_i4 || opcode == ILOpCode.Ldc_i4_s)
+                        {
+                            _currentMethod!.Definition.MethodBody.LoadConstantI4(arg);
+                        }
+                        else
+                        {
+                            _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                            _currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)arg);
+                        }
+                    }
                     break;
                 case CILParser.RULE_instr_i8:
+                    Debug.Assert(opcode == ILOpCode.Ldc_i8);
+                    _currentMethod!.Definition.MethodBody.LoadConstantI8(VisitInt64(context.int64()).Value);
                     break;
                 case CILParser.RULE_instr_method:
+                    if (opcode == ILOpCode.Callvirt || opcode == ILOpCode.Newobj)
+                    {
+                        _expectInstance = true;
+                    }
+                    _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                    _currentMethod.Definition.MethodBody.Token(VisitMethodRef(context.methodRef()).Value.Handle);
+                    // Reset the instance flag for the next instruction.
+                    if (opcode == ILOpCode.Callvirt || opcode == ILOpCode.Newobj)
+                    {
+                        _expectInstance = false;
+                    }
                     break;
                 case CILParser.RULE_instr_none:
+                    _currentMethod!.Definition.MethodBody.OpCode(opcode);
                     break;
                 case CILParser.RULE_instr_r:
+                    {
+                        double value;
+                        ParserRuleContext argument = context.GetRuleContext<ParserRuleContext>(1);
+                        if (argument is CILParser.Float64Context float64)
+                        {
+                            value = VisitFloat64(float64).Value;
+                        }
+                        else if (argument is CILParser.Int64Context int64)
+                        {
+                            long intValue = VisitInt64(int64).Value;
+                            value = BitConverter.Int64BitsToDouble(intValue);
+                        }
+                        else if (argument is CILParser.BytesContext bytesContext)
+                        {
+                            var bytes = VisitBytes(bytesContext).Value.ToArray();
+                            value = bytes switch
+                            {
+                                { Length: >= 8 } => BitConverter.ToDouble(bytes, 0),
+                                { Length: >= 4 } => BitConverter.ToSingle(bytes, 0),
+                                // TODO: Report diagnostic on too-short byte array
+                                _ => 0.0d
+                            };
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("unreachable");
+                        }
+                        if (opcode == ILOpCode.Ldc_r4)
+                        {
+                            _currentMethod!.Definition.MethodBody.LoadConstantR4((float)value);
+                        }
+                        else
+                        {
+                            _currentMethod!.Definition.MethodBody.LoadConstantR8(value);
+                        }
+                    }
                     break;
                 case CILParser.RULE_instr_sig:
+                    {
+                        BlobBuilder signature = new();
+                        byte callConv = VisitCallConv(context.callConv()).Value;
+                        signature.WriteByte(callConv);
+                        var args = VisitSigArgs(context.sigArgs()).Value;
+                        signature.WriteCompressedInteger(args.Length);
+                        // Write return type
+                        VisitType(context.type()).Value.WriteContentTo(signature);
+                        // Write arg signatures
+                        foreach (var arg in args)
+                        {
+                            arg.SignatureBlob.WriteContentTo(signature);
+                        }
+                        _currentMethod!.Definition.MethodBody.Token(_entityRegistry.GetOrCreateStandaloneSignature(signature).Handle);
+                    }
                     break;
                 case CILParser.RULE_instr_string:
+                    Debug.Assert(opcode == ILOpCode.Ldstr);
+                    string str;
+                    if (context.bytes() is CILParser.BytesContext rawBytes)
+                    {
+                        ReadOnlySpan<byte> bytes = VisitBytes(rawBytes).Value.AsSpan();
+                        ReadOnlySpan<char> bytesAsChars = MemoryMarshal.Cast<byte, char>(bytes);
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            for (int i = 0; i < bytesAsChars.Length; i++)
+                            {
+                                BinaryPrimitives.ReverseEndianness(bytesAsChars[i]);
+                            }
+                        }
+                        str = bytesAsChars.ToString();
+                    }
+                    else
+                    {
+                        var userString = context.compQstring();
+                        Debug.Assert(userString is not null);
+                        str = VisitCompQstring(userString!).Value;
+                        if (context.ANSI() is not null)
+                        {
+                            unsafe
+                            {
+                                byte* ansiStrMemory = (byte*)Marshal.StringToCoTaskMemAnsi(str);
+                                int strlen = 0;
+                                for (; ansiStrMemory[strlen] != 0; strlen++) ;
+                                str = new string((char*)ansiStrMemory, 0, (strlen + 1) / 2);
+                                Marshal.FreeCoTaskMem((nint)ansiStrMemory);
+                            }
+                        }
+                    }
+                    _currentMethod!.Definition.MethodBody.LoadString(_metadataBuilder.GetOrAddUserString(str));
                     break;
                 case CILParser.RULE_instr_switch:
+                    {
+                        var labels = new List<(LabelHandle Label, int? Offset)>();
+                        foreach (var label in context.labels().children)
+                        {
+                            if (label is CILParser.IdContext id)
+                            {
+                                string labelName = VisitId(id).Value;
+                                if (!_currentMethod!.Labels.TryGetValue(labelName, out var handle))
+                                {
+                                    _currentMethod.Labels.Add(labelName, handle = _currentMethod.Definition.MethodBody.DefineLabel());
+                                }
+                                labels.Add((handle, null));
+                            }
+                            else if (label is CILParser.Int32Context int32)
+                            {
+                                int offset = VisitInt32(int32).Value;
+                                LabelHandle labelHandle = _currentMethod!.Definition.MethodBody.DefineLabel();
+                                labels.Add((labelHandle, offset));
+                            }
+                        }
+                        var switchEncoder = _currentMethod!.Definition.MethodBody.Switch(labels.Count);
+                        foreach (var label in labels)
+                        {
+                            switchEncoder.Branch(label.Label);
+                        }
+                        // Now that we've emitted the switch instruction, we can go back and mark the offset-based target labels
+                        foreach (var label in labels)
+                        {
+                            if (label.Offset is int offset)
+                            {
+                                _currentMethod.Definition.MethodBody.MarkLabel(label.Label, _currentMethod.Definition.MethodBody.Offset + offset);
+                            }
+                        }
+                    }
                     break;
                 case CILParser.RULE_instr_tok:
+                    var tok = VisitOwnerType(context.ownerType()).Value;
+                    _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                    _currentMethod.Definition.MethodBody.Token(tok.Handle);
                     break;
                 case CILParser.RULE_instr_type:
+                    {
+                        var arg = VisitTypeSpec(context.typeSpec()).Value;
+                        _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                        _currentMethod.Definition.MethodBody.Token(arg.Handle);
+                    }
                     break;
                 case CILParser.RULE_instr_var:
+                    {
+                        string instrName = opcode.ToString();
+                        bool isShortForm = instrName.EndsWith("_s");
+                        _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                        if (context.int32() is CILParser.Int32Context int32)
+                        {
+                            int value = VisitInt32(int32).Value;
+                            if (isShortForm)
+                            {
+                                // Emit a byte instead of the int for the short form
+                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)value);
+                            }
+                            else
+                            {
+                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(value);
+                            }
+                        }
+                        else
+                        {
+                            Debug.Assert(context.id() is not null);
+                            string varName = VisitId(context.id()!).Value;
+                            int? index = null;
+                            if (instrName.Contains("arg"))
+                            {
+                                if (_currentMethod!.ArgumentNames.TryGetValue(varName, out var argIndex))
+                                {
+                                    index = argIndex;
+
+                                    if (_currentMethod.Definition.SignatureHeader.IsInstance)
+                                    {
+                                        argIndex++;
+                                    }
+                                }
+                                else
+                                {
+                                    // TODO: Report diagnostic
+                                }
+                            }
+                            else
+                            {
+                                for (int i = _currentMethod!.LocalsScopes.Count - 1; i >= 0 ; i--)
+                                {
+                                    if (_currentMethod.LocalsScopes[i].TryGetValue(varName, out var index))
+                                    {
+                                        index = index;
+                                        break;
+                                    }
+                                }
+                                if (index is null)
+                                {
+                                    // TODO: diagnostic
+                                }
+                            }
+
+                            index ??= -1;
+
+                            if (isShortForm)
+                            {
+                                // Emit a byte instead of the int for the short form
+                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)index.Value);
+                            }
+                            else
+                            {
+                                _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(index.Value);
+                            }
+                        }
+                    }
                     break;
             }
             throw new NotImplementedException();
@@ -1277,9 +1600,8 @@ namespace ILAssembler
         }
 
         public GrammarResult VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => throw new NotImplementedException();
-        public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new NotImplementedException();
+        public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitLocalsHead(CILParser.LocalsHeadContext context) => throw new NotImplementedException();
         public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitManifestResDecls(CILParser.ManifestResDeclsContext context) => throw new NotImplementedException();
         public GrammarResult VisitManifestResHead(CILParser.ManifestResHeadContext context) => throw new NotImplementedException();
@@ -1308,7 +1630,26 @@ namespace ILAssembler
             return new(_entityRegistry.ResolveHandleToEntity(MetadataTokens.EntityHandle(VisitInt32(context.int32()).Value)));
         }
 
-        public GrammarResult VisitMemberRef(CILParser.MemberRefContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitMemberRef(CILParser.MemberRefContext context) => VisitMemberRef(context);
+        public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMemberRef(CILParser.MemberRefContext context)
+        {
+            if (context.mdtoken() is CILParser.MdtokenContext mdToken)
+            {
+                return VisitMdtoken(mdToken);
+            }
+
+            if (context.methodRef() is CILParser.MethodRefContext methodRef)
+            {
+                return VisitMethodRef(methodRef);
+            }
+            if (context.fieldRef() is CILParser.FieldRefContext fieldRef)
+            {
+                return VisitFieldRef(fieldRef);
+            }
+
+            throw new InvalidOperationException("unreachable");
+        }
+
         GrammarResult ICILVisitor<GrammarResult>.VisitMethAttr(CILParser.MethAttrContext context) => VisitMethAttr(context);
         public GrammarResult.Flag<MethodAttributes> VisitMethAttr(CILParser.MethAttrContext context)
         {
@@ -1357,6 +1698,32 @@ namespace ILAssembler
             {
                 currentMethod.Definition.MaxStack = VisitInt32(context.GetChild<CILParser.Int32Context>(0)).Value;
             }
+            else if (context.LOCALS() is not null)
+            {
+                if (context.ChildCount == 3)
+                {
+                    // init keyword specified
+                    currentMethod.Definition.BodyAttributes = MethodBodyAttributes.InitLocals;
+                }
+                var localsScope = currentMethod.LocalsScopes.Count != 0 ? currentMethod.LocalsScopes[currentMethod.LocalsScopes.Count - 1] : new();
+                var newLocals = VisitSigArgs(context.sigArgs()).Value;
+                foreach (var loc in newLocals)
+                {
+                    // BREAK-COMPAT: We don't allow specifying a local's slot via the [in], [out], or [opt] parameter attributes, or the custom int override.
+                    // This only worked in ilasm due to how ilasm reused fields.
+                    // We're only going to support allowing this tool to determine the slot numbers.
+                    // This blocks two different locals in two different scopes from resuing the same slot
+                    // but that is a very rare scenario (even using more than one .locals block in a method in IL is quite rare)
+
+                    // If the local is named, add it to our name-lookup dictionary.
+                    // Otherwise, it will only be accessible via its index.
+                    if (loc.Name is not null)
+                    {
+                        localsScope.Add(loc.Name, currentMethod.AllLocals.Count);
+                    }
+                    currentMethod.AllLocals.Add(loc);
+                }
+            }
             else if (context.ChildCount == 2 && context.GetChild(0) is CILParser.IdContext labelId)
             {
                 string labelName = VisitId(labelId).Value;
@@ -1365,6 +1732,26 @@ namespace ILAssembler
                     label = currentMethod.Definition.MethodBody.DefineLabel();
                 }
                 currentMethod.Definition.MethodBody.MarkLabel(label);
+            }
+            else if (context.EXPORT() is not null)
+            {
+                // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+            }
+            else if (context.VTENTRY() is not null)
+            {
+                // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+            }
+            else if (context.OVERRIDE() is not null)
+            {
+
+            }
+            else if (context.PARAM() is not null)
+            {
+
+            }
+            else
+            {
+                _ = context.children[0].Accept(this);
             }
         }
         public GrammarResult VisitMethodDecls(CILParser.MethodDeclsContext context)
@@ -1422,7 +1809,7 @@ namespace ILAssembler
             if (parsedHeader.HasExplicitThis && !parsedHeader.IsInstance)
             {
                 // Warn on explicit-this + non-instance
-                sigHeader |= (byte)SignatureAttributes.Instance;
+                parsedHeader = new(sigHeader |= (byte)SignatureAttributes.Instance);
             }
             methodSignature.WriteByte(sigHeader);
             if (typeParameters.Length != 0)
@@ -1454,6 +1841,7 @@ namespace ILAssembler
             }
             // We've parsed all signature information. We can reset the current method now (the caller will handle setting/unsetting it for the method body).
             _currentMethod = null;
+            methodDefinition.SignatureHeader = parsedHeader;
             methodDefinition.MethodSignature = methodSignature;
 
             methodDefinition.ImplementationAttributes = context.implAttr().Aggregate((MethodImplAttributes)0, (acc, attr) => acc | VisitImplAttr(attr));
@@ -1476,7 +1864,63 @@ namespace ILAssembler
             Debug.Assert(child is CILParser.DottedNameContext);
             return (GrammarResult.String)child.Accept(this);
         }
-        public GrammarResult VisitMethodRef(CILParser.MethodRefContext context) => throw new NotImplementedException();
+
+        private bool _expectInstance;
+        GrammarResult ICILVisitor<GrammarResult>.VisitMethodRef(CILParser.MethodRefContext context) => VisitMethodRef(context);
+        public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMethodRef(CILParser.MethodRefContext context)
+        {
+            if (context.mdtoken() is CILParser.MdtokenContext token)
+            {
+                return new(VisitMdtoken(token).Value);
+            }
+            if (context.dottedName() is CILParser.DottedNameContext)
+            {
+                // TODO: typedef
+                throw new NotImplementedException();
+            }
+            BlobBuilder methodRefSignature = new();
+            byte callConv = VisitCallConv(context.callConv()).Value;
+            EntityRegistry.TypeEntity owner = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
+            if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
+            {
+                owner = VisitTypeSpec(typeSpec).Value;
+            }
+            string name = VisitMethodName(context.methodName()).Value;
+            int numGenericParameters = 0;
+            if (context.typeArgs() is CILParser.TypeArgsContext typeArgs)
+            {
+                numGenericParameters = typeArgs.type().Length;
+            }
+            else if (context.genArityNotEmpty() is CILParser.GenArityNotEmptyContext genArityNotEmpty)
+            {
+                numGenericParameters = VisitGenArityNotEmpty(genArityNotEmpty).Value;
+            }
+            if (numGenericParameters != 0)
+            {
+                callConv |= (byte)SignatureAttributes.Generic;
+            }
+            if (_expectInstance && (callConv & (byte)SignatureAttributes.Instance) == 0)
+            {
+                // TODO: Warn for missing instance call-conv
+                callConv |= (byte)SignatureAttributes.Instance;
+            }
+            methodRefSignature.WriteByte(callConv);
+            if (numGenericParameters != 0)
+            {
+                methodRefSignature.WriteCompressedInteger(numGenericParameters);
+            }
+            var args = VisitSigArgs(context.sigArgs()).Value;
+            methodRefSignature.WriteCompressedInteger(args.Length);
+            // Write return type
+            VisitType(context.type()).Value.WriteContentTo(methodRefSignature);
+            // Write arg signatures
+            foreach (var arg in args)
+            {
+                arg.SignatureBlob.WriteContentTo(methodRefSignature);
+            }
+
+            return new(EntityRegistry.CreateUnrecordedMemberReference(owner, name, methodRefSignature));
+        }
         public GrammarResult VisitMethodSpec(CILParser.MethodSpecContext context) => throw new NotImplementedException();
         public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context) => throw new NotImplementedException();
         public GrammarResult VisitMscorlib(CILParser.MscorlibContext context) => throw new NotImplementedException();
@@ -1768,7 +2212,19 @@ namespace ILAssembler
             return new(objSeqBlob);
         }
 
-        public GrammarResult VisitOwnerType(CILParser.OwnerTypeContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitOwnerType(CILParser.OwnerTypeContext context) => VisitOwnerType(context);
+        public GrammarResult.Literal<EntityRegistry.EntityBase> VisitOwnerType(CILParser.OwnerTypeContext context)
+        {
+            if (context.memberRef() is CILParser.MemberRefContext memberRef)
+            {
+                return VisitMemberRef(memberRef);
+            }
+            if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
+            {
+                return new(VisitTypeSpec(typeSpec).Value);
+            }
+            throw new InvalidOperationException("unreachable");
+        }
         GrammarResult ICILVisitor<GrammarResult>.VisitParamAttr(CILParser.ParamAttrContext context) => VisitParamAttr(context);
         public GrammarResult.Literal<ParameterAttributes> VisitParamAttr(CILParser.ParamAttrContext context)
         {
@@ -1856,14 +2312,82 @@ namespace ILAssembler
         public GrammarResult VisitPropDecls(CILParser.PropDeclsContext context) => throw new NotImplementedException();
         public GrammarResult VisitPropHead(CILParser.PropHeadContext context) => throw new NotImplementedException();
         public GrammarResult VisitRepeatOpt(CILParser.RepeatOptContext context) => throw new NotImplementedException();
-        public GrammarResult VisitScopeBlock(CILParser.ScopeBlockContext context) => throw new NotImplementedException();
+
+        public GrammarResult VisitScopeBlock(CILParser.ScopeBlockContext context)
+        {
+            int numLocalsScopes = _currentMethod!.LocalsScopes.Count;
+            _ = VisitMethodDecls(context.methodDecls());
+            _currentMethod.LocalsScopes.RemoveRange(numLocalsScopes, _currentMethod.LocalsScopes.Count - numLocalsScopes);
+            return GrammarResult.SentinelValue.Result;
+        }
+
         public GrammarResult VisitSecAction(CILParser.SecActionContext context) => throw new NotImplementedException();
         public GrammarResult VisitSecAttrBlob(CILParser.SecAttrBlobContext context) => throw new NotImplementedException();
         public GrammarResult VisitSecAttrSetBlob(CILParser.SecAttrSetBlobContext context) => throw new NotImplementedException();
         public GrammarResult VisitSecDecl(CILParser.SecDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitSehBlock(CILParser.SehBlockContext context) => throw new NotImplementedException();
-        public GrammarResult VisitSehClause(CILParser.SehClauseContext context) => throw new NotImplementedException();
-        public GrammarResult VisitSehClauses(CILParser.SehClausesContext context) => throw new NotImplementedException();
+
+        internal abstract record ExceptionClause(LabelHandle Start, LabelHandle End)
+        {
+            internal sealed record Catch(EntityRegistry.TypeEntity Type, LabelHandle Start, LabelHandle End) : ExceptionClause(Start, End);
+
+            internal sealed record Filter(LabelHandle FilterStart, LabelHandle Start, LabelHandle End) : ExceptionClause(Start, End);
+
+            internal sealed record Finally(LabelHandle Start, LabelHandle End) : ExceptionClause(Start, End);
+
+            internal sealed record Fault(LabelHandle Start, LabelHandle End) : ExceptionClause(Start, End);
+        }
+
+        public GrammarResult VisitSehBlock(CILParser.SehBlockContext context)
+        {
+            var (tryStart, tryEnd) = VisitTryBlock(context.tryBlock()).Value;
+            foreach (var clause in VisitSehClauses(context.sehClauses()).Value)
+            {
+                switch (clause)
+                {
+                    case ExceptionClause.Finally finallyClause:
+                        _currentMethod.Definition.MethodBody.ControlFlowBuilder.AddFinallyRegion(tryStart, tryEnd, finallyClause.Start, finallyClause.End);
+                    case ExceptionClause.Fault faultClause:
+                        _currentMethod.Definition.MethodBody.ControlFlowBuilder.AddFaultRegion(tryStart, tryEnd, faultClause.Start, faultClause.End);
+                    case ExceptionClause.Catch catchClause:
+                        _currentMethod.Definition.MethodBody.ControlFlowBuilder.AddCatchRegion(tryStart, tryEnd, catchClause.Start, catchClause.End, catchClause.Type.Handle);
+                        break;
+                    case ExceptionClause.Filter filterClause:
+                        _currentMethod.Definition.MethodBody.ControlFlowBuilder.AddFilterRegion(tryStart, tryEnd, filterClause.Start, filterClause.End, filterClause.FilterStart);
+                        break;
+                    default:
+                        throw new InvalidOperationException("unreachable");
+                }
+            }
+            return GrammarResult.SentinelValue.Result;
+        }
+        GrammarResult ICILVisitor<GrammarResult>.VisitSehClause(CILParser.SehClauseContext context) => VisitSehClause(context);
+        public GrammarResult.Literal<ExceptionClause> VisitSehClause(CILParser.SehClauseContext context)
+        {
+            var (start, end) = VisitHandlerBlock(context.handlerBlock()).Value;
+
+            if (context.finallyClause() is not null)
+            {
+                return new(new ExceptionClause.Finally(start, end));
+            }
+            if (context.faultClause() is not null)
+            {
+                return new(new ExceptionClause.Fault(start, end));
+            }
+            if (context.catchClause() is CILParser.CatchClauseContext catchClause)
+            {
+                return new(new ExceptionClause.Catch(VisitCatchClause(catchClause).Value, start, end));
+            }
+            if (context.filterClause() is CILParser.FilterClauseContext filterClause)
+            {
+                return new(new ExceptionClause.Filter(VisitFilterClause(filterClause).Value, start, end));
+            }
+
+            throw new InvalidOperationException("unreachable");
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitSehClauses(CILParser.SehClausesContext context) => VisitSehClauses(context);
+        public GrammarResult.Sequence<ExceptionClause> VisitSehClauses(CILParser.SehClausesContext context) => new(context.sehClause().Select(VisitSehClause).ToImmutableArray());
+
         public GrammarResult VisitSeralizType(CILParser.SeralizTypeContext context) => throw new NotImplementedException();
         public GrammarResult VisitSeralizTypeElement(CILParser.SeralizTypeElementContext context) => throw new NotImplementedException();
         GrammarResult ICILVisitor<GrammarResult>.VisitSerInit(CILParser.SerInitContext context) => VisitSerInit(context);
@@ -2013,8 +2537,13 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitSubsystem(CILParser.SubsystemContext context) => VisitSubsystem(context);
         public GrammarResult.Literal<int> VisitSubsystem(CILParser.SubsystemContext context) => VisitInt32(context.int32());
 
-        public GrammarResult VisitTerminal(ITerminalNode node) => throw new NotImplementedException();
-        public GrammarResult VisitTls(CILParser.TlsContext context) => throw new NotImplementedException();
+        public GrammarResult VisitTerminal(ITerminalNode node) => throw new InvalidOperationException("unreachable");
+        public GrammarResult VisitTls(CILParser.TlsContext context)
+        {
+            // TODO-SRM: System.Reflection.Metadata doesn't provide APIs to point a data declaration at a TLS slot or into the IL stream.
+            // We have tests for the TLS case (CoreCLR only supports it on Win-x86), but not for the IL case.
+            return GrammarResult.SentinelValue.Result;
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTruefalse(CILParser.TruefalseContext context) => VisitTruefalse(context);
 
@@ -2023,8 +2552,36 @@ namespace ILAssembler
             return new(bool.Parse(context.GetText()));
         }
 
-        public GrammarResult VisitTryBlock(CILParser.TryBlockContext context) => throw new NotImplementedException();
-        public GrammarResult VisitTryHead(CILParser.TryHeadContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitTryBlock(CILParser.TryBlockContext context) => VisitTryBlock(context);
+
+        public GrammarResult.Literal<(LabelHandle Start, LabelHandle End)> VisitTryBlock(CILParser.TryBlockContext context)
+        {
+            if (context.scopeBlock() is CILParser.ScopeBlockContext scopeBlock)
+            {
+                LabelHandle start = _currentMethod!.Definition.MethodBody.DefineLabel();
+                _currentMethod.Definition.MethodBody.MarkLabel(start);
+                _ = VisitScopeBlock(scopeBlock);
+                LabelHandle end = _currentMethod.Definition.MethodBody.DefineLabel();
+                _currentMethod.Definition.MethodBody.MarkLabel(end);
+                return new((start, end));
+            }
+            if (context.id() is CILParser.IdContext[] ids)
+            {
+                var start = _currentMethod!.Labels.TryGetValue(VisitId(ids[0]).Value, out LabelHandle startLabel) ? startLabel : _currentMethod.Labels[VisitId(ids[0]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
+                var end = _currentMethod!.Labels.TryGetValue(VisitId(ids[1]).Value, out LabelHandle endLabel) ? endLabel : _currentMethod.Labels[VisitId(ids[1]).Value] = _currentMethod.Definition.MethodBody.DefineLabel();
+                return new((start, end));
+            }
+            if (context.int32() is CILParser.Int32Context[] offsets)
+            {
+                var start = _currentMethod!.Definition.MethodBody.DefineLabel();
+                var end = _currentMethod.Definition.MethodBody.DefineLabel();
+                _currentMethod.Definition.MethodBody.MarkLabel(start, VisitInt32(offsets[0]).Value);
+                _currentMethod.Definition.MethodBody.MarkLabel(end, VisitInt32(offsets[1]).Value);
+                return new((start, end));
+            }
+            throw new InvalidOperationException("unreachable");
+        }
+
         GrammarResult ICILVisitor<GrammarResult>.VisitTyBound(CILParser.TyBoundContext context) => VisitTyBound(context);
         public GrammarResult.Sequence<EntityRegistry.GenericParameterConstraintEntity> VisitTyBound(CILParser.TyBoundContext context)
         {
@@ -2191,7 +2748,17 @@ namespace ILAssembler
         }
 
         public GrammarResult VisitTypedefDecl(CILParser.TypedefDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitTypelist(CILParser.TypelistContext context) => throw new NotImplementedException();
+        public GrammarResult VisitTypelist(CILParser.TypelistContext context)
+        {
+            foreach (var name in context.className())
+            {
+                // We don't do anything with the class names here.
+                // We just go through the name resolution process to ensure that the names are valid
+                // and to provide TypeReference table rows.
+                _ = VisitClassName(name);
+            }
+        }
+
         GrammarResult ICILVisitor<GrammarResult>.VisitTypeList(CILParser.TypeListContext context) => VisitTypeList(context);
         public GrammarResult.Sequence<EntityRegistry.TypeEntity> VisitTypeList(CILParser.TypeListContext context)
         {
@@ -2316,9 +2883,22 @@ namespace ILAssembler
             });
         }
 
-        public GrammarResult VisitVtableDecl(CILParser.VtableDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitVtfixupAttr(CILParser.VtfixupAttrContext context) => throw new NotImplementedException();
-        public GrammarResult VisitVtfixupDecl(CILParser.VtfixupDeclContext context) => throw new NotImplementedException();
+        public GrammarResult VisitVtableDecl(CILParser.VtableDeclContext context)
+        {
+            // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+            throw new NotImplementedException("raw vtable fixups blob not supported");
+        }
+
+        public GrammarResult VisitVtfixupAttr(CILParser.VtfixupAttrContext context)
+        {
+            // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+            throw new NotImplementedException("vtable fixups not supported");
+        }
+        public GrammarResult VisitVtfixupDecl(CILParser.VtfixupDeclContext context)
+        {
+            // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+            throw new NotImplementedException("raw vtable fixups blob not supported");
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitOptionalModifier(CILParser.OptionalModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
         GrammarResult ICILVisitor<GrammarResult>.VisitSZArrayModifier(CILParser.SZArrayModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);

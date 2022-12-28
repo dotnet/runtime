@@ -288,7 +288,7 @@ classAttr:
 	| 'auto'
 	| 'sequential'
 	| 'explicit'
-	| 'ansi'
+	| ANSI
 	| 'unicode'
 	| 'autochar'
 	| 'import'
@@ -395,10 +395,10 @@ instr:
 	| instr_field type typeSpec '::' dottedName
 	| instr_field type dottedName
 	| instr_field mdtoken
-	| instr_field dottedName
+	| instr_field dottedName // typedef
 	| instr_type typeSpec
 	| instr_string compQstring
-	| instr_string 'ansi' '(' compQstring ')'
+	| instr_string ANSI '(' compQstring ')'
 	| instr_string 'bytearray' '(' bytes ')'
 	| instr_sig callConv type sigArgs
 	| instr_tok ownerType /* ownerType ::= memberRef | typeSpec */
@@ -406,10 +406,7 @@ instr:
 
 labels:
 	/* empty */
-	| id ',' labels
-	| int32 ',' labels
-	| id
-	| int32;
+	| (id | int32 ',')* (id | int32);
 
 typeArgs: '<' (type ',')* type '>';
 
@@ -684,10 +681,14 @@ mdtoken: 'mdtoken' '(' int32 ')';
 
 memberRef:
 	'method' methodRef
-	| 'field' type typeSpec '::' dottedName
-	| 'field' type dottedName
-	| 'field' dottedName /* typedef */
+	| 'field' fieldRef
 	| mdtoken;
+
+fieldRef:
+	type typeSpec '::' dottedName
+	| type dottedName
+	| dottedName // typedef
+    ;
 
 /* Generic type parameters declaration  */
 typeList: (typeSpec ',')* typeSpec;
@@ -932,11 +933,9 @@ sehBlock: tryBlock sehClauses;
 sehClauses: sehClause+;
 
 tryBlock:
-	tryHead scopeBlock
-	| tryHead id 'to' id
-	| tryHead int32 'to' int32;
-
-tryHead: '.try';
+	'.try' scopeBlock
+	| '.try' id 'to' id
+	| '.try' int32 'to' int32;
 
 sehClause:
 	catchClause handlerBlock
@@ -945,11 +944,9 @@ sehClause:
 	| faultClause handlerBlock;
 
 filterClause:
-	filterHead scopeBlock
-	| filterHead id
-	| filterHead int32;
-
-filterHead: 'filter';
+	'filter' scopeBlock
+	| 'filter' id
+	| 'filter' int32;
 
 catchClause: 'catch' typeSpec;
 
@@ -971,7 +968,7 @@ tls: /* EMPTY */ | 'tls' | 'cil';
 
 ddBody: '{' ddItemList '}' | ddItem;
 
-ddItemList: ddItem ',' ddItemList | ddItem;
+ddItemList: (ddItem ',')* ddItem;
 
 ddItemCount: /* EMPTY */ | '[' int32 ']';
 

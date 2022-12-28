@@ -18,6 +18,7 @@ namespace ILAssembler
         private readonly Dictionary<string, AssemblyReferenceEntity> _seenAssemblyRefs = new();
         private readonly Dictionary<string, ModuleReferenceEntity> _seenModuleRefs = new();
         private readonly Dictionary<BlobBuilder, TypeSpecificationEntity> _seenTypeSpecs = new(new BlobBuilderContentEqualityComparer());
+        private readonly Dictionary<BlobBuilder, StandaloneSignatureEntity> _seenStandaloneSignatures = new(new BlobBuilderContentEqualityComparer());
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
@@ -254,11 +255,33 @@ namespace ILAssembler
             return true;
         }
 
+        public static MemberReferenceEntity CreateUnrecordedMemberReference(TypeEntity containingType, string name, BlobBuilder signature)
+        {
+            return new MemberReferenceEntity(containingType, name, signature);
+        }
+
+        public void ResolveAndRecordMemberReference(MemberReferenceEntity memberRef)
+        {
+            // Resolve the member reference to a local method or field reference or record
+            // it into the member reference table.
+            throw new NotImplementedException();
+        }
+
+        public StandaloneSignatureEntity GetOrCreateStandaloneSignature(BlobBuilder signature)
+        {
+            return GetOrCreateEntity(signature, TableIndex.StandAloneSig, _seenStandaloneSignatures, (sig) => new(sig), _ => { });
+        }
+
         public abstract class EntityBase : IHasHandle
         {
             public EntityHandle Handle { get; private set; }
 
-            void IHasHandle.SetHandle(EntityHandle token) => Handle = token;
+            protected virtual void SetHandle(EntityHandle token)
+            {
+                Handle = token;
+            }
+
+            void IHasHandle.SetHandle(EntityHandle token) => SetHandle(token);
         }
 
         public abstract class TypeEntity : EntityBase
@@ -449,9 +472,11 @@ namespace ILAssembler
             // COMPAT: Save the list of generic parameter constraints here to ensure we can match ILASM's emit order for generic parameter constraints exactly.
             public List<GenericParameterConstraintEntity> GenericParameterConstraints { get; } = new();
 
+            public SignatureHeader SignatureHeader { get; set; }
+
             public BlobBuilder? MethodSignature { get; set; }
 
-            public BlobBuilder? LocalsSignature { get; set; }
+            public StandaloneSignatureEntity? LocalsSignature { get; set; }
 
             public InstructionEncoder MethodBody { get; } = new(new BlobBuilder(), new ControlFlowBuilder());
 
@@ -461,6 +486,50 @@ namespace ILAssembler
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
             public MethodImplAttributes ImplementationAttributes { get; set; }
+        }
+
+        public sealed class MemberReferenceEntity : EntityBase
+        {
+            public MemberReferenceEntity(EntityBase parent, string name, BlobBuilder signature)
+            {
+                Parent = parent;
+                Name = name;
+                Signature = signature;
+            }
+
+            public EntityBase Parent { get; }
+            public string Name { get; }
+            public BlobBuilder Signature { get; }
+
+            private readonly List<Blob> _placesToWriteResolvedHandle = new();
+
+            public void RecordBlobToWriteResolvedHandle(Blob blob)
+            {
+                _placesToWriteResolvedHandle.Add(blob);
+            }
+
+            protected override void SetHandle(EntityHandle token)
+            {
+                base.SetHandle(token);
+                // Now that we've set the handle, backpatch all the blobs that need to be updated.
+                // This way we can determine the right token to use for the member reference
+                // after we've processed all of the source code.
+                foreach (var blob in _placesToWriteResolvedHandle)
+                {
+                    var writer = new BlobWriter(blob);
+                    writer.WriteInt32(MetadataTokens.GetToken(token));
+                }
+            }
+        }
+
+        public sealed class StandaloneSignatureEntity : EntityBase
+        {
+            public StandaloneSignatureEntity(BlobBuilder signature)
+            {
+                Signature = signature;
+            }
+
+            public BlobBuilder Signature { get; }
         }
     }
 }
