@@ -639,10 +639,10 @@ namespace Mono.Linker
 								return -1;
 							}
 
-							AssemblyRootMode rmode = AssemblyRootMode.Default;
+							AssemblyRootMode rmode = AssemblyRootMode.AllMembers;
 							var rootMode = GetNextStringValue ();
 							if (rootMode != null) {
-								var parsed_rmode = ParseAssemblyRootsMode (rootMode);
+								var parsed_rmode = ParseAssemblyRootMode (rootMode);
 								if (parsed_rmode is null)
 									return -1;
 
@@ -1115,11 +1115,9 @@ namespace Mono.Linker
 			return null;
 		}
 
-		AssemblyRootMode? ParseAssemblyRootsMode (string s)
+		AssemblyRootMode? ParseAssemblyRootMode (string s)
 		{
 			switch (s.ToLowerInvariant ()) {
-			case "default":
-				return AssemblyRootMode.Default;
 			case "all":
 				return AssemblyRootMode.AllMembers;
 			case "visible":

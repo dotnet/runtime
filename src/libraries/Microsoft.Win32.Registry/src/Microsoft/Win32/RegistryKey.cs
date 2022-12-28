@@ -1248,7 +1248,7 @@ namespace Microsoft.Win32
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
             }
 
-            if (!Enum.IsDefined(typeof(RegistryValueKind), valueKind))
+            if (!Enum.IsDefined(valueKind))
             {
                 throw new ArgumentException(SR.Arg_RegBadKeyKind, nameof(valueKind));
             }

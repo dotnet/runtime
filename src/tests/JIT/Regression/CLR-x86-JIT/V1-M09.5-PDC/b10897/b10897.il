@@ -15,7 +15,7 @@
 // -- bug --
 // 0xABBA is the errorlevel on success
 // ----------------------------------
-.class bug {
+.class public bug {
 
 .method static int32 jumpee(){
 .maxstack	20
@@ -28,7 +28,7 @@
 	jmp int32 bug::jumpee()
 }
 
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack 20
 	call int32 bug::jumper()

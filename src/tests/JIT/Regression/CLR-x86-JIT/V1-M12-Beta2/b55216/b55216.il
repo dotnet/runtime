@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly faulttest{}
+.assembly 'b55216'{}
 .class public auto ansi fault_class extends ['mscorlib']System.Object {
 
 //+test_10_fault

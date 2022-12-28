@@ -9,9 +9,9 @@ using System.Runtime.CompilerServices;
 
 namespace GitHub_24114
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             Test();
             return 100;
