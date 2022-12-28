@@ -32,8 +32,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Console.WriteLine(message);
         }
 
+        [JSImport("catch1toString", "JavaScriptTestHelper")]
+        public static partial string catch1toString(string message, string functionName);
+
+        [JSImport("catch1stack", "JavaScriptTestHelper")]
+        public static partial string catch1stack(string message, string functionName);
+
         [JSExport]
-        public static void Throw(string message)
+        public static void ThrowFromJSExport(string message)
         {
             throw new ArgumentException(message);
         }
@@ -99,7 +105,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.String>]
         internal static partial string getClass1();
 
-        [JSImport("throw0", "JavaScriptTestHelper")]
+        [JSImport("throw0fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Discard>]
         internal static partial void throw0();
 
@@ -257,7 +263,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Int32([JSMarshalAs<JSType.Number>] int value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int throw1_Int32([JSMarshalAs<JSType.Number>] int value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -283,7 +289,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_String([JSMarshalAs<JSType.String>] string value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.String>]
         internal static partial string throw1_String([JSMarshalAs<JSType.String>] string value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -301,6 +307,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.String>>]
+        internal static partial Task<string> echopromise_String([JSMarshalAs<JSType.String>] string value);
         #endregion String
 
         #region Object
@@ -315,7 +325,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Object([JSMarshalAs<JSType.Any>] object value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Any>]
         internal static partial object throw1_Object([JSMarshalAs<JSType.Any>] object value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -327,6 +337,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
+        internal static partial Task<object> echopromise_Object([JSMarshalAs<JSType.Any>] object value);
         #endregion Object
 
         #region Exception
@@ -341,7 +355,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Exception([JSMarshalAs<JSType.Error>] Exception value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Error>]
         internal static partial Exception throw1_Exception([JSMarshalAs<JSType.Error>] Exception value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -353,6 +367,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Error>>]
+        internal static partial Task<Exception> echopromise_Exception([JSMarshalAs<JSType.Error>] Exception value);
         #endregion Exception
 
         #region Task
@@ -473,7 +490,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Boolean([JSMarshalAs<JSType.Boolean>] bool value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool throw1_Boolean([JSMarshalAs<JSType.Boolean>] bool value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -500,7 +517,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Char([JSMarshalAs<JSType.String>] char value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.String>]
         internal static partial char throw1_Char([JSMarshalAs<JSType.String>] char value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -526,7 +543,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Byte([JSMarshalAs<JSType.Number>] byte value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial byte throw1_Byte([JSMarshalAs<JSType.Number>] byte value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -552,7 +569,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Int16([JSMarshalAs<JSType.Number>] short value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial short throw1_Int16([JSMarshalAs<JSType.Number>] short value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -578,7 +595,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Int52([JSMarshalAs<JSType.Number>] long value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial long throw1_Int52([JSMarshalAs<JSType.Number>] long value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -604,7 +621,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_BigInt64([JSMarshalAs<JSType.BigInt>] long value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.BigInt>]
         internal static partial long throw1_BigInt64([JSMarshalAs<JSType.BigInt>] long value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -630,7 +647,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Double([JSMarshalAs<JSType.Number>] double value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial double throw1_Double([JSMarshalAs<JSType.Number>] double value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -656,7 +673,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Single([JSMarshalAs<JSType.Number>] float value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial float throw1_Single([JSMarshalAs<JSType.Number>] float value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -682,7 +699,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_IntPtr([JSMarshalAs<JSType.Number>] IntPtr value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial IntPtr throw1_IntPtr([JSMarshalAs<JSType.Number>] IntPtr value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -709,7 +726,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal unsafe static partial bool identity1_VoidPtr([JSMarshalAs<JSType.Number>] void* value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal unsafe static partial void* throw1_VoidPtr([JSMarshalAs<JSType.Number>] void* value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -735,7 +752,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_DateTime([JSMarshalAs<JSType.Date>] DateTime value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Date>]
         internal static partial DateTime throw1_DateTime([JSMarshalAs<JSType.Date>] DateTime value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -761,7 +778,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_DateTimeOffset([JSMarshalAs<JSType.Date>] DateTimeOffset value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Date>]
         internal static partial DateTimeOffset throw1_DateTimeOffset([JSMarshalAs<JSType.Date>] DateTimeOffset value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -788,7 +805,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableBoolean([JSMarshalAs<JSType.Boolean>] bool? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool? throw1_NullableBoolean([JSMarshalAs<JSType.Boolean>] bool? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -815,7 +832,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableInt32([JSMarshalAs<JSType.Number>] int? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int? throw1_NullableInt32([JSMarshalAs<JSType.Number>] int? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -842,7 +859,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableBigInt64([JSMarshalAs<JSType.BigInt>] long? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.BigInt>]
         internal static partial long? throw1_NullableBigInt64([JSMarshalAs<JSType.BigInt>] long? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -869,7 +886,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableIntPtr([JSMarshalAs<JSType.Number>] IntPtr? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial IntPtr? throw1_NullableIntPtr([JSMarshalAs<JSType.Number>] IntPtr? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -896,7 +913,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableDouble([JSMarshalAs<JSType.Number>] double? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial double? throw1_NullableDouble([JSMarshalAs<JSType.Number>] double? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -923,7 +940,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableDateTime([JSMarshalAs<JSType.Date>] DateTime? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Date>]
         internal static partial DateTime? throw1_NullableDateTime([JSMarshalAs<JSType.Date>] DateTime? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -949,7 +966,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_JSObject([JSMarshalAs<JSType.Object>] JSObject value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Object>]
         internal static partial JSObject throw1_JSObject([JSMarshalAs<JSType.Object>] JSObject value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -961,6 +978,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Object>>]
+        internal static partial Task<JSObject> echopromise_JSObject([JSMarshalAs<JSType.Object>] JSObject value);
         #endregion JSObject
 
         [JSImport("setup", "JavaScriptTestHelper")]

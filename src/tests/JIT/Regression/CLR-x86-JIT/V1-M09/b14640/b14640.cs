@@ -10,7 +10,7 @@ namespace DefaultNamespace
 
     internal class repro
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             char b = 'B';
 

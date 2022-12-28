@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="library, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Mono.Linker.Tests.Cases.Warnings.Dependencies.TriggerWarnings_Lib.get_Warning2</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Mono.Linker.Tests.Cases.Warnings.Dependencies.TriggerWarnings_Lib.Main</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Mono.Linker.Tests.Cases.Warnings.Dependencies.TriggerWarnings_Lib.NestedType.Warning3</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Mono.Linker.Tests.Cases.Warnings.Dependencies.TriggerWarnings_Lib.NestedType.Warning4``1(System.Collections.Generic.List{``0}@)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2072</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:Mono.Linker.Tests.Cases.Warnings.Dependencies.TriggerWarnings_Lib.Warning1</property>
+    </attribute>
+  </assembly>
+</linker>

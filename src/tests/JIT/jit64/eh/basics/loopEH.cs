@@ -7,7 +7,7 @@ using System.Text;
 
 internal class Program
 {
-    private static int Main(string[] args)
+    private static int Main()
     {
         return Test(null, null, null, 0, 1);
     }

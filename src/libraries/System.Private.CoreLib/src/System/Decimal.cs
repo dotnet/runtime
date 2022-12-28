@@ -307,8 +307,7 @@ namespace System
         //
         public Decimal(int lo, int mid, int hi, bool isNegative, byte scale)
         {
-            if (scale > 28)
-                throw new ArgumentOutOfRangeException(nameof(scale), SR.ArgumentOutOfRange_DecimalScale);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(scale, 28);
             _lo64 = (uint)lo + ((ulong)(uint)mid << 32);
             _hi32 = (uint)hi;
             _flags = ((int)scale) << 16;
@@ -1813,6 +1812,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out decimal result) => TryParse(s, NumberStyles.Number, provider, out result);
 
         //

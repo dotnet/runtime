@@ -7,7 +7,7 @@
   <PropertyGroup>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
     <BuildCoreHostDependsOn>GetProductVersions;GenerateNativeVersionFile</BuildCoreHostDependsOn>
-    <BuildCoreHostDependsOn Condition="'$(DisableSourceLink)' != 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
+    <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRid).$(Configuration)\</IntermediateOutputRootPath>
   </PropertyGroup>
 
@@ -81,6 +81,7 @@
       <BuildArgs Condition="'$(Ninja)' == 'true'">$(BuildArgs) -ninja</BuildArgs>
       <BuildArgs>$(BuildArgs) -runtimeflavor $(RuntimeFlavor)</BuildArgs>
       <BuildArgs Condition="'$(OfficialBuildId)' != ''">$(BuildArgs) /p:OfficialBuildId="$(OfficialBuildId)"</BuildArgs>
+      <BuildArgs>$(BuildArgs) -outputrid $(OutputRid)</BuildArgs>
     </PropertyGroup>
 
     <!--

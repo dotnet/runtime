@@ -37,7 +37,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            WriteCore(writer, value, jsonTypeInfo);
+            jsonTypeInfo.Serialize(writer, value);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace System.Text.Json
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
+            jsonTypeInfo.SerializeAsObject(writer, value);
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            WriteCore(writer, value, jsonTypeInfo);
+            jsonTypeInfo.Serialize(writer, value);
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace System.Text.Json
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
+            jsonTypeInfo.SerializeAsObject(writer, value);
         }
     }
 }

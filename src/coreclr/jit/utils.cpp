@@ -1627,7 +1627,7 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(null
         }
 
         // Ignore lines starting with leading ";" "#" "//".
-        if ((0 == _strnicmp(buffer, ";", 1)) || (0 == _strnicmp(buffer, "#", 1)) || (0 == _strnicmp(buffer, "//", 2)))
+        if ((0 == strncmp(buffer, ";", 1)) || (0 == strncmp(buffer, "#", 1)) || (0 == strncmp(buffer, "//", 2)))
         {
             continue;
         }

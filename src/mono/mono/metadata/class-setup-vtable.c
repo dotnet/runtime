@@ -1065,7 +1065,7 @@ handle_dim_conflicts (MonoMethod **vtable, MonoClass *klass, GHashTable *conflic
 		int nentries = 0;
 		MonoMethod *impl = NULL;
 		for (l = entries; l; l = l->next) {
-			if (l->data) {
+			if (l->data && l->data != impl) {
 				nentries ++;
 				impl = (MonoMethod*)l->data;
 			}
@@ -1655,6 +1655,10 @@ check_vtable_covariant_override_impls (MonoClass *klass, MonoMethod **vtable, in
 			if (slot >= cur_class->vtable_size)
 				break;
 			MonoMethod *prev_impl = cur_class->vtable[slot];
+
+			// if the current class re-abstracted the method, it may not be there.
+			if (!prev_impl)
+				continue;
 
 			if (prev_impl != last_checked_prev_override) {
 				/*

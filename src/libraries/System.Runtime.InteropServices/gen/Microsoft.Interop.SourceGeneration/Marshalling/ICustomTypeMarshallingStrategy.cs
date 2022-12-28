@@ -11,7 +11,7 @@ namespace Microsoft.Interop
     /// </summary>
     internal interface ICustomTypeMarshallingStrategy
     {
-        TypeSyntax AsNativeType(TypePositionInfo info);
+        ManagedTypeInfo AsNativeType(TypePositionInfo info);
 
         IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context);
 

@@ -29,3 +29,9 @@ steps:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/tests/run.sh --runnativeaottests $(buildConfigUpper) ${{ parameters.archType }}
         displayName: Run tests in single file mode
+
+  # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
+  # PublishAot on OSX doesn't work yet. Need an SDK with https://github.com/dotnet/installer/pull/14443.
+  - ${{ if and(eq(parameters.buildConfig, 'release'), ne(parameters.osGroup, 'OSX')) }}:
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) /p:TestAssemblies=false /p:RunNativeAotTestApps=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTests.binlog ${{ parameters.extraTestArgs }}
+      displayName: Run NativeAot Library Tests

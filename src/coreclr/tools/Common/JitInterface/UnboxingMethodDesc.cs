@@ -12,9 +12,10 @@ namespace Internal.JitInterface
     /// This class is for internal purposes within the JitInterface. It's not expected
     /// for it to escape the JitInterface.
     /// </summary>
-    internal sealed class UnboxingMethodDesc : MethodDelegator
+    internal sealed class UnboxingMethodDesc : MethodDelegator, IJitHashableOnly
     {
         private readonly UnboxingMethodDescFactory _factory;
+        private readonly int _jitVisibleHashCode;
 
         public MethodDesc Target => _wrappedMethod;
 
@@ -24,6 +25,7 @@ namespace Internal.JitInterface
             Debug.Assert(wrappedMethod.OwningType.IsValueType);
             Debug.Assert(!wrappedMethod.Signature.IsStatic);
             _factory = factory;
+            _jitVisibleHashCode = HashCode.Combine(wrappedMethod.GetHashCode(), 401752602);
         }
 
         public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
@@ -74,6 +76,13 @@ namespace Internal.JitInterface
         {
             throw new NotImplementedException();
         }
+
+        protected override int ComputeHashCode()
+        {
+            throw new NotSupportedException("This method may not be stored as it is expected to only be used transiently in the JIT");
+        }
+
+        int IJitHashableOnly.GetJitVisibleHashCode() => _jitVisibleHashCode;
 #endif
     }
 

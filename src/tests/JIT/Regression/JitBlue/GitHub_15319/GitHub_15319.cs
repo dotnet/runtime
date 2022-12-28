@@ -9,7 +9,7 @@ using System.Linq;
 
 class P
 {
-    private static int Main(string[] args)
+    private static int Main()
     {
         var ar = new double[]
         {

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.XPath;
 using T = System.Xml.Xsl.XmlQueryTypeFactory;
@@ -179,7 +180,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             XmlNodeKindFlags nodeKinds = isType.Right.XmlType!.NodeKinds;
-            if (!Bits.ExactlyOne((uint)nodeKinds))
+            if (!BitOperations.IsPow2((uint)nodeKinds))
             {
                 return;
             }

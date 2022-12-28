@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   platform: ''
   crossBuild: false
-  crossrootfsDir: ''
   timeoutInMinutes: 120
   condition: true
   shouldContinueOnError: false
@@ -21,6 +20,7 @@ parameters:
   runtimeVariant: ''
   pool: ''
   pgoType: ''
+  runOnlyIfDependenciesSucceeded: false
 
   # The target names here should match container names in the resources section in our pipelines, like runtime.yml
   packageDistroList:
@@ -50,9 +50,13 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
-    stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
-    condition: ${{ parameters.condition }}
+
+    ${{ if eq(parameters.runOnlyIfDependenciesSucceeded, true) }}:
+      condition: and(succeeded(), ${{ parameters.condition }})
+    ${{ if ne(parameters.runOnlyIfDependenciesSucceeded, true) }}:
+      condition: ${{ parameters.condition }}
+
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     disableClrTest: ${{ parameters.disableClrTest }}
     pgoType: ${{ parameters.pgoType }}
@@ -68,9 +72,13 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true
+
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      disableComponentGovernance: true
+
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{ variable }}
@@ -194,34 +202,24 @@ jobs:
         value: ${{ eq(parameters.osSubgroup, '') }}
 
       - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
-        # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
-        # lowercase for RID format. (Detection normally converts, but we're preventing it.)
-        - name: OutputRidArg
-          value: /p:OutputRid=linux-musl-${{ parameters.archType }}
-        - name: RuntimeOSArg
-          value: /p:RuntimeOS=linux-musl
         - name: _PortableBuild
           value: true
+
+      - ${{ if eq(parameters.crossBuild, true) }}:
+        - name: ArchArg
+          value: -arch ${{ parameters.archType }}
 
       - name: BaseJobBuildCommand
         value: >-
           $(Build.SourcesDirectory)/build.sh -subset host+packs -ci
           $(BuildAction)
+          $(ArchArg)
           /p:CrossBuild=${{ parameters.crossBuild }}
           /p:PortableBuild=$(_PortableBuild)
           /p:SkipTests=$(SkipTests)
           $(pgoInstrumentArg)
           $(LiveOverridePathArgs)
           $(CommonMSBuildArgs)
-          $(OutputRidArg)
-          $(RuntimeOSArg)
-
-      - name: PublishArguments
-        value: >-
-          /p:PortableBuild=$(_PortableBuild)
-          $(CommonMSBuildArgs)
-          $(OutputRidArg)
-          /bl:msbuild.publish.binlog
 
       - name: installersSubsetArg
         value: --subset packs.installers
@@ -316,7 +314,7 @@ jobs:
             cleanUnpackFolder: false
 
       - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-        - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
+        - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
           displayName: Install Build Dependencies
 
         - script: |

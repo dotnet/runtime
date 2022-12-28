@@ -234,5 +234,118 @@ namespace Internal.IL.Stubs
 
             return false;
         }
+
+        public static bool CanCompareValueTypeBits(MetadataType type, MethodDesc objectEqualsMethod)
+        {
+            Debug.Assert(type.IsValueType);
+
+            if (type.ContainsGCPointers)
+                return false;
+
+            if (type.IsGenericDefinition)
+                return false;
+
+            OverlappingFieldTracker overlappingFieldTracker = new OverlappingFieldTracker(type);
+
+            bool result = true;
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                if (!overlappingFieldTracker.TrackField(field))
+                {
+                    // This field overlaps with another field - can't compare memory
+                    result = false;
+                    break;
+                }
+
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
+                {
+                    TypeFlags category = fieldType.UnderlyingType.Category;
+                    if (category == TypeFlags.Single || category == TypeFlags.Double)
+                    {
+                        // Double/Single have weird behaviors around negative/positive zero
+                        result = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // Would be a suprise if this wasn't a valuetype. We checked ContainsGCPointers above.
+                    Debug.Assert(fieldType.IsValueType);
+
+                    // If the field overrides Equals, we can't use the fast helper because we need to call the method.
+                    if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(objectEqualsMethod).OwningType == fieldType)
+                    {
+                        result = false;
+                        break;
+                    }
+
+                    if (!CanCompareValueTypeBits((MetadataType)fieldType, objectEqualsMethod))
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+            }
+
+            // If there are gaps, we can't memcompare
+            if (result && overlappingFieldTracker.HasGaps)
+                result = false;
+
+            return result;
+        }
+
+        private struct OverlappingFieldTracker
+        {
+            private bool[] _usedBytes;
+
+            public OverlappingFieldTracker(MetadataType type)
+            {
+                _usedBytes = new bool[type.InstanceFieldSize.AsInt];
+            }
+
+            public bool TrackField(FieldDesc field)
+            {
+                int fieldBegin = field.Offset.AsInt;
+
+                TypeDesc fieldType = field.FieldType;
+
+                int fieldEnd;
+                if (fieldType.IsPointer || fieldType.IsFunctionPointer)
+                {
+                    fieldEnd = fieldBegin + field.Context.Target.PointerSize;
+                }
+                else
+                {
+                    Debug.Assert(fieldType.IsValueType);
+                    fieldEnd = fieldBegin + ((DefType)fieldType).InstanceFieldSize.AsInt;
+                }
+
+                for (int i = fieldBegin; i < fieldEnd; i++)
+                {
+                    if (_usedBytes[i])
+                        return false;
+                    _usedBytes[i] = true;
+                }
+
+                return true;
+            }
+
+            public bool HasGaps
+            {
+                get
+                {
+                    for (int i = 0; i < _usedBytes.Length; i++)
+                        if (!_usedBytes[i])
+                            return true;
+
+                    return false;
+                }
+            }
+        }
+
     }
 }

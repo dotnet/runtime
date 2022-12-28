@@ -92,7 +92,7 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
     // GC-references.
     ASSERT(!pResultArray || pResultArray->get_EEType()->IsArray());
     ASSERT(!pResultArray || !pResultArray->get_EEType()->HasReferenceFields());
-    ASSERT(!pResultArray || pResultArray->get_EEType()->get_ComponentSize() == sizeof(void*));
+    ASSERT(!pResultArray || pResultArray->get_EEType()->RawGetComponentSize() == sizeof(void*));
 
     uint32_t cResultArrayElements = pResultArray ? pResultArray->GetArrayLength() : 0;
     HANDLE * pResultElements = pResultArray ? (HANDLE*)(pResultArray + 1) : NULL;

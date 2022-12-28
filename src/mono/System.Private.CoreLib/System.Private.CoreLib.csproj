@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -82,10 +82,6 @@
   <PropertyGroup Condition="'$(Platform)' == 'ppc64le'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_POWERPC64</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->
@@ -197,8 +193,6 @@
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\WeakReference.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.Mono.cs" />
@@ -234,8 +228,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DerivedTypes.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILInfo.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.notsupported.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventOnTypeBuilderInst.cs" />
@@ -282,14 +275,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Environment.Unix.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
-      <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnv.cs">
-        <Link>Common\Interop\Unix\System.Native\Interop.GetEnv.cs</Link>
-      </Compile>
-      <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
-        <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
-      </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
@@ -361,10 +347,8 @@
 
   <!-- Import refererence assembly and ApiCompat logic -->
   <PropertyGroup>
-    <IsSourceProject>true</IsSourceProject>
-    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
+    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
   </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 
 </Project>

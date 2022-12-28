@@ -31,8 +31,9 @@ usage()
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
-  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
+  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, wasi, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
+  echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -279,13 +280,15 @@ while [[ $# > 0 ]]; do
           os="Android" ;;
         browser)
           os="Browser" ;;
+        wasi)
+          os="wasi" ;;
         illumos)
           os="illumos" ;;
         solaris)
           os="Solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, wasi, illumos and Solaris."
           exit 1
           ;;
       esac
@@ -403,6 +406,12 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+     *crossbuild=true*)
+      crossBuild=1
+      extraargs="$extraargs $1"
+      shift 1
+      ;;
+
      -clang*)
       compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
       arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
@@ -422,6 +431,15 @@ while [[ $# > 0 ]]; do
       compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
       arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
+      ;;
+
+     -outputrid)
+      if [ -z ${2+x} ]; then
+        echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      shift 2
       ;;
 
      -portablebuild)
@@ -485,8 +503,12 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [[ "$os" == "Browser" && "$arch" != "wasm" ]]; then
+if [[ "$os" == "Browser" ]]; then
     # override default arch for Browser, we only support wasm
+    arch=wasm
+fi
+if [[ "$os" == "wasi" ]]; then
+    # override default arch for wasi, we only support wasm
     arch=wasm
 fi
 

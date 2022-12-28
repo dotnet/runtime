@@ -19,7 +19,6 @@ set(MDRUNTIME_HEADERS
   ../../inc/corpriv.h
   ../../inc/mdcommon.h
   ../../inc/mdfileformat.h
-  ../../inc/metadatatracker.h
   ../../inc/pedecoder.h
   ../../inc/posterror.h
   ../compiler/regmeta.h

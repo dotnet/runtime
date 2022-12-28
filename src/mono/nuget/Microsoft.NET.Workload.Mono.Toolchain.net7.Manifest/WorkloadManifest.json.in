@@ -170,7 +170,7 @@
     },
     "Microsoft.NET.Runtime.WebAssembly.Templates.net7": {
       "kind": "template",
-      "version": "${PackageVersionNet7}",
+      "version": "${PackageVersionForTemplates7}",
       "alias-to": {
         "any": "Microsoft.NET.Runtime.WebAssembly.Templates"
       }

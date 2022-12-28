@@ -14,7 +14,7 @@
 }
 
 .class public			heap_ovf {
-.method public static	int32 main(string[]) {
+.method public static	int32 main() {
 .locals		(class [mscorlib]System.Exception)
 .entrypoint
 try_start:

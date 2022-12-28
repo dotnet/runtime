@@ -136,7 +136,7 @@ namespace System.Tests
             }
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { (Int128)32, "C100", invariantFormat, "¤32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { (Int128)32, "C100", invariantFormat, "\u00A432.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (Int128)32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
             yield return new object[] { (Int128)32, "D100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
             yield return new object[] { (Int128)32, "E100", invariantFormat, "3.2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
@@ -457,6 +457,16 @@ namespace System.Tests
             // CLDR data for Swedish culture has negative sign U+2212. This test ensure parsing with the hyphen with such cultures will succeed.
             CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
             Assert.Equal(-15868, Int128.Parse("-15868", NumberStyles.Number, ci));
+        }
+
+        [Fact]
+        public static void Runtime75416()
+        {
+            Int128 a = (Int128.MaxValue - 10) * +100;
+            Assert.Equal(a, -1100);
+
+            Int128 b = (Int128.MaxValue - 10) * -100;
+            Assert.Equal(b, +1100);
         }
     }
 }

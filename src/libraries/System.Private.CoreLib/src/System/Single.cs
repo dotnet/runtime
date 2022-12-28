@@ -70,11 +70,11 @@ namespace System
         /// <remarks>This is known as Euler's number and is approximately 2.7182818284590452354.</remarks>
         public const float E = MathF.E;
 
-        /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, π.</summary>
+        /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, PI.</summary>
         /// <remarks>Pi is approximately 3.1415926535897932385.</remarks>
         public const float Pi = MathF.PI;
 
-        /// <summary>Represents the number of radians in one turn, specified by the constant, τ.</summary>
+        /// <summary>Represents the number of radians in one turn, specified by the constant, Tau.</summary>
         /// <remarks>Tau is approximately 6.2831853071795864769.</remarks>
         public const float Tau = MathF.Tau;
 
@@ -1391,6 +1391,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out float result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //

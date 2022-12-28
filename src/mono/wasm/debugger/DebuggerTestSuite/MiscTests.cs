@@ -86,7 +86,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c0", '\u20AC');
                     await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
@@ -713,7 +713,7 @@ namespace DebuggerTests
 
                  await CheckProps(frame_locals, new
                  {
-                     mi = TObject("System.Reflection.RuntimeMethodInfo"), //this is what is returned when debugging desktop apps using VS
+                     mi = TObject("System.Reflection.RuntimeMethodInfo", description: "Void SimpleStaticMethod(System.DateTime, System.String)"), //this is what is returned when debugging desktop apps using VS
                      dt = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
                      i = TNumber(4),
                      strings = TArray("string[]", "string[1]"),
@@ -737,7 +737,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("lazy-debugger-test")]
-        [InlineData("lazy-debugger-test-chinese-char-in-path-ㄨ")]
+        [InlineData("lazy-debugger-test-chinese-char-in-path-\u3128")]
         public async Task DebugLazyLoadedAssemblyWithPdb(string assembly_name)
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
@@ -964,7 +964,7 @@ namespace DebuggerTests
             "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-\u0105\u0142.cs")]
         public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
             string classWithNamespace, string expectedFileLocation)
         {
@@ -1067,7 +1067,11 @@ namespace DebuggerTests
                         {
                             myField = TNumber(0),
                             myField2 = TNumber(0),
-                        }, "this_props", num_fields: 2);
+                            propB = TGetter("propB"),
+                            propC = TGetter("propC"),
+                            e = TNumber(50),
+                            f = TNumber(60),
+                        }, "this_props", num_fields: 6);
                     }
                     else
                     {
@@ -1092,13 +1096,38 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task SetBreakpointInProjectWithChineseCharactereInPath()
         {
-            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-ㄨ.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
+            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-\u3128.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
             await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-ㄨ] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
-                "dotnet://debugger-test-chinese-char-in-path-ㄨ.dll/test.cs",
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-\u3128] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-chinese-char-in-path-\u3128.dll/test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
+        }
+
+        [Fact]
+        public async Task InspectReadOnlySpan()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] ReadOnlySpanTest:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1371, 8,
+                "ReadOnlySpanTest.CheckArguments",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]"))
+                    );
+                }
+            );
+            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1363, 8, "ReadOnlySpanTest.Run",
+                locals_fn: async (locals) =>
+                {
+                    await CheckValueType(locals, "var1", "System.ReadOnlySpan<object>", description: "System.ReadOnlySpan<Object>[0]");
+                }
+            );
         }
     }
 }

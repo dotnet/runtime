@@ -425,7 +425,7 @@ namespace System.Text.Json
             return refMetadataFound;
         }
 
-        internal static void ValidateMetadataForObjectConverter(JsonConverter converter, ref Utf8JsonReader reader, scoped ref ReadStack state)
+        internal static void ValidateMetadataForObjectConverter(ref ReadStack state)
         {
             if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
             {

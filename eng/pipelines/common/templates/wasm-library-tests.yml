@@ -7,9 +7,9 @@ parameters:
   isWasmOnlyBuild: false
   nameSuffix: ''
   platforms: []
-  runSmokeOnlyArg: ''
   scenarios: ['normal']
   shouldContinueOnError: false
+  shouldRunSmokeOnly: false 
 
 jobs:
 
@@ -47,11 +47,19 @@ jobs:
           and(
             eq(dependencies.evaluate_paths.outputs.SetPathVars_wasm_wbt_or_dbg.containsChange, true),
             ne(dependencies.evaluate_paths.outputs.SetPathVars_any_other_than_wasm_wbt_dbg.containsChange, true))
+      - name: _wasmRunSmokeTestsOnlyArg
+        value: /p:RunSmokeTestsOnly=${{ eq(parameters.shouldRunSmokeOnly, true) }}
+      - name: chromeInstallArg
+        ${{ if containsValue(parameters.scenarios, 'wasmtestonbrowser') }}:
+          value: /p:InstallChromeForTests=true
+        ${{ else }}:
+          value: ''
+
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTests${{ parameters.nameSuffix }}
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
@@ -71,9 +79,9 @@ jobs:
                 make -C src/mono/wasi provision-deps all &&
                 make -C src/mono/wasi/sample/console run
               name: build_wasi
-              displayName: Build Wasi, and run a sample
+              displayName: Build WASI, and run a sample
 
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraHelixArgs }}
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArgs }}
         scenarios: ${{ parameters.scenarios }}

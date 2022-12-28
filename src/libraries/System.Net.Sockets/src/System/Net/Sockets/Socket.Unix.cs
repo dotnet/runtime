@@ -8,6 +8,7 @@ using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 using System.Reflection;
 using System.Collections;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -108,7 +109,7 @@ namespace System.Net.Sockets
             SocketError errorCode = ReplaceHandle();
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int) errorCode);
+                throw new SocketException((int)errorCode);
             }
 
             _handle.LastConnectFailed = false;
@@ -137,12 +138,20 @@ namespace System.Net.Sockets
 
             // Then replace the handle with a new one
             SafeSocketHandle oldHandle = _handle;
-            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out _handle);
+            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out SafeSocketHandle newHandle);
+            Volatile.Write(ref _handle, newHandle);
             oldHandle.TransferTrackedState(_handle);
             oldHandle.Dispose();
+
             if (errorCode != SocketError.Success)
             {
                 return errorCode;
+            }
+
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                _handle.Dispose();
+                throw new ObjectDisposedException(GetType().FullName);
             }
 
             // And put back the copied settings.  For DualMode, we use the value stored in the _handle
@@ -167,23 +176,26 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
-#pragma warning disable CA1822
+#pragma warning disable IDE0060, CA1822
         private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
-            if (acceptSocket != null && acceptSocket._handle.HasShutdownSend)
+            if (acceptSocket != null)
             {
-                throw new SocketException((int)SocketError.InvalidArgument);
-            }
+                if (acceptSocket._handle.HasShutdownSend)
+                {
+                    throw new SocketException((int)SocketError.InvalidArgument);
+                }
 
-            if (acceptSocket != null && acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
+                if (acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
+                }
             }
 
             handle = null;
             return acceptSocket;
         }
-#pragma warning restore CA1822
+#pragma warning restore IDE0060, CA1822
 
         private static void CheckTransmitFileOptions(TransmitFileOptions flags)
         {
@@ -271,40 +283,16 @@ namespace System.Net.Sockets
             // Try to detect if a property gets added that we're not copying correctly.
             foreach (PropertyInfo pi in typeof(Socket).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                object? origValue = pi.GetValue(source);
-                object? cloneValue = pi.GetValue(this);
-
-                if (origValue is IEnumerable origEnumerable)
+                try
                 {
-                    IEnumerable? cloneEnumerable = cloneValue as IEnumerable;
-                    Debug.Assert(cloneEnumerable != null, $"{pi.Name}. Expected enumerable cloned value.");
+                    object? origValue = pi.GetValue(source);
+                    object? cloneValue = pi.GetValue(this);
 
-                    IEnumerator e1 = origEnumerable.GetEnumerator();
-                    try
-                    {
-                        IEnumerator e2 = cloneEnumerable.GetEnumerator();
-                        try
-                        {
-                            while (e1.MoveNext())
-                            {
-                                Debug.Assert(e2.MoveNext(), $"{pi.Name}. Cloned enumerator too short.");
-                                Debug.Assert(Equals(e1.Current, e2.Current), $"{pi.Name}. Cloned enumerator's values don't match.");
-                            }
-                            Debug.Assert(!e2.MoveNext(), $"{pi.Name}. Cloned enumerator too long.");
-                        }
-                        finally
-                        {
-                            (e2 as IDisposable)?.Dispose();
-                        }
-                    }
-                    finally
-                    {
-                        (e1 as IDisposable)?.Dispose();
-                    }
-                }
-                else
-                {
                     Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
+                }
+                catch (TargetInvocationException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.OperationNotSupported)
+                {
+                    // macOS fails to retrieve DontFragment and MulticastLoopback at the moment
                 }
             }
 #endif
