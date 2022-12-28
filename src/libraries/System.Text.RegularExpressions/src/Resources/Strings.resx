@@ -211,7 +211,7 @@
     <value>A subtraction must be the last element in a character class.</value>
   </data>
   <data name="InsufficientOrInvalidHexDigits" xml:space="preserve">
-    <value>Insufficient hexadecimal digits.</value>
+    <value>Insufficient or invalid hexadecimal digits.</value>
   </data>
   <data name="AlternationHasTooManyConditions" xml:space="preserve">
     <value>Too many | in (?()|).</value>
@@ -235,7 +235,7 @@
     <value>Unrecognized control character.</value>
   </data>
   <data name="UnrecognizedEscape" xml:space="preserve">
-    <value>Unrecognized escape sequence \\{0}.</value>
+    <value>Unrecognized escape sequence \{0}.</value>
   </data>
   <data name="InvalidGroupingConstruct" xml:space="preserve">
     <value>Unrecognized grouping construct.</value>

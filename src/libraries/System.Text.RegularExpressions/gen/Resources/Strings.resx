@@ -259,7 +259,7 @@
     <value>Unrecognized control character.</value>
   </data>
   <data name="UnrecognizedEscape" xml:space="preserve">
-    <value>Unrecognized escape sequence \\{0}.</value>
+    <value>Unrecognized escape sequence \{0}.</value>
   </data>
   <data name="InvalidGroupingConstruct" xml:space="preserve">
     <value>Unrecognized grouping construct.</value>

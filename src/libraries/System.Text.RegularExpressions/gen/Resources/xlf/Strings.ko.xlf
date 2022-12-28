@@ -238,8 +238,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
-        <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="translated">인식할 수 없는 이스케이프 시퀀스 \\{0}.</target>
+        <source>Unrecognized escape sequence \{0}.</source>
+        <target state="needs-review-translation">인식할 수 없는 이스케이프 시퀀스 \\{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">
