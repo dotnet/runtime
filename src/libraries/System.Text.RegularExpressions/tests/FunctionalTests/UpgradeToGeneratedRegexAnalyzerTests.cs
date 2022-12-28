@@ -950,35 +950,6 @@ partial class Program
         }
 
         [Fact]
-        public async Task UnnecessaryChangesAvoidedByFixer()
-        {
-            string test = @"using System.Text.RegularExpressions;
-
-partial class Program
-{
-    static void Main(System.String[] args) // remains upper case String
-    {
-        Regex regex = (Regex)[|new Regex(""foo"")|]; // cast remains
-    }
-}";
-
-            string expectedFixedCode = @"using System.Text.RegularExpressions;
-
-partial class Program
-{
-    static void Main(System.String[] args) // remains upper case String
-    {
-        Regex regex = (Regex)MyRegex(); // cast remains
-    }
-
-    [GeneratedRegex(""foo"")]
-    private static partial Regex MyRegex();
-}";
-
-            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
-        }
-
-        [Fact]
         public async Task TestAsArgument()
         {
             string test = @"using System.Text.RegularExpressions;
