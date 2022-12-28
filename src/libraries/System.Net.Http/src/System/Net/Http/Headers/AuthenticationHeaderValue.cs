@@ -93,7 +93,7 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static AuthenticationHeaderValue Parse(string? input)
+        public static AuthenticationHeaderValue Parse(string input)
         {
             int index = 0;
             return (AuthenticationHeaderValue)GenericHeaderParser.SingleValueAuthenticationParser.ParseValue(

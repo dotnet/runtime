@@ -59,6 +59,19 @@ namespace System.Formats.Asn1
         {
             CheckUniversalTag(tag, UniversalTagNumber.ObjectIdentifier);
 
+#if NETCOREAPP
+            ReadOnlySpan<byte> wellKnownContents = WellKnownOids.GetContents(oidValue);
+
+            if (!wellKnownContents.IsEmpty)
+            {
+                WriteTag(tag?.AsPrimitive() ?? Asn1Tag.ObjectIdentifier);
+                WriteLength(wellKnownContents.Length);
+                wellKnownContents.CopyTo(_buffer.AsSpan(_offset));
+                _offset += wellKnownContents.Length;
+                return;
+            }
+#endif
+
             WriteObjectIdentifierCore(tag?.AsPrimitive() ?? Asn1Tag.ObjectIdentifier, oidValue);
         }
 

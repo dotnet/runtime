@@ -295,6 +295,41 @@ namespace System.Security.Cryptography.Cose.Tests
             Assert.Equal(1, map.Count);
         }
 
+        [Fact]
+        public void SetEncodedValue_CriticalHeaders_ThrowIf_ArrayEmpty()
+        {
+            // definite length
+            var writer = new CborWriter();
+            writer.WriteStartArray(0);
+            writer.WriteEndArray();
+
+            Verify(writer.Encode());
+
+            // indefinite length
+            writer.Reset();
+            writer.WriteStartArray(null);
+            writer.WriteEndArray();
+
+            Verify(writer.Encode());
+
+            void Verify(byte[] encodedValue)
+            {
+                CoseHeaderMap map = new();
+                CoseHeaderValue value = CoseHeaderValue.FromEncodedValue(writer.Encode());
+                Assert.Throws<ArgumentException>(() => map[CoseHeaderLabel.CriticalHeaders] = value);
+            }
+        }
+
+        [Fact]
+        public void SetEncodedValue_CriticalHeaders_ThrowIf_IndefiniteLengthArrayMissingBreak()
+        {
+            byte[] encodedValue = GetDummyCritHeaderValue(useIndefiniteLength: true);
+
+            CoseHeaderMap map = new();
+            CoseHeaderValue value = CoseHeaderValue.FromEncodedValue(encodedValue.AsSpan(0, encodedValue.Length - 1));
+            Assert.Throws<ArgumentException>(() => map[CoseHeaderLabel.CriticalHeaders] = value);
+        }
+
         public enum SetValueMethod
         {
             ItemSet,
@@ -493,7 +528,11 @@ namespace System.Security.Cryptography.Cose.Tests
                 writer.WriteInt32((int)ECDsaAlgorithm.ES256);
                 yield return ReturnDataAndReset(KnownHeaderAlg, writer, setMethod, getMethod);
 
-                WriteDummyCritHeaderValue(writer);
+                WriteDummyCritHeaderValue(writer, useIndefiniteLength: false);
+                yield return ReturnDataAndReset(KnownHeaderCrit, writer, setMethod, getMethod);
+
+
+                WriteDummyCritHeaderValue(writer, useIndefiniteLength: true);
                 yield return ReturnDataAndReset(KnownHeaderCrit, writer, setMethod, getMethod);
 
                 writer.WriteTextString(ContentTypeDummyValue);

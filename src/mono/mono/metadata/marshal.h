@@ -310,7 +310,7 @@ typedef enum {
 
 G_ENUM_FUNCTIONS(MonoNativeWrapperFlags);
 
-#define MONO_MARSHAL_CALLBACKS_VERSION 6
+#define MONO_MARSHAL_CALLBACKS_VERSION 7
 
 
 typedef struct {
@@ -348,6 +348,7 @@ typedef struct {
 	int (*emit_marshal_scalar) (EmitMarshalContext *m, int argnum, MonoType *t, MonoMarshalSpec *spec, int conv_arg, MonoType **conv_arg_type, MarshalAction action);
 } MonoMarshalLightweightCallbacks;
 
+/* This structure specifies all the callbacks the marshal-ilgen component needs to call back into the runtime*/
 typedef struct {
 	MonoType* (*get_object_type) (void);
 	MonoMarshalConv (*get_ptr_to_string_conv) (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec, gboolean *need_free);
@@ -374,32 +375,35 @@ typedef struct {
 	void (*init_safe_handle) (void);
 	gboolean (*is_in) (const MonoType *t);
 	gboolean (*is_out) (const MonoType *t);
-	void (*mb_emit_exception_marshal_directive)  (MonoMethodBuilder *mb, char *msg);
-	int (*mb_add_local) (MonoMethodBuilder *mb, MonoType *type);
-	void (*mb_emit_add_to_local) (MonoMethodBuilder *mb, guint16 local, gint32 incr);
-	void (*mb_emit_auto_layout_exception)  (MonoMethodBuilder *mb, MonoClass *klass);
-	guint32 (*mb_emit_branch) (MonoMethodBuilder *mb, guint8 op);
-	void (*mb_emit_branch_label) (MonoMethodBuilder *mb, guint8 op, guint32 label);
-	void (*mb_emit_byte) (MonoMethodBuilder *mb, guint8 op);
-	void (*mb_emit_exception) (MonoMethodBuilder *mb, const char *exc_name, const char *msg);
-	void (*mb_emit_exception_full) (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg);
-	void (*mb_emit_icall_id) (MonoMethodBuilder *mb, MonoJitICallId jit_icall_id);
-	void (*mb_emit_icon) (MonoMethodBuilder *mb, gint32 value);
-	void (*mb_emit_ldarg) (MonoMethodBuilder *mb, guint argnum);
-	void (*mb_emit_ldarg_addr) (MonoMethodBuilder *mb, guint argnum);
-	void (*mb_emit_ldflda)  (MonoMethodBuilder *mb, gint32 offset);
-	void (*mb_emit_ldloc) (MonoMethodBuilder *mb, guint num);
-	void (*mb_emit_ldloc_addr)  (MonoMethodBuilder *mb, guint argnum);
-	void (*mb_emit_managed_call) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *opt_sig);
-	void (*mb_emit_op) (MonoMethodBuilder *mb, guint8 op, gpointer data);
-	void (*mb_emit_stloc) (MonoMethodBuilder *mb, guint num);
-	int (*mb_get_label) (MonoMethodBuilder *mb);
-	void (*mb_patch_branch) (MonoMethodBuilder *mb, guint32 pos);
+
 	gboolean (*pinvoke_is_unicode) (MonoMethodPInvoke *piinfo);
 	MonoType* (*reflection_type_from_name_checked) (char *name, MonoAssemblyLoadContext *alc, MonoImage *image, MonoError *error);
 	void (*memory_barrier) (void);
 	gboolean (*need_free) (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
 	MonoType* (*get_int_type) (void);
+	struct {
+		void (*emit_exception_marshal_directive)  (MonoMethodBuilder *mb, char *msg);
+		int (*add_local) (MonoMethodBuilder *mb, MonoType *type);
+		void (*emit_add_to_local) (MonoMethodBuilder *mb, guint16 local, gint32 incr);
+		void (*emit_auto_layout_exception)  (MonoMethodBuilder *mb, MonoClass *klass);
+		guint32 (*emit_branch) (MonoMethodBuilder *mb, guint8 op);
+		void (*emit_branch_label) (MonoMethodBuilder *mb, guint8 op, guint32 label);
+		void (*emit_byte) (MonoMethodBuilder *mb, guint8 op);
+		void (*emit_exception) (MonoMethodBuilder *mb, const char *exc_name, const char *msg);
+		void (*emit_exception_full) (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg);
+		void (*emit_icall_id) (MonoMethodBuilder *mb, MonoJitICallId jit_icall_id);
+		void (*emit_icon) (MonoMethodBuilder *mb, gint32 value);
+		void (*emit_ldarg) (MonoMethodBuilder *mb, guint argnum);
+		void (*emit_ldarg_addr) (MonoMethodBuilder *mb, guint argnum);
+		void (*emit_ldflda)  (MonoMethodBuilder *mb, gint32 offset);
+		void (*emit_ldloc) (MonoMethodBuilder *mb, guint num);
+		void (*emit_ldloc_addr)  (MonoMethodBuilder *mb, guint argnum);
+		void (*emit_managed_call) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *opt_sig);
+		void (*emit_op) (MonoMethodBuilder *mb, guint8 op, gpointer data);
+		void (*emit_stloc) (MonoMethodBuilder *mb, guint num);
+		int (*get_label) (MonoMethodBuilder *mb);
+		void (*patch_branch) (MonoMethodBuilder *mb, guint32 pos);
+	} methodBuilder;
 } IlgenCallbacksToMono;
 
 /*type of the function pointer of methods returned by mono_marshal_get_runtime_invoke*/
@@ -696,16 +700,16 @@ ICALL_EXPORT
 int
 ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *pUnk);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_win32_compat_CopyMemory (gpointer dest, gconstpointer source, gsize length);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_win32_compat_FillMemory (gpointer dest, gsize length, guchar fill);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_win32_compat_MoveMemory (gpointer dest, gconstpointer source, gsize length);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_win32_compat_ZeroMemory (gpointer dest, gsize length);
 
 void

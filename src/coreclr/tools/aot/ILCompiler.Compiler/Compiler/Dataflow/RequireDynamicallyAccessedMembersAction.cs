@@ -10,10 +10,10 @@ using Internal.TypeSystem;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    partial struct RequireDynamicallyAccessedMembersAction
+    internal partial struct RequireDynamicallyAccessedMembersAction
     {
-        readonly ReflectionMarker _reflectionMarker;
-        readonly Origin _memberWithRequirements;
+        private readonly ReflectionMarker _reflectionMarker;
+        private readonly Origin _memberWithRequirements;
 
         public RequireDynamicallyAccessedMembersAction(
             ReflectionMarker reflectionMarker,

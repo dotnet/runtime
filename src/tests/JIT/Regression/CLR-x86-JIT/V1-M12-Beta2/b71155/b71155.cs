@@ -26,7 +26,7 @@ namespace Test
                 } while (m_bFwd1);
             }
         }
-        static int Main()
+        public static int Main()
         {
             new AA().Method1();
             return 100;

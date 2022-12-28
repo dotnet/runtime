@@ -56,7 +56,7 @@ namespace System.Text.RegularExpressions.Generator
             context.RegisterCodeFix(
                 CodeAction.Create(
                     SR.UseRegexSourceGeneratorTitle,
-                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, context.Diagnostics[0], cancellationToken),
+                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, cancellationToken),
                     equivalenceKey: SR.UseRegexSourceGeneratorTitle),
                 context.Diagnostics);
         }
@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="diagnostic">The diagnostic to fix.</param>
         /// <param name="cancellationToken">The cancellation token for the async operation.</param>
         /// <returns>The new document with the replaced nodes after applying the code fix.</returns>
-        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, Diagnostic diagnostic, CancellationToken cancellationToken)
+        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, CancellationToken cancellationToken)
         {
             // We first get the compilation object from the document
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
@@ -100,10 +100,7 @@ namespace System.Text.RegularExpressions.Generator
             // Get the parent type declaration so that we can inspect its methods as well as check if we need to add the partial keyword.
             SyntaxNode? typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
 
-            if (typeDeclarationOrCompilationUnit is null)
-            {
-                typeDeclarationOrCompilationUnit = await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
-            }
+            typeDeclarationOrCompilationUnit ??= await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
 
             // Calculate what name should be used for the generated static partial method
             string methodName = DefaultRegexMethodName;
@@ -207,10 +204,7 @@ namespace System.Text.RegularExpressions.Generator
                 cultureNameValue = generator.LiteralExpression(CultureInfo.CurrentCulture.Name);
 
                 // If options weren't passed in, then we need to define it as well in order to use the three parameter constructor.
-                if (regexOptionsValue is null)
-                {
-                    regexOptionsValue = generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
-                }
+                regexOptionsValue ??= generator.MemberAccessExpression(SyntaxFactory.IdentifierName("RegexOptions"), "None");
             }
 
             // Generate the GeneratedRegex attribute syntax node with the specified parameters.
@@ -279,6 +273,10 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value).ToString());
                     return SyntaxFactory.ParseExpression(optionsLiteral);
+                }
+                else if (argument.Value is ILiteralOperation literalOperation)
+                {
+                    return literalOperation.Syntax;
                 }
                 else
                 {

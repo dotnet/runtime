@@ -463,8 +463,7 @@ internal sealed class OletxTransactionManager
                 transactionShim,
                 outcomeEnlistment,
                 txIdentifier,
-                oletxIsoLevel,
-                true);
+                oletxIsoLevel);
             tx = new OletxCommittableTransaction(realTransaction);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -486,15 +485,8 @@ internal sealed class OletxTransactionManager
         byte[] recoveryInformation,
         IEnlistmentNotificationInternal enlistmentNotification)
     {
-        if (recoveryInformation == null)
-        {
-            throw new ArgumentNullException(nameof(recoveryInformation));
-        }
-
-        if (enlistmentNotification == null)
-        {
-            throw new ArgumentNullException(nameof(enlistmentNotification));
-        }
+        ArgumentNullException.ThrowIfNull(recoveryInformation);
+        ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
         // Now go find the resource manager in the collection.
         OletxResourceManager oletxResourceManager = RegisterResourceManager(resourceManagerIdentifier);
@@ -773,12 +765,9 @@ internal sealed class OletxInternalResourceManager
             while (tableEnum.MoveNext())
             {
                 OletxResourceManager? oletxRM = (OletxResourceManager?)tableEnum.Value;
-                if (oletxRM != null)
-                {
-                    // When the RM spins through its enlistments, it will need to make sure that
-                    // the enlistment is for this particular TM.
-                    oletxRM.TMDownFromInternalRM(_oletxTm);
-                }
+                // When the RM spins through its enlistments, it will need to make sure that
+                // the enlistment is for this particular TM.
+                oletxRM?.TMDownFromInternalRM(_oletxTm);
             }
         }
 

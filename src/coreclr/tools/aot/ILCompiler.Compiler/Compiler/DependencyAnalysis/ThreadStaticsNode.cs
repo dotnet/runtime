@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
         int ISymbolNode.Offset => 0;
 
         int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
- 
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(GetMangledName(_type, nameMangler));

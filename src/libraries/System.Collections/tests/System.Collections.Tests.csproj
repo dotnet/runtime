@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
@@ -98,8 +98,10 @@
     <Compile Include="Generic\List\List.Generic.Tests.BinarySearch.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Constructor.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.CopyTo.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Find.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.EnsureCapacity.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.InsertRange.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Remove.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.cs" />

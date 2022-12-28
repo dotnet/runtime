@@ -168,7 +168,7 @@
   } // end of property GenericClassOverInterface`1::Default
 } // end of class GitHub_26311.GenericClassOverInterface`1
 
-.class private auto ansi beforefieldinit GitHub_26311.Program
+.class public auto ansi beforefieldinit GitHub_26311.Program
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Test() cil managed noinlining
@@ -242,8 +242,8 @@
     IL_0067:  ret
   } // end of method Program::Test
 
-  .method private hidebysig static int32
-          Main(string[] args) cil managed
+  .method public hidebysig static int32
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

@@ -60,6 +60,8 @@ declare interface EmscriptenModule {
     FS_readFile(filename: string, opts: any): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+    addFunction(fn: Function, signature: string): number;
+    getWasmTableEntry(index: number): any;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
@@ -73,11 +75,11 @@ declare interface EmscriptenModule {
         (error: any): void;
     };
 }
-declare type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module) => void;
-declare type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
+type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module) => void;
+type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
-declare type MonoConfig = {
+type MonoConfig = {
     /**
      * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
      */
@@ -166,11 +168,11 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-declare type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-crypto" | "js-module-threads";
-declare type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads";
+type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "auto";
-declare type DotnetModuleConfig = {
+type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;
     configSrc?: string;
@@ -180,7 +182,7 @@ declare type DotnetModuleConfig = {
     exports?: string[];
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
 } & Partial<EmscriptenModule>;
-declare type APIType = {
+type APIType = {
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;
     runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<number>;
     setEnvironmentVariable: (name: string, value: string) => void;
@@ -212,7 +214,7 @@ declare type APIType = {
     getHeapF32: (offset: NativePointer) => number;
     getHeapF64: (offset: NativePointer) => number;
 };
-declare type RuntimeAPI = {
+type RuntimeAPI = {
     /**
      * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
      */
@@ -226,26 +228,22 @@ declare type RuntimeAPI = {
     runtimeId: number;
     runtimeBuildInfo: {
         productVersion: string;
+        gitHash: string;
         buildConfiguration: string;
     };
 } & APIType;
-declare type ModuleAPI = {
+type ModuleAPI = {
     dotnet: DotnetHostBuilder;
     exit: (code: number, reason?: any) => void;
 };
 declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
-declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
+type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 
 interface IDisposable {
     dispose(): void;
     get isDisposed(): boolean;
 }
-declare const enum MemoryViewType {
-    Byte = 0,
-    Int32 = 1,
-    Double = 2
-}
-interface IMemoryView {
+interface IMemoryView extends IDisposable {
     /**
      * copies elements from provided source to the wasm memory.
      * target has to have the elements of the same type as the underlying C# array.
@@ -269,50 +267,7 @@ declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 
-/**
- * Span class is JS wrapper for System.Span<T>. This view doesn't own the memory, nor pin the underlying array.
- * It's ideal to be used on call from C# with the buffer pinned there or with unmanaged memory.
- * It is disposed at the end of the call to JS.
- */
-declare class Span implements IMemoryView, IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    set(source: TypedArray, targetOffset?: number | undefined): void;
-    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
-    slice(start?: number | undefined, end?: number | undefined): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-/**
- * ArraySegment class is JS wrapper for System.ArraySegment<T>.
- * This wrapper would also pin the underlying array and hold GCHandleType.Pinned until this JS instance is collected.
- * User could dispose it manually.
- */
-declare class ArraySegment implements IMemoryView, IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    set(source: TypedArray, targetOffset?: number | undefined): void;
-    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
-    slice(start?: number | undefined, end?: number | undefined): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-/**
- * Represents proxy to the System.Exception
- */
-declare class ManagedError extends Error implements IDisposable {
-    get stack(): string | undefined;
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
-/**
- * Represents proxy to the System.Object
- */
-declare class ManagedObject implements IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
+declare const dotnet: ModuleAPI["dotnet"];
+declare const exit: ModuleAPI["exit"];
 
-export { ArraySegment, AssetBehaviours, AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, LoadingResource, ManagedError, ManagedObject, MemoryViewType, ModuleAPI, MonoConfig, NativePointer, ResourceRequest, RuntimeAPI, Span, createDotnetRuntime as default };
+export { CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

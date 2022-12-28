@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class FieldMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class FieldMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly FieldDesc _field;
 
@@ -36,6 +36,11 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(factory.TypeMetadata((MetadataType)_field.OwningType), "Owning type metadata");
 
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaField)_field));
+
+            if (_field is EcmaField ecmaField)
+            {
+                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+            }
 
             return dependencies;
         }

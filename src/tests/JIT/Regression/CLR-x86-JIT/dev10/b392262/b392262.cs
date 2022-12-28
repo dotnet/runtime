@@ -5,7 +5,7 @@
 /*
  * Regression testcase for JIT32: Assertion failed 'OKmask' and
  * NGen time "Assertion failed 'EA_SIZE(attr) != EA_1BYTE || (emitRegMask(ireg)
- * & SRM_BYTE_REGS)'" under Complus_JitStressBBProf=1
+ * & SRM_BYTE_REGS)'" under DOTNET_JitStressBBProf=1
 
    The actual repro attached to the bug was to ngen one of the visual studio assemblies. 
    I was talking to brian about the problem, and he told me to use a struct, which contains four 
@@ -28,7 +28,7 @@ namespace b392262
         public bool bool4;
     }
 
-    class Program
+    public class Program
     {
         static bool result = false;
 
@@ -38,7 +38,7 @@ namespace b392262
             result = (vt.bool1 && vt.bool2 && vt.bool3 && vt.bool4);
         }
 
-        static int Main(string[] args)
+        public static int Main()
         {
             VT vt = new VT();
             vt.bool1 = true;

@@ -28,7 +28,7 @@
 // but the pointers passed to DispatchTailCalls will not be updated that leads to Callee using the non-updated location when writing its return value.
 //
 // Note: you will find below that Caller uses localloc - this is done in order to prevent a call to Caller to be transformed into fast tail call.
-// Note: COMPlus_GCStress=3 or COMPlus_GCStress=C are required in order to reliably expose this issue.
+// Note: DOTNET_GCStress=3 or DOTNET_GCStress=C are required in order to reliably expose this issue.
 
 .assembly extern System.Runtime
 {
@@ -52,7 +52,7 @@
   .field public int32 h
 }
 
-.class private auto ansi beforefieldinit Runtime_39581.Program
+.class public auto ansi beforefieldinit Runtime_39581.Program
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static valuetype int32x8 Callee(uint8* arg0) cil managed noinlining
@@ -100,7 +100,7 @@
     IL_000b:  ret
   }
 
-  .method private hidebysig static int32 Main(string[] args) cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

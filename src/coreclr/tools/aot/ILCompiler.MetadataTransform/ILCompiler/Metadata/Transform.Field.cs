@@ -14,7 +14,7 @@ using FieldAttributes = System.Reflection.FieldAttributes;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         internal EntityMap<Cts.FieldDesc, MetadataRecord> _fields =
             new EntityMap<Cts.FieldDesc, MetadataRecord>(EqualityComparer<Cts.FieldDesc>.Default);
@@ -93,7 +93,7 @@ namespace ILCompiler.Metadata
             };
         }
 
-        private FieldAttributes GetFieldAttributes(Cts.FieldDesc field)
+        private static FieldAttributes GetFieldAttributes(Cts.FieldDesc field)
         {
             FieldAttributes result;
 

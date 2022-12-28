@@ -10,16 +10,16 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class InterfaceDispatchCellNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public sealed class InterfaceDispatchCellNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private readonly MethodDesc _targetMethod;
-        private readonly string _callSiteIdentifier;
+        private readonly ISortableSymbolNode _callSiteIdentifier;
 
         internal MethodDesc TargetMethod => _targetMethod;
 
-        internal string CallSiteIdentifier => _callSiteIdentifier;
+        internal ISortableSymbolNode CallSiteIdentifier => _callSiteIdentifier;
 
-        public InterfaceDispatchCellNode(MethodDesc targetMethod, string callSiteIdentifier)
+        public InterfaceDispatchCellNode(MethodDesc targetMethod, ISortableSymbolNode callSiteIdentifier)
         {
             Debug.Assert(targetMethod.OwningType.IsInterface);
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
@@ -29,7 +29,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(nameMangler, _targetMethod, _callSiteIdentifier));
+            sb.Append(nameMangler.CompilationUnitPrefix)
+                .Append("__InterfaceDispatchCell_")
+                .Append(nameMangler.GetMangledMethodName(_targetMethod));
+
+            if (_callSiteIdentifier != null)
+            {
+                sb.Append('_');
+                _callSiteIdentifier.AppendMangledName(nameMangler, sb);
+            }
         }
 
         int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
@@ -37,18 +45,6 @@ namespace ILCompiler.DependencyAnalysis
         int ISymbolNode.Offset => 0;
 
         public override bool IsShareable => false;
-
-        public static string GetMangledName(NameMangler nameMangler, MethodDesc method, string callSiteIdentifier)
-        {
-            string name = nameMangler.CompilationUnitPrefix + "__InterfaceDispatchCell_" + nameMangler.GetMangledMethodName(method);
-
-            if (!string.IsNullOrEmpty(callSiteIdentifier))
-            {
-                name += "_" + callSiteIdentifier;
-            }
-
-            return name;
-        }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -106,16 +102,11 @@ namespace ILCompiler.DependencyAnalysis
 
             if (objData.TargetPointerSize == 8)
             {
-                // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer 
+                // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer
                 // width there since a pointer to the cache will be written into the cell. Emit additional
-                // 32 bits on targets whose pointer size is 64 bit. 
+                // 32 bits on targets whose pointer size is 64 bit.
                 objData.EmitInt(0);
             }
-        }
-
-        protected override void OnMarked(NodeFactory factory)
-        {
-            factory.InterfaceDispatchCellSection.AddEmbeddedObject(this);
         }
 
         public override int ClassCode => -2023802120;
@@ -123,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             var compare = comparer.Compare(_targetMethod, ((InterfaceDispatchCellNode)other)._targetMethod);
-            return compare != 0 ? compare : string.Compare(_callSiteIdentifier, ((InterfaceDispatchCellNode)other)._callSiteIdentifier);
+            return compare != 0 ? compare : comparer.Compare(_callSiteIdentifier, ((InterfaceDispatchCellNode)other)._callSiteIdentifier);
         }
     }
 }

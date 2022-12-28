@@ -9,7 +9,7 @@ namespace Internal.TypeSystem
 {
     public class MetadataVirtualMethodAlgorithm : VirtualMethodAlgorithm
     {
-        private class MethodDescHashtable : LockFreeReaderHashtable<MethodDesc, MethodDesc>
+        private sealed class MethodDescHashtable : LockFreeReaderHashtable<MethodDesc, MethodDesc>
         {
             protected override int GetKeyHashCode(MethodDesc key)
             {
@@ -24,13 +24,13 @@ namespace Internal.TypeSystem
             protected override bool CompareKeyToValue(MethodDesc key, MethodDesc value)
             {
                 Debug.Assert(key.Context == value.Context);
-                return object.ReferenceEquals(key, value);
+                return ReferenceEquals(key, value);
             }
 
             protected override bool CompareValueToValue(MethodDesc value1, MethodDesc value2)
             {
                 Debug.Assert(value1.Context == value2.Context);
-                return object.ReferenceEquals(value1, value2);
+                return ReferenceEquals(value1, value2);
             }
 
             protected override MethodDesc CreateValueFromKey(MethodDesc key)
@@ -39,7 +39,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private class UnificationGroup
+        private sealed class UnificationGroup
         {
             private MethodDesc[] _members = MethodDesc.EmptyMethods;
             private int _memberCount;
@@ -467,8 +467,7 @@ namespace Internal.TypeSystem
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
                 if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
                 {
-                    if (separatedMethods == null)
-                        separatedMethods = new MethodDescHashtable();
+                    separatedMethods ??= new MethodDescHashtable();
                     separatedMethods.AddOrGetExisting(memberMethod);
                 }
             }
@@ -491,8 +490,7 @@ namespace Internal.TypeSystem
                 {
                     unificationGroup.RemoveFromGroup(declSlot);
 
-                    if (separatedMethods == null)
-                        separatedMethods = new MethodDescHashtable();
+                    separatedMethods ??= new MethodDescHashtable();
                     separatedMethods.AddOrGetExisting(declSlot);
 
                     if (unificationGroup.RequiresSlotUnification(declSlot) || implSlot.RequiresSlotUnification())
@@ -907,8 +905,6 @@ namespace Internal.TypeSystem
         /// <returns>MethodDesc of the resolved virtual static method, null when not found (runtime lookup must be used)</returns>
         public static MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
-            TypeDesc interfaceType = interfaceMethod.OwningType;
-
             // Search for match on a per-level in the type hierarchy
             for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.MetadataBaseType)
             {

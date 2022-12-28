@@ -314,6 +314,7 @@ internal static partial class Interop
                     return DriveType.Ram;
 
                 case "gphotofs":
+                case "sdcardfs":
                 case "usbfs":
                 case "usbdevice":
                 case "vfat":

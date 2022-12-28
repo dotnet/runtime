@@ -12,7 +12,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Runtime_40607.Program extends [System.Runtime]System.Object
+.class public auto ansi beforefieldinit Runtime_40607.Program extends [System.Runtime]System.Object
 {
   .method private hidebysig static int32 DependsOnUnInitValue(bool valueToWrite) cil managed noinlining
   {
@@ -370,7 +370,7 @@
     IL_0015:  ret
   }
 
-  .method private hidebysig static int32 Main(string[] args) cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

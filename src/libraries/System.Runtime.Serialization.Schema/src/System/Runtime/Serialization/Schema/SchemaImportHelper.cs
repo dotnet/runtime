@@ -75,8 +75,7 @@ namespace System.Runtime.Serialization
 
         internal static string GetDefaultXmlNamespace(string? clrNs)
         {
-            if (clrNs == null) clrNs = string.Empty;
-            return new Uri(ImportGlobals.DataContractXsdBaseNamespaceUri, clrNs).AbsoluteUri;
+            return new Uri(ImportGlobals.DataContractXsdBaseNamespaceUri, clrNs ?? string.Empty).AbsoluteUri;
         }
 
         internal static bool IsBuiltInNamespace(string ns)

@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// cell.
     /// </summary>
     public partial class InitialInterfaceDispatchStubNode : AssemblyStubNode
-    {      
+    {
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

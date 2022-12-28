@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -112,7 +113,7 @@ internal static partial class Interop
         internal static partial int BioWrite(SafeBioHandle b, ref byte data, int len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
-        internal static partial SafeX509Handle SslGetPeerCertificate(SafeSslHandle ssl);
+        internal static partial IntPtr SslGetPeerCertificate(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertChain")]
         internal static partial SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl);

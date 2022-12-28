@@ -10,7 +10,7 @@
 
 using System;
 
-class Program
+public class Program
 {
     static bool failed = false;
 
@@ -2015,7 +2015,7 @@ class Program
 
     }
 
-    static int Main(string[] args)
+    public static int Main()
     {
         TestSHL();
 

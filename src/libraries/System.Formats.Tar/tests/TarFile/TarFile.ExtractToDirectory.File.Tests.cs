@@ -44,6 +44,33 @@ namespace System.Formats.Tar.Tests
             Assert.Throws<DirectoryNotFoundException>(() => TarFile.ExtractToDirectory(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
         }
 
+        [Fact]
+        public void SetsLastModifiedTimeOnExtractedFiles()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string inDir = Path.Join(root.Path, "indir");
+            string inFile = Path.Join(inDir, "file");
+
+            string tarFile = Path.Join(root.Path, "file.tar");
+
+            string outDir = Path.Join(root.Path, "outdir");
+            string outFile = Path.Join(outDir, "file");
+
+            Directory.CreateDirectory(inDir);
+            File.Create(inFile).Dispose();
+            var dt = new DateTime(2001, 1, 2, 3, 4, 5, DateTimeKind.Local);
+            File.SetLastWriteTime(inFile, dt);
+
+            TarFile.CreateFromDirectory(sourceDirectoryName: inDir, destinationFileName: tarFile, includeBaseDirectory: false);
+
+            Directory.CreateDirectory(outDir);
+            TarFile.ExtractToDirectory(sourceFileName: tarFile, destinationDirectoryName: outDir, overwriteFiles: false);
+
+            Assert.True(File.Exists(outFile));
+            Assert.InRange(File.GetLastWriteTime(outFile).Ticks, dt.AddSeconds(-3).Ticks, dt.AddSeconds(3).Ticks); // include some slop for filesystem granularity
+        }
+
         [Theory]
         [InlineData(TestTarFormat.v7)]
         [InlineData(TestTarFormat.ustar)]
@@ -216,13 +243,9 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             AssertFileModeEquals(filePath, TestPermission2);
 
-            // Missing parents are created with DefaultDirectoryMode.
-            // The mode is not set when overwrite == true if there is no entry and the directory exists before extracting.
+            // Missing parents are created with CreateDirectoryDefaultMode.
             Assert.True(Directory.Exists(missingParentPath), $"{missingParentPath}' does not exist.");
-            if (!overwrite)
-            {
-                AssertFileModeEquals(missingParentPath, DefaultDirectoryMode);
-            }
+            AssertFileModeEquals(missingParentPath, CreateDirectoryDefaultMode);
 
             Assert.True(Directory.Exists(missingParentDirPath), $"{missingParentDirPath}' does not exist.");
             AssertFileModeEquals(missingParentDirPath, TestPermission3);

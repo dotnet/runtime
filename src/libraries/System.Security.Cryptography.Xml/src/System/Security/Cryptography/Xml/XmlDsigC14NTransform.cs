@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) };
         private readonly Type[] _outputTypes = { typeof(Stream) };
-        private CanonicalXml _cXml;
+        private CanonicalXml? _cXml;
         private readonly bool _includeComments;
 
         public XmlDsigC14NTransform()
@@ -40,17 +40,17 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             return null;
         }
 
         public override void LoadInput(object obj)
         {
-            XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
+            XmlResolver resolver = ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver();
             if (obj is Stream)
             {
-                _cXml = new CanonicalXml((Stream)obj, _includeComments, resolver, BaseURI);
+                _cXml = new CanonicalXml((Stream)obj, _includeComments, resolver, BaseURI!);
                 return;
             }
             if (obj is XmlDocument)
@@ -70,19 +70,19 @@ namespace System.Security.Cryptography.Xml
 
         public override object GetOutput()
         {
-            return new MemoryStream(_cXml.GetBytes());
+            return new MemoryStream(_cXml!.GetBytes());
         }
 
         public override object GetOutput(Type type)
         {
             if (type != typeof(Stream) && !type.IsSubclassOf(typeof(Stream)))
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
-            return new MemoryStream(_cXml.GetBytes());
+            return new MemoryStream(_cXml!.GetBytes());
         }
 
         public override byte[] GetDigestedOutput(HashAlgorithm hash)
         {
-            return _cXml.GetDigestedBytes(hash);
+            return _cXml!.GetDigestedBytes(hash);
         }
     }
 }

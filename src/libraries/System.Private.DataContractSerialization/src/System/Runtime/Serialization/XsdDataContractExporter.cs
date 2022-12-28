@@ -85,11 +85,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_dataContractSet == null)
-                {
-                    _dataContractSet = new DataContractSet(Options?.DataContractSurrogate, null, null);
-                }
-                return _dataContractSet;
+                return _dataContractSet ??= new DataContractSet(Options?.DataContractSurrogate, null, null);
             }
         }
 

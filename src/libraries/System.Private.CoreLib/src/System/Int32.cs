@@ -141,7 +141,7 @@ namespace System
             return Number.ParseInt32(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        // Parses an integer from a String in the given style.  If
+        // Parses an integer from a String in the given style. If
         // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
         //
@@ -151,7 +151,7 @@ namespace System
             return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
-        // Parses an integer from a String in the given style.  If
+        // Parses an integer from a String in the given style. If
         // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
         //
@@ -1158,7 +1158,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertToChecked<TOther>(int value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<int>.TryConvertToChecked<TOther>(int value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1219,14 +1219,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertToSaturating<TOther>(int value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<int>.TryConvertToSaturating<TOther>(int value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1290,14 +1290,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<int>.TryConvertToTruncating<TOther>(int value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<int>.TryConvertToTruncating<TOther>(int value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1358,7 +1358,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1367,6 +1367,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out int result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //

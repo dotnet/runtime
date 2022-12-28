@@ -2491,17 +2491,11 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     // the assembly was loaded in.</REVISIT_TODO>
     if (CORDebuggerAttached())
     {
-        AppDomainIterator i(FALSE);
-
-        while (i.Next())
+        AppDomain *pDomain = AppDomain::GetCurrentDomain();
+        if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
+                                                pDomain->ContainsAssembly(m_pAssembly)))
         {
-            AppDomain *pDomain = i.GetDomain();
-
-            if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
-                                                  pDomain->ContainsAssembly(m_pAssembly)))
-            {
-                g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
-            }
+            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
         }
     }
 }
@@ -2835,7 +2829,7 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
 }
 
 
-OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token)
+OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
 {
     CONTRACTL
     {
@@ -2864,7 +2858,7 @@ OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token)
 
     pLoaderAllocator = this->GetLoaderAllocator();
 
-    string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData);
+    string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
 
     return string;
 }
@@ -2910,23 +2904,6 @@ BYTE *Module::GetProfilerBase()
     {
         RETURN NULL;
     }
-}
-
-void Module::AddActiveDependency(Module *pModule, BOOL unconditional)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pModule));
-        PRECONDITION(pModule != this);
-        PRECONDITION(!IsSystem());
-        // Postcondition about activation
-    }
-    CONTRACT_END;
-
-    pModule->EnsureActive();
-    RETURN;
 }
 
 #endif //!DACCESS_COMPILE
@@ -5123,7 +5100,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     {
         m_ModuleID->EnumMemoryRegions(flags);
     }
-
     if (m_pPEAssembly.IsValid())
     {
         m_pPEAssembly->EnumMemoryRegions(flags);
@@ -5136,7 +5112,11 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     m_TypeRefToMethodTableMap.ListEnumMemoryRegions(flags);
     m_TypeDefToMethodTableMap.ListEnumMemoryRegions(flags);
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
+    else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         if (m_pAvailableClasses.IsValid())
         {
@@ -5224,7 +5204,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
             }
         }
 
-    }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE
+    }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
 
 
     LookupMap<PTR_Module>::Iterator fileRefIter(&m_FileReferencesMap);

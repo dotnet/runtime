@@ -23,7 +23,7 @@ class Foo : IDisposable
     public void Dispose() => GC.SuppressFinalize(this);
 }
 
-class Runtime_4781
+public class Runtime_4781
 {
     private static int Throw() => throw new NotSupportedException();
     private static bool failed = false;
@@ -42,7 +42,7 @@ class Runtime_4781
         return new Foo(2);
     }
     
-    static int Main(string[] args)
+    public static int Main()
     {
         Test().Dispose();
         GC.Collect();

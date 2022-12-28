@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.Logging.Console
 {
@@ -14,6 +15,13 @@ namespace Microsoft.Extensions.Logging.Console
         private const string LoglevelPadding = ": ";
         private static readonly string _messagePadding = new string(' ', GetLogLevelString(LogLevel.Information).Length + LoglevelPadding.Length);
         private static readonly string _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
+#if NETCOREAPP
+        private static bool IsAndroidOrAppleMobile => OperatingSystem.IsAndroid() ||
+                                                      OperatingSystem.IsTvOS() ||
+                                                      OperatingSystem.IsIOS(); // returns true on MacCatalyst
+#else
+        private static bool IsAndroidOrAppleMobile => false;
+#endif
         private IDisposable? _optionsReloadToken;
 
         public SimpleConsoleFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
@@ -157,8 +165,10 @@ namespace Microsoft.Extensions.Logging.Console
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
+            // We shouldn't be outputting color codes for Android/Apple mobile platforms,
+            // they have no shell (adb shell is not meant for running apps) and all the output gets redirected to some log file.
             bool disableColors = (FormatterOptions.ColorBehavior == LoggerColorBehavior.Disabled) ||
-                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && !ConsoleUtils.EmitAnsiColorCodes);
+                (FormatterOptions.ColorBehavior == LoggerColorBehavior.Default && (!ConsoleUtils.EmitAnsiColorCodes || IsAndroidOrAppleMobile));
             if (disableColors)
             {
                 return new ConsoleColors(null, null);

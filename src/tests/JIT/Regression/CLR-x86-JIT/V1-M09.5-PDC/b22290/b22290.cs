@@ -4,7 +4,7 @@
 
 namespace DefaultNamespace
 {
-    class DD
+    public class DD
     {
         public float[] Method1()
         {

@@ -1,29 +1,20 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import { useState, useEffect } from 'react'
-import createDotnetRuntime from '@microsoft/dotnet-runtime'
+import { dotnet } from '@microsoft/dotnet-runtime'
 
 let dotnetRuntimePromise = undefined;
-let meaningFunction = undefined;
 
 async function createRuntime() {
     try {
-        const response = await fetch('dotnet.wasm');
-        const arrayBuffer = await response.arrayBuffer();
-        return createDotnetRuntime({
-            configSrc: "./mono-config.json",
-            disableDotnet6Compatibility: true,
-            locateFile: (path, prefix) => {
-                return '/' + path;
-            },
-            instantiateWasm: async (imports, successCallback) => {
-                try {
-                    const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, imports);
-                    successCallback(arrayBufferResult.instance);
-                } catch (err) {
-                    console.error(err);
-                    throw err;
+        return dotnet.
+            withModuleConfig({
+                locateFile: (path, prefix) => {
+                    return '/' + path;
                 }
-            }
-        });
+            })
+            .create();
     } catch (err) {
         console.error(err);
         throw err;

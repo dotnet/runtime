@@ -8,9 +8,11 @@ namespace System.Runtime.Serialization
 {
     public interface IFormatter
     {
-        internal const string RequiresUnreferencedCodeMessage = "BinaryFormatter serialization is not trim compatible because the Type of objects being processed cannot be statically discovered.";
+        internal const string RequiresDynamicCodeMessage = "BinaryFormatter serialization uses dynamic code generation, the type of objects being processed cannot be statically discovered.";
+        internal const string RequiresUnreferencedCodeMessage = "BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.";
 
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         object Deserialize(Stream serializationStream);
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]

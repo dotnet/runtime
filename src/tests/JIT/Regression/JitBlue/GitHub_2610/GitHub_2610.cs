@@ -20,9 +20,9 @@ public struct MyStruct
     { v1 = a; v2 = b; }
 }
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         MyValue p1 = new MyValue(10);
         MyValue p2 = new MyValue(20);

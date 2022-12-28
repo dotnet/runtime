@@ -165,22 +165,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateObject);
         }
 
-        public static IntPtr GetAllocateArrayHelperForType(RuntimeTypeHandle type)
-        {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateArray);
-        }
-
-        public static IntPtr GetCastingHelperForType(RuntimeTypeHandle type, bool throwing)
-        {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type),
-                throwing ? RuntimeHelperKind.CastClass : RuntimeHelperKind.IsInst);
-        }
-
-        public static IntPtr GetDispatchMapForType(RuntimeTypeHandle typeHandle)
-        {
-            return CreateEETypePtr(typeHandle).DispatchMap;
-        }
-
         public static IntPtr GetFallbackDefaultConstructor()
         {
             return Activator.GetFallbackDefaultConstructor();
@@ -648,11 +632,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhResolveDispatch(instance, CreateEETypePtr(interfaceType), checked((ushort)slot));
         }
 
-        public static IntPtr GVMLookupForSlot(RuntimeTypeHandle type, RuntimeMethodHandle slot)
-        {
-            return GenericVirtualMethodSupport.GVMLookupForSlot(type, slot);
-        }
-
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsPointer;
@@ -846,14 +825,6 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(obj.GetEETypePtr());
         }
 
-        // Move memory which may be on the heap which may have object references in it.
-        // In general, a memcpy on the heap is unsafe, but this is able to perform the
-        // correct write barrier such that the GC is not incorrectly impacted.
-        public static unsafe void BulkMoveWithWriteBarrier(IntPtr dmem, IntPtr smem, int size)
-        {
-            RuntimeImports.RhBulkMoveWithWriteBarrier(ref *(byte*)dmem.ToPointer(), ref *(byte*)smem.ToPointer(), (uint)size);
-        }
-
         public static IntPtr GetUniversalTransitionThunk()
         {
             return RuntimeImports.RhGetUniversalTransitionThunk();
@@ -872,7 +843,6 @@ namespace Internal.Runtime.Augments
             IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
             if (newThunk == IntPtr.Zero)
                 throw new OutOfMemoryException();
-            TypeLoaderCallbacks.RegisterThunk(newThunk);
             return newThunk;
         }
 

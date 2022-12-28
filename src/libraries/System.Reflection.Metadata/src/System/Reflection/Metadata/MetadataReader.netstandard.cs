@@ -97,7 +97,7 @@ namespace System.Reflection.Metadata
             }
             catch (InvalidOperationException ex)
             {
-                throw new BadImageFormatException(ex.Message);
+                throw new BadImageFormatException(ex.Message, assemblyFile, ex);
             }
         }
 

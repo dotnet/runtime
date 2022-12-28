@@ -7,7 +7,7 @@ import { Module, runtimeHelpers, ENVIRONMENT_IS_PTHREAD } from "./imports";
 import { alloc_stack_frame, get_arg, get_arg_gc_handle, MarshalerType, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
-import { marshal_int32_to_js, marshal_task_to_js } from "./marshal-to-js";
+import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "./marshal-to-js";
 
 export function init_managed_exports(): void {
     const anyModule = Module as any;
@@ -22,8 +22,8 @@ export function init_managed_exports(): void {
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
-    const install_sync_context = get_method("InstallSynchronizationContext");
-    mono_assert(install_sync_context, "Can't find InstallSynchronizationContext method");
+    const install_sync_context = cwraps.mono_wasm_assembly_find_method(runtimeHelpers.runtime_interop_exports_class, "InstallSynchronizationContext", -1);
+    // mono_assert(install_sync_context, "Can't find InstallSynchronizationContext method");
     const call_entry_point = get_method("CallEntrypoint");
     mono_assert(call_entry_point, "Can't find CallEntrypoint method");
     const release_js_owned_object_by_gc_handle_method = get_method("ReleaseJSOwnedObjectByGCHandle");
@@ -34,6 +34,9 @@ export function init_managed_exports(): void {
     mono_assert(complete_task_method, "Can't find CompleteTask method");
     const call_delegate_method = get_method("CallDelegate");
     mono_assert(call_delegate_method, "Can't find CallDelegate method");
+    const get_managed_stack_trace_method = get_method("GetManagedStackTrace");
+    mono_assert(get_managed_stack_trace_method, "Can't find GetManagedStackTrace method");
+
     runtimeHelpers.javaScriptExports.call_entry_point = (entry_point: MonoMethod, program_args?: string[]) => {
         const sp = anyModule.stackSave();
         try {
@@ -134,19 +137,38 @@ export function init_managed_exports(): void {
             anyModule.stackRestore(sp);
         }
     };
-    runtimeHelpers.javaScriptExports.install_synchronization_context = () => {
+    runtimeHelpers.javaScriptExports.get_managed_stack_trace = (exception_gc_handle: GCHandle) => {
         const sp = anyModule.stackSave();
         try {
-            const args = alloc_stack_frame(2);
-            invoke_method_and_handle_exception(install_sync_context, args);
+            const args = alloc_stack_frame(3);
+
+            const arg1 = get_arg(args, 2);
+            set_arg_type(arg1, MarshalerType.Exception);
+            set_gc_handle(arg1, exception_gc_handle);
+
+            invoke_method_and_handle_exception(get_managed_stack_trace_method, args);
+            const res = get_arg(args, 1);
+            return marshal_string_to_js(res);
         } finally {
             anyModule.stackRestore(sp);
         }
     };
 
-    if (!ENVIRONMENT_IS_PTHREAD)
-        // Install our sync context so that async continuations will migrate back to this thread (the main thread) automatically
-        runtimeHelpers.javaScriptExports.install_synchronization_context();
+    if (install_sync_context) {
+        runtimeHelpers.javaScriptExports.install_synchronization_context = () => {
+            const sp = anyModule.stackSave();
+            try {
+                const args = alloc_stack_frame(2);
+                invoke_method_and_handle_exception(install_sync_context, args);
+            } finally {
+                anyModule.stackRestore(sp);
+            }
+        };
+
+        if (!ENVIRONMENT_IS_PTHREAD)
+            // Install our sync context so that async continuations will migrate back to this thread (the main thread) automatically
+            runtimeHelpers.javaScriptExports.install_synchronization_context();
+    }
 }
 
 export function get_method(method_name: string): MonoMethod {

@@ -44,7 +44,6 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
-#include "mono/metadata/marshal-noilgen.h"
 #include "mono/metadata/monitor.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
@@ -63,6 +62,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/jit-info.h"
+#include "mono/metadata/icall-internals.h"
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
@@ -155,32 +155,34 @@ static IlgenCallbacksToMono ilgenCallbacksToMono = {
 	&mono_marshal_shared_init_safe_handle,
 	&mono_marshal_shared_is_in,
 	&mono_marshal_shared_is_out,
-	&mono_marshal_shared_mb_emit_exception_marshal_directive,
-	&mono_mb_add_local,
-	&mono_mb_emit_add_to_local,
-	&mono_mb_emit_auto_layout_exception,
-	&mono_mb_emit_branch,
-	&mono_mb_emit_branch_label,
-	&mono_mb_emit_byte,
-	&mono_mb_emit_exception,
-	&mono_mb_emit_exception_full,
-	&mono_mb_emit_icall_id,
-	&mono_mb_emit_icon,
-	&mono_mb_emit_ldarg,
-	&mono_mb_emit_ldarg_addr,
-	&mono_mb_emit_ldflda,
-	&mono_mb_emit_ldloc,
-	&mono_mb_emit_ldloc_addr,
-	&mono_mb_emit_managed_call,
-	&mono_mb_emit_op,
-	&mono_mb_emit_stloc,
-	&mono_mb_get_label,
-	&mono_mb_patch_branch,
 	&mono_pinvoke_is_unicode,
 	&mono_reflection_type_from_name_checked,
 	&mono_memory_barrier,
 	&mono_marshal_need_free,
-	&mono_get_int_type
+	&mono_get_int_type,
+	{
+		&mono_marshal_shared_mb_emit_exception_marshal_directive,
+		&mono_mb_add_local,
+		&mono_mb_emit_add_to_local,
+		&mono_mb_emit_auto_layout_exception,
+		&mono_mb_emit_branch,
+		&mono_mb_emit_branch_label,
+		&mono_mb_emit_byte,
+		&mono_mb_emit_exception,
+		&mono_mb_emit_exception_full,
+		&mono_mb_emit_icall_id,
+		&mono_mb_emit_icon,
+		&mono_mb_emit_ldarg,
+		&mono_mb_emit_ldarg_addr,
+		&mono_mb_emit_ldflda,
+		&mono_mb_emit_ldloc,
+		&mono_mb_emit_ldloc_addr,
+		&mono_mb_emit_managed_call,
+		&mono_mb_emit_op,
+		&mono_mb_emit_stloc,
+		&mono_mb_get_label,
+		&mono_mb_patch_branch,
+	}
 };
 
 IlgenCallbacksToMono*
@@ -3222,7 +3224,6 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	if (!m->runtime_marshalling_enabled)
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
-	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
 	return mono_component_marshal_ilgen()->emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
 } 
 
@@ -3445,8 +3446,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	ERROR_DECL (emitted_error);
 	WrapperInfo *info;
 
-
-
 	g_assert (method != NULL);
 	g_assertf (mono_method_signature_internal (method)->pinvoke, "%s flags:%X iflags:%X param_count:%X",
 		method->name, method->flags, method->iflags, mono_method_signature_internal (method)->param_count);
@@ -3471,6 +3470,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		guint32 icall_flags = 0;
+		if (mono_lookup_internal_call_full_with_flags (method, FALSE, &icall_flags)) {
+			if (icall_flags & MONO_ICALL_FLAGS_NO_EXCEPTION)
+				check_exceptions = FALSE;
+		}
+	}
 
 	if (MONO_CLASS_IS_IMPORT (method->klass)) {
 		/* The COM code is not AOT compatible, it calls mono_custom_attrs_get_attr_checked () */
@@ -6095,45 +6102,6 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, const gchar *name, Mono
 	return res;
 }
 
-/*
- * The mono_win32_compat_* functions are implementations of inline
- * Windows kernel32 APIs, which are DllImport-able under MS.NET,
- * although not exported by kernel32.
- *
- * We map the appropriate kernel32 entries to these functions using
- * dllmaps declared in the global etc/mono/config.
- */
-
-void
-mono_win32_compat_CopyMemory (gpointer dest, gconstpointer source, gsize length)
-{
-	if (!dest || !source)
-		return;
-
-	memcpy (dest, source, length);
-}
-
-void
-mono_win32_compat_FillMemory (gpointer dest, gsize length, guchar fill)
-{
-	memset (dest, fill, length);
-}
-
-void
-mono_win32_compat_MoveMemory (gpointer dest, gconstpointer source, gsize length)
-{
-	if (!dest || !source)
-		return;
-
-	memmove (dest, source, length);
-}
-
-void
-mono_win32_compat_ZeroMemory (gpointer dest, gsize length)
-{
-	memset (dest, 0, length);
-}
-
 void
 mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask)
 {
@@ -6315,14 +6283,7 @@ mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 static MonoMarshalLightweightCallbacks *
 get_marshal_cb (void)
 {
-
-	if (G_UNLIKELY (!lightweight_cb_inited)) {
-#ifdef ENABLE_ILGEN
-		mono_marshal_lightweight_init ();
-#else
-		mono_marshal_noilgen_init_lightweight ();
-#endif
-	}
+	g_assert (lightweight_cb_inited);
 	return &marshal_lightweight_cb;
 }
 
@@ -6352,4 +6313,39 @@ mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method)
 	if (!cinfo->cached)
 		mono_custom_attrs_free (cinfo);
 	return result;
+}
+
+static void
+free_hash (GHashTable *hash)
+{
+	if (hash)
+		g_hash_table_destroy (hash);
+}
+
+void
+mono_wrapper_caches_free (MonoWrapperCaches *cache)
+{
+	free_hash (cache->delegate_invoke_cache);
+	free_hash (cache->delegate_begin_invoke_cache);
+	free_hash (cache->delegate_end_invoke_cache);
+	free_hash (cache->delegate_bound_static_invoke_cache);
+	free_hash (cache->runtime_invoke_signature_cache);
+
+	free_hash (cache->delegate_abstract_invoke_cache);
+
+	free_hash (cache->runtime_invoke_method_cache);
+	free_hash (cache->managed_wrapper_cache);
+
+	free_hash (cache->native_wrapper_cache);
+	free_hash (cache->native_wrapper_aot_cache);
+	free_hash (cache->native_wrapper_check_cache);
+	free_hash (cache->native_wrapper_aot_check_cache);
+
+	free_hash (cache->native_func_wrapper_aot_cache);
+	free_hash (cache->native_func_wrapper_indirect_cache);
+	free_hash (cache->synchronized_cache);
+	free_hash (cache->unbox_wrapper_cache);
+	free_hash (cache->cominterop_invoke_cache);
+	free_hash (cache->cominterop_wrapper_cache);
+	free_hash (cache->thunk_invoke_cache);
 }

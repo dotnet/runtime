@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             var result = library.ResolveReferencePaths(resolvers);
 
-            result.ShouldBeEquivalentTo(new[] { "Assembly" });
+            result.Should().BeEquivalentTo(new[] { "Assembly" });
 
             fail.Verify(r => r.TryResolveAssemblyPaths(It.IsAny<CompilationLibrary>(), It.IsAny<List<string>>()),
                 Times.Once());
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             try
             {
                 var result = library.ResolveReferencePaths(null);
-                result.ShouldBeEquivalentTo(new[] { assemblyPath });
+                result.Should().BeEquivalentTo(new[] { assemblyPath });
             }
             finally
             {

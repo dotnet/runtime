@@ -673,13 +673,6 @@ Initialize(
             goto CLEANUP15;
         }
 
-        if (FALSE == NUMASupportInitialize())
-        {
-            ERROR("Unable to initialize NUMA support\n");
-            palError = ERROR_PALINIT_NUMA;
-            goto CLEANUP15;
-        }
-
         TRACE("First-time PAL initialization complete.\n");
         init_count++;
 

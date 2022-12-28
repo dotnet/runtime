@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
+using System.Collections.Generic;
 using System.Security.Cryptography.Tests;
-using Test.Cryptography;
 using System.Security.Cryptography.EcDiffieHellman.Tests;
+using Test.Cryptography;
+using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
@@ -350,6 +351,50 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Assert.Equal(expectedX, exportedParameters.Q.X);
                 Assert.Equal(expectedY, exportedParameters.Q.Y);
                 Assert.Equal(limitedPrivateParameters.D, exportedParameters.D);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NamedCurves))]
+        public static void OidPresentOnCurveMiscased(ECCurve curve)
+        {
+            ECCurve miscasedCurve = ECCurve.CreateFromFriendlyName(InvertStringCase(curve.Oid.FriendlyName));
+            Assert.NotEqual(miscasedCurve.Oid.FriendlyName, curve.Oid.FriendlyName);
+            Assert.Equal(miscasedCurve.Oid.FriendlyName, curve.Oid.FriendlyName, ignoreCase: true);
+
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                ecdsa.GenerateKey(miscasedCurve);
+                ECParameters exportedParameters = ecdsa.ExportParameters(false);
+                Assert.Equal(curve.Oid.Value, exportedParameters.Curve.Oid.Value);
+
+                exportedParameters.Curve = miscasedCurve;
+
+                // Assert.NoThrow. Make sure we can import the mis-cased curve.
+                ecdsa.ImportParameters(exportedParameters);
+            }
+        }
+
+        public static IEnumerable<object[]> NamedCurves
+        {
+            get
+            {
+                yield return new object[] { ECCurve.NamedCurves.nistP256 };
+                yield return new object[] { ECCurve.NamedCurves.nistP384 };
+                yield return new object[] { ECCurve.NamedCurves.nistP521 };
+                yield return new object[] { ECCurve.CreateFromFriendlyName("ECDSA_P256") };
+                yield return new object[] { ECCurve.CreateFromFriendlyName("ECDSA_P384") };
+                yield return new object[] { ECCurve.CreateFromFriendlyName("ECDSA_P521") };
+
+                if (ECDsaFactory.IsCurveValid(ECCurve.NamedCurves.brainpoolP160r1.Oid))
+                {
+                    yield return new object[] { ECCurve.NamedCurves.brainpoolP160r1 };
+                }
+
+                if (ECDsaFactory.IsCurveValid(ECCurve.NamedCurves.brainpoolP160t1.Oid))
+                {
+                    yield return new object[] { ECCurve.NamedCurves.brainpoolP160t1 };
+                }
             }
         }
 

@@ -3432,10 +3432,6 @@ private:
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 private:
-    UINT32 m_workerThreadPoolCompletionCount;
-    static UINT64 s_workerThreadPoolCompletionCountOverflow;
-    UINT32 m_ioThreadPoolCompletionCount;
-    static UINT64 s_ioThreadPoolCompletionCountOverflow;
     UINT32 m_monitorLockContentionCount;
     static UINT64 s_monitorLockContentionCountOverflow;
 
@@ -3489,38 +3485,6 @@ private:
     static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
 
 public:
-    static void IncrementWorkerThreadPoolCompletionCount(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        IncrementCount(pThread, offsetof(Thread, m_workerThreadPoolCompletionCount), &s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetWorkerThreadPoolCompletionCountOverflow()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetOverflowCount(&s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetTotalWorkerThreadPoolCompletionCount()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetTotalCount(offsetof(Thread, m_workerThreadPoolCompletionCount), &s_workerThreadPoolCompletionCountOverflow);
-    }
-
-    static void IncrementIOThreadPoolCompletionCount(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        IncrementCount(pThread, offsetof(Thread, m_ioThreadPoolCompletionCount), &s_ioThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetIOThreadPoolCompletionCountOverflow()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetOverflowCount(&s_ioThreadPoolCompletionCountOverflow);
-    }
-
-    static UINT64 GetTotalThreadPoolCompletionCount();
-
     static void IncrementMonitorLockContentionCount(Thread *pThread)
     {
         WRAPPER_NO_CONTRACT;
@@ -3773,6 +3737,9 @@ public:
                 return(true);
             // If the pointer lives in the GC heap, than it is protected, and thus valid.
             if (dac_cast<TADDR>(g_lowest_address) <= val && val < dac_cast<TADDR>(g_highest_address))
+                return(true);
+            // Same for frozen segments
+            if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(*(Object**)ref))
                 return(true);
             return(false);
         }
@@ -4188,20 +4155,6 @@ public:
     }
 
 private:
-    //
-    //This context is used for optimizations on I/O thread pool thread. In case the
-    //overlapped structure is from a different appdomain, it is stored in this structure
-    //to be processed later correctly by entering the right domain.
-    PVOID m_pIOCompletionContext;
-    BOOL AllocateIOCompletionContext();
-    VOID FreeIOCompletionContext();
-public:
-    inline PVOID GetIOCompletionContext()
-    {
-        return m_pIOCompletionContext;
-    }
-
-private:
     // Inside a host, we don't own a thread handle, and we avoid DuplicateHandle call.
     // If a thread is dying after we obtain the thread handle, our SuspendThread may fail
     // because the handle may be closed and reused for a completely different type of handle.
@@ -4307,7 +4260,7 @@ public:
 
     // GC calls this when creating special threads that also happen to have an EE Thread
     // object associated with them (e.g., the bgc thread).
-    void SetGCSpecial(bool fGCSpecial);
+    void SetGCSpecial();
 
 private:
 
@@ -6004,10 +5957,6 @@ struct ManagedThreadBase
     // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
-
-    // The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in
-    // the ThreadPool
-    static void ThreadPool(ADCallBackFcnType pTarget, LPVOID args);
 
     // The Finalizer thread uses this path
     static void FinalizerBase(ADCallBackFcnType pTarget);

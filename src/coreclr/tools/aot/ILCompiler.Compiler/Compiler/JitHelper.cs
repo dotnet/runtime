@@ -9,7 +9,7 @@ using Internal.ReadyToRunConstants;
 
 namespace ILCompiler
 {
-    internal class JitHelper
+    internal static class JitHelper
     {
         /// <summary>
         /// Returns JIT helper entrypoint. JIT helpers can be either implemented by entrypoint with given mangled name or

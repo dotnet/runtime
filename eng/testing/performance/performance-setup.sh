@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
+# Also reset/set below
 set -x
 
 source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
 baseline_core_root_directory=
 architecture=x64
-framework=net5.0
+framework=
 compilation_mode=tiered
 repository=$BUILD_REPOSITORY_NAME
 branch=$BUILD_SOURCEBRANCH
@@ -37,7 +38,9 @@ javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
 maui_version=""
+use_local_commit_time=false
 only_sanity=false
+dotnet_versions=""
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -148,6 +151,10 @@ while (($# > 0)); do
       use_latest_dotnet=true
       shift 1
       ;;
+    --dotnetversions)
+      dotnet_versions="$2"
+      shift 2
+      ;;
     --iosmono)
       iosmono=true
       shift 1
@@ -159,6 +166,10 @@ while (($# > 0)); do
     --mauiversion)
       maui_version=$2
       shift 2
+      ;;
+    --uselocalcommittime)
+      use_local_commit_time=true
+      shift 1
       ;;
     --perffork)
       perf_fork=$2
@@ -182,7 +193,7 @@ while (($# > 0)); do
       echo ""
       echo "Advanced settings:"
       echo "  --framework <value>            The framework to run, if not running in master"
-      echo "  --compliationmode <value>      The compilation mode if not passing --configurations"
+      echo "  --compilationmode <value>      The compilation mode if not passing --configurations"
       echo "  --sourcedirectory <value>      The directory of the sources. Defaults to env:BUILD_SOURCESDIRECTORY"
       echo "  --repository <value>           The name of the repository in the <owner>/<repository name> format. Defaults to env:BUILD_REPOSITORY_NAME"
       echo "  --branch <value>               The name of the branch. Defaults to env:BUILD_SOURCEBRANCH"
@@ -196,12 +207,14 @@ while (($# > 0)); do
       echo "  --wasmbundle                   Path to the wasm bundle containing the dotnet, and data needed for helix payload"
       echo "  --wasmaot                      Indicate wasm aot"
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
+      echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
+      echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
       echo ""
-      exit 0
+      exit 1
       ;;
   esac
 done
@@ -314,6 +327,11 @@ if [[ "$internal" != true ]]; then
     setup_arguments="$setup_arguments --not-in-lab"
 fi
 
+if [[ "$use_local_commit_time" == true ]]; then
+    local_commit_time=$(git show -s --format=%ci $commit_sha)
+    setup_arguments="$setup_arguments --commit-time \"$local_commit_time\""
+fi
+
 if [[ "$run_from_perf_repo" == true ]]; then
     payload_directory=
     workitem_directory=$source_directory
@@ -352,6 +370,10 @@ if [[ -n "$mono_dotnet" && "$monoaot" == "false" ]]; then
     using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
     mv $mono_dotnet $mono_dotnet_path
+fi
+
+if [[ -n "$dotnet_versions" ]]; then
+    setup_arguments="$setup_arguments --dotnet-versions $dotnet_versions"
 fi
 
 if [[ "$monoaot" == "true" ]]; then
@@ -413,6 +435,9 @@ ci=true
 _script_dir=$(pwd)/eng/common
 . "$_script_dir/pipeline-logging-functions.sh"
 
+# Prevent vso[task.setvariable to be erroneously processed
+set +x
+
 # Make sure all of our variables are available for future steps
 Write-PipelineSetVariable -name "UseCoreRun" -value "$use_core_run" -is_multi_job_variable false
 Write-PipelineSetVariable -name "UseBaselineCoreRun" -value "$use_baseline_core_run" -is_multi_job_variable false
@@ -437,3 +462,6 @@ Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
+
+# Put it back to what was set on top of this script
+set -x

@@ -1174,7 +1174,7 @@ major_block_is_evacuating (MSBlockInfo *block)
 		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj); \
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
-			if (sgen_gc_descr_has_references (desc))			\
+			if (sgen_gc_descr_has_references (desc) || sgen_vtable_has_class_obj (SGEN_LOAD_VTABLE (obj))) \
 				GRAY_OBJECT_ENQUEUE_SERIAL ((queue), (obj), (desc)); \
 			sgen_binary_protocol_mark ((obj), (gpointer)SGEN_LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
@@ -1187,7 +1187,7 @@ major_block_is_evacuating (MSBlockInfo *block)
 		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj); \
 		MS_SET_MARK_BIT_PAR ((block), __word, __bit, first);	\
 		if (first) {						\
-			if (sgen_gc_descr_has_references (desc))	\
+			if (sgen_gc_descr_has_references (desc) || sgen_vtable_has_class_obj (SGEN_LOAD_VTABLE (obj))) \
 				GRAY_OBJECT_ENQUEUE_PARALLEL ((queue), (obj), (desc)); \
 			sgen_binary_protocol_mark ((obj), (gpointer)SGEN_LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((obj))); \
 			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
@@ -2861,7 +2861,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_MS_BLOCK_INFO, SIZEOF_MS_BLOCK_INFO);
 
-	if (mono_cpu_count () <= 1)
+	if (mono_cpu_limit () <= 1)
 		is_parallel = FALSE;
 
 	num_block_obj_sizes = ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, NULL);
@@ -3027,7 +3027,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	if (is_concurrent && is_parallel)
-		sgen_workers_create_context (GENERATION_OLD, mono_cpu_count ());
+		sgen_workers_create_context (GENERATION_OLD, mono_cpu_limit ());
 	else if (is_concurrent)
 		sgen_workers_create_context (GENERATION_OLD, 1);
 

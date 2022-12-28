@@ -1302,7 +1302,7 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidX86))]   // disabled on Android x86, see https://github.com/dotnet/runtime/issues/37093
+        [Theory]
         [MemberData(nameof(Boundaries_2_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]

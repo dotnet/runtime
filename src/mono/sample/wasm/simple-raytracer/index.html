@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!--  Licensed to the .NET Foundation under one or more agreements. -->
+<!-- The .NET Foundation licenses this file to you under the MIT license. -->
+<html>
+
+<head>
+  <title>Simple wasm raytracer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="modulepreload" href="./main.js" />
+  <link rel="modulepreload" href="./dotnet.js" />
+</head>
+
+<body>
+  <h1>Simple wasm raytracer</h1>
+  <button id="btnRender" onclick="globalThis.onClick()" disabled="true">Render</button>
+  <br /><br />
+  <canvas id="out" width="640" height="480" style="border: dotted;"></canvas>
+  <script type='module' src="./main.js"></script>
+  <br /><br />
+  <p>
+    Original implementation by Nicholas C. Bray
+  </p>
+</body>
+
+</html>

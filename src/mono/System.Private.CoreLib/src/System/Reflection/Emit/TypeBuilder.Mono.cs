@@ -477,10 +477,7 @@ namespace System.Reflection.Emit
                     null, EmptyTypes, null);
             if (parent_constructor == null)
             {
-                throw new NotSupportedException("Parent does"
-                    + " not have a default constructor."
-                    + " The default constructor must be"
-                    + " explicitly defined.");
+                throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
             }
 
             ConstructorBuilder cb = DefineConstructor(attributes,
@@ -552,9 +549,9 @@ namespace System.Reflection.Emit
             check_name(nameof(dllName), dllName);
             check_name(nameof(entryName), entryName);
             if ((attributes & MethodAttributes.Abstract) != 0)
-                throw new ArgumentException("PInvoke methods must be static and native and cannot be abstract.");
+                throw new ArgumentException(SR.Argument_BadPInvokeMethod);
             if (IsInterface)
-                throw new ArgumentException("PInvoke methods cannot exist on interfaces.");
+                throw new ArgumentException(SR.Argument_BadPInvokeOnInterface);
             check_not_created();
 
             MethodBuilder res
@@ -595,7 +592,7 @@ namespace System.Reflection.Emit
         {
             check_name(nameof(fieldName), fieldName);
             if (type == typeof(void))
-                throw new ArgumentException("Bad field type in defining field.");
+                throw new ArgumentException(SR.Argument_BadFieldType);
             check_not_created();
 
             FieldBuilder res = new FieldBuilder(this, fieldName, type, attributes, requiredCustomModifiers, optionalCustomModifiers);
@@ -824,24 +821,21 @@ namespace System.Reflection.Emit
             {
                 foreach (FieldBuilder fb in fields)
                 {
-                    if (fb != null)
-                        fb.ResolveUserTypes();
+                    fb?.ResolveUserTypes();
                 }
             }
             if (methods != null)
             {
                 foreach (MethodBuilder mb in methods)
                 {
-                    if (mb != null)
-                        mb.ResolveUserTypes();
+                    mb?.ResolveUserTypes();
                 }
             }
             if (ctors != null)
             {
                 foreach (ConstructorBuilder cb in ctors)
                 {
-                    if (cb != null)
-                        cb.ResolveUserTypes();
+                    cb?.ResolveUserTypes();
                 }
             }
         }
@@ -959,12 +953,13 @@ namespace System.Reflection.Emit
 
         /* Needed to keep signature compatibility with MS.NET */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public override EventInfo[] GetEvents()
         {
             const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
+            // Suppression can be removed after https://github.com/dotnet/linker/issues/2673 is resolved.
+#pragma warning disable IL2085
             return GetEvents(DefaultBindingFlags);
+#pragma warning restore IL2085
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
@@ -1309,11 +1304,11 @@ namespace System.Reflection.Emit
             //return base.MakeGenericType (typeArguments);
 
             if (!IsGenericTypeDefinition)
-                throw new InvalidOperationException("not a generic type definition");
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
             ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (generic_params!.Length != typeArguments.Length)
-                throw new ArgumentException(string.Format("The type or method has {0} generic parameter(s) but {1} generic argument(s) where provided. A generic argument must be provided for each generic parameter.", generic_params.Length, typeArguments.Length), nameof(typeArguments));
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, generic_params.Length, typeArguments.Length), nameof(typeArguments));
 
             foreach (Type t in typeArguments)
             {
@@ -1502,7 +1497,7 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             if ((size <= 0) || (size > 0x3f0000))
-                throw new ArgumentException("Data size must be > 0 and < 0x3f0000");
+                throw new ArgumentException(SR.Argument_BadSizeForData);
             check_not_created();
 
             string typeName = "$ArrayType$" + size;
@@ -1532,7 +1527,7 @@ namespace System.Reflection.Emit
                 if ((attrs & TypeAttributes.Interface) != 0)
                 {
                     if ((attrs & TypeAttributes.Abstract) == 0)
-                        throw new InvalidOperationException("Interface must be declared abstract.");
+                        throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
                     this.parent = null;
                 }
                 else
@@ -1584,7 +1579,7 @@ namespace System.Reflection.Emit
 
         private static Exception not_supported()
         {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+            return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         internal void check_not_created()
@@ -1663,7 +1658,7 @@ namespace System.Reflection.Emit
         public override Type GetGenericTypeDefinition()
         {
             if (generic_params == null)
-                throw new InvalidOperationException("Type is not generic");
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
             return this;
         }
 
@@ -1965,7 +1960,7 @@ namespace System.Reflection.Emit
                         destValue = ticks;
                         return true;
                     default:
-                        throw new ArgumentException(type!.ToString() + " is not a supported constant type.");
+                        throw new ArgumentException(SR.Format(SR.Argument_ConstantNotSupported, type));
                 }
             }
             else
@@ -1981,7 +1976,7 @@ namespace System.Reflection.Emit
 
         private static void throw_argument_ConstantDoesntMatch()
         {
-            throw new ArgumentException("Constant does not match the defined type.");
+            throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
         }
 
         public override bool IsTypeDefinition => true;

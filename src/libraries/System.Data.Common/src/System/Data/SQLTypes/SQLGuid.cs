@@ -25,7 +25,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a SqlGuid.Null
-        private SqlGuid(bool fNull)
+        private SqlGuid(bool _)
         {
             m_value = null;
         }
@@ -39,7 +39,7 @@ namespace System.Data.SqlTypes
             value.CopyTo(m_value, 0);
         }
 
-        internal SqlGuid(byte[] value, bool ignored)
+        internal SqlGuid(byte[] value, bool _)
         {
             if (value == null || value.Length != SizeOfGuid)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage);

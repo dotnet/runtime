@@ -154,9 +154,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_schemaObjects == null)
-                    _schemaObjects = CreateSchemaObjects();
-                return _schemaObjects;
+                return _schemaObjects ??= CreateSchemaObjects();
             }
         }
 
@@ -164,9 +162,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_redefineList == null)
-                    _redefineList = CreateRedefineList();
-                return _redefineList;
+                return _redefineList ??= CreateRedefineList();
             }
         }
 
@@ -279,10 +275,7 @@ namespace System.Runtime.Serialization
                                 SchemaObjectInfo? baseTypeInfo;
                                 if (schemaObjects.TryGetValue(baseTypeName, out baseTypeInfo))
                                 {
-                                    if (baseTypeInfo._knownTypes == null)
-                                    {
-                                        baseTypeInfo._knownTypes = new List<XmlSchemaType>();
-                                    }
+                                    baseTypeInfo._knownTypes ??= new List<XmlSchemaType>();
                                 }
                                 else
                                 {
@@ -542,8 +535,7 @@ namespace System.Runtime.Serialization
                     ancestorDataContract.KnownDataContracts?.Remove(typeName);
                     ancestorDataContract = ancestorDataContract.BaseClassContract;
                 }
-                if (_dataContractSet.KnownTypesForObject != null)
-                    _dataContractSet.KnownTypesForObject.Remove(typeName);
+                _dataContractSet.KnownTypesForObject?.Remove(typeName);
             }
         }
 
@@ -647,7 +639,7 @@ namespace System.Runtime.Serialization
                     ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.RootSequenceMaxOccursMustBe));
 
                 if (!isDerived && CheckIfCollection(rootSequence))
-                    dataContract = ImportCollection(typeName, rootSequence, attributes, annotation, isReference);
+                    dataContract = ImportCollection(typeName, rootSequence, annotation, isReference);
                 else if (CheckIfISerializable(rootSequence, attributes))
                     dataContract = ImportISerializable(typeName, rootSequence, baseTypeName, attributes, annotation);
                 else
@@ -674,7 +666,7 @@ namespace System.Runtime.Serialization
                 Debug.Assert(dataContract.BaseClassContract != null);    // ImportBaseContract will always set this... or throw.
                 if (dataContract.BaseClassContract.IsISerializable)
                 {
-                    if (IsISerializableDerived(typeName, rootSequence))
+                    if (IsISerializableDerived(rootSequence))
                         dataContract.IsISerializable = true;
                     else
                         ThrowTypeCannotBeImportedException(dataContract.XmlName.Name, dataContract.XmlName.Namespace, SR.Format(SR.DerivedTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
@@ -846,7 +838,7 @@ namespace System.Runtime.Serialization
                 Debug.Assert(dataContract.BaseClassContract != null);    // ImportBaseContract will always set this... or throw.
                 if (!dataContract.BaseClassContract.IsISerializable)
                     ThrowISerializableTypeCannotBeImportedException(dataContract.XmlName.Name, dataContract.XmlName.Namespace, SR.Format(SR.BaseTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
-                if (!IsISerializableDerived(typeName, rootSequence))
+                if (!IsISerializableDerived(rootSequence))
                     ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableDerivedContainsOneOrMoreItems));
             }
 
@@ -899,7 +891,7 @@ namespace System.Runtime.Serialization
                 ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableMustRefFactoryTypeAttribute, factoryTypeAttributeRefName.Name, factoryTypeAttributeRefName.Namespace));
         }
 
-        private static bool IsISerializableDerived(XmlQualifiedName typeName, XmlSchemaSequence? rootSequence)
+        private static bool IsISerializableDerived(XmlSchemaSequence? rootSequence)
         {
             return (rootSequence == null || rootSequence.Items == null || rootSequence.Items.Count == 0);
         }
@@ -1056,7 +1048,7 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private CollectionDataContract ImportCollection(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlSchemaObjectCollection attributes, XmlSchemaAnnotation? annotation, bool isReference)
+        private CollectionDataContract ImportCollection(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlSchemaAnnotation? annotation, bool isReference)
         {
             CollectionDataContract dataContract = new CollectionDataContract(Globals.TypeOfSchemaDefinedType, CollectionKind.Array);
             dataContract.XmlName = typeName;
@@ -1346,7 +1338,7 @@ namespace System.Runtime.Serialization
                 Collection<Type> knownTypes = new Collection<Type>();
                 DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
                 DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject, name, ns, knownTypes,
-                    int.MaxValue, false /*ignoreExtensionDataObject*/, true /*preserveObjectReferences*/);
+                    false /*ignoreExtensionDataObject*/, true /*preserveObjectReferences*/);
                 return serializer.ReadObject(new XmlNodeReader(typeElement));
             }
             return null;

@@ -122,4 +122,38 @@ public unsafe static class ExceptionInterop
 
         Assert.True(caughtException);
     }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    [SkipOnMono("Exception interop not supported on Mono.")]
+    public static void ThrowNativeExceptionInFrameWithFinallyCatchInOuterFrame()
+    {
+        bool caughtException = false;
+        try
+        {
+            ThrowInFrameWithFinally();
+        }
+        catch
+        {
+            caughtException = true;
+        }
+
+        Assert.True(caughtException);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void ThrowInFrameWithFinally()
+        {
+            try
+            {
+                ThrowException();
+            }
+            finally
+            {
+                // Try calling another P/Invoke in the finally block before the catch
+                // to make sure we have everything set up
+                // to recover from the exceptional control flow.
+                NativeFunction();
+            }
+        }
+    }
 }

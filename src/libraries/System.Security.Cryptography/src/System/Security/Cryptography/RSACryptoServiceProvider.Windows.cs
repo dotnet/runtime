@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -53,10 +54,7 @@ namespace System.Security.Cryptography
 
         private RSACryptoServiceProvider(int keySize, CspParameters? parameters, bool useDefaultKeySize)
         {
-            if (keySize < 0)
-            {
-                throw new ArgumentOutOfRangeException("dwKeySize", "ArgumentOutOfRange_NeedNonNegNum");
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(keySize);
 
             _parameters = CapiHelper.SaveCspParameters(
                 CapiHelper.CspAlgorithmType.Rsa,
@@ -282,6 +280,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// This method is not supported. Use Decrypt(byte[], RSAEncryptionPadding) instead.
         /// </summary>
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] DecryptValue(byte[] rgb) => base.DecryptValue(rgb);
 
         /// <summary>
@@ -341,6 +341,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// This method is not supported. Use Encrypt(byte[], RSAEncryptionPadding) instead.
         /// </summary>
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] EncryptValue(byte[] rgb) => base.EncryptValue(rgb);
 
         /// <summary>
@@ -501,9 +503,12 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(rgbHash != null);
 
+            // Read the SafeKeyHandle property to force the key to load
+            SafeCapiKeyHandle localHandle = SafeKeyHandle;
+            Debug.Assert(localHandle != null);
+
             return CapiHelper.SignValue(
                 SafeProvHandle,
-                SafeKeyHandle,
                 _parameters.KeyNumber,
                 CapiHelper.CALG_RSA_SIGN,
                 calgHash,

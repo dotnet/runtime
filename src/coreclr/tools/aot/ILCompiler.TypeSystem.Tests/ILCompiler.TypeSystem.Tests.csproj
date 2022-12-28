@@ -46,6 +46,8 @@
     <Compile Include="../../Common/TypeSystem/Interop/IL/MarshallerKind.cs" Link="TypeSystem/Interop/IL/MarshallerKind.cs" />
     <Compile Include="../../Common/TypeSystem/Interop/InteropTypes.cs" Link="TypeSystem/Interop/InteropTypes.cs" />
     <Compile Include="../../Common/TypeSystem/IL/HelperExtensions.cs" Link="TypeSystem/IL/HelperExtensions" />
+    <Compile Include="../../Common/Compiler/VectorFieldLayoutAlgorithm.cs" Link="Compiler/VectorFieldLayoutAlgorithm.cs" />
+    <Compile Include="../../Common/Compiler/Int128FieldLayoutAlgorithm.cs" Link="Compiler/Int128FieldLayoutAlgorithm.cs" />
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
     <Compile Include="CanonicalizationTests.cs" />
     <Compile Include="ConstraintsValidationTest.cs" />

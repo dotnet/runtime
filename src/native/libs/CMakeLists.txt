@@ -53,14 +53,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         set(STATIC_LIB_DESTINATION .)
     endif ()
 
-    if (CLR_CMAKE_TARGET_TVOS)
-        # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
-        string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
-        string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
-        add_compile_options(-fembed-bitcode)
-        add_link_options(-fembed-bitcode)
-    endif ()
-
     if (CLR_CMAKE_TARGET_ANDROID)
         if (CROSS_ROOTFS)
             include_directories(SYSTEM "${CROSS_ROOTFS}/usr/include")
@@ -150,13 +142,12 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         add_compile_options(-Wno-typedef-redefinition)
         add_compile_options(-Wno-c11-extensions)
         add_compile_options(-Wno-thread-safety-analysis)
-        add_compile_options(-Wno-strict-prototypes)
     endif ()
 
     add_subdirectory(System.Native)
 
     if (CLR_CMAKE_TARGET_BROWSER)
-        add_subdirectory(System.Security.Cryptography.Native.Browser)
+        # skip for now
     elseif (CLR_CMAKE_TARGET_MACCATALYST)
         add_subdirectory(System.Net.Security.Native)
         # System.Security.Cryptography.Native is intentionally disabled on iOS

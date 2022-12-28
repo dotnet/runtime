@@ -20,81 +20,44 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfotypes.h"
 #include "patchpointinfo.h"
 
-ReturnKind GCTypeToReturnKind(CorInfoGCType gcType)
+ReturnKind VarTypeToReturnKind(var_types type)
 {
-    switch (gcType)
-    {
-        case TYPE_GC_NONE:
-            return RT_Scalar;
-        case TYPE_GC_REF:
-            return RT_Object;
-        case TYPE_GC_BYREF:
-            return RT_ByRef;
-        default:
-            _ASSERTE(!"TYP_GC_OTHER is unexpected");
-            return RT_Illegal;
-    }
-}
-
-ReturnKind GCInfo::getReturnKind()
-{
-    switch (compiler->info.compRetType)
+    switch (type)
     {
         case TYP_REF:
             return RT_Object;
         case TYP_BYREF:
             return RT_ByRef;
-        case TYP_STRUCT:
-        {
-            CORINFO_CLASS_HANDLE structType = compiler->info.compMethodInfo->args.retTypeClass;
-            var_types            retType    = compiler->getReturnTypeForStruct(structType, compiler->info.compCallConv);
-
-            switch (retType)
-            {
-                case TYP_REF:
-                    return RT_Object;
-
-                case TYP_BYREF:
-                    return RT_ByRef;
-
-                case TYP_STRUCT:
-                    if (compiler->IsHfa(structType))
-                    {
-#ifdef TARGET_X86
-                        _ASSERTE(false && "HFAs not expected for X86");
-#endif // TARGET_X86
-
-                        return RT_Scalar;
-                    }
-                    else
-                    {
-                        // Multi-reg return
-                        BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
-                        compiler->info.compCompHnd->getClassGClayout(structType, gcPtrs);
-
-                        ReturnKind first  = GCTypeToReturnKind((CorInfoGCType)gcPtrs[0]);
-                        ReturnKind second = GCTypeToReturnKind((CorInfoGCType)gcPtrs[1]);
-
-                        return GetStructReturnKind(first, second);
-                    }
-
-#ifdef TARGET_X86
-                case TYP_FLOAT:
-                case TYP_DOUBLE:
-                    return RT_Float;
-#endif // TARGET_X86
-                default:
-                    return RT_Scalar;
-            }
-        }
-
 #ifdef TARGET_X86
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return RT_Float;
 #endif // TARGET_X86
-
         default:
+            return RT_Scalar;
+    }
+}
+
+ReturnKind GCInfo::getReturnKind()
+{
+    // Note the GCInfo representation only supports structs with up to 2 GC pointers.
+    ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+    const unsigned regCount    = retTypeDesc.GetReturnRegCount();
+
+    switch (regCount)
+    {
+        case 1:
+            return VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0));
+        case 2:
+            return GetStructReturnKind(VarTypeToReturnKind(retTypeDesc.GetReturnRegType(0)),
+                                       VarTypeToReturnKind(retTypeDesc.GetReturnRegType(1)));
+        default:
+#ifdef DEBUG
+            for (unsigned i = 0; i < regCount; i++)
+            {
+                assert(!varTypeIsGC(retTypeDesc.GetReturnRegType(i)));
+            }
+#endif // DEBUG
             return RT_Scalar;
     }
 }
@@ -3604,7 +3567,12 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 {
     GCDump gcDump(GCINFO_VERSION);
 
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
+
     printf("Method info block:\n");
 
     return gcDump.DumpInfoHdr(table, header, methodSize, verifyGCTables);
@@ -3617,7 +3585,12 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
     printf("Pointer table:\n");
 
     GCDump gcDump(GCINFO_VERSION);
+
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
 
     return gcDump.DumpGCTable(table, header, methodSize, verifyGCTables);
 }
@@ -3630,7 +3603,12 @@ size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned
 void GCInfo::gcFindPtrsInFrame(const void* infoBlock, const void* codeBlock, unsigned offs)
 {
     GCDump gcDump(GCINFO_VERSION);
+
+#ifdef DEBUG
     gcDump.gcPrintf = gcDump_logf; // use my printf (which logs to VM)
+#else
+    gcDump.gcPrintf       = printf;
+#endif
 
     gcDump.DumpPtrsInFrame((PTR_CBYTE)infoBlock, (const BYTE*)codeBlock, offs, verifyGCTables);
 }
@@ -3790,15 +3768,6 @@ public:
                         ? "THIS"
                         : (type == GENERIC_CONTEXTPARAM_MT ? "MT"
                                                            : (type == GENERIC_CONTEXTPARAM_MD ? "MD" : "UNKNOWN!"))));
-        }
-    }
-
-    void SetSecurityObjectStackSlot(INT32 spOffset)
-    {
-        m_gcInfoEncoder->SetSecurityObjectStackSlot(spOffset);
-        if (m_doLogging)
-        {
-            printf("Set security object stack slot to %d.\n", spOffset);
         }
     }
 

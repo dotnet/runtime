@@ -78,5 +78,5 @@ namespace ILCompiler.Metadata
 
             return concreteRecord;
         }
-    }    
+    }
 }

@@ -30,7 +30,7 @@ namespace Internal.Cryptography.Pal.Windows
             {
                 hCryptMsg = Interop.Crypt32.CryptMsgOpenToDecode(MsgEncodingType.All, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
                 if (hCryptMsg == null || hCryptMsg.IsInvalid)
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
                 if (!Interop.Crypt32.CryptMsgUpdate(
                     hCryptMsg,
@@ -38,7 +38,7 @@ namespace Internal.Cryptography.Pal.Windows
                     encodedMessage.Length,
                     fFinal: true))
                 {
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw Marshal.GetLastPInvokeError().ToCryptographicException();
                 }
 
                 CryptMsgType cryptMsgType = hCryptMsg.GetMessageType();

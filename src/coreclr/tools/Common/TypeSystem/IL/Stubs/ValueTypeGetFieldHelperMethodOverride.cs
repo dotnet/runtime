@@ -71,7 +71,7 @@ namespace Internal.IL.Stubs
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();
 
-            ArrayBuilder<ILCodeLabel> fieldGetters = new ArrayBuilder<ILCodeLabel>();
+            ArrayBuilder<ILCodeLabel> fieldGetters = default(ArrayBuilder<ILCodeLabel>);
             foreach (FieldDesc field in owningType.GetFields())
             {
                 if (field.IsStatic)
@@ -120,7 +120,7 @@ namespace Internal.IL.Stubs
             }
 
             switchStream.EmitLdc(fieldGetters.Count);
-            
+
             switchStream.Emit(ILOpcode.ret);
 
             return emitter.Link(this);

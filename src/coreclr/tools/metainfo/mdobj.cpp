@@ -272,21 +272,26 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
 
     // print bar that separates different files
     pDisplayString("////////////////////////////////////////////////////////////////\n");
-    WCHAR rcFname[_MAX_FNAME], rcExt[_MAX_EXT];
 
-    _wsplitpath_s(szFile, NULL, 0, NULL, 0, rcFname, _MAX_FNAME, rcExt, _MAX_EXT);
-    sprintf_s(szString,1024,"\nFile %S%S: \n",rcFname, rcExt);
+    WCHAR *pExt = wcsrchr(szFile, W('.'));
+    WCHAR *pFname = wcsrchr(szFile, DIRECTORY_SEPARATOR_CHAR_W);
+    if (pFname == NULL)
+    {
+        pFname = szFile;
+    }
+
+    sprintf_s(szString,1024,"\nFile %S: \n",pFname);
     pDisplayString(szString);
 
     if (DumpFilter & MDInfo::dumpValidate)
     {
-        if (!_wcsicmp(rcExt, OBJ_EXT_W) || !_wcsicmp(rcExt, LIB_EXT_W))
+        if (pExt && (!_wcsicmp(pExt, OBJ_EXT_W) || !_wcsicmp(pExt, LIB_EXT_W)))
             g_ValModuleType = ValidatorModuleTypeObj;
         else
             g_ValModuleType = ValidatorModuleTypePE;
     }
 
-    if (!_wcsicmp(rcExt, LIB_EXT_W))
+    if (pExt && !_wcsicmp(pExt, LIB_EXT_W))
         DisplayArchive(szFile, DumpFilter, szObjName, pDisplayString);
     else
     {

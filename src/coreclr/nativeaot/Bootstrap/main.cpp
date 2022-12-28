@@ -94,7 +94,6 @@ static char& __unbox_z = __stop___unbox;
 #endif // _MSC_VER
 
 extern "C" bool RhInitialize();
-extern "C" void RhpEnableConservativeStackReporting();
 extern "C" void RhpShutdown();
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
@@ -113,6 +112,11 @@ extern "C" void OnFirstChanceException();
 extern "C" void OnUnhandledException();
 extern "C" void IDynamicCastableIsInterfaceImplemented();
 extern "C" void IDynamicCastableGetInterfaceImplementation();
+#ifdef FEATURE_OBJCMARSHAL
+extern "C" void ObjectiveCMarshalTryGetTaggedMemory();
+extern "C" void ObjectiveCMarshalGetIsTrackedReferenceCallback();
+extern "C" void ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
+#endif
 
 typedef void(*pfn)();
 
@@ -127,6 +131,15 @@ static const pfn c_classlibFunctions[] = {
     &OnUnhandledException,
     &IDynamicCastableIsInterfaceImplemented,
     &IDynamicCastableGetInterfaceImplementation,
+#ifdef FEATURE_OBJCMARSHAL
+    &ObjectiveCMarshalTryGetTaggedMemory,
+    &ObjectiveCMarshalGetIsTrackedReferenceCallback,
+    &ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
+#else
+    nullptr,
+    nullptr,
+    nullptr,
+#endif
 };
 
 #ifndef _countof
@@ -151,8 +164,6 @@ static int InitializeRuntime()
 {
     if (!RhInitialize())
         return -1;
-
-    // RhpEnableConservativeStackReporting();
 
     void * osModule = PalGetModuleHandleFromPointer((void*)&NATIVEAOT_ENTRYPOINT);
 

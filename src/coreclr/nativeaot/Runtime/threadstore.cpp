@@ -210,12 +210,8 @@ void ThreadStore::UnlockThreadStore()
 // when iteration == -1, only usecLimit is used
 void SpinWait(int iteration, int usecLimit)
 {
-    LARGE_INTEGER li;
-    PalQueryPerformanceCounter(&li);
-    int64_t startTicks = li.QuadPart;
-
-    PalQueryPerformanceFrequency(&li);
-    int64_t ticksPerSecond = li.QuadPart;
+    int64_t startTicks = PalQueryPerformanceCounter();
+    int64_t ticksPerSecond = PalQueryPerformanceFrequency();
     int64_t endTicks = startTicks + (usecLimit * ticksPerSecond) / 1000000;
 
     int l = min((unsigned)iteration, 30);
@@ -226,8 +222,7 @@ void SpinWait(int iteration, int usecLimit)
             System_YieldProcessor();
         }
 
-        PalQueryPerformanceCounter(&li);
-        int64_t currentTicks = li.QuadPart;
+        int64_t currentTicks = PalQueryPerformanceCounter();
         if (currentTicks > endTicks)
         {
             break;
@@ -346,8 +341,6 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     UnlockThreadStore();
 } // ResumeAllThreads
 
-#ifndef DACCESS_COMPILE
-
 void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
 {
     SuspendAllThreads(/* waitForGCEvent = */ false);
@@ -420,24 +413,11 @@ COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, (void* thread))
     GetThreadStore()->CancelThreadAbort((Thread*)thread);
 }
 
-#endif // DACCESS_COMPILE
-
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
-EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread;
-DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
-{
-    { 0 },                              // m_rgbAllocContextBuffer
-    Thread::TSF_Unknown,                // m_ThreadStateFlags
-    TOP_OF_STACK_MARKER,                // m_pTransitionFrame
-    TOP_OF_STACK_MARKER,                // m_pDeferredTransitionFrame
-    0,                                  // m_pCachedTransitionFrame
-    0,                                  // m_pNext
-    INVALID_HANDLE_VALUE,               // m_hPalThread
-    0,                                  // m_ppvHijackedReturnAddressLocation
-    0,                                  // m_pvHijackedReturnAddress
-    0,                                  // all other fields are initialized by zeroes
-};
+#ifndef _MSC_VER
+__thread ThreadBuffer tls_CurrentThread;
+#endif
 
 EXTERN_C ThreadBuffer* RhpGetThread()
 {
@@ -538,7 +518,7 @@ bool ThreadStore::GetExceptionsForCurrentThread(Array* pOutputArray, int32_t* pW
     }
 
     // No input array provided, or it was of the wrong kind.  We'll fill out the count and return false.
-    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->get_ComponentSize() != POINTER_SIZE))
+    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->RawGetComponentSize() != POINTER_SIZE))
         goto Error;
 
     // Input array was not big enough.  We don't even partially fill it.
