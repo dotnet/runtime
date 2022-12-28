@@ -157,7 +157,15 @@ namespace System.Collections.Generic
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public static partial class ComparerFactory
     {
-        // Comparison using lexicographic ordering
+        /// <summary>
+        /// Creates an <see cref="IComparer{TEnumerable}"/> which computes the comparison by
+        /// using the provided <paramref name="elementComparer"/> on each element of the enumerables to compare, using lexicographic ordering.
+        /// </summary>
+        /// <typeparam name="TEnumerable">Type of the enumerables to compare</typeparam>
+        /// <typeparam name="T">Type of the elements in the enumerables to compare</typeparam>
+        /// <param name="elementComparer">The comparer used to compute the elements comparison.
+        /// If no comparer is provided, the default comparer for <typeparamref name="T"/> is used (see <see cref="Comparer{T}.Default"/>).</param>
+        /// <returns>The new comparer</returns>
         public static IComparer<TEnumerable> CreateEnumerableComparer<TEnumerable, T>(IComparer<T>? elementComparer = null)
             where TEnumerable : IEnumerable<T> =>
             new EnumerableComparer<TEnumerable, T>(elementComparer);

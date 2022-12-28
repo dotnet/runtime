@@ -264,15 +264,44 @@ namespace System.Collections.Generic
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public static class EqualityComparer
     {
-        // Equality comparison using sequence equality
+        /// <summary>
+        /// Creates an <see cref="IEqualityComparer{TEnumerable}"/> which computes the equality comparison by
+        /// using sequentially the provided <paramref name="elementComparer"/> on each element of the enumerables to compare.
+        /// </summary>
+        /// <typeparam name="TEnumerable">Type of the enumerables to compare</typeparam>
+        /// <typeparam name="T">Type of the elements in the enumerables to compare</typeparam>
+        /// <param name="elementComparer">The comparer used to compute the sequential equality.
+        /// If no comparer is provided, the default comparer for <typeparamref name="T"/> is used (see <see cref="EqualityComparer{T}.Default"/>).</param>
+        /// <returns>The new equality comparer</returns>
         public static IEqualityComparer<TEnumerable> CreateEnumerableComparer<TEnumerable, T>(IEqualityComparer<T>? elementComparer = null)
             where TEnumerable : IEnumerable<T> =>
             new EnumerableEqualityComparer<TEnumerable, T>(elementComparer);
 
+        /// <summary>
+        /// Creates an <see cref="IEqualityComparer{TSet}"/> which computes the equality comparison by
+        /// using the provided <paramref name="elementComparer"/> between the elements of the sets to compare.
+        /// </summary>
+        /// <typeparam name="TSet">Type of the sets to compare</typeparam>
+        /// <typeparam name="T">Type of the elements in the sets to compare</typeparam>
+        /// <param name="elementComparer">The comparer used to compute the sets equality.
+        /// If no comparer is provided, the default comparer for <typeparamref name="T"/> is used (see <see cref="EqualityComparer{T}.Default"/>).</param>
+        /// <returns>The new equality comparer</returns>
         public static IEqualityComparer<TSet> CreateSetComparer<TSet, T>(IEqualityComparer<T>? elementComparer = null)
             where TSet : IReadOnlySet<T> =>
             new SetEqualityComparer<TSet, T>(elementComparer);
 
+        /// <summary>
+        /// Creates an <see cref="IEqualityComparer{TDictionary}"/> which computes the equality comparison by
+        /// using the provided <paramref name="keyComparer"/> (resp. <paramref name="valueComparer"/>) between the keys (resp. values) of the dictionaries to compare.
+        /// </summary>
+        /// <typeparam name="TDictionary">Type of the dictionaries to compare</typeparam>
+        /// <typeparam name="TKey">Type of the keys in the dictionaries to compare</typeparam>
+        /// <typeparam name="TValue">Type fo the values in the dictionaries to compare</typeparam>
+        /// <param name="keyComparer">>The comparer used to compute the equality of dictionary keys.
+        /// If no comparer is provided, the default comparer for <typeparamref name="TKey"/> is used (see <see cref="EqualityComparer{T}.Default"/>).</param>
+        /// <param name="valueComparer">>The comparer used to compute the equality of dictionary values.
+        /// If no comparer is provided, the default comparer for <typeparamref name="TValue"/> is used (see <see cref="EqualityComparer{T}.Default"/>).</param>
+        /// <returns>The new equality comparer</returns>
         public static IEqualityComparer<TDictionary> CreateDictionaryComparer<TDictionary, TKey, TValue>(IEqualityComparer<TKey>? keyComparer = null, IEqualityComparer<TValue>? valueComparer = null)
             where TDictionary : IReadOnlyDictionary<TKey, TValue> =>
             new DictionaryEqualityComparer<TDictionary, TKey, TValue>(keyComparer, valueComparer);
