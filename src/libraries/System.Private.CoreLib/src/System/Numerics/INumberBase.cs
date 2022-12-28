@@ -166,9 +166,9 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="value" /> is NaN; otherwise, <c>false</c>.</returns>
         static abstract bool IsNaN(TSelf value);
 
-        /// <summary>Determines if a value is negative.</summary>
+        /// <summary>Determines if a value represents a negative real number.</summary>
         /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if <paramref name="value" /> represents a negative real number; otherwise, <c>false</c>.</returns>
         /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsPositive(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</remarks>
         static abstract bool IsNegative(TSelf value);
 
@@ -191,9 +191,9 @@ namespace System.Numerics
         /// </remarks>
         static abstract bool IsOddInteger(TSelf value);
 
-        /// <summary>Determines if a value is positive.</summary>
+        /// <summary>Determines if a value represents zero or a positive real number.</summary>
         /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is positive; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if <paramref name="value" /> represents zero or a positive real number; otherwise, <c>false</c>.</returns>
         /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsNegative(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</remarks>
         static abstract bool IsPositive(TSelf value);
 
