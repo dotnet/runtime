@@ -39,7 +39,7 @@ namespace System.Text.RegularExpressions.Tests
             // but be unable to make the fix when requested.
             // Such test cases need to indicate that an iteration is expected
             // even though no fix is made.
-            if (expectedNumberOfIterations > 0)
+            if (expectedNumberOfIterations != -1)
             {
                 test.NumberOfIncrementalIterations = expectedNumberOfIterations;
             }
