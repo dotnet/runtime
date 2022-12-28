@@ -118,19 +118,27 @@ namespace ILCompiler
 
             private void ProcessResources(XPathNavigator nav)
             {
-                foreach (XPathNavigator child in nav.SelectChildren("resource", ""))
+                foreach (XPathNavigator resourceNav in nav.SelectChildren("resource", ""))
                 {
-                    if (GetAttribute(child, "action") == "remove")
-                    {
-                        _substitutions.Add(GetAttribute(child, "name"));
-                    }
-                }
-            }
+                    if (!ShouldProcessElement(resourceNav))
+                        continue;
 
-            protected override void ProcessAssemblies(XPathNavigator nav)
-            {
-                base.ProcessAssemblies(nav);
-                ProcessResources(nav);
+                    string name = GetAttribute(resourceNav, "name");
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        //LogWarning(resourceNav, DiagnosticId.XmlMissingNameAttributeInResource);
+                        continue;
+                    }
+
+                    string action = GetAttribute(resourceNav, "action");
+                    if (action != "remove")
+                    {
+                        //LogWarning(resourceNav, DiagnosticId.XmlInvalidValueForAttributeActionForResource, action, name);
+                        continue;
+                    }
+
+                    _substitutions.Add(name);
+                }
             }
 
             protected override void ProcessAssembly(ModuleDesc assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
@@ -138,6 +146,7 @@ namespace ILCompiler
                 ProcessResources(nav);
             }
 
+            // Should not be resolving types. That's useless work.
             protected override void ProcessType(TypeDesc type, XPathNavigator nav) => throw new System.NotImplementedException();
         }
     }
