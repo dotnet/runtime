@@ -8737,6 +8737,7 @@ namespace System.Globalization
     public sealed partial class NumberFormatInfo : System.ICloneable, System.IFormatProvider
     {
         public NumberFormatInfo() { }
+        public bool AllowHyphenDuringParsing { get { throw null; } }
         public int CurrencyDecimalDigits { get { throw null; } set { } }
         public string CurrencyDecimalSeparator { get { throw null; } set { } }
         public string CurrencyGroupSeparator { get { throw null; } set { } }
@@ -10307,6 +10308,12 @@ namespace System.Numerics
         static abstract TResult operator >=(TSelf left, TOther right);
         static abstract TResult operator <(TSelf left, TOther right);
         static abstract TResult operator <=(TSelf left, TOther right);
+    }
+    public partial interface IDecimalFloatingPointIeee754<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IFloatingPointIeee754<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IDecimalFloatingPointIeee754<TSelf>
+    {
+        static abstract TSelf Quantize(TSelf x, TSelf y);
+        static abstract TSelf Quantum(TSelf x);
+        static abstract bool SameQuantum(TSelf x, TSelf y);
     }
     public partial interface IDecrementOperators<TSelf> where TSelf : System.Numerics.IDecrementOperators<TSelf>?
     {

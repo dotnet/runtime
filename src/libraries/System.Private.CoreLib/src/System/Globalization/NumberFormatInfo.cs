@@ -136,7 +136,7 @@ namespace System.Globalization
         }
 
         internal bool HasInvariantNumberSigns => _hasInvariantNumberSigns;
-        internal bool AllowHyphenDuringParsing => _allowHyphenDuringParsing;
+        public bool AllowHyphenDuringParsing => _allowHyphenDuringParsing;
 
         private void InitializeInvariantAndNegativeSignFlags()
         {

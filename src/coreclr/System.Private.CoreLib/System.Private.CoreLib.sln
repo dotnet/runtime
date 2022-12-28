@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28902.138
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.32818.431
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "System.Private.CoreLib.csproj", "{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}"
 EndProject
@@ -9,10 +9,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib.Generators", "..\..\libraries\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj", "{7196828B-5E00-4BC6-9A1E-492C948E41A3}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		..\..\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems*{3da06c3a-2e7b-4cb7-80ed-9b12916013f9}*SharedItemsImports = 5
-		..\..\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems*{845c8b26-350b-4e63-bd11-2c8150444e28}*SharedItemsImports = 13
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Checked|amd64 = Checked|amd64
 		Checked|Any CPU = Checked|Any CPU
@@ -94,5 +90,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DA05075A-7CDA-4F65-AF6A-CB5DB6CF936F}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\..\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems*{845c8b26-350b-4e63-bd11-2c8150444e28}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

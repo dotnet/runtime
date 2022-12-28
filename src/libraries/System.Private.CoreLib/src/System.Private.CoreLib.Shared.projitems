@@ -2500,6 +2500,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryNumber.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBitwiseOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IComparisonOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IDecimalFloatingPointIeee754.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IDecrementOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IDivisionOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IEqualityOperators.cs" />
