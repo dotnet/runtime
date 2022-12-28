@@ -567,9 +567,9 @@ namespace ILCompiler
 
             Debug.Assert(methodIL != null || method.IsAbstract || method.IsPInvoke || method.IsInternalCall);
 
-            if (methodIL != null && scanReflection)
+            if (scanReflection)
             {
-                if (FlowAnnotations.RequiresDataflowAnalysis(method))
+                if (methodIL != null && FlowAnnotations.RequiresDataflowAnalysis(method))
                 {
                     AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
                 }
