@@ -7053,6 +7053,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
 
     unsigned actualCodeSize = emitCurCodeOffs(cp);
+    BYTE* tempMem = emitComp->getAllocator(CMK_InstDesc).allocate<BYTE>(actualCodeSize);
+    memcpy(tempMem, codeBlock + writeableOffset, actualCodeSize);
 
 #if defined(TARGET_ARM64)
     assert(emitTotalCodeSize == actualCodeSize);
