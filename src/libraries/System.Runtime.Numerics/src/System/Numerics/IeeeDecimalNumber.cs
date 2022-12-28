@@ -75,14 +75,14 @@ namespace System.Numerics
 #endif // DEBUG
             }
 
-            public byte* GetDigitsPointer() // TODO this is complaining that the method could be static, but it is wrong
+            public byte* GetDigitsPointer()
             {
                 // This is safe to do since we are a ref struct
                 return (byte*)(Unsafe.AsPointer(ref Digits[0]));
             }
 
             //
-            // Code coverage note: This only exists so that Number displays nicely in the VS watch window. So yes, I know it works.
+            // Code coverage note: This only exists so that IeeeDecimalNumber displays nicely in the VS watch window. So yes, I know it works.
             //
             public override string ToString()
             {
@@ -116,7 +116,6 @@ namespace System.Numerics
 
         // IeeeDecimalNumber Parsing
 
-        // TODO potentially rewrite this description
         // The Parse methods provided by the numeric classes convert a
         // string to a numeric value. The optional style parameter specifies the
         // permitted style of the numeric string. It must be a combination of bit flags
@@ -132,13 +131,12 @@ namespace System.Numerics
         // specified. Note, however, that the Parse methods do not accept
         // NaNs or Infinities.
 
-
         // Max and Min Exponent assuming the value is in the form 0.Mantissa x 10^Exponent
         private const int Decimal32MaxExponent = Decimal32.MaxQExponent + Decimal32.Precision; // TODO check this
-        private const int Decimal32MinExponent = Decimal32.MinQExponent + Decimal32.Precision; // TODO check this, probably wrong
+        private const int Decimal32MinExponent = Decimal32.MinQExponent + Decimal32.Precision; // TODO check this, possibly wrong
 
         [DoesNotReturn]
-        internal static void ThrowFormatException(ReadOnlySpan<char> value) => throw new FormatException(/*SR.Format(SR.Format_InvalidStringWithValue,*/ value.ToString()/*)*/);
+        internal static void ThrowFormatException(ReadOnlySpan<char> value) => throw new FormatException(/*SR.Format(SR.Format_InvalidStringWithValue,*/ value.ToString()/*)*/); // TODO get this to work
 
         internal static Decimal32 ParseDecimal32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
@@ -246,7 +244,7 @@ namespace System.Numerics
             // For compatibility, we need to allow trailing zeros at the end of a number string
             value.Slice(index).IndexOfAnyExcept('\0') < 0;
 
-        // This is almost a direct copy paste of the one in Number.Parsing.cs
+        // Note: this is copy pasted and adjusted from Number.Parsing.cs in System.Private.CoreLib
         private static unsafe bool TryParseNumber(scoped ref char* str, char* strEnd, NumberStyles styles, ref IeeeDecimalNumberBuffer number, NumberFormatInfo info)
         {
             Debug.Assert(str != null);
@@ -329,7 +327,7 @@ namespace System.Numerics
             int digCount = 0;
             int digEnd = 0;
             int maxDigCount = number.Digits.Length - 1;
-            // int numberOfTrailingZeros = 0;
+            // int numberOfTrailingZeros = 0; TODO delete this comment
 
             while (true)
             {
@@ -342,6 +340,7 @@ namespace System.Numerics
                         if (digCount < maxDigCount)
                         {
                             number.Digits[digCount] = (byte)(ch);
+                            // TODO delete this comment
                             //if ((ch != '0') || (number.Kind != NumberBufferKind.Integer)) // number.Kind will always not be Integer
                             //{
                                 digEnd = digCount + 1;
@@ -367,7 +366,7 @@ namespace System.Numerics
                         if (digCount < maxDigCount)
                         {
                             // Handle a case like "53.0". We need to ignore trailing zeros in the fractional part for floating point numbers, so we keep a count of the number of trailing zeros and update digCount later
-                            // Note: I deleted this case because we care about trailing zeros for IEEE decimals
+                            // // TODO delete this comment: I removed this case because we care about trailing zeros for IEEE decimals
                             /* if (ch == '0')
                             {
                                 numberOfTrailingZeros++;
@@ -448,19 +447,24 @@ namespace System.Numerics
                     }
                 }
 
-                if (/*number.Kind == NumberBufferKind.FloatingPoint && // <- this will always be true */!number.HasNonZeroTail)
+
+                // TODO delete this comment: I removed this case because we care about trailing zeros for IEEE decimals
+                /*
+                if (number.Kind == NumberBufferKind.FloatingPoint &&
+                !number.HasNonZeroTail)
                 {
                     // Adjust the number buffer for trailing zeros
-                    // Note: I deleted this case because we care about trailing zeros for IEEE decimals
-                    /*int numberOfFractionalDigits = digEnd - number.Scale;
+
+                    int numberOfFractionalDigits = digEnd - number.Scale;
                     if (numberOfFractionalDigits > 0)
                     {
                         numberOfTrailingZeros = Math.Min(numberOfTrailingZeros, numberOfFractionalDigits);
                         Debug.Assert(numberOfTrailingZeros >= 0);
                         number.DigitsCount = digEnd - numberOfTrailingZeros;
                         number.Digits[number.DigitsCount] = (byte)('\0');
-                    }*/
+                    }
                 }
+                */
 
                 while (true)
                 {
@@ -694,6 +698,6 @@ namespace System.Numerics
             }
         }
 
-        // IeeeDecimalNumber Formatting
+        // IeeeDecimalNumber Formatting TODO
     }
 }

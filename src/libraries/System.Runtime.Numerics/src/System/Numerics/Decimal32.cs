@@ -27,7 +27,6 @@ namespace System.Numerics
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands; // TODO is this correct?
 
         // Constants for manipulating the private bit-representation
-        // TODO I think adding masks that help us "triage" the type of encoding will be useful.
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
@@ -40,22 +39,6 @@ namespace System.Numerics
         internal const uint TrailingSignificandMask = 0x000F_FFFF;
         internal const int TrailingSignificandWidth = 20;
 
-        // TODO figure out if these three are useful, I don't think they are
-        internal const uint ClassificationMask = 0x7C00_0000;
-        internal const uint NaNMask = 0x7C00_0000;
-        internal const uint InfinityMask = 0x7800_0000;
-
-
-        // Significands are encoded based on this bit
-        internal const uint SignificandEncodingTypeMask = 0x0080_0000;
-
-        // Finite numbers are classified based on these bits
-        internal const uint FiniteNumberClassifictionMask = 0x6000_0000;
-
-        // TODO I think these might be useless in Decimal
-        /*        internal const ushort MinCombination = 0x0000;
-                internal const ushort MaxCombination = 0x07FF;*/
-
         internal const sbyte EMax = 96;
         internal const sbyte EMin = -95;
 
@@ -67,6 +50,20 @@ namespace System.Numerics
 
         internal const int MaxSignificand = 9999999;
         internal const int MinSignificand = -9999999;
+
+        // The 5 bits that classify the value as NaN, Infinite, or Finite
+        // If the Classification bits are set to 11111, the value is NaN
+        // If the Classification bits are set to 11110, the value is Infinite
+        // Otherwise, the value is Finite
+        internal const uint ClassificationMask = 0x7C00_0000;
+        internal const uint NaNMask = 0x7C00_0000;
+        internal const uint InfinityMask = 0x7800_0000;
+
+        // If the Classification bits are set to 11XXX, we encode the significand one way. Otherwise, we encode it a different way
+        internal const uint FiniteNumberClassificationMask = 0x6000_0000;
+
+        // Finite significands are encoded in two different ways. Encoding type can be selected based on whether or not this bit is set in the decoded significand.
+        internal const uint SignificandEncodingTypeMask = 0x0080_0000;
 
         // Constants representing the private bit-representation for various default values.
         // See either IEEE-754 2019 section 3.5 or https://en.wikipedia.org/wiki/Decimal32_floating-point_format for a breakdown of the encoding.
@@ -162,8 +159,10 @@ namespace System.Numerics
         // c. Significand, set to 1.
         //
         // Encoded value:         1 x 10^0
+
         private const uint PositiveOneBits = 0x3280_0001;
         private const uint NegativeOneBits = SignMask | PositiveOneBits;
+
         /*
                 private const uint EBits = 0; // TODO
                 private const uint PiBits = 0; // TODO
@@ -199,9 +198,9 @@ namespace System.Numerics
 
         public static Decimal32 Zero => new Decimal32(PositiveZeroBits);                    // -0E-101
 
-        public static Decimal32 AdditiveIdentity => new Decimal32(PositiveZeroBits); // TODO do we want to make sure this is a zero such that the quantum of any other value is preserved on addition?
+        public static Decimal32 AdditiveIdentity => new Decimal32(PositiveZeroBits); // TODO make sure this is a zero such that the quantum of any other value is preserved on addition
 
-        public static Decimal32 MultiplicativeIdentity => new Decimal32(PositiveZeroBits); // TODO do we want to make sure this is a zero such that the quantum of any other value is preserved on addition?
+        public static Decimal32 MultiplicativeIdentity => new Decimal32(PositiveZeroBits); // TODO make sure this is a zero such that the quantum of any other value is preserved on multiplication
 
         internal readonly uint _value; // TODO: Single places this at the top, Half places it here. Also, Single has this as private, Half has it as internal. What do we want?
 
@@ -233,8 +232,6 @@ namespace System.Numerics
                 // We are encoding a significand that has the most significand 4 bits set to 0xyz
                 combination |= (uint)(q + ExponentBias) << 3;
                 combination |= 0b0111 & (c >> TrailingSignificandWidth); // combination = (biased_exponent, xyz)
-
-
             }
             else
             {
@@ -276,7 +273,6 @@ namespace System.Numerics
         {
             get
             {
-                Debug.Assert(IsFinite(this)); // TODO NaN and Inf might want to use this
                 return _value & TrailingSignificandMask;
             }
         }
@@ -287,7 +283,7 @@ namespace System.Numerics
             ushort combination = (ushort)((bits >> CombinationShift) & ShiftedCombinationMask);
 
             // Two types of encodings for finite numbers
-            if ((bits & FiniteNumberClassifictionMask) == FiniteNumberClassifictionMask)
+            if ((bits & FiniteNumberClassificationMask) == FiniteNumberClassificationMask)
             {
                 // G0 and G1 are 11, exponent is stored in G2:G(CombinationWidth - 1)
                 return (byte)(combination >> 1);
@@ -299,14 +295,14 @@ namespace System.Numerics
             }
         }
 
-        // TODO this returns garbage for Inf and NaN
+        // returns garbage for infinity and NaN, TODO maybe fix this
         internal static uint ExtractSignificandFromBits(uint bits)
         {
             ushort combination = (ushort)((bits >> CombinationShift) & ShiftedCombinationMask);
 
             // Two types of encodings for finite numbers
             uint significand;
-            if ((bits & FiniteNumberClassifictionMask) == FiniteNumberClassifictionMask)
+            if ((bits & FiniteNumberClassificationMask) == FiniteNumberClassificationMask)
             {
                 // G0 and G1 are 11, 4 MSBs of significand are 100x, where x is G(CombinationWidth)
                 significand = (uint)(0b1000 | (combination & 0b1));
