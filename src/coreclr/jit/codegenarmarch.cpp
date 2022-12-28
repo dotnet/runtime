@@ -659,12 +659,17 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
     // Both operand and its result must be of the same floating point type.
-    GenTree* srcNode = treeNode->AsOp()->gtOp1;
-    assert(varTypeIsFloating(srcNode));
-    assert(srcNode->TypeGet() == treeNode->TypeGet());
+    GenTree* srcNode = treeNode->gtGetOp1();
 
-    // Only a subset of functions are treated as math intrinsics.
-    //
+#ifdef DEBUG
+    if ((treeNode->gtIntrinsicName > NI_SYSTEM_MATH_START) && (treeNode->gtIntrinsicName < NI_SYSTEM_MATH_END))
+    {
+        assert(varTypeIsFloating(srcNode));
+        assert(srcNode->TypeGet() == treeNode->TypeGet());
+    }
+#endif // DEBUG
+
+    // Handle intrinsics that can be implemented by target-specific instructions
     switch (treeNode->gtIntrinsicName)
     {
         case NI_System_Math_Abs:
@@ -696,13 +701,13 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
         case NI_System_Math_Max:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitIns_R_R_R(INS_fmax, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
-                                        treeNode->gtGetOp1()->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
+                                        srcNode->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
             break;
 
         case NI_System_Math_Min:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitIns_R_R_R(INS_fmin, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
-                                        treeNode->gtGetOp1()->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
+                                        srcNode->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
             break;
 #endif // TARGET_ARM64
 
