@@ -56,7 +56,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 // GVM analysis happens on canonical forms, but this is potentially injecting new genericness
                 // into the system. Ensure reflection analysis can still see this.
-                factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, _targetMethod, methodIL: null);
+                if (_targetMethod.IsAbstract)
+                    factory.MetadataManager.GetDependenciesDueToMethodCodePresence(ref dependencies, factory, _targetMethod, methodIL: null);
             }
 
             factory.MetadataManager.GetDependenciesDueToLdToken(ref dependencies, factory, _targetMethod);
