@@ -5,7 +5,6 @@
 // If these types lived in the System namespace, these methods would live in Number.Parsing.cs and Number.Formatting.cs,
 // just like Single, Double, and Half.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;

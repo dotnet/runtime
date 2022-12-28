@@ -421,6 +421,9 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 Cos(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Cosh(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 CosPi(System.Numerics.Decimal32 x) { throw null; }
+        public static System.Numerics.Decimal32 CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Decimal32 CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Decimal32 CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool Equals(System.Numerics.Decimal32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Numerics.Decimal32 Exp(System.Numerics.Decimal32 x) { throw null; }
@@ -476,8 +479,10 @@ namespace System.Numerics
         public static System.Numerics.Decimal32 operator -(System.Numerics.Decimal32 left, System.Numerics.Decimal32 right) { throw null; }
         public static System.Numerics.Decimal32 operator -(System.Numerics.Decimal32 value) { throw null; }
         public static System.Numerics.Decimal32 operator +(System.Numerics.Decimal32 value) { throw null; }
-        public static System.Numerics.Decimal32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Decimal32 Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Numerics.Decimal32 Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Decimal32 Parse(string s) { throw null; }
+        public static System.Numerics.Decimal32 Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Numerics.Decimal32 Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal32 Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Decimal32 Pow(System.Numerics.Decimal32 x, System.Numerics.Decimal32 y) { throw null; }
@@ -496,9 +501,9 @@ namespace System.Numerics
         static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertFromChecked<TOther>(TOther value, out System.Numerics.Decimal32 result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertFromSaturating<TOther>(TOther value, out System.Numerics.Decimal32 result) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertFromTruncating<TOther>(TOther value, out System.Numerics.Decimal32 result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToChecked<TOther>(System.Numerics.Decimal32 value, out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToSaturating<TOther>(System.Numerics.Decimal32 value, out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToTruncating<TOther>(System.Numerics.Decimal32 value, out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToChecked<TOther>(System.Numerics.Decimal32 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToSaturating<TOther>(System.Numerics.Decimal32 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Decimal32>.TryConvertToTruncating<TOther>(System.Numerics.Decimal32 value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         public static System.Numerics.Decimal32 Tan(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 Tanh(System.Numerics.Decimal32 x) { throw null; }
         public static System.Numerics.Decimal32 TanPi(System.Numerics.Decimal32 x) { throw null; }
@@ -506,8 +511,10 @@ namespace System.Numerics
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out System.Numerics.Decimal32 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out System.Numerics.Decimal32 result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Numerics.Decimal32 result) { throw null; }
         public bool TryWriteExponentBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryWriteExponentLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryWriteSignificandBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }

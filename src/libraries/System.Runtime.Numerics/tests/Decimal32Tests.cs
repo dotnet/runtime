@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -270,7 +269,7 @@ namespace System.Numerics.Tests
                 Assert.Throws(exceptionType, () => Decimal32.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(Decimal32.TryParse(value.AsSpan(), style, provider, out Decimal32 result));
-                Assert.Equal(default(Decimal32), result); // TODO is this right?
+                Assert.Equal(default(Decimal32), result);
             }
         }
     }

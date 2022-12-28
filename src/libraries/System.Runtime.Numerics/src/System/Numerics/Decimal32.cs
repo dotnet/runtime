@@ -1118,9 +1118,14 @@ namespace System.Numerics
         public bool TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
         public bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
 
-        public static Decimal32 operator +(Decimal32 value) => throw new NotImplementedException();
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        public static Decimal32 operator +(Decimal32 value) => value;
+
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         public static Decimal32 operator +(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static Decimal32 operator -(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
+        public static Decimal32 operator -(Decimal32 value) => Negate(value);
         public static Decimal32 operator -(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
         public static Decimal32 operator ++(Decimal32 value) => throw new NotImplementedException();
         public static Decimal32 operator --(Decimal32 value) => throw new NotImplementedException();
