@@ -48,7 +48,7 @@ public:
     static PTR_Thread       GetSuspendingThread();
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);
-    static void             DetachCurrentThread(bool shutdownStarted);
+    static void             DetachCurrentThread();
 #ifndef DACCESS_COMPILE
     static void             SaveCurrentThreadOffsetForDAC();
     void                    InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort);

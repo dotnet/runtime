@@ -148,7 +148,7 @@ void ThreadStore::AttachCurrentThread()
     AttachCurrentThread(true);
 }
 
-void ThreadStore::DetachCurrentThread(bool shutdownStarted)
+void ThreadStore::DetachCurrentThread()
 {
     // The thread may not have been initialized because it may never have run managed code before.
     Thread * pDetachingThread = RawGetCurrentThread();
@@ -166,20 +166,13 @@ void ThreadStore::DetachCurrentThread(bool shutdownStarted)
 
     {
         // remove the thread from the list.
-        // this must be done even when shutdown is in progress.
-        // departing threads will be releasing their TLS storage and if not removed,
-        // will corrupt the thread list, while some prior to shutdown detach might still be in progress.
+        // Note that when process is shutting down, the threads may be rudely terminated,
+        // possibly while holding the threadstore lock. That is ok, since the process will soon be gone.
         ThreadStore* pTS = GetThreadStore();
         ReaderWriterLock::WriteHolder write(&pTS->m_Lock);
         ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
         pDetachingThread->Detach();
-    }
-
-    // the rest of cleanup is not necessary if we are shutting down.
-    if (shutdownStarted)
-    {
-        return;
     }
 
     pDetachingThread->Destroy();
@@ -190,7 +183,7 @@ void ThreadStore::DetachCurrentThread(bool shutdownStarted)
 // released.  This way, the GC always enumerates a consistent set of threads each time
 // it enumerates threads between SuspendAllThreads and ResumeAllThreads.
 //
-// @TODO: Investigate if this requirement is actually necessary.  Threads already may
+// @TODO:  Investigate if this requirement is actually necessary.  Threads already may
 // not enter managed code during GC, so if new threads are added to the thread store,
 // but haven't yet entered managed code, is that really a problem?
 //

@@ -444,11 +444,10 @@ static void UninitDLL()
 }
 
 // This is set to the thread that initiates and performs the shutdown and needs to run
-// while other threads are rudely terminated.
-// 
-// On many POSIX OSes a process lives as long as any thread lives or until
+// while other threads are rudely terminated. So far this is a Windows-specific concern.
+// On POSIX OSes a process typically lives as long as any of its threads lives or until
 // the process is terminated via `exit()` or a signal.
-// Thus there is no distinction between threads and this is never set.
+// Thus there is no distinction between threads and g_threadPerformingShutdown is never set.
 volatile Thread* g_threadPerformingShutdown = NULL;
 
 static void DllThreadDetach()
@@ -488,17 +487,18 @@ void RuntimeThreadShutdown(void* thread)
 #else
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
-    // Do not do shutdown for the thread that performs the shutdown.
-    // other threads could already be terminated rudely and could leave TLS locked
+    // Do not try detaching the thread that performs the shutdown.
     if (g_threadPerformingShutdown != nullptr)
     {
         ASSERT(g_threadPerformingShutdown == thread);
+        // At this point other threads are gone and could be terminated rudely while leaving runtime
+        // in inconsistent state, so we would be risking blocking the process from exiting.
         return;
     }
 
 #endif
 
-    ThreadStore::DetachCurrentThread(g_threadPerformingShutdown != NULL);
+    ThreadStore::DetachCurrentThread();
 }
 
 extern "C" bool RhInitialize()
