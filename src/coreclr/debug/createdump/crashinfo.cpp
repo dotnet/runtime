@@ -748,7 +748,7 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         // https://www.kernel.org/doc/Documentation/vm/pagemap.txt
         if (m_fdPagemap == -1)
         {
-            // Weren't able to open pagemap file, so don't run this check
+            // Weren't able to open pagemap file or the user explicitly disabled it, so don't run this check.
             // Expected on kernels 4.0 and 4.1 as we need CAP_SYS_ADMIN to open /proc/pid/pagemap
             // On kernels after 4.2 we only need PTRACE_MODE_READ_FSCREDS as we are ok with zeroed PFNs
             return true;

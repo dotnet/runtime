@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include <clrconfignocache.h>
 
 #ifndef PT_ARM_EXIDX
 #define PT_ARM_EXIDX   0x70000001      /* See llvm ELF.h */
@@ -36,12 +37,23 @@ CrashInfo::Initialize()
         return false;
     }
 
-    char pagemapPath[128];
-    _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%lu/pagemap", m_pid);
-    m_fdPagemap = open(pagemapPath, O_RDONLY);
-    if (m_fdPagemap == -1)
+    CLRConfigNoCache disablePagemapUse = CLRConfigNoCache::Get("DbgDisablePagemapUse", /*noprefix*/ false, &getenv);
+    DWORD val = 0;
+
+    if (disablePagemapUse.IsSet() && disablePagemapUse.TryAsInteger(10, val) && val == 1)
     {
-        TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        TRACE("DbgDisablePagemapUse detected, will skip checking page for committed memory in memory enumeration.\n");
+        m_fdPagemap = -1;
+    }
+    else
+    {
+        char pagemapPath[128];
+        _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%lu/pagemap", m_pid);
+        m_fdPagemap = open(pagemapPath, O_RDONLY);
+        if (m_fdPagemap == -1)
+        {
+            TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        }
     }
 
     // Get the process info
