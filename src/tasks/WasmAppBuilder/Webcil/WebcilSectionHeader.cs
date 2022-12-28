@@ -6,18 +6,17 @@ using System.Runtime.InteropServices;
 namespace Microsoft.WebAssembly.Build.Tasks.WebCil;
 
 /// <summary>
-/// This is System.Reflection.PortableExecutable.CoffHeader, but with a public constructor so that
-/// we can make our own copies of it, and with fewer fields
+/// This is the Webcil analog of System.Reflection.PortableExecutable.SectionHeader, but with fewer fields
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct CoffSectionHeaderBuilder
+public readonly struct WebcilSectionHeader
 {
     public readonly int VirtualSize;
     public readonly int VirtualAddress;
     public readonly int SizeOfRawData;
     public readonly int PointerToRawData;
 
-    public CoffSectionHeaderBuilder(int virtualSize, int virtualAddress, int sizeOfRawData, int pointerToRawData)
+    public WebcilSectionHeader(int virtualSize, int virtualAddress, int sizeOfRawData, int pointerToRawData)
     {
         VirtualSize = virtualSize;
         VirtualAddress = virtualAddress;
