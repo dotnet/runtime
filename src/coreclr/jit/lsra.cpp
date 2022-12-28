@@ -6311,8 +6311,8 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     saveLcl->SetRegNum(lclVarReg);
     SetLsraAdded(saveLcl);
 
-    GenTreeIntrinsic* simdUpperSave = new (compiler, GT_INTRINSIC)
-        GenTreeIntrinsic(LargeVectorSaveType, saveLcl, NI_SIMD_UpperSave, nullptr);
+    GenTreeIntrinsic* simdUpperSave =
+        new (compiler, GT_INTRINSIC) GenTreeIntrinsic(LargeVectorSaveType, saveLcl, NI_SIMD_UpperSave, nullptr);
 
     SetLsraAdded(simdUpperSave);
     simdUpperSave->SetRegNum(spillReg);
@@ -6368,8 +6368,8 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     restoreLcl->SetRegNum(lclVarReg);
     SetLsraAdded(restoreLcl);
 
-    GenTreeIntrinsic* simdUpperRestore = new (compiler, GT_INTRINSIC)
-        GenTreeIntrinsic(varDsc->TypeGet(), restoreLcl, NI_SIMD_UpperRestore, nullptr);
+    GenTreeIntrinsic* simdUpperRestore =
+        new (compiler, GT_INTRINSIC) GenTreeIntrinsic(varDsc->TypeGet(), restoreLcl, NI_SIMD_UpperRestore, nullptr);
 
     regNumber restoreReg = upperVectorInterval->physReg;
     SetLsraAdded(simdUpperRestore);

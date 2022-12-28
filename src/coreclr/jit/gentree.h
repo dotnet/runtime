@@ -5567,7 +5567,7 @@ struct GenTreeCall final : public GenTree
         bool mayUseDispatcher = true;
         // Branch predictors on ARM64 generally do not handle the dispatcher as
         // well as on x64 hardware, so only use the validator by default.
-        bool       shouldUseDispatcher = false;
+        bool shouldUseDispatcher = false;
 #else
         // Other platforms do not even support the dispatcher.
         bool mayUseDispatcher    = false;
@@ -6110,12 +6110,12 @@ struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
     GenTree*           gtInlineOperands[2];
-    regNumberSmall     gtOtherReg;         // The second register for multi-reg intrinsics.
-    MultiRegSpillFlags gtSpillFlags;       // Spill flags for multi-reg intrinsics.
-    unsigned char      gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    unsigned char      gtSimdBaseJitType;  // SIMD vector base JIT type
-    unsigned char      gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
-    NamedIntrinsic     gtHWIntrinsicId;
+    regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
+    MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
+    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
+    NamedIntrinsic gtHWIntrinsicId;
 
 public:
     regNumber GetOtherReg() const
