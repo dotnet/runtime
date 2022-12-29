@@ -709,7 +709,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData(Int32Enum.One)]
-        [InlineData(true)]
         [InlineData('a')]
         public void IsDefined_InvalidValue_ThrowsArgumentException(object value)
         {
