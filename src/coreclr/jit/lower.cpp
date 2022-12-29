@@ -7273,13 +7273,9 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
         //
-        bool isContainable = false;
-        if (ind->Addr() != nullptr)
-        {
-            isContainable = IsSafeToContainMem(ind, ind->Addr());
-        }
+        const bool isContainable = (ind->Addr() != nullptr) && IsSafeToContainMem(ind, ind->Addr());
 #else
-        const bool isContainable         = true;
+        const bool isContainable = true;
 #endif
 
         if (!ind->OperIs(GT_NOP))
