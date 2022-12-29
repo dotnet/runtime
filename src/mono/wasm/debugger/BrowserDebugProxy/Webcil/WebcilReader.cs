@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using System.Reflection.Metadata;
@@ -14,7 +15,7 @@ namespace Microsoft.WebAssembly.Diagnostics.Webcil;
 
 public sealed class WebcilReader : IDisposable
 {
-    // TODO: WISH:
+    // WISH:
     // This should be implemented in terms of System.Reflection.Internal.MemoryBlockProvider like the PEReader,
     // but the memory block classes are internal to S.R.M.
 
@@ -170,14 +171,109 @@ public sealed class WebcilReader : IDisposable
 
     public CodeViewDebugDirectoryData ReadCodeViewDebugDirectoryData(DebugDirectoryEntry entry)
     {
-        // TODO: implement by copying PEReader.DecodeCodeViewDebugDirectoryData
-        throw new NotImplementedException("FIXME: implement ReadCodeViewDebugDirectoryData");
+        var pos = entry.DataPointer;
+        var buffer = new byte[entry.DataSize];
+        if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
+        {
+            throw new BadImageFormatException("Could not seek to CodeView debug directory data", nameof(_stream));
+        }
+        if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
+        {
+            throw new BadImageFormatException("Could not read CodeView debug directory data", nameof(_stream));
+        }
+        unsafe
+        {
+            fixed (byte* p = buffer)
+            {
+                return DecodeCodeViewDebugDirectoryData(new BlobReader(p, buffer.Length));
+            }
+        }
+    }
+
+    private static CodeViewDebugDirectoryData DecodeCodeViewDebugDirectoryData(BlobReader reader)
+    {
+        // FIXME: copy-pasted from PEReader.DecodeCodeViewDebugDirectoryData
+
+        if (reader.ReadByte() != (byte)'R' ||
+            reader.ReadByte() != (byte)'S' ||
+            reader.ReadByte() != (byte)'D' ||
+            reader.ReadByte() != (byte)'S')
+        {
+            throw new BadImageFormatException("Unexpected CodeView data signature");
+        }
+
+        Guid guid = reader.ReadGuid();
+        int age = reader.ReadInt32();
+        string path = ReadUtf8NullTerminated(reader);
+
+        return MakeCodeViewDebugDirectoryData(guid, age, path);
+
+    }
+
+    private static string ReadUtf8NullTerminated(BlobReader reader)
+    {
+        var mi = typeof(BlobReader).GetMethod("ReadUtf8NullTerminated", BindingFlags.NonPublic | BindingFlags.Instance);
+        return (string)mi.Invoke(reader, null);
+    }
+
+    private static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path)
+    {
+        var types = new Type[] { typeof(Guid), typeof(int), typeof(string) };
+        var mi = typeof(CodeViewDebugDirectoryData).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, types);
+        return (CodeViewDebugDirectoryData)mi.Invoke(new object[] { guid, age, path });
     }
 
     public MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
     {
-        // TODO: implement by copying PEReader.DecodeEmbeddedPortablePdbDebugDirectoryData
-        throw new NotImplementedException("FIXME: Implement ReadEmbeddedPortablePdbDebugDirectoryData");
+        var pos = entry.DataPointer;
+        var buffer = new byte[entry.DataSize];
+        if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
+        {
+            throw new BadImageFormatException("Could not seek to Embedded Portable PDB debug directory data", nameof(_stream));
+        }
+        if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
+        {
+            throw new BadImageFormatException("Could not read Embedded Portable PDB debug directory data", nameof(_stream));
+        }
+        unsafe
+        {
+            fixed (byte* p = buffer)
+            {
+                return DecodeEmbeddedPortablePdbDirectoryData(new BlobReader(p, buffer.Length));
+            }
+        }
+    }
+
+    private const uint PortablePdbVersions_DebugDirectoryEmbeddedSignature = 0x4244504d;
+    private static MetadataReaderProvider DecodeEmbeddedPortablePdbDirectoryData(BlobReader reader)
+    {
+        // FIXME: inspired by PEReader.DecodeEmbeddedPortablePdbDebugDirectoryData
+        // but not using its internal utility classes.
+
+        if (reader.ReadUInt32() != PortablePdbVersions_DebugDirectoryEmbeddedSignature)
+        {
+            throw new BadImageFormatException("Unexpected embedded portable PDB data signature");
+        }
+
+        int decompressedSize = reader.ReadInt32();
+
+        byte[] decompressedBuffer;
+
+        byte[] compressedBuffer = reader.ReadBytes(reader.RemainingBytes);
+
+        using (var compressedStream = new MemoryStream(compressedBuffer, writable: false))
+        using (var deflateStream = new System.IO.Compression.DeflateStream(compressedStream, System.IO.Compression.CompressionMode.Decompress, leaveOpen: true))
+        {
+            decompressedBuffer = GC.AllocateUninitializedArray<byte>(decompressedSize);
+            using (var decompressedStream = new MemoryStream(decompressedBuffer, writable: true))
+            {
+                deflateStream.CopyTo(decompressedStream);
+            }
+        }
+
+
+        return MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(decompressedBuffer, writable: false));
+
     }
 
     private long TranslateRVA(uint rva)
