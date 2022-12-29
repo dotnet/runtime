@@ -293,14 +293,14 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        public bool TryLookupExactMethodPointerForComponents(RuntimeTypeHandle declaringType, MethodNameAndSignature nameAndSignature, RuntimeTypeHandle[] genericMethodArgumentHandles, out IntPtr result)
+        public bool TryLookupExactMethodPointerForComponents(InstantiatedMethod method, out IntPtr result)
         {
-            int lookupHashcode = declaringType.GetHashCode();
+            int lookupHashcode = method.OwningType.GetHashCode();
 
             NativeHashtable hashtable;
             ExternalReferencesTable externalReferencesLookup;
 
-            HandleBasedGenericMethodLookup lookupData = new HandleBasedGenericMethodLookup(declaringType, nameAndSignature, genericMethodArgumentHandles);
+            MethodDescBasedGenericMethodLookup lookupData = new MethodDescBasedGenericMethodLookup(method);
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
