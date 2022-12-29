@@ -247,7 +247,7 @@ struct FixupPrecode
 #elif defined(HOST_RISCV64)
     static const int Type = 0x3;
     static const int CodeSize = 40;
-    static const int FixupCodeOffset = 16;
+    static const int FixupCodeOffset = 14;
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];

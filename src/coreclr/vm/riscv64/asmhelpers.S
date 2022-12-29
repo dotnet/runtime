@@ -371,7 +371,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 
     addi  a0, sp, __PWTB_TransitionBlock        // pTransitionBlock
     call  PreStubWorker
-    ori  t4, a0, 0
+    addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
     EPILOG_BRANCH_REG  t4

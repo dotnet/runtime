@@ -16,12 +16,12 @@ LEAF_ENTRY FixupPrecodeCode
     auipc t2, 0x1
     addi t1, t2, 0x3 // 3, for Type encoding.
     ld t2, (FixupPrecodeData__Target - 3)(t1)
-    jalr x0, t2,0
+    c.jr t2
 
     auipc t2, 0x1
     addi t1, t2, 0x3 // 3, for Type encoding.
-    ld t2, (FixupPrecodeData__MethodDesc - 3 - 16)(t1)
-    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 3 - 16)(t1)
+    ld t2, (FixupPrecodeData__MethodDesc - 0x3 - 0xe)(t1)
+    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 0x3 - 0xe)(t1)
     jalr x0, t1, 0
 LEAF_END_MARKED FixupPrecodeCode
 

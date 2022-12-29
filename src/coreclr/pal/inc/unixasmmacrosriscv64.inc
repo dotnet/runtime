@@ -2,39 +2,39 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .macro NESTED_ENTRY Name, Section, Handler
-        LEAF_ENTRY \Name, \Section
-        .ifnc \Handler, NoHandler
+    LEAF_ENTRY \Name, \Section
+    .ifnc \Handler, NoHandler
         .cfi_personality 0x1c, C_FUNC(\Handler) // 0x1c == DW_EH_PE_pcrel | DW_EH_PE_sdata8
-        .endif
+    .endif
 .endm
 
 .macro NESTED_END Name, Section
-        LEAF_END \Name, \Section
+    LEAF_END \Name, \Section
 .endm
 
 .macro PATCH_LABEL Name
-        .global C_FUNC(\Name)
+    .global C_FUNC(\Name)
 C_FUNC(\Name):
 .endm
 
 .macro LEAF_ENTRY Name, Section
-        .global C_FUNC(\Name)
-        .type \Name, %function
+    .global C_FUNC(\Name)
+    .type \Name, %function
 C_FUNC(\Name):
-        .cfi_startproc
+    .cfi_startproc
 .endm
 
 .macro LEAF_END Name, Section
-        .size \Name, .-\Name
-        .cfi_endproc
+    .size \Name, .-\Name
+    .cfi_endproc
 .endm
 
 .macro LEAF_END_MARKED Name, Section
 C_FUNC(\Name\()_End):
-        .global C_FUNC(\Name\()_End)
-        LEAF_END \Name, \Section
-        // make sure this symbol gets its own address
-        nop
+    .global C_FUNC(\Name\()_End)
+    LEAF_END \Name, \Section
+    // make sure this symbol gets its own address
+    nop
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
@@ -42,13 +42,15 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro PROLOG_STACK_ALLOC Size
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    addi sp, sp, -\Size
+    //.cfi_adjust_cfa_offset \Size
+    .cfi_def_cfa 3,\Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    addi sp, sp, \Size
+    //.cfi_adjust_cfa_offset -\Size
+    .cfi_def_cfa sp,-\Size
 .endm
 
 .macro EPILOG_STACK_RESTORE
@@ -111,7 +113,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
-        ebreak
+    ebreak
 .endm
 
 .macro EPILOG_BRANCH Target
@@ -120,8 +122,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EPILOG_BRANCH_REG reg
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    jalr x0, \reg, 0
 .endm
 
 //-----------------------------------------------------------------------------
@@ -131,20 +132,36 @@ C_FUNC(\Name\()_End):
 
 // Reserve 64 bytes of memory before calling  SAVE_CALLEESAVED_REGISTERS
 .macro SAVE_CALLEESAVED_REGISTERS reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    PROLOG_SAVE_REG_PAIR s1, s2, \ofs + 16
+    PROLOG_SAVE_REG_PAIR s3, s4, \ofs + 32
+    PROLOG_SAVE_REG_PAIR s5, s6, \ofs + 48
+    PROLOG_SAVE_REG_PAIR s7, s8, \ofs + 64
+    PROLOG_SAVE_REG_PAIR s9, s10, \ofs + 80
+    PROLOG_SAVE_REG_PAIR s11, sp,  \ofs + 96
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    sd  a0, (\ofs)(\reg)
+    sd  a1, (\ofs + 8)(\reg)
+    sd  a2, (\ofs + 16)(\reg)
+    sd  a3, (\ofs + 24)(\reg)
+    sd  a4, (\ofs + 32)(\reg)
+    sd  a5, (\ofs + 40)(\reg)
+    sd  a6, (\ofs + 48)(\reg)
+    sd  a7, (\ofs + 56)(\reg)
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    fsd  fa0, (\ofs)(\reg)
+    fsd  fa1, (\ofs + 8)(\reg)
+    fsd  fa2, (\ofs + 16)(\reg)
+    fsd  fa3, (\ofs + 24)(\reg)
+    fsd  fa4, (\ofs + 32)(\reg)
+    fsd  fa5, (\ofs + 40)(\reg)
+    fsd  fa6, (\ofs + 48)(\reg)
+    fsd  fa7, (\ofs + 56)(\reg)
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_CALLEESAVED_REGISTERS
@@ -154,18 +171,34 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro RESTORE_CALLEESAVED_REGISTERS reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    EPILOG_RESTORE_REG_PAIR s11, sp  \ofs + 96
+    EPILOG_RESTORE_REG_PAIR s9, s10, \ofs + 80 
+    EPILOG_RESTORE_REG_PAIR s7, s8,  \ofs + 64
+    EPILOG_RESTORE_REG_PAIR s5, s6,  \ofs + 48
+    EPILOG_RESTORE_REG_PAIR s3, s4,  \ofs + 32
+    EPILOG_RESTORE_REG_PAIR s1, s2,  \ofs + 16
 .endm
 
 .macro RESTORE_ARGUMENT_REGISTERS reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    ld  a0, (\ofs)(\reg)
+    ld  a1, (\ofs + 8)(\reg)
+    ld  a2, (\ofs + 16)(\reg)
+    ld  a3, (\ofs + 24)(\reg)
+    ld  a4, (\ofs + 32)(\reg)
+    ld  a5, (\ofs + 40)(\reg)
+    ld  a6, (\ofs + 48)(\reg)
+    ld  a7, (\ofs + 56)(\reg)
 .endm
 
 .macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    fld  fa0, (\ofs)(\reg)
+    fld  fa1, (\ofs + 8)(\reg)
+    fld  fa2, (\ofs + 16)(\reg)
+    fld  fa3, (\ofs + 24)(\reg)
+    fld  fa4, (\ofs + 32)(\reg)
+    fld  fa5, (\ofs + 40)(\reg)
+    fld  fa6, (\ofs + 48)(\reg)
+    fld  fa7, (\ofs + 56)(\reg)
 .endm
 
 .macro RESTORE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
@@ -218,38 +251,38 @@ C_FUNC(\Name\()_End):
 //
 .macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1
 
-        __PWTB_FloatArgumentRegisters = \extraLocals
-        __PWTB_SaveFPArgs = \SaveFPRegs
+    __PWTB_FloatArgumentRegisters = \extraLocals
+    __PWTB_SaveFPArgs = \SaveFPRegs
 
-        .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
-            __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
-        .endif
+    .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
+        __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+    .endif
 
-        __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
+    __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
 
-        .if (__PWTB_SaveFPArgs == 1)
-            __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
-        .endif
+    .if (__PWTB_SaveFPArgs == 1)
+        __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
+    .endif
 
 
-        __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
-        __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120 
+    __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
+    __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120 
 
-        // Including fp, ra, s1-s11, tp, gp, and (a0-a7)arguments. (1+1+11+1+1)*8 + 8*8.
-        __PWTB_StackAlloc = __PWTB_TransitionBlock + 120 + 64
-        PROLOG_STACK_ALLOC __PWTB_StackAlloc
-        PROLOG_SAVE_REG_PAIR  fp, ra, __PWTB_CalleeSavedRegisters, 1
+    // Including fp, ra, s1-s11, tp, gp, and (a0-a7)arguments. (1+1+11+1+1)*8 + 8*8.
+    __PWTB_StackAlloc = __PWTB_TransitionBlock + 120 + 64
+    PROLOG_STACK_ALLOC __PWTB_StackAlloc
+    PROLOG_SAVE_REG_PAIR  fp, ra, __PWTB_CalleeSavedRegisters, 1
 
-        // First, Spill argument registers.
-        SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+    // First, Spill argument registers.
+    SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
 
-        // Then, Spill callee saved registers.  $sp=$r3.
-        SAVE_CALLEESAVED_REGISTERS     sp, __PWTB_CalleeSavedRegisters
+    // Then, Spill callee saved registers.  sp=r3.
+    SAVE_CALLEESAVED_REGISTERS     sp, __PWTB_CalleeSavedRegisters
 
-        // saving is f10-17.
-        .if (__PWTB_SaveFPArgs == 1)
-            SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
-        .endif
+    // saving is f10-17.
+    .if (__PWTB_SaveFPArgs == 1)
+        SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
+    .endif
 
 .endm
 
@@ -264,8 +297,17 @@ C_FUNC(\Name\()_End):
 // Since this is a tail call argument registers are restored.
 //
 .macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    .if (__PWTB_SaveFPArgs == 1)
+        RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, __PWTB_FloatArgumentRegisters
+    .endif
+
+    RESTORE_CALLEESAVED_REGISTERS     sp, __PWTB_CalleeSavedRegisters
+
+    RESTORE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+
+    EPILOG_RESTORE_REG_PAIR fp, ra, __PWTB_CalleeSavedRegisters
+
+    EPILOG_STACK_FREE                 __PWTB_StackAlloc
 .endm
 
 // ------------------------------------------------------------------
