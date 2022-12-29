@@ -69,9 +69,11 @@ public class WebcilWriter
         WriteHeader(outputStream, wcInfo.Header);
         WriteSectionHeaders(outputStream, wcInfo.SectionHeaders);
         CopySections(outputStream, inputStream, peInfo.SectionHeaders);
-        var wcDebugDirectoryEntries = FixupDebugDirectoryEntries(peInfo, wcInfo);
-        OverwriteDebugDirectoryEntries(outputStream, wcInfo, wcDebugDirectoryEntries);
-        outputStream.Flush();
+        if (wcInfo.Header.pe_debug_size != 0 && wcInfo.Header.pe_debug_rva != 0)
+        {
+            var wcDebugDirectoryEntries = FixupDebugDirectoryEntries(peInfo, wcInfo);
+            OverwriteDebugDirectoryEntries(outputStream, wcInfo, wcDebugDirectoryEntries);
+        }
     }
 
     public record struct FilePosition(int Position)
