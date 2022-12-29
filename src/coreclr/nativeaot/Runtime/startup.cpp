@@ -477,10 +477,9 @@ void RuntimeThreadShutdown(void* thread)
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
     // Do not try detaching the thread that performs the shutdown.
-    if (g_threadPerformingShutdown != nullptr)
+    if (g_threadPerformingShutdown == thread)
     {
-        ASSERT(g_threadPerformingShutdown == thread);
-        // At this point other threads are gone and could be terminated rudely while leaving runtime
+        // At this point other threads could be terminated rudely while leaving runtime
         // in inconsistent state, so we would be risking blocking the process from exiting.
         return;
     }

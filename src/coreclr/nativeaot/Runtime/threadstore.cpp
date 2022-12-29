@@ -40,7 +40,11 @@ ThreadStore * GetThreadStore()
 ThreadStore::Iterator::Iterator() :
     m_pCurrentPosition(GetThreadStore()->m_ThreadList.GetHead())
 {
-    ASSERT(GetThreadStore()->m_Lock.OwnedByCurrentThread());
+    // GC threads may access threadstore without locking as
+    // the lock taken during suspension effectively held by the entire GC.
+    // Others must take a lock.
+    ASSERT(GetThreadStore()->m_Lock.OwnedByCurrentThread() ||
+        (ThreadStore::GetCurrentThread()->IsGCSpecial() && GCHeapUtilities::IsGCInProgress()));
 }
 
 ThreadStore::Iterator::~Iterator()
@@ -124,12 +128,8 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     pAttachingThread->Construct();
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
 
-    // The runtime holds the thread store lock for the duration of thread suspension for GC, so let's check to
-    // see if that's going on and, if so, use a proper wait instead of the RWL's spinning.  NOTE: when we are
-    // called with fAcquireThreadStoreLock==false, we are being called in a situation where the GC is trying to
-    // init a GC thread, so we must honor the flag to mean "do not block on GC" or else we will deadlock.
-    if (fAcquireThreadStoreLock && (RhpTrapThreads != (uint32_t)TrapThreadsFlags::None))
-        RedhawkGCInterface::WaitForGCCompletion();
+    // fAcquireThreadStoreLock is false when threads are created/attached for GC purpose
+    // in such casse the lock is already held and GC takes care to ensure safe access to the threadstore
 
     ThreadStore* pTS = GetThreadStore();
     CrstHolderWithState threadStoreLock(&pTS->m_Lock, fAcquireThreadStoreLock);
