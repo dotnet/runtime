@@ -212,10 +212,31 @@ public class WebcilWriter
         // endianness: ok, we're just copying from one stream to another
         foreach (var peHeader in peSections)
         {
+            var buffer = new byte[peHeader.SizeOfRawData];
             inputStream.Seek(peHeader.PointerToRawData, SeekOrigin.Begin);
-            inputStream.CopyTo(outStream, peHeader.SizeOfRawData);
+            ReadExactly(inputStream, buffer);
+            outStream.Write(buffer, 0, buffer.Length);
         }
     }
+
+#if NETCOREAPP2_1_OR_GREATER
+    private static void ReadExactly(Stream s, Span<byte> buffer)
+    {
+        s.ReadExactly(buffer);
+    }
+#else
+    private static void ReadExactly(Stream s, byte[] buffer)
+    {
+        int offset = 0;
+        while (offset < buffer.Length)
+        {
+            int read = s.Read(buffer, offset, buffer.Length - offset);
+            if (read == 0)
+                throw new EndOfStreamException();
+            offset += read;
+        }
+    }
+#endif
 
     private static FilePosition GetPositionOfRelativeVirtualAddress(ImmutableArray<WebcilSectionHeader> wcSections, uint relativeVirtualAddress)
     {
@@ -291,20 +312,21 @@ public class WebcilWriter
     private static void OverwriteDebugDirectoryEntries(Stream s, WCFileInfo wcInfo, ImmutableArray<DebugDirectoryEntry> entries)
     {
         s.Seek(GetPositionOfRelativeVirtualAddress(wcInfo.SectionHeaders, wcInfo.Header.pe_cli_header_rva).Position, SeekOrigin.Begin);
+        using var writer = new BinaryWriter(s, System.Text.Encoding.UTF8, leaveOpen: true);
         // endianness: ok, we're just copying from one stream to another
         foreach (var entry in entries)
         {
-            WriteDebugDirectoryEntry(s, entry);
+            WriteDebugDirectoryEntry(writer, entry);
         }
+        writer.Flush();
         // TODO check that we overwrite with the same size as the original
 
         // restore the stream position
         s.Seek(0, SeekOrigin.End);
     }
 
-    private static void WriteDebugDirectoryEntry(Stream s, DebugDirectoryEntry entry)
+    private static void WriteDebugDirectoryEntry(BinaryWriter writer, DebugDirectoryEntry entry)
     {
-        using var writer = new BinaryWriter(s, System.Text.Encoding.UTF8, leaveOpen: true);
         writer.Write((uint)0); // Characteristics
         writer.Write(entry.Stamp);
         writer.Write(entry.MajorVersion);
@@ -313,6 +335,5 @@ public class WebcilWriter
         writer.Write(entry.DataSize);
         writer.Write(entry.DataRelativeVirtualAddress);
         writer.Write(entry.DataPointer);
-        writer.Flush();
     }
 }
