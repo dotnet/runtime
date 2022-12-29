@@ -724,7 +724,23 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 // This method is expected to have called genConsumeOperands() before calling it.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    const genTreeOps oper      = treeNode->OperGet();
+    regNumber        targetReg = treeNode->GetRegNum();
+    emitter*         emit      = GetEmitter();
+
+    assert(treeNode->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_AND_NOT, GT_OR, GT_XOR));
+
+    GenTree*    op1 = treeNode->gtGetOp1();
+    GenTree*    op2 = treeNode->gtGetOp2();
+    instruction ins = genGetInsForOper(treeNode);
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(targetReg != REG_NA);
+
+    regNumber r = emit->emitInsTernary(ins, emitActualTypeSize(treeNode), treeNode, op1, op2);
+    assert(r == targetReg);
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -1044,14 +1060,329 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
 static inline bool isImmed(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(treeNode->OperIsBinary());
+
+    if (treeNode->gtGetOp2()->isContainedIntOrIImmed())
+    {
+        return true;
+    }
+
     return false;
 }
 
-instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
+instruction CodeGen::genGetInsForOper(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
-    return INS_invalid;
+    var_types  type = treeNode->TypeGet();
+    genTreeOps oper = treeNode->OperGet();
+    GenTree*   op1  = treeNode->gtGetOp1();
+    GenTree*   op2;
+    emitAttr   attr  = emitActualTypeSize(treeNode);
+    bool       isImm = false;
+
+    instruction ins = INS_ebreak;
+
+    if (varTypeIsFloating(type))
+    {
+        switch (oper)
+        {
+            case GT_ADD:
+                if (attr == EA_4BYTE)
+                {
+                    ins = INS_fadd_s;
+                }
+                else
+                {
+                    ins = INS_fadd_d;
+                }
+                break;
+            case GT_SUB:
+                if (attr == EA_4BYTE)
+                {
+                    ins = INS_fsub_s;
+                }
+                else
+                {
+                    ins = INS_fsub_d;
+                }
+                break;
+            case GT_MUL:
+                if (attr == EA_4BYTE)
+                {
+                    ins = INS_fmul_s;
+                }
+                else
+                {
+                    ins = INS_fmul_d;
+                }
+                break;
+            case GT_DIV:
+                if (attr == EA_4BYTE)
+                {
+                    ins = INS_fdiv_s;
+                }
+                else
+                {
+                    ins = INS_fdiv_d;
+                }
+                break;
+            case GT_NEG:
+                _ASSERTE(!"TODO RISCV64 NYI");
+                break;
+
+            default:
+                NYI("Unhandled oper in genGetInsForOper() - float");
+                unreached();
+                break;
+        }
+    }
+    else
+    {
+        switch (oper)
+        {
+            case GT_ADD:
+                isImm = isImmed(treeNode);
+                if (isImm)
+                {
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+                    {
+                        ins = INS_addi;
+                    }
+                    else
+                    {
+                        assert(attr == EA_4BYTE);
+                        ins = INS_addi;
+                    }
+                }
+                else
+                {
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+                    {
+                        ins = INS_add;
+                    }
+                    else
+                    {
+                        assert(attr == EA_4BYTE);
+                        ins = INS_addw;
+                    }
+                }
+                break;
+
+            case GT_SUB:
+                if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+                {
+                    ins = INS_sub;
+                }
+                else
+                {
+                    assert(attr == EA_4BYTE);
+                    ins = INS_subw;
+                }
+                break;
+
+            case GT_MOD:
+                if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+                {
+                    ins = INS_rem;
+                }
+                else
+                {
+                    assert(attr == EA_4BYTE);
+                    ins = INS_remw;
+                }
+                break;
+
+            case GT_DIV:
+                if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+                {
+                    ins = INS_div;
+                }
+                else
+                {
+                    assert(attr == EA_4BYTE);
+                    ins = INS_divw;
+                }
+                break;
+
+            case GT_UMOD:
+                if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+                {
+                    ins = INS_remu;
+                }
+                else
+                {
+                    assert(attr == EA_4BYTE);
+                    ins = INS_remuw;
+                }
+                break;
+
+            case GT_UDIV:
+                if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+                {
+                    ins = INS_divu;
+                }
+                else
+                {
+                    assert(attr == EA_4BYTE);
+                    ins = INS_divuw;
+                }
+                break;
+
+            case GT_MUL:
+                // TODO CHECK AGAIN
+                if ((attr == EA_8BYTE) || (attr == EA_BYREF))
+                {
+                    op2 = treeNode->gtGetOp2();
+                    if (genActualTypeIsInt(op1) && genActualTypeIsInt(op2))
+                        ins = INS_mulw;
+                    else
+                        ins = INS_mul;
+                }
+                else
+                {
+                    ins = INS_mulw;
+                }
+                break;
+
+            case GT_NEG:
+                _ASSERTE(!"TODO RISCV64 NYI");
+                break;
+
+            case GT_NOT:
+                _ASSERTE(!"TODO RISCV64 NYI");
+                break;
+
+            case GT_AND:
+                isImm = isImmed(treeNode);
+                if (isImm)
+                {
+                    ins = INS_andi;
+                }
+                else
+                {
+                    ins = INS_and;
+                }
+                break;
+
+            case GT_AND_NOT:
+                _ASSERTE(!"TODO RISCV64 NYI");
+                break;
+
+            case GT_OR:
+                isImm = isImmed(treeNode);
+                if (isImm)
+                {
+                    ins = INS_ori;
+                }
+                else
+                {
+                    ins = INS_or;
+                }
+                break;
+
+            case GT_LSH:
+                isImm = isImmed(treeNode);
+                if (isImm)
+                {
+                    // it's better to check sa.
+                    if (attr == EA_4BYTE)
+                    {
+                        ins = INS_slliw;
+                    }
+                    else
+                    {
+                        ins = INS_slli;
+                    }
+                }
+                else
+                {
+                    if (attr == EA_4BYTE)
+                    {
+                        ins = INS_sllw;
+                    }
+                    else
+                    {
+                        ins = INS_sll;
+                    }
+                }
+                break;
+
+            case GT_RSZ:
+                isImm = isImmed(treeNode);
+                if (isImm)
+                {
+                    // it's better to check sa.
+                    if (attr == EA_4BYTE)
+                    {
+                        ins = INS_srliw;
+                    }
+                    else
+                    {
+                        ins = INS_srli;
+                    }
+                }
+                else
+                {
+                    if (attr == EA_4BYTE)
+                    {
+                        ins = INS_srlw;
+                    }
+                    else
+                    {
+                        ins = INS_srl;
+                    }
+                }
+                break;
+
+            case GT_RSH:
+                isImm = isImmed(treeNode);
+                if (isImm)
+                {
+                    // it's better to check sa.
+                    if (attr == EA_4BYTE)
+                    {
+                        ins = INS_sraiw;
+                    }
+                    else
+                    {
+                        ins = INS_srai;
+                    }
+                }
+                else
+                {
+                    if (attr == EA_4BYTE)
+                    {
+                        ins = INS_sraw;
+                    }
+                    else
+                    {
+                        ins = INS_sra;
+                    }
+                }
+                break;
+
+            case GT_ROR:
+                _ASSERTE(!"TODO RISCV64 NYI");
+                break;
+
+            case GT_XOR:
+                isImm = isImmed(treeNode);
+                if (isImm)
+                {
+                    ins = INS_xori;
+                }
+                else
+                {
+                    ins = INS_xor;
+                }
+                break;
+
+            default:
+                NYI("Unhandled oper in genGetInsForOper() - integer");
+                unreached();
+                break;
+        }
+    }
+    return ins;
 }
 
 //------------------------------------------------------------------------
@@ -1983,7 +2314,69 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
-    NYI("unimplemented on RISCV64 yet");
+    void* addr  = nullptr;
+    void* pAddr = nullptr;
+
+    emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
+    addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
+    regNumber callTarget           = REG_NA;
+
+    if (addr == nullptr)
+    {
+        // This is call to a runtime helper.
+        // lui reg, pAddr     #NOTE: this maybe multi-instructions.
+        // ld reg, reg
+        // jalr reg
+
+        if (callTargetReg == REG_NA)
+        {
+            // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
+            // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
+            callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
+        }
+
+        regMaskTP callTargetMask = genRegMask(callTargetReg);
+        regMaskTP callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+        // assert that all registers in callTargetMask are in the callKillSet
+        noway_assert((callTargetMask & callKillSet) == callTargetMask);
+
+        callTarget = callTargetReg;
+
+        if (compiler->opts.compReloc)
+        {
+            // TODO-RISCV64: here the jal is special flag rather than a real instruction.
+            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
+        }
+        else
+        {
+            ssize_t high = (((ssize_t)pAddr) >> 32) & 0xffffffff;
+            GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, callTarget, (((high + 0x800) >> 12) & 0xfffff));
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, (high & 0xfff));
+
+            ssize_t low = ((ssize_t)pAddr) & 0xffffffff;
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, callTarget, callTarget, 11);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, ((low >> 21) & 0x7ff));
+
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, callTarget, callTarget, 11);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, callTarget, callTarget, ((low >> 10) & 0x7ff));
+            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, callTarget, callTarget, (low & 0x3ff));
+        }
+        regSet.verifyRegUsed(callTarget);
+
+        callType = emitter::EC_INDIR_R;
+    }
+
+    GetEmitter()->emitIns_Call(callType, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) addr, argSize,
+                               retSize, EA_UNKNOWN, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
+                               gcInfo.gcRegByrefSetCur, DebugInfo(), /* IL offset */
+                               callTarget,                           /* ireg */
+                               REG_NA, 0, 0,                         /* xreg, xmul, disp */
+                               false                                 /* isJump */
+                               );
+
+    regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regSet.verifyRegistersUsed(killMask);
 }
 
 #ifdef FEATURE_SIMD
@@ -3964,7 +4357,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             callType   = emitter::EC_FUNC_TOKEN;
             callTarget = REG_NA;
 
-            ssize_t imm = 10 << 2;
+            ssize_t imm = 9 << 2;
             if (compiler->opts.compReloc)
             {
                 imm = 3 << 2;

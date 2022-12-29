@@ -117,8 +117,11 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return nullptr;
+    assert(mul->OperIsMul());
+
+    ContainCheckMul(mul);
+
+    return mul->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -555,7 +558,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 //
 void Lowering::ContainCheckMul(GenTreeOp* node)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    ContainCheckBinary(node);
 }
 
 //------------------------------------------------------------------------
