@@ -93,11 +93,8 @@ namespace System.Net
         // Check that local certificate was used by schannel.
         internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _credentialsHandle, SafeDeleteContext securityContext)
         {
-            //SafeFreeCredential_SECURITY creds = (SafeFreeCredential_SECURITY)_credentialsHandle!;
             SecPkgContext_SessionInfo info  = default;
-
-            // fails on Server 2008 and older. We will fall-back to probing schannel
-            //bool success = SSPIWrapper.QueryBlittableContextAttributes(
+            // fails on Server 2008 and older. We will fall-back to probing LOCAL_CERT_CONTEXT in that case.
             if (SSPIWrapper.QueryBlittableContextAttributes(
                                     GlobalSSPI.SSPISecureChannel,
                                     securityContext,
