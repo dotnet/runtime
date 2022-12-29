@@ -9828,14 +9828,23 @@ interp_super_instructions (TransformData *td)
 						switch (def->opcode) {
 							case MINT_CEQ_I4: replace_opcode = negate ? MINT_BNE_UN_I4 : MINT_BEQ_I4; break;
 							case MINT_CEQ_I8: replace_opcode = negate ? MINT_BNE_UN_I8 : MINT_BEQ_I8; break;
-							// Add more opcodes
+							case MINT_CGT_I4: replace_opcode = negate ? MINT_BLE_I4 : MINT_BGT_I4; break;
+							case MINT_CGT_I8: replace_opcode = negate ? MINT_BLE_I8 : MINT_BGT_I8; break;
+							case MINT_CLT_I4: replace_opcode = negate ? MINT_BGE_I4 : MINT_BLT_I4; break;
+							case MINT_CLT_I8: replace_opcode = negate ? MINT_BGE_I8 : MINT_BLT_I8; break;
+							case MINT_CGT_UN_I4: replace_opcode = negate ? MINT_BLE_UN_I4 : MINT_BGT_UN_I4; break;
+							case MINT_CGT_UN_I8: replace_opcode = negate ? MINT_BLE_UN_I8 : MINT_BGT_UN_I8; break;
+							case MINT_CLT_UN_I4: replace_opcode = negate ? MINT_BGE_UN_I4 : MINT_BLT_UN_I4; break;
+							case MINT_CLT_UN_I8: replace_opcode = negate ? MINT_BGE_UN_I8 : MINT_BLT_UN_I8; break;
+							case MINT_CEQ0_I4: replace_opcode = negate ? MINT_BRTRUE_I4 : MINT_BRFALSE_I4; break; // If def->opcode is MINT_CEQ0_I4 ins->opcode is inverted
 							default:
 								break;
 						}
 						if (replace_opcode != -1) {
 							ins->opcode = replace_opcode;
 							ins->sregs [0] = def->sregs [0];
-							ins->sregs [1] = def->sregs [1];
+							if (def->opcode != MINT_CEQ0_I4)
+								ins->sregs [1] = def->sregs [1];
 							interp_clear_ins (def);
 							if (td->verbose_level) {
 								g_print ("superins: ");
