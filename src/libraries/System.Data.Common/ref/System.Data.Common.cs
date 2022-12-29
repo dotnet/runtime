@@ -1049,8 +1049,8 @@ namespace System.Data
         void System.ComponentModel.IBindingList.RemoveSort() { }
         void System.ComponentModel.IBindingListView.ApplySort(System.ComponentModel.ListSortDescriptionCollection sorts) { }
         void System.ComponentModel.IBindingListView.RemoveFilter() { }
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
+        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
         public System.Data.DataTable ToTable() { throw null; }
         public System.Data.DataTable ToTable(bool distinct, params string[] columnNames) { throw null; }
         public System.Data.DataTable ToTable(string? tableName) { throw null; }
@@ -1103,8 +1103,8 @@ namespace System.Data
         int System.ComponentModel.IBindingList.Find(System.ComponentModel.PropertyDescriptor property, object key) { throw null; }
         void System.ComponentModel.IBindingList.RemoveIndex(System.ComponentModel.PropertyDescriptor property) { }
         void System.ComponentModel.IBindingList.RemoveSort() { }
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
+        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
         protected virtual void TableCollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) { }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataViewRowStateEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
