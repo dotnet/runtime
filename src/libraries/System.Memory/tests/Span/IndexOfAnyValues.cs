@@ -25,6 +25,7 @@ namespace System.SpanTests
         {
             string[] values = new[]
             {
+                "",
                 "\0",
                 "a",
                 "ab",
