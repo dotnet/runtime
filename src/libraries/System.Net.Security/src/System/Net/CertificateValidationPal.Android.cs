@@ -92,7 +92,7 @@ namespace System.Net
         }
 
         // Check if the local certificate has been sent to the peer during the handshake.
-        internal static bool IsLocalCertificateUsed(SafeDeleteContext? securityContext)
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _, SafeDeleteContext? securityContext)
         {
             SafeSslHandle? sslContext = ((SafeDeleteSslContext?)securityContext)?.SslContext;
             if (sslContext == null)

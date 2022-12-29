@@ -64,6 +64,7 @@ internal static partial class Interop
             SECPKG_ATTR_ISSUER_LIST_EX = 0x59,         // returns SecPkgContext_IssuerListInfoEx
             SECPKG_ATTR_CLIENT_CERT_POLICY = 0x60,     // sets    SecPkgCred_ClientCertCtlPolicy
             SECPKG_ATTR_CONNECTION_INFO = 0x5A,        // returns SecPkgContext_ConnectionInfo
+            SECPKG_ATTR_SESSION_INFO = 0x5D,           // sets    SecPkgContext_SessionInfo
             SECPKG_ATTR_CIPHER_INFO = 0x64,            // returns SecPkgContext_CipherInfo
             SECPKG_ATTR_REMOTE_CERT_CHAIN = 0x67,      // returns PCCERT_CONTEXT
             SECPKG_ATTR_UI_INFO = 0x68,                // sets    SEcPkgContext_UiInfo
@@ -329,6 +330,21 @@ internal static partial class Interop
             public BOOL fOmitUsageCheck;
             public char* pwszSslCtlStoreName;
             public char* pwszSslCtlIdentifier;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct SecPkgContext_SessionInfo
+        {
+            public uint dwFlags;
+            public uint cbSessionId;
+            public fixed byte rgbSessionId[32];
+
+            [Flags]
+            public enum Flags
+            {
+                Zero = 0,
+                SSL_SESSION_RECONNECT = 0x01,
+            };
         }
 
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
