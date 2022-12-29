@@ -165,16 +165,11 @@ namespace System.Net.Security.Tests
                         clientCerts.Add(_clientCertificate);
                     }
 
-                    // Connect to GUID to prevent TLS resume
-                    var options = new SslClientAuthenticationOptions()
-                    {
-                        TargetHost = Guid.NewGuid().ToString("N"),
-                        ClientCertificates = clientCerts,
-                        EnabledSslProtocols = SslProtocolSupport.DefaultSslProtocols,
-                        CertificateChainPolicy = new X509ChainPolicy(),
-                    };
-                    options.CertificateChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreInvalidName;
-                    Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(options, default);
+                    Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(
+                        serverName,
+                        clientCerts,
+                        SslProtocolSupport.DefaultSslProtocols,
+                        false);
 
                     Task serverAuthentication = sslServerStream.AuthenticateAsServerAsync(
                         _serverCertificate,
