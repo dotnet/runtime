@@ -86,7 +86,7 @@ public class WebcilWriter
         return sizeof(WCHeader);
     }
 
-    public static unsafe void GatherInfo(PEReader peReader, out WCFileInfo wcInfo, out PEFileInfo peInfo)
+    public unsafe void GatherInfo(PEReader peReader, out WCFileInfo wcInfo, out PEFileInfo peInfo)
     {
         var headers = peReader.PEHeaders;
         var peHeader = headers.PEHeader!;
@@ -109,8 +109,9 @@ public class WebcilWriter
         // position of the current section in the output file
         // initially it's after all the section headers
         FilePosition curSectionPos = pos + sizeof(WebcilSectionHeader) * coffHeader.NumberOfSections;
-
+        // The first WC section is immediately after the section directory
         FilePosition firstWCSection = curSectionPos;
+
         FilePosition firstPESection = 0;
 
         ImmutableArray<WebcilSectionHeader>.Builder headerBuilder = ImmutableArray.CreateBuilder<WebcilSectionHeader>(coffHeader.NumberOfSections);
@@ -139,10 +140,13 @@ public class WebcilWriter
             headerBuilder.Add(newHeader);
         }
 
+
+        ImmutableArray<DebugDirectoryEntry> debugDirectoryEntries = peReader.ReadDebugDirectory();
+
         peInfo = new PEFileInfo(SectionHeaders: sections,
                                 DebugTableDirectory: peHeader.DebugTableDirectory,
                                 SectionStart: firstPESection,
-                                DebugDirectoryEntries: peReader.ReadDebugDirectory());
+                                DebugDirectoryEntries: debugDirectoryEntries);
 
         wcInfo = new WCFileInfo(Header: header,
                                 SectionHeaders: headerBuilder.MoveToImmutable(),
@@ -244,7 +248,8 @@ public class WebcilWriter
         {
             if (relativeVirtualAddress >= section.VirtualAddress && relativeVirtualAddress < section.VirtualAddress + section.VirtualSize)
             {
-                return section.PointerToRawData + (int)(relativeVirtualAddress - section.VirtualAddress);
+                FilePosition pos = section.PointerToRawData + ((int)relativeVirtualAddress - section.VirtualAddress);
+                return pos;
             }
         }
 
@@ -290,7 +295,7 @@ public class WebcilWriter
         foreach (var entry in entries)
         {
             DebugDirectoryEntry newEntry;
-            if (entry.Type == DebugDirectoryEntryType.Reproducible)
+            if (entry.Type == DebugDirectoryEntryType.Reproducible || entry.DataPointer == 0 || entry.DataSize == 0)
             {
                 // this entry doesn't have an associated data pointer, so just copy it
                 newEntry = entry;
@@ -311,18 +316,17 @@ public class WebcilWriter
 
     private static void OverwriteDebugDirectoryEntries(Stream s, WCFileInfo wcInfo, ImmutableArray<DebugDirectoryEntry> entries)
     {
-        s.Seek(GetPositionOfRelativeVirtualAddress(wcInfo.SectionHeaders, wcInfo.Header.pe_cli_header_rva).Position, SeekOrigin.Begin);
+        FilePosition debugDirectoryPos = GetPositionOfRelativeVirtualAddress(wcInfo.SectionHeaders, wcInfo.Header.pe_debug_rva);
         using var writer = new BinaryWriter(s, System.Text.Encoding.UTF8, leaveOpen: true);
-        // endianness: ok, we're just copying from one stream to another
+        writer.Seek(debugDirectoryPos.Position, SeekOrigin.Begin);
         foreach (var entry in entries)
         {
             WriteDebugDirectoryEntry(writer, entry);
         }
-        writer.Flush();
         // TODO check that we overwrite with the same size as the original
 
         // restore the stream position
-        s.Seek(0, SeekOrigin.End);
+        writer.Seek(0, SeekOrigin.End);
     }
 
     private static void WriteDebugDirectoryEntry(BinaryWriter writer, DebugDirectoryEntry entry)
