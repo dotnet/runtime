@@ -877,7 +877,7 @@ namespace System.Reflection.Emit
                 bool is_concrete = !IsAbstract;
                 for (int i = 0; i < num_methods; ++i)
                 {
-                    RuntimeMethodBuilder mb = (methods[i]);
+                    RuntimeMethodBuilder mb = methods[i];
                     if (is_concrete && mb.IsAbstract)
                         throw new InvalidOperationException("Type is concrete but has abstract method " + mb);
                     mb.check_override();
