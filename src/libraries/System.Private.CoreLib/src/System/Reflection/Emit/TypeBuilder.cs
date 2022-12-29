@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    public abstract class TypeBuilder : TypeInfo
+    public abstract partial class TypeBuilder : TypeInfo
     {
         protected TypeBuilder()
         {
@@ -157,72 +157,6 @@ namespace System.Reflection.Emit
 
         public virtual FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
             => DefineUninitializedData(name, size, attributes);
-
-        public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
-        {
-            Module module = type.Module;
-            if (module is not ModuleBuilder moduleBuilder)
-            {
-                if (type.IsGenericType)
-                {
-                    foreach (Type t in type.GetGenericArguments())
-                    {
-                        if (t.Module is ModuleBuilder mb)
-                        {
-                            return mb.GetConstructor(type, constructor);
-                        }
-                    }
-                }
-
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-            }
-
-            return moduleBuilder.GetConstructor(type, constructor);
-        }
-
-        public static FieldInfo GetField(Type type, FieldInfo field)
-        {
-            Module module = type.Module;
-            if (module is not ModuleBuilder moduleBuilder)
-            {
-                if (type.IsGenericType)
-                {
-                    foreach (Type t in type.GetGenericArguments())
-                    {
-                        if (t.Module is ModuleBuilder mb)
-                        {
-                            return mb.GetField(type, field);
-                        }
-                    }
-                }
-
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-            }
-
-            return moduleBuilder.GetField(type, field);
-        }
-
-        public static MethodInfo GetMethod(Type type, MethodInfo method)
-        {
-            Module module = type.Module;
-            if (module is not ModuleBuilder moduleBuilder)
-            {
-                if (type.IsGenericType)
-                {
-                    foreach (Type t in type.GetGenericArguments())
-                    {
-                        if (t.Module is ModuleBuilder mb)
-                        {
-                            return mb.GetMethod(type, method);
-                        }
-                    }
-                }
-
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-            }
-
-            return moduleBuilder.GetMethod(type, method);
-        }
 
         public virtual bool IsCreated()
             => IsCreated();
