@@ -1185,6 +1185,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data),
                 CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data),
                 CorElementType.ELEMENT_TYPE_CHAR => Unsafe.As<byte, char>(ref data),
+                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.As<byte, bool>(ref data),
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
