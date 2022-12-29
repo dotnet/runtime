@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
@@ -19,53 +18,51 @@ namespace System
     // included in this file which are specific to the packed implementation.
     internal static partial class PackedSpanHelpers
     {
-        public static bool PackedIndexOfIsSupported => Sse2.IsSupported || AdvSimd.IsSupported;
+        // We only do this optimization on X86 as the packing is noticeably more expensive on ARM in comparison.
+        // While the impact on worst-case (match at the start) is minimal on X86, it's prohibitively large on ARM.
+        public static bool PackedIndexOfIsSupported => Sse2.IsSupported;
 
         // Not all values can benefit from packing the searchSpace. See comments in PackSources below.
-        // On X86, the values must be in the [1, 254] range.
-        // On ARM, the values must be in the [0, 254] range.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool CanUsePackedIndexOf<T>(T value) =>
             PackedIndexOfIsSupported &&
             RuntimeHelpers.IsBitwiseEquatable<T>() &&
             sizeof(T) == sizeof(ushort) &&
-            (Sse2.IsSupported
-                ? *(ushort*)&value - 1u < 254u
-                : *(ushort*)&value < 255u);
+            *(ushort*)&value - 1u < 254u;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PackedIndexOf(ref char searchSpace, char value, int length) =>
-            PackedIndexOf<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+        public static int IndexOf(ref char searchSpace, char value, int length) =>
+            IndexOf<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PackedIndexOfAnyExcept(ref char searchSpace, char value, int length) =>
-            PackedIndexOf<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+        public static int IndexOfAnyExcept(ref char searchSpace, char value, int length) =>
+            IndexOf<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PackedIndexOfAny(ref char searchSpace, char value0, char value1, int length) =>
-            PackedIndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+        public static int IndexOfAny(ref char searchSpace, char value0, char value1, int length) =>
+            IndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PackedIndexOfAnyExcept(ref char searchSpace, char value0, char value1, int length) =>
-            PackedIndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+        public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, int length) =>
+            IndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PackedIndexOfAny(ref char searchSpace, char value0, char value1, char value2, int length) =>
-            PackedIndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
+        public static int IndexOfAny(ref char searchSpace, char value0, char value1, char value2, int length) =>
+            IndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PackedIndexOfAnyExcept(ref char searchSpace, char value0, char value1, char value2, int length) =>
-            PackedIndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
+        public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, char value2, int length) =>
+            IndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PackedIndexOfAnyInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
-            PackedIndexOfAnyInRange<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
+        public static int IndexOfAnyInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
+            IndexOfAnyInRange<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int PackedIndexOfAnyExceptInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
-            PackedIndexOfAnyInRange<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
+        public static int IndexOfAnyExceptInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
+            IndexOfAnyInRange<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
 
-        public static bool PackedContains(ref short searchSpace, short value, int length)
+        public static bool Contains(ref short searchSpace, short value, int length)
         {
             Debug.Assert(CanUsePackedIndexOf(value));
 
@@ -207,7 +204,7 @@ namespace System
             return false;
         }
 
-        private static int PackedIndexOf<TNegator>(ref short searchSpace, short value, int length)
+        private static int IndexOf<TNegator>(ref short searchSpace, short value, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
             Debug.Assert(CanUsePackedIndexOf(value));
@@ -348,7 +345,7 @@ namespace System
             return -1;
         }
 
-        private static int PackedIndexOfAny<TNegator>(ref short searchSpace, short value0, short value1, int length)
+        private static int IndexOfAny<TNegator>(ref short searchSpace, short value0, short value1, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
             Debug.Assert(CanUsePackedIndexOf(value0));
@@ -498,7 +495,7 @@ namespace System
             return -1;
         }
 
-        private static int PackedIndexOfAny<TNegator>(ref short searchSpace, short value0, short value1, short value2, int length)
+        private static int IndexOfAny<TNegator>(ref short searchSpace, short value0, short value1, short value2, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
             Debug.Assert(CanUsePackedIndexOf(value0));
@@ -651,7 +648,7 @@ namespace System
             return -1;
         }
 
-        private static int PackedIndexOfAnyInRange<TNegator>(ref short searchSpace, short lowInclusive, short rangeInclusive, int length)
+        private static int IndexOfAnyInRange<TNegator>(ref short searchSpace, short lowInclusive, short rangeInclusive, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
             Debug.Assert(CanUsePackedIndexOf(lowInclusive));
@@ -798,15 +795,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> PackSources(Vector128<short> source0, Vector128<short> source1)
         {
+            Debug.Assert(Sse2.IsSupported);
             // Pack two vectors of characters into bytes. While the type is Vector128<short>, these are really UInt16 characters.
             // X86: Downcast every character using saturation.
             // - Values <= 32767 result in min(value, 255).
             // - Values  > 32767 result in 0. Because of this we can't accept needles that contain 0.
-            // ARM64: Do narrowing saturation over unsigned values.
-            // - All values result in min(value, 255)
-            return Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate(source0, source1).AsByte()
-                : AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0.AsUInt16()), source1.AsUInt16());
+            return Sse2.PackUnsignedSaturate(source0, source1).AsByte();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

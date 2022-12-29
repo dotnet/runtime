@@ -79,7 +79,7 @@ namespace System
                 char valueUc = (char)(value | 0x20);
                 char valueLc = (char)(value & ~0x20);
                 return PackedSpanHelpers.PackedIndexOfIsSupported
-                    ? PackedSpanHelpers.PackedIndexOfAny(ref _firstChar, valueLc, valueUc, Length)
+                    ? PackedSpanHelpers.IndexOfAny(ref _firstChar, valueLc, valueUc, Length)
                     : SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
             }
 
