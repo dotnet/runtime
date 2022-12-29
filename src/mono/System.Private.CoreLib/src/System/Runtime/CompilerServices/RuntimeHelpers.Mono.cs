@@ -44,6 +44,12 @@ namespace System.Runtime.CompilerServices
             return InternalGetHashCode(o);
         }
 
+        internal static int TryGetHashCode(object o)
+        {
+            // On Mono the fast path is not yet implemented, so we just defer to GetHashCode.
+            return InternalGetHashCode(o);
+        }
+
         public static new bool Equals(object? o1, object? o2)
         {
             if (o1 == o2)

@@ -49,6 +49,28 @@ namespace System.Threading
             return (int*)ppMethodTable - 1;
         }
 
+        // returns zero if no hash code is currently assigned
+        private static unsafe int TryGetHashCode(int* pHeader)
+        {
+            int bits = *pHeader;
+            int hashOrIndex = bits & MASK_HASHCODE_INDEX;
+            if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
+            {
+                // Found the hash code in the header
+                Debug.Assert(hashOrIndex != 0);
+                return hashOrIndex;
+            }
+
+            if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
+            {
+                // Look up the hash code in the SyncTable
+                return SyncTable.GetHashCode(hashOrIndex);
+            }
+
+            // The hash code has not yet been set.
+            return 0;
+        }
+
         /// <summary>
         /// Returns the hash code assigned to the object.  If no hash code has yet been assigned,
         /// it assigns one in a thread-safe way.
@@ -61,27 +83,34 @@ namespace System.Threading
             fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                int bits = *pHeader;
-                int hashOrIndex = bits & MASK_HASHCODE_INDEX;
-                if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
+                int hashCode = TryGetHashCode(pHeader);
+                if (hashCode != 0)
                 {
-                    // Found the hash code in the header
-                    Debug.Assert(hashOrIndex != 0);
-                    return hashOrIndex;
-                }
-
-                if ((bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
-                {
-                    // Look up the hash code in the SyncTable
-                    int hashCode = SyncTable.GetHashCode(hashOrIndex);
-                    if (hashCode != 0)
-                    {
-                        return hashCode;
-                    }
+                    return hashCode;
                 }
 
                 // The hash code has not yet been set.  Assign some value.
                 return AssignHashCode(o, pHeader);
+            }
+        }
+
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// This method needs to follow the rules in RestrictedCallouts.h, as it may be called
+        /// while a garbage collection in in progress.
+        /// </remarks>
+        public static unsafe int TryGetHashCode(object o)
+        {
+            if (o == null)
+                return 0;
+
+            fixed (MethodTable** ppMethodTable = &o.GetMethodTableRef())
+            {
+                int* pHeader = GetHeaderPtr(ppMethodTable);
+                return TryGetHashCode(pHeader);
             }
         }
 

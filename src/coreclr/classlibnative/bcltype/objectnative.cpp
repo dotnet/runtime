@@ -65,6 +65,34 @@ FCIMPL1(Object*, ObjectNative::GetObjectValue, Object* obj)
 }
 FCIMPLEND
 
+static INT32 TryGetHashCodeHelper(OBJECTREF objRef)
+{
+    DWORD bits = objRef->GetHeader()->GetBits();
+
+    if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+    {
+        if (bits & BIT_SBLK_IS_HASHCODE)
+        {
+            // Common case: the object already has a hash code
+            return  bits & MASK_HASHCODE;
+        }
+        else
+        {
+            // We have a sync block index. This means if we already have a hash code,
+            // it is in the sync block, otherwise we generate a new one and store it there
+            SyncBlock *psb = objRef->PassiveGetSyncBlock();
+            if (psb != NULL)
+            {
+                DWORD hashCode = psb->GetHashCode();
+                if (hashCode != 0)
+                    return  hashCode;
+            }
+        }
+    }
+
+    // No hash code currently assigned.
+    return 0;
+}
 
 NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
 {
@@ -99,32 +127,30 @@ FCIMPL1(INT32, ObjectNative::GetHashCode, Object* obj) {
 
     OBJECTREF objRef(obj);
 
-    {
-        DWORD bits = objRef->GetHeader()->GetBits();
-
-        if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-        {
-            if (bits & BIT_SBLK_IS_HASHCODE)
-            {
-                // Common case: the object already has a hash code
-                return  bits & MASK_HASHCODE;
-            }
-            else
-            {
-                // We have a sync block index. This means if we already have a hash code,
-                // it is in the sync block, otherwise we generate a new one and store it there
-                SyncBlock *psb = objRef->PassiveGetSyncBlock();
-                if (psb != NULL)
-                {
-                    DWORD hashCode = psb->GetHashCode();
-                    if (hashCode != 0)
-                        return  hashCode;
-                }
-            }
-        }
-    }
+    INT32 ret = TryGetHashCodeHelper(objRef);
+    if (ret != 0)
+        return ret;
 
     FC_INNER_RETURN(INT32, GetHashCodeHelper(objRef));
+}
+FCIMPLEND
+
+FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
+
+    CONTRACTL
+    {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    VALIDATEOBJECT(obj);
+
+    if (obj == 0)
+        return 0;
+
+    OBJECTREF objRef(obj);
+
+    return TryGetHashCodeHelper(objRef);
 }
 FCIMPLEND
 
