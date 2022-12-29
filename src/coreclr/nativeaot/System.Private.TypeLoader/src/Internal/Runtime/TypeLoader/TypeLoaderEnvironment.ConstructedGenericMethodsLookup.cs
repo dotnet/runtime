@@ -325,66 +325,6 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        // This method computes the method pointer and dictionary pointer for a GVM.
-        // Inputs:
-        //      - targetTypeHanlde: target type on which the GVM is implemented
-        //      - nameAndSignature: name and signature of the GVM method
-        //      - genericMethodArgumentHandles: GVM instantiation arguments
-        // Outputs:
-        //      - methodPointer: pointer to the GVM's implementation
-        //      - dictionaryPointer: (if applicable) pointer to the dictionary to be used with the GVM call
-        public bool TryGetGenericVirtualMethodPointer(RuntimeTypeHandle targetTypeHandle, MethodNameAndSignature nameAndSignature, RuntimeTypeHandle[] genericMethodArgumentHandles, out IntPtr methodPointer, out IntPtr dictionaryPointer)
-        {
-            methodPointer = dictionaryPointer = IntPtr.Zero;
-
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
-            Instantiation methodInstantiation = context.ResolveRuntimeTypeHandles(genericMethodArgumentHandles);
-            InstantiatedMethod method = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, targetType, nameAndSignature, methodInstantiation, IntPtr.Zero, false);
-
-            if (!method.CanShareNormalGenericCode())
-            {
-                // First see if we can find an exact method implementation for the GVM (avoid using USG implementations if we can,
-                // because USG code is much slower).
-                if (TryLookupExactMethodPointerForComponents(targetTypeHandle, nameAndSignature, genericMethodArgumentHandles, out methodPointer))
-                {
-                    Debug.Assert(methodPointer != IntPtr.Zero);
-                    TypeSystemContextFactory.Recycle(context);
-                    return true;
-                }
-            }
-
-            // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictinoary
-            NativeLayoutInfo nativeLayoutInfo = new NativeLayoutInfo();
-            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(method, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
-            if (templateMethod == null)
-                return false;
-
-            methodPointer = templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal) ?
-                templateMethod.UsgFunctionPointer :
-                templateMethod.FunctionPointer;
-
-            if (!TryLookupGenericMethodDictionaryForComponents(targetTypeHandle, nameAndSignature, genericMethodArgumentHandles, out dictionaryPointer))
-            {
-                using (LockHolder.Hold(_typeLoaderLock))
-                {
-                    // Now that we hold the lock, we may find that existing types can now find
-                    // their associated RuntimeTypeHandle. Flush the type builder states as a way
-                    // to force the reresolution of RuntimeTypeHandles which couldn't be found before.
-                    context.FlushTypeBuilderStates();
-
-                    if (!TypeBuilder.TryBuildGenericMethod(method, out dictionaryPointer))
-                        return false;
-                }
-            }
-
-            Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
-
-            TypeSystemContextFactory.Recycle(context);
-            return true;
-        }
-
 #region Privates
         private bool TryGetDynamicGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
         {
