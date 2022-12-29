@@ -7275,7 +7275,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         //
         const bool isContainable = (ind->Addr() != nullptr) && IsSafeToContainMem(ind, ind->Addr());
 #else
-        const bool isContainable = true;
+        const bool isContainable         = true;
 #endif
 
         if (!ind->OperIs(GT_NOP))
