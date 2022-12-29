@@ -311,8 +311,10 @@ namespace System.Net.Security
 
     internal sealed class SafeFreeCredential_SECURITY : SafeFreeCredentials
     {
+#pragma warning disable 0649
+        // This is used only by SslStream but it is included elsewhere
         public X509Certificate? LocalCertificate;
-
+#pragma warning restore 0649
         public SafeFreeCredential_SECURITY() : base() { }
 
         protected override bool ReleaseHandle()
