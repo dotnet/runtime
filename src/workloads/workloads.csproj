@@ -1,4 +1,4 @@
-﻿<Project DefaultTargets="Restore;Build">
+<Project DefaultTargets="Restore;Build">
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
@@ -136,7 +136,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-*.nupkg" MsiVersion="$(MsiVersion)"/>
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity).*.nupkg" 
+                        MsiVersion="$(MsiVersion)"
+                        SupportsMachineArch="%(SupportsMachineArch)" />
     </ItemGroup>
 
     <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
@@ -172,7 +174,8 @@
       <MsiPackageProjects Include="%(Msis.PackageProject)" />
     </ItemGroup>
 
-    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir)" Targets="restore;pack" />
+    <!-- We disable PackageValidation which runs because these projects import the repo's Directory.Build.props and Directory.Build.targets file. -->
+    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir);EnablePackageValidation=false" Targets="restore;pack" />
   </Target>
 
   <!-- Target to create a single wixpack for signing -->

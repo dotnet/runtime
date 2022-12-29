@@ -109,6 +109,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Discard>]
         internal static partial void throw0();
 
+        [JSImport("returnError", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Any>]
+        internal static partial object returnError();
+
         [JSImport("echo1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Void>>]
         internal static partial Task echo1_Task([JSMarshalAs<JSType.Promise<JSType.Void>>] Task arg1);
@@ -307,6 +311,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.String>>]
+        internal static partial Task<string> echopromise_String([JSMarshalAs<JSType.String>] string value);
         #endregion String
 
         #region Object
@@ -333,6 +341,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Any>>]
+        internal static partial Task<object> echopromise_Object([JSMarshalAs<JSType.Any>] object value);
         #endregion Object
 
         #region Exception
@@ -359,6 +371,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Error>>]
+        internal static partial Task<Exception> echopromise_Exception([JSMarshalAs<JSType.Error>] Exception value);
         #endregion Exception
 
         #region Task
@@ -967,6 +982,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
+
+        [JSImport("echopromise", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Promise<JSType.Object>>]
+        internal static partial Task<JSObject> echopromise_JSObject([JSMarshalAs<JSType.Object>] JSObject value);
         #endregion JSObject
 
         [JSImport("setup", "JavaScriptTestHelper")]
@@ -996,12 +1015,12 @@ namespace JavaScriptTestHelperNamespace
             return message + "11";
         }
 
-        public partial class NestedClass
+        private partial class NestedClass
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
             public static string EchoString(string message) => message + "12";
         
-            public partial class DoubleNestedClass
+            private partial class DoubleNestedClass
             {
                 [System.Runtime.InteropServices.JavaScript.JSExport]
                 public static string EchoString(string message) => message + "13";

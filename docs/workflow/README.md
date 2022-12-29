@@ -35,7 +35,7 @@ More info on this, as well as the different build configurations in the [Configu
 This was a concise introduction and now it's time to show the specifics of building specific subsets in any given supported platform, since most likely you will want to customize your builds according to what component(s) you're working on, as well as how you configured your build environment. We have links to instructions depending on your needs [in this section](#full-instructions-on-building-and-testing-the-runtime-repo).
 
 * For instructions on how to edit code and make changes, see [Editing and Debugging](editing-and-debugging.md).
-* For instructions on how to debug CoreCLR, see [Debugging CoreCLR](/docs/workflow/debugging/coreclr/debugging-coreclr.md).
+* For instructions on how to debug CoreCLR, see [Debugging CoreCLR](/docs/workflow/debugging/coreclr/debugging-runtime.md).
 * For instructions on using GitHub Codespaces, see [Codespaces](/docs/workflow/Codespaces.md).
 
 ## Configurations and Subsets

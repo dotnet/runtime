@@ -197,10 +197,8 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static void PrelinkCore(MethodInfo m)
-        {
-            // This method is effectively a no-op for NativeAOT, everything pre-generated.
-        }
+        // This method is effectively a no-op for NativeAOT, everything pre-generated.
+        static partial void PrelinkCore(MethodInfo m);
 
         internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
         {
@@ -307,8 +305,10 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-            if (checked(ofs + Unsafe.SizeOf<T>()) > size)
+#pragma warning disable 8500 // sizeof of managed types
+            if (checked(ofs + sizeof(T)) > size)
                 throw new ArgumentOutOfRangeException(nameof(ofs));
+#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);
@@ -386,8 +386,10 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-            if (checked(ofs + Unsafe.SizeOf<T>()) > size)
+#pragma warning disable 8500 // sizeof of managed types
+            if (checked(ofs + sizeof(T)) > size)
                 throw new ArgumentOutOfRangeException(nameof(ofs));
+#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);

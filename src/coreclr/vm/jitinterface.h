@@ -418,7 +418,6 @@ class CEEInfo : public ICorJitInfo
     MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context);
     TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context);
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
-    BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
     void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 public:
@@ -494,6 +493,7 @@ public:
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
     CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
+        m_pJitHandles(nullptr),
         m_pMethodBeingCompiled(fd),
         m_pThread(GetThreadNULLOk()),
         m_hMethodForSecurity_Key(NULL),
@@ -509,6 +509,21 @@ public:
     virtual ~CEEInfo()
     {
         LIMITED_METHOD_CONTRACT;
+
+#if !defined(DACCESS_COMPILE)
+        // Free all handles used by JIT
+        if (m_pJitHandles != nullptr)
+        {
+            OBJECTHANDLE* elements = m_pJitHandles->GetElements();
+            unsigned count = m_pJitHandles->GetCount();
+            for (unsigned i = 0; i < count; i++)
+            {
+                DestroyHandle(elements[i]);
+            }
+            delete m_pJitHandles;
+            m_pJitHandles = nullptr;
+        }
+#endif
     }
 
     // Performs any work JIT-related work that should be performed at process shutdown.
@@ -569,6 +584,7 @@ public:
 #endif
 
 protected:
+    SArray<OBJECTHANDLE>*   m_pJitHandles;                      // GC handles used by JIT
     MethodDesc*             m_pMethodBeingCompiled;             // Top-level method being compiled
     Thread *                m_pThread;                          // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS            m_jitFlags;
@@ -578,6 +594,9 @@ protected:
         LIMITED_METHOD_CONTRACT;
         return (CORINFO_METHOD_HANDLE)m_pMethodBeingCompiled;
     }
+
+    CORINFO_OBJECT_HANDLE getJitHandleForObject(OBJECTREF objref, bool knownFrozen = false);
+    OBJECTREF getObjectFromJitHandle(CORINFO_OBJECT_HANDLE handle);
 
     // Cache of last GetMethodForSecurity() lookup
     CORINFO_METHOD_HANDLE   m_hMethodForSecurity_Key;
@@ -589,18 +608,7 @@ protected:
 
     bool                    m_allowInlining;
 
-    // Tracking of module activation dependencies. We have two flavors:
-    // - Fast one that gathers generic arguments from EE handles, but does not work inside generic context.
-    // - Slow one that operates on typespec and methodspecs from metadata.
-    void ScanForModuleDependencies(Module* pModule, SigPointer psig);
-    void ScanMethodSpec(Module * pModule, PCCOR_SIGNATURE pMethodSpec, ULONG cbMethodSpec);
-    // Returns true if it is ok to proceed with scan of parent chain
-    bool ScanTypeSpec(Module * pModule, PCCOR_SIGNATURE pTypeSpec, ULONG cbTypeSpec);
-    void ScanInstantiation(Module * pModule, Instantiation inst);
-
-    // The main entrypoints for module activation tracking
-    void ScanToken(Module * pModule, CORINFO_RESOLVED_TOKEN * pResolvedToken, TypeHandle th, MethodDesc * pMD = NULL);
-    void ScanTokenForDynamicScope(CORINFO_RESOLVED_TOKEN * pResolvedToken, TypeHandle th, MethodDesc * pMD = NULL);
+    void EnsureActive(TypeHandle th, MethodDesc * pMD = NULL);
 };
 
 
@@ -908,9 +916,6 @@ public:
                        void **            ppIndirection) override final;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
-    // Override active dependency to talk to loader
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo) override final;
-
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
     // method desc, it calls through to CEEInfo::GetProfilingHandle and caches the
     // result in CEEJitInfo::GetProfilingHandleCache.  Thereafter, this wrapper regurgitates the cached values
@@ -924,7 +929,6 @@ public:
 
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override final;
     InfoAccessType emptyStringLiteral(void ** ppValue) override final;
-    void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection) override final;
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override final;
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override final;
 

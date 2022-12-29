@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Filter ProjectReferences to build the best matching target framework only. -->
+    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
   </PropertyGroup>
 
   <!-- Reference all NetCoreAppCurrent shared framework generator projects. -->

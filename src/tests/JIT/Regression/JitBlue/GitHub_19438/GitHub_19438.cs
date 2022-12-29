@@ -14,7 +14,7 @@ using System.Diagnostics;
 
 namespace GitHub_19438
 {
-    class Program
+    public class Program
     {
         struct float4
         {
@@ -63,7 +63,7 @@ namespace GitHub_19438
             }
         }
 
-        static int Main(string[] args)
+        public static int Main()
         {
             const int iterationCount = 10;
             const int itemCount = 1000000;

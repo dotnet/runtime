@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         var map = new Dictionary<string, bool?> { { "foo", true } };
         return (Test(map) == true) ? 100 : 1;

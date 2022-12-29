@@ -1064,12 +1064,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return ::CreateRefcountedHandle(m_handleStore, object);
     }
-
-    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, NativeComWeakHandleInfo* pComWeakHandleInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakHandleInfo);
-    }
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
@@ -1092,6 +1086,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return &m_crstLoaderAllocatorReferences;
+    }
+
+    CrstExplicitInit* GetStaticBoxInitLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_crstStaticBoxInitLock;
     }
 
     static CrstStatic* GetMethodTableExposedClassObjectLock()
@@ -1118,6 +1118,7 @@ protected:
     CrstExplicitInit m_DomainLocalBlockCrst;
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
+    CrstExplicitInit m_crstStaticBoxInitLock;
 
     //#AssemblyListLock
     // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
@@ -1473,8 +1474,6 @@ struct FailedAssembly {
         //
     }
 };
-
-class AppDomainIterator;
 
 const DWORD DefaultADID = 1;
 
@@ -1980,29 +1979,6 @@ public:
 
     static void ExceptionUnwind(Frame *pFrame);
 
-#ifdef _DEBUG
-
-    BOOL IsHeldByIterator()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwIterHolders>0;
-    }
-
-    void IteratorRelease()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_dwIterHolders);
-        InterlockedDecrement(&m_dwIterHolders);
-    }
-
-
-    void IteratorAcquire()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedIncrement(&m_dwIterHolders);
-    }
-
-#endif
     BOOL IsActive()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2022,7 +1998,6 @@ public:
         return m_Stage > STAGE_CREATING;
 #endif
     }
-
 
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR szName);
@@ -2214,10 +2189,6 @@ private:
 
     ArrayList        m_failedAssemblies;
 
-#ifdef _DEBUG
-    Volatile<LONG> m_dwIterHolders;
-#endif
-
     //
     // DAC iterator for failed assembly loads
     //
@@ -2354,8 +2325,6 @@ typedef VPTR(class SystemDomain) PTR_SystemDomain;
 class SystemDomain : public BaseDomain
 {
     friend class AppDomainNative;
-    friend class AppDomainIterator;
-    friend class UnsafeAppDomainIterator;
     friend class ClrDataAccess;
 
     VPTR_VTABLE_CLASS(SystemDomain, BaseDomain)
@@ -2680,132 +2649,6 @@ public:
 #endif
 
 };  // class SystemDomain
-
-
-//
-// an UnsafeAppDomainIterator is used to iterate over all existing domains
-//
-// The iteration is guaranteed to include all domains that exist at the
-// start & end of the iteration. This iterator is considered unsafe because it does not
-// reference count the various appdomains, and can only be used when the runtime is stopped,
-// or external synchronization is used. (and therefore no other thread may cause the appdomain list to change.)
-// In CoreCLR, this iterator doesn't use a list as there is at most 1 AppDomain, and instead will find the only AppDomain, or not.
-//
-class UnsafeAppDomainIterator
-{
-    friend class SystemDomain;
-public:
-    UnsafeAppDomainIterator(BOOL bOnlyActive)
-    {
-        m_bOnlyActive = bOnlyActive;
-    }
-
-    void Init()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_iterationCount = 0;
-        m_pCurrent = NULL;
-    }
-
-    BOOL Next()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (m_iterationCount == 0)
-        {
-            m_iterationCount++;
-            m_pCurrent = AppDomain::GetCurrentDomain();
-            if (m_pCurrent != NULL &&
-                (m_bOnlyActive ?
-                 m_pCurrent->IsActive() : m_pCurrent->IsValid()))
-            {
-                return TRUE;
-            }
-        }
-
-        m_pCurrent = NULL;
-        return FALSE;
-    }
-
-    AppDomain * GetDomain()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pCurrent;
-    }
-
-  private:
-
-    int                 m_iterationCount;
-    AppDomain *         m_pCurrent;
-    BOOL                m_bOnlyActive;
-};  // class UnsafeAppDomainIterator
-
-//
-// an AppDomainIterator is used to iterate over all existing domains.
-//
-// The iteration is guaranteed to include all domains that exist at the
-// start & end of the iteration.  Any domains added or deleted during
-// iteration may or may not be included.  The iterator also guarantees
-// that the current iterated appdomain (GetDomain()) will not be deleted.
-//
-
-class AppDomainIterator : public UnsafeAppDomainIterator
-{
-    friend class SystemDomain;
-
-  public:
-    AppDomainIterator(BOOL bOnlyActive) : UnsafeAppDomainIterator(bOnlyActive)
-    {
-        WRAPPER_NO_CONTRACT;
-        Init();
-    }
-
-    ~AppDomainIterator()
-    {
-        WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE
-        if (GetDomain() != NULL)
-        {
-#ifdef _DEBUG
-            GetDomain()->IteratorRelease();
-#endif
-            GetDomain()->Release();
-        }
-#endif
-    }
-
-    BOOL Next()
-    {
-        WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE
-        if (GetDomain() != NULL)
-        {
-#ifdef _DEBUG
-            GetDomain()->IteratorRelease();
-#endif
-            GetDomain()->Release();
-        }
-
-        SystemDomain::LockHolder lh;
-#endif
-
-        if (UnsafeAppDomainIterator::Next())
-        {
-#ifndef DACCESS_COMPILE
-            GetDomain()->AddRef();
-#ifdef _DEBUG
-            GetDomain()->IteratorAcquire();
-#endif
-#endif
-            return TRUE;
-        }
-
-        return FALSE;
-    }
-};  // class AppDomainIterator
 
 #include "comreflectioncache.inl"
 

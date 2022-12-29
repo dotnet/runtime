@@ -13,7 +13,7 @@
 #include <winresrc.h>
 
 #ifndef FX_VER_FILEDESCRIPTION_STR
-#define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET Runtime resources\0"
+#define FX_VER_FILEDESCRIPTION_STR ".NET Runtime resources"
 #endif
 
 #include <fxver.h>

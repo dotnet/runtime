@@ -821,7 +821,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
 
     PAL_TRY(Param *, pParam, &param) {
         GUID guidLang={0},guidLangVendor={0},guidDoc={0};
-        CHAR zLang[64],zVendor[64],zDoc[64];
+        CHAR zLang[GUID_STR_BUFFER_LEN],zVendor[GUID_STR_BUFFER_LEN],zDoc[GUID_STR_BUFFER_LEN];
         ULONG32 k;
         if(pParam->pLCD->FileToken != ulWasFileToken)
         {
@@ -1029,7 +1029,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 LoadScope(pRootScope,&daScope,&ulScopes);
                 qsort(&daScope[0],ulScopes,sizeof(LexScope),cmpLexScope);
                 OpenScope(pRootScope,pszLVname,ulVars);
-                sprintf_s(szVarPrefix,MAX_PREFIX_SIZE,"@%Id0",(size_t)pszLVname);
+                sprintf_s(szVarPrefix,MAX_PREFIX_SIZE,"@%zd0",(size_t)pszLVname);
 
 #ifndef SHOW_LEXICAL_SCOPES
                 for(unsigned jjj = 0; jjj < ulScopes; jjj++)
@@ -1115,8 +1115,10 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                             pFile = NULL;
                             if(fopen_s(&pFile,szFileName,"rt") != 0)
                             {
-                                char* pch = strrchr(szFileName,'\\');
+                                char* pch = strrchr(szFileName, DIRECTORY_SEPARATOR_CHAR_A);
+#ifdef HOST_WINDOWS
                                 if(pch == NULL) pch = strrchr(szFileName,':');
+#endif
                                 pFile = NULL;
                                 if(pch) fopen_s(&pFile,pch+1,"rt");
                             }
@@ -1540,7 +1542,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     PadTheString;
                 }
 
-                szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s 0x%I64x", pszInstrName, v);
+                szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s 0x%llx", pszInstrName, v);
                 PC += 8;
                 break;
             }

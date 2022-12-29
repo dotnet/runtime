@@ -5,6 +5,8 @@
 #define _WIN_PATH_APIS_WRAPPER_
 class SString;
 
+#ifdef HOST_WINDOWS
+
 HMODULE
 LoadLibraryExWrapper(
     _In_ LPCWSTR lpLibFileName,
@@ -35,7 +37,6 @@ GetFileAttributesExWrapper(
     _Out_writes_bytes_(sizeof(WIN32_FILE_ATTRIBUTE_DATA)) LPVOID lpFileInformation
     );
 
-#ifndef HOST_UNIX
 BOOL
 CopyFileExWrapper(
     _In_        LPCWSTR lpExistingFileName,
@@ -46,7 +47,7 @@ CopyFileExWrapper(
     _Inout_opt_ LPBOOL pbCancel,
     _In_        DWORD dwCopyFlags
     );
-#endif //HOST_UNIX
+#endif //HOST_WINDOWS
 
 DWORD
 SearchPathWrapper(

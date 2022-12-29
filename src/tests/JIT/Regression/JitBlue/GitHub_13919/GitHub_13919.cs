@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace N
 {
-    class C
+    public class C
     {
         class Node
         {
@@ -41,7 +41,7 @@ namespace N
             return result;
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             Node head = new Node { value = 6, next = new Node { value = 13, next = new Node { value = 5, next = null } } };
 

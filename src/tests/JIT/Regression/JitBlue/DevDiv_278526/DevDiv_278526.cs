@@ -10,7 +10,7 @@
 using System;
 
 
-class Program
+public class Program
 {
       public sealed class Variables
     {
@@ -37,7 +37,7 @@ class Program
         return true;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         string s = "skip"; // Test checks commpilation process.
         VerifyMacvalueSSlV2(s);

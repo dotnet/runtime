@@ -15,7 +15,7 @@ internal struct VT
     public char m4;
 }
 
-internal unsafe class test
+public unsafe class test
 {
     private static unsafe bool CheckDoubleAlignment1(VT* p)
     {

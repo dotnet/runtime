@@ -777,7 +777,7 @@ public:
     ValueNumPair VNPairForStore(
         ValueNumPair locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNumPair value);
 
-    bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize) const
+    static bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize)
     {
         return (offset == 0) && (locationSize == indSize);
     }
@@ -1107,6 +1107,9 @@ public:
         return ValueNumPair(EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetLiberal(), arg1VNP.GetLiberal()),
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
+
+    ValueNum EvalHWIntrinsicFunUnary(
+        var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
 
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);

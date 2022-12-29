@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public static object[] m_axStatic2 = null;
         public static void Static3()
@@ -25,7 +25,7 @@ namespace Test
                     throw new Exception();
             } while (flag3);
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

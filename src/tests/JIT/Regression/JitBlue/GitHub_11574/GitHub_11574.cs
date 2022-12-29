@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
     static byte[] s_arr2;
     static byte[] s_arr3;
@@ -20,7 +20,7 @@ class Program
         return (actual == expected) ? rv : 0;
     }
 
-    static int Main(string[] args)
+    public static int Main()
     {
         Init();
 

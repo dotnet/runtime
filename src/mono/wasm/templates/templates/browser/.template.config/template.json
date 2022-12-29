@@ -6,7 +6,6 @@
   "groupIdentity": "WebAssembly.Browser",
   "precedence": 8000,
   "identity": "WebAssembly.Browser.8.0",
-  "description": "WebAssembly Browser App",
   "name": "WebAssembly Browser App",
   "description": "A project template for creating a .NET app that runs on WebAssembly in a browser",
   "shortName": "wasmbrowser",
@@ -47,6 +46,7 @@
         }
       ],
       "defaultValue": "net8.0",
+      "replaces": "net7.0",
       "displayName": "framework"
     }
   }

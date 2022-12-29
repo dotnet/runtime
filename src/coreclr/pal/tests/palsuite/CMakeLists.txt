@@ -169,7 +169,6 @@ add_executable_clr(paltests
   c_runtime/malloc/test2/test2.cpp
   c_runtime/memchr/test1/test1.cpp
   c_runtime/memcmp/test1/test1.cpp
-  c_runtime/memcpy/test1/test1.cpp
   c_runtime/memmove/test1/test1.cpp
   c_runtime/memset/test1/test1.cpp
   c_runtime/modf/test1/test1.cpp
@@ -257,24 +256,6 @@ add_executable_clr(paltests
   c_runtime/strtod/test2/test2.cpp
   c_runtime/strtok/test1/test1.cpp
   c_runtime/strtoul/test1/test1.cpp
-  c_runtime/swprintf/test1/test1.cpp
-  c_runtime/swprintf/test10/test10.cpp
-  c_runtime/swprintf/test11/test11.cpp
-  c_runtime/swprintf/test12/test12.cpp
-  c_runtime/swprintf/test13/test13.cpp
-  c_runtime/swprintf/test14/test14.cpp
-  c_runtime/swprintf/test15/test15.cpp
-  c_runtime/swprintf/test16/test16.cpp
-  c_runtime/swprintf/test17/test17.cpp
-  c_runtime/swprintf/test18/test18.cpp
-  c_runtime/swprintf/test19/test19.cpp
-  c_runtime/swprintf/test2/test2.cpp
-  c_runtime/swprintf/test3/test3.cpp
-  c_runtime/swprintf/test4/test4.cpp
-  c_runtime/swprintf/test6/test6.cpp
-  c_runtime/swprintf/test7/test7.cpp
-  c_runtime/swprintf/test8/test8.cpp
-  c_runtime/swprintf/test9/test9.cpp
   c_runtime/tan/test1/test1.cpp
   c_runtime/tanf/test1/test1.cpp
   c_runtime/tanh/test1/test1.cpp
@@ -340,24 +321,6 @@ add_executable_clr(paltests
   c_runtime/vsprintf/test7/test7.cpp
   c_runtime/vsprintf/test8/test8.cpp
   c_runtime/vsprintf/test9/test9.cpp
-  c_runtime/vswprintf/test1/test1.cpp
-  c_runtime/vswprintf/test10/test10.cpp
-  c_runtime/vswprintf/test11/test11.cpp
-  c_runtime/vswprintf/test12/test12.cpp
-  c_runtime/vswprintf/test13/test13.cpp
-  c_runtime/vswprintf/test14/test14.cpp
-  c_runtime/vswprintf/test15/test15.cpp
-  c_runtime/vswprintf/test16/test16.cpp
-  c_runtime/vswprintf/test17/test17.cpp
-  c_runtime/vswprintf/test18/test18.cpp
-  c_runtime/vswprintf/test19/test19.cpp
-  c_runtime/vswprintf/test2/test2.cpp
-  c_runtime/vswprintf/test3/test3.cpp
-  c_runtime/vswprintf/test4/test4.cpp
-  c_runtime/vswprintf/test6/test6.cpp
-  c_runtime/vswprintf/test7/test7.cpp
-  c_runtime/vswprintf/test8/test8.cpp
-  c_runtime/vswprintf/test9/test9.cpp
   c_runtime/wcscat/test1/test1.cpp
   c_runtime/wcschr/test1/test1.cpp
   c_runtime/wcscmp/test1/test1.cpp
@@ -408,24 +371,6 @@ add_executable_clr(paltests
   c_runtime/_snprintf_s/test7/test7.cpp
   c_runtime/_snprintf_s/test8/test8.cpp
   c_runtime/_snprintf_s/test9/test9.cpp
-  c_runtime/_snwprintf_s/test1/test1.cpp
-  c_runtime/_snwprintf_s/test10/test10.cpp
-  c_runtime/_snwprintf_s/test11/test11.cpp
-  c_runtime/_snwprintf_s/test12/test12.cpp
-  c_runtime/_snwprintf_s/test13/test13.cpp
-  c_runtime/_snwprintf_s/test14/test14.cpp
-  c_runtime/_snwprintf_s/test15/test15.cpp
-  c_runtime/_snwprintf_s/test16/test16.cpp
-  c_runtime/_snwprintf_s/test17/test17.cpp
-  c_runtime/_snwprintf_s/test18/test18.cpp
-  c_runtime/_snwprintf_s/test19/test19.cpp
-  c_runtime/_snwprintf_s/test2/test2.cpp
-  c_runtime/_snwprintf_s/test3/test3.cpp
-  c_runtime/_snwprintf_s/test4/test4.cpp
-  c_runtime/_snwprintf_s/test6/test6.cpp
-  c_runtime/_snwprintf_s/test7/test7.cpp
-  c_runtime/_snwprintf_s/test8/test8.cpp
-  c_runtime/_snwprintf_s/test9/test9.cpp
   c_runtime/_stricmp/test1/test1.cpp
   c_runtime/_strnicmp/test1/test1.cpp
   c_runtime/_vsnprintf_s/test1/test1.cpp
@@ -446,24 +391,6 @@ add_executable_clr(paltests
   c_runtime/_vsnprintf_s/test7/test7.cpp
   c_runtime/_vsnprintf_s/test8/test8.cpp
   c_runtime/_vsnprintf_s/test9/test9.cpp
-  c_runtime/_vsnwprintf_s/test1/test1.cpp
-  c_runtime/_vsnwprintf_s/test10/test10.cpp
-  c_runtime/_vsnwprintf_s/test11/test11.cpp
-  c_runtime/_vsnwprintf_s/test12/test12.cpp
-  c_runtime/_vsnwprintf_s/test13/test13.cpp
-  c_runtime/_vsnwprintf_s/test14/test14.cpp
-  c_runtime/_vsnwprintf_s/test15/test15.cpp
-  c_runtime/_vsnwprintf_s/test16/test16.cpp
-  c_runtime/_vsnwprintf_s/test17/test17.cpp
-  c_runtime/_vsnwprintf_s/test18/test18.cpp
-  c_runtime/_vsnwprintf_s/test19/test19.cpp
-  c_runtime/_vsnwprintf_s/test2/test2.cpp
-  c_runtime/_vsnwprintf_s/test3/test3.cpp
-  c_runtime/_vsnwprintf_s/test4/test4.cpp
-  c_runtime/_vsnwprintf_s/test6/test6.cpp
-  c_runtime/_vsnwprintf_s/test7/test7.cpp
-  c_runtime/_vsnwprintf_s/test8/test8.cpp
-  c_runtime/_vsnwprintf_s/test9/test9.cpp
   c_runtime/_wcsicmp/test1/test1.cpp
   c_runtime/_wcslwr_s/test1/test1.cpp
   c_runtime/_wcsnicmp/test1/test1.cpp
@@ -522,8 +449,6 @@ add_executable_clr(paltests
 #  filemapping_memmgt/FreeLibrary/test1/dlltest.cpp
   filemapping_memmgt/FreeLibrary/test1/FreeLibrary.cpp
   filemapping_memmgt/FreeLibrary/test2/test2.cpp
-#  filemapping_memmgt/FreeLibraryAndExitThread/test1/dlltest.cpp
-  filemapping_memmgt/FreeLibraryAndExitThread/test1/test1.cpp
   filemapping_memmgt/GetModuleFileNameA/test1/GetModuleFileNameA.cpp
   filemapping_memmgt/GetModuleFileNameA/test2/GetModuleFileNameA.cpp
   filemapping_memmgt/GetModuleFileNameW/test1/GetModuleFileNameW.cpp

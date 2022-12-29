@@ -51,7 +51,6 @@ namespace System.Net.Http
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
         private readonly TransportContext? _transportContext;
-        private readonly WeakReference<HttpConnection> _weakThisRef;
 
         private HttpRequestMessage? _currentRequest;
         private readonly byte[] _writeBuffer;
@@ -93,8 +92,6 @@ namespace System.Net.Http
 
             _writeBuffer = new byte[InitialWriteBufferSize];
             _readBuffer = new byte[InitialReadBufferSize];
-
-            _weakThisRef = new WeakReference<HttpConnection>(this);
 
             _idleSinceTickCount = Environment.TickCount64;
 
@@ -899,17 +896,12 @@ namespace System.Net.Http
             // - The registration disposes of the connection, tearing it down and causing any pending operations to wake up.
             // - Because such a tear down can result in a variety of different exception types, we check for a cancellation
             //   request and prioritize that over other exceptions, wrapping the actual exception as an inner of an OCE.
-            // - A weak reference to this HttpConnection is stored in the cancellation token, to prevent the token from
-            //   artificially keeping this connection alive.
             return cancellationToken.Register(static s =>
             {
-                var weakThisRef = (WeakReference<HttpConnection>)s!;
-                if (weakThisRef.TryGetTarget(out HttpConnection? strongThisRef))
-                {
-                    if (NetEventSource.Log.IsEnabled()) strongThisRef.Trace("Cancellation requested. Disposing of the connection.");
-                    strongThisRef.Dispose();
-                }
-            }, _weakThisRef);
+                var connection = (HttpConnection)s!;
+                if (NetEventSource.Log.IsEnabled()) connection.Trace("Cancellation requested. Disposing of the connection.");
+                connection.Dispose();
+            }, this);
         }
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
@@ -1203,12 +1195,12 @@ namespace System.Net.Http
                 value = value.Slice(1);
             }
 
-            // Skip trailing whitespace for value.
+            // Skip trailing OWS for value.
             while (true)
             {
                 int spIdx = value.Length - 1;
 
-                if ((uint)spIdx >= (uint)value.Length || value[spIdx] != ' ')
+                if ((uint)spIdx >= (uint)value.Length || !(value[spIdx] is (byte)' ' or (byte)'\t'))
                 {
                     // hot path
                     break;
@@ -1590,12 +1582,10 @@ namespace System.Net.Http
             int offset = _writeOffset;
             if (s.Length <= _writeBuffer.Length - offset)
             {
-                byte[] writeBuffer = _writeBuffer;
-                foreach (char c in s)
-                {
-                    writeBuffer[offset++] = (byte)c;
-                }
-                _writeOffset = offset;
+                OperationStatus operationStatus = Ascii.FromUtf16(s, _writeBuffer.AsSpan(offset), out int bytesWritten);
+                Debug.Assert(operationStatus == OperationStatus.Done);
+                _writeOffset = offset + bytesWritten;
+
                 return Task.CompletedTask;
             }
 
@@ -1606,14 +1596,14 @@ namespace System.Net.Http
 
         private async Task WriteStringAsyncSlow(string s, bool async)
         {
+            if (!Ascii.IsValid(s))
+            {
+                throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
+            }
+
             for (int i = 0; i < s.Length; i++)
             {
-                char c = s[i];
-                if ((c & 0xFF80) != 0)
-                {
-                    throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
-                }
-                await WriteByteAsync((byte)c, async).ConfigureAwait(false);
+                await WriteByteAsync((byte)s[i], async).ConfigureAwait(false);
             }
         }
 

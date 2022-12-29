@@ -10,7 +10,7 @@
 .assembly b10666
 {
 }
-.class value sealed Rational extends [mscorlib]System.ValueType
+.class public value sealed Rational extends [mscorlib]System.ValueType
 { .field int32 Numerator
   .field int32 Denominator
 
@@ -72,7 +72,7 @@
     ret
   }
 
-.method static int32 main()
+.method public static int32 main()
 { .entrypoint
   .locals (value class Rational Half)
   ldloca.s Half

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 public unsafe class Runtime_58874
 {
-    private static int Main(string[] args)
+    public static int Main()
     {
         using EndOfPage endOfPage = EndOfPage.Create();
         if (endOfPage != null)

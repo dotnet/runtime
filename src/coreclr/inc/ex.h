@@ -21,7 +21,6 @@
 #include "corerror.h"
 #include "stresslog.h"
 #include "staticcontract.h"
-#include "entrypoints.h"
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define _DEBUG_IMPL 1

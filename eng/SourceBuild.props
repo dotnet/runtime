@@ -34,7 +34,7 @@
     <PropertyGroup>
       <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --configuration $(Configuration)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(SourceBuildNonPortable)' == 'true'">$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
@@ -48,6 +48,10 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:EnablePackageValidation=false</InnerBuildArgs>
+      <!-- Re-enable for source-build when 8.0 Preview 1 shipped. See https://github.com/dotnet/installer/pull/14991 for more information. -->
+      <InnerBuildArgs>$(InnerBuildArgs) /p:ApiCompatValidateAssemblies=false</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) /p:PrimaryRuntimeFlavor=Mono /p:RuntimeFlavor=Mono</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

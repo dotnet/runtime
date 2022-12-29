@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             _data = new ObjectData(data.Data, data.Relocs, data.Alignment, new ISymbolDefinitionNode[] { this });
         }
 
-        public override ObjectNodeSection Section => _owningMethod.Context.Target.IsWindows
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _owningMethod.Context.Target.IsWindows
             ? ObjectNodeSection.FoldableReadOnlyDataSection
             : ObjectNodeSection.DataSection;
 

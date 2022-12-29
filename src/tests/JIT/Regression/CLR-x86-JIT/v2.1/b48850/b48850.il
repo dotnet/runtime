@@ -9,8 +9,9 @@
   .ver 4:0:0:0
 }
 
-.assembly Test {}
+.assembly 'b48850' {}
  
+.class public auto ansi Test_b48850 extends [mscorlib] System.Object {
 .method public static int32 Main()
 {
 	.entrypoint
@@ -45,6 +46,7 @@ Return:
                                                                 object)
   IL_003f:  ldloc.0
   IL_0040:  ret
+}
 }
 
 .class public value BigStructtestCase

@@ -10,7 +10,7 @@
 .assembly 'b489329' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
-.class FullProof {
+.class public FullProof {
 
 .method static int32 Test() {
 .maxstack 80

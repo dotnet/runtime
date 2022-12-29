@@ -19,7 +19,7 @@ namespace JitTest.HFA
         [DllImport("test2", EntryPoint = "GetDoubleConst")]
         public static extern double GetDoubleConst();
 
-        private static int Main()
+        public static int Main()
         {
             System.Console.WriteLine("Int32 Const = " + GetInt32Const());
             System.Console.WriteLine("Int64 Const = " + GetInt64Const());

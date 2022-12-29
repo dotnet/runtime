@@ -4322,7 +4322,7 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 #endif
 
 	/* range checking */
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg,
+	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, bounds_reg,
 				       arr->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, low1_reg,
@@ -6667,8 +6667,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method && !cfg->deopt && !cfg->interp_entry_only) {
 		if (header->num_clauses) {
-			/* deopt is only disabled for gsharedvt */
-			g_assert (cfg->gsharedvt);
 			for (guint i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
 				/* Finally clauses are checked after the remove_finally pass */
@@ -7837,7 +7835,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Inlining */
-			if ((cfg->opt & MONO_OPT_INLINE) && !inst_tailcall &&
+			if ((cfg->opt & MONO_OPT_INLINE) && !inst_tailcall && !gshared_static_virtual &&
 				(!virtual_ || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
 			    mono_method_check_inlining (cfg, cmethod)) {
 				int costs;
@@ -10007,7 +10005,7 @@ calli_end:
 				}
 
 				if (il_op == MONO_CEE_LDFLDA) {
-					if (sp [0]->type == STACK_OBJ) {
+					if (sp [0]->type == STACK_OBJ || sp [0]->type == STACK_PTR) {
 						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sp [0]->dreg, 0);
 						MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");
 					}
@@ -10081,11 +10079,14 @@ calli_end:
 				CHECK_TYPELOAD (klass);
 			}
 
-			addr = mono_special_static_field_get_offset (field, cfg->error);
-			CHECK_CFG_ERROR;
-			CHECK_TYPELOAD (klass);
-
 			is_special_static = mono_class_field_is_special_static (field);
+			if (is_special_static) {
+				addr = mono_special_static_field_get_offset (field, cfg->error);
+				CHECK_CFG_ERROR;
+				CHECK_TYPELOAD (klass);
+			} else {
+				addr = NULL;
+			}
 
 			if (is_special_static && ((gsize)addr & 0x80000000) == 0)
 				thread_ins = mono_create_tls_get (cfg, TLS_KEY_THREAD);
@@ -10254,8 +10255,13 @@ calli_end:
 			} else if (il_op == MONO_CEE_STSFLD) {
 				MonoInst *store;
 
-				EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, ftype, ins->dreg, 0, store_val->dreg);
-				store->flags |= ins_flag;
+				if (m_class_get_mem_manager (m_field_get_parent (field))->collectible && (mini_type_is_reference (ftype) || m_class_has_references (mono_class_from_mono_type_internal (ftype)))) {
+					/* These are stored on the GC heap, so they need GC barriers */
+					mini_emit_memory_store (cfg, ftype, ins, store_val, 0);
+				} else {
+					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, ftype, ins->dreg, 0, store_val->dreg);
+					store->flags |= ins_flag;
+				}
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = NULL;

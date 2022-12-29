@@ -14,15 +14,12 @@ namespace System.IO
         private FileInfo() { }
 
         public FileInfo(string fileName)
-            : this(fileName, isNormalized: false)
+            : this(fileName ?? throw new ArgumentNullException(nameof(fileName)), isNormalized: false)
         {
         }
 
         internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            ArgumentNullException.ThrowIfNull(originalPath);
-
-            // Want to throw the original argument name
             OriginalPath = originalPath;
 
             fullPath ??= originalPath;
@@ -84,10 +81,10 @@ namespace System.IO
             => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
         public StreamWriter CreateText()
-            => new StreamWriter(NormalizedPath, append: false);
+            => CreateStreamWriter(append: false);
 
         public StreamWriter AppendText()
-            => new StreamWriter(NormalizedPath, append: true);
+            => CreateStreamWriter(append: true);
 
         public FileInfo CopyTo(string destFileName) => CopyTo(destFileName, overwrite: false);
 
@@ -200,5 +197,12 @@ namespace System.IO
 
         [SupportedOSPlatform("windows")]
         public void Encrypt() => File.Encrypt(FullPath);
+
+        private StreamWriter CreateStreamWriter(bool append)
+        {
+            StreamWriter streamWriter = new StreamWriter(NormalizedPath, append);
+            Invalidate();
+            return streamWriter;
+        }
     }
 }

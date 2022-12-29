@@ -2358,7 +2358,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	if (cfg->method->dynamic)
 		jinfo = (MonoJitInfo *)g_malloc0 (mono_jit_info_size (flags, num_clauses, num_holes));
 	else
-		jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (cfg->mem_manager, mono_jit_info_size (flags, num_clauses, num_holes));
+		jinfo = mini_alloc_jinfo (cfg->jit_mm, mono_jit_info_size (flags, num_clauses, num_holes));
 	jinfo_try_holes_size += num_holes * sizeof (MonoTryBlockHoleJitInfo);
 
 	mono_jit_info_init (jinfo, cfg->method_to_register, cfg->native_code, cfg->code_len, flags, num_clauses, num_holes);
@@ -3303,9 +3303,31 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
-		cfg->deopt = TRUE;
-		/* Can't reconstruct inlined state */
-		cfg->disable_inline = TRUE;
+		gboolean can_deopt = TRUE;
+		/*
+		 * Can't handle catch clauses inside finally clauses right now.
+		 * When the ENDFINALLY opcode of the outer clause is encountered
+		 * while executing the inner catch clause from run_with_il_state (),
+		 * it will assert since it doesn't know where to continue execution.
+		 */
+		for (guint i = 0; i < cfg->header->num_clauses; ++i) {
+			for (guint j = 0; j < cfg->header->num_clauses; ++j) {
+				MonoExceptionClause *clause1 = &cfg->header->clauses [i];
+				MonoExceptionClause *clause2 = &cfg->header->clauses [j];
+
+				if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
+					if (clause1->flags == MONO_EXCEPTION_CLAUSE_NONE && clause2->flags != MONO_EXCEPTION_CLAUSE_NONE) {
+						can_deopt = FALSE;
+						break;
+					}
+				}
+			}
+		}
+		if (can_deopt) {
+			cfg->deopt = TRUE;
+			/* Can't reconstruct inlined state */
+			cfg->disable_inline = TRUE;
+		}
 	}
 
 #ifdef ENABLE_LLVM
@@ -4452,6 +4474,10 @@ mini_get_cpu_features (MonoCompile* cfg)
 	features |= MONO_CPU_ARM64_NEON;
 #endif
 
+#if defined(TARGET_WASM)
+	// All wasm VMs have this set
+	features |= MONO_CPU_WASM_BASE;
+#endif
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
 }

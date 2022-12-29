@@ -116,18 +116,9 @@ namespace System.Text
         /// <param name="capacity">The initial capacity of this builder.</param>
         public StringBuilder(string? value, int startIndex, int length, int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(capacity)));
-            }
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(length)));
-            }
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
             value ??= string.Empty;
 
@@ -160,14 +151,8 @@ namespace System.Text
             {
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_Capacity);
             }
-            if (maxCapacity < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxCapacity), SR.ArgumentOutOfRange_SmallMaxCapacity);
-            }
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(capacity)));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCapacity);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (capacity == 0)
             {
@@ -281,10 +266,7 @@ namespace System.Text
             get => m_ChunkChars.Length + m_ChunkOffset;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NegativeCapacity);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 if (value > MaxCapacity)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_Capacity);
@@ -319,10 +301,7 @@ namespace System.Text
         /// </remarks>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NegativeCapacity);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (Capacity < capacity)
             {
@@ -377,18 +356,12 @@ namespace System.Text
         public string ToString(int startIndex, int length)
         {
             int currentLength = this.Length;
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
             if (startIndex > currentLength)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
             }
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
             if (startIndex > currentLength - length)
             {
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
@@ -415,10 +388,7 @@ namespace System.Text
             set
             {
                 // If the new length is less than 0 or greater than our Maximum capacity, bail.
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NegativeLength);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 if (value > MaxCapacity)
                 {
@@ -682,10 +652,7 @@ namespace System.Text
         /// <param name="repeatCount">The number of times to append <paramref name="value"/>.</param>
         public StringBuilder Append(char value, int repeatCount)
         {
-            if (repeatCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(repeatCount), SR.ArgumentOutOfRange_NegativeCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(repeatCount);
 
             if (repeatCount == 0)
             {
@@ -730,14 +697,8 @@ namespace System.Text
         /// <param name="charCount">The number of characters to read in <paramref name="value"/>.</param>
         public StringBuilder Append(char[]? value, int startIndex, int charCount)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_GenericPositive);
-            }
-            if (charCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GenericPositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
 
             if (value == null)
             {
@@ -783,14 +744,8 @@ namespace System.Text
         /// <param name="count">The number of characters to read in <paramref name="value"/>.</param>
         public StringBuilder Append(string? value, int startIndex, int count)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_GenericPositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (value == null)
             {
@@ -825,15 +780,8 @@ namespace System.Text
 
         public StringBuilder Append(StringBuilder? value, int startIndex, int count)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            }
-
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_GenericPositive);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (value == null)
             {
@@ -901,10 +849,7 @@ namespace System.Text
         {
             ArgumentNullException.ThrowIfNull(destination);
 
-            if (destinationIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(destinationIndex)));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(destinationIndex);
 
             if (destinationIndex > destination.Length - count)
             {
@@ -916,10 +861,7 @@ namespace System.Text
 
         public void CopyTo(int sourceIndex, Span<char> destination, int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.Arg_NegativeArgCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if ((uint)sourceIndex > (uint)Length)
             {
@@ -970,10 +912,7 @@ namespace System.Text
 
         private StringBuilder Insert(int index, ReadOnlySpan<char> value, int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
@@ -1014,16 +953,8 @@ namespace System.Text
         /// </remarks>
         public StringBuilder Remove(int startIndex, int length)
         {
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
-
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
             if (length > Length - startIndex)
             {
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
@@ -1331,16 +1262,8 @@ namespace System.Text
                 ArgumentNullException.Throw(nameof(value));
             }
 
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-
-            if (charCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GenericPositive);
-            }
-
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
             if (startIndex > value.Length - charCount)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
@@ -1663,8 +1586,8 @@ namespace System.Text
                 {
                     // If arg is ISpanFormattable and the beginning doesn't need padding,
                     // try formatting it into the remaining current chunk.
-                    if (arg is ISpanFormattable spanFormattableArg &&
-                        (leftJustify || width == 0) &&
+                    if ((leftJustify || width == 0) &&
+                        arg is ISpanFormattable spanFormattableArg &&
                         spanFormattableArg.TryFormat(RemainingCurrentChunk, out int charsWritten, itemFormatSpan, provider))
                     {
                         if ((uint)charsWritten > (uint)RemainingCurrentChunk.Length)
@@ -1965,12 +1888,7 @@ namespace System.Text
                     int endInChunk = Math.Min(chunk.m_ChunkLength, endIndexInChunk);
 
                     Span<char> span = chunk.m_ChunkChars.AsSpan(curInChunk, endInChunk - curInChunk);
-                    int i;
-                    while ((i = span.IndexOf(oldChar)) >= 0)
-                    {
-                        span[i] = newChar;
-                        span = span.Slice(i + 1);
-                    }
+                    span.Replace(oldChar, newChar);
                 }
 
                 if (startIndexInChunk >= 0)
@@ -1995,10 +1913,7 @@ namespace System.Text
         public unsafe StringBuilder Append(char* value, int valueCount)
         {
             // We don't check null value as this case will throw null reference exception anyway
-            if (valueCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(valueCount), SR.ArgumentOutOfRange_NegativeCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(valueCount);
 
             Append(ref *value, valueCount);
             return this;
@@ -2624,7 +2539,18 @@ namespace System.Text
                     // if it only implements IFormattable, we come out even: only if it implements both do we
                     // end up paying for an extra interface check.
 
-                    if (value is ISpanFormattable)
+                    if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _stringBuilder.RemainingCurrentChunk, out int charsWritten))
+                        {
+                            _stringBuilder.m_ChunkLength += charsWritten;
+                        }
+                        else
+                        {
+                            AppendFormattedWithTempSpace(value, 0, format: null);
+                        }
+                    }
+                    else if (value is ISpanFormattable)
                     {
                         Span<char> destination = _stringBuilder.RemainingCurrentChunk;
                         if (((ISpanFormattable)value).TryFormat(destination, out int charsWritten, default, _provider)) // constrained call avoiding boxing for value types
@@ -2677,7 +2603,18 @@ namespace System.Text
                     // if it only implements IFormattable, we come out even: only if it implements both do we
                     // end up paying for an extra interface check.
 
-                    if (value is ISpanFormattable)
+                    if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _stringBuilder.RemainingCurrentChunk, out int charsWritten, format))
+                        {
+                            _stringBuilder.m_ChunkLength += charsWritten;
+                        }
+                        else
+                        {
+                            AppendFormattedWithTempSpace(value, 0, format);
+                        }
+                    }
+                    else if (value is ISpanFormattable)
                     {
                         Span<char> destination = _stringBuilder.RemainingCurrentChunk;
                         if (((ISpanFormattable)value).TryFormat(destination, out int charsWritten, format, _provider)) // constrained call avoiding boxing for value types

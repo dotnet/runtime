@@ -294,16 +294,26 @@ static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, cha
     char* versionOverride = getenv("CLR_ICU_VERSION_OVERRIDE");
     if (versionOverride != NULL)
     {
-        int first = -1;
-        int second = -1;
-        int third = -1;
-
-        int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
-        if (matches > 0)
+        if (strcmp(versionOverride, "build") == 0)
         {
-            if (OpenICULibraries(first, second, third, versionPrefix, symbolName, symbolVersion))
+            if (OpenICULibraries(U_ICU_VERSION_MAJOR_NUM, -1, -1, versionPrefix, symbolName, symbolVersion))
             {
                 return true;
+            }
+        }
+        else
+        {
+            int first = -1;
+            int second = -1;
+            int third = -1;
+
+            int matches = sscanf(versionOverride, "%d.%d.%d", &first, &second, &third);
+            if (matches > 0)
+            {
+                if (OpenICULibraries(first, second, third, versionPrefix, symbolName, symbolVersion))
+                {
+                    return true;
+                }
             }
         }
     }
@@ -539,6 +549,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     ValidateICUDataCanLoad();
 
     InitializeVariableMaxAndTopPointers(symbolVersion);
+    InitializeUColClonePointers(symbolVersion);
 }
 
 #undef PER_FUNCTION_BLOCK

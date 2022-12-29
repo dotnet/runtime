@@ -144,28 +144,28 @@ namespace System.Linq.Tests.LegacyTests
         [Fact]
         public void SelectMany1()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().SelectMany(n => new int[] { n + 4, 5 }).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().SelectMany(n => new[] { n + 4, 5 }).Count();
             Assert.Equal(6, count);
         }
 
         [Fact]
         public void SelectMany2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().SelectMany((n, i) => new int[] { 4 + i, 5 + n }).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().SelectMany((n, i) => new[] { 4 + i, 5 + n }).Count();
             Assert.Equal(6, count);
         }
 
         [Fact]
         public void SelectMany3()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().SelectMany(n => new long[] { n + 4, 5 }, (n1, n2) => (n1 + n2).ToString()).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().SelectMany(n => new long[] { n + 4, 5 }, (n1, n2) => (n1 + n2).ToString()).Count();
             Assert.Equal(6, count);
         }
 
         [Fact]
         public void SelectMany4()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().SelectMany((n, i) => new long[] { 4 + i, 5 + n }, (n1, n2) => (n1 + n2).ToString()).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().SelectMany((n, i) => new long[] { 4 + i, 5 + n }, (n1, n2) => (n1 + n2).ToString()).Count();
             Assert.Equal(6, count);
         }
     }

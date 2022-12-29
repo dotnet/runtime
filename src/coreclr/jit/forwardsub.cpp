@@ -222,21 +222,19 @@ public:
                 // Screen out contextual "uses"
                 //
                 GenTree* const parent = user;
-                bool const     isAddr = parent->OperIs(GT_ADDR);
-
-                bool isCallTarget = false;
 
                 // Quirk:
                 //
                 // fgGetStubAddrArg cannot handle complex trees (it calls gtClone)
                 //
+                bool isCallTarget = false;
                 if (parent->IsCall())
                 {
                     GenTreeCall* const parentCall = parent->AsCall();
                     isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
                 }
 
-                if (!isDef && !isAddr && !isCallTarget)
+                if (!isDef && !isCallTarget)
                 {
                     m_node       = node;
                     m_use        = use;
@@ -630,61 +628,24 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         }
     }
 
-    // Optimization:
-    //
-    // If we are about to substitute GT_OBJ, see if we can simplify it first.
-    // Not doing so can lead to regressions...
-    //
-    // Hold off on doing this for call args for now (per issue #51569).
-    // Hold off on OBJ(GT_LCL_ADDR).
-    //
-    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg() && fwdSubNode->gtGetOp1()->OperIs(GT_ADDR))
-    {
-        const bool     destroyNodes = false;
-        GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);
-        if (optTree != nullptr)
-        {
-            JITDUMP(" [folding OBJ(ADDR(LCL...))]");
-            fwdSubNode = optTree;
-        }
-    }
-
     // Quirks:
     //
-    // Don't substitute nodes "AddFinalArgsAndDetermineABIInfo" doesn't handle into struct args.
+    // Don't substitute nodes args morphing doesn't handle into struct args.
     //
     if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) &&
-        !fwdSubNode->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
+        !fwdSubNode->OperIs(GT_OBJ, GT_FIELD, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
     {
         JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
         return false;
     }
 
-    // We may sometimes lose or change a type handle. Avoid substituting if so.
+    // A "CanBeReplacedWithItsField" SDSU can serve as a sort of "BITCAST<primitive>(struct)"
+    // device, forwarding it risks forcing things to memory.
     //
-    // However, we allow free substitution of hardware SIMD types.
-    //
-    CORINFO_CLASS_HANDLE fwdHnd = gtGetStructHandleIfPresent(fwdSubNode);
-    CORINFO_CLASS_HANDLE useHnd = gtGetStructHandleIfPresent(fsv.GetNode());
-    if (fwdHnd != useHnd)
+    if (fwdSubNode->IsCall() && varDsc->CanBeReplacedWithItsField(this))
     {
-        if ((fwdHnd == NO_CLASS_HANDLE) || (useHnd == NO_CLASS_HANDLE))
-        {
-            JITDUMP(" would add/remove struct handle (substitution)\n");
-            return false;
-        }
-
-#ifdef FEATURE_SIMD
-        const bool bothHWSIMD = isHWSIMDClass(fwdHnd) && isHWSIMDClass(useHnd);
-#else
-        const bool bothHWSIMD = false;
-#endif
-
-        if (!bothHWSIMD)
-        {
-            JITDUMP(" would change struct handle (substitution)\n");
-            return false;
-        }
+        JITDUMP(" fwd sub local is 'CanBeReplacedWithItsField'\n");
+        return false;
     }
 
     // There are implicit assumptions downstream on where/how multi-reg ops

@@ -7,7 +7,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public abstract class Signature : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
         public override bool IsShareable => true;
         public override bool StaticDependenciesAreComputed => true;
 

@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
@@ -10,6 +12,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitDoSsa" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDoSsa" Value="0" />
   </ItemGroup>
 </Project>

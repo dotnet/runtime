@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 public class Runtime_62108
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

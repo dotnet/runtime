@@ -518,8 +518,8 @@ namespace System.Runtime.Serialization
             CodeAttributeDeclaration generatedCodeAttribute = new CodeAttributeDeclaration(typeof(GeneratedCodeAttribute).FullName!);
 
             AssemblyName assemblyName = Assembly.GetExecutingAssembly().GetName();
-            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Name)));
-            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Version?.ToString())));
+            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Name!)));
+            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Version?.ToString()!)));
 
             // System.Diagnostics.DebuggerStepThroughAttribute not allowed on enums
             // ensure that the attribute is only generated on types that are not enums
@@ -818,7 +818,7 @@ namespace System.Runtime.Serialization
             {
                 ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(classDataContract.BaseContract);
                 Debug.Assert(baseContractCodeDomInfo.IsProcessed, "Cannot generate code for type if code for base type has not been generated");
-                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference);
+                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference!);
                 AddBaseMemberNames(baseContractCodeDomInfo, contractCodeDomInfo);
                 if (baseContractCodeDomInfo.ReferencedTypeExists)
                 {
@@ -1151,7 +1151,7 @@ namespace System.Runtime.Serialization
             {
                 ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(classDataContract.BaseContract);
                 GenerateType(classDataContract.BaseContract, baseContractCodeDomInfo);
-                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference);
+                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference!);
                 if (baseContractCodeDomInfo.ReferencedTypeExists)
                 {
                     Type? actualType = (Type?)baseContractCodeDomInfo.TypeReference?.UserData[s_codeUserDataActualTypeKey];
@@ -1236,7 +1236,7 @@ namespace System.Runtime.Serialization
             Debug.Assert(contractCodeDomInfo.TypeDeclaration != null);
 
             CodeTypeDeclaration generatedType = contractCodeDomInfo.TypeDeclaration;
-            generatedType.BaseTypes.Add(baseTypeReference);
+            generatedType.BaseTypes.Add(baseTypeReference!);
             CodeAttributeDeclaration collectionContractAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(CollectionDataContractAttribute)));
             collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.NameProperty, new CodePrimitiveExpression(dataContractName)));
             collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.NamespaceProperty, new CodePrimitiveExpression(collectionContract.XmlName.Namespace)));
@@ -1671,7 +1671,7 @@ namespace System.Runtime.Serialization
 
         private static CodePrimitiveExpression NullReference
         {
-            get { return new CodePrimitiveExpression(null); }
+            get { return new CodePrimitiveExpression(null!); }
         }
 
         private CodeParameterDeclarationExpression SerializationInfoParameter
@@ -1782,12 +1782,12 @@ namespace System.Runtime.Serialization
                         new CodeTypeReferenceExpression(GetCodeTypeReference(typeof(XmlSerializableServices))),
                         nameof(XmlSerializableServices.AddDefaultSchema),
                         new CodeArgumentReferenceExpression(paramDeclaration.Name),
-                        new CodeFieldReferenceExpression(null, TypeNameFieldName)
+                        new CodeFieldReferenceExpression(null!, TypeNameFieldName)
                     )
                 );
                 getSchemaStaticMethod.Statements.Add(
                     new CodeMethodReturnStatement(
-                        new CodeFieldReferenceExpression(null, TypeNameFieldName)
+                        new CodeFieldReferenceExpression(null!, TypeNameFieldName)
                     )
                 );
                 return getSchemaStaticMethod;

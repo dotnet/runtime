@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 // test will fail with exit code 0; if it does do so correctly, the calls will not be reordered and the test will
 // pass.
 
-class Test_GitHub_10940
+public class Test_GitHub_10940
 {
     abstract class ValueSourceBase
     {
@@ -50,7 +50,7 @@ class Test_GitHub_10940
         return vs.GetReturnValue();
     }
 
-    static int Main()
+    public static int Main()
     {
         return M(new ValueSource());
     }

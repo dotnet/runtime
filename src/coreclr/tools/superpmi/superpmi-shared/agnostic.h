@@ -90,6 +90,14 @@ struct DLDD
     DWORD     C;
 };
 
+struct DLDDD
+{
+    DWORDLONG A;
+    DWORD     B;
+    DWORD     C;
+    DWORD     D;
+};
+
 struct Agnostic_CORINFO_METHODNAME_TOKENin
 {
     DWORDLONG ftn;
@@ -188,12 +196,6 @@ struct Agnostic_GetOSRInfo
 {
     DWORD index;
     unsigned ilOffset;
-};
-
-struct Agnostic_GetFieldAddress
-{
-    DWORDLONG ppIndirection;
-    DWORDLONG fieldAddress;
 };
 
 struct Agnostic_GetStaticFieldCurrentClass
@@ -387,9 +389,6 @@ struct Agnostic_AppendClassNameIn
 {
     DWORD     nBufLenIsZero;
     DWORDLONG classHandle;
-    DWORD     fNamespace;
-    DWORD     fFullInst;
-    DWORD     fAssembly;
 };
 
 struct Agnostic_AppendClassNameOut
@@ -768,11 +767,16 @@ struct Agnostic_RecordCallSite
     DWORDLONG                 methodHandle;
 };
 
-struct Agnostic_PrintObjectDescriptionResult
+struct Agnostic_PrintResult
 {
-    DWORDLONG bytesWritten;
-    DWORDLONG requiredBufferSize;
-    DWORD buffer;
+    // Required size of a buffer to contain everything including null terminator.
+    // UINT_MAX if it was not determined during recording.
+    DWORD requiredBufferSize;
+    // Index of stored string buffer. We always store this without null terminator.
+    // May be UINT_MAX if no buffer was stored.
+    DWORD stringBuffer;
+    // The size of the buffer stored by stringBuffer.
+    DWORD stringBufferSize;
 };
 
 #pragma pack(pop)
