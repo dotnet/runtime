@@ -186,7 +186,7 @@ void ThreadStore::DetachCurrentThread()
         pDetachingThread->Detach();
     }
 
-    // post-mortem clean up of native data structures.
+    // post-mortem clean up.
     pDetachingThread->Destroy();
 }
 
@@ -195,7 +195,7 @@ void ThreadStore::DetachCurrentThread()
 // released.  This way, the GC always enumerates a consistent set of threads each time
 // it enumerates threads between SuspendAllThreads and ResumeAllThreads.
 //
-// @TODO: Investigate if this requirement is actually necessary.  Threads already may
+// @TODO:  Investigate if this requirement is actually necessary.  Threads already may
 // not enter managed code during GC, so if new threads are added to the thread store,
 // but haven't yet entered managed code, is that really a problem?
 //

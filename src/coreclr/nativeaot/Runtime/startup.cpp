@@ -444,8 +444,7 @@ static void UninitDLL()
 }
 
 #ifdef _WIN32
-
-// This is set to the thread that initiates and performs the shutdown and needs to run
+// This is set to the thread that initiates and performs the shutdown and may run
 // after other threads are rudely terminated. So far this is a Windows-specific concern.
 // 
 // On POSIX OSes a process typically lives as long as any of its threads are alive or until
@@ -453,7 +452,18 @@ static void UninitDLL()
 // between threads.
 Thread* g_threadPerformingShutdown = NULL;
 
+static void __cdecl OnProcessExit()
+{
+    // The process is exiting and the current thread is performing the shutdown.
+    // At the point when this thread exits some threads may be already rudely terminated.
+    // It would not be a good idea for this thread to wait on any locks
+    // or run managed code at shutdown, so we will not try detaching it.
+    Thread* currentThread = ThreadStore::RawGetCurrentThread();
+    ASSERT(!currentThread->IsDetached());
+    g_threadPerformingShutdown = currentThread;
+}
 #endif
+
 void RuntimeThreadShutdown(void* thread)
 {
     // Note: loader lock is normally *not* held here!
@@ -490,6 +500,10 @@ extern "C" bool RhInitialize()
     if (!PalInit())
         return false;
 
+#ifdef _WIN32
+    atexit(&OnProcessExit);
+#endif
+
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
         return false;
 
@@ -518,13 +532,7 @@ EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, uint32_t dwReason, v
     case DLL_PROCESS_DETACH:
         if (pvReserved == nullptr)
         {
-            Thread* currentThread = ThreadStore::RawGetCurrentThread();
-            // The process is exiting and the current thread is performing the shutdown.
-            // At this point some threads may have been terminated rudely.
-            // It would not be a good idea for the current thread to wait on any locks
-            // or run managed code, so we do not detach it.
-            ASSERT(!currentThread->IsDetached());
-            g_threadPerformingShutdown = currentThread;
+            OnProcessExit();
         }
 
         UninitDLL();
