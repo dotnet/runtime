@@ -162,7 +162,20 @@ namespace System.Reflection.Emit
         {
             Module module = type.Module;
             if (module is not ModuleBuilder moduleBuilder)
+            {
+                if (type.IsGenericType)
+                {
+                    foreach (Type t in type.GetGenericArguments())
+                    {
+                        if (t.Module is ModuleBuilder mb)
+                        {
+                            return mb.GetConstructor(type, constructor);
+                        }
+                    }
+                }
+
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
+            }
 
             return moduleBuilder.GetConstructor(type, constructor);
         }
@@ -171,7 +184,20 @@ namespace System.Reflection.Emit
         {
             Module module = type.Module;
             if (module is not ModuleBuilder moduleBuilder)
+            {
+                if (type.IsGenericType)
+                {
+                    foreach (Type t in type.GetGenericArguments())
+                    {
+                        if (t.Module is ModuleBuilder mb)
+                        {
+                            return mb.GetField(type, field);
+                        }
+                    }
+                }
+
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
+            }
 
             return moduleBuilder.GetField(type, field);
         }
@@ -180,7 +206,20 @@ namespace System.Reflection.Emit
         {
             Module module = type.Module;
             if (module is not ModuleBuilder moduleBuilder)
+            {
+                if (type.IsGenericType)
+                {
+                    foreach (Type t in type.GetGenericArguments())
+                    {
+                        if (t.Module is ModuleBuilder mb)
+                        {
+                            return mb.GetMethod(type, method);
+                        }
+                    }
+                }
+
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
+            }
 
             return moduleBuilder.GetMethod(type, method);
         }

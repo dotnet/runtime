@@ -203,7 +203,6 @@ namespace System.Reflection.Emit
         //
 #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
-//#pragma warning disable CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.dynamic_assembly' is never used
         private LoaderAllocator? m_keepalive;
 
         private UIntPtr dynamic_assembly; /* GC-tracked */
@@ -214,7 +213,6 @@ namespace System.Reflection.Emit
         private string? culture;
         private byte[]? public_key_token;
         private Module[]? loaded_modules;
-//#pragma warning restore CS0169, CA1823 // The field 'RuntimeAssemblyBuilder.loaded_modules' is never used
         private uint access;
 #endregion
 
