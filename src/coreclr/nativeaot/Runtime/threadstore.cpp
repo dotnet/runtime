@@ -38,9 +38,9 @@ ThreadStore * GetThreadStore()
 }
 
 ThreadStore::Iterator::Iterator() :
-    m_readHolder(&GetThreadStore()->m_Lock),
     m_pCurrentPosition(GetThreadStore()->m_ThreadList.GetHead())
 {
+    ASSERT(GetThreadStore()->m_Lock.OwnedByCurrentThread());
 }
 
 ThreadStore::Iterator::~Iterator()
@@ -66,13 +66,14 @@ PTR_Thread ThreadStore::GetSuspendingThread()
 
 ThreadStore::ThreadStore() :
     m_ThreadList(),
-    m_Lock(true /* writers (i.e. attaching/detaching threads) should wait on GC event */)
+    m_Lock(CrstThreadStore)
 {
     SaveCurrentThreadOffsetForDAC();
 }
 
 ThreadStore::~ThreadStore()
 {
+    m_Lock.Destroy();
 }
 
 // static
@@ -131,7 +132,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
         RedhawkGCInterface::WaitForGCCompletion();
 
     ThreadStore* pTS = GetThreadStore();
-    ReaderWriterLock::WriteHolder write(&pTS->m_Lock, fAcquireThreadStoreLock);
+    CrstHolderWithState threadStoreLock(&pTS->m_Lock, fAcquireThreadStoreLock);
 
     //
     // Set thread state to be attached
@@ -178,7 +179,7 @@ void ThreadStore::DetachCurrentThread()
         ThreadStore* pTS = GetThreadStore();
         // Note that when process is shutting down, the threads may be rudely terminated,
         // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
-        ReaderWriterLock::WriteHolder write(&pTS->m_Lock);
+        CrstHolder threadStoreLock(&pTS->m_Lock);
         ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         // remove the thread from the list of managed threads.
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
@@ -190,25 +191,16 @@ void ThreadStore::DetachCurrentThread()
     pDetachingThread->Destroy();
 }
 
-// Used by GC to prevent new threads during a GC.  New threads must take a write lock to
-// modify the list, but they won't be allowed to until all outstanding read locks are
-// released.  This way, the GC always enumerates a consistent set of threads each time
-// it enumerates threads between SuspendAllThreads and ResumeAllThreads.
-//
-// @TODO:  Investigate if this requirement is actually necessary.  Threads already may
-// not enter managed code during GC, so if new threads are added to the thread store,
-// but haven't yet entered managed code, is that really a problem?
-//
-// @TODO: Investigate the suspend/resume algorithm's dependence on this lock's side-
-// effect of being a memory barrier.
+// Used by GC to prevent new threads during a GC and
+// to ensure that only one thread performs suspension.
 void ThreadStore::LockThreadStore()
 {
-    m_Lock.AcquireReadLock();
+    m_Lock.Enter();
 }
 
 void ThreadStore::UnlockThreadStore()
 {
-    m_Lock.ReleaseReadLock();
+    m_Lock.Leave();
 }
 
 // exponential spinwait with an approximate time limit for waiting in microsecond range.
@@ -238,9 +230,6 @@ void SpinWait(int iteration, int usecLimit)
 void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 {
     Thread * pThisThread = GetCurrentThreadIfAvailable();
-
-    LockThreadStore();
-
     RhpSuspendingThread = pThisThread;
 
     if (waitForGCEvent)
@@ -343,7 +332,6 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     {
         GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
     }
-    UnlockThreadStore();
 } // ResumeAllThreads
 
 void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
