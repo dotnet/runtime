@@ -286,6 +286,7 @@ namespace ObjectiveCMarshalAPI
         static void _Validate_ExceptionPropagation()
         {
             // Not yet implemented for NativeAOT.
+            // https://github.com/dotnet/runtime/issues/77472
             if (TestLibrary.Utilities.IsNativeAot)
             {
                 Console.WriteLine($"Skipping {nameof(_Validate_ExceptionPropagation)}, NYI");
