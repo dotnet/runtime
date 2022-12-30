@@ -129,7 +129,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
 
     // fAcquireThreadStoreLock is false when threads are created/attached for GC purpose
-    // in such casse the lock is already held and GC takes care to ensure safe access to the threadstore
+    // in such case the lock is already held and GC takes care to ensure safe access to the threadstore
 
     ThreadStore* pTS = GetThreadStore();
     CrstHolderWithState threadStoreLock(&pTS->m_Lock, fAcquireThreadStoreLock);
@@ -160,21 +160,21 @@ void ThreadStore::DetachCurrentThread()
         return;
     }
 
-    // unregister from OS notifications
-    // this can return false if detach notification is spurious and does not belong to this thread.
+    // Unregister from OS notifications
+    // This can return false if detach notification is spurious and does not belong to this thread.
     if (!PalDetachThread(pDetachingThread))
     {
         return;
     }
 
-    // run pre-mortem callbacks while we still can run managed code and not holding locks.
+    // Run pre-mortem callbacks while we still can run managed code and not holding locks.
     if (g_threadExitCallback != NULL)
     {
         g_threadExitCallback();
     }
 
-    // the following makes the thread no longer able to run managed code or participate in GC.
-    // we need to hold threadstore lock while doing that.
+    // The following makes the thread no longer able to run managed code or participate in GC.
+    // We need to hold threadstore lock while doing that.
     {
         ThreadStore* pTS = GetThreadStore();
         // Note that when process is shutting down, the threads may be rudely terminated,
