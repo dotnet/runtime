@@ -145,9 +145,9 @@ namespace ObjectiveCMarshalAPI
             }
         }
 
-        class HasThinkLockHelp : Base
+        class HasThinLockHeld : Base
         {
-            public HasThinkLockHelp()
+            public HasThinLockHeld()
             {
                 // This will write lock information into the object header.
                 // An attempt to generate a hash code for this object will cause the lock to be
@@ -236,7 +236,7 @@ namespace ObjectiveCMarshalAPI
             // so we exercise the various ways a hash code can be stored.
             AllocUntrackedObject<HasNoHashCode>();
             AllocUntrackedObject<HasHashCode>();
-            AllocUntrackedObject<HasThinkLockHelp>();
+            AllocUntrackedObject<HasThinLockHeld>();
             AllocUntrackedObject<HasSyncBlock>();
 
             // Provide the minimum number of times the reference callback should run.
