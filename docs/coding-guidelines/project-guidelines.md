@@ -51,7 +51,7 @@ Non cross-targeting project that targets .NETStandard:
 A cross-targeting project which targets specific platform with `$(NetCoreAppCurrent)` and one .NETFramework tfm:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetFrameworkMinimum)</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetFrameworkMinimum)</TargetFrameworks>
 <PropertyGroup>
 ```
 
@@ -103,17 +103,17 @@ Example:
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)</TargetFrameworks>
 </PropertyGroup>
 <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">...</ItemGroup>
-<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'OSX'">...</ItemGroup>
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">...</ItemGroup>
 ```
 Important: In contrast to the old `Targets*` checks, `TargetPlatformIdentifier` conditions apply to a single tfm only, inheritance between target frameworks can't be expressed. See the example below for Unix:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-windows</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-windows</TargetFrameworks>
 </PropertyGroup>
-<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'android'">...</ItemGroup>
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'android'">...</ItemGroup>
 <!-- Negations make such conditions easier to write and read. -->
 <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">...</ItemGroup>
 ```
