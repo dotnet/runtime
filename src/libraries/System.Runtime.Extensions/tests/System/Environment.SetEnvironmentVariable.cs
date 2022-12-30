@@ -17,7 +17,7 @@ namespace System.Tests
         internal static bool IsSupportedTarget(EnvironmentVariableTarget target)
         {
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/30566")]
-            if (target == EnvironmentVariableTarget.User && PlatformDetection.IsWindowsNanoServer)
+            if (PlatformDetection.IsWindowsNanoServer)
             {
                 return false;
             }
