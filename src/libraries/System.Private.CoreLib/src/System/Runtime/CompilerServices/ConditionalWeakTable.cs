@@ -50,11 +50,12 @@ namespace System.Runtime.CompilerServices
         /// <remarks>
         /// The key may get garbage collected during the TryGetValue operation. If so, TryGetValue
         /// may at its discretion, return "false" and set "value" to the default (as if the key was not present.)
-        /// This method needs to follow the rules in RestrictedCallouts.h, as it may be called
-        /// while a garbage collection in in progress.
         /// </remarks>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
+            // This method needs to follow the rules in RestrictedCallouts.h, as it may be called
+            // while a garbage collection in in progress.
+
             if (key is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
