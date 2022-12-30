@@ -25,7 +25,19 @@ namespace System
         public static bool IsWindows8xOrLater => IsWindowsVersionOrLater(6, 2);
         public static bool IsWindows10OrLater => IsWindowsVersionOrLater(10, 0);
         public static bool IsWindowsServer2019 => IsWindows && IsNotWindowsNanoServer && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildVersion() == 17763;
-        public static bool IsWindowsNanoServer => IsWindows && (IsNotWindowsIoTCore && GetWindowsInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
+        public static bool IsWindowsNanoServer
+        {
+            get
+            {
+                Console.WriteLine($"GetWindowsInstallationType(): {GetWindowsInstallationType()}");
+                Console.WriteLine($"GetWindowsProductType(): {GetWindowsProductType()}");
+                Console.WriteLine($"IsWindows: {IsWindows}");
+                Console.WriteLine($"IsNotWindowsIoTCore: {IsNotWindowsIoTCore}");
+                Console.WriteLine($"Environment.OSVersion.Version.Major: {Environment.OSVersion.Version.Major}");
+                Console.WriteLine($"Environment.OSVersion.Version.Minor: {Environment.OSVersion.Version.Minor}");
+                return IsWindows && (IsNotWindowsIoTCore && GetWindowsInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
+            }
+        }
         public static bool IsWindowsServerCore => IsWindows && GetWindowsInstallationType().Equals("Server Core", StringComparison.OrdinalIgnoreCase);
         public static int WindowsVersion => IsWindows ? (int)GetWindowsVersion() : -1;
         public static bool IsNotWindows7 => !IsWindows7;
