@@ -9836,6 +9836,16 @@ interp_super_instructions (TransformData *td)
 							case MINT_CGT_UN_I8: replace_opcode = negate ? MINT_BLE_UN_I8 : MINT_BGT_UN_I8; break;
 							case MINT_CLT_UN_I4: replace_opcode = negate ? MINT_BGE_UN_I4 : MINT_BLT_UN_I4; break;
 							case MINT_CLT_UN_I8: replace_opcode = negate ? MINT_BGE_UN_I8 : MINT_BLT_UN_I8; break;
+							case MINT_CEQ_R4: replace_opcode = negate ? MINT_BNE_UN_R4 : MINT_BEQ_R4; break;
+							case MINT_CEQ_R8: replace_opcode = negate ? MINT_BNE_UN_R8 : MINT_BEQ_R8; break;
+							case MINT_CGT_R4: replace_opcode = negate ? MINT_BLE_R4 : MINT_BGT_R4; break;
+							case MINT_CGT_R8: replace_opcode = negate ? MINT_BLE_R8 : MINT_BGT_R8; break;
+							case MINT_CLT_R4: replace_opcode = negate ? MINT_BGE_R4 : MINT_BLT_R4; break;
+							case MINT_CLT_R8: replace_opcode = negate ? MINT_BGE_R8 : MINT_BLT_R8; break;
+							case MINT_CGT_UN_R4: replace_opcode = negate ? MINT_BLE_UN_R4 : MINT_BGT_UN_R4; break;
+							case MINT_CGT_UN_R8: replace_opcode = negate ? MINT_BLE_UN_R8 : MINT_BGT_UN_R8; break;
+							case MINT_CLT_UN_R4: replace_opcode = negate ? MINT_BGE_UN_R4 : MINT_BLT_UN_R4; break;
+							case MINT_CLT_UN_R8: replace_opcode = negate ? MINT_BGE_UN_R8 : MINT_BLT_UN_R8; break;
 							case MINT_CEQ0_I4: replace_opcode = negate ? MINT_BRTRUE_I4 : MINT_BRFALSE_I4; break; // If def->opcode is MINT_CEQ0_I4 ins->opcode is inverted
 							// Add more opcodes
 							default:
