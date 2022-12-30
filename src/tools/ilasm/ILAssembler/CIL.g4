@@ -94,6 +94,7 @@ TYPEDREF: 'typedref';
 NATIVE_INT: 'native' 'int';
 NATIVE_UINT: ('native' 'unsigned' 'int') | ('native' 'uint');
 PARAM: '.param';
+CONSTRAINT: 'constraint';
 
 THIS: '.this';
 BASE: '.base';
@@ -201,7 +202,8 @@ compControl:
 	| PP_IFNDEF ID
 	| PP_ELSE
 	| PP_ENDIF
-	| PP_INCLUDE QSTRING;
+	| PP_INCLUDE QSTRING
+    | ';';
 
 
 /*  Aliasing of types, type specs, methods, fields and custom attributes */
@@ -235,21 +237,21 @@ customBlobDescr: customBlobArgs customBlobNVPairs;
 customBlobArgs: (serInit | compControl)*;
 
 customBlobNVPairs: (
-		fieldOrProp seralizType dottedName '=' serInit
+		fieldOrProp serializType dottedName '=' serInit
 		| compControl
 	)*;
 
 fieldOrProp: 'field' | 'property';
 
-seralizType: seralizTypeElement (ARRAY_TYPE_NO_BOUNDS)?;
+serializType: serializTypeElement (ARRAY_TYPE_NO_BOUNDS)?;
 
-seralizTypeElement:
+serializTypeElement:
 	simpleType
 	| dottedName /* typedef */
 	| TYPE
 	| OBJECT
-	| 'enum' 'class' SQSTRING
-	| 'enum' className;
+	| ENUM 'class' SQSTRING
+	| ENUM className;
 
 /*  Module declaration */
 moduleHead:
@@ -605,13 +607,16 @@ bound:
 	| int32 ELLIPSIS;
 
 /*  Security declarations  */
+PERMISSION: '.permission';
+PERMISSIONSET: '.permissionset';
+
 secDecl:
-	'.permission' secAction typeSpec '(' nameValPairs ')'
-	| '.permission' secAction typeSpec '=' '{' customBlobDescr '}'
-	| '.permission' secAction typeSpec
-	| '.permissionset' secAction '=' 'bytearray'? '(' bytes ')'
-	| '.permissionset' secAction compQstring
-	| '.permissionset' secAction '=' '{' secAttrSetBlob '}';
+	PERMISSION secAction typeSpec '(' nameValPairs ')'
+	| PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'
+	| PERMISSION secAction typeSpec
+	| PERMISSIONSET secAction '=' 'bytearray'? '(' bytes ')'
+	| PERMISSIONSET secAction compQstring
+	| PERMISSIONSET secAction '=' '{' secAttrSetBlob '}';
 
 secAttrSetBlob: | (secAttrBlob ',')* secAttrBlob;
 
@@ -730,20 +735,20 @@ classDecl:
 	| '.size' int32
 	| '.pack' int32
 	| exportHead '{' exptypeDecls '}'
-	| '.override' typeSpec '::' methodName 'with' callConv type typeSpec '::' methodName sigArgs
-	| '.override' 'method' callConv type typeSpec '::' methodName genArity sigArgs 'with' 'method'
+	| OVERRIDE typeSpec '::' methodName 'with' callConv type typeSpec '::' methodName sigArgs
+	| OVERRIDE 'method' callConv type typeSpec '::' methodName genArity sigArgs 'with' 'method'
 		callConv type typeSpec '::' methodName genArity sigArgs
 	| languageDecl
 	| compControl
-	| PARAM TYPE '[' int32 ']'
-	| PARAM TYPE dottedName
-	| PARAM 'constraint' '[' int32 ']' ',' typeSpec
-	| PARAM 'constraint' dottedName ',' typeSpec
+	| PARAM TYPE '[' int32 ']' customAttrDecl*
+	| PARAM TYPE dottedName customAttrDecl*
+	| PARAM CONSTRAINT '[' int32 ']' ',' typeSpec customAttrDecl*
+	| PARAM CONSTRAINT dottedName ',' typeSpec customAttrDecl*
 	| '.interfaceimpl' TYPE typeSpec customDescr;
 
 /*  Field declaration  */
 fieldDecl:
-	'.field' repeatOpt fieldAttr* type dottedName atOpt initOpt;
+	'.field' repeatOpt (fieldAttr | 'marshal' '(' marshalBlob ')')* type dottedName atOpt initOpt;
 
 fieldAttr:
 	'static'
@@ -753,7 +758,6 @@ fieldAttr:
 	| 'initonly'
 	| 'rtspecialname'
 	| 'specialname'
-	| 'marshal' '(' marshalBlob ')'
 	| 'assembly'
 	| 'famandassem'
 	| 'famorassem'
@@ -909,8 +913,8 @@ methodDecl:
 	| instr
 	| id ':'
 	| secDecl
-	| extSourceSpec
-	| languageDecl
+	| extSourceSpec // Leave for later when I get to generating symbols.
+	| languageDecl // Leave for later when I get to generating symbols.
 	| customAttrDecl
 	| compControl
 	| EXPORT '[' int32 ']'
@@ -919,11 +923,11 @@ methodDecl:
 	| OVERRIDE typeSpec '::' methodName
 	| OVERRIDE 'method' callConv type typeSpec '::' methodName genArity sigArgs
 	| scopeBlock
-	| PARAM TYPE '[' int32 ']'
-	| PARAM TYPE dottedName
-	| PARAM 'constraint' '[' int32 ']' ',' typeSpec
-	| PARAM 'constraint' dottedName ',' typeSpec
-	| PARAM '[' int32 ']' initOpt;
+	| PARAM TYPE '[' int32 ']' customAttrDecl*
+	| PARAM TYPE dottedName customAttrDecl*
+	| PARAM CONSTRAINT '[' int32 ']' ',' typeSpec customAttrDecl*
+	| PARAM CONSTRAINT dottedName ',' typeSpec customAttrDecl*
+	| PARAM '[' int32 ']' initOpt customAttrDecl*;
 
 scopeBlock: '{' methodDecls '}';
 

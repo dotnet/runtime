@@ -156,17 +156,13 @@ namespace ILAssembler
             return null;
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        public GenericParameterEntity CreateGenericParameter(GenericParameterAttributes attributes, string name)
-#pragma warning restore CA1822 // Mark members as static
+        public static GenericParameterEntity CreateGenericParameter(GenericParameterAttributes attributes, string name)
         {
             GenericParameterEntity param = new(attributes, name);
             return param;
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        public GenericParameterConstraintEntity CreateGenericConstraint(TypeEntity baseType)
-#pragma warning restore CA1822 // Mark members as static
+        public static GenericParameterConstraintEntity CreateGenericConstraint(TypeEntity baseType)
         {
             GenericParameterConstraintEntity constraint = new(baseType);
             return constraint;
@@ -230,7 +226,7 @@ namespace ILAssembler
             return new MethodDefinitionEntity(containingType, name);
         }
 
-        public bool TryRecordMethodDefinition(MethodDefinitionEntity methodDef)
+        public static bool TryAddMethodDefinitionToContainingType(MethodDefinitionEntity methodDef)
         {
             if (methodDef.MethodSignature is null)
             {
@@ -249,10 +245,13 @@ namespace ILAssembler
                     }
                 }
             }
-
-            RecordEntityInTable(TableIndex.MethodDef, methodDef);
             methodDef.ContainingType.Methods.Add(methodDef);
             return true;
+        }
+
+        public static ParameterEntity CreateParameter(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor)
+        {
+            return new ParameterEntity(attributes, name, marshallingDescriptor);
         }
 
         public static MemberReferenceEntity CreateUnrecordedMemberReference(TypeEntity containingType, string name, BlobBuilder signature)
@@ -270,6 +269,25 @@ namespace ILAssembler
         public StandaloneSignatureEntity GetOrCreateStandaloneSignature(BlobBuilder signature)
         {
             return GetOrCreateEntity(signature, TableIndex.StandAloneSig, _seenStandaloneSignatures, (sig) => new(sig), _ => { });
+        }
+
+        public DeclarativeSecurityAttributeEntity CreateDeclarativeSecurityAttribute(DeclarativeSecurityAction action, BlobBuilder permissionSet)
+        {
+            var entity = new DeclarativeSecurityAttributeEntity(action, permissionSet);
+            RecordEntityInTable(TableIndex.DeclSecurity, entity);
+            return entity;
+        }
+
+        public CustomAttributeEntity CreateCustomAttribute(EntityBase constructor, BlobBuilder value)
+        {
+            var entity = new CustomAttributeEntity(constructor, value);
+            RecordEntityInTable(TableIndex.CustomAttribute, entity);
+            return entity;
+        }
+
+        public static MethodImplementationEntity CreateUnrecordedMethodImplementation(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration)
+        {
+            return new MethodImplementationEntity(methodBody, methodDeclaration);
         }
 
         public abstract class EntityBase : IHasHandle
@@ -373,6 +391,8 @@ namespace ILAssembler
 
             public List<MethodDefinitionEntity> Methods { get; } = new();
 
+            public List<MethodImplementationEntity> MethodImplementations { get; } = new();
+
             public string ReflectionNotation { get; }
         }
 
@@ -467,6 +487,8 @@ namespace ILAssembler
 
             public MethodAttributes MethodAttributes { get; set; }
 
+            public List<ParameterEntity> Parameters { get; } = new();
+
             public NamedElementList<GenericParameterEntity> GenericParameters { get; } = new();
 
             // COMPAT: Save the list of generic parameter constraints here to ensure we can match ILASM's emit order for generic parameter constraints exactly.
@@ -486,6 +508,21 @@ namespace ILAssembler
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
             public MethodImplAttributes ImplementationAttributes { get; set; }
+        }
+
+        public sealed class ParameterEntity : EntityBase
+        {
+            public ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor)
+            {
+                Attributes = attributes;
+                Name = name;
+                MarshallingDescriptor = marshallingDescriptor;
+            }
+
+            public ParameterAttributes Attributes { get; }
+            public string? Name { get; }
+            public BlobBuilder MarshallingDescriptor { get; set; }
+            public bool HasCustomAttributes { get; set; }
         }
 
         public sealed class MemberReferenceEntity : EntityBase
@@ -530,6 +567,44 @@ namespace ILAssembler
             }
 
             public BlobBuilder Signature { get; }
+        }
+
+        public sealed class DeclarativeSecurityAttributeEntity : EntityBase
+        {
+            public DeclarativeSecurityAttributeEntity(DeclarativeSecurityAction action, BlobBuilder permissionSet)
+            {
+                Action = action;
+                PermissionSet = permissionSet;
+            }
+
+            public EntityBase? Parent { get; set; }
+            public DeclarativeSecurityAction Action { get; }
+            public BlobBuilder PermissionSet { get; }
+        }
+
+        public sealed class CustomAttributeEntity : EntityBase
+        {
+            public CustomAttributeEntity(EntityBase constructor, BlobBuilder value)
+            {
+                Constructor = constructor;
+                Value = value;
+            }
+
+            public EntityBase? Owner { get; set; }
+            public EntityBase Constructor { get; }
+            public BlobBuilder Value { get; }
+        }
+
+        public sealed class MethodImplementationEntity : EntityBase
+        {
+            public MethodImplementationEntity(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration)
+            {
+                MethodBody = methodBody;
+                MethodDeclaration = methodDeclaration;
+            }
+
+            public MethodDefinitionEntity MethodBody { get; }
+            public MemberReferenceEntity MethodDeclaration { get; }
         }
     }
 }

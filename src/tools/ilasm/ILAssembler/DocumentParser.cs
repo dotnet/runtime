@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
@@ -37,7 +38,8 @@ internal sealed class DocumentParser
         CILParser parser = new(new CommonTokenStream(lexer));
         var result = parser.decls();
         // TODO: Handle parse errors.
-        GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options);
+        var metadataBuilder = new MetadataBuilder();
+        GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, metadataBuilder);
         _ = result.Accept(visitor);
         // TODO: Get result information out of visitor and create MetadataRootBuilder.
     }
