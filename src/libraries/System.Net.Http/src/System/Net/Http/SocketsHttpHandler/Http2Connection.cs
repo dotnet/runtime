@@ -500,10 +500,14 @@ namespace System.Net.Http
 
                     // Process the initial SETTINGS frame. This will send an ACK.
                     ProcessSettingsFrame(frameHeader, initialFrame: true);
+
+                    Debug.Assert(InitialSettingsReceived.Task.IsCompleted);
                 }
-                catch (IOException e)
+                catch (Exception e)
                 {
-                    throw new IOException(SR.net_http_http2_connection_not_established, e);
+                    e = new IOException(SR.net_http_http2_connection_not_established, e);
+                    InitialSettingsReceived.TrySetException(e);
+                    throw e;
                 }
 
                 // Keep processing frames as they arrive.
