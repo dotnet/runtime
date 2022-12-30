@@ -609,43 +609,49 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void AddCertificate_CollectionContainsAttributeCertificate()
         {
             SignedCms signedCms = new SignedCms();
-
-            signedCms.Decode(SignedDocuments.CmsWithAttributeCertificate);
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
             signedCms.CheckSignature(true);
 
-            int countBefore = CountCertificateChoices(SignedDocuments.CmsWithAttributeCertificate);
-            int certCount = signedCms.Certificates.Count;
+            int countBefore = CountCertificateChoices(SignedDocuments.TstWithAttributeCertificate);
 
-            using (ECDsa ec = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.GetCertificate())
             {
-                CertificateRequest req = new("CN=test", ec, HashAlgorithmName.SHA256);
+                signedCms.AddCertificate(cert);
+                byte[] reEncoded = signedCms.Encode();
+                int countAfter = CountCertificateChoices(reEncoded);
+                Assert.Equal(countBefore + 1, countAfter);
 
-                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now))
-                {
-                    signedCms.AddCertificate(cert);
-                    byte[] reEncoded = signedCms.Encode();
-                    int countAfter = CountCertificateChoices(reEncoded);
-                    Assert.Equal(countBefore + 1, countAfter);
-
-                    signedCms = new SignedCms();
-                    signedCms.Decode(reEncoded);
-                    signedCms.CheckSignature(true);
-                }
+                signedCms = new SignedCms();
+                signedCms.Decode(reEncoded);
+                signedCms.CheckSignature(true);
             }
         }
 
         [Fact]
-        public static void RemoveCertificate_CollectionContainsAttributeCertificate()
+        public static void RemoveCertificate_Existing_CollectionContainsAttributeCertificate()
         {
             SignedCms signedCms = new SignedCms();
-
-            signedCms.Decode(SignedDocuments.CmsWithAttributeCertificate);
-            int countBefore = CountCertificateChoices(SignedDocuments.CmsWithAttributeCertificate);
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+            int countBefore = CountCertificateChoices(SignedDocuments.TstWithAttributeCertificate);
 
             signedCms.RemoveCertificate(signedCms.Certificates[0]);
             byte[] reEncoded = signedCms.Encode();
             int countAfter = CountCertificateChoices(reEncoded);
             Assert.Equal(countBefore - 1, countAfter);
+        }
+
+        [Fact]
+        public static void RemoveCertificate_NonExisting_CollectionContainsAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.GetCertificate())
+            {
+                // Remove a non-existing certificate so that we are forced to enumerate the entire 'certificates[0]'
+                // collection (including attribute certificates) looking for it.
+                Assert.Throws<CryptographicException>(() => signedCms.RemoveCertificate(cert));
+            }
         }
 
         private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
