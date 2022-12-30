@@ -459,7 +459,6 @@ static void __cdecl OnProcessExit()
     // It would not be a good idea for this thread to wait on any locks
     // or run managed code at shutdown, so we will not try detaching it.
     Thread* currentThread = ThreadStore::RawGetCurrentThread();
-    ASSERT(!currentThread->IsDetached());
     g_threadPerformingShutdown = currentThread;
 }
 #endif
