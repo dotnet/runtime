@@ -538,7 +538,10 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(key != null); // Key already validated as non-null.
 
-                int hashCode = RuntimeHelpers.TryGetHashCode(key);
+                int hashCode;
+
+#if CORECLR || NATIVEAOT
+                hashCode = RuntimeHelpers.TryGetHashCode(key);
 
                 if (hashCode == 0)
                 {
@@ -547,6 +550,9 @@ namespace System.Runtime.CompilerServices
                     value = null;
                     return -1;
                 }
+#else
+                hashCode = RuntimeHelpers.GetHashCode(key);
+#endif
 
                 hashCode &= int.MaxValue;
                 int bucket = hashCode & (_buckets.Length - 1);
