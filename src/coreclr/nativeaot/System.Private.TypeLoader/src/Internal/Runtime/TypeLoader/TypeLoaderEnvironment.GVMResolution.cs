@@ -128,64 +128,23 @@ namespace Internal.Runtime.TypeLoader
 
             InstantiatedMethod result = GVMLookupForSlotWorker(targetType, slotMethod);
 
-            if (!result.CanShareNormalGenericCode())
-            {
-                // First see if we can find an exact method implementation for the GVM (avoid using USG implementations if we can,
-                // because USG code is much slower).
-                if (TryLookupExactMethodPointerForComponents(result, out IntPtr exactPointer))
-                {
-                    Debug.Assert(exactPointer != IntPtr.Zero);
-                    TypeSystemContextFactory.Recycle(context);
-                    return exactPointer;
-                }
-            }
-
-            // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictinoary
-            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(result, out _, out _);
-            if (templateMethod == null)
-            {
-                ImplFailFast("No template for generic virtual method implementation.", result);
-            }
-
-            IntPtr methodPointer = templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal) ?
-                templateMethod.UsgFunctionPointer :
-                templateMethod.FunctionPointer;
-
-            if (!TryLookupGenericMethodDictionaryForComponents(new MethodDescBasedGenericMethodLookup(result), out IntPtr dictionaryPointer))
-            {
-                using (LockHolder.Hold(_typeLoaderLock))
-                {
-                    // Now that we hold the lock, we may find that existing types can now find
-                    // their associated RuntimeTypeHandle. Flush the type builder states as a way
-                    // to force the reresolution of RuntimeTypeHandles which couldn't be found before.
-                    context.FlushTypeBuilderStates();
-
-                    if (!TypeBuilder.TryBuildGenericMethod(result, out dictionaryPointer))
-                    {
-                        ImplFailFast("Building generic virtual method implementation failed.", result);
-                    }
-                }
-            }
-
-            Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
-
-            TypeSystemContextFactory.Recycle(context);
-            return FunctionPointerOps.GetGenericMethodFunctionPointer(methodPointer, dictionaryPointer);
-
-            static void ImplFailFast(string message, MethodDesc method)
+            if (!TryGetGenericVirtualMethodPointer(result, out IntPtr methodPointer, out IntPtr dictionaryPointer))
             {
                 var sb = new System.Text.StringBuilder();
-                sb.AppendLine(message);
+                sb.AppendLine("Failed to create generic virtual method implementation");
                 sb.AppendLine();
-                sb.AppendLine("Declaring type: " + GetTypeNameDebug(method.OwningType));
-                sb.AppendLine("Method name: " + method.NameAndSignature.Name);
+                sb.AppendLine("Declaring type: " + GetTypeNameDebug(result.OwningType));
+                sb.AppendLine("Method name: " + result.NameAndSignature.Name);
                 sb.AppendLine("Instantiation:");
-                for (int i = 0; i < method.Instantiation.Length; i++)
+                for (int i = 0; i < result.Instantiation.Length; i++)
                 {
-                    sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + GetTypeNameDebug(method.Instantiation[i]));
+                    sb.AppendLine("  Argument " + i.LowLevelToString() + ": " + GetTypeNameDebug(result.Instantiation[i]));
                 }
                 Environment.FailFast(sb.ToString());
             }
+
+            TypeSystemContextFactory.Recycle(context);
+            return FunctionPointerOps.GetGenericMethodFunctionPointer(methodPointer, dictionaryPointer);
         }
 
         private static MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, TypeManagerHandle moduleHandle, uint nativeLayoutOffset)

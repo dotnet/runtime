@@ -325,6 +325,59 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
+        // This method computes the method pointer and dictionary pointer for a GVM.
+        // Inputs:
+        //      - method: the GVM whose pointer and dictionary to retrieve
+        // Outputs:
+        //      - methodPointer: pointer to the GVM's implementation
+        //      - dictionaryPointer: (if applicable) pointer to the dictionary to be used with the GVM call
+        public bool TryGetGenericVirtualMethodPointer(InstantiatedMethod method, out IntPtr methodPointer, out IntPtr dictionaryPointer)
+        {
+            if (!method.CanShareNormalGenericCode())
+            {
+                // First see if we can find an exact method implementation for the GVM (avoid using USG implementations if we can,
+                // because USG code is much slower).
+                if (TryLookupExactMethodPointerForComponents(method, out methodPointer))
+                {
+                    Debug.Assert(methodPointer != IntPtr.Zero);
+                    dictionaryPointer = IntPtr.Zero;
+                    return true;
+                }
+            }
+
+            // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictinoary
+            InstantiatedMethod templateMethod = TemplateLocator.TryGetGenericMethodTemplate(method, out _, out _);
+            if (templateMethod == null)
+            {
+                methodPointer = default;
+                dictionaryPointer = default;
+                return false;
+            }
+
+            methodPointer = templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal) ?
+                templateMethod.UsgFunctionPointer :
+                templateMethod.FunctionPointer;
+
+            if (!TryLookupGenericMethodDictionaryForComponents(new MethodDescBasedGenericMethodLookup(method), out dictionaryPointer))
+            {
+                using (LockHolder.Hold(_typeLoaderLock))
+                {
+                    // Now that we hold the lock, we may find that existing types can now find
+                    // their associated RuntimeTypeHandle. Flush the type builder states as a way
+                    // to force the reresolution of RuntimeTypeHandles which couldn't be found before.
+                    method.Context.FlushTypeBuilderStates();
+
+                    if (!TypeBuilder.TryBuildGenericMethod(method, out dictionaryPointer))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
+            return true;
+        }
+
 #region Privates
         private bool TryGetDynamicGenericMethodDictionaryForComponents(GenericMethodLookupData lookupData, out IntPtr result)
         {
