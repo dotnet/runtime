@@ -89,10 +89,6 @@ namespace System.Threading
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.
         /// </summary>
-        /// <remarks>
-        /// This method needs to follow the rules in RestrictedCallouts.h, as it may be called
-        /// while a garbage collection in in progress.
-        /// </remarks>
         public static unsafe int TryGetHashCode(object o)
         {
             if (o == null)

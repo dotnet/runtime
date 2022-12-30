@@ -53,9 +53,6 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            // This method needs to follow the rules in RestrictedCallouts.h, as it may be called
-            // while a garbage collection in in progress.
-
             if (key is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
@@ -523,10 +520,6 @@ namespace System.Runtime.CompilerServices
             }
 
             /// <summary>Worker for finding a key/value pair. Must hold _lock.</summary>
-            /// <remarks>
-            /// This method needs to follow the rules in RestrictedCallouts.h, as it may be called
-            /// while a garbage collection in in progress.
-            /// </remarks>
             internal bool TryGetValueWorker(TKey key, [MaybeNullWhen(false)] out TValue value)
             {
                 Debug.Assert(key != null); // Key already validated as non-null
@@ -540,11 +533,7 @@ namespace System.Runtime.CompilerServices
             /// Returns -1 if not found (if key expires during FindEntry, this can be treated as "not found.").
             /// Must hold _lock, or be prepared to retry the search while holding _lock.
             /// </summary>
-            /// <remarks>
-            /// This method requires <paramref name="value"/> to be on the stack to be properly tracked.
-            /// This method needs to follow the rules in RestrictedCallouts.h, as it may be called
-            /// while a garbage collection in in progress.
-            /// </remarks>
+            /// <remarks>This method requires <paramref name="value"/> to be on the stack to be properly tracked.</remarks>
             internal int FindEntry(TKey key, out object? value)
             {
                 Debug.Assert(key != null); // Key already validated as non-null.
