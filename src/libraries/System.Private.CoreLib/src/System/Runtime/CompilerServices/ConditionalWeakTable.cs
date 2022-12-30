@@ -540,7 +540,9 @@ namespace System.Runtime.CompilerServices
 
                 int hashCode;
 
-#if CORECLR || NATIVEAOT
+#if MONO
+                hashCode = RuntimeHelpers.GetHashCode(key);
+#else
                 hashCode = RuntimeHelpers.TryGetHashCode(key);
 
                 if (hashCode == 0)
@@ -550,8 +552,6 @@ namespace System.Runtime.CompilerServices
                     value = null;
                     return -1;
                 }
-#else
-                hashCode = RuntimeHelpers.GetHashCode(key);
 #endif
 
                 hashCode &= int.MaxValue;
