@@ -511,49 +511,4 @@ extern "C" bool RhInitialize()
     return true;
 }
 
-#ifdef _WIN32
-EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, uint32_t dwReason, void* pvReserved)
-{
-    switch (dwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-    {
-        STARTUP_TIMELINE_EVENT(PROCESS_ATTACH_BEGIN);
-
-        if (!InitDLL(hPalInstance))
-            return FALSE;
-
-        STARTUP_TIMELINE_EVENT(PROCESS_ATTACH_COMPLETE);
-    }
-    break;
-
-    case DLL_PROCESS_DETACH:
-        if (pvReserved == nullptr)
-        {
-            OnProcessExit();
-        }
-
-        UninitDLL();
-        break;
-
-    case DLL_THREAD_DETACH:
-        // BEWARE: loader lock is held here!
-
-        // Should have already received a call to FiberDetach for this thread's "home" fiber.
-        Thread* pCurrentThread = ThreadStore::GetCurrentThreadIfAvailable();
-        if (pCurrentThread != NULL &&
-            pCurrentThread != g_threadPerformingShutdown &&
-            !pCurrentThread->IsDetached())
-        {
-            ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
-            RhFailFast();
-        }
-
-        break;
-    }
-
-    return TRUE;
-}
-#endif // _WIN32
-
 #endif // !DACCESS_COMPILE
