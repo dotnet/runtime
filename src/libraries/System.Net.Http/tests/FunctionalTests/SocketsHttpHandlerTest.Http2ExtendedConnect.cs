@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestMessage request = CreateRequest(HttpMethod.Connect, uri, UseVersion, exactVersion: true);
                 request.Headers.Protocol = "foo";
 
-                using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
+                using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
                 using Stream responseStream = await response.Content.ReadAsStreamAsync();
 
