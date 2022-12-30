@@ -4774,18 +4774,18 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     assert(tree->OperIs(GT_LCL_FLD));
 
     var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
-
-    noway_assert(targetReg != REG_NA);
 
 #ifdef FEATURE_SIMD
     // Loading of TYP_SIMD12 (i.e. Vector3) field
     if (targetType == TYP_SIMD12)
     {
-        genLoadLclTypeSIMD12(tree);
+        genLoadLclTypeSimd12(tree);
         return;
     }
 #endif
+
+    regNumber targetReg = tree->GetRegNum();
+    noway_assert(targetReg != REG_NA);
 
     noway_assert(targetType != TYP_STRUCT);
 
@@ -4825,7 +4825,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         // Loading of TYP_SIMD12 (i.e. Vector3) variable
         if (tree->TypeGet() == TYP_SIMD12)
         {
-            genLoadLclTypeSIMD12(tree);
+            genLoadLclTypeSimd12(tree);
             return;
         }
 #endif // defined(FEATURE_SIMD) && defined(TARGET_X86)
@@ -4854,7 +4854,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // storing of TYP_SIMD12 (i.e. Vector3) field
     if (targetType == TYP_SIMD12)
     {
-        genStoreLclTypeSIMD12(tree);
+        genStoreLclTypeSimd12(tree);
         return;
     }
 #endif // FEATURE_SIMD
@@ -4955,7 +4955,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         // storing of TYP_SIMD12 (i.e. Vector3) field
         if (targetType == TYP_SIMD12)
         {
-            genStoreLclTypeSIMD12(lclNode);
+            genStoreLclTypeSimd12(lclNode);
             return;
         }
 #endif // FEATURE_SIMD
@@ -5137,7 +5137,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     // Handling of Vector3 type values loaded through indirection.
     if (tree->TypeGet() == TYP_SIMD12)
     {
-        genLoadIndTypeSIMD12(tree);
+        genLoadIndTypeSimd12(tree);
         return;
     }
 #endif // FEATURE_SIMD
@@ -5176,7 +5176,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     // Storing Vector3 of size 12 bytes through indirection
     if (tree->TypeGet() == TYP_SIMD12)
     {
-        genStoreIndTypeSIMD12(tree);
+        genStoreIndTypeSimd12(tree);
         return;
     }
 #endif // FEATURE_SIMD
@@ -5340,6 +5340,12 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
                             attr = emitActualTypeSize(baseType);
                             break;
+                        }
+
+                        case NI_Vector128_GetElement:
+                        {
+                            assert(baseType == TYP_FLOAT);
+                            FALLTHROUGH;
                         }
 
                         case NI_SSE2_Extract:
@@ -8112,7 +8118,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             if (fieldType == TYP_SIMD12)
             {
                 assert(genIsValidFloatReg(simdTmpReg));
-                genStoreSIMD12ToStack(argReg, simdTmpReg);
+                genStoreSimd12ToStack(argReg, simdTmpReg);
             }
             else
 #endif // defined(FEATURE_SIMD)
@@ -8407,7 +8413,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
 #if defined(TARGET_X86) && defined(FEATURE_SIMD)
     if (putArgStk->isSIMD12())
     {
-        genPutArgStkSIMD12(putArgStk);
+        genPutArgStkSimd12(putArgStk);
         return;
     }
 #endif // defined(TARGET_X86) && defined(FEATURE_SIMD)

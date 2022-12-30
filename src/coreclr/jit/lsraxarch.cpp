@@ -93,17 +93,21 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_LCL_FLD:
         {
             srcCount = 0;
+
 #ifdef FEATURE_SIMD
-            // Need an additional register to read upper 4 bytes of Vector3.
-            if (tree->TypeGet() == TYP_SIMD12)
+            if (tree->TypeIs(TYP_SIMD12) && tree->OperIs(GT_STORE_LCL_FLD))
             {
-                // We need an internal register different from targetReg in which 'tree' produces its result
-                // because both targetReg and internal reg will be in use at the same time.
-                buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
-                setInternalRegsDelayFree = true;
-                buildInternalRegisterUses();
+                if (!tree->AsLclFld()->Data()->IsVectorZero())
+                {
+                    // GT_STORE_LCL_FLD needs an internal register, when the
+                    // data is not zero, so the upper 4 bytes can be extracted
+
+                    buildInternalFloatRegisterDefForNode(tree);
+                    buildInternalRegisterUses();
+                }
             }
-#endif
+#endif // FEATURE_SIMD
+
             BuildDef(tree);
         }
         break;
@@ -2482,23 +2486,11 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     assert(indirTree->TypeGet() != TYP_STRUCT);
 
 #ifdef FEATURE_SIMD
-    RefPosition* internalFloatDef = nullptr;
-    if (indirTree->TypeGet() == TYP_SIMD12)
+    if (indirTree->TypeIs(TYP_SIMD12) && indirTree->OperIs(GT_STOREIND) &&
+        !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41) && !indirTree->Data()->IsVectorZero())
     {
-        // If indirTree is of TYP_SIMD12, addr is not contained. See comment in LowerIndir().
-        assert(!indirTree->Addr()->isContained());
-
-        // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
-        // To assemble the vector properly we would need an additional
-        // XMM register.
-        internalFloatDef = buildInternalFloatRegisterDefForNode(indirTree);
-
-        // In case of GT_IND we need an internal register different from targetReg and
-        // both of the registers are used at the same time.
-        if (indirTree->OperGet() == GT_IND)
-        {
-            setInternalRegsDelayFree = true;
-        }
+        // GT_STOREIND needs an internal register so the upper 4 bytes can be extracted
+        buildInternalFloatRegisterDefForNode(indirTree);
     }
 #endif // FEATURE_SIMD
 

@@ -18822,6 +18822,7 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_Vector128_GetElement:
         case NI_SSE2_ConvertToInt32:
         case NI_SSE2_ConvertToUInt32:
         case NI_SSE2_X64_ConvertToInt64:

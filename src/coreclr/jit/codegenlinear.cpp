@@ -1880,7 +1880,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         {
             // Need an additional integer register to extract upper 4 bytes from data.
             regNumber tmpReg = nextArgNode->GetSingleTempReg();
-            GetEmitter()->emitStoreSIMD12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
+            GetEmitter()->emitStoreSimd12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
         }
         else
 #endif // FEATURE_SIMD

@@ -11444,8 +11444,12 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_AWR_RRD_RRD:
                 {
-                    reg345 = id->idReg2();
-                    break;
+                    if (ins != INS_extractps)
+                    {
+                        reg345 = id->idReg2();
+                        break;
+                    }
+                    FALLTHROUGH;
                 }
 
                 default:
@@ -15537,8 +15541,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseSimdEncoding());
+            assert(IsAvx512OrPriorInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
