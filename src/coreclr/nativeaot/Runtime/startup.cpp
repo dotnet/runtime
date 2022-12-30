@@ -455,7 +455,7 @@ Thread* g_threadPerformingShutdown = NULL;
 static void __cdecl OnProcessExit()
 {
     // The process is exiting and the current thread is performing the shutdown.
-    // At the point when this thread exits some threads may be already rudely terminated.
+    // When this thread exits some threads may be already rudely terminated.
     // It would not be a good idea for this thread to wait on any locks
     // or run managed code at shutdown, so we will not try detaching it.
     Thread* currentThread = ThreadStore::RawGetCurrentThread();
