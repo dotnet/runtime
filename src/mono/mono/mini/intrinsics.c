@@ -878,7 +878,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->klass = mono_defaults.runtimetype_class;
 			*ins_type_initialized = TRUE;
 			return ins;
-		} else if (!cfg->backend->emulate_mul_div && strcmp (cmethod->name, "InternalGetHashCode") == 0 && fsig->param_count == 1 && !mono_gc_is_moving ()) {
+		} else if (!cfg->backend->emulate_mul_div && (strcmp (cmethod->name, "InternalGetHashCode") == 0 || strcmp (cmethod->name, "InternalTryGetHashCode") == 0) && fsig->param_count == 1 && !mono_gc_is_moving ()) {
 			int dreg = alloc_ireg (cfg);
 			int t1 = alloc_ireg (cfg);
 

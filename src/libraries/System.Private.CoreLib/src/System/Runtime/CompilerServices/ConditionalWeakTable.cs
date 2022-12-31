@@ -538,12 +538,7 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(key != null); // Key already validated as non-null.
 
-                int hashCode;
-
-#if MONO
-                hashCode = RuntimeHelpers.GetHashCode(key);
-#else
-                hashCode = RuntimeHelpers.TryGetHashCode(key);
+                int hashCode = RuntimeHelpers.TryGetHashCode(key);
 
                 if (hashCode == 0)
                 {
@@ -552,7 +547,6 @@ namespace System.Runtime.CompilerServices
                     value = null;
                     return -1;
                 }
-#endif
 
                 hashCode &= int.MaxValue;
                 int bucket = hashCode & (_buckets.Length - 1);
