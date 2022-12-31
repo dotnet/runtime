@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
@@ -16,9 +17,18 @@ namespace System.Net.Http.Functional.Tests
 
         protected override Version UseVersion => HttpVersion.Version20;
 
+        public static IEnumerable<object[]> UseSsl_MemberData()
+        {
+            yield return new object[] { false };
+
+            if (PlatformDetection.SupportsAlpn)
+            {
+                yield return new object[] { true };
+            }
+        }
+
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [MemberData(nameof(UseSsl_MemberData))]
         public async Task Connect_ReadWriteResponseStream(bool useSsl)
         {
             byte[] clientMessage = new byte[] { 1, 2, 3 };
@@ -38,6 +48,7 @@ namespace System.Net.Http.Functional.Tests
                 using Stream responseStream = await response.Content.ReadAsStreamAsync();
 
                 await responseStream.WriteAsync(clientMessage);
+                await responseStream.FlushAsync();
 
                 byte[] readBuffer = new byte[serverMessage.Length];
                 await responseStream.ReadExactlyAsync(readBuffer);
@@ -66,8 +77,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [MemberData(nameof(UseSsl_MemberData))]
         public async Task Connect_ServerDoesNotSupportExtendedConnect_ClientIncludesExceptionData(bool useSsl)
         {
             TaskCompletionSource clientCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
