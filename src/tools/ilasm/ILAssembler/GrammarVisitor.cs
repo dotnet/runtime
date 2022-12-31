@@ -115,6 +115,7 @@ namespace ILAssembler
             };
         }
 
+        // TODO: Implement parsing assembly references and the "this assembly" block
         public GrammarResult VisitAsmOrRefDecl(CILParser.AsmOrRefDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitAssemblyBlock(CILParser.AssemblyBlockContext context) => throw new NotImplementedException();
         public GrammarResult VisitAssemblyDecl(CILParser.AssemblyDeclContext context) => throw new NotImplementedException();
@@ -1229,6 +1230,8 @@ namespace ILAssembler
                 _ => throw new InvalidOperationException("unreachable"),
             };
         }
+
+        // TODO: Implement multimodule type exports and fowarders
         public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitExptypeDecls(CILParser.ExptypeDeclsContext context) => throw new NotImplementedException();
         public GrammarResult VisitExptypeHead(CILParser.ExptypeHeadContext context) => throw new NotImplementedException();
@@ -2061,10 +2064,22 @@ namespace ILAssembler
         public GrammarResult.Literal<int?> VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => context.int32() is {} int32 ? new(VisitInt32(int32).Value) : new(null);
         public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context) => throw new NotImplementedException("TODO: Symbols");
+
+        // TODO-SRM: Provide an API to build the managed resource blobs.
         public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitManifestResDecls(CILParser.ManifestResDeclsContext context) => throw new NotImplementedException();
         public GrammarResult VisitManifestResHead(CILParser.ManifestResHeadContext context) => throw new NotImplementedException();
-        public GrammarResult VisitManresAttr(CILParser.ManresAttrContext context) => throw new NotImplementedException();
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitManresAttr(CILParser.ManresAttrContext context) => VisitManresAttr(context);
+        public GrammarResult.Flag<ManifestResourceAttributes> VisitManresAttr(CILParser.ManresAttrContext context)
+        {
+            return context.GetText() switch
+            {
+                "public" => new(ManifestResourceAttributes.Public),
+                "private" => new(ManifestResourceAttributes.Private),
+                _ => throw new InvalidOperationException("unreachable")
+            };
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMarshalBlob(CILParser.MarshalBlobContext context) => VisitMarshalBlob(context);
         public GrammarResult.FormattedBlob VisitMarshalBlob(CILParser.MarshalBlobContext context)
