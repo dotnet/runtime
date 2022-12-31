@@ -56,6 +56,11 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
     }
 }
 
+static HMODULE LoadKernel32dll()
+{
+    return LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+}
+
 void InitializeCurrentProcessCpuCount()
 {
     DWORD count;
@@ -442,10 +447,44 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 
 static PalHijackCallback g_pHijackCallback;
 
+typedef struct _APC_CALLBACK_DATA {
+    ULONG_PTR Parameter;
+    PCONTEXT ContextRecord;
+    ULONG_PTR Reserved0;
+    ULONG_PTR Reserved1;
+} APC_CALLBACK_DATA;
+
+typedef BOOL(WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
+static QueueUserAPC2Proc pfnQueueUserAPC2Proc;
+
+static const QUEUE_USER_APC_FLAGS QUEUE_USER_APC_CALLBACK_DATA_CONTEXT = (QUEUE_USER_APC_FLAGS)2;
+static const QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (QUEUE_USER_APC_FLAGS)
+                                    (QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
+                                    QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
+
+static void __stdcall EmptyActivationHandler(ULONG_PTR parameter){}
+
+static void __stdcall ActivationHandler(ULONG_PTR parameter)
+{
+    APC_CALLBACK_DATA* data = (APC_CALLBACK_DATA*)parameter;
+    g_pHijackCallback(data->ContextRecord, NULL);
+}
+
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
 {
     ASSERT(g_pHijackCallback == NULL);
     g_pHijackCallback = callback;
+
+    // Check if we have QueueUserAPC2
+    HMODULE hKernel32 = LoadKernel32dll();
+    pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
+
+    // See if QueueUserAPC2 supports the special user-mode APC with a callback that includes the interrupted CONTEXT
+    if (pfnQueueUserAPC2Proc != NULL &&
+        !(*pfnQueueUserAPC2Proc)(EmptyActivationHandler, GetCurrentThread(), 0, SpecialUserModeApcWithContextFlags))
+    {
+        pfnQueueUserAPC2Proc = NULL;
+    }
 
     return true;
 }
@@ -453,6 +492,16 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
+
+    if (pfnQueueUserAPC2Proc)
+    {
+        pfnQueueUserAPC2Proc(
+            &ActivationHandler,
+            hThread,
+            0,
+            SpecialUserModeApcWithContextFlags);
+    }
+
     if (SuspendThread(hThread) == (DWORD)-1)
     {
         return;
@@ -546,7 +595,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
 
-    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hMod = LoadKernel32dll();
     if (hMod == NULL)
         return FALSE;
 
@@ -571,7 +620,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
 
-    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hMod = LoadKernel32dll();
     if (hMod == NULL)
         return FALSE;
 
