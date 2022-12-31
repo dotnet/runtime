@@ -1074,6 +1074,23 @@ void Thread::SetDetached()
     SetState(TSF_Detached);
 }
 
+bool Thread::IsActivationPending()
+{
+    return IsStateSet(TSF_ActivationPending);
+}
+
+void Thread::SetActivationPending(bool isPending)
+{
+    if (isPending)
+    {
+        SetState(TSF_ActivationPending);
+    }
+    else
+    {
+        ClearState(TSF_ActivationPending);
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()

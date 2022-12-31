@@ -131,6 +131,7 @@ public:
                                                     // suspend once resumed.
                                                     // If we see this flag, we skip hijacking as an optimization.
 #endif //FEATURE_SUSPEND_REDIRECTION
+        TSF_ActivationPending   = 0x00000100,
     };
 private:
 
@@ -215,6 +216,9 @@ public:
 
     bool                IsDetached();
     void                SetDetached();
+
+    bool                IsActivationPending();
+    void                SetActivationPending(bool isPending);
 
     PTR_VOID            GetThreadStressLog() const;
 #ifndef DACCESS_COMPILE

@@ -33,6 +33,9 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 #include "gcenv.ee.h"
 #include "gcconfig.h"
 
+#include "regdisplay.h"
+#include "StackFrameIterator.h"
+#include "thread.h"
 
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
@@ -457,7 +460,7 @@ typedef struct _APC_CALLBACK_DATA {
 typedef BOOL(WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
 static QueueUserAPC2Proc pfnQueueUserAPC2Proc;
 
-static const QUEUE_USER_APC_FLAGS QUEUE_USER_APC_CALLBACK_DATA_CONTEXT = (QUEUE_USER_APC_FLAGS)2;
+static const QUEUE_USER_APC_FLAGS QUEUE_USER_APC_CALLBACK_DATA_CONTEXT = (QUEUE_USER_APC_FLAGS)0x00010000;
 static const QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (QUEUE_USER_APC_FLAGS)
                                     (QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
                                     QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
@@ -468,6 +471,9 @@ static void __stdcall ActivationHandler(ULONG_PTR parameter)
 {
     APC_CALLBACK_DATA* data = (APC_CALLBACK_DATA*)parameter;
     g_pHijackCallback(data->ContextRecord, NULL);
+
+    Thread* pThread = (Thread*)data->Parameter;
+    pThread->SetActivationPending(false);
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
@@ -480,10 +486,12 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
 
     // See if QueueUserAPC2 supports the special user-mode APC with a callback that includes the interrupted CONTEXT
-    if (pfnQueueUserAPC2Proc != NULL &&
-        !(*pfnQueueUserAPC2Proc)(EmptyActivationHandler, GetCurrentThread(), 0, SpecialUserModeApcWithContextFlags))
+    if (pfnQueueUserAPC2Proc != NULL)
     {
-        pfnQueueUserAPC2Proc = NULL;
+        if (!(*pfnQueueUserAPC2Proc)(EmptyActivationHandler, GetCurrentThread(), 0, SpecialUserModeApcWithContextFlags))
+        {
+            pfnQueueUserAPC2Proc = NULL;
+        }
     }
 
     return true;
@@ -495,11 +503,20 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
     if (pfnQueueUserAPC2Proc)
     {
-        pfnQueueUserAPC2Proc(
-            &ActivationHandler,
-            hThread,
-            0,
-            SpecialUserModeApcWithContextFlags);
+        Thread* pThread = (Thread*)pThreadToHijack;
+
+        // An APC can be interrupted by another one, do not queue more if one is pending.
+        if (!pThread->IsActivationPending())
+        {
+            pThread->SetActivationPending(true);
+            pfnQueueUserAPC2Proc(
+                &ActivationHandler,
+                hThread,
+                (ULONG_PTR)pThreadToHijack,
+                SpecialUserModeApcWithContextFlags);
+        }
+
+        return;
     }
 
     if (SuspendThread(hThread) == (DWORD)-1)
