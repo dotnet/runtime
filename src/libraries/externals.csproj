@@ -98,6 +98,9 @@
       <!-- copy the host files to make the desktop samples work -->
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)') and '$(TargetsMobile)' != 'true'"/>
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)') and '$(TargetsMobile)' != 'true'" />
+      <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
       <!-- Setup runtime pack native. -->
       <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
