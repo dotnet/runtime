@@ -93,9 +93,28 @@ namespace ILAssembler
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
 
-        public GrammarResult VisitAlignment(CILParser.AlignmentContext context) => throw new NotImplementedException();
-        public GrammarResult VisitAsmAttr(CILParser.AsmAttrContext context) => throw new NotImplementedException();
-        public GrammarResult VisitAsmAttrAny(CILParser.AsmAttrAnyContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitAlignment(CILParser.AlignmentContext context) => VisitAlignment(context);
+        public GrammarResult.Literal<int> VisitAlignment(CILParser.AlignmentContext context)
+        {
+            return VisitInt32(context.int32());
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitAsmAttr(CILParser.AsmAttrContext context) => VisitAsmAttr(context);
+        public GrammarResult.Literal<AssemblyFlags> VisitAsmAttr(CILParser.AsmAttrContext context)
+            => new(context.asmAttrAny().Select(VisitAsmAttrAny).Aggregate((AssemblyFlags)0, (lhs, rhs) => lhs | rhs));
+        GrammarResult ICILVisitor<GrammarResult>.VisitAsmAttrAny(CILParser.AsmAttrAnyContext context) => VisitAsmAttrAny(context);
+        public GrammarResult.Flag<AssemblyFlags> VisitAsmAttrAny(CILParser.AsmAttrAnyContext context)
+        {
+            return context.GetText() switch
+            {
+                "retargetable" => new(AssemblyFlags.Retargetable),
+                "windowsruntime" => new(AssemblyFlags.WindowsRuntime),
+                "legacy library" => new(0),
+                // TODO: Handle platform
+                _ => throw new InvalidOperationException("unreachable")
+            };
+        }
+
         public GrammarResult VisitAsmOrRefDecl(CILParser.AsmOrRefDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitAssemblyBlock(CILParser.AssemblyBlockContext context) => throw new NotImplementedException();
         public GrammarResult VisitAssemblyDecl(CILParser.AssemblyDeclContext context) => throw new NotImplementedException();
@@ -335,6 +354,10 @@ namespace ILAssembler
                     declarativeSecurity.Parent = _currentTypeDefinition.PeekOrDefault();
                 }
             }
+            else if (context.fieldDecl() is {} fieldDecl)
+            {
+                _ = VisitFieldDecl(fieldDecl);
+            }
 
             return GrammarResult.SentinelValue.Result;
         }
@@ -452,10 +475,9 @@ namespace ILAssembler
                         newTypeDef.BaseType = VisitExtendsClause(context.extendsClause()).Value;
                     }
 
-                    // TODO: Handle interface implementation
                     if (context.implClause() is CILParser.ImplClauseContext impl)
                     {
-                        _ = impl;
+                        newTypeDef.InterfaceImplementations.AddRange(VisitImplClause(context.implClause()).Value);
                     }
 
                     _currentTypeDefinition.Pop();
@@ -942,6 +964,12 @@ namespace ILAssembler
                 _currentMethod = new(VisitMethodHead(methodHead).Value);
                 VisitMethodDecls(context.methodDecls());
                 _currentMethod = null;
+                return GrammarResult.SentinelValue.Result;
+            }
+            if (context.fieldDecl() is {} fieldDecl)
+            {
+                _ = VisitFieldDecl(fieldDecl);
+                return GrammarResult.SentinelValue.Result;
             }
             throw new NotImplementedException();
         }
@@ -1130,14 +1158,77 @@ namespace ILAssembler
             return new(blob);
         }
 
-        public GrammarResult VisitErrorNode(IErrorNode node) => throw new NotImplementedException();
-        public GrammarResult VisitEsHead(CILParser.EsHeadContext context) => throw new NotImplementedException();
-        public GrammarResult VisitEventAttr(CILParser.EventAttrContext context) => throw new NotImplementedException();
-        public GrammarResult VisitEventDecl(CILParser.EventDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitEventDecls(CILParser.EventDeclsContext context) => throw new NotImplementedException();
-        public GrammarResult VisitEventHead(CILParser.EventHeadContext context) => throw new NotImplementedException();
+        public GrammarResult VisitErrorNode(IErrorNode node) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitEsHead(CILParser.EsHeadContext context) => throw new NotImplementedException("TODO: Symbols");
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitEventAttr(CILParser.EventAttrContext context) => VisitEventAttr(context);
+        public GrammarResult.Flag<EventAttributes> VisitEventAttr(CILParser.EventAttrContext context)
+        {
+            return context.GetText() switch
+            {
+                "specialname" => new(EventAttributes.SpecialName),
+                "rtspecialname" => new(0), // COMPAT: Ignore
+                _ => throw new InvalidOperationException("unreachable"),
+            };
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitEventDecl(CILParser.EventDeclContext context) => VisitEventDecl(context);
+        public GrammarResult.Literal<(MethodSemanticsAttributes, EntityRegistry.EntityBase)?> VisitEventDecl(CILParser.EventDeclContext context)
+        {
+            if (context.ChildCount != 2)
+            {
+                return new(null);
+            }
+            string accessor = context.GetChild(0).GetText();
+            EntityRegistry.EntityBase memberReference = VisitMethodRef(context.methodRef()).Value;
+            MethodSemanticsAttributes methodSemanticsAttributes = accessor switch
+            {
+                ".addon" => MethodSemanticsAttributes.Adder,
+                ".removeon" => MethodSemanticsAttributes.Remover,
+                ".fire" => MethodSemanticsAttributes.Raiser,
+                ".other" => MethodSemanticsAttributes.Other,
+                _ => throw new InvalidOperationException("unreachable"),
+            };
+            return new((methodSemanticsAttributes, memberReference));
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitEventDecls(CILParser.EventDeclsContext context) => VisitEventDecls(context);
+        public GrammarResult.Sequence<(MethodSemanticsAttributes, EntityRegistry.EntityBase)> VisitEventDecls(CILParser.EventDeclsContext context)
+            => new(
+                context.eventDecl()
+                .Select(decl => VisitEventDecl(decl).Value)
+                .Where(decl => decl is not null)
+                .Select(decl => decl!.Value).ToImmutableArray());
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitEventHead(CILParser.EventHeadContext context) => VisitEventHead(context);
+        public GrammarResult.Literal<EntityRegistry.EventEntity> VisitEventHead(CILParser.EventHeadContext context)
+        {
+            string name = VisitDottedName(context.dottedName()).Value;
+            EventAttributes eventAttributes = context.eventAttr().Select(attr => VisitEventAttr(attr).Value).Aggregate((a, b) => a | b);
+            return new(new EntityRegistry.EventEntity(eventAttributes, VisitTypeSpec(context.typeSpec()).Value, name));
+        }
+
         public GrammarResult VisitExportHead(CILParser.ExportHeadContext context) => throw new NotImplementedException();
-        public GrammarResult VisitExptAttr(CILParser.ExptAttrContext context) => throw new NotImplementedException();
+
+        private const TypeAttributes TypeAttributesForwarder = (TypeAttributes)0x00200000;
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitExptAttr(CILParser.ExptAttrContext context) => VisitExptAttr(context);
+        public static GrammarResult.Flag<TypeAttributes> VisitExptAttr(CILParser.ExptAttrContext context)
+        {
+            return context.GetText() switch
+            {
+                "private" => new(TypeAttributes.NotPublic),
+                "public" => new(TypeAttributes.Public),
+                "forwarder" => new(TypeAttributesForwarder),
+                "nestedpublic" => new(TypeAttributes.NestedPublic),
+                "nestedprivate" => new(TypeAttributes.NestedPrivate),
+                "nestedfamily" => new(TypeAttributes.NestedFamily),
+                "nestedassembly" => new(TypeAttributes.NestedAssembly),
+                "nestedfamandassem" => new(TypeAttributes.NestedFamANDAssem),
+                "nestedfamorassem" => new(TypeAttributes.NestedFamORAssem),
+                _ => throw new InvalidOperationException("unreachable"),
+            };
+        }
         public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitExptypeDecls(CILParser.ExptypeDeclsContext context) => throw new NotImplementedException();
         public GrammarResult VisitExptypeHead(CILParser.ExptypeHeadContext context) => throw new NotImplementedException();
@@ -1155,7 +1246,8 @@ namespace ILAssembler
             }
         }
 
-        public GrammarResult VisitExtSourceSpec(CILParser.ExtSourceSpecContext context) => throw new NotImplementedException();
+        public GrammarResult VisitExtSourceSpec(CILParser.ExtSourceSpecContext context) => throw new NotImplementedException("TODO: Symbols");
+
         GrammarResult ICILVisitor<GrammarResult>.VisitF32seq(CILParser.F32seqContext context) => VisitF32seq(context);
         public GrammarResult.FormattedBlob VisitF32seq(CILParser.F32seqContext context)
         {
@@ -1191,8 +1283,58 @@ namespace ILAssembler
 
         public GrammarResult VisitFaultClause(CILParser.FaultClauseContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
 
-        public GrammarResult VisitFieldAttr(CILParser.FieldAttrContext context) => throw new NotImplementedException();
-        public GrammarResult VisitFieldDecl(CILParser.FieldDeclContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitFieldAttr(CILParser.FieldAttrContext context) => VisitFieldAttr(context);
+        public GrammarResult.Flag<FieldAttributes> VisitFieldAttr(CILParser.FieldAttrContext context)
+        {
+            if (context.int32() is { } int32)
+            {
+                return new((FieldAttributes)VisitInt32(int32).Value, ShouldAppend: false);
+            }
+
+            return context.GetText() switch
+            {
+                "static" => new(FieldAttributes.Static),
+                "public" => new(FieldAttributes.Public, FieldAttributes.FieldAccessMask),
+                "private" => new(FieldAttributes.Private, FieldAttributes.FieldAccessMask),
+                "family" => new(FieldAttributes.Family, FieldAttributes.FieldAccessMask),
+                "initonly" => new(FieldAttributes.InitOnly),
+                "rtspecialname" => new(0), // COMPAT: Don't emit rtspecialname
+                "specialname" => new(FieldAttributes.SpecialName),
+                "assembly" => new(FieldAttributes.Assembly, FieldAttributes.FieldAccessMask),
+                "famandassem" => new(FieldAttributes.FamANDAssem, FieldAttributes.FieldAccessMask),
+                "famorassem" => new(FieldAttributes.FamORAssem, FieldAttributes.FieldAccessMask),
+                "privatescope" => new(FieldAttributes.PrivateScope, FieldAttributes.FieldAccessMask),
+                "literal" => new(FieldAttributes.Literal),
+                "notserialized" => new(FieldAttributes.NotSerialized),
+                _ => throw new InvalidOperationException("unreachable")
+            };
+        }
+        GrammarResult ICILVisitor<GrammarResult>.VisitFieldDecl(CILParser.FieldDeclContext context) => VisitFieldDecl(context);
+        public GrammarResult VisitFieldDecl(CILParser.FieldDeclContext context)
+        {
+            var fieldAttrs = context.fieldAttr().Select(VisitFieldAttr).Aggregate((FieldAttributes)0, (a, b) => a | b);
+            var fieldType = VisitType(context.type()).Value;
+            var marshalBlobs = context.marshalBlob();
+            var marshalBlob = VisitMarshalBlob(marshalBlobs[marshalBlobs.Length - 1]).Value;
+            var name = VisitDottedName(context.dottedName()).Value;
+            var rvaOffset = VisitAtOpt(context.atOpt()).Value;
+            _ = VisitInitOpt(context.initOpt());
+
+            var signature = new BlobEncoder(new BlobBuilder());
+            _ = signature.Field();
+            fieldType.WriteContentTo(signature.Builder);
+
+            var field = EntityRegistry.CreateFieldDefinition(fieldAttrs, _currentTypeDefinition.PeekOrDefault()!, name, signature.Builder);
+
+            if (field is not null)
+            {
+                field.MarshallingDescriptor = marshalBlob;
+                field.DataDeclarationName = rvaOffset;
+            }
+
+            return GrammarResult.SentinelValue.Result;
+        }
+
         public GrammarResult VisitFieldInit(CILParser.FieldInitContext context) => throw new NotImplementedException("TODO-SRM: Need support for an arbitrary byte blob as a constant value");
 
         public GrammarResult VisitFieldOrProp(CILParser.FieldOrPropContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
@@ -1491,14 +1633,30 @@ namespace ILAssembler
             };
         }
 
-        public GrammarResult VisitImplClause(CILParser.ImplClauseContext context) => throw new NotImplementedException();
-        public GrammarResult VisitImplList(CILParser.ImplListContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitImplClause(CILParser.ImplClauseContext context) => VisitImplClause(context);
+        public GrammarResult.Sequence<EntityRegistry.InterfaceImplementationEntity> VisitImplClause(CILParser.ImplClauseContext context) => context.implList() is {} implList ? VisitImplList(implList) : new(ImmutableArray<EntityRegistry.InterfaceImplementationEntity>.Empty);
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitImplList(CILParser.ImplListContext context) => VisitImplList(context);
+        public GrammarResult.Sequence<EntityRegistry.InterfaceImplementationEntity> VisitImplList(CILParser.ImplListContext context)
+        {
+            var builder = ImmutableArray.CreateBuilder<EntityRegistry.InterfaceImplementationEntity>();
+            foreach (var impl in context.typeSpec())
+            {
+                builder.Add(EntityRegistry.CreateUnrecordedInterfaceImplementation(_currentTypeDefinition.PeekOrDefault()!, VisitTypeSpec(impl).Value));
+            }
+            return new(builder.ToImmutable());
+        }
+
         public GrammarResult VisitInitOpt(CILParser.InitOptContext context)
         {
-            // TODO: Change fieldSerInit to return a parsed System.Object value to construct the constant row entry.
-            // TODO-SRM: AddConstant does not support providing an arbitrary byte array as a constant value.
-            // Propose MetadataBuilder.AddConstant(EntityHandle parent, BlobBuilder value) overload?
-            throw new NotImplementedException();
+            if (context.fieldInit() is {})
+            {
+                // TODO: Change fieldSerInit to return a parsed System.Object value to construct the constant row entry.
+                // TODO-SRM: AddConstant does not support providing an arbitrary byte array as a constant value.
+                // Propose MetadataBuilder.AddConstant(EntityHandle parent, PrimitiveTypeCode type, BlobBuilder value) overload?
+                throw new NotImplementedException();
+            }
+            return GrammarResult.SentinelValue.Result;
         }
 #pragma warning disable CA1822 // Mark members as static
         public GrammarResult VisitInstr(CILParser.InstrContext context)
@@ -1899,9 +2057,10 @@ namespace ILAssembler
             return new GrammarResult.Literal<long>(num);
         }
 
-        public GrammarResult VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => VisitIntOrWildcard(context);
+        public GrammarResult.Literal<int?> VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => context.int32() is {} int32 ? new(VisitInt32(int32).Value) : new(null);
         public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context) => throw new NotImplementedException();
+        public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context) => throw new NotImplementedException("TODO: Symbols");
         public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new NotImplementedException();
         public GrammarResult VisitManifestResDecls(CILParser.ManifestResDeclsContext context) => throw new NotImplementedException();
         public GrammarResult VisitManifestResHead(CILParser.ManifestResHeadContext context) => throw new NotImplementedException();
@@ -2035,11 +2194,11 @@ namespace ILAssembler
             }
             else if (context.EXPORT() is not null)
             {
-                // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+                // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
             }
             else if (context.VTENTRY() is not null)
             {
-                // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+                // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
             }
             else if (context.OVERRIDE() is not null)
             {
@@ -2786,10 +2945,64 @@ namespace ILAssembler
             return new((moduleName, entryPointName, attrs));
         }
 
-        public GrammarResult VisitPropAttr(CILParser.PropAttrContext context) => throw new NotImplementedException();
-        public GrammarResult VisitPropDecl(CILParser.PropDeclContext context) => throw new NotImplementedException();
-        public GrammarResult VisitPropDecls(CILParser.PropDeclsContext context) => throw new NotImplementedException();
-        public GrammarResult VisitPropHead(CILParser.PropHeadContext context) => throw new NotImplementedException();
+        GrammarResult ICILVisitor<GrammarResult>.VisitPropAttr(CILParser.PropAttrContext context) => VisitPropAttr(context);
+        public static GrammarResult.Flag<PropertyAttributes> VisitPropAttr(CILParser.PropAttrContext context)
+        {
+            return context.GetText() switch
+            {
+                "specialname" => new(PropertyAttributes.SpecialName),
+                "rtspecialname" => new(0), // COMPAT: Ignore
+                _ => throw new InvalidOperationException("unreachable"),
+            };
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitPropDecl(CILParser.PropDeclContext context) => VisitEventDecl(context);
+        public GrammarResult.Literal<(MethodSemanticsAttributes, EntityRegistry.EntityBase)?> VisitPropDecl(CILParser.PropDeclContext context)
+        {
+            if (context.ChildCount != 2)
+            {
+                return new(null);
+            }
+            string accessor = context.GetChild(0).GetText();
+            EntityRegistry.EntityBase memberReference = VisitMethodRef(context.methodRef()).Value;
+            MethodSemanticsAttributes methodSemanticsAttributes = accessor switch
+            {
+                ".set" => MethodSemanticsAttributes.Getter,
+                ".get" => MethodSemanticsAttributes.Setter,
+                ".other" => MethodSemanticsAttributes.Other,
+                _ => throw new InvalidOperationException("unreachable"),
+            };
+            return new((methodSemanticsAttributes, memberReference));
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitPropDecls(CILParser.PropDeclsContext context) => VisitPropDecls(context);
+        public GrammarResult.Sequence<(MethodSemanticsAttributes, EntityRegistry.EntityBase)> VisitPropDecls(CILParser.PropDeclsContext context)
+            => new(
+                context.propDecl()
+                .Select(decl => VisitPropDecl(decl).Value)
+                .Where(decl => decl is not null)
+                .Select(decl => decl!.Value).ToImmutableArray());
+
+        public GrammarResult.Literal<EntityRegistry.PropertyEntity> VisitPropHead(CILParser.PropHeadContext context)
+        {
+            var propAttrs = context.propAttr().Select(VisitPropAttr).Aggregate((PropertyAttributes)0, (a, b) => a | b);
+            var name = VisitDottedName(context.dottedName()).Value;
+
+            var signature = new BlobBuilder();
+            byte callConv = VisitCallConv(context.callConv()).Value | (byte)SignatureKind.Property;
+            signature.WriteByte(callConv);
+            var args = VisitSigArgs(context.sigArgs()).Value;
+            signature.WriteCompressedInteger(args.Value.Count);
+            VisitType(context.type()).WriteContentTo(signature);
+            foreach (var arg in args)
+            {
+                arg.SignatureBlob.WriteContentTo(signature);
+            }
+
+            // TODO: Handle initOpt
+            _ = VisitInitOpt(context.initOpt());
+            return new(new(propAttrs, signature, name));
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitRepeatOpt(CILParser.RepeatOptContext context) => VisitRepeatOpt(context);
         public GrammarResult.Literal<int?> VisitRepeatOpt(CILParser.RepeatOptContext context) => context.int32() is {} int32 ? new(VisitInt32(int32).Value) : new(null);
@@ -3520,18 +3733,18 @@ namespace ILAssembler
 
         public GrammarResult VisitVtableDecl(CILParser.VtableDeclContext context)
         {
-            // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+            // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
             throw new NotImplementedException("raw vtable fixups blob not supported");
         }
 
         public GrammarResult VisitVtfixupAttr(CILParser.VtfixupAttrContext context)
         {
-            // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+            // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
             throw new NotImplementedException("vtable fixups not supported");
         }
         public GrammarResult VisitVtfixupDecl(CILParser.VtfixupDeclContext context)
         {
-            // TODO-SRM: System.Reflection.Metadata doesnt support writing the exports directory with the current API.
+            // TODO: Need custom ManagedPEBuilder subclass to write the exports directory.
             throw new NotImplementedException("raw vtable fixups blob not supported");
         }
 

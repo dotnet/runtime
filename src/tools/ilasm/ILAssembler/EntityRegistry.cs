@@ -249,6 +249,31 @@ namespace ILAssembler
             return true;
         }
 
+        public static FieldDefinitionEntity? CreateFieldDefinition(FieldAttributes attributes, TypeDefinitionEntity containingType, string name, BlobBuilder signature)
+        {
+            var field = new FieldDefinitionEntity(attributes, containingType, name, signature);
+            bool allowDuplicate = (field.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.PrivateScope;
+            if (!allowDuplicate)
+            {
+                foreach (var fieldDef in field.ContainingType.Fields)
+                {
+                    if (fieldDef.Name == field.Name
+                        && fieldDef.Signature.ContentEquals(field.Signature!)
+                        && (fieldDef.Attributes & FieldAttributes.FieldAccessMask) != FieldAttributes.PrivateScope)
+                    {
+                        return null;
+                    }
+                }
+            }
+            field.ContainingType.Fields.Add(field);
+            return field;
+        }
+
+        public static InterfaceImplementationEntity CreateUnrecordedInterfaceImplementation(TypeDefinitionEntity implementingType, TypeEntity interfaceType)
+        {
+            return new InterfaceImplementationEntity(implementingType, interfaceType);
+        }
+
         public static ParameterEntity CreateParameter(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor)
         {
             return new ParameterEntity(attributes, name, marshallingDescriptor);
@@ -392,6 +417,14 @@ namespace ILAssembler
             public List<MethodDefinitionEntity> Methods { get; } = new();
 
             public List<MethodImplementationEntity> MethodImplementations { get; } = new();
+
+            public List<FieldDefinitionEntity> Fields { get; } = new();
+
+            public List<PropertyEntity> Properties { get; } = new();
+
+            public List<EventEntity> Events { get; } = new();
+
+            public List<InterfaceImplementationEntity> InterfaceImplementations { get; } = new();
 
             public string ReflectionNotation { get; }
         }
@@ -605,6 +638,69 @@ namespace ILAssembler
 
             public MethodDefinitionEntity MethodBody { get; }
             public MemberReferenceEntity MethodDeclaration { get; }
+        }
+
+        public sealed class FieldDefinitionEntity : EntityBase
+        {
+            public FieldDefinitionEntity(FieldAttributes attributes, TypeDefinitionEntity type, string name, BlobBuilder signature)
+            {
+                Attributes = attributes;
+                ContainingType = type;
+                Name = name;
+                Signature = signature;
+            }
+
+            public FieldAttributes Attributes { get; }
+            public TypeDefinitionEntity ContainingType { get; }
+            public string Name { get; }
+            public BlobBuilder Signature { get; }
+
+            public BlobBuilder? MarshallingDescriptor { get; set; }
+            public string? DataDeclarationName { get; set; }
+        }
+
+        public sealed class InterfaceImplementationEntity : EntityBase
+        {
+            public InterfaceImplementationEntity(TypeDefinitionEntity type, TypeEntity interfaceType)
+            {
+                Type = type;
+                InterfaceType = interfaceType;
+            }
+
+            public TypeDefinitionEntity Type { get; }
+            public TypeEntity InterfaceType { get; }
+        }
+
+        public sealed class EventEntity : EntityBase
+        {
+            public EventEntity(EventAttributes attributes, TypeEntity type, string name)
+            {
+                Attributes = attributes;
+                Type = type;
+                Name = name;
+            }
+
+            public EventAttributes Attributes { get; }
+            public TypeEntity Type { get; }
+            public string Name { get; }
+
+            public List<(MethodSemanticsAttributes Semantic, EntityBase Method)> Accessors { get; } = new();
+        }
+
+        public sealed class PropertyEntity : EntityBase
+        {
+            public PropertyEntity(PropertyAttributes attributes, BlobBuilder type, string name)
+            {
+                Attributes = attributes;
+                Type = type;
+                Name = name;
+            }
+
+            public PropertyAttributes Attributes { get; }
+            public BlobBuilder Type { get; }
+            public string Name { get; }
+
+            public List<(MethodSemanticsAttributes Semantic, EntityBase Method)> Accessors { get; } = new();
         }
     }
 }

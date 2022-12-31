@@ -313,7 +313,7 @@ implClause: /* EMPTY */ | 'implements' implList;
 
 classDecls: classDecl*;
 
-implList: implList ',' typeSpec | typeSpec;
+implList: (typeSpec ',')* typeSpec;
 
 /*  External source declarations  */
 esHead: '.line' | '#line';
@@ -333,10 +333,10 @@ extSourceSpec:
 
 /*  Manifest declarations  */
 fileDecl:
-	'.file' fileAttr dottedName fileEntry HASH '=' '(' bytes ')' fileEntry
-	| '.file' fileAttr dottedName fileEntry;
+	'.file' fileAttr* dottedName fileEntry HASH '=' '(' bytes ')' fileEntry
+	| '.file' fileAttr* dottedName fileEntry;
 
-fileAttr: /* EMPTY */ | fileAttr 'nometadata';
+fileAttr: 'nometadata';
 
 fileEntry: /* EMPTY */ | '.entrypoint';
 
@@ -774,15 +774,14 @@ repeatOpt: /* EMPTY */ | '[' int32 ']';
 
 /*  Event declaration  */
 eventHead:
-	'.event' eventAttr typeSpec dottedName
-	| '.event' eventAttr dottedName;
+	'.event' eventAttr* typeSpec dottedName
+	| '.event' eventAttr* dottedName;
 
 eventAttr:
-	/* EMPTY */
-	| eventAttr 'rtspecialname'
-	| eventAttr 'specialname';
+    'rtspecialname'
+	| 'specialname';
 
-eventDecls: /* EMPTY */ | eventDecls eventDecl;
+eventDecls: eventDecl*;
 
 eventDecl:
 	'.addon' methodRef
@@ -796,14 +795,13 @@ eventDecl:
 
 /*  Property declaration  */
 propHead:
-	'.property' propAttr callConv type dottedName sigArgs initOpt;
+	'.property' propAttr* callConv type dottedName sigArgs initOpt;
 
 propAttr:
-	/* EMPTY */
-	| propAttr 'rtspecialname'
-	| propAttr 'specialname';
+	'rtspecialname'
+	| 'specialname';
 
-propDecls: /* EMPTY */ | propDecls propDecl;
+propDecls: propDecl*;
 
 propDecl:
 	'.set' methodRef
@@ -1124,9 +1122,7 @@ manifestResHead:
 
 manresAttr: 'public' | 'private';
 
-manifestResDecls:
-	/* EMPTY */
-	| manifestResDecls manifestResDecl;
+manifestResDecls: manifestResDecl*;
 
 manifestResDecl:
 	'.file' dottedName 'at' int32
