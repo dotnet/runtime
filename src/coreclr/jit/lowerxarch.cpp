@@ -5292,7 +5292,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     if (simdBaseType == TYP_FLOAT)
                     {
                         // SSE41_Extract is "extractps reg/mem, xmm, imm8"
-                        isContainable = hwintrinsic->Op(2)->IsCnsIntOrI() &
+                        isContainable = hwintrinsic->Op(2)->IsCnsIntOrI() &&
                                         comp->compOpportunisticallyDependsOn(InstructionSet_SSE41);
                     }
                     break;

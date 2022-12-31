@@ -5282,8 +5282,8 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 {
     assert(treeNode->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
 
-    unsigned   offs   = treeNode->GetLclOffs();
-    unsigned   varNum = treeNode->GetLclNum();
+    unsigned offs   = treeNode->GetLclOffs();
+    unsigned varNum = treeNode->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     GenTree* data = treeNode->gtGetOp1();

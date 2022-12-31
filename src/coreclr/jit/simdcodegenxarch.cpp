@@ -70,7 +70,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     GenTree* addr = treeNode->Addr();
     genConsumeAddress(addr);
 
-    GenTree* data = treeNode->Data();
+    GenTree*  data    = treeNode->Data();
     regNumber dataReg = genConsumeReg(data);
 
     emitter* emit = GetEmitter();
@@ -295,8 +295,8 @@ void CodeGen::genLoadLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 
     emitter* emit = GetEmitter();
 
-    unsigned  offs   = treeNode->GetLclOffs();
-    unsigned  varNum = treeNode->GetLclNum();
+    unsigned offs   = treeNode->GetLclOffs();
+    unsigned varNum = treeNode->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
     regNumber tgtReg = treeNode->GetRegNum();
