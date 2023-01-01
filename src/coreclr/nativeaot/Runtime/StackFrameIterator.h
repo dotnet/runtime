@@ -1,5 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef __StackFrameIterator_h__
+#define __StackFrameIterator_h__
+
 #include "ICodeManager.h"
 
 struct ExInfo;
@@ -215,3 +219,4 @@ protected:
     PTR_VOID            m_OriginalControlPC;
 };
 
+#endif // __StackFrameIterator_h__

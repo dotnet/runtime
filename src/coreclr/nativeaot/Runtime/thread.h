@@ -1,5 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef __thread_h__
+#define __thread_h__
+
+#include "regdisplay.h"
+#include "StackFrameIterator.h"
+
 #include "forward_declarations.h"
 
 struct gc_alloc_context;
@@ -325,3 +332,5 @@ typedef promote_func EnumGcRefCallbackFunc;
 typedef ScanContext  EnumGcRefScanContext;
 
 #endif // DACCESS_COMPILE
+
+#endif // __thread_h__
