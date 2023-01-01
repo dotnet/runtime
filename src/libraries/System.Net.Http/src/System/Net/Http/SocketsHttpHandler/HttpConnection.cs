@@ -61,9 +61,7 @@ namespace System.Net.Http
 
         private ValueTask<int>? _readAheadTask;
         private int _readAheadTaskLock; // 0 == free, 1 == held
-        private byte[] _readBuffer;
-        private int _readOffset;
-        private int _readLength;
+        private ArrayBuffer _readBuffer;
 
         private long _idleSinceTickCount;
         private int _keepAliveTimeoutSeconds; // 0 == no timeout
@@ -91,7 +89,7 @@ namespace System.Net.Http
             _transportContext = transportContext;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
-            _readBuffer = new byte[InitialReadBufferSize];
+            _readBuffer = new ArrayBuffer(InitialReadBufferSize, usePool: false);
 
             _idleSinceTickCount = Environment.TickCount64;
 
@@ -185,7 +183,7 @@ namespace System.Net.Http
                 try
                 {
 #pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
-                    _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
+                    _readAheadTask = _stream.ReadAsync(_readBuffer.AvailableMemory);
 #pragma warning restore CA2012
                     return !_readAheadTask.Value.IsCompleted;
                 }
@@ -218,7 +216,7 @@ namespace System.Net.Http
             async ValueTask<int> ReadAheadWithZeroByteReadAsync()
             {
                 Debug.Assert(_readAheadTask is null);
-                Debug.Assert(RemainingBuffer.Length == 0);
+                Debug.Assert(_readBuffer.ActiveLength == 0);
 
                 // Issue a zero-byte read.
                 // If the underlying stream supports it, this will not complete until the stream has data available,
@@ -227,7 +225,7 @@ namespace System.Net.Http
                 await _stream.ReadAsync(Memory<byte>.Empty).ConfigureAwait(false);
 
                 // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
-                return await _stream.ReadAsync(new Memory<byte>(_readBuffer)).ConfigureAwait(false);
+                return await _stream.ReadAsync(_readBuffer.AvailableMemory).ConfigureAwait(false);
             }
         }
 
@@ -261,14 +259,14 @@ namespace System.Net.Http
 
         public HttpConnectionKind Kind => _pool.Kind;
 
-        private int ReadBufferSize => _readBuffer.Length;
+        private int ReadBufferSize => _readBuffer.Capacity;
 
-        private ReadOnlyMemory<byte> RemainingBuffer => new ReadOnlyMemory<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
+        private ReadOnlyMemory<byte> RemainingBuffer => _readBuffer.ActiveMemory;
 
         private void ConsumeFromRemainingBuffer(int bytesToConsume)
         {
-            Debug.Assert(bytesToConsume <= _readLength - _readOffset, $"{bytesToConsume} > {_readLength} - {_readOffset}");
-            _readOffset += bytesToConsume;
+            Debug.Assert(bytesToConsume <= _readBuffer.ActiveLength);
+            _readBuffer.Discard(bytesToConsume);
         }
 
         private async ValueTask WriteHeadersAsync(HttpHeaders headers, string? cookiesFromContainer, bool async)
@@ -406,7 +404,7 @@ namespace System.Net.Http
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
-            Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in read buffer");
+            Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
 
             _currentRequest = request;
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
@@ -557,7 +555,7 @@ namespace System.Net.Http
 
                 // We should not have any buffered data here; if there was, it should have been treated as an error
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)
-                Debug.Assert(_readOffset == _readLength);
+                Debug.Assert(_readBuffer.ActiveLength == 0);
 
                 // When the connection was taken out of the pool, a pre-emptive read was performed
                 // into the read buffer. We need to consume that read prior to issuing another read.
@@ -577,7 +575,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (!async)
+                        if (NetEventSource.Log.IsEnabled() && !async)
                         {
                             Trace($"Pre-emptive read completed asynchronously for a synchronous request.");
                         }
@@ -585,10 +583,9 @@ namespace System.Net.Http
                         bytesRead = await vt.ConfigureAwait(false);
                     }
 
-                    if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
+                    _readBuffer.Commit(bytesRead);
 
-                    _readOffset = 0;
-                    _readLength = bytesRead;
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
                 }
                 else
                 {
@@ -596,7 +593,7 @@ namespace System.Net.Http
                     await InitialFillAsync(async).ConfigureAwait(false);
                 }
 
-                if (_readLength == 0)
+                if (_readBuffer.ActiveLength == 0)
                 {
                     // The server shutdown the connection on their end, likely because of an idle timeout.
                     // If we haven't started sending the request body yet (or there is no request body),
@@ -968,13 +965,14 @@ namespace System.Net.Http
 
         private bool ParseStatusLine(HttpResponseMessage response)
         {
-            Span<byte> buffer = new Span<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
+            Span<byte> buffer = _readBuffer.ActiveSpan;
 
             int lineFeedIndex = buffer.IndexOf((byte)'\n');
             if (lineFeedIndex >= 0)
             {
-                _readOffset += lineFeedIndex + 1;
-                _allowedReadLineBytes -= lineFeedIndex + 1;
+                int bytesConsumed = lineFeedIndex + 1;
+                _readBuffer.Discard(bytesConsumed);
+                _allowedReadLineBytes -= bytesConsumed;
 
                 int carriageReturnIndex = lineFeedIndex - 1;
                 int length = (uint)carriageReturnIndex < (uint)buffer.Length && buffer[carriageReturnIndex] == '\r'
@@ -1069,7 +1067,7 @@ namespace System.Net.Http
 
         private bool ParseHeaders(HttpResponseMessage? response, bool isFromTrailer)
         {
-            Span<byte> buffer = new Span<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
+            Span<byte> buffer = _readBuffer.ActiveSpan;
 
             (bool finished, int bytesConsumed) = ParseHeadersCore(buffer, response, isFromTrailer);
 
@@ -1079,7 +1077,7 @@ namespace System.Net.Http
                 ThrowExceededAllowedReadLineBytes();
             }
 
-            _readOffset += bytesConsumed;
+            _readBuffer.Discard(bytesConsumed);
             _allowedReadLineBytes -= bytesConsumed;
             Debug.Assert(_allowedReadLineBytes >= 0);
 
@@ -1650,7 +1648,7 @@ namespace System.Net.Http
 
         private bool TryReadNextChunkedLine(out ReadOnlySpan<byte> line)
         {
-            var buffer = new ReadOnlySpan<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
+            ReadOnlySpan<byte> buffer = _readBuffer.ActiveReadOnlySpan;
 
             int lineFeedIndex = buffer.IndexOf((byte)'\n');
             if (lineFeedIndex < 0)
@@ -1666,7 +1664,7 @@ namespace System.Net.Http
                 int bytesConsumed = lineFeedIndex + 1;
                 if (bytesConsumed <= MaxChunkBytesAllowed)
                 {
-                    _readOffset += bytesConsumed;
+                    _readBuffer.Discard(bytesConsumed);
 
                     int carriageReturnIndex = lineFeedIndex - 1;
 
@@ -1686,13 +1684,16 @@ namespace System.Net.Http
         private async ValueTask InitialFillAsync(bool async)
         {
             Debug.Assert(_readAheadTask == null);
+            Debug.Assert(_readBuffer.AvailableLength == _readBuffer.Capacity);
+            Debug.Assert(_readBuffer.AvailableLength >= InitialReadBufferSize);
 
-            _readOffset = 0;
-            _readLength = async ?
-                await _stream.ReadAsync(_readBuffer).ConfigureAwait(false) :
-                _stream.Read(_readBuffer);
+            int bytesRead = async ?
+                await _stream.ReadAsync(_readBuffer.AvailableMemory).ConfigureAwait(false) :
+                _stream.Read(_readBuffer.AvailableSpan);
 
-            if (NetEventSource.Log.IsEnabled()) Trace($"Received {_readLength} bytes.");
+            _readBuffer.Commit(bytesRead);
+
+            if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
         }
 
         // Throws IOException on EOF.  This is only called when we expect more data.
@@ -1700,55 +1701,26 @@ namespace System.Net.Http
         {
             Debug.Assert(_readAheadTask == null);
 
-            int remaining = _readLength - _readOffset;
-            Debug.Assert(remaining >= 0);
-
-            if (remaining == 0)
-            {
-                // No data in the buffer.  Simply reset the offset and length to 0 to allow
-                // the whole buffer to be filled.
-                _readOffset = _readLength = 0;
-            }
-            else if (_readOffset > 0)
-            {
-                // There's some data in the buffer but it's not at the beginning.  Shift it
-                // down to make room for more.
-                Buffer.BlockCopy(_readBuffer, _readOffset, _readBuffer, 0, remaining);
-                _readOffset = 0;
-                _readLength = remaining;
-            }
-            else if (remaining == _readBuffer.Length)
-            {
-                // The whole buffer is full, but the caller is still requesting more data,
-                // so increase the size of the buffer.
-                Debug.Assert(_readOffset == 0);
-                Debug.Assert(_readLength == _readBuffer.Length);
-
-                var newReadBuffer = new byte[_readBuffer.Length * 2];
-                Buffer.BlockCopy(_readBuffer, 0, newReadBuffer, 0, remaining);
-                _readBuffer = newReadBuffer;
-                _readOffset = 0;
-                _readLength = remaining;
-            }
+            _readBuffer.EnsureAvailableSpace(1);
 
             int bytesRead = async ?
-                await _stream.ReadAsync(new Memory<byte>(_readBuffer, _readLength, _readBuffer.Length - _readLength)).ConfigureAwait(false) :
-                _stream.Read(_readBuffer, _readLength, _readBuffer.Length - _readLength);
+                await _stream.ReadAsync(_readBuffer.AvailableMemory).ConfigureAwait(false) :
+                _stream.Read(_readBuffer.AvailableSpan);
+
+            _readBuffer.Commit(bytesRead);
 
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
             {
                 throw new IOException(SR.net_http_invalid_response_premature_eof);
             }
-
-            _readLength += bytesRead;
         }
 
         private ValueTask FillForHeadersAsync(bool async)
         {
-            // If the read offset is 0, it means we haven't consumed any data since the last FillAsync.
+            // If the start offset is 0, it means we haven't consumed any data since the last FillAsync.
             // If so, read until we either find the next new line or we hit the MaxResponseHeadersLength limit.
-            return _readOffset == 0
+            return _readBuffer.ActiveStartOffset == 0
                 ? ReadUntilEndOfHeaderAsync(async)
                 : FillAsync(async);
 
@@ -1756,7 +1728,7 @@ namespace System.Net.Http
             // This is the slow path, but guarantees O(n) worst-case parsing complexity.
             async ValueTask ReadUntilEndOfHeaderAsync(bool async)
             {
-                int searchOffset = _readLength;
+                int searchOffset = _readBuffer.ActiveLength;
                 if (searchOffset > 0)
                 {
                     // The last character we've buffered could be a new line,
@@ -1767,20 +1739,22 @@ namespace System.Net.Http
                 while (true)
                 {
                     await FillAsync(async).ConfigureAwait(false);
-                    Debug.Assert(_readOffset == 0);
+                    Debug.Assert(_readBuffer.ActiveStartOffset == 0);
+                    Debug.Assert(_readBuffer.ActiveLength > searchOffset);
 
                     // There's no need to search the whole buffer, only look through the new bytes we just read.
-                    if (TryFindEndOfLine(new ReadOnlySpan<byte>(_readBuffer, searchOffset, _readLength - searchOffset), out int offset))
+                    if (TryFindEndOfLine(_readBuffer.ActiveReadOnlySpan.Slice(searchOffset), out int offset))
                     {
                         break;
                     }
 
                     searchOffset += offset;
 
-                    if (searchOffset != _readLength)
+                    int readLength = _readBuffer.ActiveLength;
+                    if (searchOffset != readLength)
                     {
-                        Debug.Assert(searchOffset == _readLength - 1 && _readBuffer[searchOffset] == '\n');
-                        if (_readLength <= 2)
+                        Debug.Assert(searchOffset == readLength - 1 && _readBuffer.ActiveReadOnlySpan[searchOffset] == '\n');
+                        if (readLength <= 2)
                         {
                             // There are no headers - we start off with a new line.
                             // This is reachable from ChunkedEncodingReadStream if the buffers allign just right and there are no trailing headers.
@@ -1788,7 +1762,7 @@ namespace System.Net.Http
                         }
                     }
 
-                    if (_readLength >= _allowedReadLineBytes)
+                    if (readLength >= _allowedReadLineBytes)
                     {
                         ThrowExceededAllowedReadLineBytes();
                     }
@@ -1796,6 +1770,8 @@ namespace System.Net.Http
 
                 static bool TryFindEndOfLine(ReadOnlySpan<byte> buffer, out int searchOffset)
                 {
+                    Debug.Assert(buffer.Length > 0);
+
                     int originalBufferLength = buffer.Length;
 
                     while (true)
@@ -1827,32 +1803,25 @@ namespace System.Net.Http
             }
         }
 
-        private void ReadFromBuffer(Span<byte> buffer)
+        private int ReadFromBuffer(Span<byte> buffer)
         {
-            Debug.Assert(buffer.Length <= _readLength - _readOffset);
+            ReadOnlySpan<byte> available = _readBuffer.ActiveSpan;
+            int toCopy = Math.Min(available.Length, buffer.Length);
 
-            new Span<byte>(_readBuffer, _readOffset, buffer.Length).CopyTo(buffer);
-            _readOffset += buffer.Length;
+            available.Slice(0, toCopy).CopyTo(buffer);
+            _readBuffer.Discard(toCopy);
+
+            return toCopy;
         }
 
         private int Read(Span<byte> destination)
         {
             // This is called when reading the response body.
 
-            int remaining = _readLength - _readOffset;
-            if (remaining > 0)
+            if (_readBuffer.ActiveLength > 0)
             {
                 // We have data in the read buffer.  Return it to the caller.
-                if (destination.Length <= remaining)
-                {
-                    ReadFromBuffer(destination);
-                    return destination.Length;
-                }
-                else
-                {
-                    ReadFromBuffer(destination.Slice(0, remaining));
-                    return remaining;
-                }
+                return ReadFromBuffer(destination);
             }
 
             // No data in read buffer.
@@ -1867,20 +1836,10 @@ namespace System.Net.Http
         {
             // This is called when reading the response body.
 
-            int remaining = _readLength - _readOffset;
-            if (remaining > 0)
+            if (_readBuffer.ActiveLength > 0)
             {
                 // We have data in the read buffer.  Return it to the caller.
-                if (destination.Length <= remaining)
-                {
-                    ReadFromBuffer(destination.Span);
-                    return destination.Length;
-                }
-                else
-                {
-                    ReadFromBuffer(destination.Span.Slice(0, remaining));
-                    return remaining;
-                }
+                return ReadFromBuffer(destination.Span);
             }
 
             // No data in read buffer.
@@ -1894,36 +1853,26 @@ namespace System.Net.Http
         private int ReadBuffered(Span<byte> destination)
         {
             // This is called when reading the response body.
-            int remaining = _readLength - _readOffset;
-            if (remaining > 0)
+
+            if (_readBuffer.ActiveLength == 0)
             {
-                // We have data in the read buffer.  Return it to the caller.
-                if (destination.Length <= remaining)
+                // Do a buffered read directly against the underlying stream.
+                Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
+
+                if (destination.Length == 0)
                 {
-                    ReadFromBuffer(destination);
-                    return destination.Length;
+                    return _stream.Read(Array.Empty<byte>());
                 }
-                else
-                {
-                    ReadFromBuffer(destination.Slice(0, remaining));
-                    return remaining;
-                }
+
+                Debug.Assert(_readBuffer.AvailableLength == _readBuffer.Capacity);
+                int bytesRead = _stream.Read(_readBuffer.AvailableSpan);
+                _readBuffer.Commit(bytesRead);
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             }
 
-            // No data in read buffer.
-            _readOffset = _readLength = 0;
-
-            // Do a buffered read directly against the underlying stream.
-            Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
-            int bytesRead = _stream.Read(_readBuffer, 0, destination.Length == 0 ? 0 : _readBuffer.Length);
-            if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
-            _readLength = bytesRead;
-
             // Hand back as much data as we can fit.
-            int bytesToCopy = Math.Min(bytesRead, destination.Length);
-            _readBuffer.AsSpan(0, bytesToCopy).CopyTo(destination);
-            _readOffset = bytesToCopy;
-            return bytesToCopy;
+            return ReadFromBuffer(destination);
         }
 
         private ValueTask<int> ReadBufferedAsync(Memory<byte> destination)
@@ -1933,7 +1882,7 @@ namespace System.Net.Http
             // buffer, so just do an unbuffered read.
             // Also avoid avoid using the internal buffer if the user requested a zero-byte read to allow
             // underlying streams to efficiently handle such a read (e.g. SslStream defering buffer allocation).
-            return destination.Length >= _readBuffer.Length || destination.Length == 0 ?
+            return destination.Length >= _readBuffer.Capacity || destination.Length == 0 ?
                 ReadAsync(destination) :
                 ReadBufferedAsyncCore(destination);
         }
@@ -1942,54 +1891,38 @@ namespace System.Net.Http
         {
             // This is called when reading the response body.
 
-            int remaining = _readLength - _readOffset;
-            if (remaining > 0)
+            if (_readBuffer.ActiveLength == 0)
             {
-                // We have data in the read buffer.  Return it to the caller.
-                if (destination.Length <= remaining)
-                {
-                    ReadFromBuffer(destination.Span);
-                    return destination.Length;
-                }
-                else
-                {
-                    ReadFromBuffer(destination.Span.Slice(0, remaining));
-                    return remaining;
-                }
+                // Do a buffered read directly against the underlying stream.
+                Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
+
+                Debug.Assert(_readBuffer.AvailableLength == _readBuffer.Capacity);
+                int bytesRead = await _stream.ReadAsync(_readBuffer.AvailableMemory).ConfigureAwait(false);
+                _readBuffer.Commit(bytesRead);
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             }
 
-            // No data in read buffer.
-            _readOffset = _readLength = 0;
-
-            // Do a buffered read directly against the underlying stream.
-            Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
-            int bytesRead = await _stream.ReadAsync(_readBuffer.AsMemory()).ConfigureAwait(false);
-            if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
-            _readLength = bytesRead;
-
             // Hand back as much data as we can fit.
-            int bytesToCopy = Math.Min(bytesRead, destination.Length);
-            _readBuffer.AsSpan(0, bytesToCopy).CopyTo(destination.Span);
-            _readOffset = bytesToCopy;
-            return bytesToCopy;
+            return ReadFromBuffer(destination.Span);
         }
 
         private ValueTask CopyFromBufferAsync(Stream destination, bool async, int count, CancellationToken cancellationToken)
         {
-            Debug.Assert(count <= _readLength - _readOffset);
+            Debug.Assert(count <= _readBuffer.ActiveLength);
 
             if (NetEventSource.Log.IsEnabled()) Trace($"Copying {count} bytes to stream.");
 
-            int offset = _readOffset;
-            _readOffset += count;
+            ReadOnlyMemory<byte> source = _readBuffer.ActiveMemory.Slice(0, count);
+            _readBuffer.Discard(count);
 
             if (async)
             {
-                return destination.WriteAsync(new ReadOnlyMemory<byte>(_readBuffer, offset, count), cancellationToken);
+                return destination.WriteAsync(source, cancellationToken);
             }
             else
             {
-                destination.Write(_readBuffer, offset, count);
+                destination.Write(source.Span);
                 return default;
             }
         }
@@ -1998,9 +1931,7 @@ namespace System.Net.Http
         {
             Debug.Assert(destination != null);
 
-            int remaining = _readLength - _readOffset;
-
-            if (remaining > 0)
+            if (_readBuffer.ActiveLength > 0)
             {
                 return CopyToUntilEofWithExistingBufferedDataAsync(destination, async, bufferSize, cancellationToken);
             }
@@ -2016,11 +1947,10 @@ namespace System.Net.Http
 
         private async Task CopyToUntilEofWithExistingBufferedDataAsync(Stream destination, bool async, int bufferSize, CancellationToken cancellationToken)
         {
-            int remaining = _readLength - _readOffset;
+            int remaining = _readBuffer.ActiveLength;
             Debug.Assert(remaining > 0);
 
             await CopyFromBufferAsync(destination, async, remaining, cancellationToken).ConfigureAwait(false);
-            _readLength = _readOffset = 0;
 
             if (async)
             {
@@ -2039,7 +1969,7 @@ namespace System.Net.Http
             Debug.Assert(length > 0);
 
             // Copy any data left in the connection's buffer to the destination.
-            int remaining = _readLength - _readOffset;
+            int remaining = _readBuffer.ActiveLength;
             if (remaining > 0)
             {
                 if ((ulong)remaining > length)
@@ -2054,7 +1984,7 @@ namespace System.Net.Http
                     return;
                 }
 
-                Debug.Assert(_readLength - _readOffset == 0, "HttpConnection's buffer should have been empty.");
+                Debug.Assert(_readBuffer.ActiveLength == 0, "HttpConnection's buffer should have been empty.");
             }
 
             // Repeatedly read into HttpConnection's buffer and write that buffer to the destination
@@ -2071,7 +2001,7 @@ namespace System.Net.Http
                 {
                     await FillAsync(async).ConfigureAwait(false);
 
-                    remaining = (ulong)_readLength < length ? _readLength : (int)length;
+                    remaining = (int)Math.Min((ulong)_readBuffer.ActiveLength, length);
                     await CopyFromBufferAsync(destination, async, remaining, cancellationToken).ConfigureAwait(false);
 
                     length -= (ulong)remaining;
@@ -2084,16 +2014,17 @@ namespace System.Net.Http
                     // if we filled the read buffer while doing the last read (which is at least one indication that the
                     // data arrival rate is fast enough to warrant a larger buffer), and if the buffer size we'd want is
                     // larger than the one we already have, then grow the connection's read buffer to that size.
-                    if (origReadBuffer == null)
+                    if (origReadBuffer is null)
                     {
-                        byte[] currentReadBuffer = _readBuffer;
-                        if (remaining == currentReadBuffer.Length)
+                        int currentCapacity = _readBuffer.Capacity;
+                        if (remaining == currentCapacity)
                         {
                             int desiredBufferSize = (int)Math.Min((ulong)bufferSize, length);
-                            if (desiredBufferSize > currentReadBuffer.Length)
+                            if (desiredBufferSize > currentCapacity)
                             {
-                                origReadBuffer = currentReadBuffer;
-                                _readBuffer = ArrayPool<byte>.Shared.Rent(desiredBufferSize);
+                                origReadBuffer = _readBuffer.DangerousGetUnderlyingBuffer();
+                                byte[] pooledBuffer = ArrayPool<byte>.Shared.Rent(desiredBufferSize);
+                                _readBuffer = new ArrayBuffer(pooledBuffer);
                             }
                         }
                     }
@@ -2101,20 +2032,23 @@ namespace System.Net.Http
             }
             finally
             {
-                if (origReadBuffer != null)
+                if (origReadBuffer is not null)
                 {
-                    byte[] tmp = _readBuffer;
-                    _readBuffer = origReadBuffer;
-                    ArrayPool<byte>.Shared.Return(tmp);
+                    Debug.Assert(origReadBuffer.Length > 0);
 
-                    // _readOffset and _readLength may not be within range of the original
-                    // buffer, and even if they are, they won't refer to read data at this
-                    // point.  But we don't care what remaining data there was, other than
-                    // that there may have been some, as subsequent code is going to check
-                    // whether these are the same and then force the connection closed if
-                    // they're not.
-                    _readLength = _readOffset < _readLength ? 1 : 0;
-                    _readOffset = 0;
+                    // We don't care how much remaining data there was, just if there was any.
+                    // Subsequent code is going to check whether the receive buffer is empty
+                    // and then force the connection closed if it's not.
+                    bool anyDataAvailable = _readBuffer.ActiveLength > 0;
+
+                    byte[] pooledBuffer = _readBuffer.DangerousGetUnderlyingBuffer();
+                    _readBuffer = new ArrayBuffer(origReadBuffer);
+                    ArrayPool<byte>.Shared.Return(pooledBuffer);
+
+                    if (anyDataAvailable)
+                    {
+                        _readBuffer.Commit(1);
+                    }
                 }
             }
         }
@@ -2164,14 +2098,14 @@ namespace System.Net.Http
             // otherwise we'd interpret this as part of the next response. Plus, we may
             // have been using a temporary buffer to read this erroneous data, and thus
             // may not even have it any more.
-            if (_readLength != _readOffset)
+            if (_readBuffer.ActiveLength > 0)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
                     Trace("Unexpected data on connection after response read.");
                 }
 
-                _readOffset = _readLength = 0;
+                _readBuffer.Discard(_readBuffer.ActiveLength);
                 _connectionClose = true;
             }
 
@@ -2218,7 +2152,7 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest == null, "Connection should no longer be associated with a request.");
             Debug.Assert(_readAheadTask == null, "Expected a previous initial read to already be consumed.");
-            Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in connection read buffer.");
+            Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in connection read buffer.");
 
             // If we decided not to reuse the connection (either because the server sent Connection: close,
             // or there was some other problem while processing the request that makes the connection unusable),
