@@ -18,8 +18,8 @@ namespace System
     // included in this file which are specific to the packed implementation.
     internal static partial class PackedSpanHelpers
     {
-        // We only do this optimization on X86 as the packing is noticeably more expensive on ARM in comparison.
-        // While the impact on worst-case (match at the start) is minimal on X86, it's prohibitively large on ARM.
+        // We only do this optimization if we have support for X86 intrinsics (Sse2) as the packing is noticeably cheaper compared to ARM (AdvSimd).
+        // While the impact on the worst-case (match at the start) is minimal on X86, it's prohibitively large on ARM.
         public static bool PackedIndexOfIsSupported => Sse2.IsSupported;
 
         // Not all values can benefit from packing the searchSpace. See comments in PackSources below.
