@@ -174,7 +174,7 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
     {
         // Load and insert upper 4 bytes, 0x20 inserts to index 2 and 0x8 zeros index 3
         GenTreeIndir indir = indirForm(TYP_SIMD16, addr);
-        emit->emitIns_R_A_I(INS_insertps, EA_16BYTE, tgtReg, &indir, 0x28);
+        emit->emitIns_SIMD_R_R_A_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, &indir, 0x28);
     }
     else
     {
@@ -307,7 +307,7 @@ void CodeGen::genLoadLclTypeSimd12(GenTreeLclVarCommon* treeNode)
         emit->emitIns_R_S(INS_movsdsse2, EA_8BYTE, tgtReg, varNum, offs);
 
         // Load and insert upper 4 byte, 0x20 inserts to index 2 and 0x8 zeros index 3
-        emit->emitIns_R_S_I(INS_insertps, EA_16BYTE, tgtReg, varNum, offs + 8, 0x28);
+        emit->emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, varNum, offs + 8, 0x28);
     }
     else
     {
