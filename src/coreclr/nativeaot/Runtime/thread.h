@@ -138,7 +138,12 @@ public:
                                                     // suspend once resumed.
                                                     // If we see this flag, we skip hijacking as an optimization.
 #endif //FEATURE_SUSPEND_REDIRECTION
-        TSF_ActivationPending   = 0x00000100,
+#ifdef FEATURE_SUSPEND_APC2
+        TSF_SuspensionApcPending = 0x00000100,      // An APC with QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC can interrupt another APC.
+                                                    // In our case it is harmless, but wasteful and in extreme cases may
+                                                    // force the target thread into stack oveflow.
+                                                    // We use this flag to avoid sending another APC when one is still pending.
+#endif
     };
 private:
 
@@ -224,9 +229,6 @@ public:
     bool                IsDetached();
     void                SetDetached();
 
-    bool                IsActivationPending();
-    void                SetActivationPending(bool isPending);
-
     PTR_VOID            GetThreadStressLog() const;
 #ifndef DACCESS_COMPILE
     void                SetThreadStressLog(void * ptsl);
@@ -293,6 +295,11 @@ public:
 #ifdef FEATURE_SUSPEND_REDIRECTION
     NATIVE_CONTEXT* EnsureRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+#ifdef FEATURE_SUSPEND_APC2
+    bool                IsSuspensionApcPending();
+    void                SetSuspensionApcPending(bool isPending);
+#endif
 };
 
 #ifndef __GCENV_BASE_INCLUDED__

@@ -448,6 +448,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 
 static PalHijackCallback g_pHijackCallback;
 
+#ifdef FEATURE_SUSPEND_APC2
 typedef BOOL(WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
 static QueueUserAPC2Proc pfnQueueUserAPC2Proc;
 
@@ -463,7 +464,7 @@ static void __stdcall ActivationHandler(ULONG_PTR parameter)
     g_pHijackCallback(data->ContextRecord, NULL);
 
     Thread* pThread = (Thread*)data->Parameter;
-    pThread->SetActivationPending(false);
+    pThread->SetSuspensionApcPending(false);
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
@@ -492,17 +493,19 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
 
     return true;
 }
+#endif
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
 
+#ifdef FEATURE_SUSPEND_APC2
     if (pfnQueueUserAPC2Proc)
     {
         Thread* pThread = (Thread*)pThreadToHijack;
 
         // An APC can be interrupted by another one, do not queue more if one is pending.
-        if (!pThread->IsActivationPending())
+        if (!pThread->IsSuspensionApcPending())
         {
             pfnQueueUserAPC2Proc(
                 &ActivationHandler,
@@ -510,11 +513,12 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
                 (ULONG_PTR)pThreadToHijack,
                 SpecialUserModeApcWithContextFlags);
 
-            pThread->SetActivationPending(true);
+            pThread->SetSuspensionApcPending(true);
         }
 
         return;
     }
+#endif
 
     if (SuspendThread(hThread) == (DWORD)-1)
     {
