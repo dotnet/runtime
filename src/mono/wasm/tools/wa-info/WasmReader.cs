@@ -13,6 +13,44 @@ namespace WebAssemblyInfo
         {
         }
 
+        protected override void PostParse()
+        {
+            base.PostParse();
+            if (functionNames == null || functionNames.Count != 0)
+                return;
+
+            var dir = System.IO.Path.GetDirectoryName(Path);
+            if (dir == null)
+                return;
+
+            var symPath = System.IO.Path.Combine(dir, "dotnet.js.symbols");
+            if (!File.Exists(symPath))
+                return;
+
+            if (Program.Verbose)
+                Console.WriteLine($"Reading function names from: {symPath}");
+
+            var lines = File.ReadAllLines(symPath);
+            foreach (var line in lines)
+            {
+                var idx = line.IndexOf(':');
+                if (idx < 0 || !uint.TryParse(line.AsSpan(0, idx), out var fIdx))
+                    continue;
+
+                var name = line[(idx + 1)..];
+                if (string.IsNullOrEmpty(name))
+                    continue;
+
+                if (functionNames.ContainsKey(fIdx))
+                {
+                    Console.WriteLine($"warning: duplicit function index: {fIdx}");
+                    continue;
+                }
+
+                functionNames[fIdx] = name;
+            }
+        }
+
         override protected void ReadSection(SectionInfo section)
         {
             switch (section.id)

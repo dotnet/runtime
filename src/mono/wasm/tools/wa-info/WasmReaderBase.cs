@@ -26,7 +26,10 @@ namespace WebAssemblyInfo
         public void Parse()
         {
             ReadModule();
+            PostParse();
         }
+
+        protected virtual void PostParse() { }
 
         protected byte[] MagicWasm = { 0x0, 0x61, 0x73, 0x6d };
 
