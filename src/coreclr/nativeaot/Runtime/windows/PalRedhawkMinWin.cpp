@@ -485,6 +485,10 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
         {
             pfnQueueUserAPC2Proc = NULL;
         }
+        else
+        {
+            UNREACHABLE_MSG("SUPPORTS QUEUE_USER_APC_CALLBACK_DATA_CONTEXT ################## \n");
+        }
     }
 #endif
 
