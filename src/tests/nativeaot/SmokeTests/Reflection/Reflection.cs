@@ -80,6 +80,7 @@ internal static class ReflectionTest
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
 #endif
+        TestBaseOnlyUsedFromCode.Run();
         return 100;
     }
 
@@ -1503,6 +1504,33 @@ internal static class ReflectionTest
 #if !MULTIMODULE_BUILD
             Assert.Equal("mscorlib", Assembly.Load("mscorlib, PublicKeyToken=cccccccccccccccc").GetName().Name);
 #endif
+        }
+    }
+
+    class TestBaseOnlyUsedFromCode
+    {
+        class SomeReferenceType { }
+
+        class SomeGenericClass<T>
+        {
+            public static string Cookie;
+        }
+
+        class OtherGenericClass<T>
+        {
+            public override string ToString() => SomeGenericClass<T>.Cookie;
+        }
+
+        public static void Run()
+        {
+            SomeGenericClass<SomeReferenceType>.Cookie = "Hello";
+
+            var inst = Activator.CreateInstance(typeof(OtherGenericClass<>).MakeGenericType(GetSomeReferenceType()));
+
+            if (inst.ToString() != "Hello")
+                throw new Exception();
+
+            static Type GetSomeReferenceType() => typeof(SomeReferenceType);
         }
     }
 
