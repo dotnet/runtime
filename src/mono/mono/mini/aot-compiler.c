@@ -4346,9 +4346,11 @@ add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer
 			return;
 		}
 
-		if (g_hash_table_lookup (acfg->prefer_instances, method))
-			/* Compile an instance as well */
+		if (g_hash_table_lookup (acfg->prefer_instances, method) && !is_open_method (orig)) {
+			/* Compile an instance instead */
 			add_extra_method_full (acfg, orig, FALSE, depth);
+			return;
+		}
 
 		/* Add it to profile_methods so its not skipped later */
 		if (acfg->aot_opts.profile_only && g_hash_table_lookup (acfg->profile_methods, orig))
@@ -9282,6 +9284,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		 * for performance reasons, since gshared methods cannot implement some
 		 * features like static virtual methods efficiently.
 		 */
+		/* Instances encountered later will be handled in add_extra_method_full () */
 		g_hash_table_insert (acfg->prefer_instances, method, method);
 		GPtrArray *instances = g_hash_table_lookup (acfg->gshared_instances, method);
 		if (instances) {
