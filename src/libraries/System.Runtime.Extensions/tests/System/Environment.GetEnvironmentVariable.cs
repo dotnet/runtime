@@ -220,12 +220,6 @@ namespace System.Tests
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process)
                 || (PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess);
 
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/30566")]
-            if (PlatformDetection.IsWindowsNanoServer && target == EnvironmentVariableTarget.User)
-            {
-                lookForSetValue = false;
-            }
-
             string key = $"EnumerateEnvironmentVariables ({target})";
             string value = Path.GetRandomFileName();
 
