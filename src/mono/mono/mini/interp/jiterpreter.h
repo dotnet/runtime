@@ -41,6 +41,9 @@ jiterp_insert_entry_points (void *td);
 void
 mono_jiterp_register_jit_call_thunk (void *cinfo, WasmJitCallThunk thunk);
 
+extern void
+mono_interp_record_interp_entry (void *fn_ptr);
+
 // jiterpreter-interp-entry.ts
 // HACK: Pass void* so that this header can include safely in files without definition for InterpMethod
 extern gpointer

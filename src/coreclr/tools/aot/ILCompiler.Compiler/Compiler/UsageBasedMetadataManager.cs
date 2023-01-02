@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Xml;
+using System.Xml.XPath;
 
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
@@ -567,9 +567,9 @@ namespace ILCompiler
 
             Debug.Assert(methodIL != null || method.IsAbstract || method.IsPInvoke || method.IsInternalCall);
 
-            if (methodIL != null && scanReflection)
+            if (scanReflection)
             {
-                if (FlowAnnotations.RequiresDataflowAnalysis(method))
+                if (methodIL != null && FlowAnnotations.RequiresDataflowAnalysis(method))
                 {
                     AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
                 }
@@ -1142,36 +1142,48 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        RemovedAttributes = LinkAttributesReader.GetRemovedAttributes(module.Context, XmlReader.Create(ms), module, featureSwitchValues);
+                        RemovedAttributes = LinkAttributesReader.GetRemovedAttributes(module.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues);
                     }
                 }
             }
         }
 
-        private sealed class LinkAttributesReader : ProcessXmlBase
+        private sealed class LinkAttributesReader : ProcessLinkerXmlBase
         {
-            private readonly HashSet<TypeDesc> _removedAttributes;
+            private readonly HashSet<TypeDesc> _removedAttributes = new();
 
-            private LinkAttributesReader(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
-                : base(context, reader, module, featureSwitchValues)
+            public LinkAttributesReader(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+                : base(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
             {
-                _removedAttributes = new HashSet<TypeDesc>();
             }
 
-            protected override void ProcessAttribute(TypeDesc type)
+            private void ProcessAttribute(TypeDesc type, XPathNavigator nav)
             {
-                string internalValue = GetAttribute("internal");
-                if (internalValue == "RemoveAttributeInstances" && IsEmpty())
+                string internalValue = GetAttribute(nav, "internal");
+                if (internalValue == "RemoveAttributeInstances" && nav.IsEmptyElement)
                 {
                     _removedAttributes.Add(type);
                 }
             }
 
-            public static HashSet<TypeDesc> GetRemovedAttributes(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public static HashSet<TypeDesc> GetRemovedAttributes(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
-                var rdr = new LinkAttributesReader(context, reader, module, featureSwitchValues);
-                rdr.ProcessXml();
+                var rdr = new LinkAttributesReader(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
+                rdr.ProcessXml(false);
                 return rdr._removedAttributes;
+            }
+
+            protected override void ProcessAssembly(ModuleDesc assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
+            {
+                ProcessTypes(assembly, nav, warnOnUnresolvedTypes);
+            }
+
+            protected override void ProcessType(TypeDesc type, XPathNavigator nav)
+            {
+                foreach (XPathNavigator child in nav.SelectChildren("attribute", ""))
+                {
+                    ProcessAttribute(type, child);
+                }
             }
         }
     }

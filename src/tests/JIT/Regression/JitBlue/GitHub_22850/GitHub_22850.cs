@@ -9,7 +9,7 @@ using System.Runtime.Intrinsics.X86;
 
 public static class GitHub_22850
 {
-    static int Main()
+    public static int Main()
     {
         return test128((byte)90) ? 100 : -1;
     }

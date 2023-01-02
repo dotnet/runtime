@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         static int[] Static2() { return new int[100]; }
 
@@ -27,7 +27,7 @@ namespace Test
                 }
             }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

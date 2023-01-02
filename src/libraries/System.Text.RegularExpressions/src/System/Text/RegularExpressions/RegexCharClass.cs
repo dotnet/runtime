@@ -979,8 +979,9 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Gets whether the specified span contains only ASCII.</summary>
-        public static bool IsAscii(ReadOnlySpan<char> s) // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
+        public static bool IsAscii(ReadOnlySpan<char> s)
         {
+#if REGEXGENERATOR
             foreach (char c in s)
             {
                 if (c >= 128)
@@ -990,6 +991,9 @@ namespace System.Text.RegularExpressions
             }
 
             return true;
+#else
+            return Ascii.IsValid(s);
+#endif
         }
 
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>

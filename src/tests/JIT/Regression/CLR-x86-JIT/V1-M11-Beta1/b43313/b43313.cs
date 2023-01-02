@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         static float[] m_afStatic1;
 
@@ -44,7 +44,7 @@ namespace Test
             }
             catch (NullReferenceException) { }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {
