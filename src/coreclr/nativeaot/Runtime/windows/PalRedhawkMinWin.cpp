@@ -466,12 +466,14 @@ static void __stdcall ActivationHandler(ULONG_PTR parameter)
     Thread* pThread = (Thread*)data->Parameter;
     pThread->SetSuspensionApcPending(false);
 }
+#endif
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
 {
     ASSERT(g_pHijackCallback == NULL);
     g_pHijackCallback = callback;
 
+#ifdef FEATURE_SUSPEND_APC2
     // Check if we have QueueUserAPC2
     HMODULE hKernel32 = LoadKernel32dll();
     pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
@@ -484,10 +486,10 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
             pfnQueueUserAPC2Proc = NULL;
         }
     }
+#endif
 
     return true;
 }
-#endif
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
