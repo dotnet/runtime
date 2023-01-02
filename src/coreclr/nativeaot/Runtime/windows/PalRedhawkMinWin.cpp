@@ -449,16 +449,16 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 static PalHijackCallback g_pHijackCallback;
 
 #ifdef FEATURE_SUSPEND_APC2
-typedef BOOL(WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
+typedef BOOL (WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
 static QueueUserAPC2Proc pfnQueueUserAPC2Proc;
 
 static const QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (QUEUE_USER_APC_FLAGS)
                                     (QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
                                     QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
 
-static void __stdcall EmptyActivationHandler(ULONG_PTR parameter){}
+static void NTAPI EmptyActivationHandler(ULONG_PTR parameter){}
 
-static void __stdcall ActivationHandler(ULONG_PTR parameter)
+static void NTAPI ActivationHandler(ULONG_PTR parameter)
 {
     APC_CALLBACK_DATA* data = (APC_CALLBACK_DATA*)parameter;
     g_pHijackCallback(data->ContextRecord, NULL);
