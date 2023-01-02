@@ -220,6 +220,12 @@ namespace System.Tests
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process)
                 || (PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess);
 
+            if (target == EnvironmentVariableTarget.User && PlatformDetection.IsWindowsNanoServer)
+            {
+                // Windows Nano Server does not have full per-user registry hives
+                lookForSetValue = false;
+            }
+
             string key = $"EnumerateEnvironmentVariables ({target})";
             string value = Path.GetRandomFileName();
 
