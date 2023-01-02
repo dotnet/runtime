@@ -65,6 +65,10 @@ namespace ILCompiler.DependencyAnalysis
             OutputWritableData(factory, ref dataBuilder);
             OutputOptionalFields(factory, ref dataBuilder);
 
+            // Generic composition only meaningful if there's variance
+            if ((flags & (uint)EETypeFlags.GenericVarianceFlag) != 0)
+                OutputGenericInstantiationDetails(factory, ref dataBuilder);
+
             return dataBuilder.ToObjectData();
         }
 
