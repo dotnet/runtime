@@ -135,8 +135,33 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return nullptr;
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
+    {
+        GenTree* opNode  = nullptr;
+        GenTree* notNode = nullptr;
+        if (binOp->gtGetOp1()->OperIs(GT_NOT))
+        {
+            notNode = binOp->gtGetOp1();
+            opNode  = binOp->gtGetOp2();
+        }
+        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+        {
+            notNode = binOp->gtGetOp2();
+            opNode  = binOp->gtGetOp1();
+        }
+
+        if (notNode != nullptr)
+        {
+            binOp->gtOp1 = opNode;
+            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+            binOp->ChangeOper(GT_AND_NOT);
+            BlockRange().Remove(notNode);
+        }
+    }
+
+    ContainCheckBinary(binOp);
+
+    return binOp->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -569,7 +594,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(node->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV));
 }
 
 //------------------------------------------------------------------------

@@ -532,7 +532,7 @@ void emitter::emitIns_R_R_I(
         code |= reg2 << 15;          // rs1
         code |= imm << 20;           // imm
     }
-    else if (INS_sd == ins)
+    else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins)
     {
         code |= reg1 << 20;          // rs2
         code |= reg2 << 15;          // rs1
@@ -573,8 +573,9 @@ void emitter::emitIns_R_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if (((INS_add <= ins) && (ins <= INS_and)) ||
-        INS_mul == ins)
+    if ((INS_add <= ins && ins <= INS_and) ||
+        (INS_mul <= ins && ins <= INS_remuw) ||
+        (INS_addw <= ins && ins <= INS_sraw))
     {
 #ifdef DEBUG
         switch (ins)
@@ -858,7 +859,7 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
-    if (0 == ((imm + 0x800) >> 32)) {
+    if (0 == ((imm + 0x800) >> 31)) {
         if (((imm + 0x800) >> 12) != 0)
         {
             emitIns_R_I(INS_lui, size, reg, ((imm + 0x800) >> 12));
