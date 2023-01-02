@@ -73,7 +73,7 @@ namespace ILLink.RoslynAnalyzer
 					return;
 
 				context.RegisterOperationBlockAction (context => {
-					if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
+					if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
 						return;
 
 
@@ -111,7 +111,7 @@ namespace ILLink.RoslynAnalyzer
 			// warnings about base type arguments.
 			if (context.ContainingSymbol is not null
 				&& context.ContainingSymbol is not INamedTypeSymbol
-				&& context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
+				&& context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
 				return;
 
 			var symbol = context.SemanticModel.GetSymbolInfo (context.Node).Symbol;

@@ -36,6 +36,16 @@ namespace System.Net
             _availableStart = 0;
         }
 
+        public ArrayBuffer(byte[] buffer)
+        {
+            Debug.Assert(buffer.Length > 0);
+
+            _usePool = false;
+            _bytes = buffer;
+            _activeStart = 0;
+            _availableStart = 0;
+        }
+
         public void Dispose()
         {
             _activeStart = 0;
@@ -61,6 +71,9 @@ namespace System.Net
         public Memory<byte> AvailableMemorySliced(int length) => new Memory<byte>(_bytes, _availableStart, length);
 
         public int Capacity => _bytes.Length;
+        public int ActiveStartOffset => _activeStart;
+
+        public byte[] DangerousGetUnderlyingBuffer() => _bytes;
 
         public void Discard(int byteCount)
         {

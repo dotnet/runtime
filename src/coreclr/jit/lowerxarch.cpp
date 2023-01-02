@@ -1125,7 +1125,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 node->ChangeHWIntrinsicId(NI_Vector128_GetElement);
-                LowerNode(node);
+                return LowerNode(node);
             }
             break;
         }
@@ -1136,11 +1136,212 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(node->GetOperandCount() == 3);
 
+            var_types simdBaseType = node->GetSimdBaseType();
+
             // Insert takes either a 32-bit register or a memory operand.
             // In either case, only SimdBaseType bits are read and so
             // widening or narrowing the operand may be unnecessary and it
             // can just be used directly.
-            node->Op(2) = TryRemoveCastIfPresent(node->GetSimdBaseType(), node->Op(2));
+
+            node->Op(2) = TryRemoveCastIfPresent(simdBaseType, node->Op(2));
+
+            if (simdBaseType != TYP_FLOAT)
+            {
+                break;
+            }
+            assert(intrinsicId == NI_SSE41_Insert);
+
+            // We have Sse41.Insert in which case we can specially handle
+            // a couple of interesting scenarios involving chains of Inserts
+            // where one of them involves inserting zero
+            //
+            // Given Sse41.Insert has an index:
+            //  * Bits 0-3: zmask
+            //  * Bits 4-5: count_d
+            //  * Bits 6-7: count_s (register form only)
+            //
+            // Where zmask specifies which elements to zero
+            // Where count_d specifies the destination index the value is being inserted to
+            // Where count_s specifies the source index of the value being inserted
+            //
+            // We can recognize  `Insert(Insert(vector, zero, index1), value, index2)` and
+            // transform it into just `Insert(vector, value, index)`. This is because we
+            // can remove the inner insert and update the relevant index fields.
+            //
+            // We can likewise recognize `Insert(Insert(vector, value, index1), zero, index2)`
+            // and do a similar transformation.
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
+
+            bool op1IsVectorZero = op1->IsVectorZero();
+            bool op2IsVectorZero = op2->IsVectorZero();
+
+            if (op1IsVectorZero && op2IsVectorZero)
+            {
+                // While this case is unlikely, we'll handle it here to simplify some
+                // of the logic that exists below. Effectively `Insert(zero, zero, idx)`
+                // is always going to produce zero, so we'll just replace ourselves with
+                // zero. This ensures we don't need to handle a case where op2 is zero
+                // but not contained.
+
+                GenTree* nextNode = node->gtNext;
+
+                LIR::Use use;
+
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    use.ReplaceWith(op1);
+                }
+                else
+                {
+                    op1->SetUnusedValue();
+                }
+
+                BlockRange().Remove(op2);
+                op3->SetUnusedValue();
+                BlockRange().Remove(node);
+
+                return nextNode;
+            }
+
+            if (!op3->IsCnsIntOrI())
+            {
+                // Nothing to do if op3 isn't a constant
+                break;
+            }
+
+            ssize_t ival = op3->AsIntConCommon()->IconValue();
+
+            ssize_t zmask   = (ival & 0x0F);
+            ssize_t count_d = (ival & 0x30) >> 4;
+            ssize_t count_s = (ival & 0xC0) >> 6;
+
+            if (op1IsVectorZero)
+            {
+                // When op1 is zero, we can modify the mask to zero
+                // everything except for the element we're inserting
+
+                zmask |= ~(ssize_t(1) << count_d);
+                zmask &= 0x0F;
+
+                ival = (count_s << 6) | (count_d << 4) | (zmask);
+                op3->AsIntConCommon()->SetIconValue(ival);
+            }
+            else if (op2IsVectorZero)
+            {
+                // When op2 is zero, we can modify the mask to
+                // directly zero the element we're inserting
+
+                zmask |= (ssize_t(1) << count_d);
+                zmask &= 0x0F;
+
+                ival = (count_s << 6) | (count_d << 4) | (zmask);
+                op3->AsIntConCommon()->SetIconValue(ival);
+            }
+
+            if (zmask == 0x0F)
+            {
+                // This is another unlikely case, we'll handle it here to simplify some
+                // of the logic that exists below. In this case, the zmask says all entries
+                // should be zeroed out, so we'll just replace ourselves with zero.
+
+                GenTree* nextNode = node->gtNext;
+
+                LIR::Use use;
+
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    GenTree* zeroNode = comp->gtNewZeroConNode(TYP_SIMD16);
+                    BlockRange().InsertBefore(node, zeroNode);
+                    use.ReplaceWith(zeroNode);
+                }
+                else
+                {
+                    // We're an unused zero constant node, so don't both creating
+                    // a new node for something that will never be consumed
+                }
+
+                op1->SetUnusedValue();
+                op2->SetUnusedValue();
+                op3->SetUnusedValue();
+                BlockRange().Remove(node);
+
+                return nextNode;
+            }
+
+            if (!op1->OperIsHWIntrinsic())
+            {
+                // Nothing to do if op1 isn't an intrinsic
+                break;
+            }
+
+            GenTreeHWIntrinsic* op1Intrinsic = op1->AsHWIntrinsic();
+
+            if ((op1Intrinsic->GetHWIntrinsicId() != NI_SSE41_Insert) || (op1Intrinsic->GetSimdBaseType() != TYP_FLOAT))
+            {
+                // Nothing to do if op1 isn't a float32 Sse41.Insert
+                break;
+            }
+
+            GenTree* op1Idx = op1Intrinsic->Op(3);
+
+            if (!op1Idx->IsCnsIntOrI())
+            {
+                // Nothing to do if op1's index isn't a constant
+                break;
+            }
+
+            if (!IsSafeToContainMem(node, op1))
+            {
+                // What we're doing here is effectively similar to containment,
+                // except for we're deleting the node entirely, so don't we have
+                // nothing to do if there are side effects between node and op1
+                break;
+            }
+
+            if (op1Intrinsic->Op(2)->IsVectorZero())
+            {
+                // First build up the new index by updating zmask to include
+                // the zmask from op1. We expect that op2 has already been
+                // lowered and therefore the containment checks have happened
+
+                assert(op1Intrinsic->Op(2)->isContained());
+
+                ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
+                ival |= (op1Ival & 0x0F);
+                op3->AsIntConCommon()->SetIconValue(ival);
+
+                // Then we'll just carry the original non-zero input and
+                // remove the now unused constant nodes
+
+                node->Op(1) = op1Intrinsic->Op(1);
+
+                BlockRange().Remove(op1Intrinsic->Op(2));
+                BlockRange().Remove(op1Intrinsic->Op(3));
+                BlockRange().Remove(op1Intrinsic);
+            }
+            else if (op2IsVectorZero)
+            {
+                // Since we've already updated zmask to take op2 being zero into
+                // account, we can basically do the same thing here by merging this
+                // zmask into the ival from op1.
+
+                ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
+                ival            = op1Ival | zmask;
+                op3->AsIntConCommon()->SetIconValue(ival);
+
+                // Then we'll just carry the inputs from op1 and remove the now
+                // unused constant nodes
+
+                node->Op(1) = op1Intrinsic->Op(1);
+                node->Op(2) = op1Intrinsic->Op(2);
+
+                BlockRange().Remove(op2);
+                BlockRange().Remove(op1Intrinsic->Op(3));
+                BlockRange().Remove(op1Intrinsic);
+            }
             break;
         }
 
@@ -3326,17 +3527,23 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     }
 
     assert(result->GetHWIntrinsicId() != intrinsicId);
+    GenTree* nextNode = LowerNode(result);
 
-    LowerNode(result);
     if (intrinsicId == NI_Vector256_WithElement)
     {
         // Now that we have finalized the shape of the tree, lower the insertion node as well.
+
         assert(node->GetHWIntrinsicId() == NI_AVX_InsertVector128);
         assert(node != result);
-        LowerNode(node);
+
+        nextNode = LowerNode(node);
+    }
+    else
+    {
+        assert(node == result);
     }
 
-    return node->gtNext;
+    return nextNode;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -5934,28 +6141,6 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
     }
 }
 
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
-{
-    switch (simdNode->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicInitArray:
-            // We have an array and an index, which may be contained.
-            CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
-            break;
-
-        default:
-            break;
-    }
-}
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------
 // IsContainableHWIntrinsicOp: Determines whether a child node is containable for a given HWIntrinsic
@@ -7145,24 +7330,47 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // Where count_d specifies the destination index the value is being inserted to
                                 // Where count_s specifies the source index of the value being inserted
 
-                                ssize_t ival = lastOp->AsIntConCommon()->IconValue();
-
-                                ssize_t zmask   = (ival & 0x0F);
-                                ssize_t count_d = (ival & 0x30) >> 4;
-                                ssize_t count_s = (ival & 0xC0) >> 6;
-
                                 if (op1->IsVectorZero())
                                 {
-                                    // When op1 is zero, we can contain op1 and modify the mask
-                                    // to zero everything except for the element we're inserting to
+// When op1 is zero, we can contain it and we expect that
+// ival is already in the correct state to account for it
 
-                                    MakeSrcContained(node, op1);
+#if DEBUG
+                                    ssize_t ival = lastOp->AsIntConCommon()->IconValue();
 
-                                    zmask |= ~(1 << count_d);
+                                    ssize_t zmask   = (ival & 0x0F);
+                                    ssize_t count_d = (ival & 0x30) >> 4;
+                                    ssize_t count_s = (ival & 0xC0) >> 6;
+
+                                    zmask |= ~(ssize_t(1) << count_d);
                                     zmask &= 0x0F;
 
-                                    ival = (count_s << 6) | (count_d << 4) | (zmask);
-                                    lastOp->AsIntConCommon()->SetIconValue(ival);
+                                    ssize_t expected = (count_s << 6) | (count_d << 4) | (zmask);
+                                    assert(ival == expected);
+#endif
+
+                                    MakeSrcContained(node, op1);
+                                }
+                                else if (op2->IsVectorZero())
+                                {
+// When op2 is zero, we can contain it and we expect that
+// zmask is already in the correct state to account for it
+
+#if DEBUG
+                                    ssize_t ival = lastOp->AsIntConCommon()->IconValue();
+
+                                    ssize_t zmask   = (ival & 0x0F);
+                                    ssize_t count_d = (ival & 0x30) >> 4;
+                                    ssize_t count_s = (ival & 0xC0) >> 6;
+
+                                    zmask |= (ssize_t(1) << count_d);
+                                    zmask &= 0x0F;
+
+                                    ssize_t expected = (count_s << 6) | (count_d << 4) | (zmask);
+                                    assert(ival == expected);
+#endif
+
+                                    MakeSrcContained(node, op2);
                                 }
                             }
 
