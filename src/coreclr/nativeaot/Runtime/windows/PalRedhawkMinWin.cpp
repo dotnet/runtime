@@ -483,12 +483,6 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
         {
             pfnQueueUserAPC2Proc = NULL;
         }
-        else
-        {
-            // force a failure - to see if lab machines have support for this.
-            ASSERT(!"HAS Working QueueUserAPC2 ################# \n");
-            UNREACHABLE();
-        }
     }
 
     return true;
