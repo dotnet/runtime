@@ -427,7 +427,7 @@
 
     <!-- https://github.com/dotnet/runtime/issues/30566 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj"
-                       Condition="'$(RuntimeConfiguration)' == 'checked'" />
+                       Condition="'$(RuntimeConfiguration)' == 'checked' and '$(TargetOS)' == 'windows'" />
 
     <!-- Test needs to copy .so file: https://github.com/dotnet/runtime/issues/72987 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"
