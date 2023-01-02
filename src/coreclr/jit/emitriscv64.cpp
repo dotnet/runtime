@@ -234,9 +234,11 @@ void emitter::emitIns(instruction ins)
  *  For referencing a stack-based local variable and a register
  *
  */
-void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNumber tmpReg, int varx, int offs)
 {
     ssize_t imm;
+
+    assert(tmpReg != REG_RA);
 
     emitAttr size = EA_SIZE(attr);
 
@@ -267,8 +269,10 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
     assert(offs >= 0);
-    // regNumber reg2 = offs < 0 ? REG_R21 : reg3;
-    regNumber reg2 = reg3;
+    regNumber reg2 = offs < 0 ? tmpReg : reg3; // TODO R21 => tmpReg
+    assert(reg2 != REG_NA && reg2 != REG_RA);
+
+    // regNumber reg2 = reg3;
     offs           = offs < 0 ? -offs - 8 : offs;
 
     if ((-2048 <= imm) && (imm < 2048))
@@ -287,6 +291,12 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         imm2 = imm2 & 0x7ff;
         imm  = imm3 ? imm2 - imm3 : imm2;
         reg2 = REG_RA;
+    }
+
+    if (tmpReg != REG_NA)
+    {
+        emitIns_R_R_R(INS_add, attr, reg2, reg2, reg3);
+        imm = 0;
     }
 
     instrDesc* id = emitNewInstr(attr);
@@ -481,11 +491,14 @@ void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
     // assert(IsMovInstruction(ins));
-
     if (!canSkip || (dstReg != srcReg))
     {
         if ((EA_4BYTE == attr) && (INS_mov == ins))
             emitIns_R_R_I(INS_addiw, attr, dstReg, srcReg, 0);
+        else if (INS_fsgnj_s == ins || INS_fsgnj_d == ins)
+            emitIns_R_R_R(ins, attr, dstReg, srcReg, srcReg);
+        else if (genIsValidFloatReg(srcReg) || genIsValidFloatReg(dstReg))
+            emitIns_R_R(ins, attr, dstReg, srcReg);
         else
             emitIns_R_R_I(INS_addi, attr, dstReg, srcReg, 0);
     }
@@ -2537,7 +2550,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x0: // ADDI
                     printf("addi         %s, %s, %d\n", rd, rs1, imm12);
                     return;
-                case 0x1: // SLLI 
+                case 0x1: // SLLI
                     printf("slli         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
                     return;
                 case 0x2: // SLTI
@@ -2549,7 +2562,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x4: // XORI
                     printf("xori         %s, %s, 0x%x\n", rd, rs1, imm12);
                     return;
-                case 0x5: // SRLI & SRAI 
+                case 0x5: // SRLI & SRAI
                     if (((code >> 30) & 0x1) == 0)
                     {
                         printf("srli         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6BITS for SHAMT in RISCV64
@@ -2562,7 +2575,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x6: // ORI
                     printf("ori          %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
                     return;
-                case 0x7: // ANDI 
+                case 0x7: // ANDI
                     printf("andi         %s, %s, 0x%x\n", rd, rs1, imm12 & 0xfff);
                     return;
                 default:
@@ -2586,7 +2599,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x0: // ADDIW
                     printf("addiw        %s, %s, %d\n", rd, rs1, imm12);
                     return;
-                case 0x1: // SLLIW 
+                case 0x1: // SLLIW
                     printf("slliw        %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
                     return;
                 case 0x5: // SRLIW & SRAIW
@@ -2622,7 +2635,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         printf("sub          %s, %s, %s\n", rd, rs1, rs2);
                     }
                     return;
-                case 0x1: // SLL 
+                case 0x1: // SLL
                     printf("sll          %s, %s, %s\n", rd, rs1, rs2);
                     return;
                 case 0x2: // SLT
@@ -2647,7 +2660,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x6: // OR
                     printf("or           %s, %s, %s\n", rd, rs1, rs2);
                     return;
-                case 0x7: // AND 
+                case 0x7: // AND
                     printf("and          %s, %s, %s\n", rd, rs1, rs2);
                     return;
                 default:
@@ -2674,7 +2687,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         printf("subw         %s, %s, %s\n", rd, rs1, rs2);
                     }
                     return;
-                case 0x1: // SLLW 
+                case 0x1: // SLLW
                     printf("sllw         %s, %s, %s\n", rd, rs1, rs2);
                     return;
                 case 0x5: // SRLW & SRAW
@@ -3039,7 +3052,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 unsigned             offset  = varNode->GetLclOffs();
                 if (emitInsIsStore(ins))
                 {
-                    emitIns_S_R(ins, attr, dataReg, lclNum, offset);
+                    emitIns_S_R(ins, attr, dataReg, REG_NA, lclNum, offset);
                 }
                 else
                 {
@@ -3312,13 +3325,14 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 }
                 else
                 {
-                    assert(REG_T6 != dst->GetRegNum());
-                    assert(REG_T6 != src1->GetRegNum());
-                    assert(REG_T6 != src2->GetRegNum());
+                    regNumber tmpReg = dst->GetSingleTempReg();
+                    assert(tmpReg != dst->GetRegNum());
+                    assert(tmpReg != src1->GetRegNum());
+                    assert(tmpReg != src2->GetRegNum());
                     size_t imm = (EA_SIZE(attr) == EA_8BYTE) ? 63 : 31;
-                    emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_srai, attr, REG_T6, dst->GetRegNum(),
+                    emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_srai, attr, tmpReg, dst->GetRegNum(),
                                   imm);
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA, nullptr, REG_T6);
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA, nullptr, tmpReg);
                 }
             }
         }
@@ -3356,12 +3370,10 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(!varTypeIsFloating(dst));
 
             assert(REG_RA != dst->GetRegNum());
-            assert(REG_T6 != dst->GetRegNum());
 
             if (dst->GetRegNum() == regOp1)
             {
                 assert(REG_RA != regOp1);
-                assert(REG_T6 != regOp1);
                 saveOperReg1 = REG_RA;
                 saveOperReg2 = regOp2;
                 emitIns_R_R_I(INS_addi, attr, REG_RA, regOp1, 0);
@@ -3369,7 +3381,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             else if (dst->GetRegNum() == regOp2)
             {
                 assert(REG_RA != regOp2);
-                assert(REG_T6 != regOp2);
                 saveOperReg1 = regOp1;
                 saveOperReg2 = REG_RA;
                 emitIns_R_R_I(INS_addi, attr, REG_RA, regOp2, 0);
@@ -3409,7 +3420,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 }
                 else
                 {
-                    tempReg1 = REG_T6;
+                    tempReg1 = src1->GetSingleTempReg();
                     tempReg2 = codeGen->rsGetRsvdReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);

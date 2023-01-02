@@ -793,7 +793,11 @@ template void Compiler::compChangeLife<true>(VARSET_VALARG_TP newLife);
  */
 void CodeGenInterface::spillReg(var_types type, TempDsc* tmp, regNumber reg)
 {
+#ifdef TARGET_RISCV64
+    GetEmitter()->emitIns_S_R(ins_Store(type), emitActualTypeSize(type), reg, REG_NA, tmp->tdTempNum(), 0);
+#else
     GetEmitter()->emitIns_S_R(ins_Store(type), emitActualTypeSize(type), reg, tmp->tdTempNum(), 0);
+#endif
 }
 
 /*****************************************************************************
@@ -2835,7 +2839,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState)
 {
 #ifdef DEBUG
@@ -3546,7 +3550,11 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             // Since slot is typically 1, baseOffset is typically 0
             int baseOffset = (regArgTab[argNum].slot - 1) * slotSize;
 
+#ifdef TARGET_RISCV64
+            GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, REG_NA, varNum, baseOffset);
+#else
             GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
+#endif
 
 #ifndef UNIX_AMD64_ABI
             // Check if we are writing past the end of the struct
@@ -4093,7 +4101,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         noway_assert(regArgMaskLiveSave != regArgMaskLive); // if it doesn't change, we have an infinite loop
     }
 }
-#endif // !TARGET_LOONGARCH64
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -4119,7 +4127,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
 
     unsigned varNum = 0;
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     int       tmp_offset = 0;
     regNumber tmp_reg    = REG_NA;
 #endif
@@ -4198,6 +4206,8 @@ void CodeGen::genEnregisterIncomingStackArgs()
                 }
             }
         }
+#elif TARGET_RISCV64
+         _ASSERTE(!"TODO RISCV64 NYI");
 #else // !TARGET_LOONGARCH64
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
 #endif // !TARGET_LOONGARCH64
@@ -4629,7 +4639,11 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                     if (layout->IsGCPtr(i))
                     {
                         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
+#ifdef TARGET_RISCV64
+                                                  genGetZeroReg(initReg, pInitRegZeroed), REG_NA, varNum, i * REGSIZE_BYTES);
+#else
                                                   genGetZeroReg(initReg, pInitRegZeroed), varNum, i * REGSIZE_BYTES);
+#endif
                     }
                 }
             }
@@ -4642,14 +4656,22 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 unsigned i;
                 for (i = 0; i + REGSIZE_BYTES <= lclSize; i += REGSIZE_BYTES)
                 {
+#ifdef TARGET_RISCV64
+                    GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, REG_NA, varNum, i);
+#else
                     GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, varNum, i);
+#endif
                 }
 
 #ifdef TARGET_64BIT
                 assert(i == lclSize || (i + sizeof(int) == lclSize));
                 if (i != lclSize)
                 {
+#ifdef TARGET_RISCV64
+                    GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, REG_NA, varNum, i);
+#else
                     GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, varNum, i);
+#endif
                     i += sizeof(int);
                 }
 #endif // TARGET_64BIT
@@ -4966,7 +4988,8 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
     genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
                          compiler->lvaCachedGenericContextArgOffset(), REG_R21);
 #elif defined(TARGET_RISCV64)
-    _ASSERTE(!"TODO RISCV64 NYI");
+    genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+                         compiler->lvaCachedGenericContextArgOffset(), REG_RA);
 #else  // !ARM64 !ARM !LOONGARCH64 !RISCV64
     // mov [ebp-lvaCachedGenericContextArgOffset()], reg
     GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
@@ -5371,7 +5394,7 @@ void CodeGen::genFinalizeFrame()
 
     // we always push RA.  See genPushCalleeSavedRegisters
     maskCalleeRegsPushed |= RBM_RA;
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
 
@@ -5487,10 +5510,10 @@ void CodeGen::genFnProlog()
         instGen(INS_nop);
         instGen(INS_BREAKPOINT);
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Avoid asserts in the unwind info because these instructions aren't accounted for.
         compiler->unwindPadding();
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 #endif // DEBUG
 
@@ -5998,7 +6021,11 @@ void CodeGen::genFnProlog()
 
     if (compiler->info.compPublishStubParam)
     {
+#ifdef TARGET_RISCV64
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM, REG_NA,
+#else
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
+#endif
                                   compiler->lvaStubArgumentVar, 0);
         assert(intRegState.rsCalleeRegArgMaskLiveIn & RBM_SECRET_STUB_PARAM);
 
@@ -6033,8 +6060,13 @@ void CodeGen::genFnProlog()
             initRegZeroed = true;
         }
 
+#ifdef TARGET_RISCV64
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, REG_NA, compiler->lvaShadowSPslotsVar,
+                                  firstSlotOffs);
+#else
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, initReg, compiler->lvaShadowSPslotsVar,
                                   firstSlotOffs);
+#endif
     }
 
 #endif // !FEATURE_EH_FUNCLETS
@@ -6045,7 +6077,11 @@ void CodeGen::genFnProlog()
     // Initialize the LocalAllocSP slot if there is localloc in the function.
     if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)
     {
+#ifdef TARGET_RISCV64
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, REG_NA, compiler->lvaLocAllocSPvar, 0);
+#else
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaLocAllocSPvar, 0);
+#endif
     }
 #endif // JIT32_GCENCODER
 
@@ -6121,7 +6157,7 @@ void CodeGen::genFnProlog()
     {
         compiler->lvaUpdateArgsWithInitialReg();
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (intRegState.rsCalleeRegArgMaskLiveIn || floatRegState.rsCalleeRegArgMaskLiveIn)
         {
             initRegZeroed = false;
@@ -6157,14 +6193,14 @@ void CodeGen::genFnProlog()
             }
         };
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
         assignIncomingRegisterArgs(&intRegState);
         assignIncomingRegisterArgs(&floatRegState);
 #else
         assignIncomingRegisterArgs(&intRegState);
 #endif
 
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // Home the incoming arguments.
         genEnregisterIncomingStackArgs();
@@ -6291,7 +6327,11 @@ void CodeGen::genFnProlog()
         }
         else
         {
+#ifdef TARGET_RISCV64
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_EAX, REG_NA, argsStartVar, 0);
+#else
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_EAX, argsStartVar, 0);
+#endif
         }
     }
 
@@ -6303,7 +6343,11 @@ void CodeGen::genFnProlog()
         assert(compiler->lvaReturnSpCheck != BAD_VAR_NUM);
         assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister);
         assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
+#ifdef TARGET_RISCV64
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, REG_NA, compiler->lvaReturnSpCheck, 0);
+#else
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
+#endif
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
@@ -7935,7 +7979,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
         // i. e. not include the padding for the first field, and so the general loop below won't work.
         var_types type  = retTypeDesc.GetReturnRegType(0);
@@ -7950,7 +7994,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             toReg      = retTypeDesc.GetABIReturnReg(1);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
-#else  // !TARGET_LOONGARCH64
+#else  // !TARGET_LOONGARCH64 && !TARGET_RISCV64
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
         {
@@ -7959,7 +8003,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
             offset += genTypeSize(type);
         }
-#endif // !TARGET_LOONGARCH64
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
     }
     else
     {
@@ -8122,21 +8166,29 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
                 {
                     // A byte field passed in a long register should be written on the stack as a byte.
                     instruction storeIns = ins_StoreFromSrc(reg, destType);
+#ifdef TARGET_RISCV64
+                    GetEmitter()->emitIns_S_R(storeIns, emitTypeSize(destType), reg, REG_NA, fieldLclNum, 0);
+#else
                     GetEmitter()->emitIns_S_R(storeIns, emitTypeSize(destType), reg, fieldLclNum, 0);
+#endif
                 }
             }
             fieldVarDsc->SetRegNum(varReg);
         }
         else
         {
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // should consider the padding field within a struct.
             offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
 #endif
             // Several fields could be passed in one register, copy using the register type.
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
             // it is safe to store a long register into a byte field as it is known that we have enough padding after.
+#ifdef TARGET_RISCV64
+            GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, REG_NA, lclNum, offset);
+#else
             GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
+#endif
             offset += genTypeSize(srcType);
 
 #ifdef DEBUG
@@ -8402,7 +8454,7 @@ void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
             assert(regTmp != REG_NA);
             GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, regTmp, REG_SPBASE, /* canSkip */ false);
             GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, regTmp, offset);
-            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regTmp, lvaStackPointerVar, 0);
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regTmp, REG_NA, lvaStackPointerVar, 0);
         }
         else
         {
@@ -9315,14 +9367,22 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 #ifdef TARGET_64BIT
                 if ((offs % 8) == 0 && end - offs >= 8)
                 {
+#ifdef TARGET_RISCV64
+                    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, REG_NA, (int)varNum, offs - addr);
+#else
                     GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+#endif
                     offs += 8;
                     continue;
                 }
 #endif
 
                 assert((offs % 4) == 0 && end - offs >= 4);
+#ifdef TARGET_RISCV64
+                GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, REG_NA, (int)varNum, offs - addr);
+#else
                 GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+#endif
                 offs += 4;
             }
         }
