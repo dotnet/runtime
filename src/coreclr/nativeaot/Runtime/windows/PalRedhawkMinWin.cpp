@@ -487,7 +487,8 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
         }
         else
         {
-            UNREACHABLE_MSG("SUPPORTS QUEUE_USER_APC_CALLBACK_DATA_CONTEXT ################## \n");
+            ASSERT(!"SUPPORTS QUEUE_USER_APC_CALLBACK_DATA_CONTEXT ################## \n");
+            throw "SUPPORTS QUEUE_USER_APC_CALLBACK_DATA_CONTEXT ################## \n";
         }
     }
 #endif
