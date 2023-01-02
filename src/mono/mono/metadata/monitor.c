@@ -601,12 +601,6 @@ mono_object_hash_internal (MonoObject* obj)
 }
 
 int
-mono_object_hash_icall (MonoObjectHandle obj, MonoError* error)
-{
-	return mono_object_hash_internal (MONO_HANDLE_RAW (obj));
-}
-
-int
 mono_object_try_get_hash_internal (MonoObject* obj)
 {
 #ifdef HAVE_MOVING_COLLECTOR
@@ -638,12 +632,6 @@ mono_object_try_get_hash_internal (MonoObject* obj)
 
 #endif
 
-}
-
-int
-mono_object_try_get_hash_icall (MonoObjectHandle obj, MonoError* error)
-{
-	return mono_object_try_get_hash_internal (MONO_HANDLE_RAW (obj));
 }
 
 /*
