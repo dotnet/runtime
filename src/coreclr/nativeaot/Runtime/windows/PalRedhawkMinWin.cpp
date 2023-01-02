@@ -448,7 +448,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 
 static PalHijackCallback g_pHijackCallback;
 
-#ifdef FEATURE_SUSPEND_APC2
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
 typedef BOOL (WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
 static QueueUserAPC2Proc pfnQueueUserAPC2Proc;
 
@@ -473,7 +473,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     ASSERT(g_pHijackCallback == NULL);
     g_pHijackCallback = callback;
 
-#ifdef FEATURE_SUSPEND_APC2
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
     // Check if we have QueueUserAPC2
     HMODULE hKernel32 = LoadKernel32dll();
     pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
@@ -499,7 +499,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 {
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
 
-#ifdef FEATURE_SUSPEND_APC2
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
     if (pfnQueueUserAPC2Proc)
     {
         Thread* pThread = (Thread*)pThreadToHijack;

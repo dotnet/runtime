@@ -138,7 +138,7 @@ public:
                                                     // suspend once resumed.
                                                     // If we see this flag, we skip hijacking as an optimization.
 #endif //FEATURE_SUSPEND_REDIRECTION
-#ifdef FEATURE_SUSPEND_APC2
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
         TSF_SuspensionApcPending = 0x00000100,      // An APC with QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC can interrupt another APC.
                                                     // For suspension APCs it is mostly harmless, but wasteful and in extreme
                                                     // cases may force the target thread into stack oveflow.
@@ -296,7 +296,7 @@ public:
     NATIVE_CONTEXT* EnsureRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
 
-#ifdef FEATURE_SUSPEND_APC2
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
     bool                IsSuspensionApcPending();
     void                SetSuspensionApcPending(bool isPending);
 #endif
