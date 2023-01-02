@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata.Tests;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests
@@ -849,5 +851,45 @@ namespace System.Reflection.PortableExecutable.Tests
 
             Assert.Equal(@"Debug", reader.GetString(reader.GetAssemblyDefinition().Name));
         }
+
+        [Fact]
+        public void InvokeCtorWithIsLoadedImageAndPrefetchMetadataOptions()
+        {
+            using (Process currentProc = Process.GetCurrentProcess())
+            {
+                string libName = "System.Reflection.Metadata.Tests.dll";
+                ProcessModule assemblyModule = currentProc.Modules.OfType<ProcessModule>().FirstOrDefault(m => string.Equals(m.ModuleName, libName, StringComparison.OrdinalIgnoreCase));
+
+                UInt64 baseAddress = (UInt64)assemblyModule.BaseAddress.ToInt64();
+                int length = assemblyModule.ModuleMemorySize;
+
+                // Read assembly contents out of memory, skipping unmapped pages
+                byte[] assemblyBytes = new byte[length];
+                byte[] page = new byte[PageSize];
+                int bytesRead = 0;
+                for (uint i = 0; i < length; i += PageSize)
+                {
+                    ReadProcessMemory(currentProc.Handle, baseAddress + i, page, PageSize, ref bytesRead);
+                    Array.Copy(page, 0, assemblyBytes, i, bytesRead);
+                }
+
+                using (MemoryStream assemblyStream = new MemoryStream(assemblyBytes))
+                {
+                    assemblyStream.Seek(0, SeekOrigin.Begin);
+                    PEReader prefetchMetadataReader = new PEReader(assemblyStream, PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata | PEStreamOptions.LeaveOpen);
+                    prefetchMetadataReader.Dispose();
+                }
+            }
+        }
+
+        private const int PageSize = 4096;
+
+        [DllImport("kernel32.dll")]
+        public static extern bool ReadProcessMemory(
+            IntPtr hProcess,
+            UInt64 lpBaseAddress,
+            byte[] lpBuffer,
+            int nSize,
+            ref int lpNumberOfBytesRead);
     }
 }
