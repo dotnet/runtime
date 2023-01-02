@@ -171,6 +171,9 @@ namespace WebAssemblyInfo
 
         void CompareFunction(UInt32 idx, string name, object? data)
         {
+            if (data == null)
+                return;
+
             UInt32 otherIdx;
             var otherReader = (WasmDiffReader)data;
 

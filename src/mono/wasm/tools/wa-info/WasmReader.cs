@@ -48,6 +48,7 @@ namespace WebAssemblyInfo
                 }
 
                 functionNames[fIdx] = name;
+                nameToFunction[name] = fIdx;
             }
         }
 
