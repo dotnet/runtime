@@ -843,7 +843,7 @@ namespace System.Text.RegularExpressions.Generator
                             3 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
                             _ => $"{span}.IndexOfAny({Literal(new string(primarySet.Chars))})",
                         } :
-                        (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Range.Value.Negated) switch
+                        (primarySet.Range!.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Range.Value.Negated) switch
                         {
                             (false, false) => $"{span}.IndexOfAnyInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",
                             (true, false) => $"{span}.IndexOf({Literal(primarySet.Range.Value.LowInclusive)})",
@@ -2920,7 +2920,7 @@ namespace System.Text.RegularExpressions.Generator
                 if (!rtl &&
                     node.N > 1 && // no point in using IndexOf for small loops, in particular optionals
                     subsequent?.FindStartingLiteralNode() is RegexNode literalNode &&
-                    TryEmitIndexOf(literalNode, useLast: true, negate: false, out int literalLength, out string indexOfExpr))
+                    TryEmitIndexOf(literalNode, useLast: true, negate: false, out int literalLength, out string? indexOfExpr))
                 {
                     writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
 
@@ -3685,7 +3685,7 @@ namespace System.Text.RegularExpressions.Generator
                     TransferSliceStaticPosToPos();
                     writer.WriteLine($"int {iterationLocal} = inputSpan.Length - pos;");
                 }
-                else if (maxIterations == int.MaxValue && TryEmitIndexOf(node, useLast: false, negate: true, out _, out string indexOfExpr))
+                else if (maxIterations == int.MaxValue && TryEmitIndexOf(node, useLast: false, negate: true, out _, out string? indexOfExpr))
                 {
                     // We're unbounded and we can use an IndexOf method to perform the search. The unbounded restriction is
                     // purely for simplicity; it could be removed in the future with additional code to handle that case.
@@ -4351,8 +4351,8 @@ namespace System.Text.RegularExpressions.Generator
             if (node.Kind == RegexNodeKind.Multi)
             {
                 Debug.Assert(!negate, "Negation isn't appropriate for a multi");
-                indexOfExpr = $"{last}IndexOf({Literal(node.Str)})";
-                literalLength = node.Str.Length;
+                indexOfExpr = $"{last}IndexOf({Literal(node.Str!)})";
+                literalLength = node.Str!.Length;
                 return true;
             }
 
