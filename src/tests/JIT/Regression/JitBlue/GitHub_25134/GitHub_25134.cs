@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
     static bool s_caughtException;
 
@@ -96,7 +96,7 @@ class Program
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         bool failed = false;
 

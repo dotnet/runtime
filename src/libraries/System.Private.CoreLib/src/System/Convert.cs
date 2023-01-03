@@ -2463,7 +2463,7 @@ namespace System
             OperationStatus status = Base64.EncodeToUtf8(bytes, MemoryMarshal.AsBytes(chars), out _, out int bytesWritten);
             Debug.Assert(status == OperationStatus.Done && charLengthRequired == bytesWritten);
 
-            // Now widen the ASCII bytes in-place to chars (if the vectorized ASCIIUtility.WidenAsciiToUtf16 is ever updated
+            // Now widen the ASCII bytes in-place to chars (if the vectorized Ascii.WidenAsciiToUtf16 is ever updated
             // to support in-place updates, it should be used here instead). Since the base64 bytes are all valid ASCII, the byte
             // data is guaranteed to be 1/2 as long as the char data, and we can widen in-place.
             ref ushort dest = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(chars));
@@ -2514,7 +2514,7 @@ namespace System
             {
                 dest = ref Unsafe.Subtract(ref dest, 4);
                 src = ref Unsafe.Subtract(ref src, 4);
-                ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref Unsafe.As<ushort, char>(ref dest), Unsafe.ReadUnaligned<uint>(ref src));
+                Ascii.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref Unsafe.As<ushort, char>(ref dest), Unsafe.ReadUnaligned<uint>(ref src));
             }
 
             // The length produced by Base64 encoding is always a multiple of 4, so we don't need to handle

@@ -10,6 +10,7 @@ using BundleTests.Helpers;
 
 namespace Microsoft.NET.HostModel.Tests
 {
+    [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
     public class BundleLegacy : IClassFixture<BundleLegacy.SharedTestState>
     {
         private SharedTestState sharedTestState;

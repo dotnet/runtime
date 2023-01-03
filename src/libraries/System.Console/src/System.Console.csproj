@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -30,7 +30,7 @@
              Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
   </ItemGroup>
   <!-- iOS/tvOS -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\ConsolePal.iOS.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Log.cs"
              Link="Common\Interop\Unix\Interop.Log.cs" />
@@ -38,7 +38,7 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Android -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
     <Compile Include="System\ConsolePal.Android.cs" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.Logcat.cs">
       <Link>Common\Interop\Android\Interop.Logcat.cs</Link>
@@ -48,7 +48,7 @@
     </Compile>
   </ItemGroup>
   <!-- WebAssembly -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\ConsolePal.WebAssembly.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
              Link="Common\Interop\Unix\Interop.Dup.cs" />
@@ -156,7 +156,7 @@
              Link="Common\System\IO\Win32Marshal.cs" />
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TerminalFormatStrings.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
@@ -235,7 +235,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <Reference Include="System.Runtime.InteropServices.JavaScript" />
   </ItemGroup>

@@ -10,7 +10,7 @@
 .assembly 'b309576' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
-.class FullProof {
+.class public FullProof {
 .method static int32 Test() {
 .maxstack 500
 IL_1:    ldc.i4 -2147483648			//i

@@ -88,7 +88,7 @@ namespace System.Net.Http.Headers
             return _tag.GetHashCode() ^ _isWeak.GetHashCode();
         }
 
-        public static EntityTagHeaderValue Parse(string? input)
+        public static EntityTagHeaderValue Parse(string input)
         {
             int index = 0;
             return (EntityTagHeaderValue)GenericHeaderParser.SingleValueEntityTagParser.ParseValue(

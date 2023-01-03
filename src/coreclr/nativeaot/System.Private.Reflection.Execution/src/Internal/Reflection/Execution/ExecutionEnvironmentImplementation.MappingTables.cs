@@ -615,9 +615,7 @@ namespace Internal.Reflection.Execution
         // ldftn reverse lookup hash. Must be cleared and reset if the module list changes. (All sets to
         // this variable must happen under a lock)
         private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _ldftnReverseLookup_InvokeMap;
-        private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _ldftnReverseLookup_ExactInstantiations;
         private Func<NativeFormatModuleInfo, FunctionPointersToOffsets> _computeLdFtnLookupInvokeMapInvokeMap = ComputeLdftnReverseLookup_InvokeMap;
-        private Func<NativeFormatModuleInfo, FunctionPointersToOffsets> _computeLdFtnLookupExactInstantiations = ComputeLdftnReverseLookup_ExactInstantiations;
 
         /// <summary>
         /// Initialize a lookup array of module to function pointer/parser offset pair arrays. Do so in a manner that will allow
@@ -687,13 +685,6 @@ namespace Internal.Reflection.Execution
 #pragma warning restore 0420
         }
 
-        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_ExactInstantiations()
-        {
-#pragma warning disable 0420 // GetLdFtnReverseLookups_Helper treats its first parameter as volatile by using explicit Volatile operations
-            return GetLdFtnReverseLookups_Helper(ref _ldftnReverseLookup_ExactInstantiations, _computeLdFtnLookupExactInstantiations);
-#pragma warning restore 0420
-        }
-
         internal unsafe void GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(IntPtr originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument)
         {
             if (FunctionPointerOps.IsGenericMethodPointer(originalLdFtnResult))
@@ -718,26 +709,6 @@ namespace Internal.Reflection.Execution
                 // Search TemplateMethodMap
                 if (TryGetMethodForOriginalLdFtnResult_GenericMethodWithInstantiationArgument(instantiationArgument, ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
                     return true;
-            }
-            else
-            {
-                // Search ExactInstantiationsMap
-                foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantiations())
-                {
-                    int startIndex;
-                    int endIndex;
-
-                    if (perModuleLookup.Value.TryGetOffsetsRange(canonOriginalLdFtnResult, out startIndex, out endIndex))
-                    {
-                        for (int curIndex = startIndex; curIndex <= endIndex; curIndex++)
-                        {
-                            uint parserOffset = perModuleLookup.Value.Data[curIndex].Offset;
-                            if (TryGetMethodForOriginalLdFtnResult_ExactInstantiation_Inner(perModuleLookup.Key, forStartAddress: false, canonOriginalLdFtnResult, parserOffset,
-                                    ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
-                                return true;
-                        }
-                    }
-                }
             }
 
             // Search InvokeMap
@@ -764,27 +735,6 @@ namespace Internal.Reflection.Execution
 
         internal bool TryGetMethodForStartAddress(IntPtr methodStartAddress, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle)
         {
-            // Search ExactInstantiationsMap
-            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantiations())
-            {
-                int startIndex;
-                int endIndex;
-
-                if (perModuleLookup.Value.TryGetOffsetsRange(methodStartAddress, out startIndex, out endIndex))
-                {
-                    for (int curIndex = startIndex; curIndex <= endIndex; curIndex++)
-                    {
-                        uint parserOffset = perModuleLookup.Value.Data[curIndex].Offset;
-                        if (TryGetMethodForOriginalLdFtnResult_ExactInstantiation_Inner(perModuleLookup.Key, forStartAddress: true, methodStartAddress, parserOffset, ref declaringTypeHandle, out methodHandle, out _))
-                        {
-                            if (RuntimeAugments.IsGenericType(declaringTypeHandle))
-                                declaringTypeHandle = RuntimeAugments.GetGenericDefinition(declaringTypeHandle);
-                            return true;
-                        }
-                    }
-                }
-            }
-
             // Search InvokeMap
             foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_InvokeMap())
             {
@@ -977,111 +927,6 @@ namespace Internal.Reflection.Execution
             }
 
             return true;
-        }
-
-        private static FunctionPointersToOffsets ComputeLdftnReverseLookup_ExactInstantiations(NativeFormatModuleInfo mappingTableModule)
-        {
-            FunctionPointersToOffsets functionPointerToOffsetInInvokeMap = new FunctionPointersToOffsets();
-
-            NativeReader methodTemplateMapReader;
-            if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.ExactMethodInstantiationsHashtable, out methodTemplateMapReader))
-            {
-                return functionPointerToOffsetInInvokeMap;
-            }
-
-            ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-            externalReferences.InitializeNativeReferences(mappingTableModule);
-
-            NativeParser methodTemplateMapParser = new NativeParser(methodTemplateMapReader, 0);
-            NativeHashtable invokeHashtable = new NativeHashtable(methodTemplateMapParser);
-
-            LowLevelList<FunctionPointerOffsetPair> functionPointers = new LowLevelList<FunctionPointerOffsetPair>();
-
-            var lookup = invokeHashtable.EnumerateAllEntries();
-            NativeParser entryParser;
-            while (!(entryParser = lookup.GetNext()).IsNull)
-            {
-                uint parserOffset = entryParser.Offset;
-
-                // Declaring Handle
-                entryParser.SkipInteger();
-
-                // NameAndSig
-                entryParser.SkipInteger();
-
-                // generic method arity
-                int parsedArity = (int)entryParser.GetSequenceCount();
-
-                for (int i = 0; i < parsedArity; i++)
-                {
-                    entryParser.SkipInteger();
-                }
-
-                IntPtr functionPointer = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-                functionPointers.Add(new FunctionPointerOffsetPair(functionPointer, parserOffset));
-            }
-
-            functionPointerToOffsetInInvokeMap.Data = functionPointers.ToArray();
-            Array.Sort(functionPointerToOffsetInInvokeMap.Data);
-
-            return functionPointerToOffsetInInvokeMap;
-        }
-
-        private static unsafe bool TryGetMethodForOriginalLdFtnResult_ExactInstantiation_Inner(NativeFormatModuleInfo mappingTableModule, bool forStartAddress, IntPtr canonOriginalLdFtnResult, uint parserOffset, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
-        {
-            methodHandle = default(QMethodDefinition);
-            genericMethodTypeArgumentHandles = null;
-
-            NativeReader invokeMapReader;
-            if (!TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.ExactMethodInstantiationsHashtable, out invokeMapReader))
-            {
-                // This should have succeeded otherwise, how did we get a parser offset as an input parameter?
-                Debug.Assert(false);
-                return false;
-            }
-
-            ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-            externalReferences.InitializeNativeReferences(mappingTableModule);
-
-            NativeParser entryParser = new NativeParser(invokeMapReader, parserOffset);
-
-            RuntimeTypeHandle entryTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-
-            // Hash table names / sigs are indirected through to the native layout info
-            MethodNameAndSignature nameAndSignature;
-            if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule.Handle, entryParser.GetUnsigned(), out nameAndSignature))
-                return false;
-
-            int parsedArity = (int)entryParser.GetSequenceCount();
-
-            if (forStartAddress)
-            {
-                for (int i = 0; i < parsedArity; i++)
-                {
-                    entryParser.SkipInteger();
-                }
-            }
-            else
-            {
-                genericMethodTypeArgumentHandles = new RuntimeTypeHandle[parsedArity];
-
-                for (int i = 0; i < parsedArity; i++)
-                {
-                    genericMethodTypeArgumentHandles[i] = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                }
-            }
-
-            IntPtr functionPointer = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-            if (functionPointer != canonOriginalLdFtnResult)
-                return false;
-
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForTypeMethodNameAndSignature(entryTypeHandle, nameAndSignature, out methodHandle))
-            {
-                declaringTypeHandle = entryTypeHandle;
-                return true;
-            }
-
-            return false;
         }
 
         private static unsafe bool TryGetMethodForOriginalLdFtnResult_GenericMethodWithInstantiationArgument(IntPtr instantiationArgument, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)

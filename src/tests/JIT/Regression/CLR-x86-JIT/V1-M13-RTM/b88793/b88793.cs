@@ -20,7 +20,7 @@ public class CC
             } while (a);
         }
     }
-    static int Main()
+    public static int Main()
     {
         ulong ul = 0;
         Method1(ref ul, __arglist());

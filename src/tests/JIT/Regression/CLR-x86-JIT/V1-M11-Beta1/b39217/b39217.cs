@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         int m_n = 6;
         bool[] m_ab = null;
@@ -30,7 +30,7 @@ namespace Test
             Method1();
             Method2();
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

@@ -6,7 +6,7 @@ namespace DefaultNamespace
 {
     using System;
 
-    class AA
+    public class AA
     {
         public static int Main()
         {

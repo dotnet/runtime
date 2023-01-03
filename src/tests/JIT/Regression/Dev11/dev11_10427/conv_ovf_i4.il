@@ -8,6 +8,7 @@
 .assembly extern mscorlib { auto }
 
 
+.class public auto ansi Test_conv_ovf_i4 extends [mscorlib] System.Object {
 .method static public int32 main() il managed
 {
 .entrypoint
@@ -67,4 +68,5 @@ leave.s EXIT
 EXIT:
 ldloc result
 ret
+}
 }

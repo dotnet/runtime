@@ -118,7 +118,7 @@ namespace ILCompiler
         protected PreinitializationManager GetPreinitializationManager()
         {
             if (_preinitializationManager == null)
-                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), enableInterpreter: false);
+                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy());
             return _preinitializationManager;
         }
 

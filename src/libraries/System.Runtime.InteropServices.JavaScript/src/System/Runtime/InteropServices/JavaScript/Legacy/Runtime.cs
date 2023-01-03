@@ -97,7 +97,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             Interop.Runtime.SetObjectPropertyRef(self.JSHandle, name, in value, createIfNotExists, hasOwnProperty, out int exception, out object res);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{self.JSHandle}'): {res}");
+                throw new JSException(SR.Format(SR.ErrorLegacySettingProperty, name, self.JSHandle, res));
         }
 
         public static void AssertNotDisposed(this JSObject self)
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void AssertInFlight(this JSObject self, int expectedInFlightCount)
         {
-            if (self.InFlightCounter != expectedInFlightCount) throw new InvalidProgramException($"Invalid InFlightCounter for JSObject {self.JSHandle}, expected: {expectedInFlightCount}, actual: {self.InFlightCounter}");
+            if (self.InFlightCounter != expectedInFlightCount) throw new InvalidOperationException(SR.Format(SR.UnsupportedLegacyMarshlerType, self.JSHandle, expectedInFlightCount, self.InFlightCounter));
         }
     }
 }

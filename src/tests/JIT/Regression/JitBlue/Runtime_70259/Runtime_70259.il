@@ -28,7 +28,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit Runtime_70259
+.class public auto ansi beforefieldinit Runtime_70259
        extends [System.Runtime]System.Object
 {
   .class interface abstract auto ansi nested private IFace
@@ -65,7 +65,7 @@
 
   } // end of class C
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
     .entrypoint
