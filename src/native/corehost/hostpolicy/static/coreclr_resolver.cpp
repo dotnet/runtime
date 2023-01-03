@@ -8,8 +8,6 @@
 #include <pal.h>
 #include <trace.h>
 
-typedef void (*coreclr_error_writer_callback_fn) (const char *message);
-
 extern "C"
 {
     pal::hresult_t STDMETHODCALLTYPE coreclr_initialize(
