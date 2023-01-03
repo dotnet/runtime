@@ -7710,8 +7710,8 @@ MONO_RESTORE_WARNING
 			gboolean high = FALSE;
 			gboolean is_unsigned = FALSE;
 			switch (ins->opcode) {
-			case OP_ARM64_SSHLL2: high = TRUE; break;
-			case OP_ARM64_USHLL2: high = TRUE; case OP_ARM64_USHLL: is_unsigned = TRUE; break;
+			case OP_SSHLL2: high = TRUE; break;
+			case OP_USHLL2: high = TRUE; case OP_USHLL: is_unsigned = TRUE; break;
 			}
 			LLVMValueRef result = lhs;
 			if (high)
