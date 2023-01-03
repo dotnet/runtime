@@ -193,7 +193,7 @@ namespace Microsoft.Interop
                 .WithBody(stubCode);
         }
 
-        private static VirtualMethodIndexData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
+        private static VirtualMethodIndexCompilationData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
         {
             // Found the attribute, but it has an error so report the error.
             // This is most likely an issue with targeting an incorrect TFM.
@@ -214,7 +214,7 @@ namespace Microsoft.Interop
             bool exceptionMarshallingDefined = false;
             ExceptionMarshalling exceptionMarshalling = ExceptionMarshalling.Custom;
             INamedTypeSymbol? exceptionMarshallingCustomType = null;
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.Direction), out TypedConstant directionValue))
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexCompilationData.Direction), out TypedConstant directionValue))
             {
                 // TypedConstant's Value property only contains primitive values.
                 if (directionValue.Value is not int)
@@ -224,7 +224,7 @@ namespace Microsoft.Interop
                 // A boxed primitive can be unboxed to an enum with the same underlying type.
                 direction = (MarshalDirection)directionValue.Value!;
             }
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ImplicitThisParameter), out TypedConstant implicitThisValue))
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexCompilationData.ImplicitThisParameter), out TypedConstant implicitThisValue))
             {
                 if (implicitThisValue.Value is not bool)
                 {
@@ -232,7 +232,7 @@ namespace Microsoft.Interop
                 }
                 implicitThis = (bool)implicitThisValue.Value!;
             }
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ExceptionMarshalling), out TypedConstant exceptionMarshallingValue))
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexCompilationData.ExceptionMarshalling), out TypedConstant exceptionMarshallingValue))
             {
                 exceptionMarshallingDefined = true;
                 // TypedConstant's Value property only contains primitive values.
@@ -243,7 +243,7 @@ namespace Microsoft.Interop
                 // A boxed primitive can be unboxed to an enum with the same underlying type.
                 exceptionMarshalling = (ExceptionMarshalling)exceptionMarshallingValue.Value!;
             }
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexData.ExceptionMarshallingCustomType), out TypedConstant exceptionMarshallingCustomTypeValue))
+            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexCompilationData.ExceptionMarshallingCustomType), out TypedConstant exceptionMarshallingCustomTypeValue))
             {
                 if (exceptionMarshallingCustomTypeValue.Value is not INamedTypeSymbol)
                 {
@@ -252,7 +252,7 @@ namespace Microsoft.Interop
                 exceptionMarshallingCustomType = (INamedTypeSymbol)exceptionMarshallingCustomTypeValue.Value;
             }
 
-            return new VirtualMethodIndexData((int)attrData.ConstructorArguments[0].Value).WithValuesFromNamedArguments(namedArguments) with
+            return new VirtualMethodIndexCompilationData((int)attrData.ConstructorArguments[0].Value).WithValuesFromNamedArguments(namedArguments) with
             {
                 Direction = direction,
                 ImplicitThisParameter = implicitThis,
@@ -300,11 +300,11 @@ namespace Microsoft.Interop
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the LibraryImport attribute
-            VirtualMethodIndexData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(virtualMethodIndexAttr!);
+            VirtualMethodIndexCompilationData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(virtualMethodIndexAttr!);
 
             if (virtualMethodIndexData is null)
             {
-                virtualMethodIndexData = new VirtualMethodIndexData(-1);
+                virtualMethodIndexData = new VirtualMethodIndexCompilationData(-1);
             }
             else if (virtualMethodIndexData.Index < 0)
             {
@@ -371,7 +371,7 @@ namespace Microsoft.Interop
                 methodSyntaxTemplate,
                 new MethodSignatureDiagnosticLocations(syntax),
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
-                virtualMethodIndexData,
+                VirtualMethodIndexData.From(virtualMethodIndexData),
                 exceptionMarshallingInfo,
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
@@ -380,7 +380,7 @@ namespace Microsoft.Interop
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
-        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexData virtualMethodIndexData)
+        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
         {
             if (virtualMethodIndexData.ExceptionMarshallingDefined)
             {
