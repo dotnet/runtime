@@ -541,16 +541,13 @@ namespace System.Runtime.InteropServices
                             externalComObject,
                             this,
                             retValue);
-                        if (_rcwTable.TryAdd(retValue, wrapper))
-                        {
-                            _rcwCache.Add(externalComObject, wrapper._proxyHandle);
-                            return true;
-                        }
-                        else
+                        if (!_rcwTable.TryAdd(retValue, wrapper))
                         {
                             wrapper.Release();
                             throw new NotSupportedException();
                         }
+                        _rcwCache.Add(externalComObject, wrapper._proxyHandle);
+                        return true;
                     }
                 }
             }
