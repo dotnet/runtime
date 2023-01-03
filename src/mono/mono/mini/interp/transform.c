@@ -3740,7 +3740,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 		if (start + c->try_offset <= 0) {
 			mono_error_set_generic_error (error, "System", "InvalidProgramException", "Try block length <= 0");
 		}
-		if (start + c->try_offset >= end || start + c->try_offset + c->try_offset >= end) {
+		if (start + c->try_offset >= end || start + c->try_offset + c->try_len >= end) {
 			mono_error_set_generic_error (error, "System", "InvalidProgramException", "Try block offset or length > code size");
 		}
 		get_bb (td, start + c->try_offset, make_list);
