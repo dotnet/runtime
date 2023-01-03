@@ -103,7 +103,8 @@ public class GetChromeVersions : MBU.Task
 
         throw new LogAsErrorException($"Could not find a chrome snapshot folder under {baseUrl}, " +
                                         $"for branch positions {version.branch_base_position} to " +
-                                        $"{branchPosition}, for version {version.version}.");
+                                        $"{branchPosition}, for version {version.version}. " +
+                                        "A fixed version+url can be set in eng/testing/ProvisioningVersions.props .");
     }
 
     private async Task<ChromeVersionSpec> GetChromeVersionAsync()
