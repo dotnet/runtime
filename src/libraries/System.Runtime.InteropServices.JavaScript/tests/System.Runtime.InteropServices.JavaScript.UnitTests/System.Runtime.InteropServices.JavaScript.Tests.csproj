@@ -6,6 +6,11 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <FeatureWasmThreads Condition="'$(TargetOS)' == 'Browser' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
+    <FeatureWasmLegacyJsInterop Condition="'$(FeatureWasmLegacyJsInterop)' == '' and '$(FeatureWasmThreads)' == 'true'">false</FeatureWasmLegacyJsInterop>
+    <FeatureWasmLegacyJsInterop Condition="'$(FeatureWasmLegacyJsInterop)' == '' and '$(FeatureWasmThreads)' != 'true'">true</FeatureWasmLegacyJsInterop>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmLegacyJsInterop)' == 'true'" >$(DefineConstants);FEATURE_LEGACY_JS_INTEROP</DefineConstants>
     <DefineConstants Condition="'$(FeatureWasmLegacyJsInterop)' == 'true'" >$(DefineConstants);FEATURE_LEGACY_JS_INTEROP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

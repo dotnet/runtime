@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import MonoWasmLegacyJsInterop from "consts:monoWasmLegacyJsInterop";
+import FeatureWasmLegacyJsInterop from "consts:FeatureWasmLegacyJsInterop";
 import { mono_wasm_fire_debugger_agent_message, mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_load_icu_data } from "./icu";
@@ -39,7 +39,7 @@ const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     mono_wasm_diagnostic_server_stream_signal_work_available,
 };
 
-const mono_wasm_legacy_interop_exports = !MonoWasmLegacyJsInterop ? undefined : {
+const mono_wasm_legacy_interop_exports = !FeatureWasmLegacyJsInterop ? undefined : {
     // corebindings.c
     mono_wasm_invoke_js_with_args_ref,
     mono_wasm_get_object_property_ref,

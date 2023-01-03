@@ -56,6 +56,8 @@
     <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'singlethread'">false</MonoWasmThreads>
     <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
     <MonoWasmThreadsNoUser Condition="('$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true') or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
+    <FeatureWasmLegacyJsInterop Condition="'$(FeatureWasmLegacyJsInterop)' == '' and '$(MonoWasmThreads)' == 'true'">false</FeatureWasmLegacyJsInterop>
+    <FeatureWasmLegacyJsInterop Condition="'$(FeatureWasmLegacyJsInterop)' == '' and '$(MonoWasmThreads)' != 'true'">true</FeatureWasmLegacyJsInterop>
   </PropertyGroup>
 
   <!-- default thread suspend for specific platforms -->

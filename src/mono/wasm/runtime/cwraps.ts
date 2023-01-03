@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmLegacyJsInterop from "consts:monoWasmLegacyJsInterop";
+import FeatureWasmLegacyJsInterop from "consts:FeatureWasmLegacyJsInterop";
 import {
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
@@ -12,7 +12,7 @@ import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/
 
 type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
-const legacy_interop_cwraps: SigLine[] = !MonoWasmLegacyJsInterop ? [] : [
+const legacy_interop_cwraps: SigLine[] = !FeatureWasmLegacyJsInterop ? [] : [
     [true, "mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
     [true, "mono_wasm_obj_array_new_ref", "void", ["number", "number"]],
     [true, "mono_wasm_obj_array_set_ref", "void", ["number", "number", "number"]],

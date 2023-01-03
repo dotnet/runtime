@@ -5,12 +5,18 @@
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <NoWarn>0612</NoWarn>
+    <FeatureWasmThreads Condition="'$(TargetOS)' == 'Browser' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
+    <FeatureWasmLegacyJsInterop Condition="'$(FeatureWasmLegacyJsInterop)' == '' and '$(FeatureWasmThreads)' == 'true'">false</FeatureWasmLegacyJsInterop>
+    <FeatureWasmLegacyJsInterop Condition="'$(FeatureWasmLegacyJsInterop)' == '' and '$(FeatureWasmThreads)' != 'true'">true</FeatureWasmLegacyJsInterop>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmLegacyJsInterop)' == 'true'" >$(DefineConstants);FEATURE_LEGACY_JS_INTEROP</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmLegacyJsInterop)' == 'true'" >$(DefineConstants);FEATURE_LEGACY_JS_INTEROP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\ParallelTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(MonoWasmLegacyJsInterop)' == 'true'">
+  <ItemGroup Condition="'$(FeatureWasmLegacyJsInterop)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />

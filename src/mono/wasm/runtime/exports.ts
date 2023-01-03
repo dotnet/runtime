@@ -5,7 +5,7 @@ import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
-import MonoWasmLegacyJsInterop from "consts:monoWasmLegacyJsInterop";
+import FeatureWasmLegacyJsInterop from "consts:FeatureWasmLegacyJsInterop";
 
 import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_imports_exports } from "./imports";
 import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType } from "./types";
@@ -42,13 +42,13 @@ function initializeImportsAndExports(
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     set_imports_exports(imports, exports);
-    if (MonoWasmLegacyJsInterop) {
+    if (FeatureWasmLegacyJsInterop) {
         set_legacy_exports(exports);
     }
     init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects
-    if (MonoWasmLegacyJsInterop) {
+    if (FeatureWasmLegacyJsInterop) {
         Object.assign(exports.mono, export_mono_api());
         Object.assign(exports.binding, export_binding_api());
         Object.assign(exports.internal, export_internal_api());
@@ -67,7 +67,7 @@ function initializeImportsAndExports(
         },
         ...API,
     });
-    if (MonoWasmLegacyJsInterop) {
+    if (FeatureWasmLegacyJsInterop) {
         Object.assign(exportedRuntimeAPI, {
             MONO: exports.mono,
             BINDING: exports.binding,
@@ -94,7 +94,7 @@ function initializeImportsAndExports(
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
         Object.assign(module, exportedRuntimeAPI);
 
-        if (MonoWasmLegacyJsInterop) {
+        if (FeatureWasmLegacyJsInterop) {
             // backward compatibility
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore

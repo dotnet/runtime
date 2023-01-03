@@ -21,6 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         #region legacy
+#if FEATURE_LEGACY_JS_INTEROP
 
         public static object GetGlobalObject(string? str = null)
         {
@@ -30,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (exception != 0)
                 throw new JSException(SR.Format(SR.ErrorResolvingFromGlobalThis, str));
 
-            JSHostImplementation.ReleaseInFlight(jsObj);
+            LegacyHostImplementation.ReleaseInFlight(jsObj);
             return jsObj;
         }
 
@@ -43,6 +44,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return (IntPtr)(int)res;
         }
 
+#endif
         #endregion
     }
 }

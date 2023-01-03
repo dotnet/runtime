@@ -3,7 +3,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FeatureWasmThreads Condition="'$(TargetOS)' == 'Browser' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
-    <FeatureWasmLegacyJsInterop Condition="'$(TargetOS)' == 'Browser' and '$(MonoWasmLegacyJsInterop)' == 'true'">true</FeatureWasmLegacyJsInterop>
+    <FeatureWasmLegacyJsInterop Condition="'$(FeatureWasmLegacyJsInterop)' == '' and '$(FeatureWasmThreads)' == 'true'">false</FeatureWasmLegacyJsInterop>
+    <FeatureWasmLegacyJsInterop Condition="'$(FeatureWasmLegacyJsInterop)' == '' and '$(FeatureWasmThreads)' != 'true'">true</FeatureWasmLegacyJsInterop>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <DefineConstants Condition="'$(FeatureWasmLegacyJsInterop)' == 'true'" >$(DefineConstants);FEATURE_LEGACY_JS_INTEROP</DefineConstants>
   </PropertyGroup>
@@ -60,7 +61,7 @@
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser' and '$(MonoWasmLegacyJsInterop)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser' and '$(FeatureWasmLegacyJsInterop)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\LegacyExports.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />

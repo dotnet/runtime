@@ -10,17 +10,22 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal nint JSHandle;
 
+#if FEATURE_LEGACY_JS_INTEROP
         internal GCHandle? InFlight;
         internal int InFlightCounter;
+#endif
         private bool _isDisposed;
 
         internal JSObject(IntPtr jsHandle)
         {
             JSHandle = jsHandle;
+#if FEATURE_LEGACY_JS_INTEROP
             InFlight = null;
             InFlightCounter = 0;
+#endif
         }
 
+#if FEATURE_LEGACY_JS_INTEROP
         internal void AddInFlight()
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -53,6 +58,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
         }
+#endif
 
         /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;

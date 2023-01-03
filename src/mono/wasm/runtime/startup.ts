@@ -3,7 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import MonoWasmLegacyJsInterop from "consts:monoWasmLegacyJsInterop";
+import FeatureWasmLegacyJsInterop from "consts:FeatureWasmLegacyJsInterop";
 import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigError, MonoConfigInternal } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
@@ -294,7 +294,7 @@ function mono_wasm_pre_init_essential(): void {
     // init_polyfills() is already called from export.ts
     init_c_exports();
     cwraps_internal(INTERNAL);
-    if (MonoWasmLegacyJsInterop) {
+    if (FeatureWasmLegacyJsInterop) {
         cwraps_mono_api(MONO);
         cwraps_binding_api(BINDING);
     }
@@ -536,7 +536,7 @@ export function bindings_init(): void {
     try {
         const mark = startMeasure();
         init_managed_exports();
-        if (MonoWasmLegacyJsInterop) {
+        if (FeatureWasmLegacyJsInterop) {
             init_legacy_exports();
         }
         initialize_marshalers_to_js();

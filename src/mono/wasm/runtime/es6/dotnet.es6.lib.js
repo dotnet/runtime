@@ -106,7 +106,7 @@ if (process.env.MonoWasmThreads) {
         "mono_wasm_diagnostic_server_stream_signal_work_available",
     ]
 }
-if (process.env.MonoWasmLegacyJsInterop) {
+if (process.env.FeatureWasmLegacyJsInterop) {
     linked_functions = [...linked_functions,
         "mono_wasm_invoke_js_with_args_ref",
         "mono_wasm_get_object_property_ref",

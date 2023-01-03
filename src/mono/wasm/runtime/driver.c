@@ -43,9 +43,6 @@ void core_initialize_internals ();
 
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
-// Blazor specific custom routines - see dotnet_support.js for backing code
-extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
-
 void mono_wasm_enable_debugging (int);
 
 static int _marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type);
