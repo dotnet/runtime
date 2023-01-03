@@ -14653,10 +14653,6 @@ HRESULT Debugger::UpdateAppDomainEntryInIPC(AppDomain *pAppDomain)
     szName = pADInfo->m_pAppDomain->GetFriendlyNameForDebugger();
     pADInfo->SetName(szName);
 
-    LOG((LF_CORDB, LL_INFO100,
-         "D::UADEIIPC: New name:%ls (AD:0x%x)\n", pADInfo->m_szAppDomainName,
-         pAppDomain));
-
 ErrExit:
     // UnLock the list
     m_pAppDomainCB->Unlock();
