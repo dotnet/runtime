@@ -374,10 +374,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static void FailPromise(JSObject promise, Exception ex)
         {
-            if (promise.IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(promise));
-            }
+            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -423,10 +420,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static void ResolveVoidPromise(JSObject promise)
         {
-            if (promise.IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(promise));
-            }
+            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];
@@ -448,10 +442,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static void ResolvePromise<T>(JSObject promise, T value, ArgumentToJSCallback<T> marshaler)
         {
-            if (promise.IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(promise));
-            }
+            ObjectDisposedException.ThrowIf(promise.IsDisposed, promise);
 
             Span<JSMarshalerArgument> args = stackalloc JSMarshalerArgument[4];
             ref JSMarshalerArgument exc = ref args[0];

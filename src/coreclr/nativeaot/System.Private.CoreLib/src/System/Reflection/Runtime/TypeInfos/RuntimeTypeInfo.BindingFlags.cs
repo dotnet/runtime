@@ -186,8 +186,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             return Query<M>(name, bindingAttr, null);
         }
 

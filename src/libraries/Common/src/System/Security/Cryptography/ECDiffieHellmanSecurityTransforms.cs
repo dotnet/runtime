@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class ECDiffieHellmanSecurityTransforms : ECDiffieHellman
         {
-            private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(nameof(ECDiffieHellman));
+            private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(typeof(ECDiffieHellman));
 
             public ECDiffieHellmanSecurityTransforms()
             {
@@ -243,7 +243,7 @@ namespace System.Security.Cryptography
                 public ECDiffieHellmanSecurityTransformsPublicKey(ECParameters ecParameters)
                 {
                     Debug.Assert(ecParameters.D == null);
-                    _ecc = new EccSecurityTransforms(nameof(ECDiffieHellmanPublicKey));
+                    _ecc = new EccSecurityTransforms(typeof(ECDiffieHellmanPublicKey));
                     _ecc.ImportParameters(ecParameters);
                 }
 

@@ -16,16 +16,14 @@ namespace System.Reflection.Runtime.TypeInfos
         [DynamicallyAccessedMembers(GetAllMembers)]
         public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, MemberTypes.All, bindingAttr);
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, type, bindingAttr);
         }
 
@@ -120,8 +118,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
-            if (member is null)
-                throw new ArgumentNullException(nameof(member));
+            ArgumentNullException.ThrowIfNull(member);
 
             // Need to walk up the inheritance chain if member is not found
             // Leverage the existing cache mechanism on per type to store members

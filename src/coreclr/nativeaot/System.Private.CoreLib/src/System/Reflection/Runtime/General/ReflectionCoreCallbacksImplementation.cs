@@ -32,8 +32,8 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly Load(AssemblyName assemblyRef, bool throwOnFileNotFound)
         {
-            if (assemblyRef == null)
-                throw new ArgumentNullException(nameof(assemblyRef));
+            ArgumentNullException.ThrowIfNull(assemblyRef);
+
             if (throwOnFileNotFound)
                 return RuntimeAssemblyInfo.GetRuntimeAssembly(assemblyRef.ToRuntimeAssemblyName());
             else
@@ -50,8 +50,7 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly Load(string assemblyPath)
         {
-            if (assemblyPath == null)
-                throw new ArgumentNullException(nameof(assemblyPath));
+            ArgumentNullException.ThrowIfNull(assemblyPath);
 
             return RuntimeAssemblyInfo.GetRuntimeAssemblyFromPath(assemblyPath);
         }
@@ -209,10 +208,8 @@ namespace System.Reflection.Runtime.General
 
         private static Delegate CreateDelegateWorker(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure, bool allowClosed)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -237,12 +234,9 @@ namespace System.Reflection.Runtime.General
         [RequiresUnreferencedCode("The target method might be removed")]
         public sealed override Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -263,14 +257,11 @@ namespace System.Reflection.Runtime.General
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public sealed override Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -367,10 +358,8 @@ namespace System.Reflection.Runtime.General
 
         public sealed override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset)
         {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-            if (flds == null)
-                throw new ArgumentNullException(nameof(flds));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(flds);
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
 

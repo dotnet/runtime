@@ -237,6 +237,18 @@ dotnet_diagnostic.CA1508.severity = none
 # CA1509: Invalid entry in code metrics rule specification file
 dotnet_diagnostic.CA1509.severity = none
 
+# CA1510: Use ArgumentNullException throw helper
+dotnet_diagnostic.CA1510.severity = none
+
+# CA1511: Use ArgumentException throw helper
+dotnet_diagnostic.CA1511.severity = none
+
+# CA1512: Use ArgumentOutOfRangeException throw helper
+dotnet_diagnostic.CA1512.severity = none
+
+# CA1513: Use ObjectDisposedException throw helper
+dotnet_diagnostic.CA1513.severity = none
+
 # CA1700: Do not name enum values 'Reserved'
 dotnet_diagnostic.CA1700.severity = none
 
@@ -417,6 +429,15 @@ dotnet_diagnostic.CA1854.severity = none
 # CA1855: Prefer 'Clear' over 'Fill'
 dotnet_diagnostic.CA1855.severity = none
 
+# CA1856: Incorrect usage of ConstantExpected attribute
+dotnet_diagnostic.CA1856.severity = none
+
+# CA1857: A constant is expected for the parameter
+dotnet_diagnostic.CA1857.severity = none
+
+# CA1858: Use 'StartsWith' instead of 'IndexOf'
+dotnet_diagnostic.CA1858.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -467,9 +488,6 @@ dotnet_diagnostic.CA2100.severity = none
 
 # CA2101: Specify marshaling for P/Invoke string arguments
 dotnet_diagnostic.CA2101.severity = none
-
-# CA2109: Review visible event handlers
-dotnet_diagnostic.CA2109.severity = none
 
 # CA2119: Seal methods that satisfy private interfaces
 dotnet_diagnostic.CA2119.severity = none

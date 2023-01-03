@@ -8142,6 +8142,8 @@ namespace System.Xml
 
         private int IncrementalRead(Array array, int index, int count)
         {
+#pragma warning disable CA1510 // TODO: Fix analyzer to not fire when name is dynamically computed
+#pragma warning disable CA1512 // TODO: Fix analyzer to not fire when name is dynamically computed
             if (array == null)
             {
                 throw new ArgumentNullException((_incReadDecoder is IncrementalReadCharsDecoder) ? "buffer" : nameof(array));
@@ -8156,6 +8158,8 @@ namespace System.Xml
             {
                 throw new ArgumentOutOfRangeException((_incReadDecoder is IncrementalReadCharsDecoder) ? nameof(index) : "offset");
             }
+#pragma warning restore CA1512
+#pragma warning restore CA1510
 
             if (array.Length - index < count)
             {

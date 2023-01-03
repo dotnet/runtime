@@ -50,8 +50,10 @@ namespace System.Threading
                 int oldCount = Volatile.Read(ref _count);
 
                 // Have we been disposed?
+#pragma warning disable CA1513 // TODO: Fix analyzer to not fire when in a struct
                 if (oldCount < 0)
                     throw new ObjectDisposedException(typeof(T).ToString());
+#pragma warning restore CA1513
 
                 int newCount = checked(oldCount + 1);
 

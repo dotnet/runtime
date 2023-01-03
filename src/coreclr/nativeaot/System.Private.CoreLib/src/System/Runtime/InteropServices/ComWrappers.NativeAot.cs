@@ -350,8 +350,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public unsafe IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             ManagedObjectWrapperHolder? ccwValue;
             if (_ccwTable.TryGetValue(instance, out ccwValue))
@@ -471,8 +470,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
         {
-            if (wrapper == null)
-                throw new ArgumentNullException(nameof(wrapper));
+            ArgumentNullException.ThrowIfNull(wrapper);
 
             object? obj;
             if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, inner, flags, wrapper, out obj))
@@ -612,8 +610,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static void RegisterForTrackerSupport(ComWrappers instance)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForTrackerSupport, instance, null))
             {
@@ -637,8 +634,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForMarshalling, instance, null))
             {
