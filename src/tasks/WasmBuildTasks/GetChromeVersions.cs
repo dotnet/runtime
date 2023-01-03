@@ -22,7 +22,7 @@ public class GetChromeVersions : MBU.Task
     private const string s_allJsonUrl = "http://omahaproxy.appspot.com/all.json";
     private const string s_snapshotBaseUrl = $"https://storage.googleapis.com/chromium-browser-snapshots";
     private const int s_versionCheckThresholdDays = 3;
-    private const int s_numBranchPositionsToTry = 30;
+    private const int s_numBranchPositionsToTry = 50;
     private static readonly HttpClient s_httpClient = new();
 
     public string Channel { get; set; } = "stable";
