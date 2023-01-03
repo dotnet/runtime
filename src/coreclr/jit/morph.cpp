@@ -14275,13 +14275,18 @@ void Compiler::fgPostExpandQmarkChecks()
 
 #endif // DEBUG
 
-/*****************************************************************************
- *
- *  Get the top level GT_QMARK node in a given "expr", return NULL if such a
- *  node is not present. If the top level GT_QMARK node is assigned to a
- *  GT_LCL_VAR, then return the lcl node in ppDst.
- *
- */
+//------------------------------------------------------------------------
+// fgGetTopLevelQmark:
+//    Get the top level GT_QMARK node in a given expression.
+//
+// Arguments:
+//    expr  - the tree, a root node that may contain a top level qmark.
+//    ppDst - [optional] if the top level GT_QMARK node is assigned ot a
+//            GT_LCL_VAR, then this is that local node. Otherwise nullptr.
+//
+// Returns:
+//    The GT_QMARK node, or nullptr if there is no top level qmark.
+//
 GenTree* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = NULL */)
 {
     if (ppDst != nullptr)

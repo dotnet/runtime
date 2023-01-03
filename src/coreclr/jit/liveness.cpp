@@ -484,11 +484,52 @@ void Compiler::fgPerBlockLocalVarLiveness()
         {
             assert(fgIsDoingEarlyLiveness && (fgNodeThreading == NodeThreading::AllLocals));
 
-            for (Statement* stmt : block->Statements())
+            if (compQmarkUsed)
             {
-                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                for (Statement* stmt : block->Statements())
                 {
-                    fgMarkUseDef(lcl);
+                    GenTree* dst;
+                    GenTree* qmark = fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
+                    if (qmark == nullptr)
+                    {
+                        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                        {
+                            fgMarkUseDef(lcl);
+                        }
+                    }
+                    else
+                    {
+                        // Assigned local should be the very last local.
+                        assert((dst == nullptr) ||
+                               ((stmt->GetRootNode()->gtPrev == dst) && ((dst->gtFlags & GTF_VAR_DEF) != 0)));
+
+                        // Conservatively ignore defs that may be conditional
+                        // but would otherwise still interfere with the
+                        // lifetimes we compute here. We generally do not
+                        // handle qmarks very precisely here -- last uses may
+                        // not be marked as such due to interference with other
+                        // qmark arms.
+                        for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                        {
+                            bool isUse = ((lcl->gtFlags & GTF_VAR_DEF) == 0) || ((lcl->gtFlags & GTF_VAR_USEASG) != 0);
+                            // We can still handle the pure def at the top level.
+                            bool conditional = lcl != dst;
+                            if (isUse || !conditional)
+                            {
+                                fgMarkUseDef(lcl);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (Statement* stmt : block->Statements())
+                {
+                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                    {
+                        fgMarkUseDef(lcl);
+                    }
                 }
             }
         }
@@ -1767,6 +1808,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 //
 // Returns:
 //    `true` if the local var node corresponds to a dead store; `false` otherwise.
+//
 bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode)
 {
     unsigned lclNum = lclVarNode->AsLclVarCommon()->GetLclNum();
@@ -1793,6 +1835,53 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
         return fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon());
     }
     return false;
+}
+
+//------------------------------------------------------------------------
+// Compiler::fgTryRemoveDeadStoreEarly:
+//    Try to remove a dead store during early liveness.
+//
+// Arguments:
+//    stmt - The statement containing the dead store.
+//    dst  - The destination local of the dead store.
+//
+// Remarks:
+//    We only handle the simple top level case since dead embedded stores are
+//    extremely rare in early liveness.
+//
+// Returns:
+//    The next node to compute liveness for (in a backwards traversal).
+//
+GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommon* cur)
+{
+    if (!stmt->GetRootNode()->OperIs(GT_ASG) || (stmt->GetRootNode()->gtGetOp1() != cur))
+    {
+        return cur->gtPrev;
+    }
+
+    JITDUMP("Store [%06u] is dead", dspTreeID(stmt->GetRootNode()));
+    // The def ought to be the last thing.
+    assert(stmt->GetRootNode()->gtPrev == cur);
+
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(stmt->GetRootNode()->gtGetOp2(), &sideEffects);
+
+    if (sideEffects == nullptr)
+    {
+        JITDUMP(" and has no side effects, removing statement\n");
+        fgRemoveStmt(compCurBB, stmt DEBUGARG(false));
+        return nullptr;
+    }
+    else
+    {
+        JITDUMP(" but has side effects. Replacing with:\n\n");
+        stmt->SetRootNode(sideEffects);
+        fgSequenceLocals(stmt);
+        DISPTREE(cur);
+        JITDUMP("\n");
+        // continue at tail of the side effects
+        return stmt->GetRootNode()->gtPrev;
+    }
 }
 
 /*****************************************************************************
@@ -2758,44 +2847,51 @@ void Compiler::fgInterBlockLocalVarLiveness()
             {
                 Statement* prevStmt = stmt->GetPrevStmt();
 
-                for (GenTree* cur = stmt->GetRootNode()->gtPrev; cur != nullptr; cur = cur->gtPrev)
+                GenTree* dst   = nullptr;
+                GenTree* qmark = nullptr;
+                if (compQmarkUsed)
                 {
-                    assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
-                    if (!fgComputeLifeLocal(life, keepAliveVars, cur))
+                    qmark = fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
+                }
+
+                if (qmark != nullptr)
+                {
+                    for (GenTree* cur = stmt->GetRootNode()->gtPrev; cur != nullptr;)
                     {
-                        continue;
+                        assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+                        bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
+                        bool conditional = cur != dst;
+                        // Ignore conditional defs that would otherwise
+                        // (incorrectly) interfere with liveness in other
+                        // branches of the qmark.
+                        if (isDef && conditional)
+                        {
+                            cur = cur->gtPrev;
+                            continue;
+                        }
+
+                        if (!fgComputeLifeLocal(life, keepAliveVars, cur))
+                        {
+                            cur = cur->gtPrev;
+                            continue;
+                        }
+
+                        assert(cur == dst);
+                        cur = fgTryRemoveDeadStoreEarly(stmt, cur->AsLclVarCommon());
                     }
-
-                    // Dead store. We only handle the simple top level case
-                    // (dead embedded stores are extremely rare in early
-                    // liveness -- not worth the complexity).
-                    if (!stmt->GetRootNode()->OperIs(GT_ASG) || (stmt->GetRootNode()->gtGetOp1() != cur))
+                }
+                else
+                {
+                    for (GenTree* cur = stmt->GetRootNode()->gtPrev; cur != nullptr;)
                     {
-                        continue;
-                    }
+                        assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+                        if (!fgComputeLifeLocal(life, keepAliveVars, cur))
+                        {
+                            cur = cur->gtPrev;
+                            continue;
+                        }
 
-                    JITDUMP("Store [%06u] is dead", dspTreeID(stmt->GetRootNode()));
-                    // The def ought to be the last thing.
-                    assert(stmt->GetRootNode()->gtPrev == cur);
-
-                    GenTree* sideEffects = nullptr;
-                    gtExtractSideEffList(stmt->GetRootNode()->gtGetOp2(), &sideEffects);
-
-                    if (sideEffects == nullptr)
-                    {
-                        JITDUMP(" and has no side effects, removing statement\n");
-                        fgRemoveStmt(block, stmt DEBUGARG(false));
-                        break;
-                    }
-                    else
-                    {
-                        JITDUMP(" but has side effects. Replacing with:\n\n");
-                        stmt->SetRootNode(sideEffects);
-                        fgSequenceLocals(stmt);
-                        // continue at tail of the side effects
-                        cur = stmt->GetRootNode();
-                        DISPTREE(cur);
-                        JITDUMP("\n");
+                        cur = fgTryRemoveDeadStoreEarly(stmt, cur->AsLclVarCommon());
                     }
                 }
 
