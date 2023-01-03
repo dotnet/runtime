@@ -118,6 +118,18 @@
     </ItemGroup>
   </Target>
 
+  <!-- <Target Name="CopyDocumentationFileToXmlDocDir"
+          AfterTargets="CoreCompile"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'"
+          BeforeTargets="ChangeDocumentationFileForPackaging">
+
+    <Copy SourceFiles="@(DocumentationProjectOutputGroupOutput)"
+          DestinationFolder="$(XmlDocDir)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target> -->
+
   <!-- Add runtime specific file into the package if the tfm is RID specific. -->
   <Target Name="AddRuntimeSpecificFilesToPackage"
           DependsOnTargets="BuiltProjectOutputGroup;
