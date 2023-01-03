@@ -733,7 +733,6 @@ PEAssembly::PEAssembly(
 
 #ifdef LOGGING
     GetPathOrCodeBase(m_debugName);
-    m_debugName.Normalize();
     m_pDebugName = m_debugName.GetUTF8();
 #endif // LOGGING
 }

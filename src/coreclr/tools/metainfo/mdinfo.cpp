@@ -189,6 +189,9 @@ const char *g_szNativeType[] =
     "NATIVE_TYPE_ERROR", //        = 0x2d, // VT_HRESULT when exporting to a typelib.
 };
 
+// Maximum value needed to convert a UTF16 codepoint to a UTF8 codepoint.
+#define MAX_UTF8_CVT 3
+
 static const char* ConvertToUtf8(LPCWSTR name, _Out_writes_(bufLen) char* buffer, ULONG bufLen)
 {
     int res = WszWideCharToMultiByte(CP_UTF8, 0, name, -1, buffer, bufLen, NULL, NULL);
@@ -499,7 +502,7 @@ void MDInfo::DisplayScopeInfo()
     mdModule mdm;
     GUID mvid;
     WCHAR scopeName[STRING_BUFFER_LEN];
-    char scopeNameUtf8[ARRAY_SIZE(scopeName) * 3];
+    char scopeNameUtf8[ARRAY_SIZE(scopeName) * MAX_UTF8_CVT];
     char guidString[STRING_BUFFER_LEN];
 
     hr = m_pImport->GetScopeProps( scopeName, STRING_BUFFER_LEN, 0, &mvid);
@@ -588,7 +591,7 @@ void MDInfo::DisplayMemberRefInfo(mdMemberRef inMemRef, const char *preFix)
 {
     HRESULT hr;
     WCHAR memRefName[STRING_BUFFER_LEN];
-    char memRefNameUtf8[ARRAY_SIZE(memRefName) * 3];
+    char memRefNameUtf8[ARRAY_SIZE(memRefName) * MAX_UTF8_CVT];
     ULONG nameLen;
     mdToken token;
     PCCOR_SIGNATURE pbSigBlob;
@@ -776,7 +779,7 @@ void MDInfo::DisplayModuleRefInfo(mdModuleRef inModuleRef)
 {
     HRESULT hr;
     WCHAR moduleRefName[STRING_BUFFER_LEN];
-    char moduleRefNameUtf8[ARRAY_SIZE(moduleRefName) * 3];
+    char moduleRefNameUtf8[ARRAY_SIZE(moduleRefName) * MAX_UTF8_CVT];
     ULONG nameLen;
 
 
@@ -859,7 +862,7 @@ void MDInfo::DisplayMethodInfo(mdMethodDef inMethod, DWORD *pflags)
     HRESULT hr;
     mdTypeDef memTypeDef;
     WCHAR memberName[STRING_BUFFER_LEN];
-    char memberNameUtf8[ARRAY_SIZE(memberName) * 3];
+    char memberNameUtf8[ARRAY_SIZE(memberName) * MAX_UTF8_CVT];
     ULONG nameLen;
     DWORD flags;
     PCCOR_SIGNATURE pbSigBlob;
@@ -946,7 +949,7 @@ void MDInfo::DisplayFieldInfo(mdFieldDef inField, DWORD *pdwFlags)
     HRESULT hr;
     mdTypeDef memTypeDef;
     WCHAR memberName[STRING_BUFFER_LEN];
-    char memberNameUtf8[ARRAY_SIZE(memberName) * 3];
+    char memberNameUtf8[ARRAY_SIZE(memberName) * MAX_UTF8_CVT];
     ULONG nameLen;
     DWORD flags;
     PCCOR_SIGNATURE pbSigBlob;
@@ -1176,7 +1179,7 @@ void MDInfo::DisplayParamInfo(mdParamDef inParamDef)
     mdMethodDef md;
     ULONG num;
     WCHAR paramName[STRING_BUFFER_LEN];
-    char paramNameUtf8[ARRAY_SIZE(paramName) * 3];
+    char paramNameUtf8[ARRAY_SIZE(paramName) * MAX_UTF8_CVT];
     ULONG nameLen;
     DWORD flags;
     VARIANT defValue;
@@ -1284,7 +1287,7 @@ void MDInfo::DisplayGenericParamInfo(mdGenericParam tkParam, const char *prefix)
 {
     ULONG ulSeq;
     WCHAR paramName[STRING_BUFFER_LEN];
-    char paramNameUtf8[ARRAY_SIZE(paramName) * 3];
+    char paramNameUtf8[ARRAY_SIZE(paramName) * MAX_UTF8_CVT];
     ULONG nameLen;
     DWORD flags;
     mdToken tkOwner;
@@ -1399,7 +1402,7 @@ void MDInfo::DisplayTypeDefProps(mdTypeDef inTypeDef)
 {
     HRESULT hr;
     WCHAR typeDefName[STRING_BUFFER_LEN];
-    char typeDefNameUtf8[ARRAY_SIZE(typeDefName) * 3];
+    char typeDefNameUtf8[ARRAY_SIZE(typeDefName) * MAX_UTF8_CVT];
     ULONG nameLen;
     DWORD flags;
     mdToken extends;
@@ -1477,7 +1480,7 @@ void MDInfo::DisplayTypeRefInfo(mdTypeRef tr)
     HRESULT hr;
     mdToken tkResolutionScope;
     WCHAR typeRefName[STRING_BUFFER_LEN];
-    char typeRefNameUtf8[ARRAY_SIZE(typeRefName) * 3];
+    char typeRefNameUtf8[ARRAY_SIZE(typeRefName) * MAX_UTF8_CVT];
     ULONG nameLen;
 
     hr = m_pImport->GetTypeRefProps(
@@ -1682,7 +1685,7 @@ void MDInfo::DisplayPropertyInfo(mdProperty inProp)
     HRESULT     hr;
     mdTypeDef   typeDef;
     WCHAR       propName[STRING_BUFFER_LEN];
-    char        propNameUtf8[ARRAY_SIZE(propName) * 3];
+    char        propNameUtf8[ARRAY_SIZE(propName) * MAX_UTF8_CVT];
     DWORD       flags;
 #ifdef FEATURE_COMINTEROP
     VARIANT     defaultValue;
@@ -1795,7 +1798,7 @@ void MDInfo::DisplayEventInfo(mdEvent inEvent)
     HRESULT hr;
     mdTypeDef typeDef;
     WCHAR eventName[STRING_BUFFER_LEN];
-    char eventNameUtf8[ARRAY_SIZE(eventName) * 3];
+    char eventNameUtf8[ARRAY_SIZE(eventName) * MAX_UTF8_CVT];
     DWORD flags;
     mdToken eventType;
     mdMethodDef addOn, removeOn, fire, otherMethod[ENUM_BUFFER_SIZE];
@@ -1890,7 +1893,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
     ULONG       cbSig=0;                // Size of the signature.
     BOOL        bCoffSymbol = false;    // true for coff symbol CA's.
     WCHAR       rcName[MAX_CLASS_NAME]; // Name of the type.
-    char        rcNameUtf8[ARRAY_SIZE(rcName) * 3]; // Name of the type.
+    char        rcNameUtf8[ARRAY_SIZE(rcName) * MAX_UTF8_CVT]; // Name of the type.
 
     hr = m_pImport->GetCustomAttributeProps( // S_OK or error.
         inValue,                    // The attribute.
@@ -2486,7 +2489,7 @@ void MDInfo::DisplayPinvokeInfo(mdToken inToken)
     HRESULT hr = NOERROR;
     DWORD flags;
     WCHAR rcImport[512];
-    char rcImportUtf8[ARRAY_SIZE(rcImport) * 3];
+    char rcImportUtf8[ARRAY_SIZE(rcImport) * MAX_UTF8_CVT];
     mdModuleRef tkModuleRef;
 
     char szTempBuf[STRING_BUFFER_LEN];
@@ -2952,7 +2955,7 @@ void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
 
     // Print the entry point.
     WCHAR memRefName[STRING_BUFFER_LEN];
-    char memRefNameUtf8[ARRAY_SIZE(memRefName) * 3];
+    char memRefNameUtf8[ARRAY_SIZE(memRefName) * MAX_UTF8_CVT];
     HRESULT hr;
     hr = m_pImport->GetMemberRefProps( pCorNLnk->m_entryPoint, NULL, memRefName,
                                     STRING_BUFFER_LEN, NULL, NULL, NULL);
@@ -3079,7 +3082,7 @@ void MDInfo::DisplayAssemblyInfo()
     ULONG           cbPublicKey;
     ULONG           ulHashAlgId;
     WCHAR           szName[STRING_BUFFER_LEN];
-    char            szNameUtf8[ARRAY_SIZE(szName) * 3];
+    char            szNameUtf8[ARRAY_SIZE(szName) * MAX_UTF8_CVT];
     ASSEMBLYMETADATA MetaData;
     DWORD           dwFlags;
 
@@ -3170,7 +3173,7 @@ void MDInfo::DisplayAssemblyRefInfo(mdAssemblyRef inAssemblyRef)
     const BYTE      *pbPublicKeyOrToken;
     ULONG           cbPublicKeyOrToken;
     WCHAR           szName[STRING_BUFFER_LEN];
-    char            szNameUtf8[ARRAY_SIZE(szName) * 3];
+    char            szNameUtf8[ARRAY_SIZE(szName) * MAX_UTF8_CVT];
     ASSEMBLYMETADATA MetaData;
     const BYTE      *pbHashValue;
     ULONG           cbHashValue;
@@ -3260,7 +3263,7 @@ void MDInfo::DisplayFileInfo(mdFile inFile)
 {
     HRESULT         hr;
     WCHAR           szName[STRING_BUFFER_LEN];
-    char            szNameUtf8[ARRAY_SIZE(szName) * 3];
+    char            szNameUtf8[ARRAY_SIZE(szName) * MAX_UTF8_CVT];
     const BYTE      *pbHashValue;
     ULONG           cbHashValue;
     DWORD           dwFlags;
@@ -3317,7 +3320,7 @@ void MDInfo::DisplayExportedTypeInfo(mdExportedType inExportedType)
 {
     HRESULT         hr;
     WCHAR           szName[STRING_BUFFER_LEN];
-    char            szNameUtf8[ARRAY_SIZE(szName) * 3];
+    char            szNameUtf8[ARRAY_SIZE(szName) * MAX_UTF8_CVT];
     mdToken         tkImplementation;
     mdTypeDef       tkTypeDef;
     DWORD           dwFlags;
@@ -3366,7 +3369,7 @@ void MDInfo::DisplayManifestResourceInfo(mdManifestResource inManifestResource)
 {
     HRESULT         hr;
     WCHAR           szName[STRING_BUFFER_LEN];
-    char            szNameUtf8[ARRAY_SIZE(szName) * 3];
+    char            szNameUtf8[ARRAY_SIZE(szName) * MAX_UTF8_CVT];
     mdToken         tkImplementation;
     DWORD           dwOffset;
     DWORD           dwFlags;
