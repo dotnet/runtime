@@ -503,13 +503,12 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         // An APC can be interrupted by another one, do not queue more if one is pending.
         if (!pThread->IsSuspensionApcPending())
         {
+            pThread->SetSuspensionApcPending(true);
             pfnQueueUserAPC2Proc(
                 &ActivationHandler,
                 hThread,
                 (ULONG_PTR)pThreadToHijack,
                 SpecialUserModeApcWithContextFlags);
-
-            pThread->SetSuspensionApcPending(true);
         }
 
         return;
