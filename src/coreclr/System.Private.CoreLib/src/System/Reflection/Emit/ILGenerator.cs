@@ -1297,8 +1297,7 @@ namespace System.Reflection.Emit
             // Declare a local of type "local". The current active lexical scope
             // will be the scope that local will live.
 
-            RuntimeMethodBuilder? methodBuilder = m_methodBuilder as RuntimeMethodBuilder;
-            if (methodBuilder == null)
+            if (m_methodBuilder is not RuntimeMethodBuilder methodBuilder)
                 throw new NotSupportedException();
 
             if (methodBuilder.IsTypeCreated())
@@ -1327,8 +1326,7 @@ namespace System.Reflection.Emit
 
             ArgumentException.ThrowIfNullOrEmpty(usingNamespace);
 
-            RuntimeMethodBuilder? methodBuilder = m_methodBuilder as RuntimeMethodBuilder;
-            if (methodBuilder == null)
+            if (m_methodBuilder is not RuntimeMethodBuilder methodBuilder)
                 throw new NotSupportedException();
 
             int index = methodBuilder.GetILGenerator().m_ScopeTree.GetCurrentActiveScopeIndex();

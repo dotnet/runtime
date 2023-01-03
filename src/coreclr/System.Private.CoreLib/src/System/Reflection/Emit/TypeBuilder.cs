@@ -95,6 +95,7 @@ namespace System.Reflection.Emit
         }
         #endregion
     }
+
     internal sealed partial class RuntimeTypeBuilder : TypeBuilder
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
@@ -1416,8 +1417,8 @@ namespace System.Reflection.Emit
             {
                 Type? genericTypeDefinition = m_typeParent.GetGenericTypeDefinition();
 
-                if (genericTypeDefinition is TypeBuilder)
-                    genericTypeDefinition = ((RuntimeTypeBuilder)genericTypeDefinition).m_bakedRuntimeType;
+                if (genericTypeDefinition is RuntimeTypeBuilder rtBuilder)
+                    genericTypeDefinition = rtBuilder.m_bakedRuntimeType;
 
                 if (genericTypeDefinition == null)
                     throw new NotSupportedException(SR.NotSupported_DynamicModule);
@@ -1581,6 +1582,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Properties and Events
+
         public override PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention,
             Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
@@ -1948,15 +1950,14 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-            DefineCustomAttribute(m_module, m_tdType, ((RuntimeModuleBuilder)m_module).GetConstructorToken(con),
-                binaryAttribute);
+            DefineCustomAttribute(m_module, m_tdType, m_module.GetConstructorToken(con), binaryAttribute);
         }
 
         public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_module, m_tdType);
+            customBuilder.CreateCustomAttribute(m_module, m_tdType);
         }
 
         #endregion

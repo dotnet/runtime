@@ -297,8 +297,7 @@ namespace System.Reflection.Emit
 
         internal static RuntimeModule GetRuntimeModuleFromModule(Module? m)
         {
-            RuntimeModuleBuilder? mb = m as RuntimeModuleBuilder;
-            if (mb != null)
+            if (m is RuntimeModuleBuilder mb)
             {
                 return mb.InternalModule;
             }
@@ -526,10 +525,9 @@ namespace System.Reflection.Emit
 
             foreach (Type builder in _typeBuilderDict.Values)
             {
-                RuntimeEnumBuilder? enumBldr = builder as RuntimeEnumBuilder;
                 RuntimeTypeBuilder tmpTypeBldr;
 
-                if (enumBldr != null)
+                if (builder is RuntimeEnumBuilder enumBldr)
                     tmpTypeBldr = enumBldr.m_typeBuilder;
                 else
                     tmpTypeBldr = (RuntimeTypeBuilder)builder;
@@ -786,9 +784,9 @@ namespace System.Reflection.Emit
         #region Define Global Method
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public override MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
-            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
-            CallingConvention nativeCallConv, CharSet nativeCharSet)
+        public override MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName,
+            MethodAttributes attributes, CallingConventions callingConvention, Type? returnType,
+            Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             lock (SyncRoot)
             {
@@ -936,8 +934,7 @@ namespace System.Reflection.Emit
                 // no need to do anything additional other than defining the TypeRef Token
                 RuntimeTypeBuilder? typeBuilder;
 
-                RuntimeEnumBuilder? enumBuilder = type as RuntimeEnumBuilder;
-                typeBuilder = enumBuilder != null ? enumBuilder.m_typeBuilder : type as RuntimeTypeBuilder;
+                typeBuilder = type is RuntimeEnumBuilder enumBuilder ? enumBuilder.m_typeBuilder : type as RuntimeTypeBuilder;
 
                 if (typeBuilder != null)
                 {
@@ -1325,15 +1322,5 @@ namespace System.Reflection.Emit
         #endregion
 
         #endregion
-
-        public override ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
-            => RuntimeTypeBuilder.GetConstructor(type, constructor);
-
-        public override FieldInfo GetField(Type type, FieldInfo field)
-            => RuntimeTypeBuilder.GetField(type, field);
-
-        public override MethodInfo GetMethod(Type type, MethodInfo method)
-            => RuntimeTypeBuilder.GetMethod(type, method);
-
     }
 }

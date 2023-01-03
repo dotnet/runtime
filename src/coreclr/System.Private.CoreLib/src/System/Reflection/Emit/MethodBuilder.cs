@@ -146,7 +146,7 @@ namespace System.Reflection.Emit
             int[] type;
             int numCatch;
             int start, end;
-            RuntimeModuleBuilder dynMod = (RuntimeModuleBuilder)m_module;
+            RuntimeModuleBuilder dynMod = m_module;
 
             m_containingType.ThrowIfCreated();
 
@@ -360,21 +360,21 @@ namespace System.Reflection.Emit
         #region Object Overrides
         public override bool Equals(object? obj)
         {
-            if (!(obj is RuntimeMethodBuilder))
+            if (obj is not RuntimeMethodBuilder rmBuilder)
             {
                 return false;
             }
-            if (!m_strName.Equals(((RuntimeMethodBuilder)obj).m_strName))
-            {
-                return false;
-            }
-
-            if (m_iAttributes != (((RuntimeMethodBuilder)obj).m_iAttributes))
+            if (!m_strName.Equals(rmBuilder.m_strName))
             {
                 return false;
             }
 
-            SignatureHelper thatSig = ((RuntimeMethodBuilder)obj).GetMethodSignature();
+            if (m_iAttributes != rmBuilder.m_iAttributes)
+            {
+                return false;
+            }
+
+            SignatureHelper thatSig = rmBuilder.GetMethodSignature();
             if (thatSig.Equals(GetMethodSignature()))
             {
                 return true;
@@ -727,7 +727,7 @@ namespace System.Reflection.Emit
             ThrowIfGeneric();
 
             RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
-                ((RuntimeModuleBuilder)m_module).GetConstructorToken(con),
+                m_module.GetConstructorToken(con),
                 binaryAttribute);
 
             if (IsKnownCA(con))
@@ -740,7 +740,7 @@ namespace System.Reflection.Emit
 
             ThrowIfGeneric();
 
-            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_module, MetadataToken);
+            customBuilder.CreateCustomAttribute(m_module, MetadataToken);
 
             if (IsKnownCA(customBuilder.m_con))
                 ParseCA(customBuilder.m_con);

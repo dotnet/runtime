@@ -159,9 +159,9 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-            m_typeBuilder.ThrowIfCreated();
-
             RuntimeModuleBuilder moduleBuilder = (RuntimeModuleBuilder)m_typeBuilder.Module;
+
+            m_typeBuilder.ThrowIfCreated();
 
             RuntimeTypeBuilder.DefineCustomAttribute(moduleBuilder,
                 m_fieldTok, moduleBuilder.GetConstructorToken(con), binaryAttribute);

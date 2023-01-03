@@ -19,12 +19,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.Emit.ModuleBuilder.GetConstructor(System.Type,System.Reflection.ConstructorInfo)</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Reflection.Emit.ModuleBuilder.GetConstructorToken(System.Reflection.ConstructorInfo)</Target>
     <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net8.0/System.Private.CoreLib.dll</Right>

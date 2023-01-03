@@ -928,15 +928,6 @@ namespace System.Reflection.Emit
                 return RuntimeModule.get_MetadataToken(this);
             }
         }
-
-        public override ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
-            => RuntimeTypeBuilder.GetConstructor(type, constructor);
-
-        public override FieldInfo GetField(Type type, FieldInfo field)
-            => RuntimeTypeBuilder.GetField(type, field);
-
-        public override MethodInfo GetMethod(Type type, MethodInfo method)
-            => RuntimeTypeBuilder.GetMethod(type, method);
     }
 
     internal sealed class ModuleBuilderTokenGenerator : ITokenGenerator

@@ -22,14 +22,13 @@ namespace System.Reflection.Emit
     //
     internal sealed class RuntimeEventBuilder : EventBuilder
     {
-        // Constructs a EventBuilder.
+        // Constructs a RuntimeEventBuilder.
         //
         internal RuntimeEventBuilder(
-            RuntimeModuleBuilder mod,                    // the module containing this EventBuilder
-            string name,                    // Event name
-            EventAttributes attr,                    // event attribute such as Public, Private, and Protected defined above
-                                                     // int            eventType,                // event type
-            RuntimeTypeBuilder type,                 // containing type
+            RuntimeModuleBuilder mod,               // the module containing this EventBuilder
+            string name,                            // Event name
+            EventAttributes attr,                   // event attribute such as Public, Private, and Protected defined above
+            RuntimeTypeBuilder type,                // containing type
             int evToken)
         {
             m_name = name;

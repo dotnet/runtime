@@ -34,7 +34,7 @@ namespace System.Reflection.Emit
                 literalName,
                 this,
                 FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.Literal);
-            ((RuntimeFieldBuilder)fieldBuilder).SetConstant(literalValue);
+            fieldBuilder.SetConstant(literalValue);
             return fieldBuilder;
         }
 
