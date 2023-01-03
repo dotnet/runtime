@@ -464,7 +464,7 @@ static void NTAPI ActivationHandler(ULONG_PTR parameter)
     g_pHijackCallback(data->ContextRecord, NULL);
 
     Thread* pThread = (Thread*)data->Parameter;
-    pThread->SetSuspensionApcPending(false);
+    pThread->SetActivationPending(false);
 }
 #endif
 
@@ -501,9 +501,9 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         Thread* pThread = (Thread*)pThreadToHijack;
 
         // An APC can be interrupted by another one, do not queue more if one is pending.
-        if (!pThread->IsSuspensionApcPending())
+        if (!pThread->IsActivationPending())
         {
-            pThread->SetSuspensionApcPending(true);
+            pThread->SetActivationPending(true);
             BOOL success = pfnQueueUserAPC2Proc(
                 &ActivationHandler,
                 hThread,

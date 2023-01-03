@@ -1074,24 +1074,22 @@ void Thread::SetDetached()
     SetState(TSF_Detached);
 }
 
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-bool Thread::IsSuspensionApcPending()
+bool Thread::IsActivationPending()
 {
-    return IsStateSet(TSF_SuspensionApcPending);
+    return IsStateSet(TSF_ActivationPending);
 }
 
-void Thread::SetSuspensionApcPending(bool isPending)
+void Thread::SetActivationPending(bool isPending)
 {
     if (isPending)
     {
-        SetState(TSF_SuspensionApcPending);
+        SetState(TSF_ActivationPending);
     }
     else
     {
-        ClearState(TSF_SuspensionApcPending);
+        ClearState(TSF_ActivationPending);
     }
 }
-#endif
 
 #endif // !DACCESS_COMPILE
 
