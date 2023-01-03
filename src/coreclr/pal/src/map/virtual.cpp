@@ -31,7 +31,9 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include "pal/init.h"
 #include "pal/utils.h"
 #include "common.h"
+#include <clrconfignocache.h>
 
+#include <sys/resource.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <errno.h>
@@ -1617,11 +1619,33 @@ Function:
 void ExecutableMemoryAllocator::TryReserveInitialMemory()
 {
     CPalThread* pthrCurrent = InternalGetCurrentThread();
-    int32_t sizeOfAllocation = MaxExecutableMemorySizeNearCoreClr;
     int32_t preferredStartAddressIncrement;
     UINT_PTR preferredStartAddress;
     UINT_PTR coreclrLoadAddress;
 
+    int32_t sizeOfAllocation = MaxExecutableMemorySizeNearCoreClr;
+    int32_t initialReserveLimit = -1;
+    rlimit addressSpaceLimit;
+    if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
+    {
+        // By default reserve max 20% of the available virtual address space
+        rlim_t initialExecMemoryPerc = 20;
+        CLRConfigNoCache defInitialExecMemoryPerc = CLRConfigNoCache::Get("InitialExecMemoryPercent", /*noprefix*/ false, &getenv);
+        if (defInitialExecMemoryPerc.IsSet())
+        {
+            DWORD perc;
+            if (defInitialExecMemoryPerc.TryAsInteger(16, perc))
+            {
+                initialExecMemoryPerc = perc;
+            }
+        }
+
+        initialReserveLimit = addressSpaceLimit.rlim_cur * initialExecMemoryPerc / 100;
+        if (initialReserveLimit < sizeOfAllocation)
+        {
+            sizeOfAllocation = initialReserveLimit;
+        }
+    }
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Smaller steps on ARM because we try hard finding a spare memory in a 128Mb
     // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs
@@ -1697,7 +1721,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         //     does not exceed approximately 2 GB.
         //   - The code heap allocator for the JIT can allocate from this address space. Beyond this reservation, one can use
         //     the DOTNET_CodeHeapReserveForJumpStubs environment variable to reserve space for jump stubs.
-        sizeOfAllocation = MaxExecutableMemorySize;
+        sizeOfAllocation = (initialReserveLimit != -1) ? initialReserveLimit : MaxExecutableMemorySize;
         m_startAddress = ReserveVirtualMemory(pthrCurrent, nullptr, sizeOfAllocation, MEM_RESERVE_EXECUTABLE);
         if (m_startAddress == nullptr)
         {
