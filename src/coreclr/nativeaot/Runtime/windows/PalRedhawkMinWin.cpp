@@ -504,11 +504,19 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         if (!pThread->IsSuspensionApcPending())
         {
             pThread->SetSuspensionApcPending(true);
-            pfnQueueUserAPC2Proc(
+            BOOL success = pfnQueueUserAPC2Proc(
                 &ActivationHandler,
                 hThread,
                 (ULONG_PTR)pThreadToHijack,
                 SpecialUserModeApcWithContextFlags);
+
+            if (!success)
+            {
+                // Failure to send the signal is fatal.
+                // There are no known transient reasons for this to fail.
+                ASSERT(!"failed to queue an APC");
+                abort();
+            }
         }
 
         return;
