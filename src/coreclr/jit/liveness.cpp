@@ -1877,7 +1877,7 @@ GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommo
         JITDUMP(" but has side effects. Replacing with:\n\n");
         stmt->SetRootNode(sideEffects);
         fgSequenceLocals(stmt);
-        DISPTREE(cur);
+        DISPTREE(sideEffects);
         JITDUMP("\n");
         // continue at tail of the side effects
         return stmt->GetRootNode()->gtPrev;
@@ -2907,42 +2907,22 @@ void Compiler::fgInterBlockLocalVarLiveness()
         /* Done with the current block - if we removed any statements, some
          * variables may have become dead at the beginning of the block
          * -> have to update bbLiveIn */
-
-        if (fgIsDoingEarlyLiveness)
+        if (!VarSetOps::Equal(this, life, block->bbLiveIn))
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                VARSET_TP allVars(VarSetOps::Union(this, block->bbLiveIn, life));
-                printf(FMT_BB " LIFE(%d)=", block->bbNum, VarSetOps::Count(this, life));
-                lvaDispVarSet(life, allVars);
-                printf("\n     IN  (%d)=", VarSetOps::Count(this, block->bbLiveIn));
-                lvaDispVarSet(block->bbLiveIn, allVars);
-                printf("\n\n");
-            }
-#endif
+            /* some variables have become dead all across the block
+               So life should be a subset of block->bbLiveIn */
 
-            assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
-        }
-        else
-        {
-            if (!VarSetOps::Equal(this, life, block->bbLiveIn))
-            {
-                /* some variables have become dead all across the block
-                   So life should be a subset of block->bbLiveIn */
+            // We changed the liveIn of the block, which may affect liveOut of others,
+            // which may expose more dead stores.
+            fgLocalVarLivenessChanged = true;
 
-                // We changed the liveIn of the block, which may affect liveOut of others,
-                // which may expose more dead stores.
-                fgLocalVarLivenessChanged = true;
+            noway_assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
 
-                noway_assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
+            /* set the new bbLiveIn */
 
-                /* set the new bbLiveIn */
+            VarSetOps::Assign(this, block->bbLiveIn, life);
 
-                VarSetOps::Assign(this, block->bbLiveIn, life);
-
-                /* compute the new bbLiveOut for all the predecessors of this block */
-            }
+            /* compute the new bbLiveOut for all the predecessors of this block */
         }
 
         noway_assert(compCurBB == block);
