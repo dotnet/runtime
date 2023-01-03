@@ -2,42 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAny3Values<T> : IndexOfAnyValues<T>
-        where T : struct, INumber<T>
+    internal sealed class IndexOfAny3ByteValues : IndexOfAnyValues<byte>
     {
-        private readonly T _e0, _e1, _e2;
+        private readonly byte _e0, _e1, _e2;
 
-        public IndexOfAny3Values(ReadOnlySpan<T> values)
+        public IndexOfAny3ByteValues(ReadOnlySpan<byte> values)
         {
             Debug.Assert(values.Length == 3);
             (_e0, _e1, _e2) = (values[0], values[1], values[2]);
         }
 
-        internal override T[] GetValues() => new[] { _e0, _e1, _e2 };
+        internal override byte[] GetValues() => new[] { _e0, _e1, _e2 };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override bool ContainsCore(T value) =>
+        internal override bool ContainsCore(byte value) =>
             value == _e0 || value == _e1 || value == _e2;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAny(ReadOnlySpan<T> span) =>
+        internal override int IndexOfAny(ReadOnlySpan<byte> span) =>
             span.IndexOfAny(_e0, _e1, _e2);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAnyExcept(ReadOnlySpan<T> span) =>
+        internal override int IndexOfAnyExcept(ReadOnlySpan<byte> span) =>
             span.IndexOfAnyExcept(_e0, _e1, _e2);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAny(ReadOnlySpan<T> span) =>
+        internal override int LastIndexOfAny(ReadOnlySpan<byte> span) =>
             span.LastIndexOfAny(_e0, _e1, _e2);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
+        internal override int LastIndexOfAnyExcept(ReadOnlySpan<byte> span) =>
             span.LastIndexOfAnyExcept(_e0, _e1, _e2);
     }
 }

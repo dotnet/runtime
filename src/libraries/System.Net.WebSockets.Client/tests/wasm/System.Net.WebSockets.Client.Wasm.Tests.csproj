@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFramework>$(NetCoreAppCurrent)-Browser</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)-browser</TargetFramework>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
   </PropertyGroup>
 

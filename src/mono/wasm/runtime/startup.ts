@@ -21,7 +21,8 @@ import { string_decoder } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
-import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download_with_retries, wait_for_all_assets } from "./assets";
+import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download, wait_for_all_assets } from "./assets";
+import { BINDING, MONO } from "./net6-legacy/imports";
 import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
@@ -295,8 +296,8 @@ function mono_wasm_pre_init_essential(): void {
     init_c_exports();
     cwraps_internal(INTERNAL);
     if (MonoWasmLegacyJsInterop) {
-        cwraps_mono_api(MONO);
-        cwraps_binding_api(BINDING);
+    cwraps_mono_api(MONO);
+    cwraps_binding_api(BINDING);
     }
     Module.removeRunDependency("mono_wasm_pre_init_essential");
 }
@@ -449,7 +450,7 @@ async function instantiate_wasm_module(
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
         // FIXME: this would not apply re-try (on connection reset during download) for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
-        await start_asset_download_with_retries(assetToLoad, false);
+        await start_asset_download(assetToLoad);
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
@@ -537,7 +538,7 @@ export function bindings_init(): void {
         const mark = startMeasure();
         init_managed_exports();
         if (MonoWasmLegacyJsInterop) {
-            init_legacy_exports();
+        init_legacy_exports();
         }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();

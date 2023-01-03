@@ -5044,10 +5044,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 
     switch (simdNode->GetSIMDIntrinsicId())
     {
-        case SIMDIntrinsicInitN:
-            genSIMDIntrinsicInitN(simdNode);
-            break;
-
         case SIMDIntrinsicUpperSave:
             genSIMDIntrinsicUpperSave(simdNode);
             break;
@@ -5093,76 +5089,6 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
     }
 
     return result;
-}
-
-//-------------------------------------------------------------------------------------------
-// genSIMDIntrinsicInitN: Generate code for SIMD Intrinsic Initialize for the form that takes
-//                        a number of arguments equal to the length of the Vector.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
-{
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInitN);
-
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-
-    var_types targetType   = simdNode->TypeGet();
-    var_types baseType     = simdNode->GetSimdBaseType();
-    emitAttr  baseTypeSize = emitTypeSize(baseType);
-    regNumber vectorReg    = targetReg;
-    size_t    initCount    = simdNode->GetOperandCount();
-
-    assert((initCount * baseTypeSize) <= simdNode->GetSimdSize());
-
-    if (varTypeIsFloating(baseType))
-    {
-        // Note that we cannot use targetReg before consuming all float source operands.
-        // Therefore use an internal temp register
-        vectorReg = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-    }
-
-    // We will first consume the list items in execution (left to right) order,
-    // and record the registers.
-    regNumber operandRegs[FP_REGSIZE_BYTES];
-    for (size_t i = 1; i <= initCount; i++)
-    {
-        GenTree* operand = simdNode->Op(i);
-        assert(operand->TypeIs(baseType));
-        assert(!operand->isContained());
-
-        operandRegs[i - 1] = genConsumeReg(operand);
-    }
-
-    if (initCount * baseTypeSize < EA_16BYTE)
-    {
-        GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, vectorReg, 0x00, INS_OPTS_16B);
-    }
-
-    if (varTypeIsIntegral(baseType))
-    {
-        for (unsigned i = 0; i < initCount; i++)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_ins, baseTypeSize, vectorReg, operandRegs[i], i);
-        }
-    }
-    else
-    {
-        for (unsigned i = 0; i < initCount; i++)
-        {
-            GetEmitter()->emitIns_R_R_I_I(INS_ins, baseTypeSize, vectorReg, operandRegs[i], i, 0);
-        }
-    }
-
-    // Load the initialized value.
-    GetEmitter()->emitIns_Mov(INS_mov, EA_16BYTE, targetReg, vectorReg, /* canSkip */ true);
-
-    genProduceReg(simdNode);
 }
 
 //-----------------------------------------------------------------------------

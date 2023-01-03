@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -11,8 +12,31 @@ namespace System.DirectoryServices.Protocols
     {
         private bool _setFQDNDone;
 
-        private void InternalInitConnectionHandle(string hostname)
+        private void InternalInitConnectionHandle()
         {
+            string hostname = null;
+            string[] servers = ((LdapDirectoryIdentifier)_directoryIdentifier)?.Servers;
+            if (servers != null && servers.Length != 0)
+            {
+                var temp = new StringBuilder(200);
+                for (int i = 0; i < servers.Length; i++)
+                {
+                    if (servers[i] != null)
+                    {
+                        temp.Append(servers[i]);
+                        if (i < servers.Length - 1)
+                        {
+                            temp.Append(' ');
+                        }
+                    }
+                }
+
+                if (temp.Length != 0)
+                {
+                    hostname = temp.ToString();
+                }
+            }
+
             LdapDirectoryIdentifier directoryIdentifier = _directoryIdentifier as LdapDirectoryIdentifier;
 
             // User wants to setup a connectionless session with server.

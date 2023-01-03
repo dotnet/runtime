@@ -84,13 +84,13 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.22619.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.22627.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>547300d5a2a5477e38f2cca5ad78ea648ac77330</Sha>
+      <Sha>af10ce91f6738f9f2a2e4aad31a34b92df7d7fb9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.22619.1">
+    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.22627.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>547300d5a2a5477e38f2cca5ad78ea648ac77330</Sha>
+      <Sha>af10ce91f6738f9f2a2e4aad31a34b92df7d7fb9</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -142,7 +142,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>3003926e4126f827bca50d5b3ee179afc86d8a7b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="8.0.0-beta.22621.1">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="8.0.0-beta.22630.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>3003926e4126f827bca50d5b3ee179afc86d8a7b</Sha>
     </Dependency>

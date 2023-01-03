@@ -489,7 +489,7 @@ namespace System.Net.Tests
 
         const string ExpectedTextAfterUrlEncode =
             "To+be%2c+or+not+to+be%2c+that+is+the+question%3a" +
-            "Whether+'tis+Nobler+in+the+mind+to+suffer" +
+            "Whether+%27tis+Nobler+in+the+mind+to+suffer" +
             "The+Slings+and+Arrows+of+outrageous+Fortune%2c" +
             "Or+to+take+Arms+against+a+Sea+of+troubles%2c" +
             "And+by+opposing+end+them%3a";
@@ -697,7 +697,6 @@ namespace System.Net.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79731")]
         public async Task UploadValues_Success(Uri echoServer)
         {
             var wc = new WebClient();

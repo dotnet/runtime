@@ -265,18 +265,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
         }
 
-#ifdef FEATURE_SIMD
-        if (isIntrinsic)
-        {
-            call = impSIMDIntrinsic(opcode, newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token);
-            if (call != nullptr)
-            {
-                bIntrinsicImported = true;
-                goto DONE_CALL;
-            }
-        }
-#endif // FEATURE_SIMD
-
         if ((mflags & CORINFO_FLG_VIRTUAL) && (mflags & CORINFO_FLG_EnC) && (opcode == CEE_CALLVIRT))
         {
             NO_WAY("Virtual call to a function added via EnC is not supported");
