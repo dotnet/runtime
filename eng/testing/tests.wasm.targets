@@ -187,6 +187,7 @@
       <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
 
       <BundleFiles Include="$(MonoProjectRoot)\wasm\data\aot-tests\*" TargetDir="publish" />
+      <WasmOptConfigurationFlags Include="-Os" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(DebuggerSupport)' == 'true'">
