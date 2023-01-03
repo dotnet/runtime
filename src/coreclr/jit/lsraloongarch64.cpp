@@ -327,12 +327,6 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            srcCount = BuildSIMD(tree->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic(), &dstCount);
@@ -641,23 +635,6 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
-
-#ifdef FEATURE_SIMD
-//------------------------------------------------------------------------
-// BuildSIMD: Set the NodeInfo for a GT_SIMD tree.
-//
-// Arguments:
-//    tree       - The GT_SIMD node of interest
-//
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
-{
-    NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
-    return 0;
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 #include "hwintrinsic.h"

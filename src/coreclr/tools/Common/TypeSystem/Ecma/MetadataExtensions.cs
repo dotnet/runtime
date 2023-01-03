@@ -295,5 +295,20 @@ namespace Internal.TypeSystem.Ecma
         {
             return (flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
         }
+
+        public static unsafe byte* GetTypeNamePointer(this MetadataReader reader, TypeDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetTypeDefinition(handle).Name).CurrentPointer;
+        }
+
+        public static unsafe byte* GetTypeNamespacePointer(this MetadataReader reader, TypeDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetTypeDefinition(handle).Namespace).CurrentPointer;
+        }
+
+        public static unsafe byte* GetMethodNamePointer(this MetadataReader reader, MethodDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetMethodDefinition(handle).Name).CurrentPointer;
+        }
     }
 }

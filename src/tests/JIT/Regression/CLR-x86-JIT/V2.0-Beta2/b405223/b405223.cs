@@ -4,10 +4,10 @@
 
 using System;
 
-class Class1
+public class Class1
 {
 
-    static int Main()
+    public static int Main()
     {
         Console.WriteLine("Note that this is a test to verify that the implementation stays buggy");
         object o = new short[3];

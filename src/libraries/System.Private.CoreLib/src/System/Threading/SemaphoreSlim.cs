@@ -143,7 +143,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentOutOfRangeException"> <paramref name="initialCount"/>
         /// is less than 0. -or-
         /// <paramref name="initialCount"/> is greater than <paramref name="maxCount"/>. -or-
-        /// <paramref name="maxCount"/> is less than 0.</exception>
+        /// <paramref name="maxCount"/> is equal to or less than 0.</exception>
         public SemaphoreSlim(int initialCount, int maxCount)
         {
             if (initialCount < 0 || initialCount > maxCount)

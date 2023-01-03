@@ -9,6 +9,7 @@
 }
 .assembly 'b32551b' { }
 
+.class public auto ansi Test_b32551b extends [mscorlib] System.Object {
 .method public static int32 main() il managed {
   .entrypoint
   .maxstack 8
@@ -25,4 +26,5 @@
   s:
 ldc.i4 100
   ret
+}
 }

@@ -1772,14 +1772,6 @@ uint32_t interceptor_ICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field
     return temp;
 }
 
-// Adds an active dependency from the context method's module to the given module
-// This is internal callback for the EE. JIT should not call it directly.
-void interceptor_ICJI::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo)
-{
-    mc->cr->AddCall("addActiveDependency");
-    original_ICorJitInfo->addActiveDependency(moduleFrom, moduleTo);
-}
-
 CORINFO_METHOD_HANDLE interceptor_ICJI::GetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,
                                                         CORINFO_CLASS_HANDLE  clsHnd,
                                                         CORINFO_METHOD_HANDLE targetMethodHnd,

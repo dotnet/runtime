@@ -67,30 +67,18 @@ export async function mono_download_assets(): Promise<void> {
         // start fetching and instantiating all assets in parallel
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;
+            mono_assert(typeof asset === "object", "asset must be object");
+            mono_assert(typeof asset.behavior === "string", "asset behavior must be known string");
+            mono_assert(typeof asset.name === "string", "asset name must be string");
+            mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
+            mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
             if (!skipInstantiateByAssetTypes[asset.behavior]) {
                 expected_instantiated_assets_count++;
             }
             if (!skipDownloadsByAssetTypes[asset.behavior]) {
-                const headersOnly = skipBufferByAssetTypes[asset.behavior];// `response.arrayBuffer()` can't be called twice. Some usecases are calling it on response in the instantiation.
                 expected_downloaded_assets_count++;
-                if (asset.pendingDownload) {
-                    asset.pendingDownloadInternal = asset.pendingDownload;
-                    const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
-                        const response = await asset.pendingDownloadInternal!.response;
-                        ++actual_downloaded_assets_count;
-                        if (!headersOnly) {
-                            asset.buffer = await response.arrayBuffer();
-                        }
-                        return { asset, buffer: asset.buffer };
-                    };
-                    promises_of_assets_with_buffer.push(waitForExternalData());
-                } else {
-                    const waitForExternalData: () => Promise<AssetWithBuffer> = async () => {
-                        asset.buffer = await start_asset_download_with_retries(asset, !headersOnly);
-                        return { asset, buffer: asset.buffer };
-                    };
-                    promises_of_assets_with_buffer.push(waitForExternalData());
-                }
+                promises_of_assets_with_buffer.push(start_asset_download(asset));
             }
         }
         allDownloadsQueued.promise_control.resolve();
@@ -103,6 +91,7 @@ export async function mono_download_assets(): Promise<void> {
                 if (assetWithBuffer.buffer) {
                     if (!skipInstantiateByAssetTypes[asset.behavior]) {
                         const url = asset.pendingDownloadInternal!.url;
+                        mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
                         const data = new Uint8Array(asset.buffer!);
                         asset.pendingDownloadInternal = null as any; // GC
                         asset.pendingDownload = null as any; // GC
@@ -146,8 +135,25 @@ export async function mono_download_assets(): Promise<void> {
     }
 }
 
+export async function start_asset_download(asset: AssetEntryInternal) {
+    // `response.arrayBuffer()` can't be called twice. Some use-cases are calling it on response in the instantiation.
+    const headersOnly = skipBufferByAssetTypes[asset.behavior];
+    if (asset.pendingDownload) {
+        asset.pendingDownloadInternal = asset.pendingDownload;
+        const response = await asset.pendingDownloadInternal!.response;
+        ++actual_downloaded_assets_count;
+        if (!headersOnly) {
+            asset.buffer = await response.arrayBuffer();
+        }
+        return { asset, buffer: asset.buffer };
+    } else {
+        asset.buffer = await start_asset_download_with_retries(asset, !headersOnly);
+        return { asset, buffer: asset.buffer };
+    }
+}
+
 // FIXME: Connection reset is probably the only good one for which we should retry
-export async function start_asset_download_with_retries(asset: AssetEntryInternal, downloadData: boolean): Promise<ArrayBuffer | undefined> {
+async function start_asset_download_with_retries(asset: AssetEntryInternal, downloadData: boolean): Promise<ArrayBuffer | undefined> {
     try {
         return await start_asset_download_with_throttle(asset, downloadData);
     } catch (err: any) {
@@ -294,7 +300,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
                     : asset.name;
             }
             else if (asset.behavior === "resource") {
-                const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
+                const path = asset.culture && asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
                 attemptUrl = assemblyRootFolder
                     ? (assemblyRootFolder + "/" + path)
                     : path;
@@ -422,7 +428,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
             Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
-        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
+        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }
     endMeasure(mark, MeasuredBlock.instantiateAsset, asset.name);
     ++actual_instantiated_assets_count;
@@ -433,7 +439,7 @@ export async function instantiate_wasm_asset(
     wasmModuleImports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback,
 ): Promise<void> {
-    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal, "Can't load dotnet.wasm");
+    mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal && pendingAsset.pendingDownloadInternal.response, "Can't load dotnet.wasm");
     const response = await pendingAsset.pendingDownloadInternal.response;
     const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
     let compiledInstance: WebAssembly.Instance;

@@ -27,7 +27,7 @@ namespace BadBox1
     }
 
 
-    internal static class App
+    public static class App
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void RunScenario()
@@ -43,7 +43,7 @@ namespace BadBox1
         }
 
 
-        private static int Main()
+        public static int Main()
         {
             try
             {

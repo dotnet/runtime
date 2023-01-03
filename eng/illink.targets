@@ -60,18 +60,18 @@
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
-    </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
-    </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
-    </BinPlaceTargetFramework>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <ItemGroup>
@@ -89,7 +89,7 @@
       <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
       <ItemName>ILLinkSuppressionsXmls</ItemName>
     </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS.ToLowerInvariant())">
       <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
       <ItemName>ILLinkSuppressionsXmls</ItemName>
     </BinPlaceTargetFrameworks>

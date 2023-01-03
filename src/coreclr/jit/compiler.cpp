@@ -1778,7 +1778,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
     // Initialize the method name and related info, as it is used early in determining whether to
     // apply stress modes, and which ones to apply.
     // Note that even allocating memory can invoke the stress mechanism, so ensure that both
