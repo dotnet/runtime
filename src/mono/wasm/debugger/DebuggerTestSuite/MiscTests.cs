@@ -958,7 +958,7 @@ namespace DebuggerTests
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(
             "DebuggerTests.CheckSpecialCharactersInPath",
             "dotnet://debugger-test-special-char-in-path.dll/test%23.cs",
@@ -980,7 +980,7 @@ namespace DebuggerTests
             Assert.EndsWith(expectedFileNameEscaped, ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        [ConditionalFact(nameof(RunningOnChromeAndLinux))]
         public async Task SetBreakpointInProjectWithColonInSourceName()
         {
             var bp = await SetBreakpointInMethod("debugger-test-with-colon-in-source-name.dll", "DebuggerTests.CheckColonInSourceName", "Evaluate", 1);
