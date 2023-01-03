@@ -1717,7 +1717,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     else
                     {
                         GenTree* idx = gtNewIconNode((simdSize == 12) ? 2 : 3, TYP_INT);
-                        copyBlkSrc   = gtNewSimdWithElementNode(simdType, op2, op3, idx, simdBaseJitType, simdSize,
+                        copyBlkSrc   = gtNewSimdWithElementNode(simdType, op2, idx, op3, simdBaseJitType, simdSize,
                                                               /* isSimdAsHWIntrinsic */ true);
                     }
 
@@ -1889,11 +1889,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     else
                     {
                         GenTree* idx = gtNewIconNode(2, TYP_INT);
-                        op2          = gtNewSimdWithElementNode(simdType, op2, op3, idx, simdBaseJitType, simdSize,
+                        op2          = gtNewSimdWithElementNode(simdType, op2, idx, op3, simdBaseJitType, simdSize,
                                                        /* isSimdAsHWIntrinsic */ true);
 
                         idx        = gtNewIconNode(3, TYP_INT);
-                        copyBlkSrc = gtNewSimdWithElementNode(simdType, op2, op4, idx, simdBaseJitType, simdSize,
+                        copyBlkSrc = gtNewSimdWithElementNode(simdType, op2, idx, op4, simdBaseJitType, simdSize,
                                                               /* isSimdAsHWIntrinsic */ true);
                     }
 
