@@ -237,27 +237,7 @@ public:
                     isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
                 }
 
-                bool lastUse;
-                if (m_livenessBased)
-                {
-                    if ((node->gtFlags & GTF_VAR_DEATH) != 0)
-                    {
-                        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
-                        VARSET_TP* deadFields;
-                        lastUse = !dsc->lvPromoted || !m_compiler->LookupPromotedStructDeathVars(node, &deadFields);
-                    }
-                    else
-                    {
-                        lastUse = false;
-                    }
-                }
-                else
-                {
-                    // When not liveness based we can only get here when we have exactly 2 global references.
-                    lastUse = true;
-                }
-
-                if (!isDef && !isCallTarget && lastUse)
+                if (!isDef && !isCallTarget && IsLastUse(node->AsLclVar()))
                 {
                     m_node       = node;
                     m_use        = use;
@@ -272,25 +252,14 @@ public:
         LclVarDsc* lclDsc = nullptr;
         if (node->OperIsLocal())
         {
-            unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* dsc    = m_compiler->lvaGetDesc(lclNum);
-
-            // If we are forward subbing a promoted struct field then
-            // occurrences of the particular struct field, or the parent, are
-            // uses.
-            //
-            // If we are forward subbing a promoted struct then occurrences of
-            // _any_ of its fields are also uses.
-            //
-            if ((lclNum == m_lclNum) || (lclNum == m_parentLclNum) ||
-                (dsc->lvIsStructField && (dsc->lvParentLcl == m_lclNum)))
+            if (IsUse(node->AsLclVarCommon()))
             {
                 m_useCount++;
             }
 
             if (!isDef)
             {
-                lclDsc = dsc;
+                lclDsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
             }
         }
         else if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
@@ -341,6 +310,61 @@ public:
     unsigned GetComplexity() const
     {
         return m_treeSize;
+    }
+
+    //------------------------------------------------------------------------
+    // IsUse: Check if a local is considered a use of the forward sub candidate
+    // while taking promotion into account.
+    //
+    // Arguments:
+    //    lcl - the local
+    //
+    // Returns:
+    //    true if the node is a use of the local candidate or any of its fields.
+    //
+    bool IsUse(GenTreeLclVarCommon* lcl)
+    {
+        unsigned lclNum = lcl->GetLclNum();
+        if ((lclNum == m_lclNum) || (lclNum == m_parentLclNum))
+        {
+            return true;
+        }
+
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
+        return dsc->lvIsStructField && (dsc->lvParentLcl == m_lclNum);
+    }
+
+    //------------------------------------------------------------------------
+    // IsLastUse: Check if the local node is a last use. The local node is expected
+    // to be a GT_LCL_VAR of the local being forward subbed.
+    //
+    // Arguments:
+    //    lcl - the GT_LCL_VAR of the current local.
+    //
+    // Returns:
+    //    true if the expression is a last use of the local; otherwise false.
+    //
+    bool IsLastUse(GenTreeLclVar* lcl)
+    {
+        assert(lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == m_lclNum));
+
+        if (!m_livenessBased)
+        {
+            // When not liveness based we can only get here when we have
+            // exactly 2 global references, and we should have already seen the
+            // def.
+            assert(m_compiler->lvaGetDesc(lcl)->lvRefCnt(RCS_EARLY) == 2);
+            return true;
+        }
+
+        if ((lcl->gtFlags & GTF_VAR_DEATH) == 0)
+        {
+            return false;
+        }
+
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(lcl);
+        VARSET_TP* deadFields;
+        return !dsc->lvPromoted || !m_compiler->LookupPromotedStructDeathVars(lcl, &deadFields);
     }
 
 private:
@@ -538,48 +562,26 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     Statement* const nextStmt = stmt->GetNextStmt();
 
-    if (fgDidEarlyLiveness)
+    ForwardSubVisitor fsv(this, lclNum, livenessBased);
+    if (fgNodeThreading == NodeThreading::AllLocals)
     {
-        // If we have early liveness then we have a linked list of locals
-        // available for each statement, so do a quick scan through that to see
-        // if there is a last use.
-        unsigned parentLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : BAD_VAR_NUM;
+        // When we do early liveness we have a linked list of locals available
+        // for each statement, so do a quick scan through that to see if there
+        // is a last use.
 
         bool found = false;
         for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
         {
             if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
             {
-                // TODO: Unify this with forward sub visitor.
-                if (livenessBased)
+                if (fsv.IsLastUse(lcl->AsLclVar()))
                 {
-                    if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
-                    {
-                        VARSET_TP* deadFields;
-                        if (!varDsc->lvPromoted || !LookupPromotedStructDeathVars(lcl, &deadFields))
-                        {
-                            found = true;
-                            // TODO-TP: The forward sub visitor should also break
-                            // early when it finds the last use.
-                            break;
-                        }
-
-                        // Not last use; fall through to bail out early.
-                    }
-                }
-                else
-                {
-                    // If we are basing the forward sub on ref counts then we
-                    // know this is the single last use if we find it.
                     found = true;
                     break;
                 }
             }
 
-            LclVarDsc* dsc        = lvaGetDesc(lcl);
-            unsigned   thisLclNum = lcl->GetLclNum();
-            if ((thisLclNum == lclNum) || (thisLclNum == parentLclNum) ||
-                (dsc->lvIsStructField && (dsc->lvParentLcl == lclNum)))
+            if (fsv.IsUse(lcl))
             {
                 JITDUMP(" next stmt has non-last use\n");
                 return false;
@@ -601,7 +603,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Scan for the (last) use.
     //
-    ForwardSubVisitor fsv(this, lclNum, livenessBased);
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
     if (livenessBased)
