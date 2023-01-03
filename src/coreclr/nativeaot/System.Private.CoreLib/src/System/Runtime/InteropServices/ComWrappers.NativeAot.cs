@@ -500,7 +500,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(externalComObject));
 
             if (innerMaybe != IntPtr.Zero && !flags.HasFlag(CreateObjectFlags.Aggregation))
-                throw new InvalidOperationException();
+                throw new InvalidOperationException(SR.InvalidOperation_SuppliedInnerMustBeMarkedAggregation);
 
             if (flags.HasFlag(CreateObjectFlags.Aggregation))
                 throw new NotImplementedException();
