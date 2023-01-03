@@ -4,20 +4,20 @@
 
 "use strict";
 
-const usePThreads = process.env.MonoWasmThreads == "true";
-const isPThread = usePThreads ? "ENVIRONMENT_IS_PTHREAD" : "false";
+const monoWasmThreads = process.env.MonoWasmThreads == "true";
+const featureWasmLegacyJsInterop = process.env.FeatureWasmLegacyJsInterop === "true";
+const isPThread = monoWasmThreads ? "ENVIRONMENT_IS_PTHREAD" : "false";
 
 const DotnetSupportLib = {
     $DOTNET: {},
-    // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IIFE
     // Emscripten uses require function for nodeJS even in ES6 module. We need https://nodejs.org/api/module.html#modulecreaterequirefilename
     // We use dynamic import because there is no "module" module in the browser.
     // This is async init of it, note it would become available only after first tick.
     // Also fix of scriptDirectory would be delayed
-    // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of fetch
     $DOTNET__postset: `
-${usePThreads ? `
+${monoWasmThreads ? `
 let __dotnet_replacement_PThread = {
     loadWasmModuleToWorker: PThread.loadWasmModuleToWorker,
     threadInitTLS: PThread.threadInitTLS,
@@ -43,7 +43,7 @@ if (ENVIRONMENT_IS_NODE) {
     });
 }
 var noExitRuntime = __dotnet_replacements.noExitRuntime;
-${usePThreads ? `
+${monoWasmThreads ? `
 PThread.loadWasmModuleToWorker = __dotnet_replacements.pthreadReplacements.loadWasmModuleToWorker;
 PThread.threadInitTLS = __dotnet_replacements.pthreadReplacements.threadInitTLS;
 PThread.allocateUnusedWorker = __dotnet_replacements.pthreadReplacements.allocateUnusedWorker;
@@ -96,7 +96,7 @@ let linked_functions = [
     "mono_wasm_load_icu_data",
 ];
 
-if (process.env.MonoWasmThreads) {
+if (monoWasmThreads) {
     linked_functions = [...linked_functions,
         /// mono-threads-wasm.c
         "mono_wasm_pthread_on_pthread_attached",
@@ -106,7 +106,7 @@ if (process.env.MonoWasmThreads) {
         "mono_wasm_diagnostic_server_stream_signal_work_available",
     ]
 }
-if (process.env.FeatureWasmLegacyJsInterop) {
+if (featureWasmLegacyJsInterop) {
     linked_functions = [...linked_functions,
         "mono_wasm_invoke_js_with_args_ref",
         "mono_wasm_get_object_property_ref",
