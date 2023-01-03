@@ -234,7 +234,15 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>ea445e4b536e801e88ffddaa2ea485d07ee72a2b</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="14.0.0-alpha.1.22613.1">
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="14.0.0-alpha.1.22613.1">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>ea445e4b536e801e88ffddaa2ea485d07ee72a2b</Sha>
+    </Dependency>
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="14.0.0-alpha.1.22613.1">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>ea445e4b536e801e88ffddaa2ea485d07ee72a2b</Sha>
+    </Dependency>
+    <Dependency Name="runtime.osx-64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="14.0.0-alpha.1.22613.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>ea445e4b536e801e88ffddaa2ea485d07ee72a2b</Sha>
     </Dependency>
