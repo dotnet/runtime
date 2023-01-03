@@ -9,23 +9,22 @@ namespace Microsoft.Interop
     /// Contains the data related to a VirtualMethodIndexAttribute, without references to Roslyn symbols.
     /// See <seealso cref="VirtualMethodIndexCompilationData"/> for a type with a reference to the StringMarshallingCustomType
     /// </summary>
-    internal sealed record VirtualMethodIndexData(int Index) : InteropAttributeData
+    internal sealed record VirtualMethodIndexData(
+        int Index,
+        bool ImplicitThisParameter,
+        MarshalDirection Direction,
+        bool ExceptionMarshallingDefined,
+        ExceptionMarshalling ExceptionMarshalling) : InteropAttributeData
     {
-        public bool ImplicitThisParameter { get; init; }
-
-        public MarshalDirection Direction { get; init; }
-
-        public bool ExceptionMarshallingDefined { get; init; }
-
-        public ExceptionMarshalling ExceptionMarshalling { get; init; }
 
         public static VirtualMethodIndexData From(VirtualMethodIndexCompilationData virtualMethodIndex)
-            => new VirtualMethodIndexData(virtualMethodIndex.Index) with
+            => new VirtualMethodIndexData(
+                virtualMethodIndex.Index,
+                virtualMethodIndex.ImplicitThisParameter,
+                virtualMethodIndex.Direction,
+                virtualMethodIndex.ExceptionMarshallingDefined,
+                virtualMethodIndex.ExceptionMarshalling)
             {
-                ImplicitThisParameter = virtualMethodIndex.ImplicitThisParameter,
-                Direction = virtualMethodIndex.Direction,
-                ExceptionMarshallingDefined = virtualMethodIndex.ExceptionMarshallingDefined,
-                ExceptionMarshalling = virtualMethodIndex.ExceptionMarshalling,
                 IsUserDefined = virtualMethodIndex.IsUserDefined,
                 SetLastError = virtualMethodIndex.SetLastError,
                 StringMarshalling = virtualMethodIndex.StringMarshalling
