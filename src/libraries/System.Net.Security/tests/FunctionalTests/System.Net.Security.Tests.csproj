@@ -3,10 +3,10 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios</TargetFrameworks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
-    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
+    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'android'">true</IncludeNetworkSecurityConfig>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>

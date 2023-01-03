@@ -6,7 +6,7 @@ Param(
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
-  [ValidateSet("windows","Linux","OSX","Android","Browser","wasi")][string]$os,
+  [ValidateSet("windows","linux","osx","android","browser","wasi")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
@@ -40,7 +40,7 @@ function Get-Help() {
   Write-Host "                                 [Default: Debug]"
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android, wasi or Browser."
+  Write-Host "  -os                            Target operating system: windows, linux, osx, android, wasi or browser."
   Write-Host "                                 [Default: Your machine's OS.]"
   Write-Host "  -runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -128,6 +128,9 @@ if ($subset -eq 'help') {
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
   exit 0
 }
+
+# Lower-case the passed in OS string.
+$os = $os.ToLowerInvariant()
 
 if ($vs) {
   $archToOpen = $arch[0]
@@ -237,15 +240,6 @@ if (!$actionPassedIn) {
   $arguments = "-restore -build"
 }
 
-if ($PSBoundParameters.ContainsKey('os') -and $PSBoundParameters['os'] -eq "Browser") {
-  # make sure it is capitalized
-  $PSBoundParameters['os'] = "Browser"
-}
-if ($PSBoundParameters.ContainsKey('os') -and $PSBoundParameters['os'] -eq "wasi") {
-  # make sure it is not capitalized
-  $PSBoundParameters['os'] = "wasi"
-}
-
 foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
@@ -277,7 +271,7 @@ $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
 $failedBuilds = @()
 
-if ($os -eq "Browser") {
+if ($os -eq "browser") {
   # override default arch for Browser, we only support wasm
   $arch = "wasm"
 
@@ -301,7 +295,7 @@ foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    if ($os -eq "Browser") {
+    if ($os -eq "browser") {
       $env:__DistroRid="browser-$singleArch"
     } elseif ($os -eq "wasi") {
       $env:__DistroRid="wasi-$singleArch"

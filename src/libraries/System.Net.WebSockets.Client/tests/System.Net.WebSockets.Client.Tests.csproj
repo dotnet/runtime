@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
+  <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <PropertyGroup>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
@@ -8,10 +8,10 @@
     <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
     <IlcTrimMetadata>false</IlcTrimMetadata>
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
-    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
+    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'android'">true</IncludeNetworkSecurityConfig>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 because it lacks websocket support -->
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>

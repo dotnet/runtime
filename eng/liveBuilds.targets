@@ -29,7 +29,7 @@
     <CoreCLRAotSdkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'aotsdk'))</CoreCLRAotSdkDir>
     <CoreCLRBuildIntegrationDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'build'))</CoreCLRBuildIntegrationDir>
 
-    <MonoAotCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross', $(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())))</MonoAotCrossDir>
+    <MonoAotCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross', $(TargetOS)-$(TargetArchitecture.ToLowerInvariant())))</MonoAotCrossDir>
     <GrpcServerDockerImageDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'obj', 'grpcserver', 'docker'))</GrpcServerDockerImageDir>
 
     <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
@@ -179,7 +179,7 @@
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
@@ -191,11 +191,11 @@
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
       <!-- for threaded wasm -->
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.worker.js')"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.worker.js')"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.worker.js"
         IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)src\*.c;
         $(LibrariesNativeArtifactsPath)src\*.js;
@@ -204,12 +204,12 @@
         $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
         NativeSubDirectory="src"
         IsNative="true" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="$(LibrariesNativeArtifactsPath)src\es6\*.js"
                              NativeSubDirectory="src\es6"
                              IsNative="true" />
 
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)include\wasm\*.h;"
         NativeSubDirectory="include\wasm"
