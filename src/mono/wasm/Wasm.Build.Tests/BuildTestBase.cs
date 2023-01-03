@@ -423,7 +423,8 @@ namespace Wasm.Build.Tests
                                          options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.HasIcudt,
-                                         options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
+                                         options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
+                                         options.UseWebcil);
                 }
 
                 if (options.UseCache)
@@ -616,7 +617,8 @@ namespace Wasm.Build.Tests
                                                    bool hasV8Script,
                                                    string targetFramework,
                                                    bool hasIcudt = true,
-                                                   bool dotnetWasmFromRuntimePack = true)
+                                                   bool dotnetWasmFromRuntimePack = true,
+                                                   bool useWebcil = true)
         {
             AssertFilesExist(bundleDir, new []
             {
@@ -632,7 +634,9 @@ namespace Wasm.Build.Tests
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
-            AssertFilesExist(managedDir, new[] { $"{projectName}.dll" });
+            string bundledMainAppAssembly =
+                useWebcil ? $"{projectName}.webcil" : $"{projectName}.dll";
+            AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
             bool is_debug = config == "Debug";
             if (is_debug)
@@ -1095,6 +1099,7 @@ namespace Wasm.Build.Tests
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
         bool    HasV8Script               = true,
+        bool    UseWebcil                 = true,
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,
