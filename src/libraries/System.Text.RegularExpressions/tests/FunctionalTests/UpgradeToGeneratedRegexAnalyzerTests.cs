@@ -973,7 +973,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [GeneratedRegex(""pattern"", (RegexOptions)2048)]
+    [GeneratedRegex(""pattern"", (RegexOptions)(2048))]
     private static partial Regex MyRegex();
 }
 ";
@@ -1005,7 +1005,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [GeneratedRegex(""pattern"", (RegexOptions)2048)]
+    [GeneratedRegex(""pattern"", (RegexOptions)(2048))]
     private static partial Regex MyRegex();
 }
 ";
