@@ -544,19 +544,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // Don't fwd sub overly large trees.
-    // Size limit here is ad-hoc. Need to tune.
-    //
-    // Consider instead using the height of the fwdSubNode.
-    //
-    unsigned const nodeLimit = 16;
-
-    if (gtComplexityExceeds(&fwdSubNode, nodeLimit))
-    {
-        JITDUMP(" tree to sub has more than %u nodes\n", nodeLimit);
-        return false;
-    }
-
     // Local and tree to substitute seem suitable.
     // See if the next statement contains the one and only use.
     //
@@ -565,9 +552,9 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     ForwardSubVisitor fsv(this, lclNum, livenessBased);
     if (fgNodeThreading == NodeThreading::AllLocals)
     {
-        // When we do early liveness we have a linked list of locals available
-        // for each statement, so do a quick scan through that to see if there
-        // is a last use.
+        // We usually have a linked list of locals available for each
+        // statement, so do a quick scan through that to see if there is a last
+        // use.
 
         bool found = false;
         for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
@@ -593,6 +580,19 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
             JITDUMP(" no next stmt use\n");
             return false;
         }
+    }
+
+    // Don't fwd sub overly large trees.
+    // Size limit here is ad-hoc. Need to tune.
+    //
+    // Consider instead using the height of the fwdSubNode.
+    //
+    unsigned const nodeLimit = 16;
+
+    if (gtComplexityExceeds(fwdSubNode, nodeLimit))
+    {
+        JITDUMP(" tree to sub has more than %u nodes\n", nodeLimit);
+        return false;
     }
 
     // We often see stale flags, eg call flags after inlining.
@@ -675,7 +675,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // height of the fwdSubNode.
     //
     unsigned const nextTreeLimit = 200;
-    if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(&fwdSubNode, 1))
+    if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(fwdSubNode, 1))
     {
         JITDUMP(" next stmt tree is too large (%u)\n", fsv.GetComplexity());
         return false;
