@@ -9823,7 +9823,7 @@ interp_super_instructions (TransformData *td)
 					gboolean negate = opcode == MINT_BRFALSE_I4;
 					int cond_sreg = ins->sregs [0];
 					InterpInst *def = td->locals [cond_sreg].def;
-					if (def != NULL && td->local_ref_count [cond_sreg] == 1) {
+					if (def != NULL && local_ref_count [cond_sreg] == 1) {
 						int replace_opcode = -1;
 						switch (def->opcode) {
 							case MINT_CEQ_I4: replace_opcode = negate ? MINT_BNE_UN_I4 : MINT_BEQ_I4; break;
