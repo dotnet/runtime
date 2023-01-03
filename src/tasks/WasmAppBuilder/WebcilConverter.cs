@@ -16,7 +16,7 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 /// <summary>
 /// Reads a .NET assembly in a normal PE COFF file and writes it out as a Webcil file
 /// </summary>
-public class WebcilWriter
+public class WebcilConverter
 {
 
     // Interesting stuff we've learned about the input PE file
@@ -45,16 +45,21 @@ public class WebcilWriter
     private readonly string _outputPath;
 
     private TaskLoggingHelper Log { get; }
-    public WebcilWriter(string inputPath, string outputPath, TaskLoggingHelper logger)
+    private WebcilConverter(string inputPath, string outputPath, TaskLoggingHelper logger)
     {
         _inputPath = inputPath;
         _outputPath = outputPath;
         Log = logger;
     }
 
-    public void Write()
+    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, TaskLoggingHelper logger)
     {
-        Log.LogMessage($"Writing Webcil (input {_inputPath}) output to {_outputPath}");
+        return new WebcilConverter(inputPath, outputPath, logger);
+    }
+
+    public void ConvertToWebcil()
+    {
+        Log.LogMessage($"Converting to Webcil: input {_inputPath} output: {_outputPath}");
 
         using var inputStream = File.Open(_inputPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         PEFileInfo peInfo;
