@@ -3605,7 +3605,18 @@ void CodeGen::genCodeForShift(GenTree* tree)
 //
 void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+
+    var_types targetType = lclAddrNode->TypeGet();
+    emitAttr  size       = emitTypeSize(targetType);
+    regNumber targetReg  = lclAddrNode->GetRegNum();
+
+    // Address of a local var.
+    noway_assert((targetType == TYP_BYREF) || (targetType == TYP_I_IMPL));
+
+    GetEmitter()->emitIns_R_S(INS_lea, size, targetReg, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
+
+    genProduceReg(lclAddrNode);
 }
 
 //------------------------------------------------------------------------

@@ -285,6 +285,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         ssize_t imm2 = imm + imm3;
 
         assert(isValidSimm20((imm + 0x800) >> 12));
+        fprintf(stderr, "[CLAMP] #1\n");
         emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
 
         emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
@@ -456,7 +457,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
         case INS_lui:
         case INS_auipc:
             assert(isGeneralRegister(reg));
-            assert((-524288 <= imm) && (imm < 524288));
+            assert((((size_t)imm) >> 20) == 0);
 
             code |= reg << 7;
             code |= (imm & 0xfffff) << 12;
@@ -859,7 +860,7 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
-    if (0 == ((imm + 0x800) >> 31)) {
+    if (0 == ((imm + 0x800) >> 32)) {
         if (((imm + 0x800) >> 12) != 0)
         {
             emitIns_R_I(INS_lui, size, reg, ((imm + 0x800) >> 12));
