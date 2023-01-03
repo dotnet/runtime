@@ -44,7 +44,7 @@ C_FUNC(\Name\()_End):
 .macro PROLOG_STACK_ALLOC Size
     addi sp, sp, -\Size
     //.cfi_adjust_cfa_offset \Size
-    .cfi_def_cfa 3,\Size
+    .cfi_def_cfa sp,\Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
@@ -54,8 +54,8 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EPILOG_STACK_RESTORE
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    ori  sp, fp, 0
+    .cfi_restore sp
 .endm
 
 .macro PROLOG_SAVE_REG reg, ofs
@@ -76,6 +76,10 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
     addi sp, sp, -\ssize
+
+    sd \reg1, 0(sp)
+    sd \reg2, 8(sp)
+
     .cfi_adjust_cfa_offset -\ssize
     .cfi_rel_offset \reg1, 0
     .cfi_rel_offset \reg2, 8
@@ -117,8 +121,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EPILOG_BRANCH Target
-// TODO RISCV NYI
-    sw  ra, 0(zero)
+    j \Target
 .endm
 
 .macro EPILOG_BRANCH_REG reg

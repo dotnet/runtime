@@ -111,7 +111,7 @@ WRITE_BARRIER_END JIT_UpdateWriteBarrierState
 // __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
 LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     // Setup args for JIT_WriteBarrier. a0 = dst ; a1 = val
-    addi  t6, a0, 0                 // t6 = dst
+    addi  t3, a0, 0                 // t3 = dst
     addi  t4, a1, 0                 // t4 = val
 
     // Branch to the write barrier
@@ -132,7 +132,7 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 //
 // On entry:
 //   t5 : the source address (points to object reference to write)
-//   t6: the destination address (object reference written here)
+//   t3: the destination address (object reference written here)
 //
 // On exit:
 //   t5  : incremented by 8
@@ -151,50 +151,50 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 // void JIT_CheckedWriteBarrier(Object** dst, Object* src)
 //
 // On entry:
-//   t6 : the destination address (LHS of the assignment)
+//   t3 : the destination address (LHS of the assignment)
 //   t4 : the object reference (RHS of the assignment)
 //
 // On exit:
 //   t1  : trashed
 //   t0  : trashed
-//   t3  : trashed
-//   t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   t6  : trashed
+//   t3  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //
 
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-    lla  t3, wbs_lowest_address
-    ld  t3, 0(t3)
-    slt  t3, t6, t3
+    lla  t6, wbs_lowest_address
+    ld  t6, 0(t6)
+    slt  t6, t3, t6
 
     lla  t1, wbs_highest_address
     ld  t1, 0(t1)
-    slt  t0, t1, t6
-    or  t3, t0, t3
-    beq  t3, zero, C_FUNC(JIT_WriteBarrier)
+    slt  t0, t1, t3
+    or  t6, t0, t6
+    beq  t6, zero, C_FUNC(JIT_WriteBarrier)
 
-    sd  t4, 0(t6)
-    addi  t6, t6, 8
+    sd  t4, 0(t3)
+    addi  t3, t3, 8
     jalr  x0, ra, 0
 WRITE_BARRIER_END JIT_CheckedWriteBarrier
 
 // void JIT_WriteBarrier(Object** dst, Object* src)
 // On entry:
-//   t6  : the destination address (LHS of the assignment)
+//   t3  : the destination address (LHS of the assignment)
 //   t4  1 the object reference (RHS of the assignment)
 //
 // On exit:
 //   t0  : trashed
 //   t1  : trashed
-//   t3  : trashed
+//   t6  : trashed
 //   t4  : trashed
-//   t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   t3  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
     // TODO: sync_release (runtime detection required)
     fence rw, rw
 
-    sd  t4, 0(t6)
+    sd  t4, 0(t3)
 
 #ifdef WRITE_BARRIER_CHECK
     // Update GC Shadow Heap
@@ -206,19 +206,19 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     beq  t1, zero, LOCAL_LABEL(ShadowUpdateDisabled)
 
     // Compute address of shadow heap location:
-    //   pShadow = g_GCShadow + ($t6 - g_lowest_address)
-    lla  t3, wbs_lowest_address
-    ld  t3, 0(t3)
+    //   pShadow = g_GCShadow + ($t3 - g_lowest_address)
+    lla  t6, wbs_lowest_address
+    ld  t6, 0(t6)
 
-    sub  t3, t6, t3
-    add  t0, t3, t1
+    sub  t6, t3, t6
+    add  t0, t6, t1
 
     // if (pShadow >= g_GCShadowEnd) goto end
-    lla  t3, g_GCShadowEnd
-    ld  t3, 0(t3)
+    lla  t6, g_GCShadowEnd
+    ld  t6, 0(t6)
 
-    slt  t3, t0, t3
-    beq  t3, zero, LOCAL_LABEL(ShadowUpdateEnd)
+    slt  t6, t0, t6
+    beq  t6, zero, LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = $t4
     sd  t4, 0(t0)
@@ -227,13 +227,13 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     // conditions are caught by INVALIDGCVALUE.
     fence rw, rw
 
-    // if (*t6 == t4) goto end
-    ld  t3, 0(t6)
-    beq  t3, t4, LOCAL_LABEL(ShadowUpdateEnd)
+    // if (*t3 == t4) goto end
+    ld  t6, 0(t3)
+    beq  t6, t4, LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = INVALIDGCVALUE (0xcccccccd)
-    li  t3, 0xcccccccd
-    sd  t3, 0(t0)
+    li  t6, 0xcccccccd
+    sd  t6, 0(t0)
 LOCAL_LABEL(ShadowUpdateEnd):
 LOCAL_LABEL(ShadowUpdateDisabled):
 #endif
@@ -241,38 +241,38 @@ LOCAL_LABEL(ShadowUpdateDisabled):
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     // Update the write watch table if necessary
 
-    lla  t3, wbs_sw_ww_table
-    ld  t3, 0(t3)
-    beq  t3, zero, LOCAL_LABEL(CheckCardTable)
+    lla  t6, wbs_sw_ww_table
+    ld  t6, 0(t6)
+    beq  t6, zero, LOCAL_LABEL(CheckCardTable)
 
-    srli  t4, t6, 0xc
-    add  t3, t3, t4  // SoftwareWriteWatch::AddressToTableByteIndexShift
-    lb  t4, 0(t3)
+    srli  t4, t3, 0xc
+    add  t6, t6, t4  // SoftwareWriteWatch::AddressToTableByteIndexShift
+    lb  t4, 0(t6)
     bne  t4, zero, LOCAL_LABEL(CheckCardTable)
 
     ori  t4, zero, 0xFF
-    sb  t4, 0(t3)
+    sb  t4, 0(t6)
 
 LOCAL_LABEL(CheckCardTable):
 #endif
     // Branch to Exit if the reference is not in the Gen0 heap
-    lla  t3, wbs_ephemeral_low
-    ld  t3, 0(t3)
-    beq  t3, zero, LOCAL_LABEL(SkipEphemeralCheck)
+    lla  t6, wbs_ephemeral_low
+    ld  t6, 0(t6)
+    beq  t6, zero, LOCAL_LABEL(SkipEphemeralCheck)
 
-    slt  t0, t4, t3
-    lla  t3, wbs_ephemeral_high
-    ld  t3, 0(t3)
-    slt  t1, t3, t4
+    slt  t0, t4, t6
+    lla  t6, wbs_ephemeral_high
+    ld  t6, 0(t6)
+    slt  t1, t6, t4
     or  t0, t1, t0
     bne  t0, zero, LOCAL_LABEL(Exit)
 
 LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table
-    lla  t3, wbs_card_table
-    ld  t3, 0(t3)
-    srli  t0, t6, 11
-    add  t4, t3, t0
+    lla  t6, wbs_card_table
+    ld  t6, 0(t6)
+    srli  t0, t3, 11
+    add  t4, t6, t0
     lbu  t1, 0(t4)
     ori  t0, zero, 0xFF
     beq  t1, t0, LOCAL_LABEL(Exit)
@@ -281,19 +281,19 @@ LOCAL_LABEL(SkipEphemeralCheck):
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     // Check if we need to update the card bundle table
-    lla  t3, wbs_card_bundle_table
-    ld  t3, 0(t3)
-    srli  t0, t6, 21
-    add  t4, t3, t0
+    lla  t6, wbs_card_bundle_table
+    ld  t6, 0(t6)
+    srli  t0, t3, 21
+    add  t4, t6, t0
 
-    lbu  t3, 0(t4)
+    lbu  t6, 0(t4)
     ori  t0, zero, 0xFF
-    beq  t3, t0, LOCAL_LABEL(Exit)
+    beq  t6, t0, LOCAL_LABEL(Exit)
 
     sb  t0, 0(t4)
 #endif
 LOCAL_LABEL(Exit):
-    addi  t6, t6, 8
+    addi  t3, t3, 8
     jalr x0, ra, 0
 WRITE_BARRIER_END JIT_WriteBarrier
 
@@ -550,7 +550,7 @@ LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 //  [a1-a7]   contains any additional register arguments for the interface method
 //
 // Loaded from a0
-//   t3       contains our type     the MethodTable  (from object ref in a0)
+//   t6       contains our type     the MethodTable  (from object ref in a0)
 //
 // On Exit:
 //   a0, [a1-a7] arguments for the interface implementation target
@@ -568,24 +568,24 @@ NESTED_ENTRY ResolveWorkerChainLookupAsmStub, _TEXT, NoHandler
     andi  t4, t5, BACKPATCH_FLAG     // First we check if t5 has the BACKPATCH_FLAG set
     bne  t4, zero, LOCAL_LABEL(Fail) // If the BACKPATCH_FLAGS is set we will go directly to the ResolveWorkerAsmStub
 
-    ld  t3, 0(a0)         // retrieve the MethodTable from the object ref in a0
+    ld  t6, 0(a0)         // retrieve the MethodTable from the object ref in a0
 LOCAL_LABEL(MainLoop):
     ld  t1, (ResolveCacheElem__pNext)(t1)     // t1 <= the next entry in the chain
     beq  t1, zero, LOCAL_LABEL(Fail)
 
     ld  t4, 0(t1)
     // compare our MT with the one in the ResolveCacheElem
-    bne  t4, t3, LOCAL_LABEL(MainLoop)
+    bne  t4, t6, LOCAL_LABEL(MainLoop)
 
     ld  t4, 8(t1)
     // compare our DispatchToken with one in the ResolveCacheElem
     bne  t2, t4, LOCAL_LABEL(MainLoop)
 
 LOCAL_LABEL(Success):
-    PREPARE_EXTERNAL_VAR  g_dispatch_cache_chain_success_counter, t3
-    ld  t4, 0(t3)
+    PREPARE_EXTERNAL_VAR  g_dispatch_cache_chain_success_counter, t6
+    ld  t4, 0(t6)
     addi t4, t4, -1
-    sd  t4, 0(t3)
+    sd  t4, 0(t6)
     blt t4, zero, LOCAL_LABEL(Promote)
 
     ld  t4, (ResolveCacheElem__target)(t1)    // get the ImplTarget
@@ -594,7 +594,7 @@ LOCAL_LABEL(Success):
 LOCAL_LABEL(Promote):
                           // Move this entry to head position of the chain
     addi  t4, zero, 256
-    sd  t4, 0(t3)        // be quick to reset the counter so we don't get a bunch of contending threads
+    sd  t4, 0(t6)        // be quick to reset the counter so we don't get a bunch of contending threads
     ori  t5, t5, PROMOTE_CHAIN_FLAG   // set PROMOTE_CHAIN_FLAG
     addi  t2, t1, 0           // We pass the ResolveCacheElem to ResolveWorkerAsmStub instead of the DispatchToken
 
@@ -900,7 +900,7 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
     //   t1 = functionIDOrClientID
     //   t2 = profiledSp
-    //   t3 = throwable
+    //   t6 = throwable
     //
     // On exit:
     //   Values of a0-a7, fa0-fa7, fp are preserved.
@@ -910,13 +910,13 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     SAVE_ARGUMENT_REGISTERS sp, 16          // Save t0 and argument registers (a0-a7).
     sd     zero, 88(sp)                     // Clear functionId.
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96    // Save floating-point/SIMD registers (fa0-fa7).
-    addi     t3, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    sd  t3, 224(sp)            // Save probeSp.
+    addi     t6, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
+    sd  t6, 224(sp)            // Save probeSp.
     sd  t2, 232(sp)            // Save profiledSp.
 
     sd    zero, 240(sp)        // Clear hiddenArg.
-    addi  t3, zero, \flags
-    sw  t3, 248(sp)            // Save flags.
+    addi  t6, zero, \flags
+    sw  t6, 248(sp)            // Save flags.
     sw  zero, 252(sp)          // clear unused field.
 
     addi  a1, t1, 0
