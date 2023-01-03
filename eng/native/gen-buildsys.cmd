@@ -55,6 +55,7 @@ if /i "%__Arch%" == "wasm" (
 
             set EMSDK_PATH=%__repoRoot%\src\mono\wasm\emsdk
         )
+        :: replace backslash with forward slash and append last slash
         set "EMSDK_PATH=!EMSDK_PATH:\=/!"
         if not "!EMSDK_PATH:~-1!" == "/" set "EMSDK_PATH=!EMSDK_PATH!/"
 
@@ -70,6 +71,7 @@ if /i "%__Arch%" == "wasm" (
 
             set WASI_SDK_PATH=%__repoRoot%src\mono\wasi\wasi-sdk
         )
+        :: replace backslash with forward slash and append last slash
         set "WASI_SDK_PATH=!WASI_SDK_PATH:\=/!"
         if not "!WASI_SDK_PATH:~-1!" == "/" set "WASI_SDK_PATH=!WASI_SDK_PATH!/"
         set __CmakeGenerator=Ninja
