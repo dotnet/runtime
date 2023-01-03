@@ -20580,8 +20580,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                 intrinsic = NI_Vector128_op_Equality;
             }
 
-            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
-                                     /* isSimdAsHWIntrinsic */ false);
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             op2 = gtNewAllBitsSetConNode(simdType);
 
             if (simdBaseType == TYP_FLOAT)
@@ -20620,8 +20619,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                 intrinsic = NI_Vector128_op_Equality;
             }
 
-            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
-                                     /* isSimdAsHWIntrinsic */ false);
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             op2 = gtNewAllBitsSetConNode(simdType);
 
             if (simdBaseType == TYP_FLOAT)
@@ -20702,8 +20700,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
                 intrinsic = NI_Vector128_op_Inequality;
             }
 
-            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
-                                     /* isSimdAsHWIntrinsic */ false);
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             op2 = gtNewZeroConNode(simdType);
 
             if (simdBaseType == TYP_FLOAT)
@@ -20746,8 +20743,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
             intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
 
-            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
-                                     /* isSimdAsHWIntrinsic */ false);
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             op2 = gtNewZeroConNode(simdType);
 
             if (simdBaseType == TYP_FLOAT)
