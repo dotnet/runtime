@@ -15,7 +15,8 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
     copyIntoScratchBuffer, _now, elapsedTimes, append_memset_dest,
     append_memmove_dest_src, counters, getRawCwrap, importDef,
-    JiterpreterOptions, getOptions, recordFailure, try_append_memset_fast
+    JiterpreterOptions, getOptions, recordFailure, try_append_memset_fast,
+    try_append_memmove_fast, shortNameBase
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -249,6 +250,7 @@ function getTraceImports () {
         ["ld_del_ptr", "ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")],
         ["ldtsflda", "ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")],
         ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
+        ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -309,11 +311,17 @@ function generate_wasm (
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
     methodFullName: string | undefined
 ) : number {
+    // Pre-allocate a decent number of constant slots - this adds fixed size bloat
+    //  to the trace but will make the actual pointer constants in the trace smaller
+    // If we run out of constant slots it will transparently fall back to i32_const
+    // For System.Runtime.Tests we only run out of slots ~50 times in 9100 test cases
+    const constantSlotCount = 8;
+
     let builder = traceBuilder;
     if (!builder)
-        traceBuilder = builder = new WasmBuilder();
+        traceBuilder = builder = new WasmBuilder(constantSlotCount);
     else
-        builder.clear();
+        builder.clear(constantSlotCount);
 
     mostRecentOptions = builder.options;
 
@@ -489,6 +497,13 @@ function generate_wasm (
                 "opcode": WasmValtype.i32,
             }, WasmValtype.i32
         );
+        builder.defineType(
+            "relop_fp", {
+                "lhs": WasmValtype.f64,
+                "rhs": WasmValtype.f64,
+                "opcode": WasmValtype.i32,
+            }, WasmValtype.i32
+        );
 
         builder.generateTypeSection();
 
@@ -498,7 +513,7 @@ function generate_wasm (
         // Emit function imports
         for (let i = 0; i < traceImports.length; i++) {
             mono_assert(traceImports[i], () => `trace #${i} missing`);
-            const wasmName = compress ? i.toString(16) : undefined;
+            const wasmName = compress ? i.toString(shortNameBase) : undefined;
             builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], wasmName);
         }
 
@@ -543,6 +558,10 @@ function generate_wasm (
         if (getU16(ip) !== MintOpcode.MINT_TIER_PREPARE_JITERPRETER)
             throw new Error(`Expected *ip to be MINT_TIER_PREPARE_JITERPRETER but was ${getU16(ip)}`);
 
+        // TODO: Call generate_wasm_body before generating any of the sections and headers.
+        // This will allow us to do things like dynamically vary the number of locals, in addition
+        //  to using global constants and figuring out how many constant slots we need in advance
+        //  since a long trace might need many slots and that bloats the header.
         const opcodes_processed = generate_wasm_body(
             frame, traceName, ip, endOfBody, builder,
             instrumentedTraceId
@@ -569,7 +588,6 @@ function generate_wasm (
         const traceModule = new WebAssembly.Module(buffer);
 
         const imports : any = {
-            h: (<any>Module).asm.memory
         };
         // Place our function imports into the import dictionary
         for (let i = 0; i < traceImports.length; i++) {
@@ -577,12 +595,14 @@ function generate_wasm (
             const iname = traceImports[i][0];
             if (!ifn || (typeof (ifn) !== "function"))
                 throw new Error(`Import '${iname}' not found or not a function`);
-            const wasmName = compress ? i.toString(16) : iname;
+            const wasmName = compress ? i.toString(shortNameBase) : iname;
             imports[wasmName] = ifn;
         }
 
         const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: imports
+            i: imports,
+            c: <any>builder.getConstants(),
+            m: { h: (<any>Module).asm.memory },
         });
 
         // Get the exported trace function
@@ -841,7 +861,7 @@ function generate_wasm_body (
                 // We need to make sure to notify the interpreter about tiering opcodes
                 //  so that tiering up will still happen
                 const iMethod = getU32(<any>frame + offsetOfImethod);
-                builder.i32_const(iMethod);
+                builder.ptr_const(iMethod);
                 // increase_entry_count will return 1 if we can continue, otherwise
                 //  we need to bail out into the interpreter so it can perform tiering
                 builder.callImport("entry");
@@ -882,7 +902,7 @@ function generate_wasm_body (
 
                 // frame->imethod->data_items [ip [2]]
                 const data = get_imethod_data(frame, getArgU16(ip, 2));
-                builder.i32_const(data);
+                builder.ptr_const(data);
 
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
@@ -892,7 +912,7 @@ function generate_wasm_body (
                 const klass = get_imethod_data(frame, getArgU16(ip, 3));
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                builder.i32_const(klass);
+                builder.ptr_const(klass);
                 builder.callImport("value_copy");
                 break;
             }
@@ -907,7 +927,7 @@ function generate_wasm_body (
                 const klass = get_imethod_data(frame, getArgU16(ip, 3));
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
                 append_ldloca(builder, getArgU16(ip, 2));
-                builder.i32_const(klass);
+                builder.ptr_const(klass);
                 builder.callImport("value_copy");
                 break;
             }
@@ -998,7 +1018,7 @@ function generate_wasm_body (
             case MintOpcode.MINT_LDTSFLDA: {
                 append_ldloca(builder, getArgU16(ip, 1));
                 // This value is unsigned but I32 is probably right
-                builder.i32_const(getArgI32(ip, 2));
+                builder.ptr_const(getArgI32(ip, 2));
                 builder.callImport("ldtsflda");
                 break;
             }
@@ -1042,7 +1062,7 @@ function generate_wasm_body (
                 append_ldloca(builder, getArgU16(ip, 1));
                 append_ldloca(builder, getArgU16(ip, 2));
                 // klass
-                builder.i32_const(get_imethod_data(frame, getArgU16(ip, 3)));
+                builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 3)));
                 // opcode
                 builder.i32_const(opcode);
                 builder.callImport("cast");
@@ -1057,7 +1077,7 @@ function generate_wasm_body (
             case MintOpcode.MINT_BOX:
             case MintOpcode.MINT_BOX_VT: {
                 // MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items [ip [3]];
-                builder.i32_const(get_imethod_data(frame, getArgU16(ip, 3)));
+                builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 3)));
                 // dest, src
                 append_ldloca(builder, getArgU16(ip, 1));
                 append_ldloca(builder, getArgU16(ip, 2));
@@ -1068,7 +1088,7 @@ function generate_wasm_body (
             case MintOpcode.MINT_UNBOX: {
                 builder.block();
                 // MonoClass *c = (MonoClass*)frame->imethod->data_items [ip [3]];
-                builder.i32_const(get_imethod_data(frame, getArgU16(ip, 3)));
+                builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 3)));
                 // dest, src
                 append_ldloca(builder, getArgU16(ip, 1));
                 append_ldloca(builder, getArgU16(ip, 2));
@@ -1085,7 +1105,7 @@ function generate_wasm_body (
                 builder.block();
                 // MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
                 append_ldloca(builder, getArgU16(ip, 1));
-                builder.i32_const(get_imethod_data(frame, getArgU16(ip, 2)));
+                builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 2)));
                 // LOCAL_VAR (ip [1], MonoObject*) = o;
                 builder.callImport("newobj_i");
                 // If the newobj operation succeeded, continue, otherwise bailout
@@ -1201,9 +1221,7 @@ function generate_wasm_body (
                 break;
 
             default:
-                if (
-                    opname.startsWith("ret")
-                ) {
+                if (opname.startsWith("ret")) {
                     if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts)
                         append_bailout(builder, ip, BailoutReason.Return);
                     else
@@ -1221,14 +1239,10 @@ function generate_wasm_body (
                 ) {
                     if (!emit_binop(builder, ip, opcode))
                         ip = abort;
-                } else if (
-                    unopTable[opcode]
-                ) {
+                } else if (unopTable[opcode]) {
                     if (!emit_unop(builder, ip, opcode))
                         ip = abort;
-                } else if (
-                    relopbranchTable[opcode]
-                ) {
+                } else if (relopbranchTable[opcode]) {
                     if (!emit_relop_branch(builder, ip, opcode))
                         ip = abort;
                 } else if (
@@ -1253,7 +1267,7 @@ function generate_wasm_body (
                     if (!emit_math_intrinsic(builder, ip, opcode))
                         ip = abort;
                 } else if (
-                    (opcode >= MintOpcode.MINT_LDELEM_I) &&
+                    (opcode >= MintOpcode.MINT_LDELEM_I1) &&
                     (opcode <= MintOpcode.MINT_LDLEN)
                 ) {
                     if (!emit_arrayop(builder, ip, opcode))
@@ -1350,6 +1364,9 @@ function append_memset_local (builder: WasmBuilder, localOffset: number, value: 
 }
 
 function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: number, sourceLocalOffset: number, count: number) {
+    if (try_append_memmove_fast(builder, destLocalOffset, sourceLocalOffset, count, false))
+        return true;
+
     // spec: pop n, pop s, pop d, copy n bytes from s to d
     append_ldloca(builder, destLocalOffset);
     append_ldloca(builder, sourceLocalOffset);
@@ -1531,7 +1548,7 @@ function append_vtable_initialize (builder: WasmBuilder, pVtable: NativePointer,
     // TODO: Actually initialize the vtable instead of just checking and bailing out?
     builder.block();
     // FIXME: This will prevent us from reusing traces between runs since the vtables can move
-    builder.i32_const(<any>pVtable + get_offset_of_vtable_initialized_flag());
+    builder.ptr_const(<any>pVtable + get_offset_of_vtable_initialized_flag());
     builder.appendU8(WasmOpcode.i32_load8_u);
     builder.appendMemarg(0, 0);
     builder.appendU8(WasmOpcode.br_if);
@@ -1641,7 +1658,7 @@ function emit_fieldop (
         case MintOpcode.MINT_STSFLD_O:
             // dest
             if (isStatic) {
-                builder.i32_const(pStaticData);
+                builder.ptr_const(pStaticData);
             } else {
                 builder.local("cknull_ptr");
                 builder.i32_const(offsetBytes);
@@ -1658,7 +1675,7 @@ function emit_fieldop (
             append_ldloca(builder, valueOffset);
             // src
             if (isStatic) {
-                builder.i32_const(pStaticData);
+                builder.ptr_const(pStaticData);
             } else {
                 builder.local("cknull_ptr");
                 builder.i32_const(offsetBytes);
@@ -1675,7 +1692,7 @@ function emit_fieldop (
             builder.appendU8(WasmOpcode.i32_add);
             // src = locals + ip [2]
             append_ldloca(builder, valueOffset);
-            builder.i32_const(klass);
+            builder.ptr_const(klass);
             builder.callImport("value_copy");
             return true;
         }
@@ -1683,7 +1700,7 @@ function emit_fieldop (
             const sizeBytes = getArgU16(ip, 4);
             // dest
             if (isStatic) {
-                builder.i32_const(pStaticData);
+                builder.ptr_const(pStaticData);
             } else {
                 builder.local("cknull_ptr");
                 builder.i32_const(offsetBytes);
@@ -1699,7 +1716,7 @@ function emit_fieldop (
         case MintOpcode.MINT_LDSFLDA:
             builder.local("pLocals");
             if (isStatic) {
-                builder.i32_const(pStaticData);
+                builder.ptr_const(pStaticData);
             } else {
                 // cknull_ptr isn't always initialized here
                 append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
@@ -1716,7 +1733,7 @@ function emit_fieldop (
         builder.local("pLocals");
 
     if (isStatic) {
-        builder.i32_const(pStaticData);
+        builder.ptr_const(pStaticData);
         if (isLoad) {
             builder.appendU8(getter);
             builder.appendMemarg(offsetBytes, 0);
@@ -1812,6 +1829,27 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_SHR_UN_I8_IMM]:  [WasmOpcode.i64_shr_u,     WasmOpcode.i64_load, WasmOpcode.i64_store],
 };
 
+// HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
+// The opcode specifies whether the operands need to be promoted first.
+const intrinsicFpBinops : { [opcode: number] : WasmOpcode } = {
+    [MintOpcode.MINT_CEQ_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CEQ_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CNE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CNE_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGT_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGT_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGE_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CGT_UN_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CGT_UN_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLT_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLT_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLT_UN_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLT_UN_R8]: WasmOpcode.nop,
+    [MintOpcode.MINT_CLE_R4]: WasmOpcode.f64_promote_f32,
+    [MintOpcode.MINT_CLE_R8]: WasmOpcode.nop,
+};
+
 const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_ADD_I4]:    [WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_ADD_OVF_I4]:[WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
@@ -1882,25 +1920,6 @@ const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
     [MintOpcode.MINT_CLE_UN_I8]: [WasmOpcode.i64_le_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CGE_UN_I8]: [WasmOpcode.i64_ge_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_CEQ_R4]:    [WasmOpcode.f32_eq,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CNE_R4]:    [WasmOpcode.f32_ne,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLT_R4]:    [WasmOpcode.f32_lt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    // FIXME: What are these, semantically?
-    [MintOpcode.MINT_CLT_UN_R4]: [WasmOpcode.f32_lt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_R4]:    [WasmOpcode.f32_gt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    // FIXME
-    [MintOpcode.MINT_CGT_UN_R4]: [WasmOpcode.f32_gt,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_R4]:    [WasmOpcode.f32_le,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_R4]:    [WasmOpcode.f32_ge,    WasmOpcode.f32_load, WasmOpcode.i32_store],
-
-    [MintOpcode.MINT_CEQ_R8]:    [WasmOpcode.f64_eq,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CNE_R8]:    [WasmOpcode.f64_ne,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLT_R8]:    [WasmOpcode.f64_lt,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_R8]:    [WasmOpcode.f64_gt,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_R8]:    [WasmOpcode.f64_le,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_R8]:    [WasmOpcode.f64_ge,    WasmOpcode.f64_load, WasmOpcode.i32_store],
-
-    // FIXME: unordered float comparisons
 };
 
 const relopbranchTable : { [opcode: number]: [comparisonOpcode: MintOpcode, immediateOpcode: WasmOpcode | false, isSafepoint: boolean] | MintOpcode | undefined } = {
@@ -1992,6 +2011,22 @@ function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode
         lhsVar = "math_lhs32", rhsVar = "math_rhs32",
         info : OpRec3 | OpRec4 | undefined,
         operandsCached = false;
+
+    const intrinsicFpBinop = intrinsicFpBinops[opcode];
+    if (intrinsicFpBinop) {
+        builder.local("pLocals");
+        const isF64 = intrinsicFpBinop == WasmOpcode.nop;
+        append_ldloc(builder, getArgU16(ip, 2), isF64 ? WasmOpcode.f64_load : WasmOpcode.f32_load);
+        if (!isF64)
+            builder.appendU8(intrinsicFpBinop);
+        append_ldloc(builder, getArgU16(ip, 3), isF64 ? WasmOpcode.f64_load : WasmOpcode.f32_load);
+        if (!isF64)
+            builder.appendU8(intrinsicFpBinop);
+        builder.i32_const(<any>opcode);
+        builder.callImport("relop_fp");
+        append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+        return true;
+    }
 
     switch (opcode) {
         case MintOpcode.MINT_REM_R4:
@@ -2745,7 +2780,7 @@ function append_getelema1 (
 function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
     const isLoad = (
             (opcode <= MintOpcode.MINT_LDELEMA_TC) &&
-            (opcode >= MintOpcode.MINT_LDELEM_I)
+            (opcode >= MintOpcode.MINT_LDELEM_I1)
         ) || (opcode === MintOpcode.MINT_LDLEN),
         objectOffset = getArgU16(ip, isLoad ? 2 : 1),
         valueOffset = getArgU16(ip, isLoad ? 1 : 3),
@@ -2909,9 +2944,11 @@ export function mono_interp_tier_prepare_jiterpreter (
     else
         info.hitCount++;
 
-    if (info.hitCount < mostRecentOptions.minimumTraceHitCount)
+    const minHitCount = mostRecentOptions.minimumTraceHitCount;
+
+    if (info.hitCount < minHitCount)
         return JITERPRETER_TRAINING;
-    else if (info.hitCount === mostRecentOptions.minimumTraceHitCount) {
+    else if (info.hitCount === minHitCount) {
         counters.traceCandidates++;
         let methodFullName: string | undefined;
         if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0)) {
@@ -2997,32 +3034,45 @@ export function jiterpreter_dump_stats (b?: boolean) {
             // Filter out noisy methods that we don't care about optimizing
             if (traces[i].name!.indexOf("Xunit.") >= 0)
                 continue;
+
             // FIXME: A single hot method can contain many failed traces. This creates a lot of noise
             //  here and also likely indicates the jiterpreter would add a lot of overhead to it
             // Filter out aborts that aren't meaningful since it is unlikely to ever make sense
             //  to fix them, either because they are rarely used or because putting them in
             //  traces would not meaningfully improve performance
-            if (traces[i].abortReason && traces[i].abortReason!.startsWith("mono_icall_"))
-                continue;
-            switch (traces[i].abortReason) {
-                case "trace-too-small":
-                case "call":
-                case "callvirt.fast":
-                case "calli.nat.fast":
-                case "calli.nat":
-                case "call.delegate":
-                case "newobj":
-                case "newobj_vt":
-                case "intrins_ordinal_ignore_case_ascii":
-                case "intrins_marvin_block":
-                case "intrins_ascii_chars_to_uppercase":
-                case "switch":
-                case "call_handler.s":
-                case "rethrow":
-                case "endfinally":
-                case "end-of-body":
+            if (traces[i].abortReason) {
+                if (traces[i].abortReason!.startsWith("mono_icall_") ||
+                    traces[i].abortReason!.startsWith("ret."))
                     continue;
+
+                switch (traces[i].abortReason) {
+                    // not feasible to fix
+                    case "trace-too-small":
+                    case "call":
+                    case "callvirt.fast":
+                    case "calli.nat.fast":
+                    case "calli.nat":
+                    case "call.delegate":
+                    case "newobj":
+                    case "newobj_vt":
+                    case "newobj_slow":
+                    case "switch":
+                    case "call_handler.s":
+                    case "rethrow":
+                    case "endfinally":
+                    case "end-of-body":
+                    case "ret":
+                        continue;
+
+                    // not worth implementing / too difficult
+                    case "intrins_ordinal_ignore_case_ascii":
+                    case "intrins_marvin_block":
+                    case "intrins_ascii_chars_to_uppercase":
+                    case "newarr":
+                        continue;
+                }
             }
+
             c++;
             console.log(`${traces[i].name} @${traces[i].ip} (${traces[i].hitCount} hits) ${traces[i].abortReason}`);
         }

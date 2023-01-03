@@ -558,7 +558,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -609,7 +609,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -673,7 +673,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2, T value3) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -864,7 +864,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -915,7 +915,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -979,7 +979,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2, T value3) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -1750,7 +1750,6 @@ namespace System
                                 Unsafe.Add(ref valueRef, 2),
                                 span.Length);
 
-#if !MONO // We don't have a mono overload for 4 values
                         case 4:
                             return SpanHelpers.IndexOfAnyValueType(
                                 ref spanRef,
@@ -1759,7 +1758,7 @@ namespace System
                                 Unsafe.Add(ref valueRef, 2),
                                 Unsafe.Add(ref valueRef, 3),
                                 span.Length);
-#endif
+
                         case 5:
                             return SpanHelpers.IndexOfAnyValueType(
                                 ref spanRef,
@@ -2025,7 +2024,6 @@ namespace System
                                 Unsafe.Add(ref valueRef, 2),
                                 span.Length);
 
-#if !MONO // We don't have a mono overload for 4 values
                         case 4:
                             return SpanHelpers.LastIndexOfAnyValueType(
                                 ref spanRef,
@@ -2034,7 +2032,6 @@ namespace System
                                 Unsafe.Add(ref valueRef, 2),
                                 Unsafe.Add(ref valueRef, 3),
                                 span.Length);
-#endif
 
                         case 5:
                             return SpanHelpers.LastIndexOfAnyValueType(
@@ -2075,7 +2072,6 @@ namespace System
                                 Unsafe.Add(ref valueRef, 2),
                                 span.Length);
 
-#if !MONO // We don't have a mono overload for 4 values
                         case 4:
                             return SpanHelpers.LastIndexOfAnyValueType(
                                 ref spanRef,
@@ -2084,7 +2080,6 @@ namespace System
                                 Unsafe.Add(ref valueRef, 2),
                                 Unsafe.Add(ref valueRef, 3),
                                 span.Length);
-#endif
 
                         case 5:
                             return SpanHelpers.LastIndexOfAnyValueType(
@@ -3072,7 +3067,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 nuint length = (uint)span.Length;
 
@@ -3233,6 +3228,339 @@ namespace System
                 span = span.Slice(0, other.Length);
             }
             Debug.Assert(span.Length == other.Length);
+        }
+
+        /// <summary>
+        /// Parses the source <see cref="ReadOnlySpan{Char}"/> for the specified <paramref name="separator"/>, populating the <paramref name="destination"/> span
+        /// with <see cref="Range"/> instances representing the regions between the separators.
+        /// </summary>
+        /// <param name="source">The source span to parse.</param>
+        /// <param name="destination">The destination span into which the resulting ranges are written.</param>
+        /// <param name="separator">A character that delimits the regions in this instance.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim whitespace and include empty ranges.</param>
+        /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// Delimiter characters are not included in the elements of the returned array.
+        /// </para>
+        /// <para>
+        /// If the <paramref name="destination"/> span is empty, or if the <paramref name="options"/> specifies <see cref="StringSplitOptions.RemoveEmptyEntries"/> and <paramref name="source"/> is empty,
+        /// or if <paramref name="options"/> specifies both <see cref="StringSplitOptions.RemoveEmptyEntries"/> and <see cref="StringSplitOptions.TrimEntries"/> and the <paramref name="source"/> is
+        /// entirely whitespace, no ranges are written to the destination.
+        /// </para>
+        /// <para>
+        /// If the span does not contain <paramref name="separator"/>, or if <paramref name="destination"/>'s length is 1, a single range will be output containing the entire <paramref name="source"/>,
+        /// subject to the processing implied by <paramref name="options"/>.
+        /// </para>
+        /// <para>
+        /// If there are more regions in <paramref name="source"/> than will fit in <paramref name="destination"/>, the first <paramref name="destination"/> length minus 1 ranges are
+        /// stored in <paramref name="destination"/>, and a range for the remainder of <paramref name="source"/> is stored in <paramref name="destination"/>.
+        /// </para>
+        /// </remarks>
+        public static int Split(this ReadOnlySpan<char> source, Span<Range> destination, char separator, StringSplitOptions options = StringSplitOptions.None)
+        {
+            string.CheckStringSplitOptions(options);
+
+            return SplitCore(source, destination, new ReadOnlySpan<char>(in separator), default, isAny: true, options);
+        }
+
+        /// <summary>
+        /// Parses the source <see cref="ReadOnlySpan{Char}"/> for the specified <paramref name="separator"/>, populating the <paramref name="destination"/> span
+        /// with <see cref="Range"/> instances representing the regions between the separators.
+        /// </summary>
+        /// <param name="source">The source span to parse.</param>
+        /// <param name="destination">The destination span into which the resulting ranges are written.</param>
+        /// <param name="separator">A character that delimits the regions in this instance.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim whitespace and include empty ranges.</param>
+        /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// Delimiter characters are not included in the elements of the returned array.
+        /// </para>
+        /// <para>
+        /// If the <paramref name="destination"/> span is empty, or if the <paramref name="options"/> specifies <see cref="StringSplitOptions.RemoveEmptyEntries"/> and <paramref name="source"/> is empty,
+        /// or if <paramref name="options"/> specifies both <see cref="StringSplitOptions.RemoveEmptyEntries"/> and <see cref="StringSplitOptions.TrimEntries"/> and the <paramref name="source"/> is
+        /// entirely whitespace, no ranges are written to the destination.
+        /// </para>
+        /// <para>
+        /// If the span does not contain <paramref name="separator"/>, or if <paramref name="destination"/>'s length is 1, a single range will be output containing the entire <paramref name="source"/>,
+        /// subject to the processing implied by <paramref name="options"/>.
+        /// </para>
+        /// <para>
+        /// If there are more regions in <paramref name="source"/> than will fit in <paramref name="destination"/>, the first <paramref name="destination"/> length minus 1 ranges are
+        /// stored in <paramref name="destination"/>, and a range for the remainder of <paramref name="source"/> is stored in <paramref name="destination"/>.
+        /// </para>
+        /// </remarks>
+        public static int Split(this ReadOnlySpan<char> source, Span<Range> destination, ReadOnlySpan<char> separator, StringSplitOptions options = StringSplitOptions.None)
+        {
+            string.CheckStringSplitOptions(options);
+
+            // If the separator is an empty string, the whole input is considered the sole range.
+            if (separator.IsEmpty)
+            {
+                if (!destination.IsEmpty)
+                {
+                    int startInclusive = 0, endExclusive = source.Length;
+
+                    if ((options & StringSplitOptions.TrimEntries) != 0)
+                    {
+                        (startInclusive, endExclusive) = TrimSplitEntry(source, startInclusive, endExclusive);
+                    }
+
+                    if (startInclusive != endExclusive || (options & StringSplitOptions.RemoveEmptyEntries) == 0)
+                    {
+                        destination[0] = startInclusive..endExclusive;
+                        return 1;
+                    }
+                }
+
+                return 0;
+            }
+
+            return SplitCore(source, destination, separator, default, isAny: false, options);
+        }
+
+        /// <summary>
+        /// Parses the source <see cref="ReadOnlySpan{Char}"/> for one of the specified <paramref name="separators"/>, populating the <paramref name="destination"/> span
+        /// with <see cref="Range"/> instances representing the regions between the separators.
+        /// </summary>
+        /// <param name="source">The source span to parse.</param>
+        /// <param name="destination">The destination span into which the resulting ranges are written.</param>
+        /// <param name="separators">Any number of characters that may delimit the regions in this instance. If empty, all Unicode whitespace characters are used as the separators.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim whitespace and include empty ranges.</param>
+        /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// Delimiter characters are not included in the elements of the returned array.
+        /// </para>
+        /// <para>
+        /// If the <paramref name="destination"/> span is empty, or if the <paramref name="options"/> specifies <see cref="StringSplitOptions.RemoveEmptyEntries"/> and <paramref name="source"/> is empty,
+        /// or if <paramref name="options"/> specifies both <see cref="StringSplitOptions.RemoveEmptyEntries"/> and <see cref="StringSplitOptions.TrimEntries"/> and the <paramref name="source"/> is
+        /// entirely whitespace, no ranges are written to the destination.
+        /// </para>
+        /// <para>
+        /// If the span does not contain any of the <paramref name="separators"/>, or if <paramref name="destination"/>'s length is 1, a single range will be output containing the entire <paramref name="source"/>,
+        /// subject to the processing implied by <paramref name="options"/>.
+        /// </para>
+        /// <para>
+        /// If there are more regions in <paramref name="source"/> than will fit in <paramref name="destination"/>, the first <paramref name="destination"/> length minus 1 ranges are
+        /// stored in <paramref name="destination"/>, and a range for the remainder of <paramref name="source"/> is stored in <paramref name="destination"/>.
+        /// </para>
+        /// </remarks>
+        public static int SplitAny(this ReadOnlySpan<char> source, Span<Range> destination, ReadOnlySpan<char> separators, StringSplitOptions options = StringSplitOptions.None)
+        {
+            string.CheckStringSplitOptions(options);
+
+            // If the separators list is empty, whitespace is used as separators.  In that case, we want to ignore TrimEntries if specified,
+            // since TrimEntries also impacts whitespace.
+            if (separators.IsEmpty)
+            {
+                options &= ~StringSplitOptions.TrimEntries;
+            }
+
+            return SplitCore(source, destination, separators, default, isAny: true, options);
+        }
+
+        /// <summary>
+        /// Parses the source <see cref="ReadOnlySpan{Char}"/> for one of the specified <paramref name="separators"/>, populating the <paramref name="destination"/> span
+        /// with <see cref="Range"/> instances representing the regions between the separators.
+        /// </summary>
+        /// <param name="source">The source span to parse.</param>
+        /// <param name="destination">The destination span into which the resulting ranges are written.</param>
+        /// <param name="separators">Any number of strings that may delimit the regions in this instance.  If empty, all Unicode whitespace characters are used as the separators.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim whitespace and include empty ranges.</param>
+        /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// Delimiter characters are not included in the elements of the returned array.
+        /// </para>
+        /// <para>
+        /// If the <paramref name="destination"/> span is empty, or if the <paramref name="options"/> specifies <see cref="StringSplitOptions.RemoveEmptyEntries"/> and <paramref name="source"/> is empty,
+        /// or if <paramref name="options"/> specifies both <see cref="StringSplitOptions.RemoveEmptyEntries"/> and <see cref="StringSplitOptions.TrimEntries"/> and the <paramref name="source"/> is
+        /// entirely whitespace, no ranges are written to the destination.
+        /// </para>
+        /// <para>
+        /// If the span does not contain any of the <paramref name="separators"/>, or if <paramref name="destination"/>'s length is 1, a single range will be output containing the entire <paramref name="source"/>,
+        /// subject to the processing implied by <paramref name="options"/>.
+        /// </para>
+        /// <para>
+        /// If there are more regions in <paramref name="source"/> than will fit in <paramref name="destination"/>, the first <paramref name="destination"/> length minus 1 ranges are
+        /// stored in <paramref name="destination"/>, and a range for the remainder of <paramref name="source"/> is stored in <paramref name="destination"/>.
+        /// </para>
+        /// </remarks>
+        public static int SplitAny(this ReadOnlySpan<char> source, Span<Range> destination, ReadOnlySpan<string> separators, StringSplitOptions options = StringSplitOptions.None)
+        {
+            string.CheckStringSplitOptions(options);
+
+            // If the separators list is empty, whitespace is used as separators.  In that case, we want to ignore TrimEntries if specified,
+            // since TrimEntries also impacts whitespace.
+            if (separators.IsEmpty)
+            {
+                options &= ~StringSplitOptions.TrimEntries;
+            }
+
+            return SplitCore(source, destination, default, separators!, isAny: true, options);
+        }
+
+        /// <summary>Core implementation for all of the Split{Any}AsRanges methods.</summary>
+        /// <param name="source">The source span to parse.</param>
+        /// <param name="destination">The destination span into which the resulting ranges are written.</param>
+        /// <param name="separatorOrSeparators">Either a single separator (one or more characters in length) or multiple individual 1-character separators.</param>
+        /// <param name="stringSeparators">Strings to use as separators instead of <paramref name="separatorOrSeparators"/>.</param>
+        /// <param name="isAny">true if the separators are a set; false if <paramref name="separatorOrSeparators"/> should be treated as a single separator.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim whitespace and include empty ranges.</param>
+        /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
+        /// <remarks>This implementation matches the various quirks of string.Split.</remarks>
+        private static int SplitCore(
+            ReadOnlySpan<char> source, Span<Range> destination,
+            ReadOnlySpan<char> separatorOrSeparators, ReadOnlySpan<string?> stringSeparators, bool isAny,
+            StringSplitOptions options)
+        {
+            // If the destination is empty, there's nothing to do.
+            if (destination.IsEmpty)
+            {
+                return 0;
+            }
+
+            bool keepEmptyEntries = (options & StringSplitOptions.RemoveEmptyEntries) == 0;
+            bool trimEntries = (options & StringSplitOptions.TrimEntries) != 0;
+
+            // If the input is empty, then we either return an empty range as the sole range, or if empty entries
+            // are to be removed, we return nothing.
+            if (source.Length == 0)
+            {
+                if (keepEmptyEntries)
+                {
+                    destination[0] = default;
+                    return 1;
+                }
+
+                return 0;
+            }
+
+            int startInclusive = 0, endExclusive;
+
+            // If the destination has only one slot, then we need to return the whole input, subject to the options.
+            if (destination.Length == 1)
+            {
+                endExclusive = source.Length;
+                if (trimEntries)
+                {
+                    (startInclusive, endExclusive) = TrimSplitEntry(source, startInclusive, endExclusive);
+                }
+
+                if (startInclusive != endExclusive || keepEmptyEntries)
+                {
+                    destination[0] = startInclusive..endExclusive;
+                    return 1;
+                }
+
+                return 0;
+            }
+
+            scoped ValueListBuilder<int> separatorList = new ValueListBuilder<int>(stackalloc int[string.StackallocIntBufferSizeLimit]);
+            scoped ValueListBuilder<int> lengthList = default;
+
+            int separatorLength;
+            int rangeCount = 0;
+            if (!stringSeparators.IsEmpty)
+            {
+                lengthList = new ValueListBuilder<int>(stackalloc int[string.StackallocIntBufferSizeLimit]);
+                string.MakeSeparatorListAny(source, stringSeparators, ref separatorList, ref lengthList);
+                separatorLength = -1; // Will be set on each iteration of the loop
+            }
+            else if (isAny)
+            {
+                string.MakeSeparatorListAny(source, separatorOrSeparators, ref separatorList);
+                separatorLength = 1;
+            }
+            else
+            {
+                string.MakeSeparatorList(source, separatorOrSeparators, ref separatorList);
+                separatorLength = separatorOrSeparators.Length;
+            }
+
+            // Try to fill in all but the last slot in the destination.  The last slot is reserved for whatever remains
+            // after the last discovered separator. If the options specify that empty entries are to be removed, then we
+            // need to skip past all of those here as well, including any that occur at the beginning of the last entry,
+            // which is why we enter the loop if remove empty entries is set, even if we've already added enough entries.
+            int separatorIndex = 0;
+            Span<Range> destinationMinusOne = destination.Slice(0, destination.Length - 1);
+            while (separatorIndex < separatorList.Length && (rangeCount < destinationMinusOne.Length || !keepEmptyEntries))
+            {
+                endExclusive = separatorList[separatorIndex];
+                if (separatorIndex < lengthList.Length)
+                {
+                    separatorLength = lengthList[separatorIndex];
+                }
+                separatorIndex++;
+
+                // Trim off whitespace from the start and end of the range.
+                int untrimmedEndEclusive = endExclusive;
+                if (trimEntries)
+                {
+                    (startInclusive, endExclusive) = TrimSplitEntry(source, startInclusive, endExclusive);
+                }
+
+                // If the range is not empty or we're not ignoring empty ranges, store it.
+                Debug.Assert(startInclusive <= endExclusive);
+                if (startInclusive != endExclusive || keepEmptyEntries)
+                {
+                    // If we're not keeping empty entries, we may have entered the loop even if we'd
+                    // already written enough ranges.  Now that we know this entry isn't empty, we
+                    // need to validate there's still room remaining.
+                    if ((uint)rangeCount >= (uint)destinationMinusOne.Length)
+                    {
+                        break;
+                    }
+
+                    destinationMinusOne[rangeCount] = startInclusive..endExclusive;
+                    rangeCount++;
+                }
+
+                // Reset to be just past the separator, and loop around to go again.
+                startInclusive = untrimmedEndEclusive + separatorLength;
+            }
+
+            separatorList.Dispose();
+            lengthList.Dispose();
+
+            // Either we found at least destination.Length - 1 ranges or we didn't find any more separators.
+            // If we still have a last destination slot available and there's anything left in the source,
+            // put a range for the remainder of the source into the destination.
+            if ((uint)rangeCount < (uint)destination.Length)
+            {
+                endExclusive = source.Length;
+                if (trimEntries)
+                {
+                    (startInclusive, endExclusive) = TrimSplitEntry(source, startInclusive, endExclusive);
+                }
+
+                if (startInclusive != endExclusive || keepEmptyEntries)
+                {
+                    destination[rangeCount] = startInclusive..endExclusive;
+                    rangeCount++;
+                }
+            }
+
+            // Return how many ranges were written.
+            return rangeCount;
+        }
+
+        /// <summary>Updates the starting and ending markers for a range to exclude whitespace.</summary>
+        private static (int StartInclusive, int EndExclusive) TrimSplitEntry(ReadOnlySpan<char> source, int startInclusive, int endExclusive)
+        {
+            while (startInclusive < endExclusive && char.IsWhiteSpace(source[startInclusive]))
+            {
+                startInclusive++;
+            }
+
+            while (endExclusive > startInclusive && char.IsWhiteSpace(source[endExclusive - 1]))
+            {
+                endExclusive--;
+            }
+
+            return (startInclusive, endExclusive);
         }
 
         /// <summary>Writes the specified interpolated string to the character span.</summary>
@@ -3410,10 +3738,21 @@ namespace System
                 if (value is IFormattable)
                 {
                     // If the value can format itself directly into our buffer, do so.
+
+                    if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _destination.Slice(_pos), out int charsWritten))
+                        {
+                            _pos += charsWritten;
+                            return true;
+                        }
+
+                        return Fail();
+                    }
+
                     if (value is ISpanFormattable)
                     {
-                        int charsWritten;
-                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out charsWritten, default, _provider)) // constrained call avoiding boxing for value types
+                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out int charsWritten, default, _provider)) // constrained call avoiding boxing for value types
                         {
                             _pos += charsWritten;
                             return true;
@@ -3455,10 +3794,21 @@ namespace System
                 if (value is IFormattable)
                 {
                     // If the value can format itself directly into our buffer, do so.
+
+                    if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _destination.Slice(_pos), out int charsWritten, format))
+                        {
+                            _pos += charsWritten;
+                            return true;
+                        }
+
+                        return Fail();
+                    }
+
                     if (value is ISpanFormattable)
                     {
-                        int charsWritten;
-                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out charsWritten, format, _provider)) // constrained call avoiding boxing for value types
+                        if (((ISpanFormattable)value).TryFormat(_destination.Slice(_pos), out int charsWritten, format, _provider)) // constrained call avoiding boxing for value types
                         {
                             _pos += charsWritten;
                             return true;

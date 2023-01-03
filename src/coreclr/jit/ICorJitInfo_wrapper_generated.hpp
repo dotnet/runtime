@@ -1474,16 +1474,6 @@ unsigned WrapICorJitInfo::getClassDomainID(
     return temp;
 }
 
-void* WrapICorJitInfo::getFieldAddress(
-          CORINFO_FIELD_HANDLE field,
-          void** ppIndirection)
-{
-    API_ENTER(getFieldAddress);
-    void* temp = wrapHnd->getFieldAddress(field, ppIndirection);
-    API_LEAVE(getFieldAddress);
-    return temp;
-}
-
 bool WrapICorJitInfo::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
@@ -1554,15 +1544,6 @@ uint32_t WrapICorJitInfo::getFieldThreadLocalStoreID(
     uint32_t temp = wrapHnd->getFieldThreadLocalStoreID(field, ppIndirection);
     API_LEAVE(getFieldThreadLocalStoreID);
     return temp;
-}
-
-void WrapICorJitInfo::addActiveDependency(
-          CORINFO_MODULE_HANDLE moduleFrom,
-          CORINFO_MODULE_HANDLE moduleTo)
-{
-    API_ENTER(addActiveDependency);
-    wrapHnd->addActiveDependency(moduleFrom, moduleTo);
-    API_LEAVE(addActiveDependency);
 }
 
 CORINFO_METHOD_HANDLE WrapICorJitInfo::GetDelegateCtor(

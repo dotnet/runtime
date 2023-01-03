@@ -784,7 +784,6 @@ namespace Microsoft.Win32
         /// <returns>All subkey names.</returns>
         public string[] GetSubKeyNames()
         {
-            EnsureNotDisposed();
             int subkeys = SubKeyCount;
 
             if (subkeys <= 0)
@@ -792,16 +791,17 @@ namespace Microsoft.Win32
                 return Array.Empty<string>();
             }
 
-            List<string> names = new List<string>(subkeys);
-            Span<char> name = stackalloc char[MaxKeyLength + 1];
+            string[] names = new string[subkeys];
+            Span<char> nameSpan = stackalloc char[MaxKeyLength + 1];
 
             int result;
-            int nameLength = name.Length;
+            int nameLength = nameSpan.Length;
+            int cpt = 0;
 
             while ((result = Interop.Advapi32.RegEnumKeyEx(
                 _hkey,
-                names.Count,
-                ref MemoryMarshal.GetReference(name),
+                cpt,
+                ref MemoryMarshal.GetReference(nameSpan),
                 ref nameLength,
                 null,
                 null,
@@ -811,9 +811,15 @@ namespace Microsoft.Win32
                 switch (result)
                 {
                     case Interop.Errors.ERROR_SUCCESS:
-                        names.Add(new string(name.Slice(0, nameLength)));
-                        nameLength = name.Length;
+                        if (cpt >= names.Length) // possible new item during loop
+                        {
+                            Array.Resize(ref names, names.Length * 2);
+                        }
+
+                        names[cpt++] = new string(nameSpan.Slice(0, nameLength));
+                        nameLength = nameSpan.Length;
                         break;
+
                     default:
                         // Throw the error
                         Win32Error(result, null);
@@ -821,7 +827,13 @@ namespace Microsoft.Win32
                 }
             }
 
-            return names.ToArray();
+            // Shrink array to fit found items, if necessary
+            if (cpt < names.Length)
+            {
+                Array.Resize(ref names, cpt);
+            }
+
+            return names;
         }
 
         /// <summary>Retrieves the count of values.</summary>
@@ -858,8 +870,6 @@ namespace Microsoft.Win32
         /// <returns>All value names.</returns>
         public unsafe string[] GetValueNames()
         {
-            EnsureNotDisposed();
-
             int values = ValueCount;
 
             if (values <= 0)
@@ -867,7 +877,7 @@ namespace Microsoft.Win32
                 return Array.Empty<string>();
             }
 
-            var names = new List<string>(values);
+            string[] names = new string[values];
 
             // Names in the registry aren't usually very long, although they can go to as large
             // as 16383 characters (MaxValueLength).
@@ -878,6 +888,7 @@ namespace Microsoft.Win32
             // only if needed.
 
             char[]? name = ArrayPool<char>.Shared.Rent(100);
+            int cpt = 0;
 
             try
             {
@@ -886,7 +897,7 @@ namespace Microsoft.Win32
 
                 while ((result = Interop.Advapi32.RegEnumValue(
                     _hkey,
-                    names.Count,
+                    cpt,
                     name,
                     ref nameLength,
                     0,
@@ -899,7 +910,12 @@ namespace Microsoft.Win32
                         // The size is only ever reported back correctly in the case
                         // of ERROR_SUCCESS. It will almost always be changed, however.
                         case Interop.Errors.ERROR_SUCCESS:
-                            names.Add(new string(name, 0, nameLength));
+                            if (cpt >= names.Length) // possible new item during loop
+                            {
+                                Array.Resize(ref names, names.Length * 2);
+                            }
+
+                            names[cpt++] = new string(name, 0, nameLength);
                             break;
                         case Interop.Errors.ERROR_MORE_DATA:
                             if (IsPerfDataKey())
@@ -909,9 +925,15 @@ namespace Microsoft.Win32
                                 // to be big enough however. 8 characters is the largest
                                 // known name. The size isn't returned, but the string is
                                 // null terminated.
+
+                                if (cpt >= names.Length) // possible new item during loop
+                                {
+                                    Array.Resize(ref names, names.Length * 2);
+                                }
+
                                 fixed (char* c = &name[0])
                                 {
-                                    names.Add(new string(c));
+                                    names[cpt++] = new string(c);
                                 }
                             }
                             else
@@ -939,7 +961,13 @@ namespace Microsoft.Win32
                     ArrayPool<char>.Shared.Return(name);
             }
 
-            return names.ToArray();
+            // Shrink array to fit found items, if necessary
+            if (cpt < names.Length)
+            {
+                Array.Resize(ref names, cpt);
+            }
+
+            return names;
         }
 
         /// <summary>Retrieves the specified value. <b>null</b> is returned if the value doesn't exist</summary>
@@ -1238,7 +1266,7 @@ namespace Microsoft.Win32
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
             }
 
-            if (!Enum.IsDefined(typeof(RegistryValueKind), valueKind))
+            if (!Enum.IsDefined(valueKind))
             {
                 throw new ArgumentException(SR.Arg_RegBadKeyKind, nameof(valueKind));
             }

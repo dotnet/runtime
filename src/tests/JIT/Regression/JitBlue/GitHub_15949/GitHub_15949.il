@@ -14,9 +14,9 @@
 // helper call, decomposition, constant folding via gtFoldExpr and constant folding via VN's EvalOpIntegral.
 // But it also works on the current 64 bit targets (ARM64 & x64) because they too have the same behavior.
 
-.class private auto ansi Program extends [mscorlib]System.Object
+.class public auto ansi Program extends [mscorlib]System.Object
 {
-    .method static int32 Main() cil managed
+    .method public static int32 Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

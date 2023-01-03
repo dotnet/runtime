@@ -1481,13 +1481,6 @@ unsigned MyICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection
     return jitInstance->mc->repGetClassDomainID(cls, ppIndirection);
 }
 
-// return the data's address (for static fields only)
-void* MyICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("getFieldAddress");
-    return jitInstance->mc->repGetFieldAddress(field, ppIndirection);
-}
-
 bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
@@ -1536,15 +1529,6 @@ uint32_t MyICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** p
 {
     jitInstance->mc->cr->AddCall("getFieldThreadLocalStoreID");
     return jitInstance->mc->repGetFieldThreadLocalStoreID(field, ppIndirection);
-}
-
-// Adds an active dependency from the context method's module to the given module
-// This is internal callback for the EE. JIT should not call it directly.
-void MyICJI::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo)
-{
-    jitInstance->mc->cr->AddCall("addActiveDependency");
-    LogError("Hit unimplemented addActiveDependency");
-    DebugBreakorAV(116);
 }
 
 CORINFO_METHOD_HANDLE MyICJI::GetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,

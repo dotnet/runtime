@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    public class NonGCStaticsNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public class NonGCStaticsNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly MetadataType _type;
         private readonly PreinitializationManager _preinitializationManager;
@@ -31,9 +31,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection GetSection(NodeFactory factory)
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
-            if (_preinitializationManager.HasLazyStaticConstructor(_type)
+            if (HasCCtorContext
                 || _preinitializationManager.IsPreinitialized(_type))
             {
                 // We have data to be emitted so this needs to be in an initialized data section
@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 // Make sure the NonGCStatics symbol always points to the beginning of the data.
-                if (_preinitializationManager.HasLazyStaticConstructor(_type))
+                if (HasCCtorContext)
                 {
                     return GetClassConstructorContextStorageSize(_type.Context.Target, _type);
                 }
@@ -74,7 +74,25 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public bool HasCCtorContext => _preinitializationManager.HasLazyStaticConstructor(_type);
+        public static bool TypeHasCctorContext(PreinitializationManager preinitializationManager, MetadataType type)
+        {
+            // If the type has a lazy static constructor, we need the cctor context.
+            if (preinitializationManager.HasLazyStaticConstructor(type))
+                return true;
+
+            // If the type has a canonical form and accessing the base from a canonical
+            // context requires a cctor check, we need the cctor context.
+            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (canonType != type && preinitializationManager.HasLazyStaticConstructor(canonType))
+                return true;
+
+            // Otherwise no cctor context needed.
+            return false;
+        }
+
+        public bool HasCCtorContext => TypeHasCctorContext(_preinitializationManager, _type);
+
+        public bool HasLazyStaticConstructor => _preinitializationManager.HasLazyStaticConstructor(_type);
 
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
@@ -118,13 +136,13 @@ namespace ILCompiler.DependencyAnalysis
             return dependencyList;
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
             // If the type has a class constructor, its non-GC statics section is prefixed
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
+            if (HasCCtorContext)
             {
                 int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment.AsInt, GetClassConstructorContextAlignment(_type.Context.Target));
                 int classConstructorContextStorageSize = GetClassConstructorContextStorageSize(factory.Target, _type);
@@ -138,7 +156,24 @@ namespace ILCompiler.DependencyAnalysis
                 // Emit the actual StaticClassConstructionContext
                 MethodDesc cctorMethod = _type.GetStaticConstructor();
                 builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
-                builder.EmitZeroPointer();
+
+                // If we're emitting the cctor context, but the type is actually preinitialized, emit the
+                // cctor context as already executed.
+                if (!HasLazyStaticConstructor)
+                {
+                    // Constructor executed
+                    // TODO-NICE: introduce a named constant and also use it in the runner in CoreLib
+                    builder.EmitInt(1);
+                }
+                else
+                {
+                    // Constructor didn't execute
+                    builder.EmitInt(0);
+                }
+
+                // Emit padding if needed
+                if (builder.TargetPointerSize == 8)
+                    builder.EmitInt(0);
             }
             else
             {

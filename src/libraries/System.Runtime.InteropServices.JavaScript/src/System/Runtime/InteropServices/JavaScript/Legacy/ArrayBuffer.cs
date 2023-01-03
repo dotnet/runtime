@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public ArrayBuffer(int length)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(ArrayBuffer), new object[] { length }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         /// <summary>

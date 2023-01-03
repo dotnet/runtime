@@ -155,9 +155,9 @@ namespace R3Contention
     }
 
 
-    internal static class App
+    public static class App
     {
-        private static int Main()
+        public static int Main()
         {
             var layoutOptions = new LayoutOptions();
 

@@ -7,9 +7,9 @@ namespace Test
     using System;
     using System.Collections;
 
-    class App
+    public class App
     {
-        static int Main()
+        public static int Main()
         {
             "hello".CompareTo(null);
             return 100;

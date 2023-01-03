@@ -1058,13 +1058,6 @@ unsigned interceptor_ICJI::getClassDomainID(
     return original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
 }
 
-void* interceptor_ICJI::getFieldAddress(
-          CORINFO_FIELD_HANDLE field,
-          void** ppIndirection)
-{
-    return original_ICorJitInfo->getFieldAddress(field, ppIndirection);
-}
-
 bool interceptor_ICJI::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
@@ -1114,13 +1107,6 @@ uint32_t interceptor_ICJI::getFieldThreadLocalStoreID(
           void** ppIndirection)
 {
     return original_ICorJitInfo->getFieldThreadLocalStoreID(field, ppIndirection);
-}
-
-void interceptor_ICJI::addActiveDependency(
-          CORINFO_MODULE_HANDLE moduleFrom,
-          CORINFO_MODULE_HANDLE moduleTo)
-{
-    original_ICorJitInfo->addActiveDependency(moduleFrom, moduleTo);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::GetDelegateCtor(

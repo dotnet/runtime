@@ -66,7 +66,7 @@ public class ConstToString
         }
         return iret;
     }
-    static int Main()
+    public static int Main()
     {
         int iret = 100;
         if (IntConstToString() != 100)

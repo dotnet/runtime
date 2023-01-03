@@ -60,18 +60,18 @@
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
-    </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
-    </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
-    </BinPlaceTargetFramework>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <ItemGroup>
@@ -89,7 +89,7 @@
       <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
       <ItemName>ILLinkSuppressionsXmls</ItemName>
     </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS.ToLowerInvariant())">
       <RuntimePath>$(ILLinkTrimAssemblySuppressionsXmlsDir)</RuntimePath>
       <ItemName>ILLinkSuppressionsXmls</ItemName>
     </BinPlaceTargetFrameworks>
@@ -274,7 +274,7 @@
     />
 
     <ItemGroup>
-      <_DependencyDirectoriesTemp Include="@(ReferencePath->'%(RootDir)%(Directory)')" />
+      <_DependencyDirectoriesTemp Include="@(ReferencePathWithRefAssemblies->'%(RootDir)%(Directory)')" />
       <!-- Remove duplicate directories by batching over them -->
       <!-- Add project references first to give precedence to project-specific files -->
       <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'=='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />

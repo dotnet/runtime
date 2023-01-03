@@ -20,6 +20,10 @@ namespace System.Buffers
         internal override char[] GetValues() => _values.ToCharArray();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal override bool ContainsCore(char value) =>
+            ProbabilisticMap.Contains(ref Unsafe.As<ProbabilisticMap, uint>(ref _map), _values, value);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
             IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(ref MemoryMarshal.GetReference(span), span.Length);
 

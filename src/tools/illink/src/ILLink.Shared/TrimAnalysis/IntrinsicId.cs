@@ -7,7 +7,7 @@
 namespace ILLink.Shared.TrimAnalysis
 {
 	[StaticCs.Closed]
-	enum IntrinsicId
+	internal enum IntrinsicId
 	{
 		None = 0,
 		/// <summary>
@@ -128,8 +128,8 @@ namespace ILLink.Shared.TrimAnalysis
 		Type_GetProperties__BindingFlags,
 		/// <summary>
 		/// <list type="table">
-		///	<item><see cref="System.Type.GetEvent(string)"/></item>
-		///	<item><see cref="System.Type.GetEvent(string, System.Reflection.BindingFlags)"/></item>
+		/// <item><see cref="System.Type.GetEvent(string)"/></item>
+		/// <item><see cref="System.Type.GetEvent(string, System.Reflection.BindingFlags)"/></item>
 		/// </list>
 		/// </summary>
 		Type_GetEvent,
@@ -139,9 +139,9 @@ namespace ILLink.Shared.TrimAnalysis
 		Type_GetEvents__BindingFlags,
 		/// <summary>
 		/// <list type="table">
-		///	<item><see cref="System.Type.GetNestedType(string)"/></item>
-		///	<item><see cref="System.Type.GetNestedType(string, System.Reflection.BindingFlags)"/></item>
-		///	</list>
+		/// <item><see cref="System.Type.GetNestedType(string)"/></item>
+		/// <item><see cref="System.Type.GetNestedType(string, System.Reflection.BindingFlags)"/></item>
+		/// </list>
 		/// </summary>
 		Type_GetNestedType,
 		/// <summary>
@@ -150,10 +150,10 @@ namespace ILLink.Shared.TrimAnalysis
 		Type_GetNestedTypes__BindingFlags,
 		/// <summary>
 		/// <list type="table">
-		///	<item><see cref="System.Type.GetMember(string)"/></item>
-		///	<item><see cref="System.Type.GetMember(string, System.Reflection.BindingFlags)"/></item>
-		///	<item><see cref="System.Type.GetMember(string, System.Reflection.MemberTypes, System.Reflection.BindingFlags)"/></item>
-		///	</list>
+		/// <item><see cref="System.Type.GetMember(string)"/></item>
+		/// <item><see cref="System.Type.GetMember(string, System.Reflection.BindingFlags)"/></item>
+		/// <item><see cref="System.Type.GetMember(string, System.Reflection.MemberTypes, System.Reflection.BindingFlags)"/></item>
+		/// </list>
 		/// </summary>
 		Type_GetMember,
 		/// <summary>
@@ -180,7 +180,7 @@ namespace ILLink.Shared.TrimAnalysis
 		/// </summary>
 		Type_get_BaseType,
 		/// <summary>
-		///	<see cref="System.Linq.Expressions.Expression.Call(System.Type, string, System.Type[]?, System.Linq.Expressions.Expression[]?))"/>
+		/// <see cref="System.Linq.Expressions.Expression.Call(System.Type, string, System.Type[]?, System.Linq.Expressions.Expression[]?))"/>
 		/// </summary>
 		Expression_Call,
 		/// <summary>

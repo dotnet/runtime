@@ -6,9 +6,9 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
-        static int Main()
+        public static int Main()
         {
             bool[] ab = new bool[2];
             try
