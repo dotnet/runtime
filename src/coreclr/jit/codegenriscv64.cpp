@@ -1050,7 +1050,35 @@ void CodeGen::genLclHeap(GenTree* tree)
 //
 void CodeGen::genCodeForNegNot(GenTree* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(tree->OperIs(GT_NEG, GT_NOT));
+
+    var_types targetType = tree->TypeGet();
+
+    assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
+
+    regNumber   targetReg = tree->GetRegNum();
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(!tree->isContained());
+    // The dst can only be a register.
+    assert(targetReg != REG_NA);
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber operandReg = genConsumeReg(operand);
+
+    emitAttr attr = emitActualTypeSize(tree);
+    if (tree->OperIs(GT_NEG))
+    {
+        GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, -1);
+    }
+    else if (tree->OperIs(GT_NOT))
+    {
+        GetEmitter()->emitIns_R_R_R(INS_sub, attr, targetReg, REG_R0, operandReg); // TODO CHECK BETTER WAY
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -3543,7 +3571,11 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 //
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(tree->OperIs(GT_NULLCHECK));
+
+    genConsumeRegs(tree->gtOp1);
+
+    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), REG_R0, tree);
 }
 
 //------------------------------------------------------------------------
@@ -3594,7 +3626,88 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 //
 void CodeGen::genCodeForShift(GenTree* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    emitAttr    size = emitActualTypeSize(tree);
+
+    assert(tree->GetRegNum() != REG_NA);
+
+    genConsumeOperands(tree->AsOp());
+
+    GenTree* operand = tree->gtGetOp1();
+    GenTree* shiftBy = tree->gtGetOp2();
+
+    if (tree->OperIs(GT_ROR))
+    {
+        unsigned immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64
+        if (!shiftBy->IsCnsIntOrI())
+        {
+            GetEmitter()->emitIns_R_R_I(INS_addi, size, REG_RA, REG_R0, immWidth);
+            GetEmitter()->emitIns_R_R_R(INS_sub, size, REG_RA, REG_RA, shiftBy->GetRegNum());
+            if (size == EA_8BYTE)
+            {
+                GetEmitter()->emitIns_R_R_R(INS_srl, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
+                GetEmitter()->emitIns_R_R_R(INS_sll, size, REG_RA, operand->GetRegNum(), REG_RA);
+                GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R_R(INS_srlw, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
+                GetEmitter()->emitIns_R_R_R(INS_sllw, size, REG_RA, operand->GetRegNum(), REG_RA);
+                GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
+            }
+        }
+        else
+        {
+            unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+            if ((shiftByImm >= 32 and shiftByImm < 64) || size == EA_8BYTE)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_srl, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
+                GetEmitter()->emitIns_R_R_I(INS_sll, size, REG_RA, operand->GetRegNum(), immWidth - shiftByImm);
+                GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R_I(INS_srlw, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
+                GetEmitter()->emitIns_R_R_I(INS_sllw, size, REG_RA, operand->GetRegNum(), immWidth - shiftByImm);
+                GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
+            }
+        }
+    }
+    else {
+        if (!shiftBy->IsCnsIntOrI())
+        {
+            instruction ins  = genGetInsForOper(tree);
+            GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
+        }
+        else
+        {
+            instruction ins  = genGetInsForOper(tree);
+            unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+
+            // should check shiftByImm for riscv64-ins.
+            unsigned immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64
+            shiftByImm &= (immWidth - 1);
+
+            if (ins == INS_slliw && shiftByImm >= 32)
+            {
+                ins = INS_slli;
+            }
+            else if (ins == INS_slli && shiftByImm >= 32 && shiftByImm < 64)
+            {
+                ins = INS_slli;
+            }
+            else if (ins == INS_srai && shiftByImm >= 32 && shiftByImm < 64)
+            {
+                ins = INS_srai;
+            }
+            else if (ins == INS_srli && shiftByImm >= 32 && shiftByImm < 64)
+            {
+                ins = INS_srli;
+            }
+            GetEmitter()->emitIns_R_R_I(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
+        }
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -4772,7 +4885,15 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 //
 void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 {
-    NYI("unimplemented on RISCV64 yet");
+#ifdef DEBUG
+    if (JitConfig.JitNoMemoryBarriers() == 1)
+    {
+        return;
+    }
+#endif // DEBUG
+
+    // TODO-RISCV64: Use the exact barrier type depending on the CPU.
+    GetEmitter()->emitIns_I(INS_fence, EA_4BYTE, INS_BARRIER_FULL);
 }
 
 //-----------------------------------------------------------------------------------

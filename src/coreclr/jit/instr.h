@@ -360,7 +360,7 @@ enum insOpts : unsigned
 
 enum insBarrier : unsigned
 {
-    INS_BARRIER_FULL  =  0,
+    INS_BARRIER_FULL  =  0x33,
 };
 
 #endif

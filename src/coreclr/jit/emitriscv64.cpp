@@ -435,7 +435,24 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
 void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    code_t code = emitInsCode(ins);
+
+    switch (ins)
+    {
+        case INS_fence:
+            code |= ((imm & 0xff) << 20);
+            break;
+        default:
+            unreached();
+    }
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_I_I(instruction ins, emitAttr attr, ssize_t cc, ssize_t offs)
@@ -527,6 +544,7 @@ void emitter::emitIns_R_R_I(
     code_t code = emitInsCode(ins);
     if ((INS_addi <= ins && INS_srai >= ins) ||
         (INS_addiw <= ins && INS_sraiw >= ins) ||
+        (INS_lb <= ins && INS_lhu >= ins) ||
         INS_ld == ins || INS_lw == ins || INS_jalr == ins)
     {
         code |= reg1 << 7;           // rd
@@ -2841,7 +2859,13 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             printf("jal          %s, %d\n", rd, offset);
             return;
         }
-
+        case 0x0f:
+        {
+            int pred = ((code) >> 24) & 0xf;
+            int succ = ((code) >> 20) & 0xf;
+            printf("fence        %d, %d\n", pred, succ);
+            return;
+        }
         default:
             printf("Not implemented instruction: 0x%08X\n", code);
             _ASSERTE(!"TODO RISCV64 NYI");
@@ -3214,7 +3238,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         ssize_t imm = intConst->IconValue();
         if (ins == INS_andi || ins == INS_ori || ins == INS_xori)
         {
-            assert(isValidUimm12(imm));
+            assert(isValidSimm12(imm));
         }
         else
         {
