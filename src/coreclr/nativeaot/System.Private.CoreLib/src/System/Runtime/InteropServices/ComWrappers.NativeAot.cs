@@ -289,7 +289,7 @@ namespace System.Runtime.InteropServices
 
         internal unsafe class NativeObjectWrapper
         {
-            private readonly IntPtr _externalComObject;
+            private IntPtr _externalComObject;
             private readonly ComWrappers _comWrappers;
             internal GCHandle _proxyHandle;
 
@@ -301,7 +301,7 @@ namespace System.Runtime.InteropServices
                 _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
             }
 
-            ~NativeObjectWrapper()
+            public void Release()
             {
                 _comWrappers.RemoveRCWFromCache(_externalComObject);
                 if (_proxyHandle.IsAllocated)
@@ -309,7 +309,16 @@ namespace System.Runtime.InteropServices
                     _proxyHandle.Free();
                 }
 
-                Marshal.Release(_externalComObject);
+                if (_externalComObject != IntPtr.Zero)
+                {
+                    Marshal.Release(_externalComObject);
+                    _externalComObject = IntPtr.Zero;
+                }
+            }
+
+            ~NativeObjectWrapper()
+            {
+                Release();
             }
         }
 
@@ -357,7 +366,7 @@ namespace System.Runtime.InteropServices
         private unsafe ManagedObjectWrapper* CreateCCW(object instance, CreateComInterfaceFlags flags)
         {
             ComInterfaceEntry* userDefined = ComputeVtables(instance, flags, out int userDefinedCount);
-            if (userDefinedCount < 0)
+            if ((userDefined == null && userDefinedCount != 0) || userDefinedCount < 0)
             {
                 throw new ArgumentException();
             }
@@ -532,17 +541,16 @@ namespace System.Runtime.InteropServices
                             externalComObject,
                             this,
                             retValue);
-                        if (!_rcwTable.TryGetValue(retValue, out var existingWrapper))
+                        if (_rcwTable.TryAdd(retValue, wrapper))
                         {
-                            _rcwTable.Add(retValue, wrapper);
+                            _rcwCache.Add(externalComObject, wrapper._proxyHandle);
+                            return true;
                         }
                         else
                         {
+                            wrapper.Release();
                             throw new NotSupportedException();
                         }
-
-                        _rcwCache.Add(externalComObject, wrapper._proxyHandle);
-                        return true;
                     }
                 }
             }
