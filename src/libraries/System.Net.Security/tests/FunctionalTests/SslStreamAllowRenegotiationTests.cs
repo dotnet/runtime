@@ -70,7 +70,6 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [OuterLoop] // Test hits external azure server.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77414", TestPlatforms.AnyUnix)]
         public async Task SslStream_AllowRenegotiation_False_Throws()
         {
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

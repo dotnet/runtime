@@ -8,7 +8,7 @@ public class AA
     static AA m_xStatic3;
     static long m_lFwd5;
     void Method1(ref long param1) { }
-    static int Main()
+    public static int Main()
     {
         try
         {

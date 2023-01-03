@@ -8,7 +8,7 @@ namespace DefaultNamespace
     //@ENDRENAME; Verify this renames
     using System;
 
-    internal class repro
+    public class repro
     {
         public static int Main()
         {

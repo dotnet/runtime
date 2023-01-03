@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static void Main1()
         {
@@ -20,7 +20,7 @@ namespace Test
                 } while (F);
             }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

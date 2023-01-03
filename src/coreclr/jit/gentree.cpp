@@ -6457,12 +6457,6 @@ bool GenTree::OperIsImplicitIndir() const
             return true;
         case GT_INTRINSIC:
             return AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType;
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-        {
-            return AsSIMD()->OperIsMemoryLoad();
-        }
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
@@ -18751,18 +18745,6 @@ var_types GenTreeJitIntrinsic::GetSimdBaseType() const
         return TYP_UNKNOWN;
     }
     return JitType2PreciseVarType(simdBaseJitType);
-}
-
-//------------------------------------------------------------------------
-// OperIsMemoryLoad: Does this SIMD intrinsic have memory load semantics?
-//
-// Return Value:
-//    Whether this intrinsic may throw NullReferenceException if the
-//    address is "null".
-//
-bool GenTreeSIMD::OperIsMemoryLoad() const
-{
-    return GetSIMDIntrinsicId() == SIMDIntrinsicInitArray;
 }
 
 /* static */ bool GenTreeSIMD::Equals(GenTreeSIMD* op1, GenTreeSIMD* op2)

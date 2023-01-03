@@ -172,7 +172,7 @@ namespace System
         public static IEnumerable<object[]> GetKeyChords()
         {
             yield return MkConsoleKeyInfo("Ctrl+B", '\x02', ConsoleKey.B, ConsoleModifiers.Control);
-            yield return MkConsoleKeyInfo("Ctrl+Alt+B", OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
+            yield return MkConsoleKeyInfo("Ctrl+Alt+B", '\x00', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
             yield return MkConsoleKeyInfo("Enter", '\r', ConsoleKey.Enter, default);
 
             if (OperatingSystem.IsWindows())
@@ -181,8 +181,8 @@ namespace System
             }
             else
             {
-                // Validate current Unix console behaviour: '\n' is reported as '\r'
-                yield return MkConsoleKeyInfo("Ctrl+J", '\r', ConsoleKey.Enter, default);
+                // Ctrl+J is mapped by every Unix Terminal as Ctrl+Enter with new line character
+                yield return MkConsoleKeyInfo("Ctrl+J", '\n', ConsoleKey.Enter, ConsoleModifiers.Control);
             }
 
             static object[] MkConsoleKeyInfo (string requestedKeyChord, char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)

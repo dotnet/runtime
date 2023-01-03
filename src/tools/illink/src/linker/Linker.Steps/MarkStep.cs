@@ -710,11 +710,12 @@ namespace Mono.Linker.Steps
 		/// <summary>
 		/// Returns true if the Override in <paramref name="overrideInformation"/> should be marked because it is needed by the base method.
 		/// Does not take into account if the base method is in a preserved scope.
-		/// Assumes the base method is marked.
+		/// Assumes the base method is marked or comes from a preserved scope.
 		/// </summary>
 		// TODO: Move interface method marking logic here https://github.com/dotnet/linker/issues/3090
 		bool ShouldMarkOverrideForBase (OverrideInformation overrideInformation)
 		{
+			Debug.Assert (Annotations.IsMarked (overrideInformation.Base) || IgnoreScope (overrideInformation.Base.DeclaringType.Scope));
 			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
 				return false;
 			if (overrideInformation.IsOverrideOfInterfaceMember) {
@@ -725,8 +726,9 @@ namespace Mono.Linker.Steps
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override))
 				return true;
 
-			// Methods on instantiated types that override a ov.Override from a base type (not an interface) should be marked
-			// Interface ov.Overrides should only be marked if the interfaceImplementation is marked, which is handled below
+			// In this context, an override needs to be kept if
+			// a) it's an override on an instantiated type (of a marked base) or
+			// b) it's an override of an abstract base (required for valid IL)
 			if (Annotations.IsInstantiated (overrideInformation.Override.DeclaringType))
 				return true;
 
@@ -744,6 +746,7 @@ namespace Mono.Linker.Steps
 		// TODO: Take into account a base method in preserved scope
 		void MarkOverrideForBaseMethod (OverrideInformation overrideInformation)
 		{
+			Debug.Assert (ShouldMarkOverrideForBase (overrideInformation));
 			if (Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override) && Annotations.IsInstantiated (overrideInformation.Override.DeclaringType)) {
 				MarkMethod (overrideInformation.Override, new DependencyInfo (DependencyKind.OverrideOnInstantiatedType, overrideInformation.Override.DeclaringType), ScopeStack.CurrentScope.Origin);
 			} else {
@@ -1653,7 +1656,7 @@ namespace Mono.Linker.Steps
 			// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
 			bool skipWarningsForOverride = member is MethodDefinition m && m.IsVirtual && Annotations.GetBaseMethods (m) != null;
 
-			bool isReflectionAccessCoveredByRUC = Annotations.DoesMemberRequireUnreferencedCode (member, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute);
+			bool isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (member, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute);
 			if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
 				Context.LogWarning (origin, id, type.GetDisplayName (),
@@ -1777,11 +1780,11 @@ namespace Mono.Linker.Steps
 				return;
 			}
 
-			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
+			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider, out _))
 				return;
 
 			bool isReflectionAccessCoveredByRUC;
-			if (isReflectionAccessCoveredByRUC = Annotations.DoesFieldRequireUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
+			if (isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
 				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
 			bool isReflectionAccessCoveredByDAM = false;
@@ -2034,12 +2037,14 @@ namespace Mono.Linker.Steps
 				_typesWithInterfaces.Add ((type, ScopeStack.CurrentScope));
 
 			if (type.HasMethods) {
-				// TODO: MarkMethodIfNeededByBaseMethod should include logic for IsMethodNeededBytTypeDueToPreservedScope
+				// TODO: MarkMethodIfNeededByBaseMethod should include logic for IsMethodNeededByTypeDueToPreservedScope: https://github.com/dotnet/linker/issues/3090
 				foreach (var method in type.Methods) {
 					MarkMethodIfNeededByBaseMethod (method);
+					if (IsMethodNeededByTypeDueToPreservedScope (method)) {
+						// For methods that must be preserved, blame the declaring type.
+						MarkMethod (method, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), ScopeStack.CurrentScope.Origin);
+					}
 				}
-				// For methods that must be preserved, blame the declaring type.
-				MarkMethodsIf (type.Methods, IsMethodNeededByTypeDueToPreservedScope, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), ScopeStack.CurrentScope.Origin);
 				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
 					using (ScopeStack.PopToParent ())
 						MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), ScopeStack.CurrentScope.Origin);
@@ -2929,11 +2934,37 @@ namespace Mono.Linker.Steps
 			if (Annotations.GetAction (method) == MethodAction.Nothing)
 				Annotations.SetAction (method, MethodAction.Parse);
 
-			EnqueueMethod (method, reason, origin);
 
 			// Use the original reason as it's important to correctly generate warnings
 			// the updated reason is only useful for better tracking of dependencies.
 			ProcessAnalysisAnnotationsForMethod (method, originalReasonKind, origin);
+
+			// Record the reason for marking a method on each call.
+			switch (reason.Kind) {
+			case DependencyKind.AlreadyMarked:
+				Debug.Assert (Annotations.IsMarked (method));
+				break;
+			default:
+				Annotations.Mark (method, reason, origin);
+				break;
+			}
+
+			bool markedForCall =
+				reason.Kind == DependencyKind.DirectCall ||
+				reason.Kind == DependencyKind.VirtualCall ||
+				reason.Kind == DependencyKind.Newobj;
+			if (markedForCall) {
+				// Record declaring type of a called method up-front as a special case so that we may
+				// track at least some method calls that trigger a cctor.
+				// Temporarily switch to the original source for marking this method
+				// this is for the same reason as for tracking, but this time so that we report potential
+				// warnings from a better place.
+				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringTypeOfCalledMethod, method), new MessageOrigin (reason.Source as IMemberDefinition ?? method));
+			}
+
+			// We will only enqueue a method to be processed if it hasn't been processed yet.
+			if (!CheckProcessed (method))
+				EnqueueMethod (method, reason, origin);
 
 			return method;
 		}
@@ -3009,6 +3040,13 @@ namespace Mono.Linker.Steps
 			// since in those cases the warnings are desirable (potential access through reflection).
 			case DependencyKind.MemberOfType:
 
+			// Used when marking a cctor because a type or field is kept. This should not warn because we already warn
+			// on access to members of the type which could trigger the cctor.
+			case DependencyKind.CctorForType:
+			case DependencyKind.CctorForField:
+			case DependencyKind.TriggersCctorThroughFieldAccess:
+			case DependencyKind.TriggersCctorForCalledMethod:
+
 			// We should not be generating code which would produce warnings
 			case DependencyKind.UnreachableBodyRequirement:
 
@@ -3032,15 +3070,30 @@ namespace Mono.Linker.Steps
 				break;
 			};
 
-			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
+			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider, out _))
 				return;
 
-			// All override methods should have the same annotations as their base methods
-			// (else we will produce warning IL2046 or IL2092 or some other warning).
-			// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-			bool skipWarningsForOverride = dependencyKind == DependencyKind.DynamicallyAccessedMember && method.IsVirtual && Annotations.GetBaseMethods (method) != null;
+			bool skipWarningsForOverride;
+			bool isReflectionAccessCoveredByRUC;
+			RequiresUnreferencedCodeAttribute? requiresUnreferencedCode;
+			if (dependencyKind == DependencyKind.AttributeProperty) {
+				// Property assignment in an attribute instance.
+				// This case is more like a direct method call than reflection, and should
+				// be logically similar to what is done in ReflectionMethodBodyScanner for method calls.
+				skipWarningsForOverride = false;
+				isReflectionAccessCoveredByRUC = Annotations.DoesMethodRequireUnreferencedCode (method, out requiresUnreferencedCode);
+			} else {
+				// All override methods should have the same annotations as their base methods
+				// (else we will produce warning IL2046 or IL2092 or some other warning).
+				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+				skipWarningsForOverride = dependencyKind == DependencyKind.DynamicallyAccessedMember && method.IsVirtual && Annotations.GetBaseMethods (method) != null;
+				// If the method being accessed has warnings suppressed due to Requires attributes,
+				// we need to issue a warning for the reflection access. This is true even for instance
+				// methods, which can be reflection-invoked without ever calling a constructor of the
+				// accessed type.
+				isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (method, out requiresUnreferencedCode);
+			}
 
-			bool isReflectionAccessCoveredByRUC = Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode);
 			if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride)
 				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
@@ -3106,32 +3159,10 @@ namespace Mono.Linker.Steps
 			using var parentScope = ScopeStack.PushScope (new MarkScopeStack.Scope (origin));
 			using var methodScope = ScopeStack.PushScope (new MessageOrigin (method));
 
-			// Record the reason for marking a method on each call. The logic under CheckProcessed happens
-			// only once per method.
-			switch (reason.Kind) {
-			case DependencyKind.AlreadyMarked:
-				Debug.Assert (Annotations.IsMarked (method));
-				break;
-			default:
-				Annotations.Mark (method, reason, ScopeStack.CurrentScope.Origin);
-				break;
-			}
-
 			bool markedForCall =
 				reason.Kind == DependencyKind.DirectCall ||
 				reason.Kind == DependencyKind.VirtualCall ||
 				reason.Kind == DependencyKind.Newobj;
-			if (markedForCall) {
-				// Record declaring type of a called method up-front as a special case so that we may
-				// track at least some method calls that trigger a cctor.
-				// Temporarily switch to the original source for marking this method
-				// this is for the same reason as for tracking, but this time so that we report potential
-				// warnings from a better place.
-				MarkType (method.DeclaringType, new DependencyInfo (DependencyKind.DeclaringTypeOfCalledMethod, method), new MessageOrigin (reason.Source as IMemberDefinition ?? method));
-			}
-
-			if (CheckProcessed (method))
-				return;
 
 			foreach (Action<MethodDefinition> handleMarkMethod in MarkContext.MarkMethodActions)
 				handleMarkMethod (method);
@@ -3190,7 +3221,7 @@ namespace Mono.Linker.Steps
 			MarkBaseMethods (method);
 
 			if (Annotations.GetOverrides (method) is IEnumerable<OverrideInformation> overrides) {
-				foreach (var @override in overrides) {
+				foreach (var @override in overrides.Where (ov => Annotations.IsMarked (ov.Base) || IgnoreScope (ov.Base.DeclaringType.Scope))) {
 					if (ShouldMarkOverrideForBase (@override))
 						MarkOverrideForBaseMethod (@override);
 				}

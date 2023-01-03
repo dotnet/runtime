@@ -10,7 +10,7 @@
 using System;
 
 
-class Program
+public class Program
 {
       public sealed class Variables
     {
