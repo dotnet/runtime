@@ -238,7 +238,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            if (_method.IsVirtual && _method.HasInstantiation)
+            if (_method.IsVirtual && _method.HasInstantiation && !_method.IsGenericMethodDefinition)
             {
                 return GetGenericVirtualMethodDependencies(context);
             }

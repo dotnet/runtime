@@ -3,12 +3,10 @@
 
 using System.Buffers;
 using System.Buffers.Text;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -41,10 +39,6 @@ namespace System.Net.Http
         /// </remarks>
         private const int MaxChunkBytesAllowed = 16 * 1024;
 
-        private static readonly byte[] s_contentLength0NewlineAsciiBytes = "Content-Length: 0\r\n"u8.ToArray();
-        private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = " HTTP/1.0\r\n"u8.ToArray();
-        private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = " HTTP/1.1\r\n"u8.ToArray();
-        private static readonly byte[] s_httpSchemeAndDelimiter = "http://"u8.ToArray();
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64("HTTP/1.0"u8);
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
@@ -53,11 +47,12 @@ namespace System.Net.Http
         private readonly TransportContext? _transportContext;
 
         private HttpRequestMessage? _currentRequest;
-        private readonly byte[] _writeBuffer;
-        private int _writeOffset;
+        private ArrayBuffer _writeBuffer;
         private int _allowedReadLineBytes;
+
         /// <summary>Reusable array used to get the values for each header being written to the wire.</summary>
-        private string[] _headerValues = Array.Empty<string>();
+        [ThreadStatic]
+        private static string[]? t_headerValues;
 
         private ValueTask<int>? _readAheadTask;
         private int _readAheadTaskLock; // 0 == free, 1 == held
@@ -88,7 +83,7 @@ namespace System.Net.Http
 
             _transportContext = transportContext;
 
-            _writeBuffer = new byte[InitialWriteBufferSize];
+            _writeBuffer = new ArrayBuffer(InitialWriteBufferSize, usePool: false);
             _readBuffer = new ArrayBuffer(InitialReadBufferSize, usePool: false);
 
             _idleSinceTickCount = Environment.TickCount64;
@@ -269,142 +264,238 @@ namespace System.Net.Http
             _readBuffer.Discard(bytesToConsume);
         }
 
-        private async ValueTask WriteHeadersAsync(HttpHeaders headers, string? cookiesFromContainer, bool async)
+        private void WriteHeaders(HttpRequestMessage request, HttpMethod normalizedMethod)
         {
-            Debug.Assert(_currentRequest != null);
+            Debug.Assert(request.RequestUri is not null);
 
-            if (headers.GetEntriesArray() is HeaderEntry[] entries)
+            // Write the request line
+            WriteAsciiString(normalizedMethod.Method);
+            _writeBuffer.EnsureAvailableSpace(1);
+            _writeBuffer.AvailableSpan[0] = (byte)' ';
+            _writeBuffer.Commit(1);
+
+            if (ReferenceEquals(normalizedMethod, HttpMethod.Connect))
             {
-                for (int i = 0; i < headers.Count; i++)
+                // RFC 7231 #section-4.3.6.
+                // Write only CONNECT foo.com:345 HTTP/1.1
+                if (!request.HasHeaders || request.Headers.Host is not string host)
                 {
-                    HeaderEntry header = entries[i];
-
-                    if (header.Key.KnownHeader is KnownHeader knownHeader)
-                    {
-                        await WriteBytesAsync(knownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        await WriteAsciiStringAsync(header.Key.Name, async).ConfigureAwait(false);
-                        await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
-                    }
-
-                    int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
-                    Debug.Assert(headerValuesCount > 0, "No values for header??");
-                    if (headerValuesCount > 0)
-                    {
-                        Encoding? valueEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(header.Key.Name, _currentRequest);
-
-                        await WriteStringAsync(_headerValues[0], async, valueEncoding).ConfigureAwait(false);
-
-                        if (cookiesFromContainer != null && header.Key.Equals(KnownHeaders.Cookie))
-                        {
-                            await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
-                            await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
-
-                            cookiesFromContainer = null;
-                        }
-
-                        // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
-                        if (headerValuesCount > 1)
-                        {
-                            HttpHeaderParser? parser = header.Key.Parser;
-                            string separator = HttpHeaderParser.DefaultSeparator;
-                            if (parser != null && parser.SupportsMultipleValues)
-                            {
-                                separator = parser.Separator!;
-                            }
-
-                            for (int j = 1; j < headerValuesCount; j++)
-                            {
-                                await WriteAsciiStringAsync(separator, async).ConfigureAwait(false);
-                                await WriteStringAsync(_headerValues[j], async, valueEncoding).ConfigureAwait(false);
-                            }
-                        }
-                    }
-
-                    await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
+                    throw new HttpRequestException(SR.net_http_request_no_host);
                 }
-            }
 
-            if (cookiesFromContainer != null)
-            {
-                await WriteAsciiStringAsync(HttpKnownHeaderNames.Cookie, async).ConfigureAwait(false);
-                await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
-
-                Encoding? valueEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(HttpKnownHeaderNames.Cookie, _currentRequest);
-                await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
-
-                await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
-            }
-        }
-
-        private async ValueTask WriteHostHeaderAsync(Uri uri, bool async)
-        {
-            await WriteBytesAsync(KnownHeaders.Host.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
-
-            if (_pool.HostHeaderValueBytes != null)
-            {
-                Debug.Assert(Kind != HttpConnectionKind.Proxy);
-                await WriteBytesAsync(_pool.HostHeaderValueBytes, async).ConfigureAwait(false);
+                WriteAsciiString(host);
             }
             else
             {
-                Debug.Assert(Kind == HttpConnectionKind.Proxy);
-
-                // Uri.IdnHost is missing '[', ']' characters around IPv6 address
-                // and it also contains ScopeID for Link-Local addresses
-                if (uri.HostNameType == UriHostNameType.IPv6)
+                if (Kind == HttpConnectionKind.Proxy)
                 {
-                    await WriteAsciiStringAsync(uri.Host, async).ConfigureAwait(false);
+                    // Proxied requests contain full URL
+                    Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
+                    WriteBytes("http://"u8);
+                    WriteHost(request.RequestUri);
+                }
+
+                WriteAsciiString(request.RequestUri.PathAndQuery);
+            }
+
+            // Fall back to 1.1 for all versions other than 1.0
+            Debug.Assert(request.Version.Major >= 0 && request.Version.Minor >= 0); // guaranteed by Version class
+            bool isHttp10 = request.Version.Minor == 0 && request.Version.Major == 1;
+            WriteBytes(isHttp10 ? " HTTP/1.0\r\n"u8 : " HTTP/1.1\r\n"u8);
+
+            // Write special additional headers.  If a host isn't in the headers list, then a Host header
+            // wasn't set, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
+            if (!request.HasHeaders || request.Headers.Host is null)
+            {
+                if (_pool.HostHeaderLineBytes is byte[] hostHeaderLineBytes)
+                {
+                    Debug.Assert(Kind != HttpConnectionKind.Proxy);
+                    WriteBytes(hostHeaderLineBytes);
                 }
                 else
                 {
-                    await WriteAsciiStringAsync(uri.IdnHost, async).ConfigureAwait(false);
+                    Debug.Assert(Kind == HttpConnectionKind.Proxy);
+                    WriteBytes(KnownHeaders.Host.AsciiBytesWithColonSpace);
+                    WriteHost(request.RequestUri);
+                    WriteCRLF();
                 }
+            }
 
-                if (!uri.IsDefaultPort)
+            // Determine cookies to send
+            string? cookiesFromContainer = null;
+            if (_pool.Settings._useCookies)
+            {
+                cookiesFromContainer = _pool.Settings._cookieContainer!.GetCookieHeader(request.RequestUri);
+                if (cookiesFromContainer == "")
                 {
-                    await WriteByteAsync((byte)':', async).ConfigureAwait(false);
-                    await WriteDecimalInt32Async(uri.Port, async).ConfigureAwait(false);
+                    cookiesFromContainer = null;
                 }
             }
 
-            await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
-        }
-
-        private Task WriteDecimalInt32Async(int value, bool async)
-        {
-            // Try to format into our output buffer directly.
-            if (Utf8Formatter.TryFormat(value, new Span<byte>(_writeBuffer, _writeOffset, _writeBuffer.Length - _writeOffset), out int bytesWritten))
+            // Write request headers
+            if (request.HasHeaders || cookiesFromContainer is not null)
             {
-                _writeOffset += bytesWritten;
-                return Task.CompletedTask;
+                WriteHeaderCollection(request.Headers, cookiesFromContainer);
             }
 
-            // If we don't have enough room, do it the slow way.
-            return WriteAsciiStringAsync(value.ToString(), async);
-        }
-
-        private Task WriteHexInt32Async(int value, bool async)
-        {
-            // Try to format into our output buffer directly.
-            if (Utf8Formatter.TryFormat(value, new Span<byte>(_writeBuffer, _writeOffset, _writeBuffer.Length - _writeOffset), out int bytesWritten, 'X'))
+            // Write content headers
+            if (request.Content is HttpContent content)
             {
-                _writeOffset += bytesWritten;
-                return Task.CompletedTask;
+                WriteHeaderCollection(content.Headers);
+            }
+            else
+            {
+                // Write out Content-Length: 0 header to indicate no body,
+                // unless this is a method that never has a body.
+                if (normalizedMethod.MustHaveRequestBody)
+                {
+                    WriteBytes("Content-Length: 0\r\n"u8);
+                }
             }
 
-            // If we don't have enough room, do it the slow way.
-            return WriteAsciiStringAsync(value.ToString("X", CultureInfo.InvariantCulture), async);
+            // CRLF for end of headers.
+            WriteCRLF();
+
+            void WriteHost(Uri requestUri)
+            {
+                // Uri.IdnHost is missing '[', ']' characters around IPv6 address
+                // and it also contains ScopeID for Link-Local addresses
+                string host = requestUri.HostNameType == UriHostNameType.IPv6 ? requestUri.Host : requestUri.IdnHost;
+                WriteAsciiString(host);
+
+                if (!requestUri.IsDefaultPort)
+                {
+                    _writeBuffer.EnsureAvailableSpace(6);
+                    Span<byte> buffer = _writeBuffer.AvailableSpan;
+                    buffer[0] = (byte)':';
+                    bool success = Utf8Formatter.TryFormat(requestUri.Port, buffer.Slice(1), out int bytesWritten);
+                    Debug.Assert(success);
+                    _writeBuffer.Commit(bytesWritten + 1);
+                }
+            }
+        }
+
+        private void WriteHeaderCollection(HttpHeaders headers, string? cookiesFromContainer = null)
+        {
+            Debug.Assert(_currentRequest is not null);
+
+            HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
+            ref string[]? headerValues = ref t_headerValues;
+
+            foreach (HeaderEntry header in headers.GetEntries())
+            {
+                if (header.Key.KnownHeader is KnownHeader knownHeader)
+                {
+                    WriteBytes(knownHeader.AsciiBytesWithColonSpace);
+                }
+                else
+                {
+                    WriteAsciiString(header.Key.Name);
+                    WriteBytes(": "u8);
+                }
+
+                int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref headerValues);
+                Debug.Assert(headerValuesCount > 0, "No values for header??");
+
+                Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, _currentRequest);
+
+                WriteString(headerValues[0], valueEncoding);
+
+                if (cookiesFromContainer is not null && header.Key.Equals(KnownHeaders.Cookie))
+                {
+                    WriteBytes("; "u8); // Cookies use "; " as the separator
+                    WriteString(cookiesFromContainer, valueEncoding);
+                    cookiesFromContainer = null;
+                }
+
+                // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
+                if (headerValuesCount > 1)
+                {
+                    HttpHeaderParser? parser = header.Key.Parser;
+                    string separator = HttpHeaderParser.DefaultSeparator;
+                    if (parser != null && parser.SupportsMultipleValues)
+                    {
+                        separator = parser.Separator!;
+                    }
+
+                    for (int i = 1; i < headerValuesCount; i++)
+                    {
+                        WriteAsciiString(separator);
+                        WriteString(headerValues[i], valueEncoding);
+                    }
+                }
+
+                WriteCRLF();
+            }
+
+            if (cookiesFromContainer is not null)
+            {
+                WriteBytes(KnownHeaders.Cookie.AsciiBytesWithColonSpace);
+                WriteString(cookiesFromContainer, encodingSelector?.Invoke(HttpKnownHeaderNames.Cookie, _currentRequest));
+                WriteCRLF();
+            }
+        }
+
+        private void WriteCRLF()
+        {
+            _writeBuffer.EnsureAvailableSpace(2);
+            Span<byte> buffer = _writeBuffer.AvailableSpan;
+            buffer[1] = (byte)'\n';
+            buffer[0] = (byte)'\r';
+            _writeBuffer.Commit(2);
+        }
+
+        private void WriteBytes(ReadOnlySpan<byte> bytes)
+        {
+            _writeBuffer.EnsureAvailableSpace(bytes.Length);
+            bytes.CopyTo(_writeBuffer.AvailableSpan);
+            _writeBuffer.Commit(bytes.Length);
+        }
+
+        private void WriteAsciiString(string s)
+        {
+            _writeBuffer.EnsureAvailableSpace(s.Length);
+            int length = Encoding.ASCII.GetBytes(s, _writeBuffer.AvailableSpan);
+            Debug.Assert(length == s.Length);
+            Debug.Assert(Encoding.ASCII.GetString(_writeBuffer.AvailableSpan.Slice(0, length)) == s);
+            _writeBuffer.Commit(length);
+        }
+
+        private void WriteString(string s, Encoding? encoding)
+        {
+            if (encoding is null)
+            {
+                _writeBuffer.EnsureAvailableSpace(s.Length);
+                Span<byte> buffer = _writeBuffer.AvailableSpan;
+                for (int i = 0; i < s.Length; i++)
+                {
+                    char c = s[i];
+                    if (!char.IsAscii(c))
+                    {
+                        ThrowForInvalidCharEncoding();
+                    }
+                    buffer[i] = (byte)c;
+                }
+                _writeBuffer.Commit(s.Length);
+            }
+            else
+            {
+                _writeBuffer.EnsureAvailableSpace(encoding.GetMaxByteCount(s.Length));
+                int length = encoding.GetBytes(s, _writeBuffer.AvailableSpan);
+                _writeBuffer.Commit(length);
+            }
+
+            static void ThrowForInvalidCharEncoding() =>
+                throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
         }
 
         public async Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            TaskCompletionSource<bool>? allowExpect100ToContinue = null;
-            Task? sendRequestContentTask = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
+
+            TaskCompletionSource<bool>? allowExpect100ToContinue = null;
+            Task? sendRequestContentTask = null;
 
             _currentRequest = request;
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
@@ -419,98 +510,7 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
 
-                Debug.Assert(request.RequestUri != null);
-                // Write request line
-                await WriteStringAsync(normalizedMethod.Method, async).ConfigureAwait(false);
-                await WriteByteAsync((byte)' ', async).ConfigureAwait(false);
-
-                if (ReferenceEquals(normalizedMethod, HttpMethod.Connect))
-                {
-                    // RFC 7231 #section-4.3.6.
-                    // Write only CONNECT foo.com:345 HTTP/1.1
-                    if (!request.HasHeaders || request.Headers.Host == null)
-                    {
-                        throw new HttpRequestException(SR.net_http_request_no_host);
-                    }
-                    await WriteAsciiStringAsync(request.Headers.Host, async).ConfigureAwait(false);
-                }
-                else
-                {
-                    if (Kind == HttpConnectionKind.Proxy)
-                    {
-                        // Proxied requests contain full URL
-                        Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
-                        await WriteBytesAsync(s_httpSchemeAndDelimiter, async).ConfigureAwait(false);
-
-                        // TODO https://github.com/dotnet/runtime/issues/25782:
-                        // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
-                        // So, we need to add them manually for now.
-                        if (request.RequestUri.HostNameType == UriHostNameType.IPv6)
-                        {
-                            await WriteByteAsync((byte)'[', async).ConfigureAwait(false);
-                            await WriteAsciiStringAsync(request.RequestUri.IdnHost, async).ConfigureAwait(false);
-                            await WriteByteAsync((byte)']', async).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            await WriteAsciiStringAsync(request.RequestUri.IdnHost, async).ConfigureAwait(false);
-                        }
-
-                        if (!request.RequestUri.IsDefaultPort)
-                        {
-                            await WriteByteAsync((byte)':', async).ConfigureAwait(false);
-                            await WriteDecimalInt32Async(request.RequestUri.Port, async).ConfigureAwait(false);
-                        }
-                    }
-                    await WriteStringAsync(request.RequestUri.PathAndQuery, async).ConfigureAwait(false);
-                }
-
-                // Fall back to 1.1 for all versions other than 1.0
-                Debug.Assert(request.Version.Major >= 0 && request.Version.Minor >= 0); // guaranteed by Version class
-                bool isHttp10 = request.Version.Minor == 0 && request.Version.Major == 1;
-                await WriteBytesAsync(isHttp10 ? s_spaceHttp10NewlineAsciiBytes : s_spaceHttp11NewlineAsciiBytes, async).ConfigureAwait(false);
-
-                // Determine cookies to send
-                string? cookiesFromContainer = null;
-                if (_pool.Settings._useCookies)
-                {
-                    cookiesFromContainer = _pool.Settings._cookieContainer!.GetCookieHeader(request.RequestUri);
-                    if (cookiesFromContainer == "")
-                    {
-                        cookiesFromContainer = null;
-                    }
-                }
-
-                // Write special additional headers.  If a host isn't in the headers list, then a Host header
-                // wasn't sent, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
-                if (!request.HasHeaders || request.Headers.Host == null)
-                {
-                    await WriteHostHeaderAsync(request.RequestUri, async).ConfigureAwait(false);
-                }
-
-                // Write request headers
-                if (request.HasHeaders || cookiesFromContainer != null)
-                {
-                    await WriteHeadersAsync(request.Headers, cookiesFromContainer, async).ConfigureAwait(false);
-                }
-
-                if (request.Content == null)
-                {
-                    // Write out Content-Length: 0 header to indicate no body,
-                    // unless this is a method that never has a body.
-                    if (normalizedMethod.MustHaveRequestBody)
-                    {
-                        await WriteBytesAsync(s_contentLength0NewlineAsciiBytes, async).ConfigureAwait(false);
-                    }
-                }
-                else
-                {
-                    // Write content headers
-                    await WriteHeadersAsync(request.Content.Headers, cookiesFromContainer: null, async).ConfigureAwait(false);
-                }
-
-                // CRLF for end of headers.
-                await WriteTwoBytesAsync((byte)'\r', (byte)'\n', async).ConfigureAwait(false);
+                WriteHeaders(request, normalizedMethod);
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
 
@@ -1310,21 +1310,14 @@ namespace System.Net.Http
 
         private void WriteToBuffer(ReadOnlySpan<byte> source)
         {
-            Debug.Assert(source.Length <= _writeBuffer.Length - _writeOffset);
-            source.CopyTo(new Span<byte>(_writeBuffer, _writeOffset, source.Length));
-            _writeOffset += source.Length;
-        }
-
-        private void WriteToBuffer(ReadOnlyMemory<byte> source)
-        {
-            Debug.Assert(source.Length <= _writeBuffer.Length - _writeOffset);
-            source.Span.CopyTo(new Span<byte>(_writeBuffer, _writeOffset, source.Length));
-            _writeOffset += source.Length;
+            Debug.Assert(source.Length <= _writeBuffer.AvailableLength);
+            source.CopyTo(_writeBuffer.AvailableSpan);
+            _writeBuffer.Commit(source.Length);
         }
 
         private void Write(ReadOnlySpan<byte> source)
         {
-            int remaining = _writeBuffer.Length - _writeOffset;
+            int remaining = _writeBuffer.AvailableLength;
 
             if (source.Length <= remaining)
             {
@@ -1333,7 +1326,7 @@ namespace System.Net.Http
                 return;
             }
 
-            if (_writeOffset != 0)
+            if (_writeBuffer.ActiveLength != 0)
             {
                 // Fit what we can in the current write buffer and flush it.
                 WriteToBuffer(source.Slice(0, remaining));
@@ -1341,7 +1334,7 @@ namespace System.Net.Http
                 Flush();
             }
 
-            if (source.Length >= _writeBuffer.Length)
+            if (source.Length >= _writeBuffer.Capacity)
             {
                 // Large write.  No sense buffering this.  Write directly to stream.
                 WriteToStream(source);
@@ -1353,43 +1346,66 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask WriteAsync(ReadOnlyMemory<byte> source, bool async)
+        private ValueTask WriteAsync(ReadOnlyMemory<byte> source)
         {
-            int remaining = _writeBuffer.Length - _writeOffset;
+            int remaining = _writeBuffer.AvailableLength;
 
             if (source.Length <= remaining)
             {
                 // Fits in current write buffer.  Just copy and return.
-                WriteToBuffer(source);
-                return;
+                WriteToBuffer(source.Span);
+                return default;
             }
 
-            if (_writeOffset != 0)
+            if (_writeBuffer.ActiveLength != 0)
             {
                 // Fit what we can in the current write buffer and flush it.
-                WriteToBuffer(source.Slice(0, remaining));
+                WriteToBuffer(source.Span.Slice(0, remaining));
                 source = source.Slice(remaining);
-                await FlushAsync(async).ConfigureAwait(false);
+
+                ValueTask flushTask = FlushAsync(async: true);
+
+                if (flushTask.IsCompletedSuccessfully)
+                {
+                    flushTask.GetAwaiter().GetResult();
+
+                    if (source.Length <= _writeBuffer.Capacity)
+                    {
+                        WriteToBuffer(source.Span);
+                        return default;
+                    }
+
+                    // Fall-through to WriteToStreamAsync
+                }
+                else
+                {
+                    return AwaitFlushAndWriteAsync(flushTask, source);
+                }
             }
 
-            if (source.Length >= _writeBuffer.Length)
+            // Large write.  No sense buffering this.  Write directly to stream.
+            return WriteToStreamAsync(source, async: true);
+
+            async ValueTask AwaitFlushAndWriteAsync(ValueTask flushTask, ReadOnlyMemory<byte> source)
             {
-                // Large write.  No sense buffering this.  Write directly to stream.
-                await WriteToStreamAsync(source, async).ConfigureAwait(false);
-            }
-            else
-            {
-                // Copy remainder into buffer
-                WriteToBuffer(source);
+                await flushTask.ConfigureAwait(false);
+
+                if (source.Length <= _writeBuffer.Capacity)
+                {
+                    WriteToBuffer(source.Span);
+                }
+                else
+                {
+                    await WriteToStreamAsync(source, async: true).ConfigureAwait(false);
+                }
             }
         }
 
         private void WriteWithoutBuffering(ReadOnlySpan<byte> source)
         {
-            if (_writeOffset != 0)
+            if (_writeBuffer.ActiveLength != 0)
             {
-                int remaining = _writeBuffer.Length - _writeOffset;
-                if (source.Length <= remaining)
+                if (source.Length <= _writeBuffer.AvailableLength)
                 {
                     // There's something already in the write buffer, but the content
                     // we're writing can also fit after it in the write buffer.  Copy
@@ -1410,21 +1426,20 @@ namespace System.Net.Http
 
         private ValueTask WriteWithoutBufferingAsync(ReadOnlyMemory<byte> source, bool async)
         {
-            if (_writeOffset == 0)
+            if (_writeBuffer.ActiveLength == 0)
             {
                 // There's nothing in the write buffer we need to flush.
                 // Just write the supplied data out to the stream.
                 return WriteToStreamAsync(source, async);
             }
 
-            int remaining = _writeBuffer.Length - _writeOffset;
-            if (source.Length <= remaining)
+            if (source.Length <= _writeBuffer.AvailableLength)
             {
                 // There's something already in the write buffer, but the content
                 // we're writing can also fit after it in the write buffer.  Copy
                 // the content to the write buffer and then flush it, so that we
                 // can do a single send rather than two.
-                WriteToBuffer(source);
+                WriteToBuffer(source.Span);
                 return FlushAsync(async);
             }
 
@@ -1439,188 +1454,47 @@ namespace System.Net.Http
             await WriteToStreamAsync(source, async).ConfigureAwait(false);
         }
 
-        private Task WriteByteAsync(byte b, bool async)
+        private ValueTask WriteHexInt32Async(int value, bool async)
         {
-            if (_writeOffset < _writeBuffer.Length)
+            // Try to format into our output buffer directly.
+            if (Utf8Formatter.TryFormat(value, _writeBuffer.AvailableSpan, out int bytesWritten, 'X'))
             {
-                _writeBuffer[_writeOffset++] = b;
-                return Task.CompletedTask;
-            }
-            return WriteByteSlowAsync(b, async);
-        }
-
-        private async Task WriteByteSlowAsync(byte b, bool async)
-        {
-            Debug.Assert(_writeOffset == _writeBuffer.Length);
-            await WriteToStreamAsync(_writeBuffer, async).ConfigureAwait(false);
-
-            _writeBuffer[0] = b;
-            _writeOffset = 1;
-        }
-
-        private Task WriteTwoBytesAsync(byte b1, byte b2, bool async)
-        {
-            if (_writeOffset <= _writeBuffer.Length - 2)
-            {
-                byte[] buffer = _writeBuffer;
-                buffer[_writeOffset++] = b1;
-                buffer[_writeOffset++] = b2;
-                return Task.CompletedTask;
-            }
-            return WriteTwoBytesSlowAsync(b1, b2, async);
-        }
-
-        private async Task WriteTwoBytesSlowAsync(byte b1, byte b2, bool async)
-        {
-            await WriteByteAsync(b1, async).ConfigureAwait(false);
-            await WriteByteAsync(b2, async).ConfigureAwait(false);
-        }
-
-        private Task WriteBytesAsync(byte[] bytes, bool async)
-        {
-            if (_writeOffset <= _writeBuffer.Length - bytes.Length)
-            {
-                Buffer.BlockCopy(bytes, 0, _writeBuffer, _writeOffset, bytes.Length);
-                _writeOffset += bytes.Length;
-                return Task.CompletedTask;
-            }
-            return WriteBytesSlowAsync(bytes, bytes.Length, async);
-        }
-
-        private async Task WriteBytesSlowAsync(byte[] bytes, int length, bool async)
-        {
-            int offset = 0;
-            while (true)
-            {
-                int remaining = length - offset;
-                int toCopy = Math.Min(remaining, _writeBuffer.Length - _writeOffset);
-                Buffer.BlockCopy(bytes, offset, _writeBuffer, _writeOffset, toCopy);
-                _writeOffset += toCopy;
-                offset += toCopy;
-
-                Debug.Assert(offset <= length, $"Expected {nameof(offset)} to be <= {length}, got {offset}");
-                Debug.Assert(_writeOffset <= _writeBuffer.Length, $"Expected {nameof(_writeOffset)} to be <= {_writeBuffer.Length}, got {_writeOffset}");
-                if (offset == length)
-                {
-                    break;
-                }
-                else if (_writeOffset == _writeBuffer.Length)
-                {
-                    await WriteToStreamAsync(_writeBuffer, async).ConfigureAwait(false);
-                    _writeOffset = 0;
-                }
-            }
-        }
-
-        private Task WriteStringAsync(string s, bool async)
-        {
-            // If there's enough space in the buffer to just copy all of the string's bytes, do so.
-            // Unlike WriteAsciiStringAsync, validate each char along the way.
-            int offset = _writeOffset;
-            if (s.Length <= _writeBuffer.Length - offset)
-            {
-                byte[] writeBuffer = _writeBuffer;
-                foreach (char c in s)
-                {
-                    if ((c & 0xFF80) != 0)
-                    {
-                        throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
-                    }
-                    writeBuffer[offset++] = (byte)c;
-                }
-                _writeOffset = offset;
-                return Task.CompletedTask;
+                _writeBuffer.Commit(bytesWritten);
+                return default;
             }
 
-            // Otherwise, fall back to doing a normal slow string write; we could optimize away
-            // the extra checks later, but the case where we cross a buffer boundary should be rare.
-            return WriteStringAsyncSlow(s, async);
-        }
-
-        private Task WriteStringAsync(string s, bool async, Encoding? encoding)
-        {
-            if (encoding is null)
+            // If we don't have enough room, do it the slow way.
+            if (async)
             {
-                return WriteStringAsync(s, async);
+                return WriteAsync(Encoding.ASCII.GetBytes(value.ToString("X", CultureInfo.InvariantCulture)));
             }
-
-            // If there's enough space in the buffer to just copy all of the string's bytes, do so.
-            if (encoding.GetMaxByteCount(s.Length) <= _writeBuffer.Length - _writeOffset)
+            else
             {
-                _writeOffset += encoding.GetBytes(s, _writeBuffer.AsSpan(_writeOffset));
-                return Task.CompletedTask;
-            }
+                // We should have enough capacity to write any hex-encoded int after flushing the buffer.
+                Debug.Assert(_writeBuffer.Capacity >= 8);
 
-            // Otherwise, fall back to doing a normal slow string write
-            return WriteStringWithEncodingAsyncSlow(s, async, encoding);
-        }
-
-        private async Task WriteStringWithEncodingAsyncSlow(string s, bool async, Encoding encoding)
-        {
-            // Avoid calculating the length if the rented array would be small anyway
-            int length = s.Length <= 512
-                ? encoding.GetMaxByteCount(s.Length)
-                : encoding.GetByteCount(s);
-
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(length);
-            try
-            {
-                int written = encoding.GetBytes(s, rentedBuffer);
-                await WriteBytesSlowAsync(rentedBuffer, written, async).ConfigureAwait(false);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
-            }
-        }
-
-        private Task WriteAsciiStringAsync(string s, bool async)
-        {
-            // If there's enough space in the buffer to just copy all of the string's bytes, do so.
-            int offset = _writeOffset;
-            if (s.Length <= _writeBuffer.Length - offset)
-            {
-                OperationStatus operationStatus = Ascii.FromUtf16(s, _writeBuffer.AsSpan(offset), out int bytesWritten);
-                Debug.Assert(operationStatus == OperationStatus.Done);
-                _writeOffset = offset + bytesWritten;
-
-                return Task.CompletedTask;
-            }
-
-            // Otherwise, fall back to doing a normal slow string write; we could optimize away
-            // the extra checks later, but the case where we cross a buffer boundary should be rare.
-            return WriteStringAsyncSlow(s, async);
-        }
-
-        private async Task WriteStringAsyncSlow(string s, bool async)
-        {
-            if (!Ascii.IsValid(s))
-            {
-                throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
-            }
-
-            for (int i = 0; i < s.Length; i++)
-            {
-                await WriteByteAsync((byte)s[i], async).ConfigureAwait(false);
+                Flush();
+                return WriteHexInt32Async(value, async: false);
             }
         }
 
         private void Flush()
         {
-            if (_writeOffset > 0)
+            ReadOnlySpan<byte> bytes = _writeBuffer.ActiveSpan;
+            if (bytes.Length > 0)
             {
-                WriteToStream(new ReadOnlySpan<byte>(_writeBuffer, 0, _writeOffset));
-                _writeOffset = 0;
+                _writeBuffer.Discard(bytes.Length);
+                WriteToStream(bytes);
             }
         }
 
         private ValueTask FlushAsync(bool async)
         {
-            if (_writeOffset > 0)
+            ReadOnlyMemory<byte> bytes = _writeBuffer.ActiveMemory;
+            if (bytes.Length > 0)
             {
-                ValueTask t = WriteToStreamAsync(new ReadOnlyMemory<byte>(_writeBuffer, 0, _writeOffset), async);
-                _writeOffset = 0;
-                return t;
+                _writeBuffer.Discard(bytes.Length);
+                return WriteToStreamAsync(bytes, async);
             }
             return default;
         }
@@ -2089,7 +1963,7 @@ namespace System.Net.Http
         private void CompleteResponse()
         {
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
-            Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
+            Debug.Assert(_writeBuffer.ActiveLength == 0, "Everything in write buffer should have been flushed.");
 
             // Disassociate the connection from a request.
             _currentRequest = null;
