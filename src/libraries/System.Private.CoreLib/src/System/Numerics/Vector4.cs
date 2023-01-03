@@ -225,6 +225,7 @@ namespace System.Numerics
         /// <param name="value2">The scalar value.</param>
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Division" /> method defines the division operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator /(Vector4 value1, float value2)
         {
@@ -279,6 +280,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(Vector4 left, float right)
         {
@@ -290,6 +292,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(float left, Vector4 right)
         {
@@ -317,6 +320,7 @@ namespace System.Numerics
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_UnaryNegation" /> method defines the unary negation operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator -(Vector4 value)
         {

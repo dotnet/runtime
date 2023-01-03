@@ -810,6 +810,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdAbsNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Vector2_op_UnaryNegation:
+                case NI_Vector3_op_UnaryNegation:
+                case NI_Vector4_op_UnaryNegation:
                 case NI_VectorT128_Negate:
                 case NI_VectorT128_op_UnaryNegation:
 #if defined(TARGET_XARCH)
@@ -1172,6 +1175,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
+                case NI_Vector4_op_Division:
                 case NI_VectorT128_Divide:
                 case NI_VectorT128_op_Division:
 #if defined(TARGET_XARCH)
@@ -1183,6 +1187,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Vector2_op_Equality:
+                case NI_Vector3_op_Equality:
+                case NI_Vector4_op_Equality:
                 case NI_VectorT128_EqualsAll:
                 case NI_VectorT128_op_Equality:
 #if defined(TARGET_XARCH)
@@ -1286,6 +1293,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                  /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Vector2_Max:
+                case NI_Vector3_Max:
+                case NI_Vector4_Max:
                 case NI_VectorT128_Max:
 #if defined(TARGET_XARCH)
                 case NI_VectorT256_Max:
@@ -1295,6 +1305,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                             /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Vector2_Min:
+                case NI_Vector3_Min:
+                case NI_Vector4_Min:
                 case NI_VectorT128_Min:
 #if defined(TARGET_XARCH)
                 case NI_VectorT256_Min:
@@ -1304,11 +1317,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                             /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Vector2_op_Multiply:
+                case NI_Vector3_op_Multiply:
+                case NI_Vector4_op_Multiply:
                 case NI_VectorT128_Multiply:
                 case NI_VectorT128_op_Multiply:
 #if defined(TARGET_XARCH)
-                case NI_VectorT256_op_Multiply:
                 case NI_VectorT256_Multiply:
+                case NI_VectorT256_op_Multiply:
 #endif // TARGET_XARCH
                 {
                     return gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize,
