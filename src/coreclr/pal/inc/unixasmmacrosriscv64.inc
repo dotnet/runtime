@@ -140,7 +140,8 @@ C_FUNC(\Name\()_End):
     PROLOG_SAVE_REG_PAIR s5, s6, \ofs + 48
     PROLOG_SAVE_REG_PAIR s7, s8, \ofs + 64
     PROLOG_SAVE_REG_PAIR s9, s10, \ofs + 80
-    PROLOG_SAVE_REG_PAIR s11, sp,  \ofs + 96
+    PROLOG_SAVE_REG_PAIR s11, tp  \ofs + 96
+    PROLOG_SAVE_REG      gp,  \ofs + 112
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
@@ -174,7 +175,8 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro RESTORE_CALLEESAVED_REGISTERS reg, ofs
-    EPILOG_RESTORE_REG_PAIR s11, sp  \ofs + 96
+    EPILOG_RESTORE_REG      gp  \ofs + 112
+    EPILOG_RESTORE_REG_PAIR s11, tp  \ofs + 96
     EPILOG_RESTORE_REG_PAIR s9, s10, \ofs + 80 
     EPILOG_RESTORE_REG_PAIR s7, s8,  \ofs + 64
     EPILOG_RESTORE_REG_PAIR s5, s6,  \ofs + 48
@@ -253,9 +255,9 @@ C_FUNC(\Name\()_End):
 // Extra:
 //
 .macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1
+    __PWTB_SaveFPArgs = \SaveFPRegs
 
     __PWTB_FloatArgumentRegisters = \extraLocals
-    __PWTB_SaveFPArgs = \SaveFPRegs
 
     .if ((__PWTB_FloatArgumentRegisters % 16) != 0)
         __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
@@ -269,7 +271,7 @@ C_FUNC(\Name\()_End):
 
 
     __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
-    __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120 
+    __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 120
 
     // Including fp, ra, s1-s11, tp, gp, and (a0-a7)arguments. (1+1+11+1+1)*8 + 8*8.
     __PWTB_StackAlloc = __PWTB_TransitionBlock + 120 + 64

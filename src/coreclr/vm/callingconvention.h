@@ -168,8 +168,8 @@ struct TransitionBlock
     union {
         CalleeSavedRegisters m_calleeSavedRegisters;
         struct {
-            TADDR m_ReturnAddress;
             INT64 s0; // frame pointer
+            TADDR m_ReturnAddress;
             INT64 s1;
             INT64 s2;
             INT64 s3;
@@ -178,7 +178,11 @@ struct TransitionBlock
             INT64 s6;
             INT64 s7;
             INT64 s8;
+            INT64 s9;
+            INT64 s10;
+            INT64 s11;
             INT64 tp;
+            INT64 gp;
         };
     };
     //TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
