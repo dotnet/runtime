@@ -148,8 +148,8 @@ namespace ILCompiler
         {
             // This is causing too much noise
             // https://github.com/dotnet/runtimelab/issues/1591
-            if (code == 2110 || code == 2111 || code == 2113 || code == 2115)
-                return true;
+            //if (code == 2110 || code == 2111 || code == 2113 || code == 2115)
+            //    return true;
 
             if (_suppressedWarnings.Contains(code))
                 return true;
@@ -299,6 +299,9 @@ namespace ILCompiler
             if (originMember is MethodDesc method &&
                 method.IsInRequiresScope(requiresAttribute))
                 return true;
+
+            if (originMember.GetOwningType() == null)  // Basically a way to test if the entity is a member (type, method, field, ...)
+                return false;
 
             MethodDesc owningMethod;
             if (_compilerGeneratedState != null)

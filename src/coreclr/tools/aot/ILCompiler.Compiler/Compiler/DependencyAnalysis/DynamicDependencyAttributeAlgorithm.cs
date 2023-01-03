@@ -10,6 +10,7 @@ using System.Reflection.Metadata;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.Dataflow;
 using ILCompiler.Logging;
 
 using ILLink.Shared;
@@ -69,6 +70,8 @@ namespace ILCompiler.DependencyAnalysis
             var fixedArgs = attribute.FixedArguments;
             TypeDesc targetType;
 
+            UsageBasedMetadataManager metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
+
             if (fixedArgs.Length > 0 && fixedArgs[0].Value is string sigFromAttribute)
             {
                 switch (fixedArgs.Length)
@@ -89,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
                         ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
                         if (asm == null)
                         {
-                            ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                            metadataManager.Logger.LogWarning(
                                 new MessageOrigin(entity),
                                 DiagnosticId.UnresolvedAssemblyInDynamicDependencyAttribute,
                                 assemblyStringFromAttribute);
@@ -99,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
                         targetType = DocumentationSignatureParser.GetTypeByDocumentationSignature((IAssemblyDesc)asm, typeStringFromAttribute);
                         if (targetType == null)
                         {
-                            ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                            metadataManager.Logger.LogWarning(
                                 new MessageOrigin(entity),
                                 DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute,
                                 typeStringFromAttribute);
@@ -116,7 +119,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!members.Any())
                 {
-                    ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                    metadataManager.Logger.LogWarning(
                         new MessageOrigin(entity),
                         DiagnosticId.NoMembersResolvedForMemberSignatureOrType,
                         sigFromAttribute,
@@ -138,7 +141,7 @@ namespace ILCompiler.DependencyAnalysis
                     ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
                     if (asm == null)
                     {
-                        ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                        metadataManager.Logger.LogWarning(
                             new MessageOrigin(entity),
                             DiagnosticId.UnresolvedAssemblyInDynamicDependencyAttribute,
                             assemblyStringFromAttribute);
@@ -148,7 +151,7 @@ namespace ILCompiler.DependencyAnalysis
                     targetType = DocumentationSignatureParser.GetTypeByDocumentationSignature((IAssemblyDesc)asm, typeStringFromAttribute);
                     if (targetType == null)
                     {
-                        ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                        metadataManager.Logger.LogWarning(
                             new MessageOrigin(entity),
                             DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute,
                             typeStringFromAttribute);
@@ -165,8 +168,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!members.Any())
                 {
-                    ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
-                    new MessageOrigin(entity),
+                    metadataManager.Logger.LogWarning(
+                        new MessageOrigin(entity),
                         DiagnosticId.NoMembersResolvedForMemberSignatureOrType,
                         memberTypesFromAttribute.ToString(),
                         targetType.GetDisplayName());
@@ -184,11 +187,18 @@ namespace ILCompiler.DependencyAnalysis
             const string reason = "DynamicDependencyAttribute";
 
             // Now root the discovered members
+            ReflectionMarker reflectionMarker = new ReflectionMarker(
+                metadataManager.Logger,
+                factory,
+                metadataManager.FlowAnnotations,
+                typeHierarchyDataFlow: false,
+                enabled: true);
             foreach (var member in members)
             {
                 switch (member)
                 {
                     case MethodDesc m:
+                        reflectionMarker.MarkMethod(new MessageOrigin(entity), m);
                         RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, m, reason);
                         break;
                     case FieldDesc field:
