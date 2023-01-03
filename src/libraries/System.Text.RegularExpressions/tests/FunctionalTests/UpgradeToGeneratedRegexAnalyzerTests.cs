@@ -226,13 +226,12 @@ public class Program
 {{
     public static void Main(string[] args)
     {{
-        var isMatch = [|Regex.IsMatch("""", @""{pattern}"")|];
+        var isMatch = Regex.IsMatch("""", @""{pattern}""); // fixer not offered
     }}
 }}";
-            // We offer a diagnostic in this case, based on cursory analysis; but when
-            // we attempt the fix, we cannot proceed. So there will be one iteration, even
-            // though no fix is made.
-            await VerifyCS.VerifyCodeFixAsync(test, test, references: null, expectedNumberOfIterations: 1);
+            // We need to be able to parse the pattern sufficiently that we can extract
+            // any inline options; in this case we can't, so we don't make the fix.
+            await VerifyCS.VerifyCodeFixAsync(test, test);
         }
 
         public static IEnumerable<object[]> ConstantPatternTestData()
