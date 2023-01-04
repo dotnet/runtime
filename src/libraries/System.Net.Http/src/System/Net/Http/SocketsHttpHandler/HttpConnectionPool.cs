@@ -1824,14 +1824,22 @@ namespace System.Net.Http
         /// Called when an HttpConnection from this pool is no longer usable.
         /// Note, this is always called from HttpConnection.Dispose, which is a bit different than how HTTP2 works.
         /// </summary>
-        public void InvalidateHttp11Connection(HttpConnection connection, bool disposing = true)
+        public void InvalidateHttp11Connection(HttpConnection connection, bool fromReadAheadTask = false)
         {
-            lock (SyncObj)
+            // Not locking on SyncObj here as it's expected that we may already be holding the lock in
+            // case we just added an idle connection to the pool and called OnAddingIdleConnectionToPool,
+            // which started a read-ahead that immediately completed, which in turn Disposed and Invalidated
+            // the connection.
+            lock (_availableHttp11Connections)
             {
-                Debug.Assert(_associatedHttp11ConnectionCount > 0);
-                Debug.Assert(!disposing || !_availableHttp11Connections.Contains(connection));
+                Debug.Assert(_associatedHttp11ConnectionCount > 0, $"{_associatedHttp11ConnectionCount}");
 
                 _associatedHttp11ConnectionCount--;
+
+                if (fromReadAheadTask)
+                {
+                    _availableHttp11Connections.Remove(connection);
+                }
 
                 CheckForHttp11ConnectionInjection();
             }
@@ -1937,6 +1945,7 @@ namespace System.Net.Http
                         // Add connection to the pool.
                         added = true;
                         _availableHttp11Connections.Add(connection);
+                        connection.OnAddingIdleConnectionToPool();
                     }
 
                     // If the pool has been disposed of, we will dispose the connection below outside the lock.
