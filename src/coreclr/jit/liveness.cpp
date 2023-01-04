@@ -2973,6 +2973,12 @@ void Compiler::fgDispBBLiveness()
 
 #endif // DEBUG
 
+//------------------------------------------------------------------------
+// fgEarlyLiveness: Run the early liveness pass.
+//
+// Return Value:
+//     Returns MODIFIED_EVERYTHING when liveness was computed and DCE was run.
+//
 PhaseStatus Compiler::fgEarlyLiveness()
 {
     if (!opts.OptimizationEnabled())
