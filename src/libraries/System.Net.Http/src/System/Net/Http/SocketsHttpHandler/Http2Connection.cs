@@ -505,9 +505,8 @@ namespace System.Net.Http
                 }
                 catch (Exception e)
                 {
-                    e = new IOException(SR.net_http_http2_connection_not_established, e);
-                    InitialSettingsReceived.TrySetException(e);
-                    throw e;
+                    InitialSettingsReceived.TrySetException(new IOException(SR.net_http_http2_connection_not_established, e));
+                    throw new IOException(SR.net_http_http2_connection_not_established, e);
                 }
 
                 // Keep processing frames as they arrive.
