@@ -146,9 +146,9 @@ namespace Microsoft.Interop.Analyzers
                 || unmanagedType == UnmanagedType.SafeArray;
         }
 
-        private static InteropAttributeData CreateInteropAttributeDataFromDllImport(DllImportData dllImportData)
+        private static InteropAttributeCompilationData CreateInteropAttributeDataFromDllImport(DllImportData dllImportData)
         {
-            InteropAttributeData interopData = new();
+            InteropAttributeCompilationData interopData = new();
             if (dllImportData.SetLastError)
             {
                 interopData = interopData with { IsUserDefined = interopData.IsUserDefined | InteropAttributeMember.SetLastError, SetLastError = true };
