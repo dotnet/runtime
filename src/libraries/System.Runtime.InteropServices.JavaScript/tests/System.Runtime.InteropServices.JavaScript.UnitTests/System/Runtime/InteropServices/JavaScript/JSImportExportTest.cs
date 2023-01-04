@@ -1364,6 +1364,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public void JSImportReturnError()
+        {
+            var err = JavaScriptTestHelper.returnError() as Exception;
+            Assert.NotNull(err);
+            Assert.Contains("this-is-error", err.Message);
+        }
+
+        [Fact]
         public void JsExportCatchToString()
         {
             var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
