@@ -33,23 +33,53 @@ namespace System.Net.Security.Tests
             _clientCertificate.Dispose();
         }
 
+        public enum ClientCertSource
+        {
+            ClientCertificate,
+            SelectionCallback,
+            CertificateContext
+        }
+
+        public static TheoryData<bool, ClientCertSource> BoolAndCertSourceData()
+        {
+            TheoryData<bool, ClientCertSource> data = new();
+
+            foreach(var source in Enum.GetValues<ClientCertSource>())
+            {
+                data.Add(true, source);
+                data.Add(false, source);
+            }
+
+            return data;
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, bool useClientSelectionCallback)
+        [MemberData(nameof(BoolAndCertSourceData))]
+        public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, ClientCertSource certSource)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, false, AllowAnyCertificate))
             using (var server = new SslStream(stream2, false, AllowAnyCertificate))
             {
-                Task t2 = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                var clientOptions = new SslClientAuthenticationOptions
                 {
-                    ClientCertificates = useClientSelectionCallback ? null : new X509CertificateCollection() { _clientCertificate },
-                    LocalCertificateSelectionCallback = useClientSelectionCallback ? ClientCertSelectionCallback : null,
                     TargetHost = Guid.NewGuid().ToString("N")
-                });
+                };
+
+                switch (certSource)
+                {
+                    case ClientCertSource.ClientCertificate:
+                        clientOptions.ClientCertificates = new X509CertificateCollection() { _clientCertificate };
+                        break;
+                    case ClientCertSource.SelectionCallback:
+                        clientOptions.LocalCertificateSelectionCallback = ClientCertSelectionCallback;
+                        break;
+                    case ClientCertSource.CertificateContext:
+                        clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(_clientCertificate, new());
+                        break;
+                }
+
+                Task t2 = client.AuthenticateAsClientAsync(clientOptions);
                 Task t1 = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = _serverCertificate,
@@ -132,6 +162,7 @@ namespace System.Net.Security.Tests
         {
             return true;
         }
+
         private X509Certificate ClientCertSelectionCallback(
             object sender,
             string targetHost,
