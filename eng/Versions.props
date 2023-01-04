@@ -136,8 +136,9 @@
     <MicrosoftDiagnosticsNETCoreClientVersion>0.2.61701</MicrosoftDiagnosticsNETCoreClientVersion>
     <MicrosoftBuildVersion>16.10.0</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
-    <NugetProjectModelVersion>6.2.1</NugetProjectModelVersion>
-    <NugetPackagingVersion>6.2.1</NugetPackagingVersion>
+    <SystemDrawingCommonVersion>4.7.2</SystemDrawingCommonVersion>
+    <NugetProjectModelVersion>6.2.2</NugetProjectModelVersion>
+    <NugetPackagingVersion>6.2.2</NugetPackagingVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
