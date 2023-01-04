@@ -5784,14 +5784,18 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                     if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
                          TypeCompareState::Must))
                     {
-                        assert((info.compCompHnd->getClassAttribs(likelyCls) &
-                                (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0);
-                        JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
-                                eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
+                        bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
+                                           (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0;
+                        // If it's abstract it means we most likely deal with a stale PGO data so bail out.
+                        if (!isAbstract)
+                        {
+                            JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
+                                    eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
 
-                        canExpandInline = true;
-                        partialExpand   = true;
-                        exactCls        = likelyCls;
+                            canExpandInline = true;
+                            partialExpand   = true;
+                            exactCls        = likelyCls;
+                        }
                     }
                 }
             }
