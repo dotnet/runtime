@@ -22,10 +22,6 @@ export interface DotnetHostBuilder {
     run(): Promise<number>
 }
 
-// these constants duplicate detection inside emscripten internals, but happen earlier
-const ENVIRONMENT_IS_WEB = typeof window == "object";
-const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
-
 class HostBuilder implements DotnetHostBuilder {
     private instance?: RuntimeAPI;
     private applicationArguments?: string[];

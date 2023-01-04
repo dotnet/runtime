@@ -17,3 +17,6 @@ declare module "consts:monoDiagnosticsMock" {
     const constant: boolean;
     export default constant;
 }
+
+declare const ENVIRONMENT_IS_NODE: boolean;
+declare const ENVIRONMENT_IS_WEB: boolean;

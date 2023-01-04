@@ -257,7 +257,7 @@
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz  -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2 --closure 1</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
@@ -306,6 +306,7 @@
     <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
                        runtime/es6/dotnet.es6.lib.js;
                        runtime/es6/dotnet.es6.post.js;
+                       runtime/es6/dotnet.es6.externs.js;
                        runtime/es6/dotnet.es6.extpost.js;"
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
