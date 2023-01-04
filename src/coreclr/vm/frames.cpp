@@ -1372,6 +1372,17 @@ UINT TransitionFrame::CbStackPopUsingGCRefMap(PTR_BYTE pGCRefMap)
 }
 #endif
 
+static UINT OffsetFromGCRefMapPos(int pos)
+{
+#ifdef TARGET_X86
+    return (pos < NUM_ARGUMENT_REGISTERS) ?
+            (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
+            (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
+#else
+    return TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * sizeof(TADDR);
+#endif
+}
+
 void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanContext* sc, PTR_BYTE pGCRefMap)
 {
     WRAPPER_NO_CONTRACT;
@@ -1389,16 +1400,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
     {
         int pos = decoder.CurrentPos();
         int token = decoder.ReadToken();
-
-        int ofs;
-
-#ifdef TARGET_X86
-        ofs = (pos < NUM_ARGUMENT_REGISTERS) ?
-            (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
-            (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
-#else
-        ofs = TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * sizeof(TADDR);
-#endif
+        int ofs = OffsetFromGCRefMapPos(pos);
 
         PTR_TADDR ppObj = dac_cast<PTR_TADDR>(pTransitionBlock + ofs);
 
@@ -2060,6 +2062,75 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
     }
 }
 
+#ifdef _DEBUG
+static void DumpGCRefMap(const wchar_t* name, BYTE *address)
+{
+    GCRefMapDecoder decoder(address);
+
+    wprintf(L"%s GC ref map: ", name);
+#if TARGET_X86
+    uint32_t stackPop = decoder.ReadStackPop();
+    wprintf(L"POP(0x%x)", stackPop);
+#endif
+
+    int previousToken = GCREFMAP_SKIP;
+    while (!decoder.AtEnd())
+    {
+        int pos = decoder.CurrentPos();
+        int token = decoder.ReadToken();
+        if (token != previousToken)
+        {
+            if (previousToken != GCREFMAP_SKIP)
+            {
+                wprintf(L") ");
+            }
+            switch (token)
+            {
+                case GCREFMAP_SKIP:
+                    break;
+
+                case GCREFMAP_REF:
+                    wprintf(L"R(");
+                    break;
+
+                case GCREFMAP_INTERIOR:
+                    wprintf(L"I(");
+                    break;
+
+                case GCREFMAP_METHOD_PARAM:
+                    wprintf(L"M(");
+                    break;
+
+                case GCREFMAP_TYPE_PARAM:
+                    wprintf(L"T(");
+                    break;
+
+                case GCREFMAP_VASIG_COOKIE:
+                    wprintf(L"V(");
+
+                default:
+                    // Not implemented
+                    _ASSERTE(false);
+            }
+        }
+        else if (token != GCREFMAP_SKIP)
+        {
+            wprintf(L" ");
+        }
+        if (token != GCREFMAP_SKIP)
+        {
+            wprintf(L"%02x", OffsetFromGCRefMapPos(pos));
+        }
+        previousToken = token;
+    }
+    if (previousToken != GCREFMAP_SKIP)
+    {
+        wprintf(L")");
+    }
+    wprintf(L"\n");
+}
+#endif
+
 bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell)
 {
 #ifdef _DEBUG
@@ -2074,16 +2145,36 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
     GCRefMapDecoder decoderNew((BYTE *)pBlob);
     GCRefMapDecoder decoderExisting(pGCRefMap);
 
-#ifdef TARGET_X86
-    _ASSERTE(decoderNew.ReadStackPop() == decoderExisting.ReadStackPop());
-#endif
+    bool invalidGCRefMap = false;
 
-    _ASSERTE(decoderNew.AtEnd() == decoderExisting.AtEnd());
-    while (!decoderNew.AtEnd())
+#ifdef TARGET_X86
+    if (decoderNew.ReadStackPop() != decoderExisting.ReadStackPop())
     {
-        _ASSERTE(decoderNew.CurrentPos() == decoderExisting.CurrentPos());
-        _ASSERTE(decoderNew.ReadToken() == decoderExisting.ReadToken());
-        _ASSERTE(decoderNew.AtEnd() == decoderExisting.AtEnd());
+        invalidGCRefMap = true;
+    }
+#endif
+    while (!decoderNew.AtEnd() || !decoderExisting.AtEnd())
+    {
+        if (decoderNew.AtEnd() != decoderExisting.AtEnd())
+        {
+            invalidGCRefMap = true;
+            break;
+        }
+        if (decoderNew.CurrentPos() != decoderExisting.CurrentPos())
+        {
+            invalidGCRefMap = true;
+        }
+        if (decoderNew.ReadToken() != decoderExisting.ReadToken())
+        {
+            invalidGCRefMap = true;
+        }
+    }
+    if (invalidGCRefMap)
+    {
+        wprintf(L"GC ref map mismatch detected for method: %S::%S\n", pMD->GetMethodTable()->GetDebugClassName(), pMD->GetName());
+        DumpGCRefMap(L"  Runtime", (BYTE *)pBlob);
+        DumpGCRefMap(L"Crossgen2", pGCRefMap);
+        _ASSERTE(false);
     }
 #endif
     return true;
