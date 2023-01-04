@@ -4790,20 +4790,6 @@ namespace
             m_amTracker.SuppressRelease();
         }
 
-        DEBUG_NOINLINE static void HolderEnter(ILStubCreatorHelper *pThis)
-        {
-            WRAPPER_NO_CONTRACT;
-            ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-            pThis->GetStubMethodDesc();
-        }
-
-        DEBUG_NOINLINE static void HolderLeave(ILStubCreatorHelper *pThis)
-        {
-            WRAPPER_NO_CONTRACT;
-            ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-            pThis->RemoveILStubCacheEntry();
-        }
-
     private:
         MethodDesc*                      m_pTargetMD;
         NDirectStubParameters*           m_pParams;
@@ -4813,8 +4799,6 @@ namespace
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
     };  //ILStubCreatorHelper
-
-    typedef Wrapper<ILStubCreatorHelper*, ILStubCreatorHelper::HolderEnter, ILStubCreatorHelper::HolderLeave> ILStubCreatorHelperHolder;
 
     MethodDesc* CreateInteropILStub(
                             ILStubState*             pss,
@@ -4889,8 +4873,8 @@ namespace
                                 pSigDesc->m_pMT
                                 );
 
-        // The following two ILStubCreatorHelperHolder are to recover the status when an
-        // exception happen during the generation of the IL stubs. We need to free the
+        // The following ILStubCreatorHelper is to recover the status when an
+        // exception happens during the generation of the IL stubs. We need to free the
         // memory allocated and restore the ILStubCache.
         //
         // The following block is logically divided into two phases. The first phase is
@@ -4900,7 +4884,7 @@ namespace
         //
         // ilStubCreatorHelper contains an instance of AllocMemTracker which tracks the
         // allocated memory during the creation of MethodDesc so that we are able to remove
-        // them when releasing the ILStubCreatorHelperHolder or destructing ILStubCreatorHelper
+        // them when destructing ILStubCreatorHelper
 
         // When removing IL Stub from Cache, we have a constraint that only the thread which
         // creates the stub can remove it. Otherwise, any thread hits cache and gets the stub will
@@ -4913,10 +4897,8 @@ namespace
             ListLockHolder pILStubLock(pLoaderModule->GetDomain()->GetILStubGenLock());
 
             {
-                // The holder will free the allocated MethodDesc and restore the ILStubCache
-                // if exception happen.
-                ILStubCreatorHelperHolder pCreateOrGetStubHolder(&ilStubCreatorHelper);
-                pStubMD = pCreateOrGetStubHolder->GetStubMD();
+                ilStubCreatorHelper.GetStubMethodDesc();
+                pStubMD = ilStubCreatorHelper.GetStubMD();
 
                 ///////////////////////////////
                 //
@@ -4930,16 +4912,11 @@ namespace
 
                     ListLockEntryLockHolder pEntryLock(pEntry, FALSE);
 
-                    // We can release the holder for the first phase now
-                    pCreateOrGetStubHolder.SuppressRelease();
-
                     // We have the entry lock we need to use, so we can release the global lock.
                     pILStubLock.Release();
 
                     {
-                        // The holder will free the allocated MethodDesc and restore the ILStubCache
-                        // if exception happen. The reason to get the holder again is to
-                        ILStubCreatorHelperHolder pGenILHolder(&ilStubCreatorHelper);
+                        ilStubCreatorHelper.GetStubMethodDesc();
 
                         if (!pEntryLock.DeadlockAwareAcquire())
                         {
@@ -4964,11 +4941,11 @@ namespace
                             pILStubLock.Acquire();
 
                             // Assure that pStubMD we have now has not been destroyed by other threads
-                            pGenILHolder->GetStubMethodDesc();
+                            ilStubCreatorHelper.GetStubMethodDesc();
 
-                            while (pStubMD != pGenILHolder->GetStubMD())
+                            while (pStubMD != ilStubCreatorHelper.GetStubMD())
                             {
-                                pStubMD = pGenILHolder->GetStubMD();
+                                pStubMD = ilStubCreatorHelper.GetStubMD();
 
                                 pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
                                 pEntryLock.Assign(pEntry, FALSE);
@@ -4994,7 +4971,7 @@ namespace
 
                                 pILStubLock.Acquire();
 
-                                pGenILHolder->GetStubMethodDesc();
+                                ilStubCreatorHelper.GetStubMethodDesc();
                             }
                         }
 
@@ -5084,8 +5061,6 @@ namespace
 
                         // Link the MethodDesc onto the method table with the lock taken
                         AddMethodDescChunkWithLockTaken(&params, pStubMD);
-
-                        pGenILHolder.SuppressRelease();
                     }
                 }
             }
