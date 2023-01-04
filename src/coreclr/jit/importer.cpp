@@ -5785,7 +5785,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                          TypeCompareState::Must))
                     {
                         bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
-                                           (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0;
+                                           (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
                         // If it's abstract it means we most likely deal with a stale PGO data so bail out.
                         if (!isAbstract)
                         {
