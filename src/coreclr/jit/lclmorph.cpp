@@ -19,6 +19,13 @@ public:
     {
     }
 
+    //-------------------------------------------------------------------
+    // Start: Start sequencing a statement. Must be called before other members
+    // are called for a specified statement.
+    //
+    // Arguments:
+    //     stmt - the statement
+    //
     void Start(Statement* stmt)
     {
         // We use the root node as a 'sentinel' node that will keep the head
@@ -31,6 +38,13 @@ public:
         m_prevNode         = m_rootNode;
     }
 
+    //-------------------------------------------------------------------
+    // Finish: Finish sequencing a statement. Should be called after sub nodes
+    // of the statement have been visited and sequenced.
+    //
+    // Arguments:
+    //     stmt - the statement
+    //
     void Finish(Statement* stmt)
     {
         assert(stmt->GetRootNode() == m_rootNode);
@@ -76,6 +90,12 @@ public:
         return fgWalkResult::WALK_CONTINUE;
     }
 
+    //-------------------------------------------------------------------
+    // SequenceLocal: Add a local to the list.
+    //
+    // Arguments:
+    //     lcl - the local
+    //
     void SequenceLocal(GenTreeLclVarCommon* lcl)
     {
         lcl->gtPrev        = m_prevNode;
@@ -84,26 +104,55 @@ public:
         m_prevNode         = lcl;
     }
 
+    //-------------------------------------------------------------------
+    // SequenceAssignment: Post-process an assignment that may have a local on the LHS.
+    //
+    // Arguments:
+    //     asg - the assignment
+    //
+    // Remarks:
+    //     In execution order the LHS of an assignment is normally visited
+    //     before the RHS. However, for our purposes, we would like to see the
+    //     LHS local which is considered the def after the nodes on the RHS, so
+    //     this function corrects where that local appears in the list.
+    //
+    //     This is handled in later liveness by guaranteeing GTF_REVERSE_OPS is
+    //     set for assignments with tracked locals on the LHS.
+    //
     void SequenceAssignment(GenTreeOp* asg)
     {
-        if (!asg->gtGetOp1()->OperIsLocal())
+        if (asg->gtGetOp1()->OperIsLocal())
         {
-            return;
+            // Correct the point at which the definition of the local on the LHS appears.
+            MoveNodeToEnd(asg->gtGetOp1());
         }
-
-        MoveNodeToEnd(asg->gtGetOp1());
     }
 
+    //-------------------------------------------------------------------
+    // SequenceCall: Post-process a call that may define a local.
+    //
+    // Arguments:
+    //     call - the call
+    //
+    // Remarks:
+    //     Like above, but calls may also define a local that we would like to
+    //     see after all other operands of the call have been evaluated.
+    //
     void SequenceCall(GenTreeCall* call)
     {
         if (!call->IsOptimizingRetBufAsLocal())
         {
-            return;
+            // Correct the point at which the definition of the retbuf local appears.
+            MoveNodeToEnd(m_compiler->gtCallGetDefinedRetBufLclAddr(call));
         }
-
-        MoveNodeToEnd(m_compiler->gtCallGetDefinedRetBufLclAddr(call));
     }
 
+    //-------------------------------------------------------------------
+    // Sequence: Fully sequence a statement.
+    //
+    // Arguments:
+    //     stmt - The statement
+    //
     void Sequence(Statement* stmt)
     {
         Start(stmt);
@@ -112,6 +161,13 @@ public:
     }
 
 private:
+    //-------------------------------------------------------------------
+    // MoveNodeToEnd: Move a node from its current position in the linked list
+    // to the end.
+    //
+    // Arguments:
+    //     node - The node
+    //
     void MoveNodeToEnd(GenTree* node)
     {
         if (node->gtNext == nullptr)
@@ -124,7 +180,7 @@ private:
         GenTree* prev = node->gtPrev;
         GenTree* next = node->gtNext;
 
-        assert(prev != nullptr); // Should have 'sentinel'
+        assert(prev != nullptr); // Should have sentinel always, even as the first local.
         prev->gtNext = next;
         next->gtPrev = prev;
 
@@ -135,6 +191,15 @@ private:
     }
 };
 
+//-------------------------------------------------------------------
+// fgSequenceLocals: Sequence the locals in a statement.
+//
+// Arguments:
+//     stmt - The statement.
+//
+// Remarks:
+//     This is the locals-only (see fgNodeThreading) counterpart to fgSetStmtSeq.
+//
 void Compiler::fgSequenceLocals(Statement* stmt)
 {
     assert((fgNodeThreading == NodeThreading::AllLocals) || (mostRecentlyActivePhase == PHASE_STR_ADRLCL));

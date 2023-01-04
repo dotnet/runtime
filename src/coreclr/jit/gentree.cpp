@@ -578,7 +578,7 @@ LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 //     node - The node the edge should be pointing at.
 //
 // Return Value:
-//     The edge, such as *edge == node.
+//     The edge, such that *edge == node.
 //
 GenTree** LocalsGenTreeList::GetForwardEdge(GenTreeLclVarCommon* node)
 {
@@ -601,7 +601,7 @@ GenTree** LocalsGenTreeList::GetForwardEdge(GenTreeLclVarCommon* node)
 //     node - The node the edge should be pointing at.
 //
 // Return Value:
-//     The edge, such as *edge == node.
+//     The edge, such that *edge == node.
 //
 GenTree** LocalsGenTreeList::GetBackwardEdge(GenTreeLclVarCommon* node)
 {
@@ -617,6 +617,12 @@ GenTree** LocalsGenTreeList::GetBackwardEdge(GenTreeLclVarCommon* node)
     }
 }
 
+//-----------------------------------------------------------
+// Remove: Remove a specified node from the locals tree list.
+//
+// Arguments:
+//     node - the local node that should be part of this list.
+//
 void LocalsGenTreeList::Remove(GenTreeLclVarCommon* node)
 {
     GenTree** forwardEdge  = GetForwardEdge(node);
@@ -626,6 +632,15 @@ void LocalsGenTreeList::Remove(GenTreeLclVarCommon* node)
     *backwardEdge = node->gtPrev;
 }
 
+//-----------------------------------------------------------
+// Replace: Replace a sequence of nodes with another (already linked) sequence of nodes.
+//
+// Arguments:
+//     firstNode - The first node, part of this locals tree list, to be replaced.
+//     lastNode - The last node, part of this locals tree list, to be replaced.
+//     newFirstNode - The start of the replacement sub list.
+//     newLastNode - The last node of the replacement sub list.
+//
 void LocalsGenTreeList::Replace(GenTreeLclVarCommon* firstNode,
                                 GenTreeLclVarCommon* lastNode,
                                 GenTreeLclVarCommon* newFirstNode,
@@ -652,6 +667,9 @@ void LocalsGenTreeList::Replace(GenTreeLclVarCommon* firstNode,
 //
 // Only valid between fgSetBlockOrder and rationalization. See fgNodeThreading.
 //
+// Return Value:
+//   The tree list.
+//
 GenTreeList Statement::TreeList() const
 {
     assert(JitTls::GetCompiler()->fgNodeThreading == NodeThreading::AllTrees);
@@ -663,6 +681,9 @@ GenTreeList Statement::TreeList() const
 // iteration.
 //
 // Only valid between local morph and forward sub. See fgNodeThreading.
+//
+// Return Value:
+//    The locals tree list.
 //
 LocalsGenTreeList Statement::LocalsTreeList()
 {
@@ -16705,6 +16726,17 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
     return walker.GetFlags();
 }
 
+//-----------------------------------------------------------
+// gtComplexityExceeds: Check if a tree exceeds a specified complexity in terms
+// of number of sub nodes.
+//
+// Arguments:
+//     tree  - The tree to check
+//     limit - The limit in terms of number of nodes
+//
+// Return Value:
+//     True if there are mode sub nodes in tree; otherwise false.
+//
 bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit)
 {
     struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
