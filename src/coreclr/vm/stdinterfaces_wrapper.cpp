@@ -47,7 +47,7 @@ struct IEnumConnectionPoints;
 
 namespace
 {
-    inline BOOL CanCallRuntimeInterfaceImplementations()
+    bool CanCallRuntimeInterfaceImplementations()
     {
         LIMITED_METHOD_CONTRACT;
         // If we are finalizing all alive objects, or after this stage, we do not allow
@@ -60,7 +60,7 @@ namespace
 // IUnknown methods
 
 
-HRESULT __stdcall Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, void** ppv)
+HRESULT STDMETHODCALLTYPE Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, void** ppv)
 {
     SetupThreadForComCall(E_OUTOFMEMORY);
 
@@ -81,7 +81,7 @@ HRESULT __stdcall Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, void** ppv
     return Unknown_QueryInterface_Internal(pWrap, pUnk, riid, ppv);
 }
 
-ULONG __stdcall Unknown_AddRef(IUnknown* pUnk)
+ULONG STDMETHODCALLTYPE Unknown_AddRef(IUnknown* pUnk)
 {
     // Ensure the Thread is available for contracts and other users of the Thread, but don't do any of
     // the other "entering managed code" work like checking for reentrancy.
@@ -104,7 +104,7 @@ ULONG __stdcall Unknown_AddRef(IUnknown* pUnk)
     return Unknown_AddRef_Internal(pUnk);
 }
 
-ULONG __stdcall Unknown_Release(IUnknown* pUnk)
+ULONG STDMETHODCALLTYPE Unknown_Release(IUnknown* pUnk)
 {
     // Ensure the Thread is available for contracts and other users of the Thread, but don't do any of
     // the other "entering managed code" work like checking for reentrancy.
@@ -127,7 +127,7 @@ ULONG __stdcall Unknown_Release(IUnknown* pUnk)
     return Unknown_Release_Internal(pUnk);
 }
 
-ULONG __stdcall Unknown_AddRefInner(IUnknown* pUnk)
+ULONG STDMETHODCALLTYPE Unknown_AddRefInner(IUnknown* pUnk)
 {
     // Ensure the Thread is available for contracts and other users of the Thread, but don't do any of
     // the other "entering managed code" work like checking for reentrancy.
@@ -150,7 +150,7 @@ ULONG __stdcall Unknown_AddRefInner(IUnknown* pUnk)
     return Unknown_AddRefInner_Internal(pUnk);
 }
 
-ULONG __stdcall Unknown_ReleaseInner(IUnknown* pUnk)
+ULONG STDMETHODCALLTYPE Unknown_ReleaseInner(IUnknown* pUnk)
 {
     // Ensure the Thread is available for contracts and other users of the Thread, but don't do any of
     // the other "entering managed code" work like checking for reentrancy.
@@ -173,7 +173,7 @@ ULONG __stdcall Unknown_ReleaseInner(IUnknown* pUnk)
     return Unknown_ReleaseInner_Internal(pUnk);
 }
 
-ULONG __stdcall Unknown_AddRefSpecial(IUnknown* pUnk)
+ULONG STDMETHODCALLTYPE Unknown_AddRefSpecial(IUnknown* pUnk)
 {
     // Ensure the Thread is available for contracts and other users of the Thread, but don't do any of
     // the other "entering managed code" work like checking for reentrancy.
@@ -196,7 +196,7 @@ ULONG __stdcall Unknown_AddRefSpecial(IUnknown* pUnk)
     return Unknown_AddRefSpecial_Internal(pUnk);
 }
 
-ULONG __stdcall Unknown_ReleaseSpecial(IUnknown* pUnk)
+ULONG STDMETHODCALLTYPE Unknown_ReleaseSpecial(IUnknown* pUnk)
 {
     // Ensure the Thread is available for contracts and other users of the Thread, but don't do any of
     // the other "entering managed code" work like checking for reentrancy.
@@ -219,7 +219,7 @@ ULONG __stdcall Unknown_ReleaseSpecial(IUnknown* pUnk)
     return Unknown_ReleaseSpecial_Internal(pUnk);
 }
 
-HRESULT __stdcall Unknown_QueryInterface_IErrorInfo(IUnknown* pUnk, REFIID riid, void** ppv)
+HRESULT STDMETHODCALLTYPE Unknown_QueryInterface_IErrorInfo(IUnknown* pUnk, REFIID riid, void** ppv)
 {
     SetupForComCallHR();
 
@@ -233,7 +233,7 @@ HRESULT __stdcall Unknown_QueryInterface_IErrorInfo(IUnknown* pUnk, REFIID riid,
 // Release for IErrorInfo that takes into account that this can be called
 // while holding the loader lock
 // ---------------------------------------------------------------------------
-ULONG __stdcall Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk)
+ULONG STDMETHODCALLTYPE Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk)
 {
     SetupForComCallDWORD();
 
@@ -254,7 +254,7 @@ ULONG __stdcall Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk)
 //      appropriate implementation based on the flags of the class that
 //      implements them.
 
-HRESULT __stdcall Dispatch_GetTypeInfoCount_Wrapper(IDispatch* pDisp, unsigned int *pctinfo)
+HRESULT STDMETHODCALLTYPE Dispatch_GetTypeInfoCount_Wrapper(IDispatch* pDisp, unsigned int *pctinfo)
 {
     SetupForComCallHR();
 
@@ -274,7 +274,7 @@ HRESULT __stdcall Dispatch_GetTypeInfoCount_Wrapper(IDispatch* pDisp, unsigned i
     return Dispatch_GetTypeInfoCount(pDisp, pctinfo);
 }
 
-HRESULT __stdcall Dispatch_GetTypeInfo_Wrapper(IDispatch* pDisp, unsigned int itinfo, LCID lcid, ITypeInfo **pptinfo)
+HRESULT STDMETHODCALLTYPE Dispatch_GetTypeInfo_Wrapper(IDispatch* pDisp, unsigned int itinfo, LCID lcid, ITypeInfo **pptinfo)
 {
     SetupForComCallHR();
 
@@ -295,7 +295,7 @@ HRESULT __stdcall Dispatch_GetTypeInfo_Wrapper(IDispatch* pDisp, unsigned int it
     return Dispatch_GetTypeInfo(pDisp, itinfo, lcid, pptinfo);
 }
 
-HRESULT __stdcall Dispatch_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
+HRESULT STDMETHODCALLTYPE Dispatch_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                 unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     SetupForComCallHR();
@@ -317,7 +317,7 @@ HRESULT __stdcall Dispatch_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, 
     return Dispatch_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
 }
 
-HRESULT __stdcall InternalDispatchImpl_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
+HRESULT STDMETHODCALLTYPE InternalDispatchImpl_GetIDsOfNames_Wrapper(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                             unsigned int cNames, LCID lcid, DISPID *rgdispid)
 {
     SetupForComCallHR();
@@ -339,7 +339,7 @@ HRESULT __stdcall InternalDispatchImpl_GetIDsOfNames_Wrapper(IDispatch* pDisp, R
     return InternalDispatchImpl_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
 }
 
-HRESULT __stdcall Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember, REFIID riid, LCID lcid, unsigned short wFlags,
+HRESULT STDMETHODCALLTYPE Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember, REFIID riid, LCID lcid, unsigned short wFlags,
                         DISPPARAMS *pdispparams, VARIANT *pvarResult, EXCEPINFO *pexcepinfo, unsigned int *puArgErr)
 {
     HRESULT hrRetVal = S_OK;
@@ -366,7 +366,7 @@ HRESULT __stdcall Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember,
     return Dispatch_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
 }
 
-HRESULT __stdcall InternalDispatchImpl_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember, REFIID riid, LCID lcid,
+HRESULT STDMETHODCALLTYPE InternalDispatchImpl_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember, REFIID riid, LCID lcid,
                                     unsigned short wFlags, DISPPARAMS *pdispparams, VARIANT *pvarResult,
                                     EXCEPINFO *pexcepinfo, unsigned int *puArgErr)
 {
@@ -397,7 +397,7 @@ namespace
     //-------------------------------------------------------------------------
     // IProvideClassInfo methods
 
-    HRESULT __stdcall ClassInfo_GetClassInfo_Wrapper(IUnknown* pUnk, ITypeInfo** ppTI)
+    HRESULT STDMETHODCALLTYPE ClassInfo_GetClassInfo_Wrapper(IUnknown* pUnk, ITypeInfo** ppTI)
     {
         SetupForComCallHR();
 
@@ -421,7 +421,7 @@ namespace
     // ---------------------------------------------------------------------------
     //  Interface ISupportsErrorInfo
 
-    HRESULT __stdcall
+    HRESULT STDMETHODCALLTYPE
     SupportsErroInfo_IntfSupportsErrorInfo_Wrapper(IUnknown* pUnk, REFIID riid)
     {
         SetupForComCallHR();
@@ -443,7 +443,7 @@ namespace
 
     // ---------------------------------------------------------------------------
     //  Interface IErrorInfo
-    HRESULT __stdcall ErrorInfo_GetDescription_Wrapper(IUnknown* pUnk, BSTR* pbstrDescription)
+    HRESULT STDMETHODCALLTYPE ErrorInfo_GetDescription_Wrapper(IUnknown* pUnk, BSTR* pbstrDescription)
     {
         SetupForComCallHR();
 
@@ -463,7 +463,7 @@ namespace
         return ErrorInfo_GetDescription(pUnk, pbstrDescription);
     }
 
-    HRESULT __stdcall ErrorInfo_GetGUID_Wrapper(IUnknown* pUnk, GUID* pguid)
+    HRESULT STDMETHODCALLTYPE ErrorInfo_GetGUID_Wrapper(IUnknown* pUnk, GUID* pguid)
     {
         SetupForComCallHR();
 
@@ -504,7 +504,7 @@ namespace
         return ErrorInfo_GetHelpContext(pUnk, pdwHelpCtxt);
     }
 
-    HRESULT __stdcall ErrorInfo_GetHelpFile_Wrapper(IUnknown* pUnk, BSTR* pbstrHelpFile)
+    HRESULT STDMETHODCALLTYPE ErrorInfo_GetHelpFile_Wrapper(IUnknown* pUnk, BSTR* pbstrHelpFile)
     {
         SetupForComCallHR();
 
@@ -524,7 +524,7 @@ namespace
         return ErrorInfo_GetHelpFile(pUnk, pbstrHelpFile);
     }
 
-    HRESULT __stdcall ErrorInfo_GetSource_Wrapper(IUnknown* pUnk, BSTR* pbstrSource)
+    HRESULT STDMETHODCALLTYPE ErrorInfo_GetSource_Wrapper(IUnknown* pUnk, BSTR* pbstrSource)
     {
         SetupForComCallHR();
 
@@ -547,7 +547,7 @@ namespace
     // ---------------------------------------------------------------------------
     //  Interface IDispatchEx
 
-    HRESULT __stdcall DispatchEx_GetTypeInfoCount_Wrapper(IDispatchEx* pDisp, unsigned int *pctinfo)
+    HRESULT STDMETHODCALLTYPE DispatchEx_GetTypeInfoCount_Wrapper(IDispatchEx* pDisp, unsigned int *pctinfo)
     {
         SetupForComCallHR();
 
@@ -567,7 +567,7 @@ namespace
         return DispatchEx_GetTypeInfoCount(pDisp, pctinfo);
     }
 
-    HRESULT __stdcall DispatchEx_GetTypeInfo_Wrapper(IDispatchEx* pDisp, unsigned int itinfo, LCID lcid, ITypeInfo **pptinfo)
+    HRESULT STDMETHODCALLTYPE DispatchEx_GetTypeInfo_Wrapper(IDispatchEx* pDisp, unsigned int itinfo, LCID lcid, ITypeInfo **pptinfo)
     {
         SetupForComCallHR();
 
@@ -587,7 +587,7 @@ namespace
         return DispatchEx_GetTypeInfo(pDisp, itinfo, lcid, pptinfo);
     }
 
-    HRESULT __stdcall DispatchEx_GetIDsOfNames_Wrapper(IDispatchEx* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
+    HRESULT STDMETHODCALLTYPE DispatchEx_GetIDsOfNames_Wrapper(IDispatchEx* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR **rgszNames,
                                      unsigned int cNames, LCID lcid, DISPID *rgdispid)
     {
         SetupForComCallHR();
@@ -609,7 +609,7 @@ namespace
         return DispatchEx_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
     }
 
-    HRESULT __stdcall DispatchEx_Invoke_Wrapper(IDispatchEx* pDisp, DISPID dispidMember, REFIID riid, LCID lcid,
+    HRESULT STDMETHODCALLTYPE DispatchEx_Invoke_Wrapper(IDispatchEx* pDisp, DISPID dispidMember, REFIID riid, LCID lcid,
                               unsigned short wFlags, DISPPARAMS *pdispparams, VARIANT *pvarResult,
                               EXCEPINFO *pexcepinfo, unsigned int *puArgErr)
     {
@@ -634,7 +634,7 @@ namespace
         return DispatchEx_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
     }
 
-    HRESULT __stdcall DispatchEx_DeleteMemberByDispID_Wrapper(IDispatchEx* pDisp, DISPID id)
+    HRESULT STDMETHODCALLTYPE DispatchEx_DeleteMemberByDispID_Wrapper(IDispatchEx* pDisp, DISPID id)
     {
         SetupForComCallHR();
 
@@ -653,7 +653,7 @@ namespace
         return DispatchEx_DeleteMemberByDispID(pDisp, id);
     }
 
-    HRESULT __stdcall DispatchEx_DeleteMemberByName_Wrapper(IDispatchEx* pDisp, BSTR bstrName, DWORD grfdex)
+    HRESULT STDMETHODCALLTYPE DispatchEx_DeleteMemberByName_Wrapper(IDispatchEx* pDisp, BSTR bstrName, DWORD grfdex)
     {
         SetupForComCallHR();
 
@@ -672,7 +672,7 @@ namespace
         return DispatchEx_DeleteMemberByName(pDisp, bstrName, grfdex);
     }
 
-    HRESULT __stdcall DispatchEx_GetMemberName_Wrapper(IDispatchEx* pDisp, DISPID id, BSTR *pbstrName)
+    HRESULT STDMETHODCALLTYPE DispatchEx_GetMemberName_Wrapper(IDispatchEx* pDisp, DISPID id, BSTR *pbstrName)
     {
         SetupForComCallHR();
 
@@ -693,7 +693,7 @@ namespace
     }
 
 
-    HRESULT __stdcall DispatchEx_GetDispID_Wrapper(IDispatchEx* pDisp, BSTR bstrName, DWORD grfdex, DISPID *pid)
+    HRESULT STDMETHODCALLTYPE DispatchEx_GetDispID_Wrapper(IDispatchEx* pDisp, BSTR bstrName, DWORD grfdex, DISPID *pid)
     {
         SetupForComCallHR();
 
@@ -713,7 +713,7 @@ namespace
         return DispatchEx_GetDispID(pDisp, bstrName, grfdex, pid);
     }
 
-    HRESULT __stdcall DispatchEx_GetMemberProperties_Wrapper(IDispatchEx* pDisp, DISPID id, DWORD grfdexFetch, DWORD *pgrfdex)
+    HRESULT STDMETHODCALLTYPE DispatchEx_GetMemberProperties_Wrapper(IDispatchEx* pDisp, DISPID id, DWORD grfdexFetch, DWORD *pgrfdex)
     {
         SetupForComCallHR();
 
@@ -733,7 +733,7 @@ namespace
         return DispatchEx_GetMemberProperties(pDisp, id, grfdexFetch, pgrfdex);
     }
 
-    HRESULT __stdcall DispatchEx_GetNameSpaceParent_Wrapper(IDispatchEx* pDisp, IUnknown **ppunk)
+    HRESULT STDMETHODCALLTYPE DispatchEx_GetNameSpaceParent_Wrapper(IDispatchEx* pDisp, IUnknown **ppunk)
     {
         SetupForComCallHR();
 
@@ -753,7 +753,7 @@ namespace
         return DispatchEx_GetNameSpaceParent(pDisp, ppunk);
     }
 
-    HRESULT __stdcall DispatchEx_GetNextDispID_Wrapper(IDispatchEx* pDisp, DWORD grfdex, DISPID id, DISPID *pid)
+    HRESULT STDMETHODCALLTYPE DispatchEx_GetNextDispID_Wrapper(IDispatchEx* pDisp, DWORD grfdex, DISPID id, DISPID *pid)
     {
         SetupForComCallHR();
 
@@ -773,7 +773,7 @@ namespace
         return DispatchEx_GetNextDispID(pDisp, grfdex, id, pid);
     }
 
-    HRESULT __stdcall DispatchEx_InvokeEx_Wrapper(IDispatchEx* pDisp, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp,
+    HRESULT STDMETHODCALLTYPE DispatchEx_InvokeEx_Wrapper(IDispatchEx* pDisp, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp,
                                 VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller)
     {
         SetupForComCallHR();
@@ -800,7 +800,7 @@ namespace
     // ---------------------------------------------------------------------------
     //  Interface IMarshal
 
-    HRESULT __stdcall Marshal_GetUnmarshalClass_Wrapper(IMarshal* pMarsh, REFIID riid, void * pv, ULONG dwDestContext,
+    HRESULT STDMETHODCALLTYPE Marshal_GetUnmarshalClass_Wrapper(IMarshal* pMarsh, REFIID riid, void * pv, ULONG dwDestContext,
                                       void * pvDestContext, ULONG mshlflags, LPCLSID pclsid)
     {
         SetupForComCallHR();
@@ -823,7 +823,7 @@ namespace
         return Marshal_GetUnmarshalClass(pMarsh, riid, pv, dwDestContext, pvDestContext, mshlflags, pclsid);
     }
 
-    HRESULT __stdcall Marshal_GetMarshalSizeMax_Wrapper(IMarshal* pMarsh, REFIID riid, void * pv, ULONG dwDestContext,
+    HRESULT STDMETHODCALLTYPE Marshal_GetMarshalSizeMax_Wrapper(IMarshal* pMarsh, REFIID riid, void * pv, ULONG dwDestContext,
                                       void * pvDestContext, ULONG mshlflags, ULONG * pSize)
     {
         SetupForComCallHR();
@@ -846,7 +846,7 @@ namespace
         return Marshal_GetMarshalSizeMax(pMarsh, riid, pv, dwDestContext, pvDestContext, mshlflags, pSize);
     }
 
-    HRESULT __stdcall Marshal_MarshalInterface_Wrapper(IMarshal* pMarsh, LPSTREAM pStm, REFIID riid, void * pv,
+    HRESULT STDMETHODCALLTYPE Marshal_MarshalInterface_Wrapper(IMarshal* pMarsh, LPSTREAM pStm, REFIID riid, void * pv,
                                      ULONG dwDestContext, LPVOID pvDestContext, ULONG mshlflags)
     {
         SetupForComCallHR();
@@ -868,7 +868,7 @@ namespace
         return Marshal_MarshalInterface(pMarsh, pStm, riid, pv, dwDestContext, pvDestContext, mshlflags);
     }
 
-    HRESULT __stdcall Marshal_UnmarshalInterface_Wrapper(IMarshal* pMarsh, LPSTREAM pStm, REFIID riid, void ** ppvObj)
+    HRESULT STDMETHODCALLTYPE Marshal_UnmarshalInterface_Wrapper(IMarshal* pMarsh, LPSTREAM pStm, REFIID riid, void ** ppvObj)
     {
         SetupForComCallHR();
 
@@ -889,7 +889,7 @@ namespace
         return Marshal_UnmarshalInterface(pMarsh, pStm, riid, ppvObj);
     }
 
-    HRESULT __stdcall Marshal_ReleaseMarshalData_Wrapper(IMarshal* pMarsh, LPSTREAM pStm)
+    HRESULT STDMETHODCALLTYPE Marshal_ReleaseMarshalData_Wrapper(IMarshal* pMarsh, LPSTREAM pStm)
     {
         SetupForComCallHR();
 
@@ -909,7 +909,7 @@ namespace
         return Marshal_ReleaseMarshalData(pMarsh, pStm);
     }
 
-    HRESULT __stdcall Marshal_DisconnectObject_Wrapper(IMarshal* pMarsh, ULONG dwReserved)
+    HRESULT STDMETHODCALLTYPE Marshal_DisconnectObject_Wrapper(IMarshal* pMarsh, ULONG dwReserved)
     {
         SetupForComCallHR();
 
@@ -931,7 +931,7 @@ namespace
     // ---------------------------------------------------------------------------
     //  Interface IConnectionPointContainer
 
-    HRESULT __stdcall ConnectionPointContainer_EnumConnectionPoints_Wrapper(IUnknown* pUnk, IEnumConnectionPoints **ppEnum)
+    HRESULT STDMETHODCALLTYPE ConnectionPointContainer_EnumConnectionPoints_Wrapper(IUnknown* pUnk, IEnumConnectionPoints **ppEnum)
     {
         SetupForComCallHR();
 
@@ -951,7 +951,7 @@ namespace
         return ConnectionPointContainer_EnumConnectionPoints(pUnk, ppEnum);
     }
 
-    HRESULT __stdcall ConnectionPointContainer_FindConnectionPoint_Wrapper(IUnknown* pUnk, REFIID riid, IConnectionPoint **ppCP)
+    HRESULT STDMETHODCALLTYPE ConnectionPointContainer_FindConnectionPoint_Wrapper(IUnknown* pUnk, REFIID riid, IConnectionPoint **ppCP)
     {
         SetupForComCallHR();
 
@@ -975,7 +975,7 @@ namespace
     //------------------------------------------------------------------------------------------
     //      IObjectSafety methods for COM+ objects
 
-    HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk, REFIID riid,
+    HRESULT STDMETHODCALLTYPE ObjectSafety_GetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk, REFIID riid,
                                                    DWORD *pdwSupportedOptions, DWORD *pdwEnabledOptions)
     {
         SetupForComCallHR();
@@ -997,7 +997,7 @@ namespace
         return ObjectSafety_GetInterfaceSafetyOptions(pUnk, riid, pdwSupportedOptions, pdwEnabledOptions);
     }
 
-    HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk, REFIID riid,
+    HRESULT STDMETHODCALLTYPE ObjectSafety_SetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk, REFIID riid,
                                                    DWORD dwOptionSetMask, DWORD dwEnabledOptions)
     {
         SetupForComCallHR();

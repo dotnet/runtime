@@ -21,8 +21,6 @@ class Assembly;
 class Module;
 class MethodTable;
 
-typedef HRESULT (__stdcall* PCOMFN)(void);
-
 //------------------------------------------------------------------------------------------
 // HRESULT's returned by GetITypeInfoForEEClass.
 #define S_USEIUNKNOWN   (HRESULT)2
