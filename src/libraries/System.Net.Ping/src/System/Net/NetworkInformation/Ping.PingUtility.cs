@@ -15,8 +15,6 @@ namespace System.Net.NetworkInformation
 {
     public partial class Ping
     {
-        private static char[] s_ttlExceededAddressSeparators = new[] { ' ', ':' };
-
         private Process GetPingProcess(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
@@ -137,7 +135,7 @@ namespace System.Net.NetworkInformation
             // - "From 172.21.64.1 icmp_seq=1 Time to live exceeded"
             // - "From 172.21.64.1: icmp_seq=1 Time to live exceeded"
             int addressStart = stdout.IndexOf("From ", StringComparison.Ordinal) + 5;
-            int addressLength = stdout.IndexOfAny(s_ttlExceededAddressSeparators, Math.Max(addressStart, 0)) - addressStart;
+            int addressLength = stdout.AsSpan(Math.Max(addressStart, 0)).IndexOfAny(' ', ':');
             IPAddress? address;
             if (addressStart < 5 || addressLength <= 0 || !IPAddress.TryParse(stdout.AsSpan(addressStart, addressLength), out address))
             {
