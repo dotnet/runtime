@@ -216,7 +216,7 @@ public partial class Program
         }
 
         [Fact]
-        public async Task CodeFixRejectsInvalidPatternFromWhichOptionsCannotBeParsed()
+        public async Task CodeFixIsNotOfferedForInvalidPatternFromWhichOptionsCannotBeParsed()
         {
             string pattern = "\\g"; // throws during pre-parse for options
             string test = $@"using System.Text;
@@ -230,7 +230,7 @@ public class Program
     }}
 }}";
             // We need to be able to parse the pattern sufficiently that we can extract
-            // any inline options; in this case we can't, so we don't make the fix.
+            // any inline options; in this case we can't, so we don't offer the fix.
             await VerifyCS.VerifyCodeFixAsync(test, test);
         }
 
