@@ -14462,22 +14462,53 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 				return 1;
 			}
 
-			char *line = NULL;
-			size_t line_len = 0;
-			while (getline (&line, &line_len, direct_pinvoke_list_file) != -1 && added_direct_pinvoke) {
-				int len = strlen (line);
+			if (fseek (direct_pinvoke_list_file, 0L, SEEK_END)) {
+				aot_printerrf (acfg, "Failed to seek end of provided 'direct-pinvoke-list' '%s', fseek SEEK_END failed.\n", direct_pinvoke_list);
+				fclose (direct_pinvoke_list_file);
+				return 1;
+			}
 
+			size_t file_len = ftell (direct_pinvoke_list_file);
+
+			if (fseek (direct_pinvoke_list_file, 0L, SEEK_SET)) {
+				aot_printerrf (acfg, "Failed to seek start of provided 'direct-pinvoke-list' '%s', fseek SEEK_SET failed.\n", direct_pinvoke_list);
+				fclose (direct_pinvoke_list_file);
+				return 1;
+			}
+
+			// Allocate enough memory to read the entire file
+			// Other than that, the contents doesn't really matter,
+			// and it won't match the contents of direct_pinvoke_list_file
+			// when each direct_pinvoke read are cleaned of \n and whitespaces
+			char *direct_pinvokes = g_malloc0 (file_len * sizeof (char));
+			// Ensures that
+			size_t offset = 0;
+
+			while (added_direct_pinvoke && fgets (&direct_pinvokes [offset], (int)(file_len - offset + 1), direct_pinvoke_list_file)) {
+				char *direct_pinvoke = &direct_pinvokes [offset];
+				size_t len = strlen (direct_pinvoke);
+
+				// No characters have been read from fgets
 				if (len == 0)
+					break;
+
+				offset += len;
+
+				// Remove newline read by fgets by null terminating instead
+				if (len >= 0 && direct_pinvoke [len - 1] == '\n')
+					direct_pinvoke [len - 1] = '\0';
+
+				// Strip whitespace from line read
+				g_strstrip (direct_pinvoke);
+
+				// Skip empty direct_pinvokes
+				if (direct_pinvoke [0] == '\0')
 					continue;
 
-				if (line [len - 1] == '\n')
-					len--;
-
-				char *direct_pinvoke = g_malloc0 (sizeof(char) * (len + 1));
-				memcpy (direct_pinvoke, line, len);
 				added_direct_pinvoke = process_specified_direct_pinvokes (acfg, direct_pinvoke);
-				g_free (direct_pinvoke);
 			}
+
+			g_free (direct_pinvokes);
 
 			fclose (direct_pinvoke_list_file);
 			if (!added_direct_pinvoke)
