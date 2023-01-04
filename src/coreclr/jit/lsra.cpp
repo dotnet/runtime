@@ -2875,7 +2875,17 @@ regNumber LinearScan::allocateReg(Interval*    referentInterval,
     {
         //TODO: Unassign anything else for this register.
         foundRegBit <<= 1;
+        foundReg = genRegNumFromMask(foundRegBit);
+        /*Interval*  consecutiveInterval    = consecutiveRefPosition->getInterval();
+        if (consecutiveInterval->physReg != foundReg)
+        {
+            consecutiveInterval->isActive = false;
+            unassignPhysReg(consecutiveInterval->physReg);
+            consecutiveInterval->isActive = true;
+        }*/
+
         consecutiveRefPosition->registerAssignment = foundRegBit;
+        
 
         consecutiveRefPosition = consecutiveRefPosition->nextConsecutiveRefPosition;
     }
@@ -5210,7 +5220,7 @@ void LinearScan::allocateRegisters()
 
         regMaskTP assignedRegBit = RBM_NONE;
         bool      isInRegister   = false;
-        if (assignedRegister != REG_NA)
+        if ((assignedRegister != REG_NA) /*&& !currentRefPosition.needsConsecutive*/)
         {
             isInRegister   = true;
             assignedRegBit = genRegMask(assignedRegister);
@@ -5243,7 +5253,7 @@ void LinearScan::allocateRegisters()
             assert(previousRefPosition->nextRefPosition == &currentRefPosition);
             assert(assignedRegister == REG_NA || assignedRegBit == previousRefPosition->registerAssignment ||
                    currentRefPosition.outOfOrder || previousRefPosition->copyReg ||
-                   previousRefPosition->refType == RefTypeExpUse || currentRefPosition.refType == RefTypeDummyDef);
+                   previousRefPosition->refType == RefTypeExpUse || currentRefPosition.refType == RefTypeDummyDef || currentRefPosition.needsConsecutive);
         }
         else if (assignedRegister != REG_NA)
         {
@@ -5317,7 +5327,7 @@ void LinearScan::allocateRegisters()
             }
         }
 
-        if (assignedRegister != REG_NA)
+        if ((assignedRegister != REG_NA))
         {
             RegRecord* physRegRecord = getRegisterRecord(assignedRegister);
             assert((assignedRegBit == currentRefPosition.registerAssignment) ||
@@ -5338,7 +5348,7 @@ void LinearScan::allocateRegisters()
                 setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
             }
-            else if ((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
+            else if (((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0))
             {
                 currentRefPosition.registerAssignment = assignedRegBit;
                 if (!currentInterval->isActive)
@@ -5419,6 +5429,57 @@ void LinearScan::allocateRegisters()
                     }
                 }
             }
+        }
+
+        if (currentRefPosition.needsConsecutive)
+        {
+            // For consecutive register, we would like to assign a register (if not already assigned)
+            // to the 1st position and the subsequent positions will just get the consecutive register.
+            if (currentRefPosition.multiRegIdx == 0)
+            {
+                if (assignedRegister != REG_NA)
+                {
+                    // For 1st position, if it already has a register assigned, then just assign
+                    // subsequent registers to remaining position and skip the allocation for the
+                    // 1st position altogether.
+
+                    RefPosition* consecutiveRefPosition = currentRefPosition.nextConsecutiveRefPosition;
+                    regMaskTP    registerBit            = assignedRegBit;
+                    while (consecutiveRefPosition != nullptr)
+                    {
+                        // TODO: Unassign anything else for this register.
+                        registerBit <<= 1;
+                        regNumber foundReg = genRegNumFromMask(registerBit);
+                        /*Interval*  consecutiveInterval    = consecutiveRefPosition->getInterval();
+                        if (consecutiveInterval->physReg != foundReg)
+                        {
+                            consecutiveInterval->isActive = false;
+                            unassignPhysReg(consecutiveInterval->physReg);
+                            consecutiveInterval->isActive = true;
+                        }*/
+
+                        consecutiveRefPosition->registerAssignment = registerBit;
+
+                        consecutiveRefPosition = consecutiveRefPosition->nextConsecutiveRefPosition;
+                    }   
+                }
+            }
+            else
+            {
+                if (assignedRegBit == currentRefPosition.registerAssignment)
+                {
+                    // For the subsequent position, if they already have the subsequent register assigned, then
+                    // no need to find register to assign.
+                    allocate = false;
+                }
+                else
+                {
+                    // If subsequent position is not assigned to the subsequent register, then reassign the right
+                    // consecutive register.
+                    assignedRegister = REG_NA;
+                }
+            }
+
         }
 
         if (assignedRegister == REG_NA)
@@ -5511,7 +5572,7 @@ void LinearScan::allocateRegisters()
 
             // If we allocated a register, and this is a use of a spilled value,
             // it should have been marked for reload above.
-            if (assignedRegister != REG_NA && RefTypeIsUse(refType) && !isInRegister)
+            if (assignedRegister != REG_NA && RefTypeIsUse(refType) && !isInRegister && !currentRefPosition.needsConsecutive)
             {
                 assert(currentRefPosition.reload);
             }
@@ -5997,7 +6058,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
     if (reload)
     {
         assert(currentRefPosition->refType != RefTypeDef);
-        assert(interval->isSpilled);
+        assert(interval->isSpilled || currentRefPosition->needsConsecutive);
         varDsc->SetRegNum(REG_STK);
         if (!spillAfter)
         {

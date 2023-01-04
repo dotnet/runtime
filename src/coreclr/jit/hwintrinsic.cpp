@@ -1144,31 +1144,81 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     // check the number of fields present in op1 and set NI_AdvSimd_Arm64_VectorTableLookup_2,
                     // NI_AdvSimd_Arm64_VectorTableLookup_3, etc.
                     op1 = impPopStack().val;
-                    int fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
-                    switch (fieldCount)
+                    ClassLayout* layout      = op1->GetLayout(this);
+                    unsigned     structSize  = layout->GetSize();
+                    unsigned slotCount = layout->GetSlotCount();
+
+                    /*GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+                    for (unsigned i = 0; i < fieldCount; i++)
                     {
-                        case 2:
-                            intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_2;
-                            break;
-                        case 3:
-                            intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_3;
-                            break;
-                        case 4:
-                            intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_4;
-                            break;
-                        default:
-                            noway_assert("Unknown field count");
+                        LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
+                        GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
+                        fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
+                        fieldLclNum++;
                     }
-                    
+                    return fieldList;*/
+                    unsigned fieldCount = slotCount / info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
+
+                    if (fieldCount > 1)
+                    {
+                        op1->AsLclVar()->SetMultiRegUse();
+                        GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+                        int               offset    = 0;
+                        for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
+                        {
+                            unsigned   lclNum    = lvaGrabTemp(true DEBUGARG("VectorTableLookup"));
+                            LclVarDsc* fldVarDsc = lvaGetDesc(lclNum);
+                            fldVarDsc->lvType    = TYP_SIMD16;
+
+                            CORINFO_FIELD_HANDLE fieldHandle =
+                                info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, fieldId);
+                            CORINFO_CLASS_HANDLE classHandle = info.compCompHnd->getFieldClass(fieldHandle);
+                            lvaSetStruct(lclNum, classHandle, true);
+
+                            GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, TYP_SIMD16, offset);
+
+                            // varDsc->SetLayout(layout);
+
+                            fieldList->AddField(this, fldNode, 0, TYP_SIMD16);
+                            offset += 16;
+                        }
+                        // op1                                   = fieldList;
+
+                        /*const CORINFO_FIELD_HANDLE field1 =
+                            info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 0);
+                        unsigned                   fldOffset1 = info.compCompHnd->getFieldOffset(field1);
+                        const CORINFO_FIELD_HANDLE field2 = info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 1);
+                        unsigned                   fldOffset2 = info.compCompHnd->getFieldOffset(field2);*/
+
+                        switch (fieldCount)
+                        {
+                            case 1:
+                                // keep the intrinsic
+                                break;
+                            case 2:
+                                intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_2;
+                                break;
+                            case 3:
+                                intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_3;
+                                break;
+                            case 4:
+                                intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_4;
+                                break;
+                            default:
+                                noway_assert("Unknown field count");
+                        }
+                    }
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                    lvaGetDesc(op1->AsLclVar())->lvUsedInSIMDIntrinsic = false;
                 }
                 else
 #endif
                 {
                     op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                    retNode = isScalar
+                                  ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
+                                  : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
                 }
-
-                retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
-                                   : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
 #ifdef TARGET_XARCH
                 if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))

@@ -12149,7 +12149,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
         //
         // So here we preserve this invariant and mark any promoted structs as do-not-enreg.
         //
-        if (operand->OperIs(GT_LCL_VAR) && lvaGetDesc(operand->AsLclVar())->lvPromoted)
+        if (operand->OperIs(GT_LCL_VAR) && lvaGetDesc(operand->AsLclVar())->lvPromoted && !operand->AsLclVar()->IsMultiRegUse())
         {
             lvaSetVarDoNotEnregister(operand->AsLclVar()->GetLclNum()
                                          DEBUGARG(DoNotEnregisterReason::SimdUserForcesDep));
