@@ -101,6 +101,13 @@ jobs:
       - name: BuildAction
         value: ''
 
+    # enable testing on osx-arm64
+    - ${{ if eq(and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64')), true) }}:
+      - name: SkipTests
+        value: false
+      - name: BuildAction
+        value: -test
+
     - name: SignType
       value: test
 
