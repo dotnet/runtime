@@ -706,8 +706,11 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     assert(ig);
 
 #ifdef TARGET_ARMARCH
-    // Reset emitLastMemBarrier for new IG
-    emitLastMemBarrier = nullptr;
+    if (!emitAdd)
+    {
+        // Reset emitLastMemBarrier for new IG
+        emitLastMemBarrier = nullptr;
+    }
 #endif
 
     // Compute how much code we've generated
