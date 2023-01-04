@@ -3841,8 +3841,9 @@ void Compiler::lvaSortByRefCount()
         varDsc->lvVarIndex = static_cast<unsigned short>(varIndex);
 
         INDEBUG(if (verbose) { gtDispLclVar(trackedCandidates[varIndex]); })
-        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()), varDsc->lvRefCnt(),
-                refCntWtd2str(varDsc->lvRefCntWtd(), /* padForDecimalPlaces */ true));
+        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()),
+                varDsc->lvRefCnt(lvaRefCountState),
+                refCntWtd2str(varDsc->lvRefCntWtd(lvaRefCountState), /* padForDecimalPlaces */ true));
     }
 
     JITDUMP("\n");
@@ -7667,8 +7668,8 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             printf("    ]");
         }
 
-        printf(" (%3u,%*s)", varDsc->lvRefCnt(), (int)refCntWtdWidth,
-               refCntWtd2str(varDsc->lvRefCntWtd(), /* padForDecimalPlaces */ true));
+        printf(" (%3u,%*s)", varDsc->lvRefCnt(lvaRefCountState), (int)refCntWtdWidth,
+               refCntWtd2str(varDsc->lvRefCntWtd(lvaRefCountState), /* padForDecimalPlaces */ true));
 
         printf(" %7s ", varTypeName(type));
         if (genTypeSize(type) == 0)
@@ -7681,7 +7682,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
 
         // The register or stack location field is 11 characters wide.
-        if ((varDsc->lvRefCnt() == 0) && !varDsc->lvImplicitlyReferenced)
+        if ((varDsc->lvRefCnt(lvaRefCountState) == 0) && !varDsc->lvImplicitlyReferenced)
         {
             printf("zero-ref   ");
         }
@@ -7929,7 +7930,7 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     {
         for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
         {
-            size_t width = strlen(refCntWtd2str(varDsc->lvRefCntWtd(), /* padForDecimalPlaces */ true));
+            size_t width = strlen(refCntWtd2str(varDsc->lvRefCntWtd(lvaRefCountState), /* padForDecimalPlaces */ true));
             if (width > refCntWtdWidth)
             {
                 refCntWtdWidth = width;
