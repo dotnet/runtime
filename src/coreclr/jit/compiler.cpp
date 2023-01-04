@@ -1849,13 +1849,12 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     fgInit();
     lvaInit();
+    optInit();
 
     if (!compIsForInlining())
     {
         codeGen = getCodeGenerator(this);
-        optInit();
         hashBv::Init(this);
-
         compVarScopeMap = nullptr;
 
         // If this method were a real constructor for Compiler, these would
