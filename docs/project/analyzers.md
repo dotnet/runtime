@@ -9,7 +9,7 @@ To add an analyzer package to the build:
     <PackageReference Include="SonarAnalyzer.CSharp" Version="SonarAnalyzerCSharpVersion" PrivateAssets="all" />
     ```
 3. Add `<SonarAnalyzerCSharpVersion>8.50.0.58025</SonarAnalyzerCSharpVersion>` property to [Versions.props](https://github.com/dotnet/runtime/blob/main/eng/Versions.props).
-4. After that point, all builds will employ all rules in that analyzer package that are enabled by default.  Rules can be disabled by adding entries to the globalconfig files [CodeAnalysis.src.globalconfig](https://github.com/dotnet/runtime/blob/main/eng/CodeAnalysis.src.globalconfig) or [CodeAnalysis.test.globalconfig](https://github.com/dotnet/runtime/blob/main/eng/CodeAnalysis.test.globalconfig).
+4. After that point, all builds will employ all rules in that analyzer package that are enabled by default.  You can change the severity for rules by adding entries to the globalconfig files [CodeAnalysis.src.globalconfig](https://github.com/dotnet/runtime/blob/main/eng/CodeAnalysis.src.globalconfig) or [CodeAnalysis.test.globalconfig](https://github.com/dotnet/runtime/blob/main/eng/CodeAnalysis.test.globalconfig).
 
 The build system in this repo defaults to treating all warnings as errors. It can be helpful when enabling a new rule to temporarily allow warnings to be warnings rather than errors, while you proceed to fix all of them across the repo. Instead of building from the root of the repo with:
 ```
@@ -19,5 +19,3 @@ build.cmd
 ```
 build.cmd -warnAsError 0
 ```
-
-**Tip:** You can use [dotnet format](https://learn.microsoft.com/dotnet/core/tools/dotnet-format) to fix analyzer warnings if the analyzer has an associated `CodeFixProvider`.
