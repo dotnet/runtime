@@ -1075,36 +1075,11 @@ protected:
     void genCompareInt(GenTree* treeNode);
 
 #ifdef FEATURE_SIMD
-    enum SIMDScalarMoveType{
-        SMT_ZeroInitUpper,                  // zero initlaize target upper bits
-        SMT_ZeroInitUpper_SrcHasUpperZeros, // zero initialize target upper bits; source upper bits are known to be zero
-        SMT_PreserveUpper                   // preserve target upper bits
-    };
-
 #ifdef TARGET_ARM64
     insOpts genGetSimdInsOpt(emitAttr size, var_types elementType);
 #endif
-    instruction getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival = nullptr);
-    void genSIMDScalarMove(
-        var_types targetType, var_types type, regNumber target, regNumber src, SIMDScalarMoveType moveType);
-    void genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg);
-    void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode);
-    void genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
-                               var_types       simdType,
-                               var_types       baseType,
-                               regNumber       tmpReg,
-                               regNumber       tmpIntReg,
-                               regNumber       targetReg);
-    void genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode);
-    void genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg);
     void genSIMDIntrinsic(GenTreeSIMD* simdNode);
 
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires

@@ -421,21 +421,25 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Index.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\BitVector256.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny1Value.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny2Values.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny3Values.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny1CharValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny1ByteValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny2ByteValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny2CharValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny3ByteValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny3CharValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny4Values.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAny5Values.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyAsciiByteValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyAsciiCharValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyAsciiSearcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyByteValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyByteValuesInRange.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyCharValuesInRange.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyCharValuesProbabilistic.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyLatin1CharValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValues.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValuesDebugView.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfAnyValuesInRange.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\IndexOfEmptyValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOfAnyValues\ProbabilisticMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
@@ -1029,6 +1033,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Byte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Packed.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SR.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StackOverflowException.cs" />
@@ -1041,9 +1046,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\StringNormalizationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StringSplitOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.CaseConversion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Transcoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Trimming.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Utility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Utility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIEncoding.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIUtility.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIUtility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\CodePageDataItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderExceptionFallback.cs" />
@@ -2525,8 +2534,5 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryNegationOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryPlusOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureMono)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Mono.cs" />
   </ItemGroup>
 </Project>

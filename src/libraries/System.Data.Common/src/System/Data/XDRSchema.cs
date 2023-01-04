@@ -297,16 +297,17 @@ namespace System.Data
         private static Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;
-            string[] parts = dt.Split(':');
 
-            if (parts.Length > 2)
+            Span<System.Range> parts = stackalloc System.Range[3];
+            switch (dt.AsSpan().Split(parts, ':'))
             {
-                throw ExceptionBuilder.InvalidAttributeValue("type", dt);
-            }
-            else if (parts.Length == 2)
-            {
-                // CONSIDER: check that we have valid prefix
-                strType = parts[1];
+                case 2:
+                    // CONSIDER: check that we have valid prefix
+                    strType = dt[parts[1]];
+                    break;
+
+                case > 2:
+                    throw ExceptionBuilder.InvalidAttributeValue("type", dt);
             }
 
             NameType nt = FindNameType(strType);

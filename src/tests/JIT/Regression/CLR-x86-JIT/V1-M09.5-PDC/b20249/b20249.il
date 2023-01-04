@@ -7,8 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0x38e574ea {}
-.class ILGEN_0x38e574ea {
+.assembly 'b20249' {}
+.class public ILGEN_0x38e574ea {
 
 //BEGIN STATIC FIELDS
 .field static	unsigned int8 field_0x0
@@ -22,7 +22,7 @@
 .field static	float32 field_0x8
 .field static	float64 field_0x9
 //END STATIC FIELDS
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	18
 

@@ -18,15 +18,17 @@ output_ts_path = sys.argv [2]
 src = open(src_header_path, 'r')
 
 tab = "    "
-header = tab + src.read().replace("\n", "\n" + tab)
+header_lines = src.read().splitlines()
+# strip preprocessing directives and add indentation for tslint/eslint
+header = "\n".join((tab + l) for l in header_lines if not l.startswith("#"))
 src.close()
 
-opdef_regex = r'OPDEF\((\w+),\s*(.+?),\s*(MintOp\w+)\)'
+opdef_regex = r'\s(IR)?OPDEF\((\w+),\s*(.+?),\s*(MintOp\w+)\)'
 enum_values = re.sub(
-    opdef_regex, lambda m : f"{m.group(1)}{' = 0' if (m.group(1) == 'MINT_NOP') else ''},", header
+    opdef_regex, lambda m : f"{m.group(2)},", header
 )
 metadata_table = re.sub(
-    opdef_regex, lambda m : f"[MintOpcode.{m.group(1)}]: [{m.group(2)}, MintOpArgType.{m.group(3)}],", header
+    opdef_regex, lambda m : f"[MintOpcode.{m.group(2)}]: [{m.group(3)}, MintOpArgType.{m.group(4)}],", header
 )
 
 generated = f"""

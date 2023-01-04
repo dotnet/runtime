@@ -30,12 +30,12 @@ class B : A
     public override decimal X => d + 1;
 }
 
-class Repro
+public class Repro
 {
     static string s;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int F(A[] a)
+    static int F(A[] a)
     {
         int i = 0;
         for (; i < a.Length; i++)

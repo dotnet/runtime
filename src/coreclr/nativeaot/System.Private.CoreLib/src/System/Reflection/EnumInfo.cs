@@ -33,8 +33,7 @@ namespace System.Reflection
             base(underlyingType, names, isFlags)
         {
             Debug.Assert(values.Length == names.Length);
-
-            Array.Sort(keys: values, items: names);
+            Debug.Assert(Enum.AreSorted(values));
 
             Values = values;
             ValuesAreSequentialFromZero = Enum.AreSequentialFromZero(values);

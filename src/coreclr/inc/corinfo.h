@@ -416,7 +416,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
     CORINFO_HELP_STRCNS,            // create a new string literal
-    CORINFO_HELP_STRCNS_CURRENT_MODULE, // create a new string literal from the current module (used by NGen code)
 
     /* Object model */
 
@@ -591,7 +590,10 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_NEWARR_1,
     CORINFO_HELP_READYTORUN_ISINSTANCEOF,
     CORINFO_HELP_READYTORUN_CHKCAST,
-    CORINFO_HELP_READYTORUN_STATIC_BASE,
+    CORINFO_HELP_READYTORUN_GCSTATIC_BASE,           // static gc field access
+    CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE,        // static non gc field access
+    CORINFO_HELP_READYTORUN_THREADSTATIC_BASE,
+    CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE,
     CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
     CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
     CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
@@ -3255,13 +3257,6 @@ public:
                     CORINFO_FIELD_HANDLE    field,
                     void                  **ppIndirection = NULL
                     ) = 0;
-
-    // Adds an active dependency from the context method's module to the given module
-    // This is internal callback for the EE. JIT should not call it directly.
-    virtual void addActiveDependency(
-               CORINFO_MODULE_HANDLE       moduleFrom,
-               CORINFO_MODULE_HANDLE       moduleTo
-                ) = 0;
 
     virtual CORINFO_METHOD_HANDLE GetDelegateCtor(
             CORINFO_METHOD_HANDLE  methHnd,

@@ -503,6 +503,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return false;
                     }
 
+                case "Runtime.callFunctionOn":
+                    {
+                        try {
+                            return await CallOnFunction(id, args, token);
+                        }
+                        catch (Exception ex) {
+                            logger.LogDebug($"Runtime.callFunctionOn failed for {id} with args {args}: {ex}");
+                            SendResponse(id,
+                                Result.Exception(new ArgumentException(
+                                    $"Runtime.callFunctionOn not supported with ({args["objectId"]}).")),
+                                token);
+                            return true;
+                        }
+                    }
+
                 // Protocol extensions
                 case "DotnetDebugger.setDebuggerProperty":
                     {
@@ -552,19 +567,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                         SendResponse(id, await GetMethodLocation(id, args, token), token);
                         return true;
                     }
-                case "Runtime.callFunctionOn":
+                case "DotnetDebugger.setEvaluationOptions":
                     {
+                        //receive the available options from DAP to variables, stack and evaluate commands.
                         try {
-                            return await CallOnFunction(id, args, token);
+                            if (args["options"]?["noFuncEval"]?.Value<bool>() == true)
+                                context.AutoEvaluateProperties = false;
+                            else
+                                context.AutoEvaluateProperties = true;
+                            SendResponse(id, Result.OkFromObject(new { }), token);
                         }
-                        catch (Exception ex) {
-                            logger.LogDebug($"Runtime.callFunctionOn failed for {id} with args {args}: {ex}");
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug($"DotnetDebugger.setEvaluationOptions failed for {id} with args {args}: {ex}");
                             SendResponse(id,
                                 Result.Exception(new ArgumentException(
-                                    $"Runtime.callFunctionOn not supported with ({args["objectId"]}).")),
+                                    $"DotnetDebugger.setEvaluationOptions got incorrect argument ({args})")),
                                 token);
-                            return true;
                         }
+                        return true;
                     }
             }
             // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
@@ -630,7 +651,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return Result.Err($"Method '{typeName}:{methodName}' not found.");
             }
 
-            string src_url = methodInfo.Assembly.Sources.Single(sf => sf.SourceId == methodInfo.SourceId).Url;
+            string src_url = methodInfo.Assembly.Sources.Single(sf => sf.SourceId == methodInfo.SourceId).Url.ToString();
 
             return Result.OkFromObject(new
             {
@@ -737,6 +758,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
+            if (context.AutoEvaluateProperties)
+                getObjectOptions |= GetObjectCommandOptions.AutoExpandable;
             if (JustMyCode)
                 getObjectOptions |= GetObjectCommandOptions.JustMyCode;
             try
@@ -1330,7 +1353,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     logger.LogDebug($"Could not source file {method.SourceName} for method {method.Name} in assembly {assemblyName}");
                     return;
                 }
-                string bpId = $"auto:{method.StartLocation.Line}:{method.StartLocation.Column}:{sourceFile.DotNetUrl}";
+                string bpId = $"auto:{method.StartLocation.Line}:{method.StartLocation.Column}:{sourceFile.DotNetUrlEscaped}";
                 BreakpointRequest request = new(bpId, JObject.FromObject(new
                 {
                     lineNumber = method.StartLocation.Line,
@@ -1746,8 +1769,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             try
             {
-                var uri = new Uri(src_file.Url);
-                string source = $"// Unable to find document {src_file.SourceUri}";
+                string source = $"// Unable to find document {src_file.FileUriEscaped}";
 
                 using (Stream data = await src_file.GetSourceAsync(checkHash: false, token: token))
                 {
@@ -1764,7 +1786,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var o = new
                 {
                     scriptSource = $"// Unable to read document ({e.Message})\n" +
-                    $"Local path: {src_file?.SourceUri}\n" +
+                    $"Local path: {src_file?.FileUriEscaped}\n" +
                     $"SourceLink path: {src_file?.SourceLinkUri}\n"
                 };
 

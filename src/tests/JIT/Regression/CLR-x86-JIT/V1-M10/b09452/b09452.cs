@@ -8,7 +8,7 @@ namespace DefaultNamespace
     //@ENDRENAME; Verify this renames
     using System;
 
-    class X
+    public class X
     {
         public static int Main()
         {

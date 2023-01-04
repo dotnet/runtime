@@ -904,7 +904,7 @@ namespace System.Text.RegularExpressions.Generator
                             _ => $"{span}.IndexOfAny({EmitIndexOfAnyValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
                         } :
                         primarySet.AsciiSet is not null ? $"{span}.IndexOfAny({EmitIndexOfAnyValues(primarySet.AsciiSet, requiredHelpers)})" :
-                        (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Negated) switch
+                        (primarySet.Range!.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Negated) switch
                         {
                             (false, false) => $"{span}.IndexOfAnyInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",
                             (true, false) => $"{span}.IndexOf({Literal(primarySet.Range.Value.LowInclusive)})",
@@ -2981,7 +2981,7 @@ namespace System.Text.RegularExpressions.Generator
                 if (!rtl &&
                     node.N > 1 && // no point in using IndexOf for small loops, in particular optionals
                     subsequent?.FindStartingLiteralNode() is RegexNode literalNode &&
-                    TryEmitIndexOf(requiredHelpers, literalNode, useLast: true, negate: false, out int literalLength, out string indexOfExpr))
+                    TryEmitIndexOf(requiredHelpers, literalNode, useLast: true, negate: false, out int literalLength, out string? indexOfExpr))
                 {
                     writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
 
@@ -3759,7 +3759,7 @@ namespace System.Text.RegularExpressions.Generator
                     TransferSliceStaticPosToPos();
                     writer.WriteLine($"int {iterationLocal} = inputSpan.Length - pos;");
                 }
-                else if (maxIterations == int.MaxValue && TryEmitIndexOf(requiredHelpers, node, useLast: false, negate: true, out _, out string indexOfExpr))
+                else if (maxIterations == int.MaxValue && TryEmitIndexOf(requiredHelpers, node, useLast: false, negate: true, out _, out string? indexOfExpr))
                 {
                     // We're unbounded and we can use an IndexOf method to perform the search. The unbounded restriction is
                     // purely for simplicity; it could be removed in the future with additional code to handle that case.
@@ -3944,7 +3944,8 @@ namespace System.Text.RegularExpressions.Generator
                     // only to find we can't iterate further, and will need to clear any pushed state from the backtracking
                     // stack.  For both cases, we need to store the starting stack index so it can be reset to that position.
                     startingStackpos = ReserveName("startingStackpos");
-                    writer.WriteLine($"int {startingStackpos} = stackpos;");
+                    additionalDeclarations.Add($"int {startingStackpos} = 0;");
+                    writer.WriteLine($"{startingStackpos} = stackpos;");
                 }
 
                 string originalDoneLabel = doneLabel;
@@ -4208,8 +4209,10 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine();
 
                         // Store the loop's state
-                        EmitStackPush(iterationMayBeEmpty ?
-                            new[] { startingPos!, iterationCount } :
+                        EmitStackPush(
+                            startingPos is not null && startingStackpos is not null ? new[] { startingPos, startingStackpos, iterationCount } :
+                            startingPos is not null ? new[] { startingPos, iterationCount } :
+                            startingStackpos is not null ? new[] { startingStackpos, iterationCount } :
                             new[] { iterationCount });
 
                         // Skip past the backtracking section
@@ -4220,8 +4223,10 @@ namespace System.Text.RegularExpressions.Generator
                         // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
-                        EmitStackPop(iterationMayBeEmpty ?
-                            new[] { iterationCount, startingPos! } :
+                        EmitStackPop(
+                            startingPos is not null && startingStackpos is not null ? new[] { iterationCount, startingStackpos, startingPos } :
+                            startingPos is not null ? new[] { iterationCount, startingPos } :
+                            startingStackpos is not null ? new[] { iterationCount, startingStackpos } :
                             new[] { iterationCount });
 
                         // We're backtracking.  Check the timeout.
@@ -4421,8 +4426,8 @@ namespace System.Text.RegularExpressions.Generator
             if (node.Kind == RegexNodeKind.Multi)
             {
                 Debug.Assert(!negate, "Negation isn't appropriate for a multi");
-                indexOfExpr = $"{last}IndexOf({Literal(node.Str)})";
-                literalLength = node.Str.Length;
+                indexOfExpr = $"{last}IndexOf({Literal(node.Str!)})";
+                literalLength = node.Str!.Length;
                 return true;
             }
 

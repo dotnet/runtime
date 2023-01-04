@@ -762,6 +762,37 @@ partial class Program
         }
 
         [Fact]
+        public async Task CodeFixerDoesNotSimplifyStyle()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+class Program
+{
+    static void Main()
+    {
+        int i = (4 - 4); // this shouldn't be changed by fixer
+        Regex r = [|new Regex(options: RegexOptions.None, pattern: ""a|b"")|];
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main()
+    {
+        int i = (4 - 4); // this shouldn't be changed by fixer
+        Regex r = MyRegex();
+    }
+
+    [GeneratedRegex(""a|b"", RegexOptions.None)]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
         public async Task TopLevelStatements_MultipleSourceFiles()
         {
             await new VerifyCS.Test
@@ -942,7 +973,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [GeneratedRegex(""pattern"", (RegexOptions)2048)]
+    [GeneratedRegex(""pattern"", (RegexOptions)(2048))]
     private static partial Regex MyRegex();
 }
 ";
@@ -974,7 +1005,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [GeneratedRegex(""pattern"", (RegexOptions)2048)]
+    [GeneratedRegex(""pattern"", (RegexOptions)(2048))]
     private static partial Regex MyRegex();
 }
 ";

@@ -480,11 +480,8 @@ if (CLR_CMAKE_HOST_UNIX)
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
   
-  # Separate functions so linker can remove them. But not on tvOS because
-  # -ffunction-sections is not supported with -fembed-bitcode.
-  if (NOT CLR_CMAKE_HOST_TVOS)
-    add_compile_options(-ffunction-sections)
-  endif()
+  # Separate functions so linker can remove them.
+  add_compile_options(-ffunction-sections)
 
   # Specify the minimum supported version of macOS
   # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
@@ -679,7 +676,7 @@ if (MSVC)
   # Set Warning Level 4:
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w44177>) # Pragma data_seg s/b at global scope.
 
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>:/Zi>) # enable debugging information
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 

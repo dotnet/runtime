@@ -194,7 +194,12 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
         PTR_MethodTable pMethodTable = pMD->GetMethodTable();
 
         // Standard fast check
-        if (!pMethodTable->ValidateWithPossibleAV())
+        if ((pMethodTable == NULL) || dac_cast<TADDR>(pMethodTable) == (TADDR)-1)
+        {
+            retval = FALSE;
+        }
+
+        if (retval && !pMethodTable->ValidateWithPossibleAV())
         {
             retval = FALSE;
         }

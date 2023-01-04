@@ -189,7 +189,7 @@ ReturnFromEndOfRecursiveFunction:
 
                 TarjanWorkerClass tarjansResultsIterative = new TarjanWorkerClass(vertices, true);
 
-#if DEBUG
+#if RECURSIVE_CYCLE_DETECTION
                 TarjanWorkerClass tarjansResultsRecursive = new TarjanWorkerClass(vertices, false);
 
                 // assert the result of the iterative and recursive versions of the algorithm are EXACTLY the same
@@ -245,7 +245,7 @@ ReturnFromEndOfRecursiveFunction:
 
                 IEnumerable<Vertex> verticesInAFlaggedCycleTarjanStyle = _vertexMap.Values.Where(v => v.ProvedToBeInvolvedInAFlaggedCycle);
 
-#if DEBUG
+#if RECURSIVE_CYCLE_DETECTION
                 Vertex[] vertices = _vertexMap.Values.ToArray();
                 foreach (Vertex vertex in vertices)
                 {

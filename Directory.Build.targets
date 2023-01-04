@@ -11,6 +11,8 @@
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
 
   <!--
   When .NET gets built from source, make the SDK aware there are bootstrap packages
@@ -75,7 +77,7 @@
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
   </PropertyGroup>
-  
+
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
       <IsReferenceAssemblyProject>$(IsReferenceAssemblyProject)</IsReferenceAssemblyProject>
@@ -105,6 +107,88 @@
       <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
       <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="GetAnalyzerPackFiles"
+          DependsOnTargets="$(GenerateNuspecDependsOn)"
+          Returns="@(_AnalyzerPackFile)">
+    <PropertyGroup>
+      <_analyzerPath>analyzers/dotnet</_analyzerPath>
+      <_analyzerPath Condition="'$(AnalyzerRoslynVersion)' != ''">$(_analyzerPath)/roslyn$(AnalyzerRoslynVersion)</_analyzerPath>
+      <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
+    </PropertyGroup>
+
+    <!-- Filter on netstandard2.0 so that generator projects can multi-target for the purpose of enabling nullable reference type compiler checks. -->
+    <ItemGroup>
+      <_AnalyzerPackFile Include="@(_BuildOutputInPackage->WithMetadataValue('TargetFramework', 'netstandard2.0'))" IsSymbol="false" />
+      <_AnalyzerPackFile Include="@(_TargetPathsToSymbols->WithMetadataValue('TargetFramework', 'netstandard2.0'))" IsSymbol="true" />
+      <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
+    </ItemGroup>
+
+    <Error Text="Analyzers must target netstandard2.0 since they run in the compiler which targets netstandard2.0. $(MSBuildProjectFullPath) targets '$([MSBuild]::ValueOrDefault('$(TargetFrameworks)', '$(TargetFramework)'))' instead."
+           Condition="'@(_AnalyzerPackFile)' == ''" />
+  </Target>
+
+  <!-- Allows building against source assemblies when the 'SkipUseReferenceAssembly' attribute is present on ProjectReference items. -->
+  <Target Name="HandleReferenceAssemblyAttributeForProjectReferences"
+          AfterTargets="ResolveProjectReferences"
+          BeforeTargets="FindReferenceAssembliesForReferences"
+          Condition="'@(ProjectReference)' != '' and '@(_ResolvedProjectReferencePaths)' != ''">
+    <!-- If we have a ProjectReference to CoreLib, we need to compile against implementation assemblies. -->
+    <PropertyGroup Condition="@(_ResolvedProjectReferencePaths->AnyHaveMetadataValue('MSBuildSourceProjectFile', '$(CoreLibProject)'))">
+      <CompileUsingReferenceAssemblies Condition="'$(CompileUsingReferenceAssemblies)' == ''">false</CompileUsingReferenceAssemblies>
+    </PropertyGroup>
+
+    <!-- Clear the ReferenceAssembly attribute on resolved P2Ps that set SkipUseReferenceAssembly to true. -->
+    <ItemGroup>
+      <_ResolvedProjectReferencePaths Condition="'%(_ResolvedProjectReferencePaths.SkipUseReferenceAssembly)' == 'true'"
+                                      ReferenceAssembly="" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Filter out transitive P2Ps which should be excluded. -->
+  <Target Name="FilterTransitiveProjectReferences"
+          AfterTargets="IncludeTransitiveProjectReferences"
+          Condition="'$(DisableTransitiveProjectReferences)' != 'true' and
+                     '@(DefaultReferenceExclusion)' != ''">
+    <ItemGroup>
+      <_transitiveProjectReferenceWithProjectName Include="@(ProjectReference->Metadata('NuGetPackageId'))"
+                                                  OriginalIdentity="%(Identity)" />
+      <_transitiveIncludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
+                                                          Exclude="@(DefaultReferenceExclusion)" />
+      <_transitiveExcludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
+                                                          Exclude="@(_transitiveIncludedProjectReferenceWithProjectName)" />
+      <ProjectReference Remove="@(_transitiveExcludedProjectReferenceWithProjectName->Metadata('OriginalIdentity'))" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Filter out conflicting implicit assembly references. -->
+  <Target Name="FilterImplicitAssemblyReferences"
+          Condition="'$(DisableImplicitFrameworkReferences)' != 'true'"
+          DependsOnTargets="ResolveProjectReferences"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <_targetingPackReferenceExclusion Include="$(TargetName)" />
+      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
+      <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
+    </ItemGroup>
+
+    <!-- Filter out shims from the targeting pack references as an opt-in. -->
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                          '$(SkipTargetingPackShimReferences)' == 'true'">
+      <_targetingPackReferenceExclusion Include="@(NetFxReference)" />
+      <_targetingPackReferenceExclusion Include="netstandard" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
+                                              OriginalIdentity="%(Identity)" />
+      <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackReferenceExclusion)" />
+      <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
+                                                      Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
+      <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
+    </ItemGroup>
   </Target>
 
   <!--

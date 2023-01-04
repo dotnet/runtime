@@ -37,18 +37,10 @@ class Thread;
 // can be retrieved via GetInterruptedContext()
 #define INTERRUPTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
-enum SyncRequestResult
-{
-    TryAgain,
-    SuccessUnmanaged,
-    SuccessManaged,
-};
-
 typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 
 struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
-
 
 // Also defined in ExceptionHandling.cs, layouts must match.
 // When adding new fields to this struct, ensure they get properly initialized in the exception handling
@@ -94,9 +86,7 @@ struct ThreadBuffer
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
-    PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
-    uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
-    EEThreadId              m_threadId;
+    EEThreadId              m_threadId;                             // OS thread ID
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
     NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
 #ifdef FEATURE_SUSPEND_REDIRECTION
@@ -106,7 +96,6 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-
 };
 
 struct ReversePInvokeFrame
@@ -183,16 +172,19 @@ private:
     void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
 
 public:
-
-    void Detach(); // First phase of thread destructor, executed with thread store lock taken
-    void Destroy(); // Second phase of thread destructor, executed without thread store lock taken
+    // First phase of thread destructor, disposes stuff related to GC.
+    // Executed with thread store lock taken so GC cannot happen.
+    void Detach();
+    // Second phase of thread destructor.
+    // Executed without thread store lock taken.
+    void Destroy();
 
     bool                IsInitialized();
 
-    gc_alloc_context *  GetAllocContext();  // @TODO: I would prefer to not expose this in this way
+    gc_alloc_context *  GetAllocContext();
 
 #ifndef DACCESS_COMPILE
-    uint64_t              GetPalThreadIdForLogging();
+    uint64_t            GetPalThreadIdForLogging();
     bool                IsCurrentThread();
 
     void                GcScanRoots(void * pfnEnumCallback, void * pvCallbackData);
@@ -213,11 +205,7 @@ public:
     void                SetSuppressGcStress();
     void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
-
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
-
-    PTR_UInt8           GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset);
-
     void                PushExInfo(ExInfo * pExInfo);
     void                ValidateExInfoPop(ExInfo * pExInfo, void * limitSP);
     void                ValidateExInfoStack();

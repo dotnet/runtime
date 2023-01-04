@@ -54,6 +54,7 @@
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
 // Remove problematic #defines
+#undef BN_is_zero
 #undef SSL_get_state
 #undef SSL_is_init_finished
 #undef X509_get_X509_PUBKEY

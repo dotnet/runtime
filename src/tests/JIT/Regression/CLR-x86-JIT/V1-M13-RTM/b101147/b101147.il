@@ -8,8 +8,9 @@
 }
 
 
-.assembly Hello{}
+.assembly 'b101147'{}
 .assembly extern mscorlib{}
+.class public auto ansi Test_b101147 extends [mscorlib] System.Object {
 .method public static int32 main()
 {
   .entrypoint
@@ -54,3 +55,4 @@
   ldc.i4.s 100
   ret     
 }  
+}
