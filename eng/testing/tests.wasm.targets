@@ -19,7 +19,7 @@
       - for AOT library tests, we use WasmNativeStrip=false, so we already have symbols
     -->
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
-    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
+    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
 
     <!-- Run only if previous command succeeded -->
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
@@ -168,16 +168,9 @@
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
-    <PropertyGroup Condition="'$(IsHighAotMemoryUsageTest)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true'">
-      <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">true</DisableParallelEmccCompile>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2</EmccLinkOptimizationFlag>
-    </PropertyGroup>
-
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O1 -Wl,-O0 -Wl,-lto-O0</EmccLinkOptimizationFlag>
-      <WasmNativeStrip>true</WasmNativeStrip>
     </PropertyGroup>
 
     <Error Text="Item WasmAssembliesToBundle is empty. This is likely an authoring error." Condition="@(WasmAssembliesToBundle->Count()) == 0" />
@@ -215,6 +208,9 @@
       <_WasmPropertyNames Include="_WasmDevel" />
       <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
       <_WasmPropertyNames Include="WasmEmitSymbolMap" />
+      <_WasmPropertyNames Include="WasmNativeDebugSymbols" />
+      <_WasmPropertyNames Include="EmccExtraCFlags" />
+      <_WasmPropertyNames Include="EmccExtraLDFlags" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
@@ -255,9 +251,22 @@
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-
-      <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true' and '$(IsHighAotMemoryUsageTest)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true'">
+      <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">true</DisableParallelEmccCompile>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2</EmccLinkOptimizationFlag>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O1 -Wl,-O0 -Wl,-lto-O0</EmccLinkOptimizationFlag>
+
+      <!-- Use symbol map instead of generating full dwarf info -->
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">false</WasmNativeDebugSymbols>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+      <EmccExtraCFlags>$(EmccExtraCFlags) -g2</EmccExtraCFlags>
+      <EmccExtraLDFlags>$(EmccExtraLDFlags) --profiling-funcs</EmccExtraLDFlags>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
