@@ -52,3 +52,35 @@ const __initializeImportsAndExports = function (
     replacements,
     callbackAPI) { };
 const __requirePromise = {};
+
+
+/** @interface */
+function t_FS() { }
+t_FS.prototype.isDir = function () { };
+
+/**
+ * @type {t_FS}
+ * @suppress {duplicate}
+ */
+var FS = {}
+
+/** @interface */
+function CreateDotnetRuntime() { }
+CreateDotnetRuntime.prototype.locateFile = function () { };
+CreateDotnetRuntime.prototype.__locateFile = function () { };
+CreateDotnetRuntime.prototype.ready = {};
+CreateDotnetRuntime.prototype.FS = FS;
+CreateDotnetRuntime.prototype.HEAPU8 = {};
+CreateDotnetRuntime.prototype.HEAP8 = {};
+CreateDotnetRuntime.prototype.HEAPU16 = {};
+CreateDotnetRuntime.prototype.HEAP16 = {};
+CreateDotnetRuntime.prototype.HEAPU32 = {};
+CreateDotnetRuntime.prototype.HEAP32 = {};
+CreateDotnetRuntime.prototype.HEAPF32 = {};
+CreateDotnetRuntime.prototype.HEAPF64 = {};
+
+/**
+ * @type {CreateDotnetRuntime}
+ * @suppress {duplicate}
+ */
+var createDotnetRuntime = {}
