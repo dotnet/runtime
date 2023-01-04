@@ -31,6 +31,8 @@ namespace System.Net.Security
 
         public X509CertificateCollection? ClientCertificates { get; set; }
 
+        public SslStreamCertificateContext? ClientCertificateContext { get; set; }
+
         public X509RevocationMode CertificateRevocationCheckMode
         {
             get => _checkCertificateRevocation;

@@ -268,7 +268,11 @@ namespace System.Net.Security
             List<X509Certificate>? filteredCerts = null;      // This is an intermediate client certs collection that try to use if no selectedCert is available yet.
             string[] issuers;                                 // This is a list of issuers sent by the server, only valid if we do know what the server cert is.
 
-            if (_sslAuthenticationOptions.CertSelectionDelegate != null)
+            if (_sslAuthenticationOptions.CertificateContext != null)
+            {
+                EnsureInitialized(ref filteredCerts).Add(_sslAuthenticationOptions.CertificateContext.Certificate);
+            }
+            else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Info(this, "Calling CertificateSelectionCallback");
@@ -565,14 +569,14 @@ namespace System.Net.Security
                     cachedCred = true;
                     if (selectedCert != null)
                     {
-                        _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
+                        _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert!);
                     }
                 }
                 else
                 {
                     if (selectedCert != null)
                     {
-                        _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
+                        _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert!);
                     }
 
                     _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions);
@@ -581,9 +585,9 @@ namespace System.Net.Security
             }
             finally
             {
-                if (selectedCert != null && _sslAuthenticationOptions.CertificateContext != null)
+                if (selectedCert != null)
                 {
-                    _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
+                    _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert);
                 }
             }
 
@@ -996,7 +1000,7 @@ namespace System.Net.Security
                 _remoteCertificate = certificate;
                 if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_securityContext!))
                 {
-                    // We may slect client cert but it may not be used.
+                    // We may select client cert but it may not be used.
                     // This is primarily issue on Windows with credential caching
                     _selectedClientCertificate = null;
                 }
