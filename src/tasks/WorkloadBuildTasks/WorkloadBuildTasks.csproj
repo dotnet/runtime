@@ -9,6 +9,7 @@
     <Compile Include="..\Common\Utils.cs" />
 
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
   </ItemGroup>
 
   <Target Name="PublishBuilder"
