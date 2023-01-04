@@ -662,7 +662,6 @@ namespace System.Net.WebSockets.Client.Tests
                     }
                     await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_Concurrent_Success", ctsDefault.Token);
 
-                    Array.Reverse(receiveBuffer);
                     Assert.Equal<byte>(sendBuffer, receiveBuffer);
                 }
             });
