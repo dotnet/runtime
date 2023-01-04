@@ -187,18 +187,18 @@ namespace ILCompiler.DependencyAnalysis
             const string reason = "DynamicDependencyAttribute";
 
             // Now root the discovered members
-            ReflectionMarker reflectionMarker = new ReflectionMarker(
-                metadataManager.Logger,
-                factory,
-                metadataManager.FlowAnnotations,
-                typeHierarchyDataFlow: false,
-                enabled: true);
+            //ReflectionMarker reflectionMarker = new ReflectionMarker(
+            //    metadataManager.Logger,
+            //    factory,
+            //    metadataManager.FlowAnnotations,
+            //    typeHierarchyDataFlow: false,
+            //    enabled: true);
             foreach (var member in members)
             {
                 switch (member)
                 {
                     case MethodDesc m:
-                        reflectionMarker.MarkMethod(new MessageOrigin(entity), m);
+                        //reflectionMarker.MarkMethod(new MessageOrigin(entity), m);
                         RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, m, reason);
                         break;
                     case FieldDesc field:
