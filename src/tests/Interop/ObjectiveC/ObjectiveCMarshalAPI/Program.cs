@@ -74,8 +74,9 @@ namespace ObjectiveCMarshalAPI
         // the RefCountDown will be set to some non-negative number and RefCountUp
         // will remain zero. The values will be incremented and decremented respectively
         // during the "is referenced" callback. When the object enters the finalizer queue
-        // the RefCountDown will then be set to nuint.MaxValue. In the object's finalizer
-        // the RefCountUp can be checked to ensure the count down value was respected.
+        // the RefCountDown will then be set to nuint.MaxValue, see the EnteredFinalizerCb
+        // callback. In the object's finalizer the RefCountUp can be checked to ensure
+        // the count down value was respected.
         struct Contract
         {
             public nuint RefCountDown;
@@ -191,11 +192,6 @@ namespace ObjectiveCMarshalAPI
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void AllocUntrackedObject<T>() where T : Base, new()
-        {
-            new T();
-        }
-
         static void Validate_AllocAndFreeAnotherHandle<T>(GCHandle handle) where T : Base, new()
         {
             var obj = (T)handle.Target;
@@ -207,6 +203,12 @@ namespace ObjectiveCMarshalAPI
 
             Assert.NotEqual(handle, h);
             h.Free();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void AllocUntrackedObject<T>() where T : Base, new()
+        {
+            new T();
         }
 
         static unsafe void Validate_ReferenceTracking_Scenario()
