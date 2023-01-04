@@ -1916,7 +1916,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
         else // print weight in this format ddd.dd
         {
-            printf("%6s", refCntWtd2str(weight));
+            printf("%6s", refCntWtd2str(weight, /* padForDecimalPlaces */ true));
         }
     }
 

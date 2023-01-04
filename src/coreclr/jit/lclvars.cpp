@@ -3841,8 +3841,8 @@ void Compiler::lvaSortByRefCount()
         varDsc->lvVarIndex = static_cast<unsigned short>(varIndex);
 
         INDEBUG(if (verbose) { gtDispLclVar(trackedCandidates[varIndex]); })
-        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()),
-                varDsc->lvRefCnt(lvaRefCountState), refCntWtd2str(varDsc->lvRefCntWtd(lvaRefCountState)));
+        JITDUMP(" [%6s]: refCnt = %4u, refCntWtd = %6s\n", varTypeName(varDsc->TypeGet()), varDsc->lvRefCnt(),
+                refCntWtd2str(varDsc->lvRefCntWtd(), /* padForDecimalPlaces */ true));
     }
 
     JITDUMP("\n");
@@ -7667,7 +7667,8 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             printf("    ]");
         }
 
-        printf(" (%3u,%*s)", varDsc->lvRefCnt(), (int)refCntWtdWidth, refCntWtd2str(varDsc->lvRefCntWtd()));
+        printf(" (%3u,%*s)", varDsc->lvRefCnt(), (int)refCntWtdWidth,
+               refCntWtd2str(varDsc->lvRefCntWtd(), /* padForDecimalPlaces */ true));
 
         printf(" %7s ", varTypeName(type));
         if (genTypeSize(type) == 0)
@@ -7928,7 +7929,7 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     {
         for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
         {
-            size_t width = strlen(refCntWtd2str(varDsc->lvRefCntWtd()));
+            size_t width = strlen(refCntWtd2str(varDsc->lvRefCntWtd(), /* padForDecimalPlaces */ true));
             if (width > refCntWtdWidth)
             {
                 refCntWtdWidth = width;
