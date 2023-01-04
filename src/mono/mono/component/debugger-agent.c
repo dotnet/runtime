@@ -437,7 +437,7 @@ static gboolean buffer_replies;
 #define GET_EXTRA_SPACE_FOR_REF_FIELDS(klass) \
 	extra_space_size = 0; \
 	extra_space = NULL; \
-	if (m_class_is_valuetype (klass) && (m_type_is_byref (m_class_get_byval_arg (klass)) || m_class_is_byreflike (klass))) { \
+	if (m_class_is_valuetype (klass)) { \
 		guint8 *p_int = p; \
 		extra_space_size = decode_value_compute_size (m_class_get_byval_arg (klass), 0, domain, p_int, &p_int, end, FALSE); \
 	} \
