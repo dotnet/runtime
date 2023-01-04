@@ -72,10 +72,14 @@
     <ItemGroup>
       <_switchesAsItems Include="%(TestConsoleApps.DisabledFeatureSwitches)" Value="false" />
       <_switchesAsItems Include="%(TestConsoleApps.EnabledFeatureSwitches)" Value="true" />
+      
+      <_propertiesAsItems Include="%(TestConsoleApps.DisabledProperties)" Value="false" />
+      <_propertiesAsItems Include="%(TestConsoleApps.EnabledProperties)" Value="true" />
     </ItemGroup>
 
     <PropertyGroup>
       <_runtimeHostConfigurationOptionsString>@(_switchesAsItems->'&lt;RuntimeHostConfigurationOption Include=&quot;%(Identity)&quot; Value=&quot;%(Value)&quot; Trim=&quot;true&quot; /&gt;', '%0a    ')</_runtimeHostConfigurationOptionsString>
+      <_additionalPropertiesString>@(_propertiesAsItems->'&lt;%(Identity)&gt;%(Value)&lt;/%(Identity)&gt;', '%0a    ')</_additionalPropertiesString>
     </PropertyGroup>
 
     <MakeDir Directories="$(_projectDir)" />
@@ -85,8 +89,16 @@
                                                  .Replace('{NetCoreAppMaximumVersion}', '$(NetCoreAppMaximumVersion)')
                                                  .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
+                                                 .Replace('{PublishAot}','$(IsNativeAotTestProject)')
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
+                                                 .Replace('{AdditionalProperties}', '$(_additionalPropertiesString)')
+                                                 .Replace('{IlcToolsPath}', '$(CoreCLRILCompilerDir)')
+                                                 .Replace('{IlcBuildTasksPath}', '$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll')
+                                                 .Replace('{IlcSdkPath}', '$(CoreCLRAotSdkDir)')
+                                                 .Replace('{IlcFrameworkPath}', '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')
+                                                 .Replace('{IlcFrameworkNativePath}', '$(MicrosoftNetCoreAppRuntimePackNativeDir)')
+                                                 .Replace('{CoreCLRBuildIntegrationDir}', '$(CoreCLRBuildIntegrationDir)')
                                                  .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
