@@ -9057,9 +9057,12 @@ retry:
 			if (num_dregs) {
 				// Check if the previous definition of this var was used at all.
 				// If it wasn't we can just clear the instruction
+				//
+				// MINT_MOV_DST_OFF doesn't fully write to the var, so we special case it here
 				if (local_defs [dreg].ins != NULL &&
 						local_defs [dreg].ref_count == 0 &&
-						!td->locals [dreg].indirects) {
+						!td->locals [dreg].indirects &&
+						opcode != MINT_MOV_DST_OFF) {
 					InterpInst *prev_def = local_defs [dreg].ins;
 					if (MINT_NO_SIDE_EFFECTS (prev_def->opcode)) {
 						for (int i = 0; i < mono_interp_op_sregs [prev_def->opcode]; i++)
