@@ -25,6 +25,16 @@ inline Thread * ThreadStore::GetCurrentThread()
     return pCurThread;
 }
 
+// static
+inline Thread * ThreadStore::GetCurrentThreadIfAvailable()
+{
+    Thread * pCurThread = RawGetCurrentThread();
+    if (pCurThread->IsInitialized())
+        return pCurThread;
+
+    return NULL;
+}
+
 EXTERN_C volatile uint32_t RhpTrapThreads;
 
 // static

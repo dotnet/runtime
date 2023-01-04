@@ -512,10 +512,10 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
             if (!success)
             {
-                // Failure to send the signal is fatal.
-                // There are no known transient reasons for this to fail.
+                // Failure to send the signal is unexpected. If we see this, it is a concern.
+                // It is possible for this to fail (like OS is out of nonpaged memory when inserting the APC),
+                // but it should be extremely rare.
                 ASSERT(!"failed to queue an APC");
-                abort();
             }
         }
 

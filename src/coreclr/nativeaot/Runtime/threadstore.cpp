@@ -37,16 +37,6 @@ ThreadStore * GetThreadStore()
     return GetRuntimeInstance()->GetThreadStore();
 }
 
-// static
-Thread* ThreadStore::GetCurrentThreadIfAvailable()
-{
-    Thread* pCurThread = RawGetCurrentThread();
-    if (pCurThread->IsInitialized())
-        return pCurThread;
-
-    return NULL;
-}
-
 ThreadStore::Iterator::Iterator() :
     m_pCurrentPosition(GetThreadStore()->m_ThreadList.GetHead())
 {
