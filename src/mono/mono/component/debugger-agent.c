@@ -10105,7 +10105,7 @@ get_field_value:
 				} else {
 					dest = (guint8*)obj + m_field_get_offset (f);
 				}
-				err = decode_value (f->type, obj->vtable->domain, dest, p, &p, end, TRUE);
+				err = decode_value (f->type, obj->vtable->domain, dest, p, &p, end, TRUE, NULL, FALSE);
 				if (err != ERR_NONE)
 					goto exit;
 			}
