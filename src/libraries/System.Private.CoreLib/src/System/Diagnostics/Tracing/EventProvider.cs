@@ -1162,6 +1162,7 @@ namespace System.Diagnostics.Tracing
                 &registrationHandle);
             if (status != 0)
             {
+                _gcHandle.Free();
                 throw new ArgumentException(Interop.Kernel32.GetMessage((int)status));
             }
             Debug.Assert(_registrationHandle == 0);
