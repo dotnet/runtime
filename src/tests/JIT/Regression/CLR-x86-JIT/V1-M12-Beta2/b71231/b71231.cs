@@ -4,7 +4,7 @@
 
 using System;
 
-class X
+public class X
 {
     static short sh_8712 = 8712;
     static short sh_m973 = -973;

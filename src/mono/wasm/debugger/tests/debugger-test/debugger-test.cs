@@ -148,7 +148,7 @@ public partial class Math
 
     public static void PrimitiveTypesTest()
     {
-        char c0 = '€';
+        char c0 = '\u20AC';
         char c1 = 'A';
         // TODO: other types!
         // just trying to ensure vars don't get optimized out

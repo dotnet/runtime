@@ -8,16 +8,18 @@ import {
     get_arg, get_sig, get_signature_argument_count, is_args_exception,
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
-import { mono_wasm_new_external_root } from "./roots";
+import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
 import { conv_string, conv_string_root } from "./strings";
-import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs } from "./types";
+import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
-import { wrap_error_root } from "./invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "./invoke-js";
+import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
+    const mark = startMeasure();
     try {
         const version = get_signature_version(signature);
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
@@ -60,6 +62,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 
         const closure: BindingClosure = {
             method,
+            fqn: js_fqn,
             args_count,
             arg_marshalers,
             res_converter,
@@ -84,6 +87,8 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         (<any>bound_fn)[bound_cs_function_symbol] = true;
 
         _walk_exports_to_set_function(assembly, namespace, classname, methodname, signature_hash, bound_fn);
+        endMeasure(mark, MeasuredBlock.bindCsFunction, js_fqn);
+        wrap_no_error_root(is_exception, resultRoot);
     }
     catch (ex: any) {
         Module.printErr(ex.toString());
@@ -96,8 +101,10 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 
 function bind_fn_0V(closure: BindingClosure) {
     const method = closure.method;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_0V() {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2);
@@ -105,6 +112,7 @@ function bind_fn_0V(closure: BindingClosure) {
             invoke_method_and_handle_exception(method, args);
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -112,8 +120,10 @@ function bind_fn_0V(closure: BindingClosure) {
 function bind_fn_1V(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_1V(arg1: any) {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -123,6 +133,7 @@ function bind_fn_1V(closure: BindingClosure) {
             invoke_method_and_handle_exception(method, args);
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -131,8 +142,10 @@ function bind_fn_1R(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -145,6 +158,7 @@ function bind_fn_1R(closure: BindingClosure) {
             return js_result;
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -154,8 +168,10 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(4);
@@ -169,6 +185,7 @@ function bind_fn_2R(closure: BindingClosure) {
             return js_result;
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
@@ -178,8 +195,10 @@ function bind_fn(closure: BindingClosure) {
     const arg_marshalers = closure.arg_marshalers;
     const res_converter = closure.res_converter;
     const method = closure.method;
+    const fqn = closure.fqn;
     (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
+        const mark = startMeasure();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2 + args_count);
@@ -200,11 +219,13 @@ function bind_fn(closure: BindingClosure) {
             }
         } finally {
             Module.stackRestore(sp);
+            endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
     };
 }
 
 type BindingClosure = {
+    fqn: string,
     args_count: number,
     method: MonoMethod,
     arg_marshalers: (BoundMarshalerToCs)[],
@@ -254,10 +275,35 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     const result = exportsByAssembly.get(assembly);
     if (!result) {
+        const mark = startMeasure();
         const asm = assembly_load(assembly);
         if (!asm)
             throw new Error("Could not find assembly: " + assembly);
-        cwraps.mono_wasm_runtime_run_module_cctor(asm);
+
+        const klass = cwraps.mono_wasm_assembly_find_class(asm, runtimeHelpers.runtime_interop_namespace, "__GeneratedInitializer");
+        if (klass) {
+            const method = cwraps.mono_wasm_assembly_find_method(klass, "__Register_", -1);
+            if (method) {
+                const outException = mono_wasm_new_root();
+                const outResult = mono_wasm_new_root<MonoString>();
+                try {
+                    cwraps.mono_wasm_invoke_method_ref(method, MonoObjectRefNull, VoidPtrNull, outException.address, outResult.address);
+                    if (outException.value !== MonoObjectNull) {
+                        const msg = conv_string_root(outResult)!;
+                        throw new Error(msg);
+                    }
+                }
+                finally {
+                    outException.release();
+                    outResult.release();
+                }
+            }
+        } else {
+            // this needs to stay here for compatibility with assemblies generated in Net7
+            // it doesn't have the __GeneratedInitializer class
+            cwraps.mono_wasm_runtime_run_module_cctor(asm);
+        }
+        endMeasure(mark, MeasuredBlock.getAssemblyExports, assembly);
     }
 
     return exportsByAssembly.get(assembly) || {};

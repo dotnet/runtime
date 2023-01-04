@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -404,5 +404,11 @@
   </data>
   <data name="UnexpectedValueUnknownType" xml:space="preserve">
     <value>Unexpected value '{0}' of unknown type.</value>
+  </data>
+  <data name="SwitchInstructionEncoderTooFewBranches" xml:space="preserve">
+    <value>The SwitchInstructionEncoder.Branch method was invoked too few times.</value>
+  </data>
+  <data name="SwitchInstructionEncoderTooManyBranches" xml:space="preserve">
+    <value>The SwitchInstructionEncoder.Branch method was invoked too many times.</value>
   </data>
 </root>

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Xml;
+using System.Xml.XPath;
 
 using Internal.TypeSystem;
 
@@ -94,35 +94,60 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        BlockedResources = SubstitutionsReader.GetSubstitutions(module.Context, XmlReader.Create(ms), module, featureSwitchValues);
+                        BlockedResources = SubstitutionsReader.GetSubstitutions(module.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues);
                     }
                 }
             }
         }
 
-        private sealed class SubstitutionsReader : ProcessXmlBase
+        private sealed class SubstitutionsReader : ProcessLinkerXmlBase
         {
-            private readonly HashSet<string> _substitutions = new HashSet<string>();
+            private readonly HashSet<string> _substitutions = new();
 
-            private SubstitutionsReader(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
-                : base(context, reader, module, featureSwitchValues)
+            private SubstitutionsReader(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+                : base(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
             {
             }
 
-            public static HashSet<string> GetSubstitutions(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public static HashSet<string> GetSubstitutions(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
-                var rdr = new SubstitutionsReader(context, reader, module, featureSwitchValues);
-                rdr.ProcessXml();
+                var rdr = new SubstitutionsReader(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
+                rdr.ProcessXml(false);
                 return rdr._substitutions;
             }
 
-            protected override void ProcessResource(ModuleDesc module)
+            private void ProcessResources(XPathNavigator nav)
             {
-                if (GetAttribute("action") == "remove")
+                foreach (XPathNavigator resourceNav in nav.SelectChildren("resource", ""))
                 {
-                    _substitutions.Add(GetAttribute("name"));
+                    if (!ShouldProcessElement(resourceNav))
+                        continue;
+
+                    string name = GetAttribute(resourceNav, "name");
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        //LogWarning(resourceNav, DiagnosticId.XmlMissingNameAttributeInResource);
+                        continue;
+                    }
+
+                    string action = GetAttribute(resourceNav, "action");
+                    if (action != "remove")
+                    {
+                        //LogWarning(resourceNav, DiagnosticId.XmlInvalidValueForAttributeActionForResource, action, name);
+                        continue;
+                    }
+
+                    _substitutions.Add(name);
                 }
             }
+
+            protected override void ProcessAssembly(ModuleDesc assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
+            {
+                ProcessResources(nav);
+            }
+
+            // Should not be resolving types. That's useless work.
+            protected override void ProcessType(TypeDesc type, XPathNavigator nav) => throw new System.NotImplementedException();
         }
     }
 

@@ -16,17 +16,17 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("ContextTypeRef={ContextTypeRef}")]
     internal sealed class ContextGenerationSpec
     {
-        public Location Location { get; init; }
+        public required Location Location { get; init; }
 
-        public JsonSourceGenerationOptionsAttribute GenerationOptions { get; init; }
+        public required JsonSourceGenerationOptionsAttribute GenerationOptions { get; init; }
 
-        public Type ContextType { get; init; }
+        public required Type ContextType { get; init; }
 
         public List<TypeGenerationSpec> RootSerializableTypes { get; } = new();
 
-        public HashSet<TypeGenerationSpec>? ImplicitlyRegisteredTypes { get; } = new();
+        public HashSet<TypeGenerationSpec> ImplicitlyRegisteredTypes { get; } = new();
 
-        public List<string> ContextClassDeclarationList { get; init; }
+        public required List<string> ContextClassDeclarationList { get; init; }
 
         /// <summary>
         /// Types that we have initiated serialization metadata generation for. A type may be discoverable in the object graph,

@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolDefinitionNode EndSymbol => _endSymbol;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -146,10 +146,6 @@ namespace ILCompiler.DependencyAnalysis
 
             // The hashtable is used to find implementations of generic virtual methods at runtime
             if (method.IsVirtual)
-                return true;
-
-            // The hashtable is also used for reflection
-            if (!factory.MetadataManager.IsReflectionBlocked(method))
                 return true;
 
             // The rest of the entries are potentially only useful for the universal

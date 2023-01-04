@@ -21,7 +21,6 @@
 .assembly Runtime_70607.dll
 {
 }
-.module Runtime_70607.dll
 // MVID: {AC28796A-6A85-4AEA-A696-61332CBEA0D5}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .imagebase 0x00400000

@@ -192,9 +192,7 @@ set(SOURCES
   safecrt/strncat_s.cpp
   safecrt/strncpy_s.cpp
   safecrt/strtok_s.cpp
-  safecrt/swprintf.cpp
   safecrt/vsprintf.cpp
-  safecrt/vswprint.cpp
   safecrt/wcscat_s.cpp
   safecrt/wcscpy_s.cpp
   safecrt/wcslen_s.cpp
@@ -203,7 +201,6 @@ set(SOURCES
   safecrt/wcsncpy_s.cpp
   safecrt/wcstok_s.cpp
   safecrt/wmakepath_s.cpp
-  safecrt/wsplitpath_s.cpp
   safecrt/xtoa_s.cpp
   safecrt/xtow_s.cpp
   sharedmemory/sharedmemory.cpp

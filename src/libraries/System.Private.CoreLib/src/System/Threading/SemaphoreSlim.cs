@@ -143,7 +143,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentOutOfRangeException"> <paramref name="initialCount"/>
         /// is less than 0. -or-
         /// <paramref name="initialCount"/> is greater than <paramref name="maxCount"/>. -or-
-        /// <paramref name="maxCount"/> is less than 0.</exception>
+        /// <paramref name="maxCount"/> is equal to or less than 0.</exception>
         public SemaphoreSlim(int initialCount, int maxCount)
         {
             if (initialCount < 0 || initialCount > maxCount)
@@ -913,10 +913,7 @@ namespace System.Threading
         /// </summary>
         private void CheckDispose()
         {
-            if (m_lockObjAndDisposed.Value)
-            {
-                throw new ObjectDisposedException(null, SR.SemaphoreSlim_Disposed);
-            }
+            ObjectDisposedException.ThrowIf(m_lockObjAndDisposed.Value, this);
         }
         #endregion
     }

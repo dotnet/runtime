@@ -22,7 +22,7 @@ namespace System.Data
             _dataSet = ds;
             while (reader.LocalName == Keywords.SQL_BEFORE && reader.NamespaceURI == Keywords.DFFNS)
             {
-                ProcessDiffs(ds, reader);
+                ProcessDiffs(reader);
                 reader.Read(); // now the reader points to the error section
             }
 
@@ -58,7 +58,7 @@ namespace System.Data
 
             while (reader.LocalName == Keywords.SQL_BEFORE && reader.NamespaceURI == Keywords.DFFNS)
             {
-                ProcessDiffs(_tables, reader);
+                ProcessDiffs(reader);
                 reader.Read(); // now the reader points to the error section
             }
 
@@ -122,7 +122,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void ProcessDiffs(ArrayList tableList, XmlReader ssync)
+        internal void ProcessDiffs(XmlReader ssync)
         {
             DataTable? tableBefore;
             DataRow? row;

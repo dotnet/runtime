@@ -18,7 +18,7 @@ public struct AA
         return (new int[1, 1]);
     }
 
-    static int Main()
+    public static int Main()
     {
         try
         {

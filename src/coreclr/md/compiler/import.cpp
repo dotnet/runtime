@@ -33,8 +33,6 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID             ridStartMethod;
     RID             ridEndMethod;
@@ -44,9 +42,6 @@ STDMETHODIMP RegMeta::EnumMembers(            // S_OK, S_FALSE, or error.
     RID             indexField;
     TypeDefRec      *pRec;
     HENUMInternal   *pEnum = NULL;
-
-    LOG((LOGMD, "MD RegMeta::EnumMembers(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, cl, rMembers, cMax, pcTokens));
 
     LOCKREAD();
 
@@ -103,9 +98,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumMembers()
 
@@ -122,8 +114,6 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID                 ridStart;
     RID                 ridEnd;
@@ -135,9 +125,6 @@ STDMETHODIMP RegMeta::EnumMembersWithName(    // S_OK, S_FALSE, or error.
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
-
-    LOG((LOGMD, "MD RegMeta::EnumMembersWithName(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, cl, MDSTR(szName), rMembers, cMax, pcTokens));
 
     LOCKREAD();
 
@@ -222,8 +209,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumMembersWithName()
 
@@ -239,18 +224,11 @@ STDMETHODIMP RegMeta::EnumMethods(
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID                 ridStart;
     RID                 ridEnd;
     TypeDefRec          *pRec;
     HENUMInternal       *pEnum = NULL;
-
-    LOG((LOGMD, "MD RegMeta::EnumMethods(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, td, rMethods, cMax, pcTokens));
-
-
 
     LOCKREAD();
 
@@ -316,8 +294,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumMethods()
 
@@ -337,8 +313,6 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID                 ridStart;
     RID                 ridEnd;
@@ -350,13 +324,7 @@ STDMETHODIMP RegMeta::EnumMethodsWithName(    // S_OK, S_FALSE, or error.
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
 
-    LOG((LOGMD, "MD RegMeta::EnumMethodsWithName(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, cl, MDSTR(szName), rMethods, cMax, pcTokens));
-
-
-
     LOCKREAD();
-
 
     if ( *ppmdEnum == 0 )
     {
@@ -418,8 +386,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumMethodsWithName()
 
@@ -438,16 +404,11 @@ RegMeta::EnumFields(
 {
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal **ppmdEnum = reinterpret_cast<HENUMInternal **>(phEnum);
     RID             ridStart;
     RID             ridEnd;
     TypeDefRec     *pRec;
     HENUMInternal  *pEnum = NULL;
-
-    LOG((LOGMD, "MD RegMeta::EnumFields(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, td, rFields, cMax, pcTokens));
 
     LOCKREAD();
 
@@ -513,8 +474,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::EnumFields
 
@@ -533,8 +492,6 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID                 ridStart;
     RID                 ridEnd;
@@ -545,11 +502,6 @@ STDMETHODIMP RegMeta::EnumFieldsWithName(     // S_OK, S_FALSE, or error.
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
     LPCUTF8             szNameUtf8Tmp;
-
-    LOG((LOGMD, "MD RegMeta::EnumFields(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, cl, MDSTR(szName), rFields, cMax, pcTokens));
-
-
 
     LOCKREAD();
 
@@ -612,8 +564,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumFieldsWithName()
 
@@ -630,18 +580,13 @@ STDMETHODIMP RegMeta::EnumParams(             // S_OK, S_FALSE, or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID                 ridStart;
     RID                 ridEnd;
     MethodRec           *pRec;
     HENUMInternal       *pEnum = NULL;
 
-    LOG((LOGMD, "MD RegMeta::EnumParams(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, mb, rParams, cMax, pcTokens));
     LOCKREAD();
-
 
     if ( *ppmdEnum == 0 )
     {
@@ -682,8 +627,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumParams()
 
@@ -701,18 +644,11 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     ULONG               ridEnd;
     ULONG               index;
     MemberRefRec        *pRec;
     HENUMInternal       *pEnum = NULL;
-
-    LOG((LOGMD, "MD RegMeta::EnumMemberRefs(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, tkParent, rMemberRefs, cMax, pcTokens));
-
-
 
     LOCKREAD();
 
@@ -756,9 +692,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumMemberRefs()
 
@@ -776,18 +709,10 @@ STDMETHODIMP RegMeta::EnumMethodImpls(        // S_OK, S_FALSE, or error
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     MethodImplRec       *pRec;
     HENUMInternal       *pEnum = NULL;
     HENUMInternal hEnum;
-
-
-    LOG((LOGMD, "MD RegMeta::EnumMethodImpls(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, td, rMethodBody, rMethodDecl, cMax, pcTokens));
-
-
 
     LOCKREAD();
 
@@ -833,8 +758,6 @@ ErrExit:
     HENUMInternal::DestroyEnum(pEnum);
     HENUMInternal::ClearEnum(&hEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumMethodImpls()
 
@@ -853,8 +776,6 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID                 ridStart;
     RID                 ridEnd;
@@ -864,9 +785,6 @@ STDMETHODIMP RegMeta::EnumPermissionSets(     // S_OK, S_FALSE, or error.
     bool                fCompareParent = false;
     mdToken             typ = TypeFromToken(tk);
     mdToken             tkParent;
-
-    LOG((LOGMD, "MD RegMeta::EnumPermissionSets(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, tk, dwActions, rPermission, cMax, pcTokens));
 
     LOCKREAD();
 
@@ -951,8 +869,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumPermissionSets()
 
@@ -968,13 +884,6 @@ STDMETHODIMP RegMeta::FindMember(
     mdToken     *pmb)                   // [OUT] matching memberdef
 {
     HRESULT             hr = NOERROR;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "MD RegMeta::FindMember(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, MDSTR(szName), pvSigBlob, cbSigBlob, pmb));
-
 
     // Don't lock this function. All of the functions that it calls are public APIs. keep it that way.
 
@@ -997,8 +906,6 @@ STDMETHODIMP RegMeta::FindMember(
             pmb) );
     }
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::FindMember()
 
@@ -1016,14 +923,9 @@ STDMETHODIMP RegMeta::FindMethod(
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW           *pMiniMd = &(m_pStgdb->m_MiniMd);
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
-
-    LOG((LOGMD, "MD RegMeta::FindMethod(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, MDSTR(szName), pvSigBlob, cbSigBlob, pmb));
 
     LOCKREAD();
 
@@ -1042,8 +944,6 @@ STDMETHODIMP RegMeta::FindMethod(
         pmb));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::FindMethod
 
@@ -1061,12 +961,7 @@ RegMeta::FindField(
 {
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW *pMiniMd = &(m_pStgdb->m_MiniMd);
-
-    LOG((LOGMD, "MD RegMeta::FindField(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, MDSTR(szName), pvSigBlob, cbSigBlob, pmb));
 
     LOCKREAD();
 
@@ -1087,8 +982,6 @@ RegMeta::FindField(
         pmb));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::FindField
 
@@ -1106,17 +999,9 @@ STDMETHODIMP RegMeta::FindMemberRef(
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW           *pMiniMd = &(m_pStgdb->m_MiniMd);
     LPUTF8              szNameUtf8;
     UTF8STR(szName, szNameUtf8);
-
-    LOG((LOGMD, "MD RegMeta::FindMemberRef(0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        tkPar, MDSTR(szName), pvSigBlob, cbSigBlob, pmr));
-
-
-
 
     // <TODO>@todo: Can this causing building hash table? If so, should this consider the write lock?</TODO>
     LOCKREAD();
@@ -1133,9 +1018,6 @@ STDMETHODIMP RegMeta::FindMemberRef(
     IfFailGo( ImportHelper::FindMemberRef(pMiniMd, tkPar, szNameUtf8, pvSigBlob, cbSigBlob, pmr) );
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::FindMemberRef()
 
@@ -1156,16 +1038,9 @@ STDMETHODIMP RegMeta::GetMethodProps(
     DWORD       *pdwImplFlags)          // [OUT] Impl. Flags
 {
     HRESULT             hr = NOERROR;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     MethodRec           *pMethodRec;
     CMiniMdRW           *pMiniMd = &(m_pStgdb->m_MiniMd);
-
-    LOG((LOGMD, "MD RegMeta::GetMethodProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mb, pClass, szMethod, cchMethod, pchMethod, pdwAttr, ppvSigBlob, pcbSigBlob,
-        pulCodeRVA, pdwImplFlags));
-
-
 
     LOCKREAD();
 
@@ -1215,8 +1090,6 @@ STDMETHODIMP RegMeta::GetMethodProps(
     }
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::GetMethodProps()
 
@@ -1235,15 +1108,8 @@ STDMETHODIMP RegMeta::GetMemberRefProps(      // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
     MemberRefRec    *pMemberRefRec;
-
-    LOG((LOGMD, "MD RegMeta::GetMemberRefProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mr, ptk, szMember, cchMember, pchMember, ppvSigBlob, pbSig));
-
-
 
     LOCKREAD();
 
@@ -1279,9 +1145,6 @@ STDMETHODIMP RegMeta::GetMemberRefProps(      // S_OK or error.
     }
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::GetMemberRefProps()
 
@@ -1298,16 +1161,11 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID                 ridStart = 0;
     RID                 ridEnd = 0;
     RID                 ridMax = 0;
     HENUMInternal       *pEnum = NULL;
-
-    LOG((LOGMD, "MD RegMeta::EnumProperties(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, td, rProperties, cMax, pcProperties));
 
     LOCKREAD();
 
@@ -1387,9 +1245,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 
 } // STDMETHODIMP RegMeta::EnumProperties()
@@ -1407,21 +1262,15 @@ STDMETHODIMP RegMeta::EnumEvents(              // S_OK, S_FALSE, or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal   **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     RID             ridStart = 0;
     RID             ridEnd = 0;
     RID             ridMax = 0;
     HENUMInternal   *pEnum = NULL;
 
-    LOG((LOGMD, "MD RegMeta::EnumEvents(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, td, rEvents,  cMax, pcEvents));
-
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
-
 
     if ( *ppmdEnum == 0 )
     {
@@ -1488,8 +1337,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumEvents()
 
@@ -1515,15 +1362,9 @@ STDMETHODIMP RegMeta::GetEventProps(          // S_OK, S_FALSE, or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
     EventRec        *pRec;
     HENUMInternal   hEnum;
-
-    LOG((LOGMD, "MD RegMeta::GetEventProps(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        ev, pClass, MDSTR(szEvent), cchEvent, pchEvent, pdwEventFlags, ptkEventType,
-        pmdAddOn, pmdRemoveOn, pmdFire, rmdOtherMethod, cMax, pcOtherMethod));
 
     LOCKREAD();
 
@@ -1599,7 +1440,6 @@ STDMETHODIMP RegMeta::GetEventProps(          // S_OK, S_FALSE, or error.
 
 ErrExit:
     HENUMInternal::ClearEnum(&hEnum);
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 } // STDMETHODIMP RegMeta::GetEventProps()
@@ -1617,7 +1457,6 @@ STDMETHODIMP RegMeta::EnumMethodSemantics(    // S_OK, S_FALSE, or error.
     ULONG       *pcEventProp)           // [OUT] Put # put here.
 {
     HRESULT             hr = NOERROR;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     HENUMInternal       **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     ULONG               ridEnd;
@@ -1625,11 +1464,7 @@ STDMETHODIMP RegMeta::EnumMethodSemantics(    // S_OK, S_FALSE, or error.
     HENUMInternal       *pEnum = NULL;
     MethodSemanticsRec  *pRec;
 
-    LOG((LOGMD, "MD RegMeta::EnumMethodSemantics(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, mb, rEventProp, cMax, pcEventProp));
-
     LOCKREAD();
-
 
     if ( *ppmdEnum == 0 )
     {
@@ -1663,8 +1498,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumMethodSemantics()
 
@@ -1680,17 +1513,10 @@ STDMETHODIMP RegMeta::GetMethodSemantics(     // S_OK, S_FALSE, or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW           *pMiniMd = &(m_pStgdb->m_MiniMd);
     MethodSemanticsRec *pRec;
     ULONG               ridCur;
     HENUMInternal       hEnum;
-
-    LOG((LOGMD, "MD RegMeta::GetMethodSemantics(0x%08x, 0x%08x, 0x%08x)\n",
-        mb, tkEventProp, pdwSemanticsFlags));
-
-
 
     LOCKREAD();
 
@@ -1717,7 +1543,6 @@ STDMETHODIMP RegMeta::GetMethodSemantics(     // S_OK, S_FALSE, or error.
 
 ErrExit:
     HENUMInternal::ClearEnum(&hEnum);
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 } // STDMETHODIMP RegMeta::GetMethodSemantics()
@@ -1737,17 +1562,12 @@ STDMETHODIMP RegMeta::GetClassLayout(
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
     ClassLayoutRec  *pRec;
     RID             ridClassLayout;
     int             bLayout=0;          // Was any layout information found?
 
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
-
-    LOG((LOGMD, "MD RegMeta::GetClassLayout(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        td, pdwPackSize, rFieldOffset, cMax, pcFieldOffset, pulClassSize));
 
     LOCKREAD();
 
@@ -1831,8 +1651,6 @@ STDMETHODIMP RegMeta::GetClassLayout(
         hr = CLDB_E_RECORD_NOTFOUND;
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::GetClassLayout()
 
@@ -1848,17 +1666,11 @@ STDMETHODIMP RegMeta::GetFieldMarshal(
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
     RID             rid;
     FieldMarshalRec *pFieldMarshalRec;
 
-
     _ASSERTE(ppvNativeType != NULL && pcbNativeType != NULL);
-
-    LOG((LOGMD, "MD RegMeta::GetFieldMarshal(0x%08x, 0x%08x, 0x%08x)\n",
-        tk, ppvNativeType, pcbNativeType));
 
     LOCKREAD();
 
@@ -1876,8 +1688,6 @@ STDMETHODIMP RegMeta::GetFieldMarshal(
     IfFailGo(pMiniMd->getNativeTypeOfFieldMarshal(pFieldMarshalRec, ppvNativeType, pcbNativeType));
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::GetFieldMarshal()
 
@@ -1894,12 +1704,7 @@ RegMeta::GetRVA(
 {
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW *pMiniMd = &(m_pStgdb->m_MiniMd);
-
-    LOG((LOGMD, "MD RegMeta::GetRVA(0x%08x, 0x%08x, 0x%08x)\n",
-        tk, pulCodeRVA, pdwImplFlags));
 
     LOCKREAD();
 
@@ -1956,8 +1761,6 @@ RegMeta::GetRVA(
         }
     }
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::GetRVA
 
@@ -1973,11 +1776,6 @@ STDMETHODIMP RegMeta::GetPermissionSetProps(
     ULONG       *pcbPermission)         // [OUT] count of bytes of pvPermission.
 {
     HRESULT             hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::GetPermissionSetProps(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        pm, pdwAction, ppvPermission, pcbPermission));
 
     CMiniMdRW           *pMiniMd = NULL;
     DeclSecurityRec     *pRecord = NULL;
@@ -2001,8 +1799,6 @@ STDMETHODIMP RegMeta::GetPermissionSetProps(
     }
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // STDMETHODIMP RegMeta::GetPermissionSetProps()
 
@@ -2026,15 +1822,8 @@ STDMETHODIMP RegMeta::GetSigFromToken(        // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
     StandAloneSigRec *pRec;
-
-    LOG((LOGMD, "MD RegMeta::GetSigFromToken(0x%08x, 0x%08x, 0x%08x)\n",
-        mdSig, ppvSig, pcbSig));
-
-
 
     LOCKREAD();
 
@@ -2044,11 +1833,7 @@ STDMETHODIMP RegMeta::GetSigFromToken(        // S_OK or error.
     IfFailGo(pMiniMd->GetStandAloneSigRecord(RidFromToken(mdSig), &pRec));
     IfFailGo(pMiniMd->getSignatureOfStandAloneSig(pRec, ppvSig, pcbSig));
 
-
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::GetSigFromToken()
 
@@ -2064,15 +1849,9 @@ STDMETHODIMP RegMeta::GetModuleRefProps(      // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
     ModuleRefRec    *pModuleRefRec;
 
-
-
-    LOG((LOGMD, "MD RegMeta::GetModuleRefProps(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mur, szName, cchName, pchName));
     LOCKREAD();
 
     IfFailGo(pMiniMd->GetModuleRefRecord(RidFromToken(mur), &pModuleRefRec));
@@ -2086,9 +1865,6 @@ STDMETHODIMP RegMeta::GetModuleRefProps(      // S_OK or error.
     }
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::GetModuleRefProps()
 
@@ -2105,13 +1881,8 @@ STDMETHODIMP RegMeta::EnumModuleRefs(         // S_OK or error.
 {
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal **ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal  *pEnum;
-
-    LOG((LOGMD, "MD RegMeta::EnumModuleRefs(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, rModuleRefs, cMax, pcModuleRefs));
 
     LOCKREAD();
 
@@ -2141,8 +1912,6 @@ STDMETHODIMP RegMeta::EnumModuleRefs(         // S_OK or error.
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::EnumModuleRefs()
 
@@ -2157,15 +1926,8 @@ STDMETHODIMP RegMeta::GetTypeSpecFromToken(   // S_OK or error.
 {
     HRESULT             hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW           *pMiniMd = &(m_pStgdb->m_MiniMd);
     TypeSpecRec *pRec = NULL;
-
-    LOG((LOGMD, "MD RegMeta::GetTypeSpecFromToken(0x%08x, 0x%08x, 0x%08x)\n",
-        typespec, ppvSig, pcbSig));
-
-
 
     LOCKREAD();
 
@@ -2176,8 +1938,6 @@ STDMETHODIMP RegMeta::GetTypeSpecFromToken(   // S_OK or error.
     IfFailGo(pMiniMd->getSignatureOfTypeSpec(pRec, ppvSig, pcbSig));
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // STDMETHODIMP RegMeta::GetTypeSpecFromToken()
 
@@ -2202,13 +1962,7 @@ STDMETHODIMP RegMeta::GetNameFromToken(       // S_OK or error.
 {
     HRESULT     hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
     CMiniMdRW   *pMiniMd = &(m_pStgdb->m_MiniMd);
-
-    LOG((LOGMD, "MD RegMeta::GetNameFromToken(0x%08x, 0x%08x)\n",
-        tk, pszUtf8NamePtr));
 
     LOCKREAD();
 
@@ -2232,10 +1986,6 @@ STDMETHODIMP RegMeta::GetNameFromToken(       // S_OK or error.
     }
 
 ErrExit:
-
-
-    END_ENTRYPOINT_NOTHROW;
-
     return (hr);
 } // RegMeta::GetNameFromToken
 
@@ -2253,8 +2003,6 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
 #ifdef FEATURE_METADATA_EMIT
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal ** ppmdEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     uint32_t         iCountTypeDef;      // Count of TypeDefs.
     uint32_t         ulStart, ulEnd;     // Bounds of methods on a given TypeDef.
@@ -2263,10 +2011,6 @@ STDMETHODIMP RegMeta::EnumUnresolvedMethods(  // S_OK or error.
     bool             bIsInterface;       // Is a given TypeDef an interface?
     HENUMInternal *  pEnum = NULL; // Enum we're working with.
     CMiniMdRW *      pMiniMd = &(m_pStgdb->m_MiniMd);
-
-    LOG((LOGMD, "MD RegMeta::EnumUnresolvedMethods(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, rMethods, cMax, pcTokens));
-
 
     // take the write lock. Because we should have not have two EnumUnresolvedMethods being called at the
     // same time. Ref to Def map may be calculated incorrectly.
@@ -2375,8 +2119,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #else //!FEATURE_METADATA_EMIT
     return E_NOTIMPL;
@@ -2396,11 +2138,6 @@ STDMETHODIMP RegMeta::GetUserString(          // S_OK or error.
     HRESULT hr = S_OK;
     ULONG   cchStringSize_Dummy;
     MetaData::DataBlob userString;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::GetUserString(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        stk, wszString, cchStringSize, pcchStringSize));
 
     LOCKREAD();
 
@@ -2448,7 +2185,6 @@ STDMETHODIMP RegMeta::GetUserString(          // S_OK or error.
     }
 
  ErrExit:
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetUserString
 
@@ -2465,13 +2201,8 @@ STDMETHODIMP RegMeta::GetPinvokeMap(          // S_OK or error.
 {
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     ImplMapRec * pRecord;
     uint32_t     iRecord;
-
-    LOG((LOGMD, "MD RegMeta::GetPinvokeMap(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        tk, pdwMappingFlags, szImportName, cchImportName, pchImportName, pmrImportDLL));
 
     LOCKREAD();
 
@@ -2494,8 +2225,6 @@ STDMETHODIMP RegMeta::GetPinvokeMap(          // S_OK or error.
     if (szImportName || pchImportName)
         IfFailGo(m_pStgdb->m_MiniMd.getImportNameOfImplMap(pRecord, szImportName, cchImportName, pchImportName));
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetPinvokeMap()
 
@@ -2510,13 +2239,8 @@ STDMETHODIMP RegMeta::EnumSignatures(         // S_OK or error.
 {
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal **ppsigEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal  *pEnum;
-
-    LOG((LOGMD, "MD RegMeta::EnumSignatures(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, rSignatures, cmax, pcSignatures));
 
     LOCKREAD();
 
@@ -2546,8 +2270,6 @@ STDMETHODIMP RegMeta::EnumSignatures(         // S_OK or error.
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppsigEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::EnumSignatures
 
@@ -2563,13 +2285,8 @@ STDMETHODIMP RegMeta::EnumTypeSpecs(          // S_OK or error.
 {
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal   **ppEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal   *pEnum;
-
-    LOG((LOGMD, "MD RegMeta::EnumTypeSpecs(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, rTypeSpecs, cmax, pcTypeSpecs));
 
     LOCKREAD();
 
@@ -2599,8 +2316,6 @@ STDMETHODIMP RegMeta::EnumTypeSpecs(          // S_OK or error.
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::EnumTypeSpecs
 
@@ -2616,13 +2331,8 @@ STDMETHODIMP RegMeta::EnumUserStrings(        // S_OK or error.
 {
     HRESULT hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     HENUMInternal **ppEnum = reinterpret_cast<HENUMInternal **> (phEnum);
     HENUMInternal  *pEnum = NULL;
-
-    LOG((LOGMD, "MD RegMeta::EnumUserStrings(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        phEnum, rStrings, cmax, pcStrings));
 
     LOCKREAD();
 
@@ -2676,8 +2386,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::EnumUserStrings
 
@@ -2692,21 +2400,12 @@ STDMETHODIMP RegMeta::GetParamForMethodIndex( // S_OK or error.
 {
     HRESULT     hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "MD RegMeta::GetParamForMethodIndex(0x%08x, 0x%08x, 0x%08x)\n",
-        md, ulParamSeq, ppd));
-
     LOCKREAD();
 
     _ASSERTE((TypeFromToken(md) == mdtMethodDef) && (ulParamSeq != UINT32_MAX) && (ppd != NULL));
 
     IfFailGo(_FindParamOfMethod(md, ulParamSeq, ppd));
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::GetParamForMethodIndex()
 
@@ -2729,15 +2428,6 @@ HRESULT RegMeta::GetMemberProps(
     ULONG       *pchValue)              // [OUT] size of constant value, string only, wide chars
 {
     HRESULT         hr = NOERROR;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::GetMemberProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mb, pClass, szMember, cchMember, pchMember, pdwAttr, ppvSigBlob, pcbSigBlob,
-        pulCodeRVA, pdwImplFlags, pdwCPlusTypeFlag, ppValue, pchValue));
-
-
-
 
     _ASSERTE(TypeFromToken(mb) == mdtMethodDef || TypeFromToken(mb) == mdtFieldDef);
 
@@ -2775,8 +2465,6 @@ HRESULT RegMeta::GetMemberProps(
             pchValue) );
     }
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetMemberProps()
 
@@ -2798,14 +2486,8 @@ HRESULT RegMeta::GetFieldProps(
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     FieldRec        *pFieldRec;
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
-
-    LOG((LOGMD, "MD RegMeta::GetFieldProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        fd, pClass, szField, cchField, pchField, pdwAttr, ppvSigBlob, pcbSigBlob, pdwCPlusTypeFlag,
-        ppValue, pchValue));
 
     LOCKREAD();
 
@@ -2885,8 +2567,6 @@ HRESULT RegMeta::GetFieldProps(
     }
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetFieldProps()
 
@@ -2913,22 +2593,9 @@ HRESULT RegMeta::GetPropertyProps(      // S_OK, S_FALSE, or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CMiniMdRW       *pMiniMd;
     PropertyRec     *pRec;
     HENUMInternal   hEnum;
-
-    LOG((LOGMD, "MD RegMeta::GetPropertyProps(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, "
-                "0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, "
-                "0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, "
-                "0x%08x)\n",
-                prop, pClass, MDSTR(szProperty),  cchProperty, pchProperty,
-                pdwPropFlags, ppvSig, pbSig, pdwCPlusTypeFlag, ppDefaultValue,
-                pchDefaultValue, pmdSetter, pmdGetter, rmdOtherMethod, cMax,
-                pcOtherMethod));
-
-
 
     LOCKREAD();
 
@@ -3052,7 +2719,6 @@ HRESULT RegMeta::GetPropertyProps(      // S_OK, S_FALSE, or error.
 
 ErrExit:
     HENUMInternal::ClearEnum(&hEnum);
-    END_ENTRYPOINT_NOTHROW;
 
     return hr;
 } // HRESULT RegMeta::GetPropertyProps()
@@ -3075,13 +2741,8 @@ HRESULT RegMeta::GetParamProps(         // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     ParamRec        *pParamRec;
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
-
-    LOG((LOGMD, "MD RegMeta::GetParamProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        pd, pmd, pulSequence, szName, cchName, pchName, pdwAttr, pdwCPlusTypeFlag, ppValue, pchValue));
 
     LOCKREAD();
 
@@ -3144,8 +2805,6 @@ HRESULT RegMeta::GetParamProps(         // S_OK or error.
         IfFailGo( pMiniMd->getNameOfParam(pParamRec, szName, cchName, pchName) );
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetParamProps()
 
@@ -3164,15 +2823,9 @@ HRESULT RegMeta::GetGenericParamProps(        // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     GenericParamRec  *pGenericParamRec;
     CMiniMdRW       *pMiniMd = NULL;
     RID             ridRD = RidFromToken(rd);
-
-
-    LOG((LOGMD, "MD RegMeta::GetGenericParamProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        rd, pulSequence, pdwAttr, ptOwner, reserved, szName, cchName, pchName));
 
     LOCKREAD();
 
@@ -3201,8 +2854,6 @@ HRESULT RegMeta::GetGenericParamProps(        // S_OK or error.
         hr =  META_E_BAD_INPUT_PARAMETER;
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetGenericParamProps()
 
@@ -3216,14 +2867,9 @@ HRESULT RegMeta::GetGenericParamConstraintProps(      // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     GenericParamConstraintRec  *pGPCRec;
     CMiniMdRW       *pMiniMd = NULL;
     RID             ridRD = RidFromToken(rd);
-
-    LOG((LOGMD, "MD RegMeta::GetGenericParamConstraintProps(0x%08x, 0x%08x, 0x%08x)\n",
-        rd, ptGenericParam, ptkConstraintType));
 
     LOCKREAD();
 
@@ -3247,8 +2893,6 @@ HRESULT RegMeta::GetGenericParamConstraintProps(      // S_OK or error.
         hr =  META_E_BAD_INPUT_PARAMETER;
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetGenericParamConstraintProps()
 
@@ -3263,13 +2907,9 @@ HRESULT RegMeta::GetMethodSpecProps(         // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     MethodSpecRec  *pMethodSpecRec;
     CMiniMdRW       *pMiniMd = NULL;
 
-    LOG((LOGMD, "MD RegMeta::GetMethodSpecProps(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mi, tkParent, ppvSigBlob, pcbSigBlob));
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -3300,9 +2940,6 @@ HRESULT RegMeta::GetMethodSpecProps(         // S_OK or error.
 
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetMethodSpecProps()
 
@@ -3316,21 +2953,14 @@ HRESULT RegMeta::GetPEKind(             // S_OK or error.
     HRESULT     hr = NOERROR;
     MAPPINGTYPE mt = MTYPE_NOMAPPING;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "MD RegMeta::GetPEKind(0x%08x, 0x%08x)\n",pdwPEKind,pdwMachine));
-
     LOCKREAD();
-
 
     if (m_pStgdb->m_pStgIO != NULL)
         mt = m_pStgdb->m_pStgIO->GetMemoryMappedType();
 
     hr = m_pStgdb->GetPEKind(mt, pdwPEKind, pdwMachine);
 
-    ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
+ErrExit:
     return hr;
 } // HRESULT RegMeta::GetPEKind()
 
@@ -3346,13 +2976,10 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
     REGMETA_POSSIBLE_INTERNAL_POINTER_EXPOSED();
 
     DWORD       cch;                    // Length of WideChar string.
     LPCSTR      pVer;                   // Pointer to version string.
-
-    LOG((LOGMD, "MD RegMeta::GetVersionString(0x%08x, 0x%08x, 0x%08x)\n",pwzBuf,cchBufSize,pchBufSize));
 
     LOCKREAD();
 
@@ -3385,8 +3012,6 @@ HRESULT RegMeta::GetVersionString(    // S_OK or error.
         *pchBufSize = cch;
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 } // HRESULT RegMeta::GetVersionString()
 
@@ -3399,15 +3024,9 @@ HRESULT RegMeta::GetNestedClassProps(   // S_OK or error.
 {
     HRESULT         hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     NestedClassRec  *pRecord;
     uint32_t        iRecord;
     CMiniMdRW       *pMiniMd = &(m_pStgdb->m_MiniMd);
-
-
-    LOG((LOGMD, "MD RegMeta::GetNestedClassProps(0x%08x, 0x%08x)\n",
-        tdNestedClass, ptdEnclosingClass));
 
     LOCKREAD();
 
@@ -3433,8 +3052,6 @@ HRESULT RegMeta::GetNestedClassProps(   // S_OK or error.
     *ptdEnclosingClass = pMiniMd->getEnclosingClassOfNestedClass(pRecord);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetNestedClassProps()
 
@@ -3448,8 +3065,6 @@ HRESULT RegMeta::GetNativeCallConvFromSig( // S_OK or error.
 {
     HRESULT     hr = NOERROR;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     PCCOR_SIGNATURE pvSigBlob = reinterpret_cast<PCCOR_SIGNATURE>(pvSig);
     ULONG       cbTotal = 0;            // total of number bytes for return type + all fixed arguments
     ULONG       cbCur = 0;              // index through the pvSigBlob
@@ -3459,9 +3074,6 @@ HRESULT RegMeta::GetNativeCallConvFromSig( // S_OK or error.
     ULONG       callingconv;
     ULONG       cArgsIndex;
     ULONG       callConv = pmCallConvWinapi;  // The calling convention.
-
-
-
 
     *pCallConv = pmCallConvWinapi;
 
@@ -3527,8 +3139,6 @@ HRESULT RegMeta::GetNativeCallConvFromSig( // S_OK or error.
     }
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // HRESULT RegMeta::GetNativeCallConvFromSig()
 

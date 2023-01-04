@@ -51,6 +51,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/marshal-lightweight.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -492,7 +493,7 @@ register_trampoline_jit_info (MonoMemoryManager *mem_manager, MonoTrampInfo *inf
 {
 	MonoJitInfo *ji;
 
-	ji = (MonoJitInfo *)mono_mem_manager_alloc0 (mem_manager, mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
+	ji = mini_alloc_jinfo (jit_mm_for_mm (mem_manager), mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
 	mono_jit_info_init (ji, NULL, (guint8*)MINI_FTNPTR_TO_ADDR (info->code), info->code_size, (MonoJitInfoFlags)0, 0, 0);
 	ji->d.tramp_info = info;
 	ji->is_trampoline = TRUE;
@@ -2400,7 +2401,8 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 		uw_info = mono_unwind_ops_encode (info->unwind_ops, &info_len);
 	}
 
-	jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (get_default_mem_manager (), MONO_SIZEOF_JIT_INFO);
+	// FIXME:
+	jinfo = mini_alloc_jinfo (get_default_jit_mm (), MONO_SIZEOF_JIT_INFO);
 	jinfo->d.method = wrapper;
 	jinfo->code_start = MINI_FTNPTR_TO_ADDR (info->code);
 	jinfo->code_size = info->code_size;
@@ -3096,17 +3098,9 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 	if (!mono_llvm_only && (mono_aot_only || mini_debug_options.dyn_runtime_invoke)) {
 		gboolean supported = TRUE;
-		int i;
 
 		if (method->string_ctor)
 			sig = mono_marshal_get_string_ctor_signature (method);
-
-		for (i = 0; i < sig->param_count; ++i) {
-			MonoType *t = sig->params [i];
-
-			if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
-				supported = FALSE;
-		}
 
 		if (!info->compiled_method)
 			supported = FALSE;
@@ -3216,8 +3210,6 @@ exit:
 	return ret;
 }
 
-static GENERATE_GET_CLASS_WITH_CACHE (nullbyrefreturn_ex, "Mono", "NullByRefReturnException");
-
 static MonoObject*
 mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
@@ -3270,20 +3262,6 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
 
-		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-			MonoClass *klass = mono_class_from_mono_type_internal (t);
-			guint8 *nullable_buf;
-			int size;
-
-			size = mono_class_value_size (klass, NULL);
-			nullable_buf = g_alloca (size);
-			g_assert (nullable_buf);
-
-			/* The argument pointed to by params [i] is either a boxed vtype or null */
-			mono_nullable_init (nullable_buf, (MonoObject*)params [i], klass);
-			params [i] = nullable_buf;
-		}
-
 		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
@@ -3301,10 +3279,9 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 
 	if (m_type_is_byref (sig->ret)) {
 		if (*(gpointer*)retval == NULL) {
-			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
-			MonoObject *ex = mono_object_new_checked (klass, error);
+			MonoException *ex = mono_get_exception_null_reference ();
 			mono_error_assert_ok (error);
-			mono_error_set_exception_instance (error, (MonoException*)ex);
+			mono_error_set_exception_instance (error, ex);
 			return NULL;
 		}
 	}
@@ -3531,10 +3508,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		if (m_type_is_byref (sig->ret)) {
 			if (*(gpointer*)retval == NULL) {
-				MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
-				MonoObject *ex = mono_object_new_checked (klass, error);
+				MonoException *ex = mono_get_exception_null_reference ();
 				mono_error_assert_ok (error);
-				mono_error_set_exception_instance (error, (MonoException*)ex);
+				mono_error_set_exception_instance (error, ex);
 				return NULL;
 			}
 		}
@@ -4339,6 +4315,15 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	mono_llvm_free_mem_manager (info);
 #endif
 
+	/* Unregister/free jit info */
+	if (info->jit_infos) {
+		for (guint i = 0; i < info->jit_infos->len; ++i) {
+			MonoJitInfo *ji = g_ptr_array_index (info->jit_infos, i);
+			mono_jit_info_table_remove (ji);
+		}
+		g_ptr_array_free (info->jit_infos, TRUE);
+	}
+
 	g_free (info);
 	mem_manager->runtime_info = NULL;
 }
@@ -4488,6 +4473,10 @@ mini_init (const char *filename)
 	if (mono_use_interpreter)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
+
+	mono_marshal_lightweight_init ();
+  	mono_component_marshal_ilgen()->ilgen_init_internal ();
+	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
 
@@ -5352,4 +5341,21 @@ const MonoEECallbacks*
 mini_get_interp_callbacks_api (void)
 {
 	return mono_interp_callbacks_pointer;
+}
+
+MonoJitInfo*
+mini_alloc_jinfo (MonoJitMemoryManager *jit_mm, int size)
+{
+	if (jit_mm->mem_manager->collectible) {
+		/* These are freed by mono_jit_info_table_remove () in an async way, so they have to be malloc-ed */
+		MonoJitInfo *ji = (MonoJitInfo*)g_malloc0 (size);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->jit_infos)
+			jit_mm->jit_infos = g_ptr_array_new ();
+		g_ptr_array_add (jit_mm->jit_infos, ji);
+		jit_mm_unlock (jit_mm);
+		return ji;
+	} else {
+		return (MonoJitInfo*)mono_mem_manager_alloc0 (jit_mm->mem_manager, size);
+	}
 }

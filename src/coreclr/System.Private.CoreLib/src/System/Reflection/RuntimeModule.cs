@@ -153,8 +153,6 @@ namespace System.Reflection
 
             Type declaringType = ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
 
-            declaringType.GetFields();
-
             try
             {
                 return declaringType.GetField(fieldName,
