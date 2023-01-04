@@ -1614,11 +1614,6 @@ MINI_OP(OP_ARM64_USHR, "arm64_ushr", XREG, XREG, IREG)
 MINI_OP3(OP_ARM64_USRA, "arm64_usra", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_ARM64_SSRA, "arm64_ssra", XREG, XREG, XREG, IREG)
 
-MINI_OP(OP_ARM64_USHLL, "arm64_ushll", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_USHLL2, "arm64_ushll2", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_SSHLL, "arm64_sshll", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_SSHLL2, "arm64_sshll2", XREG, XREG, IREG)
-
 /* Narrowing arm64 shifts that aren't decomposed into urshl or srshl. */
 MINI_OP(OP_ARM64_XNSHIFT_SCALAR, "arm64_xrshift_scalar", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_XNSHIFT, "arm64_xnshift", XREG, XREG, IREG)
@@ -1706,9 +1701,6 @@ MINI_OP(OP_ARM64_FCVTN2, "arm64_fcvtn2", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_FCVTXN, "arm64_fcvtxn", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_FCVTXN2, "arm64_fcvtxn2", XREG, XREG, XREG)
 
-MINI_OP(OP_ARM64_FCVTL, "arm64_fcvtl", XREG, XREG, NONE)
-MINI_OP(OP_ARM64_FCVTL2, "arm64_fcvtl2", XREG, XREG, NONE)
-
 MINI_OP(OP_ARM64_CMTST, "arm64_cmtst", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_BIC, "arm64_bic", XREG, XREG, XREG)
@@ -1762,6 +1754,13 @@ MINI_OP3(OP_ARM64_SQRDMLSH_BYSCALAR, "arm64_sqrdmlsh_byscalar", XREG, XREG, XREG
 MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XREG)
 
 #endif // TARGET_ARM64
+
+MINI_OP(OP_FCVTL, "convert_to_higher_precision", XREG, XREG, NONE)
+MINI_OP(OP_FCVTL2, "convert_to_higher_precision_2", XREG, XREG, NONE)
+MINI_OP(OP_USHLL, "unsigned_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_USHLL2, "unsigned_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SSHLL, "signed_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SSHLL2, "signed_shift_left_long_2", XREG, XREG, IREG)
 
 #if defined(TARGET_WASM)
 MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)

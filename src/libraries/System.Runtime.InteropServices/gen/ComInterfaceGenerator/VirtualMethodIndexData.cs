@@ -8,7 +8,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// VirtualMethodIndexAttribute data
     /// </summary>
-    internal sealed record VirtualMethodIndexData(int Index) : InteropAttributeData
+    internal sealed record VirtualMethodIndexData(int Index) : InteropAttributeCompilationData
     {
         public bool ImplicitThisParameter { get; init; }
 

@@ -6,11 +6,11 @@ namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         static void Static1(ulong param2, object param3) { }
 
-        static int Main()
+        public static int Main()
         {
             ulong[] arr = new ulong[16];
             uint u = 11u;

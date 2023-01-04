@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public static int[] m_anStatic4 = new int[7];
 
@@ -30,7 +30,7 @@ namespace Test
                 } while ((uint)param1[2] < 0);
             }
         }
-        static int Main()
+        public static int Main()
         {
             bool b = false;
             Static1(null, ref b);

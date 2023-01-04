@@ -8,8 +8,8 @@
   .ver 4:0:0:0
 }
 .assembly 'b41262'{}
-.class switch1 {
-.method static int32 main() {
+.class public switch1 {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 

@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 namespace SetIPTest
 {
-    internal class SetIP
+    public class SetIP
     {
         public SetIP()
         {

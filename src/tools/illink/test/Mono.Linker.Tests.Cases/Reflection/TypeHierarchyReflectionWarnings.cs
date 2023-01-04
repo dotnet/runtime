@@ -534,6 +534,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				void RUCMethod () { }
 
 				[Kept]
+				[ExpectedWarning ("IL2112", "--RUC on NestedRUCType--")]
 				void Method () { }
 
 				[Kept]
@@ -590,6 +591,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public void RUCMethod () { }
 
 			[Kept]
+			[ExpectedWarning ("IL2112", "--AnnotatedRUCPublicMethods--")]
 			public void Method () { }
 
 			[Kept]

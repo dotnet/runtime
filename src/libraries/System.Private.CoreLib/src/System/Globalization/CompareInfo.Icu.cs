@@ -11,6 +11,11 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
+        // Characters which require special handling are those in [0x00, 0x1F] and [0x7F, 0xFFFF] except \t\v\f
+        // Matches HighCharTable below.
+        private static readonly IndexOfAnyValues<char> s_nonSpecialAsciiChars =
+            IndexOfAnyValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
 
@@ -99,21 +104,18 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                for (int j = 0; j < target.Length; j++)
+                if (target.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
                 {
-                    char targetChar = *(b + j);
-                    if (targetChar >= 0x80 || HighCharTable[targetChar])
-                        goto InteropCall;
+                    goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    for (int k = 0; k < source.Length; k++)
+                    if (source.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
                     {
-                        char targetChar = *(a + k);
-                        if (targetChar >= 0x80 || HighCharTable[targetChar])
-                            goto InteropCall;
+                        goto InteropCall;
                     }
+
                     return -1;
                 }
 
@@ -203,21 +205,18 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                for (int j = 0; j < target.Length; j++)
+                if (target.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
                 {
-                    char targetChar = *(b + j);
-                    if (targetChar >= 0x80 || HighCharTable[targetChar])
-                        goto InteropCall;
+                    goto InteropCall;
                 }
 
                 if (target.Length > source.Length)
                 {
-                    for (int k = 0; k < source.Length; k++)
+                    if (source.IndexOfAnyExcept(s_nonSpecialAsciiChars) >= 0)
                     {
-                        char targetChar = *(a + k);
-                        if (targetChar >= 0x80 || HighCharTable[targetChar])
-                            goto InteropCall;
+                        goto InteropCall;
                     }
+
                     return -1;
                 }
 

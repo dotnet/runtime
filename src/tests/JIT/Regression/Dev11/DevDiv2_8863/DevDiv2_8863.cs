@@ -65,7 +65,7 @@ public class Program
         d.j = 0x77777777;
     }
 
-    static int Main()
+    public static int Main()
     {
         /* This issue is caused by CSE and trying to pull a typecheck out of a loop.
          * We used to do this incorrectly and this could allow a type to call methods

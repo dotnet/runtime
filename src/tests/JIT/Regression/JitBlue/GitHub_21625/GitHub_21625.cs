@@ -27,7 +27,7 @@ namespace GitHub_21625
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             ushort value = TestLibrary.Generator.GetUInt16();
             Vector128<ushort> result = CreateScalar(value);

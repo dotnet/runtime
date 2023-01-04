@@ -958,7 +958,7 @@ void LinearScan::setBlockSequence()
         const LsraBlockInfo& bi = blockInfo[block->bbNum];
 
         // Note that predBBNum isn't set yet.
-        JITDUMP(" (%6s)", refCntWtd2str(bi.weight));
+        JITDUMP(" (%6s)", refCntWtd2str(bi.weight, /* padForDecimalPlaces */ true));
 
         if (bi.hasCriticalInEdge)
         {
