@@ -178,13 +178,10 @@ public class WasmAppBuilder : Task
                 _assemblies.Add(asm);
         }
         MainAssemblyName = Path.GetFileName(MainAssemblyName);
-        var mainAssemblyNameForConfig = MainAssemblyName;
-        if (!DisableWebcil)
-            mainAssemblyNameForConfig = Path.ChangeExtension(mainAssemblyNameForConfig, ".webcil");
 
         var config = new WasmAppConfig ()
         {
-            MainAssemblyName = mainAssemblyNameForConfig,
+            MainAssemblyName = MainAssemblyName,
         };
 
         // Create app
