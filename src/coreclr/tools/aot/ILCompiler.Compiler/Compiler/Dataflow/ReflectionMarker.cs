@@ -46,26 +46,31 @@ namespace ILCompiler.Dataflow
 
             foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
             {
-                switch (member)
-                {
-                    case MethodDesc method:
-                        MarkMethod(origin, method, reason);
-                        break;
-                    case FieldDesc field:
-                        MarkField(origin, field, reason);
-                        break;
-                    case MetadataType nestedType:
-                        MarkType(origin, nestedType, reason);
-                        break;
-                    case PropertyPseudoDesc property:
-                        MarkProperty(origin, property, reason);
-                        break;
-                    case EventPseudoDesc @event:
-                        MarkEvent(origin, @event, reason);
-                        break;
-                        // case InterfaceImplementation
-                        //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
-                }
+                MarkTypeSystemEntity(origin, member, reason);
+            }
+        }
+
+        internal void MarkTypeSystemEntity(in MessageOrigin origin, TypeSystemEntity entity, string reason)
+        {
+            switch (entity)
+            {
+                case MethodDesc method:
+                    MarkMethod(origin, method, reason);
+                    break;
+                case FieldDesc field:
+                    MarkField(origin, field, reason);
+                    break;
+                case MetadataType nestedType:
+                    MarkType(origin, nestedType, reason);
+                    break;
+                case PropertyPseudoDesc property:
+                    MarkProperty(origin, property, reason);
+                    break;
+                case EventPseudoDesc @event:
+                    MarkEvent(origin, @event, reason);
+                    break;
+                    // case InterfaceImplementation
+                    //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
             }
         }
 
@@ -112,7 +117,7 @@ namespace ILCompiler.Dataflow
             RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, reason);
         }
 
-        private void MarkField(in MessageOrigin origin, FieldDesc field, string reason)
+        internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason)
         {
             if (!_enabled)
                 return;

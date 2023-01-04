@@ -187,43 +187,19 @@ namespace ILCompiler.DependencyAnalysis
             const string reason = "DynamicDependencyAttribute";
 
             // Now root the discovered members
-            //ReflectionMarker reflectionMarker = new ReflectionMarker(
-            //    metadataManager.Logger,
-            //    factory,
-            //    metadataManager.FlowAnnotations,
-            //    typeHierarchyDataFlow: false,
-            //    enabled: true);
+            ReflectionMarker reflectionMarker = new ReflectionMarker(
+                metadataManager.Logger,
+                factory,
+                metadataManager.FlowAnnotations,
+                typeHierarchyDataFlowOrigin: null,
+                enabled: true);
             foreach (var member in members)
             {
-                switch (member)
-                {
-                    case MethodDesc m:
-                        //reflectionMarker.MarkMethod(new MessageOrigin(entity), m);
-                        RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, m, reason);
-                        break;
-                    case FieldDesc field:
-                        RootingHelpers.TryGetDependenciesForReflectedField(ref dependencies, factory, field, reason);
-                        break;
-                    case MetadataType nestedType:
-                        RootingHelpers.TryGetDependenciesForReflectedType(ref dependencies, factory, nestedType, reason);
-                        break;
-                    case PropertyPseudoDesc property:
-                        if (property.GetMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, property.GetMethod, reason);
-                        if (property.SetMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, property.SetMethod, reason);
-                        break;
-                    case EventPseudoDesc @event:
-                        if (@event.AddMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, @event.AddMethod, reason);
-                        if (@event.RemoveMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, @event.RemoveMethod, reason);
-                        break;
-                    default:
-                        Debug.Fail(member.GetType().ToString());
-                        break;
-                }
+                reflectionMarker.MarkTypeSystemEntity(new MessageOrigin(entity), member, reason);
             }
+
+            dependencies ??= new DependencyList();
+            dependencies.AddRange(reflectionMarker.Dependencies);
         }
     }
 }
