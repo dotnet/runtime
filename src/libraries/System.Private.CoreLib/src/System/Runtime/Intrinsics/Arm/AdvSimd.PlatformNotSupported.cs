@@ -13,7 +13,7 @@ namespace System.Runtime.Intrinsics.Arm
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
-    internalc 
+    internal
 #endif
     abstract class AdvSimd : ArmBase
     {
