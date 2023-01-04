@@ -402,27 +402,6 @@ void Lowering::LowerCast(GenTree* tree)
 //
 void Lowering::LowerRotate(GenTree* tree)
 {
-    if (tree->OperGet() == GT_ROL)
-    {
-        // Convert ROL into ROR.
-        GenTree* rotatedValue        = tree->AsOp()->gtOp1;
-        unsigned rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
-        GenTree* rotateLeftIndexNode = tree->AsOp()->gtOp2;
-
-        if (rotateLeftIndexNode->IsCnsIntOrI())
-        {
-            ssize_t rotateLeftIndex                    = rotateLeftIndexNode->AsIntCon()->gtIconVal;
-            ssize_t rotateRightIndex                   = rotatedValueBitSize - rotateLeftIndex;
-            rotateLeftIndexNode->AsIntCon()->gtIconVal = rotateRightIndex;
-        }
-        else
-        {
-            GenTree* tmp = comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
-            BlockRange().InsertAfter(rotateLeftIndexNode, tmp);
-            tree->AsOp()->gtOp2 = tmp;
-        }
-        tree->ChangeOper(GT_ROR);
-    }
     ContainCheckShiftRotate(tree->AsOp());
 }
 

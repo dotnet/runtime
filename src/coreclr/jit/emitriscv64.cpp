@@ -2639,63 +2639,109 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         }
         case 0x33:
         {
-            unsigned int opcode2 = (code >> 12) & 0x7;
+            unsigned int opcode2 = (code >> 25) & 0x3;
+            unsigned int opcode3 = (code >> 12) & 0x7;
             const char* rd = RegNames[(code >> 7) & 0x1f];
             const char* rs1 = RegNames[(code >> 15) & 0x1f];
             const char* rs2 = RegNames[(code >> 20) & 0x1f];
-            switch (opcode2)
+            if (opcode2 == 0)
             {
-                case 0x0: // ADD & SUB
-                    if (((code >> 30) & 0x1) == 0)
-                    {
-                        printf("add          %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    else
-                    {
-                        printf("sub          %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    return;
-                case 0x1: // SLL
-                    printf("sll          %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x2: // SLT
-                    printf("slt          %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x3: // SLTU
-                    printf("sltu         %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x4: // XOR
-                    printf("xor          %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x5: // SRL & SRA
-                    if (((code >> 30) & 0x1) == 0)
-                    {
-                        printf("srl          %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    else
-                    {
-                        printf("sra          %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    return;
-                case 0x6: // OR
-                    printf("or           %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x7: // AND
-                    printf("and          %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
+                switch (opcode3)
+                {
+                    case 0x0: // ADD & SUB
+                        if (((code >> 30) & 0x1) == 0)
+                        {
+                            printf("add          %s, %s, %s\n", rd, rs1, rs2);
+                        }
+                        else
+                        {
+                            printf("sub          %s, %s, %s\n", rd, rs1, rs2);
+                        }
+                        return;
+                    case 0x1: // SLL
+                        printf("sll          %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x2: // SLT
+                        printf("slt          %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x3: // SLTU
+                        printf("sltu         %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x4: // XOR
+                        printf("xor          %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x5: // SRL & SRA
+                        if (((code >> 30) & 0x1) == 0)
+                        {
+                            printf("srl          %s, %s, %s\n", rd, rs1, rs2);
+                        }
+                        else
+                        {
+                            printf("sra          %s, %s, %s\n", rd, rs1, rs2);
+                        }
+                        return;
+                    case 0x6: // OR
+                        printf("or           %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x7: // AND
+                        printf("and          %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    default:
+                        printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                        return;
 
+                }
+            }
+            else if (opcode2 == 0x1)
+            {
+                switch (opcode3)
+                {
+                    case 0x0: // MUL
+                        printf("mul          %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x1: // MULH
+                        printf("mulh         %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x2: // MULHSU
+                        printf("mulhsu       %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x3: // MULHU
+                        printf("mulhu        %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x4: // DIV
+                        printf("div          %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x5: // DIVU
+                        printf("divu         %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x6: // REM
+                        printf("rem          %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x7: // REMU
+                        printf("remu         %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    default:
+                        printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                        return;
+
+                }
+            }
+            else
+            {
+                printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                return;
             }
         }
         case 0x3b:
         {
-            unsigned int opcode2 = (code >> 12) & 0x7;
+            unsigned int opcode2 = (code >> 25) & 0x3;
+            unsigned int opcode3 = (code >> 12) & 0x7;
             const char* rd = RegNames[(code >> 7) & 0x1f];
             const char* rs1 = RegNames[(code >> 15) & 0x1f];
             const char* rs2 = RegNames[(code >> 20) & 0x1f];
-            switch (opcode2)
+            assert(opcode2 == 0);
+
+            switch (opcode3)
             {
                 case 0x0: // ADDW & SUBW
                     if (((code >> 30) & 0x1) == 0)

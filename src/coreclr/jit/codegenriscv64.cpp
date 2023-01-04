@@ -3119,6 +3119,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_RSH:
         case GT_RSZ:
         case GT_ROR:
+        case GT_ROL:
             genCodeForShift(treeNode);
             break;
 
@@ -3635,42 +3636,47 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTree* operand = tree->gtGetOp1();
     GenTree* shiftBy = tree->gtGetOp2();
 
-    if (tree->OperIs(GT_ROR))
+    if (tree->OperIs(GT_ROR, GT_ROL))
     {
         unsigned immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64
         if (!shiftBy->IsCnsIntOrI())
         {
+            regNumber shiftRight = tree->OperIs(GT_ROR) ? shiftBy->GetRegNum() : REG_RA;
+            regNumber shiftLeft = tree->OperIs(GT_ROR) ? REG_RA : shiftBy->GetRegNum();
             GetEmitter()->emitIns_R_R_I(INS_addi, size, REG_RA, REG_R0, immWidth);
             GetEmitter()->emitIns_R_R_R(INS_sub, size, REG_RA, REG_RA, shiftBy->GetRegNum());
             if (size == EA_8BYTE)
             {
-                GetEmitter()->emitIns_R_R_R(INS_srl, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
-                GetEmitter()->emitIns_R_R_R(INS_sll, size, REG_RA, operand->GetRegNum(), REG_RA);
-                GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
+                GetEmitter()->emitIns_R_R_R(INS_srl, size, tree->GetRegNum(), operand->GetRegNum(), shiftRight);
+                GetEmitter()->emitIns_R_R_R(INS_sll, size, REG_RA, operand->GetRegNum(), shiftLeft);
             }
             else
             {
-                GetEmitter()->emitIns_R_R_R(INS_srlw, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
-                GetEmitter()->emitIns_R_R_R(INS_sllw, size, REG_RA, operand->GetRegNum(), REG_RA);
-                GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
+                GetEmitter()->emitIns_R_R_R(INS_srlw, size, tree->GetRegNum(), operand->GetRegNum(), shiftRight);
+                GetEmitter()->emitIns_R_R_R(INS_sllw, size, REG_RA, operand->GetRegNum(), shiftLeft);
             }
         }
         else
         {
             unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
-            if ((shiftByImm >= 32 and shiftByImm < 64) || size == EA_8BYTE)
+            if (shiftByImm >= 32 && shiftByImm < 64)
             {
-                GetEmitter()->emitIns_R_R_I(INS_srl, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
-                GetEmitter()->emitIns_R_R_I(INS_sll, size, REG_RA, operand->GetRegNum(), immWidth - shiftByImm);
-                GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
+                immWidth = 64;
+            }
+            unsigned shiftRight = tree->OperIs(GT_ROR) ? shiftByImm : immWidth - shiftByImm;
+            unsigned shiftLeft = tree->OperIs(GT_ROR) ? immWidth - shiftByImm : shiftByImm;
+            if ((shiftByImm >= 32 && shiftByImm < 64) || size == EA_8BYTE)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_srli, size, tree->GetRegNum(), operand->GetRegNum(), shiftRight);
+                GetEmitter()->emitIns_R_R_I(INS_slli, size, REG_RA, operand->GetRegNum(), shiftLeft);
             }
             else
             {
-                GetEmitter()->emitIns_R_R_I(INS_srlw, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
-                GetEmitter()->emitIns_R_R_I(INS_sllw, size, REG_RA, operand->GetRegNum(), immWidth - shiftByImm);
-                GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
+                GetEmitter()->emitIns_R_R_I(INS_srliw, size, tree->GetRegNum(), operand->GetRegNum(), shiftRight);
+                GetEmitter()->emitIns_R_R_I(INS_slliw, size, REG_RA, operand->GetRegNum(), shiftLeft);
             }
         }
+        GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
     }
     else {
         if (!shiftBy->IsCnsIntOrI())
