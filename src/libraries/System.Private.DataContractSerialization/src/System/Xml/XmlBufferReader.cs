@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Buffers.Binary;
 
 namespace System.Xml
 {
@@ -401,13 +402,8 @@ namespace System.Xml
         {
             int offset;
             byte[] buffer = GetBuffer(ValueHandleLength.Single, out offset);
-            float value;
-            byte* pb = (byte*)&value;
+            float value = BinaryPrimitives.ReadSingleLittleEndian(buffer.AsSpan(offset, 4));
             DiagnosticUtility.DebugAssert(sizeof(float) == 4, "");
-            pb[0] = buffer[offset + 0];
-            pb[1] = buffer[offset + 1];
-            pb[2] = buffer[offset + 2];
-            pb[3] = buffer[offset + 3];
             Advance(ValueHandleLength.Single);
             return value;
         }
@@ -416,17 +412,8 @@ namespace System.Xml
         {
             int offset;
             byte[] buffer = GetBuffer(ValueHandleLength.Double, out offset);
-            double value;
-            byte* pb = (byte*)&value;
+            double value = BinaryPrimitives.ReadDoubleLittleEndian(buffer.AsSpan(offset, 8));
             DiagnosticUtility.DebugAssert(sizeof(double) == 8, "");
-            pb[0] = buffer[offset + 0];
-            pb[1] = buffer[offset + 1];
-            pb[2] = buffer[offset + 2];
-            pb[3] = buffer[offset + 3];
-            pb[4] = buffer[offset + 4];
-            pb[5] = buffer[offset + 5];
-            pb[6] = buffer[offset + 6];
-            pb[7] = buffer[offset + 7];
             Advance(ValueHandleLength.Double);
             return value;
         }
@@ -436,9 +423,24 @@ namespace System.Xml
             int offset;
             byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out offset);
             decimal value;
-            byte* pb = (byte*)&value;
-            for (int i = 0; i < sizeof(decimal); i++)
-                pb[i] = buffer[offset + i];
+            if (BitConverter.IsLittleEndian)
+            {
+                byte* pb = (byte*)&value;
+                for (int i = 0; i < sizeof(decimal); i++)
+                    pb[i] = buffer[offset + i];
+            }
+            else
+            {
+                ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
+                ReadOnlySpan<int> span = stackalloc int[4]
+                {
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
+                };
+                value = new decimal(span);
+            }
             Advance(ValueHandleLength.Decimal);
             return value;
         }
@@ -1035,31 +1037,15 @@ namespace System.Xml
 
         public unsafe float GetSingle(int offset)
         {
-            byte[] buffer = _buffer;
-            float value;
-            byte* pb = (byte*)&value;
+            float value = BinaryPrimitives.ReadSingleLittleEndian(_buffer.AsSpan(offset, 4));
             DiagnosticUtility.DebugAssert(sizeof(float) == 4, "");
-            pb[0] = buffer[offset + 0];
-            pb[1] = buffer[offset + 1];
-            pb[2] = buffer[offset + 2];
-            pb[3] = buffer[offset + 3];
             return value;
         }
 
         public unsafe double GetDouble(int offset)
         {
-            byte[] buffer = _buffer;
-            double value;
-            byte* pb = (byte*)&value;
+            double value = BinaryPrimitives.ReadDoubleLittleEndian(_buffer.AsSpan(offset, 8));
             DiagnosticUtility.DebugAssert(sizeof(double) == 8, "");
-            pb[0] = buffer[offset + 0];
-            pb[1] = buffer[offset + 1];
-            pb[2] = buffer[offset + 2];
-            pb[3] = buffer[offset + 3];
-            pb[4] = buffer[offset + 4];
-            pb[5] = buffer[offset + 5];
-            pb[6] = buffer[offset + 6];
-            pb[7] = buffer[offset + 7];
             return value;
         }
 
@@ -1067,9 +1053,26 @@ namespace System.Xml
         {
             byte[] buffer = _buffer;
             decimal value;
-            byte* pb = (byte*)&value;
-            for (int i = 0; i < sizeof(decimal); i++)
-                pb[i] = buffer[offset + i];
+
+            if (BitConverter.IsLittleEndian)
+            {
+                byte* pb = (byte*)&value;
+                for (int i = 0; i < sizeof(decimal); i++)
+                    pb[i] = buffer[offset + i];
+            }
+            else
+            {
+                ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
+                ReadOnlySpan<int> span = stackalloc int[4]
+                {
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
+                    BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
+                };
+                value = new decimal(span);
+            }
+
             return value;
         }
 
