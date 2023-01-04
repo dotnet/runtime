@@ -111,7 +111,7 @@ namespace System.Net.WebSockets.Client.Tests
                    cws.SendAsync(Memory<byte>.Empty, WebSocketMessageType.Binary, WebSocketMessageFlags.EndOfMessage, default));
             }, server => server.AcceptConnectionAsync(async connection =>
             {
-                var extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
+                string extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
                 await LoopbackHelper.WebSocketHandshakeAsync(connection, extensionsReply);
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
@@ -150,7 +150,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server => server.AcceptConnectionAsync(async connection =>
             {
                 var buffer = new byte[compressedRemainingBytes];
-                var extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
+                string extensionsReply = CreateDeflateOptionsHeader(deflateOpt);
                 await LoopbackHelper.WebSocketHandshakeAsync(connection, extensionsReply);
 
                 // first message is compressed
