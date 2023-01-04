@@ -516,6 +516,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
                 // It is possible for this to fail (like OS is out of nonpaged memory when inserting the APC),
                 // but it should be extremely rare.
                 ASSERT(!"failed to queue an APC");
+                pThread->SetActivationPending(false);
             }
         }
 
