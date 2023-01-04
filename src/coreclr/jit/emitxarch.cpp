@@ -480,8 +480,9 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 //
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
+    // Only allow GPRs.
     // If not a valid register, then return false.
-    if (!((reg >= REG_EAX) && (reg <= REG_FP_LAST)))
+    if (!((reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST)))
         return false;
 
     // Only consider if safe
