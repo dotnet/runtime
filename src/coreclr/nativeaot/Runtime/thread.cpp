@@ -260,7 +260,10 @@ void Thread::Construct()
     // alloc_context ever needs different initialization, a matching change to the tls_CurrentThread
     // static initialization will need to be made.
 
-    m_uPalThreadIdForLogging = PalGetCurrentThreadIdForLogging();
+    m_pTransitionFrame = TOP_OF_STACK_MARKER;
+    m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
+    m_hPalThread = INVALID_HANDLE_VALUE;
+
     m_threadId.SetToCurrentThread();
 
     HANDLE curProcessPseudo = PalGetCurrentProcess();
@@ -274,8 +277,6 @@ void Thread::Construct()
 
     if (!PalGetMaximumStackBounds(&m_pStackLow, &m_pStackHigh))
         RhFailFast();
-
-    m_pTEB = PalNtCurrentTeb();
 
 #ifdef STRESS_LOG
     if (StressLog::StressLogOn(~0u, 0))
@@ -328,7 +329,7 @@ bool Thread::CatchAtSafePoint()
 
 uint64_t Thread::GetPalThreadIdForLogging()
 {
-    return m_uPalThreadIdForLogging;
+    return *(uint64_t*)&m_threadId;
 }
 
 bool Thread::IsCurrentThread()
@@ -338,12 +339,8 @@ bool Thread::IsCurrentThread()
 
 void Thread::Detach()
 {
-    // Thread::Destroy is called when the thread's "home" fiber dies.  We mark the thread as "detached" here
-    // so that we can validate, in our DLL_THREAD_DETACH handler, that the thread was already destroyed at that
-    // point.
-    SetDetached();
-
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
+    SetDetached();
 }
 
 void Thread::Destroy()
@@ -1094,20 +1091,6 @@ void Thread::ValidateExInfoStack()
     }
 #endif // _DEBUG
 #endif // !DACCESS_COMPILE
-}
-
-
-
-// Retrieve the start of the TLS storage block allocated for the given thread for a specific module identified
-// by the TLS slot index allocated to that module and the offset into the OS allocated block at which
-// Redhawk-specific data is stored.
-PTR_UInt8 Thread::GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset)
-{
-#if 0
-    return (*(uint8_t***)(m_pTEB + OFFSETOF__TEB__ThreadLocalStoragePointer))[uTlsIndex] + uTlsStartOffset;
-#else
-    return (*dac_cast<PTR_PTR_PTR_UInt8>(dac_cast<TADDR>(m_pTEB) + OFFSETOF__TEB__ThreadLocalStoragePointer))[uTlsIndex] + uTlsStartOffset;
-#endif
 }
 
 #ifndef DACCESS_COMPILE

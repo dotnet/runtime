@@ -13,8 +13,8 @@ namespace Internal.Reflection.Execution
 {
     static class NativeFormatEnumInfo
     {
-        public static EnumInfo<TUnderlyingValue> Create<TUnderlyingValue>(RuntimeTypeHandle typeHandle, MetadataReader reader, TypeDefinitionHandle typeDefHandle)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
+        public static void GetEnumValuesAndNames(MetadataReader reader, TypeDefinitionHandle typeDefHandle,
+            out object[] unsortedBoxedValues, out string[] unsortedNames, out bool isFlags)
         {
             TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
 
@@ -30,8 +30,8 @@ namespace Internal.Reflection.Execution
                 }
             }
 
-            string[] names = new string[staticFieldCount];
-            TUnderlyingValue[] values = new TUnderlyingValue[staticFieldCount];
+            unsortedNames = new string[staticFieldCount];
+            unsortedBoxedValues = new object[staticFieldCount]; // TODO: Avoid boxing the values
 
             int i = 0;
             foreach (FieldHandle fieldHandle in typeDef.Fields)
@@ -39,20 +39,18 @@ namespace Internal.Reflection.Execution
                 Field field = fieldHandle.GetField(reader);
                 if (0 != (field.Flags & FieldAttributes.Static))
                 {
-                    names[i] = field.Name.GetString(reader);
-                    values[i] = (TUnderlyingValue)field.DefaultValue.ParseConstantNumericValue(reader);
+                    unsortedNames[i] = field.Name.GetString(reader);
+                    unsortedBoxedValues[i] = field.DefaultValue.ParseConstantNumericValue(reader);
                     i++;
                 }
             }
 
-            bool isFlags = false;
+            isFlags = false;
             foreach (CustomAttributeHandle cah in typeDef.CustomAttributes)
             {
                 if (cah.IsCustomAttributeOfType(reader, "System", "FlagsAttribute"))
                     isFlags = true;
             }
-
-            return new EnumInfo<TUnderlyingValue>(RuntimeAugments.GetEnumUnderlyingType(typeHandle), values, names, isFlags);
         }
     }
 }

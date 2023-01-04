@@ -6,7 +6,7 @@ using System;
 // Finally cloning creates new throw merge candidates that
 // need to be properly counted.
 
-class Runtime_36584
+public class Runtime_36584
 {
     static int x;
 

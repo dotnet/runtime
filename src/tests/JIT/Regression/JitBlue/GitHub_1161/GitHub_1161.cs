@@ -25,7 +25,7 @@ class GitHub_1161
             return x.value + y.value;
         }
     }
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int Test()
@@ -33,7 +33,7 @@ class GitHub_1161
             Number x = 4, y = 2;
             return (int)(x + y);
         }
-        static int Main()
+        public static int Main()
         {
             return (Test() == 6) ? 100 : -1;
         }

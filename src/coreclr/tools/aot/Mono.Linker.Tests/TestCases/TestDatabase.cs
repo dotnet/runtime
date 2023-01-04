@@ -19,6 +19,11 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName ();
 		}
 
+		public static IEnumerable<object[]> DynamicDependencies ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
 		public static IEnumerable<object[]> Repro ()
 		{
 			return TestNamesBySuiteName ();

@@ -357,7 +357,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalObjectArrayCasesThrow))]
         public unsafe void JsImportObjectArrayThrows(object[]? expected)
         {
-            Assert.Throws<NotImplementedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
+            Assert.Throws<NotSupportedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
         }
 
         [Fact]
@@ -1388,6 +1388,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport)));
             Assert.DoesNotContain("Unexpected error", ex.Message);
             Assert.Contains("-t-e-s-t-", ex.Message);
+        }
+
+        [Fact]
+        public void JSImportReturnError()
+        {
+            var err = JavaScriptTestHelper.returnError() as Exception;
+            Assert.NotNull(err);
+            Assert.Contains("this-is-error", err.Message);
         }
 
         [Fact]

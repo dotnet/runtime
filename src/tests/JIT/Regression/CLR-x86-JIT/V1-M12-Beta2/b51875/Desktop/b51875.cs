@@ -6,7 +6,7 @@ namespace Test
     using System;
     using System.Collections;
 
-    internal struct AA
+    public struct AA
     {
         public static int Main1()
         {

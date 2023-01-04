@@ -7690,7 +7690,41 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildLoad2 (builder, var_type, var, "");
 			break;
 		}
-
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+		case OP_FCVTL:
+		case OP_FCVTL2: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean high = ins->opcode == OP_FCVTL2;
+			LLVMValueRef result = lhs;
+			if (high)
+				result = extract_high_elements (ctx, result);
+			result = LLVMBuildFPExt (builder, result, ret_t, "fcvtl");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_SSHLL:
+		case OP_SSHLL2:
+		case OP_USHLL:
+		case OP_USHLL2: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean high = FALSE;
+			gboolean is_unsigned = FALSE;
+			switch (ins->opcode) {
+			case OP_SSHLL2: high = TRUE; break;
+			case OP_USHLL2: high = TRUE; case OP_USHLL: is_unsigned = TRUE; break;
+			}
+			LLVMValueRef result = lhs;
+			if (high)
+				result = extract_high_elements (ctx, result);
+			if (is_unsigned)
+				result = LLVMBuildZExt (builder, result, ret_t, "ushll");
+			else
+				result = LLVMBuildSExt (builder, result, ret_t, "ushll");
+			result = LLVMBuildShl (builder, result, create_shift_vector (ctx, result, rhs), "");
+			values [ins->dreg] = result;
+			break;
+		}
+#endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 		case OP_EXTRACTX_U2:
 		case OP_XEXTRACT_I1:
@@ -9791,13 +9825,10 @@ MONO_RESTORE_WARNING
 			int nelems;
 
 #if defined(TARGET_WASM)
+			IntrinsicId intrins = (IntrinsicId)0;
+			nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
 			/* The wasm code generator doesn't understand the shuffle/and code sequence below */
-			LLVMValueRef val;
 			if (LLVMIsNull (lhs) || LLVMIsNull (rhs)) {
-				val = LLVMIsNull (lhs) ? rhs : lhs;
-				nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
-
-				IntrinsicId intrins = (IntrinsicId)0;
 				switch (nelems) {
 				case 16:
 					intrins = INTRINS_WASM_ANYTRUE_V16;
@@ -9814,6 +9845,8 @@ MONO_RESTORE_WARNING
 				default:
 					g_assert_not_reached ();
 				}
+				LLVMValueRef val = LLVMIsNull (lhs) ? rhs : lhs;
+
 				/* res = !wasm.anytrue (val) */
 				values [ins->dreg] = call_intrins (ctx, intrins, &val, "");
 				values [ins->dreg] = LLVMBuildZExt (builder, LLVMBuildICmp (builder, LLVMIntEQ, values [ins->dreg], const_int32 (0), ""), LLVMInt32Type (), dname);
@@ -9839,6 +9872,26 @@ MONO_RESTORE_WARNING
 
 			t = LLVMVectorType (elemt, nelems);
 			cmp = LLVMBuildSExt (builder, cmp, t, "");
+#if defined(TARGET_WASM)
+			switch (nelems) {
+			case 16:
+				intrins = INTRINS_WASM_ALLTRUE_V16;
+				break;
+			case 8:
+				intrins = INTRINS_WASM_ALLTRUE_V8;
+				break;
+			case 4:
+				intrins = INTRINS_WASM_ALLTRUE_V4;
+				break;
+			case 2:
+				intrins = INTRINS_WASM_ALLTRUE_V2;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			values [ins->dreg] = call_intrins (ctx, intrins, &cmp, "");
+			break;
+#endif
 			// cmp is a <nelems x elemt> vector, each element is either 0xff... or 0
 			int half = nelems / 2;
 			while (half >= 1) {
@@ -10052,17 +10105,6 @@ MONO_RESTORE_WARNING
 			result = LLVMBuildICmp (builder, LLVMIntNE, result, LLVMConstNull (t), "");
 			result = LLVMBuildSExt (builder, result, t, "");
 			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_FCVTL:
-		case OP_ARM64_FCVTL2: {
-			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			gboolean high = ins->opcode == OP_ARM64_FCVTL2;
-			LLVMValueRef result = lhs;
-			if (high)
-				result = extract_high_elements (ctx, result);
-			result = LLVMBuildFPExt (builder, result, ret_t, "arm64_fcvtl");
 			values [ins->dreg] = result;
 			break;
 		}
@@ -10753,28 +10795,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_SSHLL:
-		case OP_ARM64_SSHLL2:
-		case OP_ARM64_USHLL:
-		case OP_ARM64_USHLL2: {
-			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			gboolean high = FALSE;
-			gboolean is_unsigned = FALSE;
-			switch (ins->opcode) {
-			case OP_ARM64_SSHLL2: high = TRUE; break;
-			case OP_ARM64_USHLL2: high = TRUE; case OP_ARM64_USHLL: is_unsigned = TRUE; break;
-			}
-			LLVMValueRef result = lhs;
-			if (high)
-				result = extract_high_elements (ctx, result);
-			if (is_unsigned)
-				result = LLVMBuildZExt (builder, result, ret_t, "arm64_ushll");
-			else
-				result = LLVMBuildSExt (builder, result, ret_t, "arm64_ushll");
-			result = LLVMBuildShl (builder, result, create_shift_vector (ctx, result, rhs), "");
-			values [ins->dreg] = result;
-			break;
-		}
 		case OP_ARM64_SLI:
 		case OP_ARM64_SRI: {
 			LLVMTypeRef intrin_result_t = simd_class_to_llvm_type (ctx, ins->klass);
@@ -11285,7 +11305,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_BSL: {
 			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
 			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
@@ -11298,6 +11318,8 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		case OP_NEGATION:
 		case OP_NEGATION_SCALAR: {
 			gboolean scalar = ins->opcode == OP_NEGATION_SCALAR;

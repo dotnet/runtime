@@ -406,10 +406,7 @@ namespace System
                     throw new IOException(SR.InvalidOperation_SetWindowSize);
                 }
 
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 ConsolePal.WindowWidth = value;
             }
@@ -429,10 +426,7 @@ namespace System
                     throw new IOException(SR.InvalidOperation_SetWindowSize);
                 }
 
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 ConsolePal.WindowHeight = value;
             }
@@ -455,15 +449,8 @@ namespace System
                 throw new IOException(SR.InvalidOperation_SetWindowSize);
             }
 
-            if (width <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
-            if (height <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
 
             ConsolePal.SetWindowSize(width, height);
         }
@@ -662,10 +649,7 @@ namespace System
         public static Stream OpenStandardInput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardInput();
         }
 
@@ -677,10 +661,7 @@ namespace System
         public static Stream OpenStandardOutput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardOutput();
         }
 
@@ -692,10 +673,7 @@ namespace System
         public static Stream OpenStandardError(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardError();
         }
 

@@ -24,6 +24,15 @@ namespace System.Net.Security
         {
         }
 
+        public static SecurityStatusPal SelectApplicationProtocol(
+            SafeFreeCredentials? credentialsHandle,
+            SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            ReadOnlySpan<byte> clientProtocols)
+        {
+            throw new PlatformNotSupportedException(nameof(SelectApplicationProtocol));
+        }
+
 #pragma warning disable IDE0060
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials? credential,

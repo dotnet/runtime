@@ -116,8 +116,7 @@ namespace System
             ArgumentNullException.ThrowIfNull(sourceArray);
             ArgumentNullException.ThrowIfNull(destinationArray);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             if (sourceArray.Rank != destinationArray.Rank)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
@@ -392,9 +391,6 @@ namespace System
 
         [Intrinsic]
         internal int GetElementSize() => GetElementSize();
-
-        [Intrinsic]
-        internal bool IsPrimitive() => IsPrimitive();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern CorElementType GetCorElementTypeOfElementTypeInternal(ObjectHandleOnStack arr);

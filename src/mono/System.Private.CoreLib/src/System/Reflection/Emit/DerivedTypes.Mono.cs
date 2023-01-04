@@ -453,12 +453,12 @@ namespace System.Reflection.Emit
 
         public override Type MakeArrayType()
         {
-            throw new ArgumentException("Cannot create an array type of a byref type");
+            throw new ArgumentException(SR.NotSupported_ByRefLikeArray);
         }
 
         public override Type MakeArrayType(int rank)
         {
-            throw new ArgumentException("Cannot create an array type of a byref type");
+            throw new ArgumentException(SR.NotSupported_ByRefLikeArray);
         }
 
         public override Type MakeByRefType()

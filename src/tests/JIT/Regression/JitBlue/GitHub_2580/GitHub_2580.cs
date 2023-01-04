@@ -24,7 +24,7 @@
 // cmp      cx, ax                 ; compare only 16 bits                                            
 // seta     cl                     ; set if above (unsigned comparison)  <-- Fixed instruction       
 
-internal static class MicrsoftNETBug
+public static class MicrsoftNETBug
 {
     private struct S
     {
@@ -45,7 +45,7 @@ internal static class MicrsoftNETBug
 
 
 
-    private static int Main()
+    public static int Main()
     {
         System.Console.WriteLine(".NET 4.6.01055 bug repro: unshort comparison below incorrectly outputs False (only) when code is optimized");
 
