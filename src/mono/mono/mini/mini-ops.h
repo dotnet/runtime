@@ -1767,7 +1767,6 @@ MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
 #endif
 
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
 MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
@@ -1782,3 +1781,7 @@ MINI_OP(OP_CVT_SI_FP,        "convert_si_to_fp", XREG, XREG, NONE)
 MINI_OP(OP_CVT_UI_FP_SCALAR, "convert_ui_to_fp_scalar", XREG, XREG, NONE)
 MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
 #endif // TARGET_ARM64 || TARGET_AMD64
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
+#endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
