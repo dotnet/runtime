@@ -303,7 +303,12 @@ namespace System.Runtime.InteropServices
 
             public void Release()
             {
-                _comWrappers.RemoveRCWFromCache(_externalComObject);
+                if (_comWrappers != null)
+                {
+                    _comWrappers.RemoveRCWFromCache(_externalComObject);
+                    _comWrappers = null;
+                }
+
                 if (_proxyHandle.IsAllocated)
                 {
                     _proxyHandle.Free();
