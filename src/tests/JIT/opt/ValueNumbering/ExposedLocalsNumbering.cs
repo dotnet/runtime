@@ -17,16 +17,23 @@ unsafe class ExposedLocalsNumbering
         const int RetryCount = 100;
         const int UnsafeIndex = 1;
 
-        new Thread(_ =>
+        try
         {
-            while (!s_finished)
+            new Thread(_ =>
             {
-                if (s_mutateIndex)
+                while (!s_finished)
                 {
-                    *s_pIndex = UnsafeIndex;
+                    if (s_mutateIndex)
+                    {
+                        *s_pIndex = UnsafeIndex;
+                    }
                 }
-            }
-        }).Start();
+            }).Start();
+        }
+        catch (PlatformNotSupportedException)
+        {
+            return 100;
+        }
 
         int[] array = new int[UnsafeIndex + 1];
         array[UnsafeIndex] = 1;
