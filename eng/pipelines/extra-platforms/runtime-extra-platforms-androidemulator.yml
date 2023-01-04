@@ -75,7 +75,6 @@ jobs:
       runtimeVariant: monointerpreter
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
-      runtimeVariant: monointerpreter
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       extraStepsParameters:
