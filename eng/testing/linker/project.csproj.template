@@ -6,6 +6,7 @@
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
     <UseMonoRuntime>{UseMonoRuntime}</UseMonoRuntime>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
+    <PublishAot>{PublishAot}</PublishAot>
 
     <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
@@ -25,6 +26,15 @@
 
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+    {AdditionalProperties}
+
+    <!-- Needed for PublishAot -->
+    <IlcToolsPath>{IlcToolsPath}</IlcToolsPath>
+    <IlcBuildTasksPath>{IlcBuildTasksPath}</IlcBuildTasksPath>
+    <IlcSdkPath>{IlcSdkPath}</IlcSdkPath>
+    <IlcFrameworkPath>{IlcFrameworkPath}</IlcFrameworkPath>
+    <IlcFrameworkNativePath>{IlcFrameworkNativePath}</IlcFrameworkNativePath>
+    <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
   </PropertyGroup>
 
   <ItemGroup>
