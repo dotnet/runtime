@@ -33,6 +33,7 @@ namespace System.Diagnostics.Tracing
             if (_provHandle == 0)
             {
                 // Unable to create the provider.
+                _gcHandle.Free();
                 throw new OutOfMemoryException();
             }
         }
