@@ -529,6 +529,43 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        [Fact]
+        public static void ComputeCounterSignature_PreservesAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+            int countBefore = CountCertificateChoices(SignedDocuments.TstWithAttributeCertificate);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(cert);
+                SignerInfo info = signedCms.SignerInfos[0];
+                info.ComputeCounterSignature(signer);
+            }
+
+            byte[] encoded = signedCms.Encode();
+            int countAfter = CountCertificateChoices(encoded);
+            Assert.Equal(countBefore + 1, countAfter);
+        }
+
+        [Fact]
+        public static void ComputeSignature_PreservesAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+            int countBefore = CountCertificateChoices(SignedDocuments.TstWithAttributeCertificate);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(cert);
+                signedCms.ComputeSignature(signer);
+            }
+
+            byte[] encoded = signedCms.Encode();
+            int countAfter = CountCertificateChoices(encoded);
+            Assert.Equal(countBefore + 1, countAfter);
+        }
+
         private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
         {
             using (var pubCert = new X509Certificate2(cert.RawData))
