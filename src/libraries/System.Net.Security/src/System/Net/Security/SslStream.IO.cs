@@ -56,8 +56,8 @@ namespace System.Net.Security
             // block potential future read and auth operations since SslStream is disposing.
             // This leaves the _nestedRead = 2 and _nestedAuth = 2, but that's ok, since
             // subsequent operations check the _exception sentinel first
-            if (Interlocked.Exchange(ref _nestedRead, (int)StreamUse.Disposed) == (int)StreamUse.NotInUse &&
-                Interlocked.Exchange(ref _nestedAuth, (int)StreamUse.Disposed) == (int)StreamUse.NotInUse)
+            if (Interlocked.Exchange(ref _nestedRead, StreamDisposed) == StreamNotInUse &&
+                Interlocked.Exchange(ref _nestedAuth, StreamDisposed) == StreamNotInUse)
             {
                 _buffer.ReturnBuffer();
             }
@@ -162,22 +162,22 @@ namespace System.Net.Security
         private async Task RenegotiateAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (Interlocked.CompareExchange(ref _nestedAuth, (int)StreamUse.InUse, (int)StreamUse.NotInUse) != (int)StreamUse.NotInUse)
+            if (Interlocked.CompareExchange(ref _nestedAuth, StreamInUse, StreamNotInUse) != StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedAuth == (int)StreamUse.Disposed, this);
+                ObjectDisposedException.ThrowIf(_nestedAuth == StreamDisposed, this);
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
 
-            if (Interlocked.CompareExchange(ref _nestedRead, (int)StreamUse.InUse, (int)StreamUse.NotInUse) != (int)StreamUse.NotInUse)
+            if (Interlocked.CompareExchange(ref _nestedRead, StreamInUse, StreamNotInUse) != StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedRead == (int)StreamUse.Disposed, this);
+                ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
             // Write is different since we do not do anything special in Dispose
-            if (Interlocked.Exchange(ref _nestedWrite, (int)StreamUse.InUse) != (int)StreamUse.NotInUse)
+            if (Interlocked.Exchange(ref _nestedWrite, StreamInUse) != StreamNotInUse)
             {
-                _nestedRead = (int)StreamUse.NotInUse;
+                _nestedRead = StreamNotInUse;
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
@@ -234,8 +234,8 @@ namespace System.Net.Security
                     _buffer.ReturnBuffer();
                 }
 
-                _nestedRead = (int)StreamUse.NotInUse;
-                _nestedWrite = (int)StreamUse.NotInUse;
+                _nestedRead = StreamNotInUse;
+                _nestedWrite = StreamNotInUse;
                 _isRenego = false;
                 // We will not release _nestedAuth at this point to prevent another renegotiation attempt.
             }
@@ -251,7 +251,7 @@ namespace System.Net.Security
             if (reAuthenticationData == null)
             {
                 // prevent nesting only when authentication functions are called explicitly. e.g. handle renegotiation transparently.
-                if (Interlocked.Exchange(ref _nestedAuth, (int)StreamUse.InUse) == (int)StreamUse.InUse)
+                if (Interlocked.Exchange(ref _nestedAuth, StreamInUse) == StreamInUse)
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
                 }
@@ -338,7 +338,7 @@ namespace System.Net.Security
             {
                 if (reAuthenticationData == null)
                 {
-                    _nestedAuth = (int)StreamUse.NotInUse;
+                    _nestedAuth = StreamNotInUse;
                     _isRenego = false;
                 }
             }
@@ -497,7 +497,7 @@ namespace System.Net.Security
         {
             ProcessHandshakeSuccess();
 
-            if (_nestedAuth != (int)StreamUse.InUse)
+            if (_nestedAuth != StreamInUse)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Ignoring unsolicited renegotiated certificate.");
                 // ignore certificates received outside of handshake or requested renegotiation.
@@ -770,9 +770,9 @@ namespace System.Net.Security
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
 
-            if (Interlocked.CompareExchange(ref _nestedRead, (int)StreamUse.InUse, (int)StreamUse.NotInUse) != (int)StreamUse.NotInUse)
+            if (Interlocked.CompareExchange(ref _nestedRead, StreamInUse, StreamNotInUse) != StreamNotInUse)
             {
-                ObjectDisposedException.ThrowIf(_nestedRead == (int)StreamUse.Disposed, this);
+                ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
@@ -910,7 +910,7 @@ namespace System.Net.Security
             finally
             {
                 ReturnReadBufferIfEmpty();
-                _nestedRead = (int)StreamUse.NotInUse;
+                _nestedRead = StreamNotInUse;
             }
         }
 
@@ -925,7 +925,7 @@ namespace System.Net.Security
                 return;
             }
 
-            if (Interlocked.Exchange(ref _nestedWrite, (int)StreamUse.InUse) == (int)StreamUse.InUse)
+            if (Interlocked.Exchange(ref _nestedWrite, StreamInUse) == StreamInUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
@@ -948,7 +948,7 @@ namespace System.Net.Security
             }
             finally
             {
-                _nestedWrite = (int)StreamUse.NotInUse;
+                _nestedWrite = StreamNotInUse;
             }
         }
 
