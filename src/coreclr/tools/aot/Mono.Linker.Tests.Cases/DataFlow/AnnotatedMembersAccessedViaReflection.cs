@@ -713,13 +713,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public Type _typeField;
 			}
 
+			// TODO
 			// Analyzer doesnt take into account interop attributes https://github.com/dotnet/linker/issues/2562
-			[ExpectedWarning ("IL2110", nameof (ValueWithAnnotatedField._typeField), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2110", nameof (ValueWithAnnotatedField._typeField), ProducedBy = ProducedBy.Trimmer)]
 			[DllImport ("nonexistent")]
 			static extern ValueWithAnnotatedField GetValueWithAnnotatedField ();
 
+			// TODO
 			// Analyzer doesnt take into account interop attributes https://github.com/dotnet/linker/issues/2562
-			[ExpectedWarning ("IL2110", nameof (ValueWithAnnotatedField._typeField), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2110", nameof (ValueWithAnnotatedField._typeField), ProducedBy = ProducedBy.Trimmer)]
 			[DllImport ("nonexistent")]
 			static extern void AcceptValueWithAnnotatedField (ValueWithAnnotatedField value);
 
