@@ -1499,7 +1499,7 @@ public:
     const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
+    LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
 #endif
 
     PEImageLayout * GetReadyToRunImage();
@@ -1531,33 +1531,6 @@ public:
     mdToken GetEntryPointToken();
 
     BYTE *GetProfilerBase();
-
-
-    // Active transition path management
-    //
-    // This list keeps track of module which we have active transition
-    // paths to.  An active transition path is where we move from
-    // active execution in one module to another module without
-    // involving triggering the file loader to ensure that the
-    // destination module is active.  We must explicitly list these
-    // relationships so the loader can ensure that the activation
-    // constraints are a priori satisfied.
-    //
-    // Conditional vs. Unconditional describes how we deal with
-    // activation failure of a dependency.  In the unconditional case,
-    // we propagate the activation failure to the depending module.
-    // In the conditional case, we activate a "trigger" in the active
-    // transition path which will cause the path to fail in particular
-    // app domains where the destination module failed to activate.
-    // (This trigger in the path typically has a perf cost even in the
-    // nonfailing case.)
-    //
-    // In either case we must try to perform the activation eagerly -
-    // even in the conditional case we have to know whether to turn on
-    // the trigger or not before we let the active transition path
-    // execute.
-
-    void AddActiveDependency(Module *pModule, BOOL unconditional);
 
     BYTE* GetNativeFixupBlobData(RVA fixup);
 

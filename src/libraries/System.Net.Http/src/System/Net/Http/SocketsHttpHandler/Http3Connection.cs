@@ -36,8 +36,9 @@ namespace System.Net.Http
         // Our control stream.
         private QuicStream? _clientControl;
 
-        // Current SETTINGS from the server.
-        private int _maximumHeadersLength = int.MaxValue; // TODO: this is not yet observed by Http3Stream when buffering headers.
+        // Server-advertised SETTINGS_MAX_FIELD_SECTION_SIZE
+        // https://www.rfc-editor.org/rfc/rfc9114.html#section-7.2.4.1-2.2.1
+        private uint _maxHeaderListSize = uint.MaxValue; // Defaults to infinite
 
         // Once the server's streams are received, these are set to 1. Further receipt of these streams results in a connection error.
         private int _haveServerControlStream;
@@ -53,7 +54,7 @@ namespace System.Net.Http
 
         public HttpAuthority Authority => _authority;
         public HttpConnectionPool Pool => _pool;
-        public int MaximumRequestHeadersLength => _maximumHeadersLength;
+        public uint MaxHeaderListSize => _maxHeaderListSize;
         public byte[]? AltUsedEncodedHeaderBytes => _altUsedEncodedHeader;
         public Exception? AbortException => Volatile.Read(ref _abortException);
         private object SyncObj => _activeRequests;
@@ -84,6 +85,13 @@ namespace System.Net.Http
                 _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
             }
 
+            uint maxHeaderListSize = _pool._lastSeenHttp3MaxHeaderListSize;
+            if (maxHeaderListSize > 0)
+            {
+                // Previous connections to the same host advertised a limit.
+                // Use this as an initial value before we receive the SETTINGS frame.
+                _maxHeaderListSize = maxHeaderListSize;
+            }
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -725,10 +733,13 @@ namespace System.Net.Http
 
                     buffer.Discard(bytesRead);
 
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Applying setting {(Http3SettingType)settingId}={settingValue}");
+
                     switch ((Http3SettingType)settingId)
                     {
                         case Http3SettingType.MaxHeaderListSize:
-                            _maximumHeadersLength = (int)Math.Min(settingValue, int.MaxValue);
+                            _maxHeaderListSize = (uint)Math.Min((ulong)settingValue, uint.MaxValue);
+                            _pool._lastSeenHttp3MaxHeaderListSize = _maxHeaderListSize;
                             break;
                         case Http3SettingType.ReservedHttp2EnablePush:
                         case Http3SettingType.ReservedHttp2MaxConcurrentStreams:

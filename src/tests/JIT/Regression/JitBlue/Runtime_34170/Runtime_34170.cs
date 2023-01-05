@@ -73,9 +73,9 @@ internal struct StructNonAlignedField
     }
 }
 
-class Test_Runtime_34170
+public class Test_Runtime_34170
 {
-    private static unsafe int Main()
+    public static unsafe int Main()
     {
         
         var a = new FloatNonAlignedFieldWithSmallOffset(1);

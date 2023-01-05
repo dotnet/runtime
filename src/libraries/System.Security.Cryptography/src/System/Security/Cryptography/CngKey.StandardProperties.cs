@@ -192,6 +192,29 @@ namespace System.Security.Cryptography
                     throw errorCode.ToCryptographicException();
                 }
 
+                // The platform crypto provider always returns "0" for EC keys when asked for a key size. This
+                // has been observed in Windows 10 and most recently observed in Windows 11 22H2.
+                // The Algorithm NCrypt Property only returns the Algorithm Group, so that doesn't work either.
+                // What does work is the ECCCurveName.
+                CngAlgorithmGroup? algorithmGroup = AlgorithmGroup;
+
+                if (keySize == 0 && Provider == CngProvider.MicrosoftPlatformCryptoProvider &&
+                    (algorithmGroup == CngAlgorithmGroup.ECDiffieHellman || algorithmGroup == CngAlgorithmGroup.ECDsa))
+                {
+                    string? curve = _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+
+                    switch (curve)
+                    {
+                        // nistP192 and nistP224 don't have named curve accelerators but we can handle them.
+                        // These string values match the names in https://learn.microsoft.com/en-us/windows/win32/seccng/cng-named-elliptic-curves
+                        case "nistP192": return 192;
+                        case "nistP224": return 224;
+                        case nameof(ECCurve.NamedCurves.nistP256): return 256;
+                        case nameof(ECCurve.NamedCurves.nistP384): return 384;
+                        case nameof(ECCurve.NamedCurves.nistP521): return 521;
+                    }
+                }
+
                 return keySize;
             }
         }

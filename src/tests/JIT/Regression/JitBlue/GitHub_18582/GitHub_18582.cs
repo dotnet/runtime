@@ -9,7 +9,7 @@ using System.Threading;
 // call with a lot of arguments and some CSEs when running with limited stack (as is
 // done when CLR is hosted by IIS).
 
-class GitHub_18582
+public class GitHub_18582
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Consume(

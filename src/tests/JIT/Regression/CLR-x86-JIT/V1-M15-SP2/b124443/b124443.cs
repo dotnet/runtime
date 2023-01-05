@@ -4,7 +4,7 @@
 
 using System;
 delegate void TestDelegate();
-class ArrayBounds
+public class ArrayBounds
 {
 	public static void f1a()
 	{
@@ -107,7 +107,7 @@ class ArrayBounds
 		}
 	}
 
-	public static int RunTests(TestDelegate d)
+	static int RunTests(TestDelegate d)
 	{
 		try
 		{

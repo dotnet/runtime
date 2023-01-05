@@ -6,7 +6,7 @@
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	interface IMemberProxy
+	internal interface IMemberProxy
 	{
 		public string Name { get; }
 

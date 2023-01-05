@@ -3,7 +3,7 @@
 //
 
 using System;
-class A
+public class A
 {
     public static int Main()
     {

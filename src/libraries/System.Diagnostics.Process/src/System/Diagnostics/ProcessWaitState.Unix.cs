@@ -551,6 +551,24 @@ namespace System.Diagnostics
             }, cancellationToken);
         }
 
+        private void ChildReaped(int exitCode, bool configureConsole)
+        {
+            lock (_gate)
+            {
+                Debug.Assert(!_exited);
+
+                _exitCode = exitCode;
+
+                if (_usesTerminal)
+                {
+                    // Update terminal settings before calling SetExited.
+                    Process.ConfigureTerminalForChildProcesses(-1, configureConsole);
+                }
+
+                SetExited();
+            }
+        }
+
         private bool TryReapChild(bool configureConsole)
         {
             lock (_gate)
@@ -566,16 +584,7 @@ namespace System.Diagnostics
 
                 if (waitResult == _processId)
                 {
-                    _exitCode = exitCode;
-
-                    if (_usesTerminal)
-                    {
-                        // Update terminal settings before calling SetExited.
-                        Process.ConfigureTerminalForChildProcesses(-1, configureConsole);
-                    }
-
-                    SetExited();
-
+                    ChildReaped(exitCode, configureConsole);
                     return true;
                 }
                 else if (waitResult == 0)
@@ -636,7 +645,7 @@ namespace System.Diagnostics
                     }
                 } while (pid > 0);
 
-                if (checkAll)
+                if (checkAll && !reapAll)
                 {
                     // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates.
                     ProcessWaitState? firstToRemove = null;
@@ -675,8 +684,20 @@ namespace System.Diagnostics
                 {
                     do
                     {
-                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out _);
-                    } while (pid > 0);
+                        int exitCode;
+                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode);
+                        if (pid <= 0)
+                        {
+                            break;
+                        }
+
+                        // Check if the process is a child that has just terminated.
+                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
+                        {
+                            pws.ChildReaped(exitCode, configureConsole);
+                            pws.ReleaseRef();
+                        }
+                    } while (true);
                 }
             }
         }
