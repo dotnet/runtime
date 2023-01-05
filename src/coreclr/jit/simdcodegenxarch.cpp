@@ -115,6 +115,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
 
         // Extract upper 4 bytes from data
         emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
+        data->SetRegNum(tmpReg);
 
         // Store upper 4 bytes
         emit->emitInsStoreInd(INS_movss, EA_4BYTE, treeNode);
