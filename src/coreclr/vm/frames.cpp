@@ -2107,6 +2107,7 @@ static void DumpGCRefMap(const char *name, BYTE *address)
 
                 case GCREFMAP_VASIG_COOKIE:
                     printf("V(");
+                    break;
 
                 default:
                     // Not implemented
