@@ -192,7 +192,6 @@ namespace System.Text.RegularExpressions.Generator
             // we also need to parse the pattern in case there are options that were specified inside the pattern via the `(?i)` switch.
             SyntaxNode? cultureNameValue = null;
             RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgument(operationArguments) : RegexOptions.None;
-            
             string pattern = GetRegexPatternFromArgument(operationArguments)!;
 
             try
