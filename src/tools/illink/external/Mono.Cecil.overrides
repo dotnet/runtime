@@ -1,5 +1,9 @@
 <Project>
 
+  <!-- Cecil's Directory.Build.Props imports this file if it
+       exists. We use it to import our own Directory.Build.props. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
   <PropertyGroup>
     <!-- Cecil sets PublicSign on windows, but we always want to
          PublicSign. -->
@@ -9,10 +13,6 @@
          will depend on the publicly available package. Note that we can't set
          just set Version here because Arcade will override it. -->
     <PackageVersion>$(MonoCecilVersion)</PackageVersion>
-    <!-- When building cecil as a submodule, use the Mono.Cecil.* package IDs
-         instead of the Microsoft.DotNet.Cecil.*, so that the ILLink reference package
-         depends on the publicly available package. -->
-    <PackageId>$(MSBuildProjectName)</PackageId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoBuild)' == ''">
