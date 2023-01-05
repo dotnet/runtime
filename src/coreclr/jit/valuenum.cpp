@@ -8067,11 +8067,10 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
         Compiler::LoopDsc::FieldHandleSet* fieldsMod = optLoopTable[loopNum].lpFieldsModified;
         if (fieldsMod != nullptr)
         {
-            for (Compiler::LoopDsc::FieldHandleSet::KeyIterator ki = fieldsMod->Begin(); !ki.Equal(fieldsMod->End());
-                 ++ki)
+            for (Compiler::LoopDsc::FieldHandleSet::Node* const ki : *fieldsMod)
             {
-                CORINFO_FIELD_HANDLE fldHnd    = ki.Get();
-                FieldKindForVN       fieldKind = ki.GetValue();
+                CORINFO_FIELD_HANDLE fldHnd    = ki->GetKey();
+                FieldKindForVN       fieldKind = ki->GetValue();
                 ValueNum             fldHndVN  = vnStore->VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
 
 #ifdef DEBUG
@@ -8094,10 +8093,9 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
         Compiler::LoopDsc::ClassHandleSet* elemTypesMod = optLoopTable[loopNum].lpArrayElemTypesModified;
         if (elemTypesMod != nullptr)
         {
-            for (Compiler::LoopDsc::ClassHandleSet::KeyIterator ki = elemTypesMod->Begin();
-                 !ki.Equal(elemTypesMod->End()); ++ki)
+            for (Compiler::LoopDsc::ClassHandleSet::Node* const ki : *elemTypesMod)
             {
-                CORINFO_CLASS_HANDLE elemClsHnd = ki.Get();
+                CORINFO_CLASS_HANDLE elemClsHnd = ki->GetKey();
 
 #ifdef DEBUG
                 if (verbose)
@@ -11312,10 +11310,10 @@ void Compiler::JitTestCheckVN()
     {
         printf("\nJit Testing: Value numbering.\n");
     }
-    for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+    for (NodeToTestDataMap::Node* const ki : *testData)
     {
         TestLabelAndNum tlAndN;
-        GenTree*        node   = ki.Get();
+        GenTree*        node   = ki->GetKey();
         ValueNum        nodeVN = node->GetVN(VNK_Liberal);
 
         bool b = testData->Lookup(node, &tlAndN);

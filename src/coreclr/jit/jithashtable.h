@@ -103,6 +103,7 @@ template <typename Key,
 class JitHashTable
 {
 public:
+    class Node;
     class KeyIterator;
 
     //------------------------------------------------------------------------
@@ -361,6 +362,18 @@ public:
         return KeyIterator(this, false);
     }
 
+    // Iterator helpers for range-based `for`.
+
+    KeyIterator begin() const
+    {
+        return Begin();
+    }
+
+    KeyIterator end() const
+    {
+        return End();
+    }
+
     // Get the number of keys currently stored in the table.
     unsigned GetCount() const
     {
@@ -374,8 +387,6 @@ public:
     }
 
 private:
-    struct Node;
-
     //------------------------------------------------------------------------
     // GetIndexForKey: Get the bucket index for the specified key.
     //
@@ -536,6 +547,13 @@ public:
     // }
     // iter.Get() will yield (a reference to) the
     // current key.  It will assert the equivalent of "iter != end."
+    //
+    // Also supported is range-based `for` iteration, e.g.:
+    //    for (JitHashTable::Node* const iter : hash_table)
+    //    {
+    //        // use iter->GetKey(), iter->GetValue();
+    //    }
+    //
     class KeyIterator
     {
     private:
@@ -569,15 +587,11 @@ public:
                     m_index++;
                 }
 
-                if (m_index >= m_tableSize)
-                {
-                    return;
-                }
-                else
+                if (m_index < m_tableSize)
                 {
                     m_node = m_table[m_index];
+                    assert(m_node != nullptr);
                 }
-                assert(m_node != nullptr);
             }
         }
 
@@ -653,16 +667,15 @@ public:
                 m_index++;
             }
 
-            if (m_index >= m_tableSize)
+            if (m_index < m_tableSize)
             {
-                m_node = nullptr;
-                return;
+                m_node = m_table[m_index];
+                assert(m_node != nullptr);
             }
             else
             {
-                m_node = m_table[m_index];
+                m_node = nullptr;
             }
-            assert(m_node != nullptr);
         }
 
         // Return `true` if the specified iterator has the same position as this iterator
@@ -672,15 +685,29 @@ public:
         }
 
         // Advance the iterator to the next node
-        void operator++()
+        KeyIterator& operator++()
         {
             Next();
+            return *this;
         }
 
         // Advance the iterator to the next node
-        void operator++(int)
+        KeyIterator& operator++(int)
         {
             Next();
+            return *this;
+        }
+
+        // Iterator helpers for range-based `for` iteration.
+
+        Node* operator*() const
+        {
+            return m_node;
+        }
+
+        bool operator!=(const KeyIterator& i) const
+        {
+            return !Equal(i);
         }
     };
 
@@ -727,9 +754,12 @@ private:
         Behavior::NoMemory();
     }
 
+public:
     // The node type.
-    struct Node
+    class Node
     {
+        friend class JitHashTable;
+
         Node* m_next; // Assume that the alignment requirement of Key and Value are no greater than Node*,
                       // so put m_next first to avoid unnecessary padding.
         Key   m_key;
@@ -748,6 +778,17 @@ private:
         void operator delete(void* p, Allocator alloc)
         {
             alloc.deallocate(p);
+        }
+
+    public:
+        Key GetKey() const
+        {
+            return m_key;
+        }
+
+        Value GetValue() const
+        {
+            return m_val;
         }
     };
 

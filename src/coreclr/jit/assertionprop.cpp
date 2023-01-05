@@ -1926,11 +1926,9 @@ void Compiler::optPrintVnAssertionMapping()
 {
     printf("\nVN Assertion Mapping\n");
     printf("---------------------\n");
-    for (ValueNumToAssertsMap::KeyIterator ki = optValueNumToAsserts->Begin(); !ki.Equal(optValueNumToAsserts->End());
-         ++ki)
+    for (ValueNumToAssertsMap::Node* const node : *optValueNumToAsserts)
     {
-        printf("(%d => ", ki.Get());
-        printf("%s)\n", BitVecOps::ToString(apTraits, ki.GetValue()));
+        printf("(%d => %s)\n", node->GetKey(), BitVecOps::ToString(apTraits, node->GetValue()));
     }
 }
 #endif

@@ -1723,10 +1723,10 @@ void Compiler::JitTestCheckSSA()
     {
         printf("\nJit Testing: SSA names.\n");
     }
-    for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+    for (NodeToTestDataMap::Node* const ki : *testData)
     {
         TestLabelAndNum tlAndN;
-        GenTree*        node       = ki.Get();
+        GenTree*        node       = ki->GetKey();
         bool            nodeExists = testData->Lookup(node, &tlAndN);
         assert(nodeExists);
         if (tlAndN.m_tl == TL_SsaName)
