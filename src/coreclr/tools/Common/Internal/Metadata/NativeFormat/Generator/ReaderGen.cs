@@ -28,6 +28,7 @@ class ReaderGen : CsWriter
         WriteLine();
 
         WriteLine("using System;");
+        WriteLine("using System.Diagnostics;");
         WriteLine("using System.Reflection;");
         WriteLine("using System.Collections.Generic;");
         WriteLine("using System.Runtime.CompilerServices;");
@@ -138,8 +139,7 @@ class ReaderGen : CsWriter
 
         OpenScope($"internal {handleName}(int value)");
         WriteLine("HandleType hType = (HandleType)(value >> 24);");
-        WriteLine($"if (!(hType == 0 || hType == HandleType.{record.Name} || hType == HandleType.Null))");
-        WriteLine("    throw new ArgumentException();");
+        WriteLine($"Debug.Assert(hType == 0 || hType == HandleType.{record.Name} || hType == HandleType.Null);");
         WriteLine($"_value = (value & 0x00FFFFFF) | (((int)HandleType.{record.Name}) << 24);");
         WriteLine("_Validate();");
         CloseScope();
