@@ -8454,7 +8454,11 @@ void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
             assert(regTmp != REG_NA);
             GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, regTmp, REG_SPBASE, /* canSkip */ false);
             GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, regTmp, offset);
+#ifdef TARGET_RISCV64
             GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regTmp, REG_NA, lvaStackPointerVar, 0);
+#else
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regTmp, lvaStackPointerVar, 0);
+#endif
         }
         else
         {

@@ -2739,36 +2739,67 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             const char* rd = RegNames[(code >> 7) & 0x1f];
             const char* rs1 = RegNames[(code >> 15) & 0x1f];
             const char* rs2 = RegNames[(code >> 20) & 0x1f];
-            assert(opcode2 == 0);
 
-            switch (opcode3)
+            if (opcode2 == 0)
             {
-                case 0x0: // ADDW & SUBW
-                    if (((code >> 30) & 0x1) == 0)
-                    {
-                        printf("addw         %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    else
-                    {
-                        printf("subw         %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    return;
-                case 0x1: // SLLW
-                    printf("sllw         %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x5: // SRLW & SRAW
-                    if (((code >> 30) & 0x1) == 0)
-                    {
-                        printf("srlw         %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    else
-                    {
-                        printf("sraw         %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    return;
-                default:
-                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
-                    return;
+                switch (opcode3)
+                {
+                    case 0x0: // ADDW & SUBW
+                        if (((code >> 30) & 0x1) == 0)
+                        {
+                            printf("addw         %s, %s, %s\n", rd, rs1, rs2);
+                        }
+                        else
+                        {
+                            printf("subw         %s, %s, %s\n", rd, rs1, rs2);
+                        }
+                        return;
+                    case 0x1: // SLLW
+                        printf("sllw         %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x5: // SRLW & SRAW
+                        if (((code >> 30) & 0x1) == 0)
+                        {
+                            printf("srlw         %s, %s, %s\n", rd, rs1, rs2);
+                        }
+                        else
+                        {
+                            printf("sraw         %s, %s, %s\n", rd, rs1, rs2);
+                        }
+                        return;
+                    default:
+                        printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                        return;
+                }
+            }
+            else if (opcode2 == 1)
+            {
+                switch (opcode3)
+                {
+                    case 0x0: // MULW
+                        printf("mulw         %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x4: // DIVW
+                        printf("divw         %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x5: // DIVUW
+                        printf("divuw        %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x6: // REMW
+                        printf("remw         %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    case 0x7: // REMUW
+                        printf("remuw        %s, %s, %s\n", rd, rs1, rs2);
+                        return;
+                    default:
+                        printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                        return;
+                }
+            }
+            else
+            {
+                printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                return;
             }
         }
         case 0x23:
