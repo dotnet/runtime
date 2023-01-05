@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
@@ -69,6 +70,23 @@ namespace System.Runtime.CompilerServices.Tests
         public static void StaticDataMatchesDynamicProbing(string probedValue)
         {
             Assert.True(RuntimeFeature.IsSupported(probedValue));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void DynamicCode_ContextSwitch(bool isDynamicCodeSupported)
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (isDynamicCodeSupportedString) =>
+            {
+                bool isDynamicCodeSupported = bool.Parse(isDynamicCodeSupportedString);
+
+                Assert.Equal(isDynamicCodeSupported, RuntimeFeature.IsDynamicCodeSupported);
+                Assert.Equal(isDynamicCodeSupported, RuntimeFeature.IsDynamicCodeCompiled);
+            }, isDynamicCodeSupported.ToString(), options);
         }
     }
 }

@@ -223,6 +223,8 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(name);
 
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             if (attributes != (MethodAttributes.Static | MethodAttributes.Public) || callingConvention != CallingConventions.Standard)
                 throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
 

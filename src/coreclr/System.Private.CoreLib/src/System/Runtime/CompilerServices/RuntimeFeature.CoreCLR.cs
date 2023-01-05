@@ -5,7 +5,9 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeFeature
     {
-        public static bool IsDynamicCodeSupported => true;
-        public static bool IsDynamicCodeCompiled => true;
+        public static bool IsDynamicCodeSupported { get; } =
+            AppContext.TryGetSwitch("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", out bool isDynamicCodeSupported) ? isDynamicCodeSupported : true;
+
+        public static bool IsDynamicCodeCompiled => IsDynamicCodeSupported;
     }
 }
