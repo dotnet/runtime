@@ -1184,10 +1184,10 @@ private:
     ****************************************************************************/
 
 
-
-    
-#if !defined(TARGET_ARM64)
-    regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
+#if defined(TARGET_ARM64)
+    regMaskTP getFreeCandidates(regMaskTP candidates, RefPosition* refPosition);
+#else
+    regMaskTP              getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {
         regMaskTP result = candidates & m_AvailableRegs;
 #ifdef TARGET_ARM
@@ -1198,13 +1198,8 @@ private:
             result &= (m_AvailableRegs >> 1);
         }
 #endif // TARGET_ARM
-#ifdef TARGET_ARM64
-
-#endif // TARGET_ARM64
         return result;
     }
-#else
-    regMaskTP getFreeCandidates(regMaskTP candidates, RefPosition* refPosition);
 #endif
 
 #ifdef DEBUG

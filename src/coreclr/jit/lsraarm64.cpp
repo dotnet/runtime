@@ -1066,7 +1066,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
         }
-        
 
         // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
         // we want to preference op1Reg to the target if op1 is not contained.

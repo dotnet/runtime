@@ -2178,7 +2178,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
     {
         // We should never see ParamDefs or ZeroInits within a basic block.
         assert(currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit);
-        if (currentRefPosition->isIntervalRef() && currentRefPosition->getInterval()->isLocalVar /*&& !currentRefPosition->needsConsecutive*/)
+        if (currentRefPosition->isIntervalRef() && currentRefPosition->getInterval()->isLocalVar)
         {
             unsigned varNum   = currentRefPosition->getInterval()->varNum;
             unsigned varIndex = currentRefPosition->getInterval()->getVarIndex(compiler);
@@ -2215,22 +2215,8 @@ void LinearScan::checkLastUses(BasicBlock* block)
                     foundDiff = true;
                 }
 
-                //if (currentRefPosition->needsConsecutive)
-                //{
-                //    // If this is a case of consecutive registers, refPositions are added so they get register
-                //    // They may not be bbLiveIn but are just used directly as operand. Only add them in computedLive
-                //    // if they were part of bbLiveIn. 
-                //    if(VarSetOps::IsMember(compiler, block->bbLiveIn, varIndex))
-                //    {
-                //        JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
-                //        VarSetOps::AddElemD(compiler, computedLive, varIndex);
-                //    }
-                //}
-                //else
-                {
-                    JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
-                    VarSetOps::AddElemD(compiler, computedLive, varIndex);
-                }
+                JITDUMP("++ V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
+                VarSetOps::AddElemD(compiler, computedLive, varIndex);
             }
             else if (currentRefPosition->lastUse)
             {
@@ -2245,7 +2231,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
             {
-                JITDUMP("-- V%02u in computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
+                JITDUMP("-- V%02u from computedLive\n", compiler->lvaTrackedIndexToLclNum(varIndex));
                 VarSetOps::RemoveElemD(compiler, computedLive, varIndex);
             }
         }
@@ -3765,14 +3751,15 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
 {
     regMaskTP result = candidates & m_AvailableRegs;
-    if (!refPosition->needsConsecutive)
+    if (!refPosition->needsConsecutive || (refPosition->multiRegIdx != 0))
     {
         return result;
     }
 
+    assert(refPosition->regCount != 0);
+
     // If refPosition->multiRegIdx == 0, we need to make sure we check for all the
     // `regCount` available regs.
-    // Once we do that just allocate consecutively.
 
     result &= (m_AvailableRegs >> (refPosition->regCount - 1));
 

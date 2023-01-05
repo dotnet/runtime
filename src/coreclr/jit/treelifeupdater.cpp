@@ -38,8 +38,8 @@ template <bool ForCodeGen>
 bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, unsigned multiRegIndex)
 {
     LclVarDsc* parentVarDsc = compiler->lvaGetDesc(lclNode);
-   /* assert(parentVarDsc->lvPromoted && (multiRegIndex < parentVarDsc->lvFieldCnt) && lclNode->IsMultiReg() &&
-           compiler->lvaEnregMultiRegVars);*/
+    assert(parentVarDsc->lvPromoted && (multiRegIndex < parentVarDsc->lvFieldCnt) && lclNode->IsMultiReg() &&
+           compiler->lvaEnregMultiRegVars);
     unsigned   fieldVarNum = parentVarDsc->lvFieldLclStart + multiRegIndex;
     LclVarDsc* fldVarDsc   = compiler->lvaGetDesc(fieldVarNum);
     assert(fldVarDsc->lvTracked);
@@ -267,23 +267,6 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                 if (isInMemory)
                 {
                     VarSetOps::AddElemD(compiler, stackVarDeltaSet, varDsc->lvVarIndex);
-                }
-
-                if (lclVarTree->IsMultiRegLclVar())
-                {
-                    unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
-
-                    for (unsigned i = 0; i < 2; ++i)
-                    {
-                        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);
-                        bool       isInReg     = fieldVarDsc->lvIsInReg() && tree->GetRegByIndex(i) != REG_NA;
-                        VarSetOps::AddElemD(compiler, varDeltaSet, fieldVarDsc->lvVarIndex);
-
-                        if (isInReg)
-                        {
-                            compiler->codeGen->genUpdateRegLife(fieldVarDsc, isBorn, isDying DEBUGARG(tree));
-                        }
-                    }
                 }
             }
         }
