@@ -183,6 +183,12 @@
       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetsiOS)' == 'true'">
+      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
+      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
+      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="" />
+    </ItemGroup>
+
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"
       DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
