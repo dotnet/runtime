@@ -16,14 +16,20 @@ namespace System.Security.Cryptography
 
         public static byte[] Protect(byte[] userData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
-            ArgumentNullException.ThrowIfNull(userData);
+            CheckPlatformSupport();
+
+            if (userData is null)
+                throw new ArgumentNullException(nameof(userData));
 
             return ProtectOrUnprotect(userData, optionalEntropy, scope, protect: true);
         }
 
         public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
-            ArgumentNullException.ThrowIfNull(encryptedData);
+            CheckPlatformSupport();
+
+            if (encryptedData is null)
+                throw new ArgumentNullException(nameof(encryptedData));
 
             return ProtectOrUnprotect(encryptedData, optionalEntropy, scope, protect: false);
         }
@@ -101,6 +107,14 @@ namespace System.Security.Cryptography
             // CAPI returns a file not found error if the user profile is not yet loaded
             return errorCode == HResults.E_FILENOTFOUND ||
                    errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND;
+        }
+
+        private static void CheckPlatformSupport()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
     }
 }
