@@ -22,7 +22,6 @@ public class MiscTests : BuildTestBase
     [InlineData("Debug", false)]
     [InlineData("Release", true)]
     [InlineData("Release", false)]
-    //[ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
     public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
     {
         string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{Path.GetRandomFileName()}";
@@ -67,7 +66,12 @@ public class MiscTests : BuildTestBase
     {
         string id = $"blz_aot_prj_file_{config}_{Path.GetRandomFileName()}";
         string projectFile = CreateBlazorWasmTemplateProject(id);
-        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+
+        string extraProperties = config == "Debug"
+                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+                                    : string.Empty;
+        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
 
         // No relinking, no AOT
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
