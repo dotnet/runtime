@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
         <source>Insufficient or invalid hexadecimal digits.</source>
-        <target state="needs-review-translation">Dígitos hexadecimais insuficientes.</target>
+        <target state="new">Insufficient or invalid hexadecimal digits.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -114,7 +114,7 @@
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \p{X} character escape.</source>
-        <target state="needs-review-translation">Caractere de escape \\p{X} incompleto.</target>
+        <target state="new">Incomplete \p{X} character escape.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -139,12 +139,12 @@
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \k&lt;...&gt; named back reference.</source>
-        <target state="needs-review-translation">Referência inversa \\k&lt;...&gt; mal formada.</target>
+        <target state="new">Malformed \k&lt;...&gt; named back reference.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
         <source>Malformed \p{X} character escape.</source>
-        <target state="needs-review-translation">Caractere de escape \\p{X} mal formado.</target>
+        <target state="new">Malformed \p{X} character escape.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="needs-review-translation">O mecanismo de RegEx esgotou o tempo limite ao tentar combinar um padrão com uma cadeia de caracteres de entrada. Isso pode ocorrer por vários motivos, incluindo entradas muito grandes ou acompanhamento inverso excessivo causado por quantificadores aninhados, referências inversas e outros fatores.</target>
+        <target state="new">The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -214,7 +214,7 @@
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
         <source>Cannot include class \{0} in character range.</source>
-        <target state="needs-review-translation">Não é possível incluir classe \\{0} no intervalo de caracteres.</target>
+        <target state="new">Cannot include class \{0} in character range.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -229,7 +229,7 @@
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \ at end of pattern.</source>
-        <target state="needs-review-translation">\\ incorreto no final do padrão.</target>
+        <target state="new">Illegal \ at end of pattern.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -239,7 +239,7 @@
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
         <source>Unrecognized escape sequence \{0}.</source>
-        <target state="needs-review-translation">Sequência de escape não reconhecida \\{0}</target>
+        <target state="new">Unrecognized escape sequence \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">
