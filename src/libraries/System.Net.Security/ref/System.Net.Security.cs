@@ -29,9 +29,9 @@ namespace System.Net.Security
     public enum EncryptionPolicy
     {
         RequireEncryption = 0,
-        [System.ObsoleteAttribute("EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.", DiagnosticId = "SYSLIB0040", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.", DiagnosticId="SYSLIB0040", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         AllowNoEncryption = 1,
-        [System.ObsoleteAttribute("EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.", DiagnosticId = "SYSLIB0040", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.", DiagnosticId="SYSLIB0040", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         NoEncryption = 2,
     }
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate? remoteCertificate, string[] acceptableIssuers);
@@ -52,9 +52,9 @@ namespace System.Net.Security
         public void Dispose() { }
         public byte[]? GetOutgoingBlob(System.ReadOnlySpan<byte> incomingBlob, out System.Net.Security.NegotiateAuthenticationStatusCode statusCode) { throw null; }
         public string? GetOutgoingBlob(string? incomingBlob, out System.Net.Security.NegotiateAuthenticationStatusCode statusCode) { throw null; }
-        public System.Net.Security.NegotiateAuthenticationStatusCode Wrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted) { throw null; }
         public System.Net.Security.NegotiateAuthenticationStatusCode Unwrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, out bool wasEncrypted) { throw null; }
         public System.Net.Security.NegotiateAuthenticationStatusCode UnwrapInPlace(System.Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted) { throw null; }
+        public System.Net.Security.NegotiateAuthenticationStatusCode Wrap(System.ReadOnlySpan<byte> input, System.Buffers.IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted) { throw null; }
     }
     public partial class NegotiateAuthenticationClientOptions
     {
@@ -99,8 +99,8 @@ namespace System.Net.Security
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public partial class NegotiateStream : System.Net.Security.AuthenticatedStream
     {
-        public NegotiateStream(System.IO.Stream innerStream) : base(default(System.IO.Stream), default(bool)) { }
-        public NegotiateStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen) : base(default(System.IO.Stream), default(bool)) { }
+        public NegotiateStream(System.IO.Stream innerStream) : base (default(System.IO.Stream), default(bool)) { }
+        public NegotiateStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen) : base (default(System.IO.Stream), default(bool)) { }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanTimeout { get { throw null; } }
@@ -199,16 +199,16 @@ namespace System.Net.Security
         public SslClientAuthenticationOptions() { }
         public bool AllowRenegotiation { get { throw null; } set { } }
         public System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol>? ApplicationProtocols { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? CertificateChainPolicy { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509RevocationMode CertificateRevocationCheckMode { get { throw null; } set { } }
         public System.Net.Security.CipherSuitesPolicy? CipherSuitesPolicy { get { throw null; } set { } }
-        public System.Security.Cryptography.X509Certificates.X509CertificateCollection? ClientCertificates { get { throw null; } set { } }
         public System.Net.Security.SslStreamCertificateContext? ClientCertificateContext { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509CertificateCollection? ClientCertificates { get { throw null; } set { } }
         public System.Security.Authentication.SslProtocols EnabledSslProtocols { get { throw null; } set { } }
         public System.Net.Security.EncryptionPolicy EncryptionPolicy { get { throw null; } set { } }
         public System.Net.Security.LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get { throw null; } set { } }
         public System.Net.Security.RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get { throw null; } set { } }
         public string? TargetHost { get { throw null; } set { } }
-        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? CertificateChainPolicy { get { throw null; } set { } }
     }
     public readonly partial struct SslClientHelloInfo
     {
@@ -222,6 +222,7 @@ namespace System.Net.Security
         public SslServerAuthenticationOptions() { }
         public bool AllowRenegotiation { get { throw null; } set { } }
         public System.Collections.Generic.List<System.Net.Security.SslApplicationProtocol>? ApplicationProtocols { get { throw null; } set { } }
+        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? CertificateChainPolicy { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.X509RevocationMode CertificateRevocationCheckMode { get { throw null; } set { } }
         public System.Net.Security.CipherSuitesPolicy? CipherSuitesPolicy { get { throw null; } set { } }
         public bool ClientCertificateRequired { get { throw null; } set { } }
@@ -231,15 +232,14 @@ namespace System.Net.Security
         public System.Security.Cryptography.X509Certificates.X509Certificate? ServerCertificate { get { throw null; } set { } }
         public System.Net.Security.SslStreamCertificateContext? ServerCertificateContext { get { throw null; } set { } }
         public System.Net.Security.ServerCertificateSelectionCallback? ServerCertificateSelectionCallback { get { throw null; } set { } }
-        public System.Security.Cryptography.X509Certificates.X509ChainPolicy? CertificateChainPolicy { get { throw null; } set { } }
     }
     public partial class SslStream : System.Net.Security.AuthenticatedStream
     {
-        public SslStream(System.IO.Stream innerStream) : base(default(System.IO.Stream), default(bool)) { }
-        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen) : base(default(System.IO.Stream), default(bool)) { }
-        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback? userCertificateValidationCallback) : base(default(System.IO.Stream), default(bool)) { }
-        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback? userCertificateValidationCallback, System.Net.Security.LocalCertificateSelectionCallback? userCertificateSelectionCallback) : base(default(System.IO.Stream), default(bool)) { }
-        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback? userCertificateValidationCallback, System.Net.Security.LocalCertificateSelectionCallback? userCertificateSelectionCallback, System.Net.Security.EncryptionPolicy encryptionPolicy) : base(default(System.IO.Stream), default(bool)) { }
+        public SslStream(System.IO.Stream innerStream) : base (default(System.IO.Stream), default(bool)) { }
+        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen) : base (default(System.IO.Stream), default(bool)) { }
+        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback? userCertificateValidationCallback) : base (default(System.IO.Stream), default(bool)) { }
+        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback? userCertificateValidationCallback, System.Net.Security.LocalCertificateSelectionCallback? userCertificateSelectionCallback) : base (default(System.IO.Stream), default(bool)) { }
+        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback? userCertificateValidationCallback, System.Net.Security.LocalCertificateSelectionCallback? userCertificateSelectionCallback, System.Net.Security.EncryptionPolicy encryptionPolicy) : base (default(System.IO.Stream), default(bool)) { }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanTimeout { get { throw null; } }
