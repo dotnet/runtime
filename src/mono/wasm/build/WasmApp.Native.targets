@@ -156,7 +156,7 @@
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">false</WasmNativeStrip>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
-      <WasmAggressivelyMinifyJs Condition="'$(Configuration)' == 'Release' and '$(WasmNativeStrip)' == 'true'">true</WasmAggressivelyMinifyJs>
+      <WasmAggressivelyMinifyJs Condition="'$(WasmAggressivelyMinifyJs)' == '' and '$(Configuration)' == 'Release' and '$(WasmNativeStrip)' == 'true'">true</WasmAggressivelyMinifyJs>
       <WasmAggressivelyMinifyJs Condition="'$(WasmAggressivelyMinifyJs)' == ''">false</WasmAggressivelyMinifyJs>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
