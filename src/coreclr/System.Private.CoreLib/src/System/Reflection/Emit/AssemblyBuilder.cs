@@ -56,6 +56,8 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException();
             }
 
+            EnsureDynamicCodeSupported();
+
             _access = access;
 
             _internalAssembly = CreateDynamicAssembly(assemblyLoadContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)!, name, access);
@@ -154,8 +156,6 @@ namespace System.Reflection.Emit
             AssemblyLoadContext? assemblyLoadContext,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            EnsureDynamicCodeSupported();
-
             lock (s_assemblyBuilderLock)
             {
                 // We can only create dynamic assemblies in the current domain
@@ -328,16 +328,5 @@ namespace System.Reflection.Emit
                 customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);
             }
         }
-
-        internal static void EnsureDynamicCodeSupported()
-        {
-            if (!RuntimeFeature.IsDynamicCodeSupported)
-            {
-                ThrowDynamicCodeNotSupported();
-            }
-        }
-
-        private static void ThrowDynamicCodeNotSupported() =>
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
     }
 }

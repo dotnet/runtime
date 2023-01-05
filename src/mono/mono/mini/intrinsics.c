@@ -2073,16 +2073,20 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
-	// Return false for RuntimeFeature.IsDynamicCodeSupported and RuntimeFeature.IsDynamicCodeCompiled on FullAOT, otherwise true
+	// On FullAOT, return false for RuntimeFeature:
+	// - IsDynamicCodeCompiled 
+	// - IsDynamicCodeSupported and no interpreter
+	// otherwise use the C# code in System.Private.CoreLib
 	if (in_corlib &&
+		cfg->full_aot &&
 		!strcmp ("System.Runtime.CompilerServices", cmethod_klass_name_space) &&
 		!strcmp ("RuntimeFeature", cmethod_klass_name)) {
 		if (!strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
-			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? 0 : 1);
+			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
-		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported")) {
-			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? (cfg->interp ? 1 : 0) : 1);
+		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported") && !cfg->interp) {
+			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
 		}
