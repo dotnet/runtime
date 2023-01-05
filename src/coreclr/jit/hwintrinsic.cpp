@@ -1141,26 +1141,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
                 if ((intrinsic == NI_AdvSimd_VectorTableLookup) || (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup))
                 {
-                    // check the number of fields present in op1 and set NI_AdvSimd_Arm64_VectorTableLookup_2,
-                    // NI_AdvSimd_Arm64_VectorTableLookup_3, etc.
                     op1 = impPopStack().val;
                     ClassLayout* layout      = op1->GetLayout(this);
                     unsigned     structSize  = layout->GetSize();
                     unsigned slotCount = layout->GetSlotCount();
-
-                    /*GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-                    for (unsigned i = 0; i < fieldCount; i++)
+                    var_types typeOfLayout = layout->GetType();
+                    if (typeOfLayout == TYP_STRUCT)
                     {
-                        LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
-                        GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
-                        fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
-                        fieldLclNum++;
-                    }
-                    return fieldList;*/
-                    unsigned fieldCount = slotCount / info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
-
-                    if (fieldCount > 1)
-                    {
+                        unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
                         op1->AsLclVar()->SetMultiRegUse();
                         GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
                         int               offset    = 0;
@@ -1176,19 +1164,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                             lvaSetStruct(lclNum, classHandle, true);
 
                             GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, TYP_SIMD16, offset);
-
-                            // varDsc->SetLayout(layout);
-
                             fieldList->AddField(this, fldNode, 0, TYP_SIMD16);
+
                             offset += 16;
                         }
                         // op1                                   = fieldList;
 
-                        //const CORINFO_FIELD_HANDLE field1 =
-                        //    info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 0);
-                        //unsigned                   fldOffset1 = info.compCompHnd->getFieldOffset(field1);
-                        //const CORINFO_FIELD_HANDLE field2 = info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 1);
-                        //unsigned                   fldOffset2 = info.compCompHnd->getFieldOffset(field2);
+                        // const CORINFO_FIELD_HANDLE field1 =
+                        //     info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 0);
+                        // unsigned                   fldOffset1 = info.compCompHnd->getFieldOffset(field1);
+                        // const CORINFO_FIELD_HANDLE field2 = info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd,
+                        // 1); unsigned                   fldOffset2 = info.compCompHnd->getFieldOffset(field2);
 
                         switch (fieldCount)
                         {
@@ -1208,6 +1194,21 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                 noway_assert("Unknown field count");
                         }
                     }
+                    else
+                    {
+                        assert(typeOfLayout == TYP_SIMD16);
+                    }
+
+                    /*GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+                    for (unsigned i = 0; i < fieldCount; i++)
+                    {
+                        LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
+                        GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
+                        fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
+                        fieldLclNum++;
+                    }
+                    return fieldList;*/
+                   
                     retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
                     lvaGetDesc(op1->AsLclVar())->lvUsedInSIMDIntrinsic = false;
                 }

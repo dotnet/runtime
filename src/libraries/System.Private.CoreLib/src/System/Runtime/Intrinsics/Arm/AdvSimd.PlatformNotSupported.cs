@@ -3673,17 +3673,17 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw new PlatformNotSupportedException(); }
 
-            ///// <summary>
-            /////  uint8x16_t vqvtbl1q_u8(uint8x16_t t, uint8x16_t idx)
-            /////   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
-            ///// </summary>
-            //public static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///  uint8x16_t vqvtbl1q_u8(uint8x16_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw new PlatformNotSupportedException(); }
 
-            ///// <summary>
-            /////  int8x16_t vqvtbl1q_s8(int8x16_t t, uint8x16_t idx)
-            /////   A64: TBL Vd.16B, {Vn.16B}, Vm.16B
-            ///// </summary>
-            //public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            ///  int8x16_t vqvtbl1q_s8(int8x16_t t, uint8x16_t idx)
+            ///   A64: TBL Vd.16B, {Vn.16B}, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw new PlatformNotSupportedException(); }
 
             ///// <summary>
             /////  uint8x16_t vqvtbl1q_u8(uint8x16_t t, uint8x16_t idx)
@@ -15014,17 +15014,17 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector64<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw new PlatformNotSupportedException(); }
 
-        ///// <summary>
-        /////  uint8x16_t vqvtbl1q_u8(uint8x16_t t, uint8x16_t idx)
-        /////   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
-        ///// </summary>
-        //public static Vector64<byte> VectorTableLookup((Vector64<byte>, Vector64<byte>, Vector64<byte>) table, Vector64<byte> byteIndexes) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///  uint8x16_t vqvtbl1q_u8(uint8x16_t t, uint8x16_t idx)
+        ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
+        /// </summary>
+        public static Vector64<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) { throw new PlatformNotSupportedException(); }
 
-        ///// <summary>
-        /////  int8x16_t vqvtbl1q_s8(int8x16_t t, uint8x16_t idx)
-        /////   A64: TBL Vd.16B, {Vn.16B}, Vm.16B
-        ///// </summary>
-        //public static Vector64<sbyte> VectorTableLookup((Vector64<sbyte>, Vector64<sbyte>, Vector64<sbyte>) table, Vector64<sbyte> byteIndexes) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///  int8x16_t vqvtbl1q_s8(int8x16_t t, uint8x16_t idx)
+        ///   A64: TBL Vd.16B, {Vn.16B}, Vm.16B
+        /// </summary>
+        public static Vector64<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw new PlatformNotSupportedException(); }
 
         ///// <summary>
         /////  uint8x16_t vqvtbl1q_u8(uint8x16_t t, uint8x16_t idx)

@@ -429,6 +429,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 ins = INS_tbl_2regs;
                 break;
 
+            case NI_AdvSimd_VectorTableLookup_3:
+            case NI_AdvSimd_Arm64_VectorTableLookup_3:
+                ins = INS_tbl_3regs;
+                break;
+
+            case NI_AdvSimd_VectorTableLookup_4:
+            case NI_AdvSimd_Arm64_VectorTableLookup_4:
+                ins = INS_tbl_4regs;
+                break;
+
             case NI_AdvSimd_AddWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
                 if (intrin.op1->TypeGet() == TYP_SIMD8)
@@ -496,6 +506,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case NI_AdvSimd_VectorTableLookup_2:
             case NI_AdvSimd_Arm64_VectorTableLookup_2:
+            case NI_AdvSimd_VectorTableLookup_3:
+            case NI_AdvSimd_Arm64_VectorTableLookup_3:
+            case NI_AdvSimd_VectorTableLookup_4:
+            case NI_AdvSimd_Arm64_VectorTableLookup_4:
                 if (intrin.op1->IsCopyOrReload())
                 {
                     GenTree* op1 = intrin.op1->AsCopyOrReload()->gtGetOp1();

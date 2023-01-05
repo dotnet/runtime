@@ -1086,21 +1086,53 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            //TODO: Need to fix this reliably.
-            if ((intrin.id == NI_AdvSimd_VectorTableLookup_2) ||
-                (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_2))
+            int regCount;
+            RefPosition* useRefPos1 = nullptr;
+            RefPosition* nextUseRefPos = nullptr;
+            switch (intrin.id)
             {
-                assert(intrin.op1->OperIs(GT_LCL_VAR));
-                RefPosition* useRefPos1 = BuildUse(intrin.op1, RBM_NONE, 0, /* needsConsecutive */true);
-                useRefPos1->regCount    = 2;
-                RefPosition* useRefPos2 = BuildUse(intrin.op1, RBM_NONE, 1, /* needsConsecutive */ true);
-                useRefPos2->regCount = 0; // Explicitely set it so we can identify that this is tail.
-                useRefPos1->nextConsecutiveRefPosition = useRefPos2;
-                srcCount+=2;
+                case NI_AdvSimd_VectorTableLookup_2:
+                case NI_AdvSimd_Arm64_VectorTableLookup_2:
+                    regCount = 2;
+                    break;
+                case NI_AdvSimd_VectorTableLookup_3:
+                case NI_AdvSimd_Arm64_VectorTableLookup_3:
+                    regCount = 3;
+                    break;
+                case NI_AdvSimd_VectorTableLookup_4:
+                case NI_AdvSimd_Arm64_VectorTableLookup_4:
+                    regCount = 4;
+                    break;
+                default:
+                    regCount = 1;
+                    break;
+            }
+
+            if (regCount == 1)
+            {
+                srcCount += BuildOperandUses(intrin.op1);
             }
             else
             {
-                srcCount += BuildOperandUses(intrin.op1);
+                assert(intrin.op1->OperIs(GT_LCL_VAR));
+
+                RefPosition* lastRefPos  = nullptr;
+                // consecutive registers
+                for (int regIdx = 0; regIdx < regCount; regIdx++)
+                {
+                    RefPosition* currRefPos = BuildUse(intrin.op1, RBM_NONE, regIdx, /* needsConsecutive */ true);
+                    if (lastRefPos == nullptr)
+                    {
+                        currRefPos->regCount = regCount;
+                    }
+                    else
+                    {
+                        currRefPos->regCount = 0;  // Explicitely set it so we can identify that this is non-first refposition.
+                        lastRefPos->nextConsecutiveRefPosition = currRefPos;
+                    }
+                    lastRefPos = currRefPos;
+                }
+                srcCount += regCount;
             }
         }
     }
