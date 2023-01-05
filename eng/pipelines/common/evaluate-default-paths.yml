@@ -8,6 +8,7 @@ parameters:
     _wasm_specific_only: [
         eng/testing/ProvisioningVersions.props
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
+        eng/testing/Wasm*
         eng/testing/tests.wasm.targets
         src/libraries/sendtohelix-wasm.targets
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
@@ -56,6 +57,7 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+      - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
@@ -140,6 +142,7 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._always_exclude }}
 
     # We have limited Apple Silicon testing capacity
