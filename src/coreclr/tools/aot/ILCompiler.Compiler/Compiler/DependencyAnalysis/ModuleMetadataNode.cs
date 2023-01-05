@@ -37,9 +37,11 @@ namespace ILCompiler.DependencyAnalysis
             // Global module type always generates metadata because it's really convenient to
             // have something in an assembly that always generates metadata.
             dependencies.Add(factory.TypeMetadata(_module.GetGlobalModuleType()), "Global module type");
-            if (_module is EcmaModule ecmaModule && ecmaModule.EntryPoint is not null)
+            if (_module is EcmaModule ecmaModule
+                && ecmaModule.EntryPoint is MethodDesc entrypoint
+                && !factory.MetadataManager.IsReflectionBlocked(entrypoint))
             {
-                dependencies.Add(factory.ReflectableMethod(ecmaModule.EntryPoint), "Reflectable entrypoint");
+                dependencies.Add(factory.ReflectableMethod(entrypoint), "Reflectable entrypoint");
             }
 
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);
