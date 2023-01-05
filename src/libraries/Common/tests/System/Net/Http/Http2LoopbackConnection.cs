@@ -1025,6 +1025,7 @@ namespace System.Net.Test.Common
         }
     }
 
+#if !NETFRAMEWORK
     public sealed class Http2Stream : Stream
     {
         private readonly Http2LoopbackConnection _connection;
@@ -1093,5 +1094,5 @@ namespace System.Net.Test.Common
         public override long Length => throw new NotImplementedException();
         public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     }
-
+#endif
 }

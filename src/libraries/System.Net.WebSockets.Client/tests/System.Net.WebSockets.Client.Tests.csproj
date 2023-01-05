@@ -41,6 +41,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs" Link="Common\System\Net\Http\LoopbackProxyServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs" Link="Common\System\Net\Http\LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackServer.cs" Link="Common\System\Net\Http\Http2LoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackConnection.cs" Link="Common\System\Net\Http\Http2LoopbackConnection.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2Frames.cs" Link="Common\System\Net\Http\Http2Frames.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs" Link="Common\System\Net\Http\TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\QPackTestDecoder.cs" Link="Common\System\Net\Http\QPackTestDecoder.cs" />
@@ -73,8 +74,5 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Test" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
-    <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackConnection.cs" Link="Common\System\Net\Http\Http2LoopbackConnection.cs" />
   </ItemGroup>
 </Project>
