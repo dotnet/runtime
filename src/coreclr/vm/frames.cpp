@@ -2153,18 +2153,11 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
         invalidGCRefMap = true;
     }
 #endif
-    while (!decoderNew.AtEnd() || !decoderExisting.AtEnd())
+    while (!invalidGCRefMap && !(decoderNew.AtEnd() && decoderExisting.AtEnd()))
     {
-        if (decoderNew.AtEnd() != decoderExisting.AtEnd())
-        {
-            invalidGCRefMap = true;
-            break;
-        }
-        if (decoderNew.CurrentPos() != decoderExisting.CurrentPos())
-        {
-            invalidGCRefMap = true;
-        }
-        if (decoderNew.ReadToken() != decoderExisting.ReadToken())
+        if (decoderNew.AtEnd() != decoderExisting.AtEnd() ||
+            decoderNew.CurrentPos() != decoderExisting.CurrentPos() ||
+            decoderNew.ReadToken() != decoderExisting.ReadToken())
         {
             invalidGCRefMap = true;
         }
