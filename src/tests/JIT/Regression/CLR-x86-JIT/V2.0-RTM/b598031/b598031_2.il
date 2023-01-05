@@ -8,7 +8,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test2' {}
+.assembly 'b598031_2' {}
 .assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit switchdefaultonly1
