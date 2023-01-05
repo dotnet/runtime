@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DefineConstants>$(DefineConstants);SYSTEM_TEXT_REGULAREXPRESSIONS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\HashtableExtensions.cs" />

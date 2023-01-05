@@ -768,7 +768,7 @@ VIRTUALCommitMemory(
     madvise((void *) StartBoundary, MemSize, MADV_DODUMP);
 #endif
 
-    pRetVal = (void *) (pInformation->startBoundary);
+    pRetVal = (void *) StartBoundary;
     goto done;
 
 error:

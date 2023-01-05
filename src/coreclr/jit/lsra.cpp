@@ -6311,24 +6311,15 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     saveLcl->SetRegNum(lclVarReg);
     SetLsraAdded(saveLcl);
 
-    GenTreeSIMD* simdNode = compiler->gtNewSIMDNode(LargeVectorSaveType, saveLcl, SIMDIntrinsicUpperSave,
-                                                    varDsc->GetSimdBaseJitType(), genTypeSize(varDsc));
+    GenTreeIntrinsic* simdUpperSave =
+        new (compiler, GT_INTRINSIC) GenTreeIntrinsic(LargeVectorSaveType, saveLcl, NI_SIMD_UpperSave, nullptr);
 
-    if (simdNode->GetSimdBaseJitType() == CORINFO_TYPE_UNDEF)
-    {
-        // There are a few scenarios where we can get a LCL_VAR which
-        // doesn't know the underlying baseType. In that scenario, we
-        // will just lie and say it is a float. Codegen doesn't actually
-        // care what the type is but this avoids an assert that would
-        // otherwise be fired from the more general checks that happen.
-        simdNode->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
-    }
+    SetLsraAdded(simdUpperSave);
+    simdUpperSave->SetRegNum(spillReg);
 
-    SetLsraAdded(simdNode);
-    simdNode->SetRegNum(spillReg);
     if (spillToMem)
     {
-        simdNode->gtFlags |= GTF_SPILL;
+        simdUpperSave->gtFlags |= GTF_SPILL;
         upperVectorInterval->physReg = REG_NA;
     }
     else
@@ -6337,8 +6328,8 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
         upperVectorInterval->physReg = spillReg;
     }
 
-    blockRange.InsertBefore(tree, LIR::SeqTree(compiler, simdNode));
-    DISPTREE(simdNode);
+    blockRange.InsertBefore(tree, LIR::SeqTree(compiler, simdUpperSave));
+    DISPTREE(simdUpperSave);
     JITDUMP("\n");
 }
 
@@ -6377,21 +6368,11 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     restoreLcl->SetRegNum(lclVarReg);
     SetLsraAdded(restoreLcl);
 
-    GenTreeSIMD* simdNode = compiler->gtNewSIMDNode(varDsc->TypeGet(), restoreLcl, SIMDIntrinsicUpperRestore,
-                                                    varDsc->GetSimdBaseJitType(), genTypeSize(varDsc->lvType));
-
-    if (simdNode->GetSimdBaseJitType() == CORINFO_TYPE_UNDEF)
-    {
-        // There are a few scenarios where we can get a LCL_VAR which
-        // doesn't know the underlying baseType. In that scenario, we
-        // will just lie and say it is a float. Codegen doesn't actually
-        // care what the type is but this avoids an assert that would
-        // otherwise be fired from the more general checks that happen.
-        simdNode->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
-    }
+    GenTreeIntrinsic* simdUpperRestore =
+        new (compiler, GT_INTRINSIC) GenTreeIntrinsic(varDsc->TypeGet(), restoreLcl, NI_SIMD_UpperRestore, nullptr);
 
     regNumber restoreReg = upperVectorInterval->physReg;
-    SetLsraAdded(simdNode);
+    SetLsraAdded(simdUpperRestore);
 
     if (restoreReg == REG_NA)
     {
@@ -6399,14 +6380,14 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         assert(lclVarInterval->isSpilled);
 #ifdef TARGET_AMD64
         assert(refPosition->assignedReg() == REG_NA);
-        simdNode->gtFlags |= GTF_NOREG_AT_USE;
+        simdUpperRestore->gtFlags |= GTF_NOREG_AT_USE;
 #else
-        simdNode->gtFlags |= GTF_SPILLED;
+        simdUpperRestore->gtFlags |= GTF_SPILLED;
         assert(refPosition->assignedReg() != REG_NA);
         restoreReg = refPosition->assignedReg();
 #endif
     }
-    simdNode->SetRegNum(restoreReg);
+    simdUpperRestore->SetRegNum(restoreReg);
 
     LIR::Range& blockRange = LIR::AsRange(block);
     if (tree != nullptr)
@@ -6416,7 +6397,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         bool     foundUse = blockRange.TryGetUse(tree, &treeUse);
         assert(foundUse);
         // We need to insert the restore prior to the use, not (necessarily) immediately after the lclVar.
-        blockRange.InsertBefore(treeUse.User(), LIR::SeqTree(compiler, simdNode));
+        blockRange.InsertBefore(treeUse.User(), LIR::SeqTree(compiler, simdUpperRestore));
     }
     else
     {
@@ -6429,15 +6410,15 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
             assert(branch->OperIsConditionalJump() || branch->OperGet() == GT_SWITCH_TABLE ||
                    branch->OperGet() == GT_SWITCH);
 
-            blockRange.InsertBefore(branch, LIR::SeqTree(compiler, simdNode));
+            blockRange.InsertBefore(branch, LIR::SeqTree(compiler, simdUpperRestore));
         }
         else
         {
             assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
-            blockRange.InsertAtEnd(LIR::SeqTree(compiler, simdNode));
+            blockRange.InsertAtEnd(LIR::SeqTree(compiler, simdUpperRestore));
         }
     }
-    DISPTREE(simdNode);
+    DISPTREE(simdUpperRestore);
     JITDUMP("\n");
 }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
