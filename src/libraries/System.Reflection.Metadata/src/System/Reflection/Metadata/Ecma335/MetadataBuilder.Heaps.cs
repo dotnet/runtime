@@ -117,8 +117,9 @@ namespace System.Reflection.Metadata.Ecma335
             // There should be no blob handle that references the 0 byte added at the
             // beginning of the delta blob.
             _userStringBuilder.WriteByte(0);
+            _userStrings.Add(string.Empty, default);
 
-            _blobs.Add(ImmutableArray<byte>.Empty, default(BlobHandle));
+            _blobs.Add(ImmutableArray<byte>.Empty, default);
             _blobHeapSize = 1;
 
             // When EnC delta is applied #US, #String and #Blob heaps are appended.
@@ -462,6 +463,11 @@ namespace System.Reflection.Metadata.Ecma335
             if (length < 0)
             {
                 Throw.ArgumentOutOfRange(nameof(length));
+            }
+
+            if (length == 0)
+            {
+                return new ReservedBlob<UserStringHandle>(default, new Blob(Array.Empty<byte>(), 0, 0));
             }
 
             var handle = GetNewUserStringHandle();

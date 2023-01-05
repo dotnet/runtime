@@ -329,10 +329,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Equal(1, s1.GetWriterVirtualIndex());
 
             var us0 = mdBuilder.GetOrAddUserString("");
-            Assert.Equal(1, us0.GetHeapOffset());
+            Assert.Equal(0, us0.GetHeapOffset());
 
             var us1 = mdBuilder.GetOrAddUserString("bar");
-            Assert.Equal(3, us1.GetHeapOffset());
+            Assert.Equal(1, us1.GetHeapOffset());
 
             var b0 = mdBuilder.GetOrAddBlob(new byte[0]);
             Assert.Equal(0, b0.GetHeapOffset());
