@@ -267,7 +267,7 @@ namespace System.Net
 
         [NonEvent]
         public void CertificateFromCertContext(SslStream sslStream) =>
-            CertificateFromCertContext(GetHashCode(SslStream));
+            CertificateFromCertContext(GetHashCode(sslStream));
 
         [Event(CertificateFromCertContextId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
         public void CertificateFromCertContext(int sslStreamHash) =>
