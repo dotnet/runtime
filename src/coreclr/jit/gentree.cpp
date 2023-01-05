@@ -13601,9 +13601,9 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             fgMorphTreeDone(cast);
         }
 
-        if (varTypeIsLong(type))
+        if (type == TYP_LONG)
         {
-            cast = gtNewCastNode(TYP_LONG, cast, true, TYP_ULONG);
+            cast = gtNewCastNode(TYP_LONG, cast, true, TYP_LONG);
             if (fgGlobalMorph)
             {
                 fgMorphTreeDone(cast);
