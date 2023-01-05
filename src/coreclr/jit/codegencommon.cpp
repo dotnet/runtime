@@ -2019,7 +2019,7 @@ void CodeGen::genEmitMachineCode()
     if (verbose)
     {
         printf("*************** After end code gen, before unwindEmit()\n");
-        GetEmitter()->emitDispIGlist(true);
+        GetEmitter()->emitDispIGlist(/* displayInstructions */ true);
     }
 #else
     if (compiler->opts.disAsm)
@@ -6409,7 +6409,7 @@ void CodeGen::genGeneratePrologsAndEpilogs()
     if (verbose)
     {
         printf("*************** Before prolog / epilog generation\n");
-        GetEmitter()->emitDispIGlist(false);
+        GetEmitter()->emitDispIGlist(/* displayInstructions */ false);
     }
 #endif
 
@@ -6457,7 +6457,7 @@ void CodeGen::genGeneratePrologsAndEpilogs()
     if (verbose)
     {
         printf("*************** After prolog / epilog generation\n");
-        GetEmitter()->emitDispIGlist(false);
+        GetEmitter()->emitDispIGlist(/* displayInstructions */ false);
     }
 #endif
 }

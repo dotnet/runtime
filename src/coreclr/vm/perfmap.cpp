@@ -99,7 +99,8 @@ PerfMap::PerfMap(int pid)
     }
 
     SString path;
-    path.Printf("%Sperf-%d.map", &tempPath, pid);
+    path.Append(tempPath);
+    path.AppendPrintf("perf-%d.map", pid);
 
     // Open the map file for writing.
     OpenFile(path);
@@ -373,94 +374,4 @@ void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, u
         pszSig[0] = '\0';
     }
 }
-
-// Create a new native image perf map.
-NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
-  : PerfMap()
-{
-    STANDARD_VM_CONTRACT;
-
-    // Generate perfmap path.
-
-    // Get the assembly simple name.
-    LPCUTF8 lpcSimpleName = pAssembly->GetSimpleName();
-
-    // Get the native image signature (GUID).
-    // Used to ensure that we match symbols to the correct NGEN image.
-    CHAR szSignature[GUID_STR_BUFFER_LEN];
-    GetNativeImageSignature(pAssembly->GetPEAssembly(), szSignature, ARRAY_SIZE(szSignature));
-
-    // Build the path to the perfmap file, which consists of <inputpath><imagesimplename>.ni.<signature>.map.
-    // Example: /tmp/System.Private.CoreLib.ni.{GUID}.map
-    SString sDestPerfMapPath;
-    sDestPerfMapPath.Printf("%S%s.ni.%s.map", pDestPath, lpcSimpleName, szSignature);
-
-    // Open the perf map file.
-    OpenFile(sDestPerfMapPath);
-
-    // Determine whether to emit RVAs or file offsets based on the specified configuration.
-    m_EmitRVAs = true;
-    CLRConfigStringHolder wszFormat(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_NativeImagePerfMapFormat));
-    if(wszFormat != NULL && (wcsncmp(wszFormat, strOFFSET, wcslen(strOFFSET)) == 0))
-    {
-        m_EmitRVAs = false;
-    }
-}
-
-// Log data to the perfmap for the specified module.
-void NativeImagePerfMap::LogDataForModule(Module * pModule)
-{
-    STANDARD_VM_CONTRACT;
-
-    PEImageLayout * pLoadedLayout = pModule->GetPEAssembly()->GetLoadedLayout();
-    _ASSERTE(pLoadedLayout != nullptr);
-
-    ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
-    while (mi.Next())
-    {
-        MethodDesc* hotDesc = mi.GetMethodDesc();
-
-        LogPreCompiledMethod(hotDesc, mi.GetMethodStartAddress(), pLoadedLayout, "ReadyToRun");
-    }
-}
-
-// Log a pre-compiled method to the perfmap.
-void NativeImagePerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout *pLoadedLayout, const char *optimizationTier)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pLoadedLayout != nullptr);
-    SIZE_T baseAddr = (SIZE_T)pLoadedLayout->GetBase();
-
-    // Get information about the NGEN'd method code.
-    EECodeInfo codeInfo(pCode);
-    _ASSERTE(codeInfo.IsValid());
-
-    IJitManager::MethodRegionInfo methodRegionInfo;
-    codeInfo.GetMethodRegionInfo(&methodRegionInfo);
-
-    // NGEN can split code between hot and cold sections which are separate in memory.
-    // Emit an entry for each section if it is used.
-    PCODE addr;
-    if (methodRegionInfo.hotSize > 0)
-    {
-        addr = (PCODE)methodRegionInfo.hotStartAddress - baseAddr;
-        if (!m_EmitRVAs)
-        {
-            addr = pLoadedLayout->RvaToOffset(addr);
-        }
-        LogMethod(pMethod, addr, methodRegionInfo.hotSize, optimizationTier);
-    }
-
-    if (methodRegionInfo.coldSize > 0)
-    {
-        addr = (PCODE)methodRegionInfo.coldStartAddress - baseAddr;
-        if (!m_EmitRVAs)
-        {
-            addr = pLoadedLayout->RvaToOffset(addr);
-        }
-        LogMethod(pMethod, addr, methodRegionInfo.coldSize, optimizationTier);
-    }
-}
-
 #endif // FEATURE_PERFMAP && !DACCESS_COMPILE
