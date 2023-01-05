@@ -4468,7 +4468,7 @@ struct CallArgABIInformation
         , StructIntRegs(0)
         , StructFloatRegs(0)
 #endif
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
 #endif
         , ArgType(TYP_UNDEF)
@@ -4508,7 +4508,7 @@ public:
     unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
     // may be passed by float register(s).
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
@@ -5291,7 +5291,7 @@ struct GenTreeCall final : public GenTree
     bool HasMultiRegRetVal() const
     {
 #ifdef FEATURE_MULTIREG_RET
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
 #else
 

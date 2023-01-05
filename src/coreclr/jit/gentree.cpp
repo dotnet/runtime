@@ -4327,7 +4327,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         {
             if (!emitter::isValidSimm12(cns))
             {
-                // TODO-RISCV64: tune for LoongArch64.
+                // TODO-RISCV64: tune for RISCV64.
                 addrModeCostEx += 1;
                 addrModeCostSz += 4;
             }
@@ -4867,6 +4867,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costEx = 2;
                 costSz = 8;
 #elif defined(TARGET_RISCV64)
+                // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
                 _ASSERTE(!"TODO RISCV64 NYI");
@@ -8113,7 +8114,7 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
     }
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
     {
         // All checks pass we can perform the division operation using a reciprocal multiply.
@@ -17066,7 +17067,7 @@ const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 //
 GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValuePreMorph(Compiler* compiler)
 {
-#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
+#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) // TODO-LOONGARCH64-CQ & TODO-RISCV64: enable this.
 
     GenTreeLclVarCommon* lcl = OperIsLocal() ? AsLclVarCommon() : nullptr;
 
@@ -17075,7 +17076,7 @@ GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValuePreMorph(Compiler* co
         return lcl;
     }
 
-#endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64)
+#endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
     return nullptr;
 }
@@ -24240,7 +24241,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
             uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
@@ -24500,7 +24501,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         resultReg = (regNumber)((unsigned)(REG_FLOATRET) + idx); // V0, V1, V2 or V3
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     var_types regType = GetReturnRegType(idx);
     if (idx == 0)
     {

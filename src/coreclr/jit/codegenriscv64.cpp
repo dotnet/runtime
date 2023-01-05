@@ -2530,7 +2530,50 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 //
 void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    assert(tree->OperIs(GT_JCMP));
+    assert(!varTypeIsFloating(tree));
+    assert(!op1->isUsedFromMemory());
+    assert(!op2->isUsedFromMemory());
+    assert(op2->IsCnsIntOrI());
+    assert(op2->isContained());
+
+    genConsumeOperands(tree);
+
+    regNumber reg  = op1->GetRegNum();
+    emitAttr  attr = emitActualTypeSize(op1->TypeGet());
+
+    instruction ins;
+    int         regs;
+    ssize_t     imm = op2->AsIntCon()->gtIconVal;
+    assert(reg != REG_T6); // TODO R21 => T6
+    assert(reg != REG_RA);
+
+    if (attr == EA_4BYTE)
+    {
+        imm = (int32_t)imm;
+        GetEmitter()->emitIns_R_R_I(INS_slliw, EA_4BYTE, REG_RA, reg, 0);
+        reg = REG_RA;
+    }
+
+    if (imm != 0)
+    {
+        GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_T6, imm);
+        regs = (int)reg << 5;
+        regs |= (int)REG_T6;
+        ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_beq : INS_bne;
+    }
+    else
+    {
+        regs = (int)reg;
+        ins  = (tree->gtFlags & GTF_JCMP_EQ) ? INS_beqz : INS_bnez;
+    }
+
+    GetEmitter()->emitIns_J(ins, compiler->compCurBB->bbJumpDest, regs); // 5-bits;
 }
 
 //---------------------------------------------------------------------
