@@ -689,7 +689,14 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_BR_S:
 		case MINT_LEAVE:
 		case MINT_LEAVE_S:
-			// FIXME: Check for negative displacement
+			// Detect backwards branches
+			if (ins->info.target_bb->il_offset <= ins->il_offset) {
+				if (*inside_branch_block)
+					return TRACE_CONTINUE;
+				else
+					return TRACE_ABORT;
+			}
+
 			*inside_branch_block = TRUE;
 			return TRACE_CONTINUE;
 
