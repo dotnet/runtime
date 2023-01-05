@@ -44,6 +44,22 @@ namespace System.Runtime.CompilerServices
             return InternalGetHashCode(o);
         }
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int InternalTryGetHashCode(object? o);
+
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        public static int TryGetHashCode(object? o)
+        {
+            return InternalTryGetHashCode(o);
+        }
+
         public static new bool Equals(object? o1, object? o2)
         {
             if (o1 == o2)
