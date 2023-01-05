@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupLinkerDefaultActionAttribute (string action)
 		{
-			if (string.IsNullOrEmpty (action))
-				throw new ArgumentNullException (nameof (action));
+			ArgumentException.ThrowIfNullOrEmpty (action);
 		}
 	}
 }

@@ -106,7 +106,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            ArgumentNullException.ThrowIfNull(structuretype);
+            ArgumentNullException.ThrowIfNull(structuretype, "structureType");
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 

@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public KeptSymbolsAttribute (string assemblyFileName)
 		{
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyFileName));
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
 		}
 	}
 }

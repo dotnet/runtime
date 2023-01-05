@@ -17,8 +17,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupLinkerArgumentAttribute (string flag, params string[] values)
 		{
-			if (string.IsNullOrEmpty (flag))
-				throw new ArgumentNullException (nameof (flag));
+			ArgumentException.ThrowIfNullOrEmpty (flag);
 		}
 	}
 }

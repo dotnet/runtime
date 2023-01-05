@@ -9,10 +9,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public RemovedForwarderAttribute (string assemblyFileName, string typeName)
 		{
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyFileName));
-			if (string.IsNullOrEmpty (typeName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (typeName));
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
+			ArgumentException.ThrowIfNullOrEmpty (typeName);
 		}
 	}
 }

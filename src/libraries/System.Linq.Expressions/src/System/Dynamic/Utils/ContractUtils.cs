@@ -66,12 +66,10 @@ namespace System.Dynamic.Utils
         {
             Debug.Assert(!string.IsNullOrEmpty(paramName));
 
-#pragma warning disable CA1510 // TODO: Fix analyzer to not fire when argument name is dynamically computed
             if (value == null)
             {
                 throw new ArgumentNullException(GetParamName(paramName, index));
             }
-#pragma warning restore CA1510
         }
 
         /// <summary>

@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupCompileArgumentAttribute (string value)
 		{
-			if (string.IsNullOrEmpty (value))
-				throw new ArgumentNullException (nameof (value));
+			ArgumentException.ThrowIfNullOrEmpty (value);
 		}
 	}
 }

@@ -13,8 +13,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public LogContainsAttribute (string message, bool regexMatch = false)
 		{
-			if (string.IsNullOrEmpty (message))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (message));
+			ArgumentException.ThrowIfNullOrEmpty (message);
 		}
 
 		/// <summary>

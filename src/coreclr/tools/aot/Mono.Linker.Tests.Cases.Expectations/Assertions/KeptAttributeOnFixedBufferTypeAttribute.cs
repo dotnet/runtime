@@ -10,14 +10,12 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public KeptAttributeOnFixedBufferTypeAttribute (string attributeName)
 		{
-			if (string.IsNullOrEmpty (attributeName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (attributeName));
+			ArgumentException.ThrowIfNullOrEmpty (attributeName);
 		}
 
 		public KeptAttributeOnFixedBufferTypeAttribute (Type type)
 		{
-			if (type == null)
-				throw new ArgumentNullException (nameof (type));
+			ArgumentNullException.ThrowIfNull (type);
 		}
 	}
 }

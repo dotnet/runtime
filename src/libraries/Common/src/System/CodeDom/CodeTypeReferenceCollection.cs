@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable CA1510 // ArgumentNullException.ThrowIfNull isn't available in System.CodeDom
-
 using System.Collections;
 
 #if CODEDOM

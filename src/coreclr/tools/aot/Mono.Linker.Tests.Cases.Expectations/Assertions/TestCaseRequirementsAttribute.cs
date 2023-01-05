@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public TestCaseRequirementsAttribute (TestRunCharacteristics targetFrameworkCharacteristics, string reason)
 		{
-			if (reason == null)
-				throw new ArgumentNullException (nameof (reason));
+			ArgumentNullException.ThrowIfNull (reason);
 		}
 	}
 }

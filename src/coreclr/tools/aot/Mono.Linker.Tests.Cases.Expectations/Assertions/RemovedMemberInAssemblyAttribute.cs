@@ -11,22 +11,16 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 
 		public RemovedMemberInAssemblyAttribute (string assemblyFileName, Type type, params string[] memberNames)
 		{
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentNullException (nameof (assemblyFileName));
-			if (type == null)
-				throw new ArgumentNullException (nameof (type));
-			if (memberNames == null)
-				throw new ArgumentNullException (nameof (memberNames));
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
+			ArgumentNullException.ThrowIfNull (type);
+			ArgumentNullException.ThrowIfNull (memberNames);
 		}
 
 		public RemovedMemberInAssemblyAttribute (string assemblyFileName, string typeName, params string[] memberNames)
 		{
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentNullException (nameof (assemblyFileName));
-			if (typeName == null)
-				throw new ArgumentNullException (nameof (typeName));
-			if (memberNames == null)
-				throw new ArgumentNullException (nameof (memberNames));
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
+			ArgumentNullException.ThrowIfNull (typeName);
+			ArgumentNullException.ThrowIfNull (memberNames);
 		}
 	}
 }
