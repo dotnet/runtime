@@ -107,7 +107,7 @@ jobs:
         - Browser_wasm
         #- Browser_wasm_win
       nameSuffix: _Threading
-      extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8
+      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       # Always run for runtime-wasm because tests are not run in runtime
@@ -127,7 +127,7 @@ jobs:
         - Browser_wasm
         #- Browser_wasm_win
       nameSuffix: _Threading_PerfTracing
-      extraBuildArgs: /p:WasmEnablePerfTracing=true
+      extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       # Always run for runtime-wasm because tests are not run in runtime
