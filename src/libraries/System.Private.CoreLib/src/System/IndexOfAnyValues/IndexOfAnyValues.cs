@@ -185,7 +185,7 @@ namespace System.Buffers
             }
 
             Debug.Assert(typeof(T) == typeof(char));
-            return (IndexOfAnyValues<T>)(object)(PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(min) && PackedSpanHelpers.CanUsePackedIndexOf(max)
+            return (IndexOfAnyValues<T>)(object)(PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(min) && PackedSpanHelpers.CanUsePackedIndexOf(max)
                 ? new IndexOfAnyCharValuesInRange<TrueConst>(*(char*)&min, *(char*)&max)
                 : new IndexOfAnyCharValuesInRange<FalseConst>(*(char*)&min, *(char*)&max));
         }
