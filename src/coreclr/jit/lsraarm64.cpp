@@ -1087,7 +1087,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         else
         {
             //TODO: Need to fix this reliably.
-            if ((intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_2))
+            if ((intrin.id == NI_AdvSimd_VectorTableLookup_2) ||
+                (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_2))
             {
                 assert(intrin.op1->OperIs(GT_LCL_VAR));
                 RefPosition* useRefPos1 = BuildUse(intrin.op1, RBM_NONE, 0, /* needsConsecutive */true);

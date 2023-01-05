@@ -424,6 +424,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         instruction ins = INS_invalid;
         switch (intrin.id)
         {
+            case NI_AdvSimd_VectorTableLookup_2:
             case NI_AdvSimd_Arm64_VectorTableLookup_2:
                 ins = INS_tbl_2regs;
                 break;
@@ -493,6 +494,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         switch (intrin.id)
         {
+            case NI_AdvSimd_VectorTableLookup_2:
             case NI_AdvSimd_Arm64_VectorTableLookup_2:
                 if (intrin.op1->IsCopyOrReload())
                 {

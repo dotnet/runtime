@@ -1139,7 +1139,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
 
 #ifdef TARGET_ARM64
-                if (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup)
+                if ((intrinsic == NI_AdvSimd_VectorTableLookup) || (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup))
                 {
                     // check the number of fields present in op1 and set NI_AdvSimd_Arm64_VectorTableLookup_2,
                     // NI_AdvSimd_Arm64_VectorTableLookup_3, etc.
@@ -1184,11 +1184,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
                         // op1                                   = fieldList;
 
-                        /*const CORINFO_FIELD_HANDLE field1 =
-                            info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 0);
-                        unsigned                   fldOffset1 = info.compCompHnd->getFieldOffset(field1);
-                        const CORINFO_FIELD_HANDLE field2 = info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 1);
-                        unsigned                   fldOffset2 = info.compCompHnd->getFieldOffset(field2);*/
+                        //const CORINFO_FIELD_HANDLE field1 =
+                        //    info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 0);
+                        //unsigned                   fldOffset1 = info.compCompHnd->getFieldOffset(field1);
+                        //const CORINFO_FIELD_HANDLE field2 = info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 1);
+                        //unsigned                   fldOffset2 = info.compCompHnd->getFieldOffset(field2);
 
                         switch (fieldCount)
                         {
@@ -1196,13 +1196,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                 // keep the intrinsic
                                 break;
                             case 2:
-                                intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_2;
+                                intrinsic = (NamedIntrinsic)(intrinsic + 1);
                                 break;
                             case 3:
-                                intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_3;
+                                intrinsic = (NamedIntrinsic)(intrinsic + 2);
                                 break;
                             case 4:
-                                intrinsic = NI_AdvSimd_Arm64_VectorTableLookup_4;
+                                intrinsic = (NamedIntrinsic)(intrinsic + 3);
                                 break;
                             default:
                                 noway_assert("Unknown field count");
