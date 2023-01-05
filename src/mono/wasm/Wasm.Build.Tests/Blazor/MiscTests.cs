@@ -26,6 +26,10 @@ public class MiscTests : BuildTestBase
     {
         string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{Path.GetRandomFileName()}";
         string projectFile = CreateProjectWithNativeReference(id);
+        string extraProperties = config == "Debug"
+                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+                                    : string.Empty;
         AddItemsPropertiesToProject(projectFile, extraProperties: nativeRelink ? string.Empty : "<RunAOTCompilation>true</RunAOTCompilation>");
 
         // build with -p:DeployOnBuild=true, and that will trigger a publish
