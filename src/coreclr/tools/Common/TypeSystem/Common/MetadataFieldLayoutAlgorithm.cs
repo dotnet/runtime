@@ -960,12 +960,6 @@ namespace Internal.TypeSystem
 
             MetadataType metadataType = (MetadataType)type;
 
-            // No HAs with explicit layout. There may be cases where explicit layout may be still
-            // eligible for HA, but it is hard to tell the real intent. Make it simple and just
-            // unconditionally disable HAs for explicit layout.
-            if (metadataType.IsExplicitLayout)
-                return NotHA;
-
             switch (metadataType.Category)
             {
                 // These are the primitive types that constitute a HFA type
@@ -977,11 +971,17 @@ namespace Internal.TypeSystem
                 case TypeFlags.ValueType:
                     // Find the common HA element type if any
                     ValueTypeShapeCharacteristics haResultType = NotHA;
+                    bool hasZeroOffsetField = false;
 
                     foreach (FieldDesc field in metadataType.GetFields())
                     {
                         if (field.IsStatic)
                             continue;
+
+                        if (field.Offset == LayoutInt.Zero)
+                        {
+                            hasZeroOffsetField = true;
+                        }
 
                         // If a field isn't a DefType, then this type cannot be a HA type
                         if (!(field.FieldType is DefType fieldType))
@@ -1006,8 +1006,12 @@ namespace Internal.TypeSystem
                         }
                     }
 
-                    // If there are no instance fields, this is not a HA type
-                    if (haResultType == NotHA)
+                    // If the struct doesn't have a zero-offset field, it's not an HFA.
+                    if (!hasZeroOffsetField)
+                        return NotHA;
+
+                    // Types which are indeterminate in field size are not considered to be HA
+                    if (type.InstanceFieldSize.IsIndeterminate)
                         return NotHA;
 
                     int haElementSize = haResultType switch
@@ -1019,16 +1023,17 @@ namespace Internal.TypeSystem
                         _ => throw new ArgumentOutOfRangeException()
                     };
 
-                    // Types which are indeterminate in field size are not considered to be HA
-                    if (type.InstanceFieldSize.IsIndeterminate)
-                        return NotHA;
-
                     // Note that we check the total size, but do not perform any checks on number of fields:
                     // - Type of fields can be HA valuetype itself.
                     // - Managed C++ HA valuetypes have just one <alignment member> of type float to signal that
                     //   the valuetype is HA and explicitly specified size.
-                    int maxSize = haElementSize * type.Context.Target.MaxHomogeneousAggregateElementCount;
-                    if (type.InstanceFieldSize.AsInt > maxSize)
+                    int totalSize = type.InstanceFieldSize.AsInt;
+
+                    if (totalSize % haElementSize != 0)
+                        return NotHA;
+
+                    // On ARM, HFAs can have a maximum of four fields regardless of whether those are float or double.
+                    if (totalSize > haElementSize * type.Context.Target.MaxHomogeneousAggregateElementCount)
                         return NotHA;
 
                     // All the tests passed. This is a HA type.
