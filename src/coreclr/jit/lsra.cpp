@@ -2772,7 +2772,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 //        no such ref position, no register will be allocated.
 //
 
-regNumber LinearScan::allocateReg(Interval* currentInterval,
+regNumber LinearScan::allocateReg(Interval*                currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regMaskTP foundRegBit = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
@@ -2842,17 +2842,12 @@ regNumber LinearScan::allocateReg(Interval* currentInterval,
     assignPhysReg(availablePhysRegRecord, currentInterval);
     refPosition->registerAssignment = foundRegBit;
 
-    if (refPosition->needsConsecutive && (refPosition->regCount != 0))
+#ifdef TARGET_ARM64
+    if (refPosition->needsConsecutive && (refPosition->multiRegIdx == 0))
     {
-        // We only set this once for remaining refpositions.
-        RefPosition* consecutiveRefPosition = refPosition->nextConsecutiveRefPosition;
-        while (consecutiveRefPosition != nullptr)
-        {
-            foundRegBit <<= 1;
-            consecutiveRefPosition->registerAssignment = foundRegBit;
-            consecutiveRefPosition = consecutiveRefPosition->nextConsecutiveRefPosition;
-        }
+        setNextConsecutiveRegisterAssignment(refPosition, foundRegBit);
     }
+#endif // TARGET_ARM64
     
     return foundReg;
 }
@@ -3738,26 +3733,6 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
     INDEBUG(dumpLsraAllocationEvent(killedRegs ? LSRA_EVENT_DONE_KILL_GC_REFS : LSRA_EVENT_NO_GC_KILLS, nullptr, REG_NA,
                                     nullptr));
 }
-
-#ifdef TARGET_ARM64
-regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
-{
-    regMaskTP result = candidates & m_AvailableRegs;
-    if (!refPosition->needsConsecutive || (refPosition->multiRegIdx != 0))
-    {
-        return result;
-    }
-
-    assert(refPosition->regCount != 0);
-
-    // If refPosition->multiRegIdx == 0, we need to make sure we check for all the
-    // `regCount` available regs.
-
-    result &= (m_AvailableRegs >> (refPosition->regCount - 1));
-
-    return result;
-}
-#endif
 
 //------------------------------------------------------------------------
 // processBlockEndAllocation: Update var locations after 'currentBlock' has been allocated
@@ -5284,8 +5259,6 @@ void LinearScan::allocateRegisters()
 
         if (assignedRegister != REG_NA)
         {
-            
-
             RegRecord* physRegRecord = getRegisterRecord(assignedRegister);
             assert((assignedRegBit == currentRefPosition.registerAssignment) ||
                    (physRegRecord->assignedInterval == currentInterval) ||
@@ -5346,7 +5319,6 @@ void LinearScan::allocateRegisters()
                         assert(currentRefPosition.multiRegIdx != 0);
                     }
                     regsInUseThisLocation |= copyRegMask | assignedRegMask;
-
                     if (currentRefPosition.lastUse)
                     {
                         if (currentRefPosition.delayRegFree)
@@ -5400,6 +5372,7 @@ void LinearScan::allocateRegisters()
             }
         }
 
+#ifdef TARGET_ARM64
         if (currentRefPosition.needsConsecutive)
         {
             // For consecutive register, we would like to assign a register (if not already assigned)
@@ -5412,16 +5385,7 @@ void LinearScan::allocateRegisters()
                     // subsequent registers to remaining position and skip the allocation for the
                     // 1st position altogether.
 
-                    RefPosition* consecutiveRefPosition = currentRefPosition.nextConsecutiveRefPosition;
-                    regMaskTP    registerBit            = assignedRegBit;
-                    while (consecutiveRefPosition != nullptr)
-                    {
-                        // TODO: Unassign anything else for this register.
-                        registerBit <<= 1;
-                        consecutiveRefPosition->registerAssignment = registerBit;
-
-                        consecutiveRefPosition = consecutiveRefPosition->nextConsecutiveRefPosition;
-                    }   
+                    setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegBit);  
                 }
             }
             else
@@ -5440,7 +5404,7 @@ void LinearScan::allocateRegisters()
                 }
             }
         }
-
+#endif // TARGET_ARM64
         if (assignedRegister == REG_NA)
         {
             if (currentRefPosition.RegOptional())

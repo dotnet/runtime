@@ -1186,6 +1186,7 @@ private:
 
 #if defined(TARGET_ARM64)
     regMaskTP getFreeCandidates(regMaskTP candidates, RefPosition* refPosition);
+    void      setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regMaskTP firstRegAssigned);
 #else
     regMaskTP              getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {

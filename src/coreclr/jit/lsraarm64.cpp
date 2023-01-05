@@ -25,6 +25,39 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "sideeffects.h"
 #include "lower.h"
 
+regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
+{
+    regMaskTP result = candidates & m_AvailableRegs;
+    if (!refPosition->needsConsecutive || (refPosition->multiRegIdx != 0))
+    {
+        return result;
+    }
+
+    assert(refPosition->regCount != 0);
+
+    // If refPosition->multiRegIdx == 0, we need to make sure we check for all the
+    // `regCount` available regs.
+
+    result &= (m_AvailableRegs >> (refPosition->regCount - 1));
+
+    return result;
+}
+
+void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regMaskTP firstRegAssigned)
+{
+    assert(isSingleRegister(firstRegAssigned));
+    assert(firstRefPosition->needsConsecutive && firstRefPosition->multiRegIdx == 0);
+
+    RefPosition* consecutiveRefPosition = firstRefPosition->nextConsecutiveRefPosition;
+    regMaskTP    registerToAssign       = firstRegAssigned;
+    while (consecutiveRefPosition != nullptr)
+    {
+        registerToAssign <<= 1;
+        consecutiveRefPosition->registerAssignment = registerToAssign;
+        consecutiveRefPosition                     = consecutiveRefPosition->nextConsecutiveRefPosition;
+    }
+}
+
 //------------------------------------------------------------------------
 // BuildNode: Build the RefPositions for a node
 //
