@@ -4813,6 +4813,28 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
     CORINFO_SIG_INFO sig;
     info.compCompHnd->getMethodSig(gdvTarget, &sig);
 
+    if (genActualType(JITtype2varType(sig.retType)) != genActualType(call))
+    {
+        JITDUMP("Incompatible method GDV: call [%06u] has ret type %s while signature has ret type %s\n",
+                dspTreeID(call), varTypeName(JitType2PreciseVarType(sig.retType)), varTypeName(call->TypeGet()));
+
+        return false;
+    }
+
+    if (varTypeIsStruct(call) && (sig.retTypeClass != call->gtRetClsHnd))
+    {
+        ClassLayout* callLayout = typGetObjLayout(call->gtRetClsHnd);
+        ClassLayout* tarLayout  = typGetObjLayout(sig.retTypeClass);
+
+        if (!ClassLayout::AreCompatible(callLayout, tarLayout))
+        {
+            JITDUMP(
+                "Incompatible method GDV: struct return value [%06u] is layout-incompatible with signature of target\n",
+                dspTreeID(call));
+            return false;
+        }
+    }
+
     CORINFO_ARG_LIST_HANDLE sigParam  = sig.args;
     unsigned                numParams = sig.numArgs;
     unsigned                numArgs   = 0;
