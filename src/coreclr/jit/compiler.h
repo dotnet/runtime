@@ -8449,6 +8449,9 @@ private:
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
         }
 
+        // Currently there are cases where isSimdAsHWIntrinsic is passed
+        // incorrectly. Fall back to the canonical SIMD handle in that case.
+        // TODO-cleanup: We can probably just always use the canonical handle.
         if (clsHnd == NO_CLASS_HANDLE)
         {
             clsHnd = gtGetCanonicalStructHandleForSIMD(simdType);
