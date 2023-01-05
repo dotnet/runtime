@@ -105,7 +105,7 @@ namespace System.Buffers
                 char value0 = values[0];
                 char value1 = values[1];
                 char value2 = values[2];
-                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
+                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
                     ? new IndexOfAny3CharValue<TrueConst>(value0, value1, value2)
                     : new IndexOfAny3CharValue<FalseConst>(value0, value1, value2);
             }
