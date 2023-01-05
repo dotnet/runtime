@@ -33,6 +33,7 @@
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
+    <WasmAggressivelyMinifyJs Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(Configuration)' != 'Debug'">true</WasmAggressivelyMinifyJs>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -254,10 +255,12 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz  -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2 --closure 1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+
+      <CMakeConfigurationLinkFlags Condition="'$(WasmAggressivelyMinifyJs)' == 'true'">$(CMakeConfigurationLinkFlags) --closure 1</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>

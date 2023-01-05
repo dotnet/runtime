@@ -156,6 +156,8 @@
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">false</WasmNativeStrip>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+      <WasmAggressivelyMinifyJs Condition="'$(Configuration)' == 'Release' and '$(WasmNativeStrip)' == 'true'">true</WasmAggressivelyMinifyJs>
+      <WasmAggressivelyMinifyJs Condition="'$(WasmAggressivelyMinifyJs)' == ''">false</WasmAggressivelyMinifyJs>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
@@ -403,8 +405,8 @@
       <_EmccLinkStepArgs Include="--%(_WasmExtraJSFile.Kind) &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' != ''" />
       <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
 
-      <_EmccLinkStepArgs Include="--closure 1" />
-      <_EmccLinkStepArgs Include="--%(_WasmExtraExtFile.Kind)&quot;%(_WasmExtraExtFile.Identity)&quot;" Condition="'%(_WasmExtraExtFile.Kind)' != ''" />
+      <_EmccLinkStepArgs Condition="'$(WasmAggressivelyMinifyJs)' == 'true'" Include="--closure 1" />
+      <_EmccLinkStepArgs Include="--%(_WasmExtraExtFile.Kind)&quot;%(_WasmExtraExtFile.Identity)&quot;" Condition="'$(WasmAggressivelyMinifyJs)' == 'true' and '%(_WasmExtraExtFile.Kind)' != ''" />
 
       <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
