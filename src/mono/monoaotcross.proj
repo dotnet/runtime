@@ -38,7 +38,7 @@
 
     <MSBuild Targets="Build"
              Projects="$(MSBuildThisFileDirectory)llvm\llvm-init.proj"
-             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS);RealTargetArchitecture=$(TargetArchitecture)" />
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
