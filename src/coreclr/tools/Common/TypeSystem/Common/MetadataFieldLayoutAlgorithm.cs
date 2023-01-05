@@ -944,6 +944,14 @@ namespace Internal.TypeSystem
             return ComputeHomogeneousAggregateCharacteristic(type);
         }
 
+        /// <summary>
+        /// Identify whether a given type is a homogeneous floating-point aggregate. This code must be
+        /// kept in sync with the CoreCLR runtime method EEClass::CheckForHFA, as of this change it
+        /// can be found at
+        /// https://github.com/dotnet/runtime/blob/1928cd2b65c04ebe6fe528d4ebb581e46f1fed47/src/coreclr/vm/class.cpp#L1567
+        /// </summary>
+        /// <param name="type">Type to analyze</param>
+        /// <returns>HFA classification of the type parameter</returns>
         private static ValueTypeShapeCharacteristics ComputeHomogeneousAggregateCharacteristic(DefType type)
         {
             // Use this constant to make the code below more laconic
@@ -959,6 +967,7 @@ namespace Internal.TypeSystem
                 return NotHA;
 
             MetadataType metadataType = (MetadataType)type;
+            int haElementSize = 0;
 
             switch (metadataType.Category)
             {
@@ -996,12 +1005,26 @@ namespace Internal.TypeSystem
                         {
                             // If we hadn't yet figured out what form of HA this type might be, we've now found one case
                             haResultType = haFieldType;
+
+                            haElementSize = haResultType switch
+                            {
+                                ValueTypeShapeCharacteristics.Float32Aggregate => 4,
+                                ValueTypeShapeCharacteristics.Float64Aggregate => 8,
+                                ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
+                                ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
+                                _ => throw new ArgumentOutOfRangeException()
+                            };
                         }
                         else if (haResultType != haFieldType)
                         {
                             // If we had already determined the possible HA type of the current type, but
                             // the field we've encountered is not of that type, then the current type cannot
                             // be a HA type.
+                            return NotHA;
+                        }
+
+                        if (field.Offset.IsIndeterminate || field.Offset.AsInt % haElementSize != 0)
+                        {
                             return NotHA;
                         }
                     }
@@ -1013,15 +1036,6 @@ namespace Internal.TypeSystem
                     // Types which are indeterminate in field size are not considered to be HA
                     if (type.InstanceFieldSize.IsIndeterminate)
                         return NotHA;
-
-                    int haElementSize = haResultType switch
-                    {
-                        ValueTypeShapeCharacteristics.Float32Aggregate => 4,
-                        ValueTypeShapeCharacteristics.Float64Aggregate => 8,
-                        ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
-                        ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
-                        _ => throw new ArgumentOutOfRangeException()
-                    };
 
                     // Note that we check the total size, but do not perform any checks on number of fields:
                     // - Type of fields can be HA valuetype itself.
