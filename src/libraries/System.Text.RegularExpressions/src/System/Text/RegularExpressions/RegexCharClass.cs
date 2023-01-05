@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -838,6 +839,22 @@ namespace System.Text.RegularExpressions
             }
 
             return count;
+        }
+
+        public static bool TryGetAsciiSetChars(string set, [NotNullWhen(true)] out char[]? asciiChars)
+        {
+            Span<char> chars = stackalloc char[128];
+
+            chars = chars.Slice(0, GetSetChars(set, chars));
+
+            if (chars.IsEmpty || !IsAscii(chars))
+            {
+                asciiChars = null;
+                return false;
+            }
+
+            asciiChars = chars.ToArray();
+            return true;
         }
 
         /// <summary>

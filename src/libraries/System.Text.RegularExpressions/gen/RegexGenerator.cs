@@ -198,6 +198,7 @@ namespace System.Text.RegularExpressions.Generator
                 // a user's partial type.  We can now rely on binding rules mapping to these usings and don't need to
                 // use global-qualified names for the rest of the implementation.
                 writer.WriteLine($"    using System;");
+                writer.WriteLine($"    using System.Buffers;");
                 writer.WriteLine($"    using System.CodeDom.Compiler;");
                 writer.WriteLine($"    using System.Collections;");
                 writer.WriteLine($"    using System.ComponentModel;");
@@ -240,7 +241,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"{{");
                     writer.Indent++;
                     bool sawFirst = false;
-                    foreach (KeyValuePair<string, string[]> helper in requiredHelpers)
+                    foreach (KeyValuePair<string, string[]> helper in requiredHelpers.OrderBy(h => h.Key, StringComparer.Ordinal))
                     {
                         if (sawFirst)
                         {
