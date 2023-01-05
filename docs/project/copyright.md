@@ -14,7 +14,7 @@ The .NET project uses multiple licenses for the various project repositories.
 - Various [Creative Commons](https://creativecommons.org/) licenses are used for non-code assets, like [documentation](https://github.com/dotnet/docs/), [swag](https://github.com/dotnet/swag), and [brand](https://github.com/dotnet/brand) content.
 - The [.NET Foundation Contribution License Agreement (CLA)](https://cla.dotnetfoundation.org) is used to license contributions from contributors.
 
-We exclusively accept code contributions with permissive [OSI](https://opensource.org/licenses)-approved licenses, for example [MIT](https://opensource.org/licenses/MIT), [Apache 2](https://opensource.org/licenses/Apache-2.0), and [BSD](https://opensource.org/licenses/BSD-3-Clause).
+We exclusively accept code contributions with permissive [OSI-approved licenses](https://opensource.org/licenses), for example [MIT](https://opensource.org/licenses/MIT), [Apache 2](https://opensource.org/licenses/Apache-2.0), and [BSD](https://opensource.org/licenses/BSD-3-Clause).
 
 We do not accept code contributions with [GPL](https://opensource.org/licenses/gpl-license), [creative commons](https://creativecommons.org/) ([CC0](https://opensource.org/faq#cc-zero), [CC BY-SA](https://opensource.stackexchange.com/questions/1717/why-is-cc-by-sa-discouraged-for-code)), or public domain licenses.
 
