@@ -808,7 +808,7 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 #ifdef FEATURE_HW_INTRINSICS
         if (AsLclVar()->IsMultiRegUse())
         {
-            return compiler->lvaGetDesc(AsLclVar())->regCount;
+            return compiler->lvaGetDesc(AsLclVar())->lvFieldCnt;
         }
 #endif // FEATURE_HW_INTRINSICS
         return AsLclVar()->GetFieldCount(compiler);
