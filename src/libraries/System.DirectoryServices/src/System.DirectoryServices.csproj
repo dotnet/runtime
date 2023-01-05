@@ -5,6 +5,8 @@
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
+    <ServicingVersion>1</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
     <PackageDescription>Provides easy access to Active Directory Domain Services.

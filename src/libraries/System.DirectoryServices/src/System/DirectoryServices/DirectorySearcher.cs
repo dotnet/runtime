@@ -618,6 +618,8 @@ namespace System.DirectoryServices
 
         private SearchResultCollection FindAll(bool findMoreThanOne)
         {
+            searchResult = null;
+
             DirectoryEntry clonedRoot = SearchRoot!.CloneBrowsable();
 
             UnsafeNativeMethods.IAds adsObject = clonedRoot.AdsObject;
@@ -661,7 +663,9 @@ namespace System.DirectoryServices
                 properties = Array.Empty<string>();
             }
 
-            return new SearchResultCollection(clonedRoot, resultsHandle, properties, this);
+            SearchResultCollection result = new SearchResultCollection(clonedRoot, resultsHandle, properties, this);
+            searchResult = result;
+            return result;
         }
 
         private unsafe void SetSearchPreferences(UnsafeNativeMethods.IDirectorySearch adsSearch, bool findMoreThanOne)
