@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
@@ -1596,6 +1595,13 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => Enum.GetValues(genericArgumentWithEnumConstraint));
         }
 
+        [Fact]
+        public void DeclaringEnumWithBoolUnderlyingTypeFails()
+        {
+            var exception = Assert.Throws<ArgumentException>(GetBoolEnumType);
+            Assert.Equal("System.Boolean is not a supported constant type.", exception.Message);
+        }
+
         public static IEnumerable<object[]> ToString_Format_TestData()
         {
             // Format "D": the decimal equivalent of the value is returned.
@@ -2334,6 +2340,19 @@ namespace System.Tests
             ModuleBuilder module = assembly.DefineDynamicModule("Name");
 
             return module.DefineEnum("TestName_" + underlyingType.Name, TypeAttributes.Public, underlyingType);
+        }
+
+        private static Type GetBoolEnumType()
+        {
+            EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(bool));
+
+            if (enumBuilder == null)
+                return null;
+
+            enumBuilder.DefineLiteral("Value1", true);
+            enumBuilder.DefineLiteral("Value2", false);
+
+            return enumBuilder.CreateType();
         }
 
         private static Type s_charEnumType = GetCharEnumType();
