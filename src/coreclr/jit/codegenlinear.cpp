@@ -1444,7 +1444,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
         assert(lcl->IsMultiReg());
 
         LclVarDsc* varDsc = compiler->lvaGetDesc(lcl);
-        //assert(varDsc->lvPromoted);
+        assert(varDsc->lvPromoted);
         assert(multiRegIndex < varDsc->lvFieldCnt);
         unsigned   fieldVarNum = varDsc->lvFieldLclStart + multiRegIndex;
         LclVarDsc* fldVarDsc   = compiler->lvaGetDesc(fieldVarNum);
@@ -1541,7 +1541,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         GenTreeLclVar* lcl              = tree->gtSkipReloadOrCopy()->AsLclVar();
         LclVarDsc*     varDsc           = compiler->lvaGetDesc(lcl);
         unsigned       firstFieldVarNum = varDsc->lvFieldLclStart;
-
         for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
         {
             LclVarDsc* fldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);

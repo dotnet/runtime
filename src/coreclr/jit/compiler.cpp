@@ -9728,7 +9728,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[CALL]");
         }
-        switch (op) 
+        switch (op)
         {
             case GT_MUL:
             case GT_CAST:

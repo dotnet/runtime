@@ -512,6 +512,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_VectorTableLookup_4:
                 if (intrin.op1->IsCopyOrReload())
                 {
+                    // If value is copied in a register to satisfy the consecutive-register
+                    // requirement, make sure to get the source's register because these
+                    // instruction encoding takes only the 1st register and infer the rest
+                    // from that.
                     GenTree* op1 = intrin.op1->AsCopyOrReload()->gtGetOp1();
                     assert(!op1->IsCopyOrReload());
                     op1Reg = op1->GetRegNum();

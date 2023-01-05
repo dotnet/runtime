@@ -1256,32 +1256,17 @@ bool LinearScan::isCandidateMultiRegLclVar(GenTreeLclVar* lclNode)
 {
     assert(compiler->lvaEnregMultiRegVars && lclNode->IsMultiReg());
     LclVarDsc* varDsc = compiler->lvaGetDesc(lclNode);
-    bool       isMultiReg = false; 
-    if (lclNode->IsMultiReg())
+    assert(varDsc->lvPromoted);
+    bool isMultiReg = (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT);
+    if (!isMultiReg)
     {
-        if (!lclNode->IsMultiRegUse())
-        {
-            assert(varDsc->lvPromoted);
-            bool isMultiReg = (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT);
-            if (!isMultiReg)
-            {
-                lclNode->ClearMultiReg();
-            }
-        }
-        else
-        {
-            isMultiReg = true;
-        }
+        lclNode->ClearMultiReg();
     }
-    
 #ifdef DEBUG
-    if (!lclNode->IsMultiRegUse())
+    for (unsigned int i = 0; i < varDsc->lvFieldCnt; i++)
     {
-        for (unsigned int i = 0; i < varDsc->lvFieldCnt; i++)
-        {
-            LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-            assert(isCandidateVar(fieldVarDsc) == isMultiReg);
-        }
+        LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+        assert(isCandidateVar(fieldVarDsc) == isMultiReg);
     }
 #endif // DEBUG
     return isMultiReg;

@@ -1168,14 +1168,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                             offset += 16;
                         }
-                        // op1                                   = fieldList;
-
-                        // const CORINFO_FIELD_HANDLE field1 =
-                        //     info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, 0);
-                        // unsigned                   fldOffset1 = info.compCompHnd->getFieldOffset(field1);
-                        // const CORINFO_FIELD_HANDLE field2 = info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd,
-                        // 1); unsigned                   fldOffset2 = info.compCompHnd->getFieldOffset(field2);
-
+                        
                         switch (fieldCount)
                         {
                             case 1:
@@ -1199,16 +1192,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         assert(typeOfLayout == TYP_SIMD16);
                     }
 
-                    /*GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-                    for (unsigned i = 0; i < fieldCount; i++)
-                    {
-                        LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
-                        GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
-                        fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
-                        fieldLclNum++;
-                    }
-                    return fieldList;*/
-                   
                     retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
                     lvaGetDesc(op1->AsLclVar())->lvUsedInSIMDIntrinsic = false;
                 }

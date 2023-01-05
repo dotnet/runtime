@@ -870,7 +870,6 @@ bool GenTree::IsMultiRegNode() const
     {
         return true;
     }
-
     return false;
 }
 
