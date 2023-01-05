@@ -67,6 +67,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Discard>]
         internal static partial void throw0();
 
+        [JSImport("returnError", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Any>]
+        internal static partial object returnError();
+
         [JSImport("echo1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Void>>]
         internal static partial Task echo1_Task([JSMarshalAs<JSType.Promise<JSType.Void>>] Task arg1);

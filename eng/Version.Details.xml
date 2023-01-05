@@ -50,85 +50,85 @@
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-7.0.100" Version="7.0.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>d71ea7cbed84152a921c7b7b4b4439c306bf9130</Sha>
+      <Sha>00fbd974da8e15ee323c57e44a8e3d59560105a6</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-7.0.100" Version="7.0.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>d71ea7cbed84152a921c7b7b4b4439c306bf9130</Sha>
+      <Sha>00fbd974da8e15ee323c57e44a8e3d59560105a6</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenAPI" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.GenAPI" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenFacades" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.GenFacades" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.5.1-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.5.1-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Archives" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Archives" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="7.0.0-beta.22553.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
@@ -254,9 +254,9 @@
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>5ebf69650b9f7b4ecab485be840b3022420f7812</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="7.0.0-beta.22561.2">
+    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="7.0.0-beta.22572.6">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f36ea231c234560514ede4c2747897a737ced28f</Sha>
+      <Sha>82d0268ba6ae13318bcf7fcbcccf83472593ca62</Sha>
     </Dependency>
     <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.22415.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
