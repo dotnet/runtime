@@ -1226,11 +1226,10 @@ void DisplayNowayAssertMap()
         NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
         unsigned             i     = 0;
 
-        for (FileLineToCountMap::KeyIterator iter = NowayAssertMap->Begin(), end = NowayAssertMap->End();
-             !iter.Equal(end); ++iter)
+        for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
-            nacp[i].count = iter.GetValue();
-            nacp[i].fl    = iter.Get();
+            nacp[i].count = iter->GetValue();
+            nacp[i].fl    = iter->GetKey();
             ++i;
         }
 

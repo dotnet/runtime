@@ -2121,14 +2121,12 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // Second pass.
     //
     // We walk the map rather than the block list, to save a bit of time.
-    BlockToBlockMap::KeyIterator iter(blockMap.Begin());
-    BlockToBlockMap::KeyIterator end(blockMap.End());
-    unsigned                     updateCount = 0;
+    unsigned updateCount = 0;
 
-    for (; !iter.Equal(end); iter++)
+    for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&blockMap))
     {
-        BasicBlock* const nonCanonicalBlock = iter.Get();
-        BasicBlock* const canonicalBlock    = iter.GetValue();
+        BasicBlock* const nonCanonicalBlock = iter->GetKey();
+        BasicBlock* const canonicalBlock    = iter->GetValue();
         flowList*         nextPredEdge      = nullptr;
         bool              updated           = false;
 
