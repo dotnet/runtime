@@ -2345,7 +2345,6 @@ namespace System.Tests
         private static Type GetBoolEnumType()
         {
             EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(bool));
-
             if (enumBuilder == null)
                 return null;
 
