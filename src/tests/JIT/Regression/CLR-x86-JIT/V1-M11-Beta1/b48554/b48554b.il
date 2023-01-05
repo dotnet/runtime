@@ -12,9 +12,9 @@
 }
 
 
-.class ILGEN_1235399248 {
+.class public ILGEN_1235399248 {
  //(Nov 12 1999)15:27:27
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	11
  .locals ( float32, float32, float32, int32, int64, int32, int32, int32, float64, int32, int32, float32, float64, float32, int64, float32, int32, float64, float64, float64, int32, float64, int32, int32, int32, float64, int32, int64, int32, float32, int64, int32, int32, float32, int32, int32, float64, float64, int64, float32, int32, int32, float64, int32, int32, int32, float64, float32, int32, float32, float32, int32, int64, int32, int32, int32, float32, int32, int32, int32, int64, float64, int64, int32)

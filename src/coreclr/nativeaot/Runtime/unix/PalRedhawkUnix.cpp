@@ -459,8 +459,7 @@ EXTERN_C intptr_t RhGetCurrentThunkContext()
 }
 #endif //FEATURE_EMULATED_TLS
 
-// Attach thread to PAL.
-// It can be called multiple times for the same thread.
+// Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
 // Parameters:
 //  thread        - thread to attach
@@ -477,8 +476,7 @@ extern "C" void PalAttachThread(void* thread)
 #endif
 }
 
-// Detach thread from PAL.
-// It fails fast if some other thread value was attached to PAL.
+// Detach thread from OS notifications.
 // Parameters:
 //  thread        - thread to detach
 // Return:
@@ -486,10 +484,6 @@ extern "C" void PalAttachThread(void* thread)
 extern "C" bool PalDetachThread(void* thread)
 {
     UNREFERENCED_PARAMETER(thread);
-    if (g_threadExitCallback != nullptr)
-    {
-        g_threadExitCallback();
-    }
     return true;
 }
 

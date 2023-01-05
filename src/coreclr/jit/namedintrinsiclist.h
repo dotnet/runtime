@@ -148,6 +148,11 @@ enum NamedIntrinsic : unsigned short
     NI_SIMD_AS_HWINTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 
+#if defined(FEATURE_SIMD)
+    NI_SIMD_UpperRestore,
+    NI_SIMD_UpperSave,
+#endif // FEATURE_SIMD
+
     NI_SRCS_UNSAFE_START,
 
     NI_SRCS_UNSAFE_Add,

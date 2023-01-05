@@ -17,7 +17,7 @@ namespace BrowserDebugProxy
 {
     internal sealed class ValueTypeClass
     {
-        private readonly bool autoExpand;
+        private bool autoExpand;
         private JArray proxy;
         private GetMembersResult _combinedResult;
         private bool propertiesExpanded;
@@ -201,6 +201,8 @@ namespace BrowserDebugProxy
         public async Task<GetMembersResult> GetMemberValues(
             MonoSDBHelper sdbHelper, GetObjectCommandOptions getObjectOptions, bool sortByAccessLevel, bool includeStatic, CancellationToken token)
         {
+            if (getObjectOptions.HasFlag(GetObjectCommandOptions.AutoExpandable) && !getObjectOptions.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
+                autoExpand = true;
             // 1
             if (!propertiesExpanded)
             {

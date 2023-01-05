@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 throw ex;
             }
-            throw new InvalidProgramException();
+            throw new InvalidOperationException();
         }
 
         public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken)

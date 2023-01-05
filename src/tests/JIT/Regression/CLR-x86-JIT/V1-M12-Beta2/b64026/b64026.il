@@ -56,7 +56,7 @@
 
 } // end of class B
 
-.class private auto ansi beforefieldinit Test_b64026
+.class public auto ansi beforefieldinit Test_b64026
        extends [mscorlib]System.Object
 {
   .field public static class B b1

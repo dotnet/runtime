@@ -9,7 +9,7 @@
 }
 .assembly 'b85566'{}
 .class public s {
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
      ldc.r8	5.5

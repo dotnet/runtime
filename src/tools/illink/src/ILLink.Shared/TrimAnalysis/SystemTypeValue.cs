@@ -12,7 +12,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// This is a known System.Type value. TypeRepresented is the 'value' of the System.Type.
 	/// </summary>
-	sealed record SystemTypeValue : SingleValue
+	internal sealed record SystemTypeValue : SingleValue
 	{
 		public SystemTypeValue (in TypeProxy representedType)
 		{

@@ -43,11 +43,8 @@ namespace ILLink.Tasks
 		/// <summary>
 		///   The names of the assemblies to root. This should contain
 		///   assembly names without an extension, not file names or
-		///   paths. Exactly which parts of the assemblies get rooted
-		///   is subject to change. Currently these get passed to
-		///   illink with "-a", which roots the entry point for
-		///   executables, and everything for libraries. To control
-		///   the behaviour explicitly, set RootMode metadata.
+		///   paths. The default is to root everything in these assemblies.
+		//    For more fine-grained control, set RootMode metadata.
 		/// </summary>
 		[Required]
 		public ITaskItem[] RootAssemblyNames { get; set; }
