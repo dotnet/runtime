@@ -707,8 +707,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
     CMiniMdRW   *pMiniMd = &m_pStgdb->m_MiniMd;
     int         ixKnown;                // Index of known custom attribute.
 
-    LOG((LOGMD, "RegMeta::DefineCustomAttribute(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", tkOwner, tkCtor,
-            pCustomAttribute, cbCustomAttribute, pcv));
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(tkCtor) == mdtMethodDef || TypeFromToken(tkCtor) == mdtMemberRef);

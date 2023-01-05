@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-android</TargetFrameworks>
     <!-- ILLinker settings -->
     <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
