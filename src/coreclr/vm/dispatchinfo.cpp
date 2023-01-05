@@ -2732,7 +2732,7 @@ BOOL DispatchInfo::SynchWithManagedView()
         // Go through the list of member info's and find the end.
         DispatchMemberInfo **ppNextMember = &m_pFirstMemberInfo;
         while (*ppNextMember)
-            ppNextMember = (*ppNextMember)->GetNextField();
+            ppNextMember = (*ppNextMember)->GetNextPtr();
 
         // Retrieve the member info map.
         pMemberMap = GetMemberInfoMap();
@@ -2848,7 +2848,7 @@ BOOL DispatchInfo::SynchWithManagedView()
                             *ppNextMember = pMemberToAdd;
 
                             // Update ppNextMember to be ready for the next new member.
-                            ppNextMember = (*ppNextMember)->GetNextField();
+                            ppNextMember = (*ppNextMember)->GetNextPtr();
 
                             // Add the member to the map. Note, the hash is unsynchronized, but we already have our lock
                             // so we're okay.
@@ -3339,7 +3339,7 @@ DispatchMemberInfo* DispatchExInfo::GetFirstMember()
 
     // Now we need to make sure we skip any members that are deleted.
     while ((*ppNextMemberInfo) && !(*ppNextMemberInfo)->GetMemberInfoObject())
-        ppNextMemberInfo = (*ppNextMemberInfo)->GetNextField();
+        ppNextMemberInfo = (*ppNextMemberInfo)->GetNextPtr();
 
     RETURN *ppNextMemberInfo;
 }
@@ -3361,7 +3361,7 @@ DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
         RETURN NULL;
 
     // Start from the next member.
-    DispatchMemberInfo **ppNextMemberInfo = pDispMemberInfo->GetNextField();
+    DispatchMemberInfo **ppNextMemberInfo = pDispMemberInfo->GetNextPtr();
 
     // If the next member is not set we need to sink up with the expando object
     // itself to make sure that this member is really the last member and that
@@ -3379,7 +3379,7 @@ DispatchMemberInfo* DispatchExInfo::GetNextMember(DISPID CurrMemberDispID)
 
     // Now we need to make sure we skip any members that are deleted.
     while ((*ppNextMemberInfo) && !(*ppNextMemberInfo)->GetMemberInfoObject())
-        ppNextMemberInfo = (*ppNextMemberInfo)->GetNextField();
+        ppNextMemberInfo = (*ppNextMemberInfo)->GetNextPtr();
 
     RETURN *ppNextMemberInfo;
 }

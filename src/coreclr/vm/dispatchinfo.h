@@ -78,7 +78,7 @@ public:
         return m_pNext;
     }
 
-    DispatchMemberInfo** GetNextField()
+    DispatchMemberInfo** GetNextPtr()
     {
         LIMITED_METHOD_CONTRACT;
         return &m_pNext;
