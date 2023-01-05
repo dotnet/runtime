@@ -1205,6 +1205,107 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2 : HttpClientHandlerTestBase
+    {
+        public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+
+        [Fact]
+        public async Task ServerAdvertisedMaxHeaderListSize_IsHonoredByClient()
+        {
+            const int Limit = 10_000;
+
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            using HttpClient client = CreateHttpClient(handler);
+
+            // We want to test that the client remembered the setting it received from the previous connection.
+            // To do this, we trick the client into using the same HttpConnectionPool for both server connections.
+            Uri lastServerUri = null;
+
+            GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = async (context, ct) =>
+            {
+                Assert.Equal("foo", context.DnsEndPoint.Host);
+
+                Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                try
+                {
+                    await socket.ConnectAsync(lastServerUri.IdnHost, lastServerUri.Port);
+                    return new NetworkStream(socket, ownsSocket: true);
+                }
+                catch
+                {
+                    socket.Dispose();
+                    throw;
+                }
+            };
+
+            TaskCompletionSource waitingForLastRequest = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                lastServerUri = uri;
+                uri = new UriBuilder(uri) { Host = "foo", Port = 42 }.Uri;
+
+                // Send a dummy request to ensure the SETTINGS frame has been received.
+                Assert.Equal("Hello world", await client.GetStringAsync(uri));
+
+                HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                request.Headers.Add("Foo", new string('a', Limit));
+
+                Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                Assert.Contains(Limit.ToString(), ex.Message);
+
+                request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                for (int i = 0; i < Limit / 40; i++)
+                {
+                    request.Headers.Add($"Foo-{i}", "");
+                }
+
+                ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                Assert.Contains(Limit.ToString(), ex.Message);
+
+                await waitingForLastRequest.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+                // Ensure that the connection is still usable for requests that don't hit the limit.
+                Assert.Equal("Hello world", await client.GetStringAsync(uri));
+            },
+            async server =>
+            {
+                var setting = new SettingsEntry { SettingId = SettingId.MaxHeaderListSize, Value = Limit };
+
+                using GenericLoopbackConnection connection = await ((Http2LoopbackServer)server).EstablishConnectionAsync(setting);
+
+                await connection.ReadRequestDataAsync();
+                await connection.SendResponseAsync(content: "Hello world");
+
+                waitingForLastRequest.SetResult();
+
+                // HandleRequestAsync will close the connection
+                await connection.HandleRequestAsync(content: "Hello world");
+            });
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                lastServerUri = uri;
+                uri = new UriBuilder(uri) { Host = "foo", Port = 42 }.Uri;
+
+                HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                request.Headers.Add("Foo", new string('a', Limit));
+
+                Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                Assert.Contains(Limit.ToString(), ex.Message);
+
+                // Ensure that the connection is still usable for requests that don't hit the limit.
+                Assert.Equal("Hello world", await client.GetStringAsync(uri));
+            },
+            async server =>
+            {
+                await server.HandleRequestAsync(content: "Hello world");
+            });
+        }
+    }
+
     [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
