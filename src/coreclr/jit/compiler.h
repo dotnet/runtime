@@ -8449,6 +8449,11 @@ private:
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
         }
 
+        if (clsHnd == NO_CLASS_HANDLE)
+        {
+            clsHnd = gtGetCanonicalStructHandleForSIMD(simdType);
+        }
+
         return clsHnd;
     }
 #endif // FEATURE_HW_INTRINSICS
