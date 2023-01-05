@@ -5589,6 +5589,9 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			/* FIXME: */
 			continue;
 
+		if (!m_method_is_virtual (method))
+			continue;
+
 		/*
 		 * FIXME: Instances which are referenced by these methods are not added,
 		 * for example Array.Resize<int> for List<int>.Add ().
