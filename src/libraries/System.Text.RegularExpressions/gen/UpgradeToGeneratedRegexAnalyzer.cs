@@ -191,6 +191,18 @@ namespace System.Text.RegularExpressions.Generator
                         return false;
                     }
 
+                    try
+                    {
+                        _ = RegexParser.ParseOptionsInPattern(argument.Value.ConstantValue.Value as string, RegexOptions.None);
+                    }
+                    catch (RegexParseException)
+                    {
+                        // Pattern contained something invalid like "\g" or "\xZZZZ" so we can't parse
+                        // sufficiently to look for options in the pattern like "(?i)"
+                        // so we won't be able to safely make the fix
+                        return false;
+                    }
+
                     continue;
                 }
 

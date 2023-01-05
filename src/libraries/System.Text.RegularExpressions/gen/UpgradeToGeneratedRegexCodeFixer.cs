@@ -118,7 +118,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            // Walk the type hirerarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
+            // Walk the type hierarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
             // We also keep a count of how many partial keywords we added so that we can later find the nodeToFix again on the new root using the text offset.
             int typesModified = 0;
             root = root.ReplaceNodes(
@@ -193,7 +193,16 @@ namespace System.Text.RegularExpressions.Generator
             SyntaxNode? cultureNameValue = null;
             RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgument(operationArguments) : RegexOptions.None;
             string pattern = GetRegexPatternFromArgument(operationArguments)!;
-            regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+
+            try
+            {
+                regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+            }
+            catch (RegexParseException)
+            {
+                // We can't safely make the fix without knowing the options
+                return document;
+            }
 
             // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture in order to pass
             // it in as a parameter. If the user specified IgnoreCase, but also selected CultureInvariant, then we skip as the default is to use Invariant culture.

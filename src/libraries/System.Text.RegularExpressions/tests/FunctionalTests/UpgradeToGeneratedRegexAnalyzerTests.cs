@@ -182,6 +182,58 @@ public class Program
             }.RunAsync();
         }
 
+        [Fact]
+        public async Task CodeFixSupportsInvalidPatternFromWhichOptionsCanBeParsed()
+        {
+            string pattern = ".{99999999999}"; // throws during real parse
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = [|Regex.IsMatch("""", @""{pattern}"")|];
+    }}
+}}";
+
+            string fixedSource = @$"using System.Text;
+using System.Text.RegularExpressions;
+
+public partial class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = MyRegex().IsMatch("""");
+    }}
+
+    [GeneratedRegex(@""{pattern}"")]
+    private static partial Regex MyRegex();
+}}";
+            // We successfully offer the diagnostic and make the fix despite the pattern
+            // being invalid, because it was valid enough to parse out any options in the pattern.
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixIsNotOfferedForInvalidPatternFromWhichOptionsCannotBeParsed()
+        {
+            string pattern = "\\g"; // throws during pre-parse for options
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = Regex.IsMatch("""", @""{pattern}""); // fixer not offered
+    }}
+}}";
+            // We need to be able to parse the pattern sufficiently that we can extract
+            // any inline options; in this case we can't, so we don't offer the fix.
+            await VerifyCS.VerifyCodeFixAsync(test, test);
+        }
+
         public static IEnumerable<object[]> ConstantPatternTestData()
         {
             foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
