@@ -416,7 +416,6 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79514")]
         public async Task BlazorRunTest()
         {
             string config = "Debug";
