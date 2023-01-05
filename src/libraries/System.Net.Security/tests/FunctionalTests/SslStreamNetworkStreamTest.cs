@@ -1037,7 +1037,6 @@ namespace System.Net.Security.Tests
             var clientOptions = new SslClientAuthenticationOptions()
             {
                 TargetHost = "localhost",
-                EnabledSslProtocols = SslProtocols.Tls12
             };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
             clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
@@ -1062,7 +1061,6 @@ namespace System.Net.Security.Tests
             var clientOptions = new SslClientAuthenticationOptions()
             {
                 TargetHost = "localhost",
-                EnabledSslProtocols = SslProtocols.Tls12
             };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
             clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, clientChain);
@@ -1076,7 +1074,6 @@ namespace System.Net.Security.Tests
                 c.Dispose();
             }
         }
-
 
         [Theory]
         [InlineData(16384 * 100, 4096, 1024, false)]
