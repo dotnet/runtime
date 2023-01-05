@@ -2063,14 +2063,14 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
 }
 
 #ifdef _DEBUG
-static void DumpGCRefMap(const wchar_t* name, BYTE *address)
+static void DumpGCRefMap(const char *name, BYTE *address)
 {
     GCRefMapDecoder decoder(address);
 
-    wprintf(L"%s GC ref map: ", name);
+    printf("%s GC ref map: ", name);
 #if TARGET_X86
     uint32_t stackPop = decoder.ReadStackPop();
-    wprintf(L"POP(0x%x)", stackPop);
+    printf("POP(0x%x)", stackPop);
 #endif
 
     int previousToken = GCREFMAP_SKIP;
@@ -2082,7 +2082,7 @@ static void DumpGCRefMap(const wchar_t* name, BYTE *address)
         {
             if (previousToken != GCREFMAP_SKIP)
             {
-                wprintf(L") ");
+                printf(") ");
             }
             switch (token)
             {
@@ -2090,23 +2090,23 @@ static void DumpGCRefMap(const wchar_t* name, BYTE *address)
                     break;
 
                 case GCREFMAP_REF:
-                    wprintf(L"R(");
+                    printf("R(");
                     break;
 
                 case GCREFMAP_INTERIOR:
-                    wprintf(L"I(");
+                    printf("I(");
                     break;
 
                 case GCREFMAP_METHOD_PARAM:
-                    wprintf(L"M(");
+                    printf("M(");
                     break;
 
                 case GCREFMAP_TYPE_PARAM:
-                    wprintf(L"T(");
+                    printf("T(");
                     break;
 
                 case GCREFMAP_VASIG_COOKIE:
-                    wprintf(L"V(");
+                    printf("V(");
 
                 default:
                     // Not implemented
@@ -2115,19 +2115,19 @@ static void DumpGCRefMap(const wchar_t* name, BYTE *address)
         }
         else if (token != GCREFMAP_SKIP)
         {
-            wprintf(L" ");
+            printf(" ");
         }
         if (token != GCREFMAP_SKIP)
         {
-            wprintf(L"%02x", OffsetFromGCRefMapPos(pos));
+            printf("%02x", OffsetFromGCRefMapPos(pos));
         }
         previousToken = token;
     }
     if (previousToken != GCREFMAP_SKIP)
     {
-        wprintf(L")");
+        printf(")");
     }
-    wprintf(L"\n");
+    printf("\n");
 }
 #endif
 
@@ -2171,9 +2171,9 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
     }
     if (invalidGCRefMap)
     {
-        wprintf(L"GC ref map mismatch detected for method: %S::%S\n", pMD->GetMethodTable()->GetDebugClassName(), pMD->GetName());
-        DumpGCRefMap(L"  Runtime", (BYTE *)pBlob);
-        DumpGCRefMap(L"Crossgen2", pGCRefMap);
+        printf("GC ref map mismatch detected for method: %s::%s\n", pMD->GetMethodTable()->GetDebugClassName(), pMD->GetName());
+        DumpGCRefMap("  Runtime", (BYTE *)pBlob);
+        DumpGCRefMap("Crossgen2", pGCRefMap);
         _ASSERTE(false);
     }
 #endif
