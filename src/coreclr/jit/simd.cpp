@@ -8,7 +8,7 @@
 //
 // This implementation is preliminary, and may change dramatically.
 //
-// New JIT types, TYP_SIMDxx, are introduced, and the SIMD intrinsics are created as GT_SIMD nodes.
+// New JIT types, TYP_SIMDxx, are introduced, and the hwintrinsics are created as GT_HWINTRINSC nodes.
 // Nodes of SIMD types will be typed as TYP_SIMD* (e.g. TYP_SIMD8, TYP_SIMD16, etc.).
 //
 // Note that currently the "reference implementation" is the same as the runtime dll.  As such, it is currently
@@ -30,15 +30,6 @@
 #endif
 
 #ifdef FEATURE_SIMD
-
-// Intrinsic Id to intrinsic info map
-const SIMDIntrinsicInfo simdIntrinsicInfoArray[] = {
-#define SIMD_INTRINSIC(mname, inst, id, name, retType, argCount, arg1, arg2, arg3, t1, t2, t3, t4, t5, t6, t7, t8, t9, \
-                       t10)                                                                                            \
-    {SIMDIntrinsic##id, mname, inst, retType, argCount, arg1, arg2, arg3, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10},
-#include "simdintrinsiclist.h"
-};
-
 //------------------------------------------------------------------------
 // getSIMDVectorLength: Get the length (number of elements of base type) of
 //                      SIMD Vector given its size and base (element) type.

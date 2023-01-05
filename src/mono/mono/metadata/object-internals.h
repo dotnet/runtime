@@ -1997,6 +1997,9 @@ mono_string_hash_internal (MonoString *s);
 MONO_COMPONENT_API int
 mono_object_hash_internal (MonoObject* obj);
 
+int
+mono_object_try_get_hash_internal (MonoObject* obj);
+
 ICALL_EXPORT
 void
 mono_value_copy_internal (void* dest, const void* src, MonoClass *klass);

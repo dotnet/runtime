@@ -2368,6 +2368,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			td->ip += 5;
 			return TRUE;
+		} else if (!strcmp (tm, "InternalGetHashCode")) {
+			*op = MINT_INTRINS_GET_HASHCODE;
+		} else if (!strcmp (tm, "InternalTryGetHashCode")) {
+			*op = MINT_INTRINS_TRY_GET_HASHCODE;
 		} else if (!strcmp (tm, "GetRawData")) {
 			interp_add_ins (td, MINT_LDFLDA_UNSAFE);
 			td->last_ins->data [0] = (gint16) MONO_ABI_SIZEOF (MonoObject);
@@ -2426,9 +2430,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
 		*op = MINT_CNE_P;
 	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
-		if (!strcmp (tm, "InternalGetHashCode")) {
-			*op = MINT_INTRINS_GET_HASHCODE;
-		} else if (!strcmp (tm, "GetType")) {
+		if (!strcmp (tm, "GetType")) {
 			if (constrained_class && m_class_is_valuetype (constrained_class) && !mono_class_is_nullable (constrained_class)) {
 				// If constrained_class is valuetype we already know its type.
 				// Resolve GetType to a constant so we can fold type comparisons
@@ -9057,9 +9059,12 @@ retry:
 			if (num_dregs) {
 				// Check if the previous definition of this var was used at all.
 				// If it wasn't we can just clear the instruction
+				//
+				// MINT_MOV_DST_OFF doesn't fully write to the var, so we special case it here
 				if (local_defs [dreg].ins != NULL &&
 						local_defs [dreg].ref_count == 0 &&
-						!td->locals [dreg].indirects) {
+						!td->locals [dreg].indirects &&
+						opcode != MINT_MOV_DST_OFF) {
 					InterpInst *prev_def = local_defs [dreg].ins;
 					if (MINT_NO_SIDE_EFFECTS (prev_def->opcode)) {
 						for (int i = 0; i < mono_interp_op_sregs [prev_def->opcode]; i++)

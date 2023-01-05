@@ -104,6 +104,19 @@ namespace System.Runtime.CompilerServices
             return ObjectHeader.GetHashCode(o);
         }
 
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        internal static int TryGetHashCode(object o)
+        {
+            return ObjectHeader.TryGetHashCode(o);
+        }
+
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
         {
