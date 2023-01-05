@@ -1430,7 +1430,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 VarInfo[] varIds = scope.Method.Info.GetLiveVarsAt(scope.Location.IlLocation.Offset);
 
-                var values = await context.SdbAgent.StackFrameGetValues(scope.Method, context.ThreadId, scopeId, varIds, token);
+                var values = await context.SdbAgent.StackFrameGetValues(scope.Method, context.ThreadId, scopeId, varIds, scope.Location.IlLocation.Offset, token);
                 if (values != null)
                 {
                     if (values == null || values.Count == 0)
