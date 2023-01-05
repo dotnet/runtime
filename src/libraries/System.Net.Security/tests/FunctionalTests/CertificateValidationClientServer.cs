@@ -105,10 +105,18 @@ namespace System.Net.Security.Tests
             }
         }
 
+        public enum ClientCertSource
+        {
+            ClientCertificate,
+            SelectionCallback,
+            CertificateContext
+        }
+
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task CertificateValidationClientServer_EndToEnd_Ok(bool useClientSelectionCallback)
+        [InlineData(ClientCertSource.ClientCertificate)]
+        [InlineData(ClientCertSource.SelectionCallback)]
+        [InlineData(ClientCertSource.CertificateContext)]
+        public async Task CertificateValidationClientServer_EndToEnd_Ok(ClientCertSource clientCertSource)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);
             var server = new TcpListener(endPoint);
@@ -117,7 +125,7 @@ namespace System.Net.Security.Tests
             _clientCertificateRemovedByFilter = false;
 
             if (PlatformDetection.IsWindows7 &&
-                !useClientSelectionCallback &&
+                clientCertSource != ClientCertSource.SelectionCallback &&
                 !Capability.IsTrustedRootCertificateInstalled())
             {
                 // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
@@ -141,7 +149,7 @@ namespace System.Net.Security.Tests
 
                 LocalCertificateSelectionCallback clientCertCallback = null;
 
-                if (useClientSelectionCallback)
+                if (clientCertSource == ClientCertSource.SelectionCallback)
                 {
                     clientCertCallback = ClientCertSelectionCallback;
                 }
@@ -160,7 +168,7 @@ namespace System.Net.Security.Tests
                     string serverName = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
                     var clientCerts = new X509CertificateCollection();
 
-                    if (!useClientSelectionCallback)
+                    if (clientCertSource == ClientCertSource.ClientCertificate)
                     {
                         clientCerts.Add(_clientCertificate);
                     }
@@ -173,6 +181,12 @@ namespace System.Net.Security.Tests
                         EnabledSslProtocols = SslProtocolSupport.DefaultSslProtocols,
                         CertificateChainPolicy = new X509ChainPolicy(),
                     };
+
+                    if (clientCertSource == ClientCertSource.CertificateContext)
+                    {
+                        options.ClientCertificateContext = SslStreamCertificateContext.Create(_clientCertificate, new());
+                    }
+
                     options.CertificateChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreInvalidName;
                     Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(options, default);
 
