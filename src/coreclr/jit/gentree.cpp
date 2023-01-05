@@ -7305,14 +7305,18 @@ GenTreeLclVar* Compiler::gtNewStoreLclVar(unsigned dstLclNum, GenTree* src)
     return store;
 }
 
-GenTreeCall* Compiler::gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di)
+GenTreeCall* Compiler::gtNewIndCallNode(GenTree*             addr,
+                                        var_types            type,
+                                        CORINFO_CLASS_HANDLE retClsHandle,
+                                        const DebugInfo&     di)
 {
-    return gtNewCallNode(CT_INDIRECT, (CORINFO_METHOD_HANDLE)addr, type, di);
+    return gtNewCallNode(CT_INDIRECT, (CORINFO_METHOD_HANDLE)addr, type, retClsHandle, di);
 }
 
 GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
                                      CORINFO_METHOD_HANDLE callHnd,
                                      var_types             type,
+                                     CORINFO_CLASS_HANDLE  retClsHandle,
                                      const DebugInfo&      di)
 {
     GenTreeCall* node = new (this, GT_CALL) GenTreeCall(genActualType(type));
@@ -7326,7 +7330,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallMethHnd = callHnd;
     INDEBUG(node->callSig = nullptr;)
     node->tailCallInfo    = nullptr;
-    node->gtRetClsHnd     = nullptr;
+    node->gtRetClsHnd     = varTypeIsStruct(type) ? retClsHandle : NO_CLASS_HANDLE;
     node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
 

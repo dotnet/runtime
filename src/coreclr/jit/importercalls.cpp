@@ -103,6 +103,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     bool checkForSmallType  = false;
     bool bIntrinsicImported = false;
+    bool hasTypeArg         = callInfo->sig.hasTypeArg();
 
     CORINFO_SIG_INFO calliSig;
     NewCallArg       extraArg;
@@ -157,7 +158,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         methHnd = callInfo->hMethod;
 
-        sig        = &(callInfo->sig);
+        sig        = &callInfo->sig;
         callRetTyp = JITtype2varType(sig->retType);
 
         mflags = callInfo->methodFlags;
@@ -220,6 +221,44 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             return impImportJitTestLabelMark(sig->numArgs);
         }
 #endif // DEBUG
+
+        bool isVarArgs =
+            (sig->getCallConv() == CORINFO_CALLCONV_VARARG) || (sig->getCallConv() == CORINFO_CALLCONV_NATIVEVARARG);
+        bool isReturningArrayMethod =
+            (callRetTyp != TYP_VOID) && (opcode != CEE_NEWOBJ) && ((clsFlags & CORINFO_FLG_ARRAY) != 0);
+        if (isVarArgs || isReturningArrayMethod)
+        {
+            // In these cases we need to get a more precise/correct signature from the call site.
+            CORINFO_CLASS_HANDLE defSigRetClsHandle = sig->retTypeSigClass;
+#ifdef DEBUG
+            unsigned numArgsDef = sig->numArgs;
+#endif
+            eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
+
+            // If the signature return type changes then make sure we notify
+            // the EE to load _both_ the call site signature's return class and
+            // the method def's return class.
+            // This is to guarantee that if a GC is triggered from the prestub of this methods,
+            // all valuetypes in the method signature are already loaded.
+            // We need to be able to find the size of the valuetypes, but we cannot
+            // do a class-load from within GC.
+            // impPopCallArgs will take care of the handle stored in 'sig', so
+            // we only need to ensure the load for the one from the method def
+            // here.
+            if (sig->retTypeSigClass != defSigRetClsHandle)
+            {
+                if ((defSigRetClsHandle != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
+                    (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) &&
+                    (sig->retType != CORINFO_TYPE_VAR))
+                {
+                    // Make sure that all valuetypes (including enums) that we push are loaded.
+                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(defSigRetClsHandle);
+                }
+            }
+
+            assert((isVarArgs && (numArgsDef <= sig->numArgs)) ||
+                   (isReturningArrayMethod && (numArgsDef == sig->numArgs)));
+        }
 
         const bool isIntrinsic = (mflags & CORINFO_FLG_INTRINSIC) != 0;
 
@@ -336,7 +375,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                            (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-                    call = gtNewIndCallNode(stubAddr, callRetTyp);
+                    call = gtNewIndCallNode(stubAddr, callRetTyp, sig->retTypeClass);
 
                     call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
@@ -350,7 +389,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 else
                 {
                     // The stub address is known at compile time
-                    call                               = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                    call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, sig->retTypeClass, di);
                     call->AsCall()->gtStubCallStubAddr = callInfo->stubLookup.constLookup.addr;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
                     assert(callInfo->stubLookup.constLookup.accessType != IAT_PPVALUE &&
@@ -380,7 +419,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
-                call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, sig->retTypeClass, di);
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
 
                 // Mark this method to expand the virtual call target early in fgMorphCall
@@ -400,7 +439,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 // OK, We've been told to call via LDVIRTFTN, so just
                 // take the call now....
-                call = gtNewIndCallNode(nullptr, callRetTyp, di);
+                call = gtNewIndCallNode(nullptr, callRetTyp, sig->retTypeClass, di);
 
                 impPopCallArgs(sig, call->AsCall());
 
@@ -451,7 +490,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             case CORINFO_CALL:
             {
                 // This is for a non-virtual, non-interface etc. call
-                call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, sig->retTypeClass, di);
 
                 // We remove the nullcheck for the GetType call intrinsic.
                 // TODO-CQ: JIT64 does not introduce the null check for many more helper calls
@@ -477,7 +516,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // indirect call.  This is because a runtime lookup is required to get the code entry point.
 
                 // These calls always follow a uniform calling convention, i.e. no extra hidden params
-                assert((sig->callConv & CORINFO_CALLCONV_PARAMTYPE) == 0);
+                assert(!hasTypeArg);
 
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG);
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
@@ -496,7 +535,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 impAssignTempGen(lclNum, fptr, CHECK_SPILL_ALL);
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
-                call = gtNewIndCallNode(fptr, callRetTyp, di);
+                call = gtNewIndCallNode(fptr, callRetTyp, sig->retTypeClass, di);
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
                 if (callInfo->nullInstanceCheck)
                 {
@@ -567,9 +606,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
-    CORINFO_CLASS_HANDLE actualMethodRetTypeSigClass;
-    actualMethodRetTypeSigClass = sig->retTypeSigClass;
-
     /* Check for varargs */
     if (!compFeatureVarArg() && ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
                                  (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG))
@@ -601,38 +637,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             szCanTailCallFailReason = "Callee is varargs";
         }
 #endif
-
-        /* Get the total number of arguments - this is already correct
-         * for CALLI - for methods we have to get it from the call site */
-
-        if (opcode != CEE_CALLI)
-        {
-#ifdef DEBUG
-            unsigned numArgsDef = sig->numArgs;
-#endif
-            eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
-
-            // For vararg calls we must be sure to load the return type of the
-            // method actually being called, as well as the return types of the
-            // specified in the vararg signature. With type equivalency, these types
-            // may not be the same.
-            if (sig->retTypeSigClass != actualMethodRetTypeSigClass)
-            {
-                if (actualMethodRetTypeSigClass != nullptr && sig->retType != CORINFO_TYPE_CLASS &&
-                    sig->retType != CORINFO_TYPE_BYREF && sig->retType != CORINFO_TYPE_PTR &&
-                    sig->retType != CORINFO_TYPE_VAR)
-                {
-                    // Make sure that all valuetypes (including enums) that we push are loaded.
-                    // This is to guarantee that if a GC is triggered from the prestub of this methods,
-                    // all valuetypes in the method signature are already loaded.
-                    // We need to be able to find the size of the valuetypes, but we cannot
-                    // do a class-load from within GC.
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(actualMethodRetTypeSigClass);
-                }
-            }
-
-            assert(numArgsDef <= sig->numArgs);
-        }
 
         /* We will have "cookie" as the last argument but we cannot push
          * it on the operand stack because we may overflow, so we append it
@@ -766,7 +770,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // We also set the exact type context associated with the call so we can
     // inline the call correctly later on.
 
-    if (sig->callConv & CORINFO_CALLCONV_PARAMTYPE)
+    if (hasTypeArg)
     {
         assert(call->AsCall()->gtCallType == CT_USER_FUNC);
         if (clsHnd == nullptr)
@@ -1340,11 +1344,6 @@ DONE_CALL:
     {
         impSpillSpecialSideEff();
 
-        if (clsFlags & CORINFO_FLG_ARRAY)
-        {
-            eeGetCallSiteSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, sig);
-        }
-
         typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
         tiRetVal.NormaliseForStack();
 
@@ -1361,7 +1360,7 @@ DONE_CALL:
             if (varTypeIsStruct(callRetTyp))
             {
                 // Need to treat all "split tree" cases here, not just inline candidates
-                call       = impFixupCallStructReturn(call->AsCall(), sig->retTypeClass);
+                call       = impFixupCallStructReturn(call->AsCall());
                 callRetTyp = call->TypeGet();
             }
 
@@ -1553,19 +1552,18 @@ var_types Compiler::impImportJitTestLabelMark(int numArgs)
 //
 //  Arguments:
 //    call       -  GT_CALL GenTree node
-//    retClsHnd  -  Class handle of return type of the call
 //
 //  Return Value:
 //    Returns new GenTree node after fixing struct return of call node
 //
-GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd)
+GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call)
 {
     if (!varTypeIsStruct(call))
     {
         return call;
     }
 
-    call->gtRetClsHnd = retClsHnd;
+    assert(call->gtRetClsHnd != NO_CLASS_HANDLE);
 
     // Recognize SIMD types as we do for LCL_VARs,
     // note it could be not the ABI specific type, for example, on x64 we can set 'TYP_SIMD8`
@@ -1588,7 +1586,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 #endif // !FEATURE_MULTIREG_RET
 
     structPassingKind howToReturnStruct;
-    var_types         returnType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+    var_types returnType = getReturnTypeForStruct(call->gtRetClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
 
     if (howToReturnStruct == SPK_ByReference)
     {
@@ -1601,7 +1599,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
             // This is allowed by the managed ABI and impAssignStructPtr will
             // never introduce copies due to this.
             unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Retbuf for unmanaged call"));
-            impAssignTempGen(tmpNum, call, retClsHnd, CHECK_SPILL_ALL);
+            impAssignTempGen(tmpNum, call, call->gtRetClsHnd, CHECK_SPILL_ALL);
             return gtNewLclvNode(tmpNum, lvaGetDesc(tmpNum)->TypeGet());
         }
 
@@ -1677,7 +1675,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
     /* Create the call node */
 
-    GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, di);
+    GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, sig->retTypeClass, di);
 
     call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 #ifdef UNIX_X86_ABI

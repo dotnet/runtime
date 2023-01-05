@@ -2369,9 +2369,13 @@ public:
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
+                               CORINFO_CLASS_HANDLE  retClsHandle,
                                const DebugInfo&      di = DebugInfo());
 
-    GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
+    GenTreeCall* gtNewIndCallNode(GenTree*             addr,
+                                  var_types            type,
+                                  CORINFO_CLASS_HANDLE retClsHandle,
+                                  const DebugInfo&     di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr);
@@ -3669,7 +3673,7 @@ protected:
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
 
-    GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
+    GenTree* impFixupCallStructReturn(GenTreeCall* call);
 
     GenTree* impFixupStructReturnType(GenTree* op);
 

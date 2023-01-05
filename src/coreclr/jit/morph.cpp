@@ -7092,7 +7092,8 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
                                                       CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                       CORINFO_METHOD_HANDLE dispatcherHnd)
 {
-    GenTreeCall* callDispatcherNode = gtNewCallNode(CT_USER_FUNC, dispatcherHnd, TYP_VOID, fgMorphStmt->GetDebugInfo());
+    GenTreeCall* callDispatcherNode =
+        gtNewCallNode(CT_USER_FUNC, dispatcherHnd, TYP_VOID, NO_CLASS_HANDLE, fgMorphStmt->GetDebugInfo());
     // The dispatcher has signature
     // void DispatchTailCalls(void* callersRetAddrSlot, void* callTarget, ref byte retValue)
 

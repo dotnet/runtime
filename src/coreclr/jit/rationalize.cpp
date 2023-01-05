@@ -150,7 +150,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     BlockRange().Remove(treeFirstNode, tree);
 
     // Create the call node
-    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType);
+    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, NO_CLASS_HANDLE);
 
     if (arg2 != nullptr)
     {

@@ -999,7 +999,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
     unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
     GenTreeFlags flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? GTF_EMPTY : GTF_EXCEPT;
-    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
+    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, NO_CLASS_HANDLE);
     result->gtFlags |= flags;
 
 #if DEBUG
