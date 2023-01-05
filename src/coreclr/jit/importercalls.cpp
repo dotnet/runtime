@@ -1578,7 +1578,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call)
     }
 
 #if FEATURE_MULTIREG_RET
-    call->InitializeStructReturnType(this, retClsHnd, call->GetUnmanagedCallConv());
+    call->InitializeStructReturnType(this, call->gtRetClsHnd, call->GetUnmanagedCallConv());
     const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
     const unsigned        retRegCount = retTypeDesc->GetReturnRegCount();
 #else  // !FEATURE_MULTIREG_RET
@@ -1631,7 +1631,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call)
         // No need to assign a multi-reg struct to a local var if:
         //  - It is a tail call or
         //  - The call is marked for in-lining later
-        return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
+        return impAssignMultiRegTypeToVar(call, call->gtRetClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
     }
     return call;
 #endif // FEATURE_MULTIREG_RET
