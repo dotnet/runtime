@@ -2604,6 +2604,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
             {
                 assert(sig->numArgs == 1);
+                assert(sig->sigInst.methInstCount == 1);
 
                 GenTree*             array    = impPopStack().val;
                 CORINFO_CLASS_HANDLE elemHnd  = sig->sigInst.methInst[0];
