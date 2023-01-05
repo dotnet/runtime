@@ -271,6 +271,8 @@ namespace System.Net.Security
             if (_sslAuthenticationOptions.CertificateContext != null)
             {
                 EnsureInitialized(ref filteredCerts).Add(_sslAuthenticationOptions.CertificateContext.Certificate);
+                if (NetEventSource.Log.IsEnabled())
+                    NetEventSource.Log.CertificateFromCertContext(this);
             }
             else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
