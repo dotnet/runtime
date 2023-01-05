@@ -140,7 +140,7 @@ public:
     //
     void SequenceCall(GenTreeCall* call)
     {
-        if (!call->IsOptimizingRetBufAsLocal())
+        if (call->IsOptimizingRetBufAsLocal())
         {
             // Correct the point at which the definition of the retbuf local appears.
             MoveNodeToEnd(m_compiler->gtCallGetDefinedRetBufLclAddr(call));
