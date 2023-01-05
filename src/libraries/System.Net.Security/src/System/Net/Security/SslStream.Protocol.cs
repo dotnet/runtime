@@ -280,7 +280,7 @@ namespace System.Net.Security
 
                 _selectedClientCertificate = _sslAuthenticationOptions.CertificateContext.Certificate;
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Selected cert = {_selectedClientCertificate}");
-                return _selectedClientCertificate;
+                return _sslAuthenticationOptions.CertificateContext.Certificate;
             }
             else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
