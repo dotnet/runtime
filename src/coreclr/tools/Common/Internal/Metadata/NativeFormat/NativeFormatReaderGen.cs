@@ -9,6 +9,8 @@
 #pragma warning disable CA1066 // IEquatable<T> implementations aren't used
 #pragma warning disable CA1822
 #pragma warning disable IDE0059
+#pragma warning disable SA1121
+#pragma warning disable IDE0036, SA1129
 
 using System;
 using System.Reflection;
@@ -10700,7 +10702,7 @@ namespace Internal.Metadata.NativeFormat
         public ConstantStringValue GetConstantStringValue(ConstantStringValueHandle handle)
         {
             if (IsNull(handle))
-                return default(ConstantStringValue);
+                return new ConstantStringValue();
             ConstantStringValue record;
             record._reader = this;
             record._handle = handle;

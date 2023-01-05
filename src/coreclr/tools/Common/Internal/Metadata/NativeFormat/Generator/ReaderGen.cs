@@ -23,9 +23,14 @@ class ReaderGen : CsWriter
         WriteLine("#pragma warning disable CA1066 // IEquatable<T> implementations aren't used");
         WriteLine("#pragma warning disable CA1822");
         WriteLine("#pragma warning disable IDE0059");
+        WriteLine("#pragma warning disable SA1121");
+        WriteLine("#pragma warning disable IDE0036, SA1129");
         WriteLine();
 
+        WriteLine("using System;");
         WriteLine("using System.Reflection;");
+        WriteLine("using System.Collections.Generic;");
+        WriteLine("using System.Runtime.CompilerServices;");
         WriteLine("using Internal.NativeFormat;");
         WriteLine();
 
@@ -263,7 +268,7 @@ class ReaderGen : CsWriter
             if (record.Name == "ConstantStringValue")
             {
                 WriteLine("if (IsNull(handle))");
-                WriteLine("    return default(ConstantStringValue);");
+                WriteLine("    return new ConstantStringValue();");
             }
             WriteLine($"{record.Name} record;");
             WriteLine("record._reader = this;");
