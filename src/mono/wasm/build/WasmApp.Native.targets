@@ -406,6 +406,9 @@
       <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
 
       <_EmccLinkStepArgs Condition="'$(WasmAggressivelyMinifyJs)' == 'true'" Include="--closure 1" />
+      <!--
+      <_EmccLinkStepArgs Condition="'$(WasmAggressivelyMinifyJs)' == 'true'" Include=" - - closure-args= - - compilation_level=SIMPLE_OPTIMIZATIONS" />
+      -->
       <_EmccLinkStepArgs Include="--%(_WasmExtraExtFile.Kind)&quot;%(_WasmExtraExtFile.Identity)&quot;" Condition="'$(WasmAggressivelyMinifyJs)' == 'true' and '%(_WasmExtraExtFile.Kind)' != ''" />
 
       <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
