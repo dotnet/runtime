@@ -1,7 +1,7 @@
 Copyright
 =========
 
-.NET is a member project of the [.NET Foundation](http://www.dotnetfoundation.org/). 
+.NET is a member project of the [.NET Foundation](http://www.dotnetfoundation.org/).
 
 Source copyright is held by ".NET Foundation and Contributors", while binary distributions (and associated copyright) are provided by a variety of parties.
 
