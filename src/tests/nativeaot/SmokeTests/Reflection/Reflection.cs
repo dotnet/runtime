@@ -81,6 +81,7 @@ internal static class ReflectionTest
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
 #endif
+		TestEntryPoint.Run();
         return 100;
     }
 
@@ -2091,6 +2092,16 @@ internal static class ReflectionTest
                 throw new Exception();
 
             static MethodInfo Grab<T>() => typeof(MyGenericType<T>).GetMethod(nameof(MyGenericType<T>.MyMethod));
+        }
+    }
+
+    class TestEntryPoint
+    {
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestEntryPoint));
+			if (Assembly.GetEntryAssembly().EntryPoint == null)
+				throw new Exception();
         }
     }
 
