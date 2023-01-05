@@ -4543,8 +4543,13 @@ namespace System.Text.RegularExpressions
 
                 bool isAtomic = analysis.IsAtomicByAncestor(node);
                 LocalBuilder? startingStackpos = null;
-                if (isAtomic)
+                if (isAtomic || minIterations > 1)
                 {
+                    // If the loop is atomic, constructs will need to backtrack around it, and as such any backtracking
+                    // state pushed by the loop should be removed prior to exiting the loop.  Similarly, if the loop has
+                    // a minimum iteration count greater than 1, we might end up with at least one successful iteration
+                    // only to find we can't iterate further, and will need to clear any pushed state from the backtracking
+                    // stack.  For both cases, we need to store the starting stack index so it can be reset to that position.
                     startingStackpos = DeclareInt32();
                     Ldloc(stackpos);
                     Stloc(startingStackpos);
@@ -4732,7 +4737,6 @@ namespace System.Text.RegularExpressions
                 }
                 EmitUncaptureUntilPopped();
 
-
                 // If there's a required minimum iteration count, validate now that we've processed enough iterations.
                 if (minIterations > 0)
                 {
@@ -4751,7 +4755,7 @@ namespace System.Text.RegularExpressions
                         // since the only value that wouldn't meet that is 0.
                         if (minIterations > 1)
                         {
-                            // if (iterationCount < minIterations) goto doneLabel/originalDoneLabel;
+                            // if (iterationCount < minIterations) goto doneLabel;
                             Ldloc(iterationCount);
                             Ldc(minIterations);
                             BltFar(doneLabel);
@@ -4761,10 +4765,36 @@ namespace System.Text.RegularExpressions
                     {
                         // The child doesn't backtrack, which means there's no other way the matched iterations could
                         // match differently, so if we haven't already greedily processed enough iterations, fail the loop.
-                        // if (iterationCount < minIterations) goto doneLabel/originalDoneLabel;
+                        // if (iterationCount < minIterations)
+                        // {
+                        //    if (iterationCount != 0) stackpos = startingStackpos;
+                        //    goto originalDoneLabel;
+                        // }
+
+                        Label enoughIterations = DefineLabel();
                         Ldloc(iterationCount);
                         Ldc(minIterations);
-                        BltFar(originalDoneLabel);
+                        Bge(enoughIterations);
+
+                        // If the minimum iterations is 1, then since we're only here if there are fewer, there must be 0
+                        // iterations, in which case there's nothing to reset.  If, however, the minimum iteration count is
+                        // greater than 1, we need to check if there was at least one successful iteration, in which case
+                        // any backtracking state still set needs to be reset; otherwise, constructs earlier in the sequence
+                        // trying to pop their own state will erroneously pop this state instead.
+                        if (minIterations > 1)
+                        {
+                            Debug.Assert(startingStackpos is not null);
+
+                            Ldloc(iterationCount);
+                            Ldc(0);
+                            BeqFar(originalDoneLabel);
+
+                            Ldloc(startingStackpos);
+                            Stloc(stackpos);
+                        }
+                        BrFar(originalDoneLabel);
+
+                        MarkLabel(enoughIterations);
                     }
                 }
 
@@ -4818,10 +4848,14 @@ namespace System.Text.RegularExpressions
                     if (analysis.IsInLoop(node))
                     {
                         // Store the loop's state
-                        EmitStackResizeIfNeeded(1 + (startingPos is not null ? 1 : 0));
+                        EmitStackResizeIfNeeded(1 + (startingPos is not null ? 1 : 0) + (startingStackpos is not null ? 1 : 0));
                         if (startingPos is not null)
                         {
                             EmitStackPush(() => Ldloc(startingPos));
+                        }
+                        if (startingStackpos is not null)
+                        {
+                            EmitStackPush(() => Ldloc(startingStackpos));
                         }
                         EmitStackPush(() => Ldloc(iterationCount));
 
@@ -4838,9 +4872,15 @@ namespace System.Text.RegularExpressions
                         EmitTimeoutCheckIfNeeded();
 
                         // iterationCount = base.runstack[--runstack];
+                        // startingStackpos = base.runstack[--runstack];
                         // startingPos = base.runstack[--runstack];
                         EmitStackPop();
                         Stloc(iterationCount);
+                        if (startingStackpos is not null)
+                        {
+                            EmitStackPop();
+                            Stloc(startingStackpos);
+                        }
                         if (startingPos is not null)
                         {
                             EmitStackPop();

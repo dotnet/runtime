@@ -44,8 +44,9 @@ public:
 
     void DisplayMD(void);
 
+private:
 #ifdef FEATURE_COMINTEROP
-    LPCWSTR VariantAsString(VARIANT *pVariant);
+    LPCSTR VariantAsString(VARIANT *pVariant, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
 #endif
 
     void DisplayVersionInfo(void);
@@ -67,18 +68,16 @@ public:
     void DisplaySignatures(void);
     void DisplaySignatureInfo(mdSignature inSignature);
 
-    LPCWSTR TokenName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCSTR TypeDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
+    LPCSTR TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
+    LPCSTR TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
 
-    LPCWSTR TypeDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCSTR MemberDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
+    LPCSTR MemberRefName(mdToken inMemRef, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
+    LPCSTR MemberName(mdToken inMember, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
 
-    LPCWSTR MemberDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR MemberRefName(mdToken inMemRef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR MemberName(mdToken inMember, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
-
-    LPCWSTR MethodName(mdMethodDef inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
-    LPCWSTR FieldName(mdFieldDef inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen);
+    LPCSTR MethodName(mdMethodDef inToken, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
+    LPCSTR FieldName(mdFieldDef inToken, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen);
 
     char *ClassFlags(DWORD flags, _Out_writes_(STRING_BUFFER_LEN) char *sFlags);
 
@@ -96,7 +95,7 @@ public:
     void DisplayInterfaceImpls(mdTypeDef inTypeDef);
     void DisplayInterfaceImplInfo(mdInterfaceImpl inImpl);
 
-    LPWSTR GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPWSTR guidString, ULONG bufLen);
+    LPCSTR GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPSTR guidString, ULONG bufLen);
 
     const char *TokenTypeName(mdToken inToken);
 
@@ -164,6 +163,7 @@ public:
     ULONG DumpRawColStats(ULONG ixTbl, ULONG ixCol, ULONG cRows);
     const char *DumpRawNameOfType(ULONG ulType);
 
+public:
     static void Error(const char *szError, HRESULT hr = S_OK);
 private:
     void Init(strPassBackFn inPBFn, DUMP_FILTER DumpFilter); // Common initialization code.
@@ -192,7 +192,7 @@ private:
 
     // temporary buffer for TypeDef or TypeRef name. Consume immediately
     // because other functions may overwrite it.
-    WCHAR           m_szTempBuf[STRING_BUFFER_LEN];
+    char           m_szTempBuf[STRING_BUFFER_LEN];
 
     // temporary buffer for formatted string. Consume immediately before any function calls.
     char            m_tempFormatBuffer[STRING_BUFFER_LEN];

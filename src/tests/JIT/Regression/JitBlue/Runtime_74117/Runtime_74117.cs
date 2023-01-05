@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-unsafe class Runtime_74117
+public unsafe class Runtime_74117
 {
     public unsafe static int Main()
     {

@@ -56,6 +56,10 @@ namespace System.Net.Http
         private readonly Channel<WriteQueueEntry> _writeChannel;
         private bool _lastPendingWriterShouldFlush;
 
+        // Server-advertised SETTINGS_MAX_HEADER_LIST_SIZE
+        // https://www.rfc-editor.org/rfc/rfc9113.html#section-6.5.2-2.12.1
+        private uint _maxHeaderListSize = uint.MaxValue; // Defaults to infinite
+
         // This flag indicates that the connection is shutting down and cannot accept new requests, because of one of the following conditions:
         // (1) We received a GOAWAY frame from the server
         // (2) We have exhaustead StreamIds (i.e. _nextStream == MaxStreamId)
@@ -161,6 +165,14 @@ namespace System.Net.Http
             _keepAlivePingTimeout = TimeSpanToMs(_pool.Settings._keepAlivePingTimeout);
             _nextPingRequestTimestamp = Environment.TickCount64 + _keepAlivePingDelay;
             _keepAlivePingPolicy = _pool.Settings._keepAlivePingPolicy;
+
+            uint maxHeaderListSize = _pool._lastSeenHttp2MaxHeaderListSize;
+            if (maxHeaderListSize > 0)
+            {
+                // Previous connections to the same host advertised a limit.
+                // Use this as an initial value before we receive the SETTINGS frame.
+                _maxHeaderListSize = maxHeaderListSize;
+            }
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -500,9 +512,12 @@ namespace System.Net.Http
 
                     // Process the initial SETTINGS frame. This will send an ACK.
                     ProcessSettingsFrame(frameHeader, initialFrame: true);
+
+                    Debug.Assert(InitialSettingsReceived.Task.IsCompleted);
                 }
-                catch (IOException e)
+                catch (Exception e)
                 {
+                    InitialSettingsReceived.TrySetException(new IOException(SR.net_http_http2_connection_not_established, e));
                     throw new IOException(SR.net_http_http2_connection_not_established, e);
                 }
 
@@ -822,6 +837,8 @@ namespace System.Net.Http
                     uint settingValue = BinaryPrimitives.ReadUInt32BigEndian(settings);
                     settings = settings.Slice(4);
 
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Applying setting {(SettingId)settingId}={settingValue}");
+
                     switch ((SettingId)settingId)
                     {
                         case SettingId.MaxConcurrentStreams:
@@ -859,6 +876,11 @@ namespace System.Net.Http
                                 // https://datatracker.ietf.org/doc/html/rfc8441#section-3
                                 ThrowProtocolError();
                             }
+                            break;
+
+                        case SettingId.MaxHeaderListSize:
+                            _maxHeaderListSize = settingValue;
+                            _pool._lastSeenHttp2MaxHeaderListSize = _maxHeaderListSize;
                             break;
 
                         default:
@@ -1379,14 +1401,18 @@ namespace System.Net.Http
             headerBuffer.Commit(bytes.Length);
         }
 
-        private void WriteHeaderCollection(HttpRequestMessage request, HttpHeaders headers, ref ArrayBuffer headerBuffer)
+        private int WriteHeaderCollection(HttpRequestMessage request, HttpHeaders headers, ref ArrayBuffer headerBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
             HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
 
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
-            foreach (HeaderEntry header in headers.GetEntries())
+
+            ReadOnlySpan<HeaderEntry> entries = headers.GetEntries();
+            int headerListSize = entries.Length * HeaderField.RfcOverhead;
+
+            foreach (HeaderEntry header in entries)
             {
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref tmpHeaderValuesArray);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
@@ -1402,6 +1428,10 @@ namespace System.Net.Http
                     // The Connection, Upgrade and ProxyConnection headers are also not supported in HTTP2.
                     if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection && knownHeader != KnownHeaders.Upgrade && knownHeader != KnownHeaders.ProxyConnection)
                     {
+                        // The length of the encoded name may be shorter than the actual name.
+                        // Ensure that headerListSize is always >= of the actual size.
+                        headerListSize += knownHeader.Name.Length;
+
                         if (knownHeader == KnownHeaders.TE)
                         {
                             // HTTP/2 allows only 'trailers' TE header. rfc7540 8.1.2.2
@@ -1442,6 +1472,8 @@ namespace System.Net.Http
                     WriteLiteralHeader(header.Key.Name, headerValues, valueEncoding, ref headerBuffer);
                 }
             }
+
+            return headerListSize;
         }
 
         private void WriteHeaders(HttpRequestMessage request, ref ArrayBuffer headerBuffer)
@@ -1472,9 +1504,9 @@ namespace System.Net.Http
 
             WriteIndexedHeader(_pool.IsSecure ? H2StaticTable.SchemeHttps : H2StaticTable.SchemeHttp, ref headerBuffer);
 
-            if (request.HasHeaders && request.Headers.Host != null)
+            if (request.HasHeaders && request.Headers.Host is string host)
             {
-                WriteIndexedHeader(H2StaticTable.Authority, request.Headers.Host, ref headerBuffer);
+                WriteIndexedHeader(H2StaticTable.Authority, host, ref headerBuffer);
             }
             else
             {
@@ -1492,6 +1524,8 @@ namespace System.Net.Http
                 WriteIndexedHeader(H2StaticTable.PathSlash, pathAndQuery, ref headerBuffer);
             }
 
+            int headerListSize = 3 * HeaderField.RfcOverhead; // Method, Authority, Path
+
             if (request.HasHeaders)
             {
                 if (request.Headers.Protocol != null)
@@ -1499,9 +1533,10 @@ namespace System.Net.Http
                     WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
                     Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
                     WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
+                    headerListSize += HeaderField.RfcOverhead;
                 }
 
-                WriteHeaderCollection(request, request.Headers, ref headerBuffer);
+                headerListSize += WriteHeaderCollection(request, request.Headers, ref headerBuffer);
             }
 
             // Determine cookies to send.
@@ -1511,9 +1546,9 @@ namespace System.Net.Http
                 if (cookiesFromContainer != string.Empty)
                 {
                     WriteBytes(KnownHeaders.Cookie.Http2EncodedName, ref headerBuffer);
-
                     Encoding? cookieEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(KnownHeaders.Cookie.Name, request);
                     WriteLiteralHeaderValue(cookiesFromContainer, cookieEncoding, ref headerBuffer);
+                    headerListSize += HttpKnownHeaderNames.Cookie.Length + HeaderField.RfcOverhead;
                 }
             }
 
@@ -1525,11 +1560,24 @@ namespace System.Net.Http
                 {
                     WriteBytes(KnownHeaders.ContentLength.Http2EncodedName, ref headerBuffer);
                     WriteLiteralHeaderValue("0", valueEncoding: null, ref headerBuffer);
+                    headerListSize += HttpKnownHeaderNames.ContentLength.Length + HeaderField.RfcOverhead;
                 }
             }
             else
             {
-                WriteHeaderCollection(request, request.Content.Headers, ref headerBuffer);
+                headerListSize += WriteHeaderCollection(request, request.Content.Headers, ref headerBuffer);
+            }
+
+            // The headerListSize is an approximation of the total header length.
+            // This is acceptable as long as the value is always >= the actual length.
+            // We must avoid ever sending more than the server allowed.
+            // This approach must be revisted if we ever support the dynamic table or compression when sending requests.
+            headerListSize += headerBuffer.ActiveLength;
+
+            uint maxHeaderListSize = _maxHeaderListSize;
+            if ((uint)headerListSize > maxHeaderListSize)
+            {
+                throw new HttpRequestException(SR.Format(SR.net_http_request_headers_exceeded_length, maxHeaderListSize));
             }
         }
 
@@ -1602,9 +1650,9 @@ namespace System.Net.Http
                 // streams are created and started in order.
                 await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, headerBytes, endStream: (request.Content == null && !request.IsExtendedConnectRequest), mustFlush), static (s, writeBuffer) =>
                 {
-                    if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Started writing. Total header bytes={s.headerBytes.Length}");
-
                     s.thisRef.AddStream(s.http2Stream);
+
+                    if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Started writing. Total header bytes={s.headerBytes.Length}");
 
                     Span<byte> span = writeBuffer.Span;
 

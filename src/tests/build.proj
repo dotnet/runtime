@@ -22,6 +22,9 @@
     <RestoreProjects Include="Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
+    <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_Arm.csproj" />
+    <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_General.csproj" />
+    <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_X86.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperGenerator\XUnitWrapperGenerator.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperLibrary\XUnitWrapperLibrary.csproj" />
     <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />

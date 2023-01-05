@@ -61,6 +61,7 @@ int verbConcat::DoWork(const char* nameOfFile1, const char* nameOfFile2)
         if (res == 0)
         {
             LogError("Failed to read '%s' from offset %lld. GetLastError()=%u", nameOfFile2, offset, GetLastError());
+            delete[] buffer;
             return -1;
         }
         DWORD bytesWritten = -1;
@@ -68,11 +69,13 @@ int verbConcat::DoWork(const char* nameOfFile1, const char* nameOfFile2)
         if (res2 == 0)
         {
             LogError("Failed to write '%s' at offset %lld. GetLastError()=%u", nameOfFile1, offset, GetLastError());
+            delete[] buffer;
             return -1;
         }
         if (bytesRead != bytesWritten)
         {
             LogError("Failed to read/write matching bytes %u!=%u", bytesRead, bytesWritten);
+            delete[] buffer;
             return -1;
         }
     }

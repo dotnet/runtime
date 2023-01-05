@@ -76,11 +76,7 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
-        /// or when there is remaining data in the Stream.
-        /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
+        /// or when there is remaining data in the buffer.
         /// </exception>
         public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
@@ -91,6 +87,27 @@ namespace System.Text.Json
 
             jsonTypeInfo.EnsureConfigured();
             return ReadFromSpan(utf8Json, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Parses the UTF-8 encoded text representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="utf8Json">JSON text to parse.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid,
+        /// or there is remaining data in the buffer.
+        /// </exception>
+        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>

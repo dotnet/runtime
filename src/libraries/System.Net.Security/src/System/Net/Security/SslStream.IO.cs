@@ -381,6 +381,12 @@ namespace System.Net.Security
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
                                                                     TlsFrameHelper.ProcessingOptions.ServerName;
+                        if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
+                        {
+                            // macOS cannot process ALPN on server at the momennt.
+                            // We fallback to our own process similar to SNI bellow.
+                            options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
+                        }
 
                         // Process SNI from Client Hello message
                         if (!TlsFrameHelper.TryGetFrameInfo(_buffer.EncryptedReadOnlySpan, ref _lastFrame, options))

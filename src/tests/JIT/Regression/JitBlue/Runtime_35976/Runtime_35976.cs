@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 
-static class Runtime_35976
+public static class Runtime_35976
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static uint fo1(uint value)
@@ -23,7 +23,7 @@ static class Runtime_35976
         return 0;
     }
 
-    static int Main()
+    public static int Main()
     {
         fo1(1);
         return 100;

@@ -65,6 +65,7 @@ namespace ILCompiler.DependencyAnalysis
         protected readonly TypeDesc _type;
         internal readonly EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
         internal readonly EETypeOptionalFieldsNode _optionalFieldsNode;
+        private readonly WritableDataNode _writableDataNode;
         protected bool? _mightHaveInterfaceDispatchMap;
         private bool _hasConditionalDependenciesFromMetadataManager;
 
@@ -78,6 +79,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!type.IsRuntimeDeterminedSubtype);
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
+            _writableDataNode = factory.Target.SupportsRelativePointers ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
             factory.TypeSystemContext.EnsureLoadableType(type);
@@ -971,16 +973,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected void OutputWritableData(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            if (factory.Target.SupportsRelativePointers)
+            if (_writableDataNode != null)
             {
-                Utf8StringBuilder writableDataBlobName = new Utf8StringBuilder();
-                writableDataBlobName.Append("__writableData");
-                writableDataBlobName.Append(factory.NameMangler.GetMangledTypeName(_type));
-
-                BlobNode blob = factory.UninitializedWritableDataBlob(writableDataBlobName.ToUtf8String(),
-                    WritableData.GetSize(factory.Target.PointerSize), WritableData.GetAlignment(factory.Target.PointerSize));
-
-                objData.EmitReloc(blob, RelocType.IMAGE_REL_BASED_RELPTR32);
+                objData.EmitReloc(_writableDataNode, RelocType.IMAGE_REL_BASED_RELPTR32);
             }
         }
 
@@ -1012,15 +1007,18 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void OutputGenericInstantiationDetails(NodeFactory factory, ref ObjectDataBuilder objData)
+        protected void OutputGenericInstantiationDetails(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            if (_type.HasInstantiation && !_type.IsTypeDefinition)
+            if (_type.HasInstantiation)
             {
-                IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
-                if (factory.Target.SupportsRelativePointers)
-                    objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
-                else
-                    objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
+                if (!_type.IsTypeDefinition)
+                {
+                    IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
+                    else
+                        objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
+                }
 
                 GenericCompositionDetails details;
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
@@ -1134,11 +1132,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual void ComputeValueTypeFieldPadding()
         {
-            // All objects that can have appreciable which can be derived from size compute ValueTypeFieldPadding.
-            // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.
-
-            // Interfaces, sealed types, and non-DefTypes cannot be derived from
-            if (_type.IsInterface || !_type.IsDefType || (_type.IsSealed() && !_type.IsValueType))
+            // Only valuetypes need to compute the padding.
+            if (!_type.IsValueType)
                 return;
 
             DefType defType = _type as DefType;
@@ -1154,22 +1149,18 @@ namespace ILCompiler.DependencyAnalysis
             {
                 int numInstanceFieldBytes = defType.InstanceByteCountUnaligned.AsInt;
 
-                // Check if we have a type derived from System.ValueType or System.Enum, but not System.Enum itself
-                if (defType.IsValueType)
-                {
-                    // Value types should have at least 1 byte of size
-                    Debug.Assert(numInstanceFieldBytes >= 1);
+                // Value types should have at least 1 byte of size
+                Debug.Assert(numInstanceFieldBytes >= 1);
 
-                    // The size doesn't currently include the MethodTable pointer size.  We need to add this so that
-                    // the number of instance field bytes consistently represents the boxed size.
-                    numInstanceFieldBytes += _type.Context.Target.PointerSize;
-                }
+                // The size of value types doesn't include the MethodTable pointer.  We need to add this so that
+                // the number of instance field bytes consistently represents the boxed size.
+                numInstanceFieldBytes += _type.Context.Target.PointerSize;
 
                 // For unboxing to work correctly and for supporting dynamic type loading for derived types we need
                 // to record the actual size of the fields of a type without any padding for GC heap allocation (since
                 // we can unbox into locals or arrays where this padding is not used, and because field layout for derived
                 // types is effected by the unaligned base size). We don't want to store this information for all EETypes
-                // since it's only relevant for value types, and derivable types so it's added as an optional field. It's
+                // since it's only relevant for value types, so it's added as an optional field. It's
                 // also enough to simply store the size of the padding (between 0 and 4 or 8 bytes for 32-bit and 0 and 8 or 16 bytes
                 // for 64-bit) which cuts down our storage requirements.
 
@@ -1265,6 +1256,33 @@ namespace ILCompiler.DependencyAnalysis
                 return bytesEmitted / builder.TargetPointerSize;
             }
 
+        }
+
+        private sealed class WritableDataNode : ObjectNode, ISymbolDefinitionNode
+        {
+            private readonly EETypeNode _type;
+
+            public WritableDataNode(EETypeNode type) => _type = type;
+            public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.BssSection;
+            public override bool StaticDependenciesAreComputed => true;
+            public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+                => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type.Type));
+            public int Offset => 0;
+            public override bool IsShareable => true;
+            public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _type.ShouldSkipEmittingObjectNode(factory);
+
+            public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+                => new ObjectData(new byte[WritableData.GetSize(factory.Target.PointerSize)],
+                    Array.Empty<Relocation>(),
+                    WritableData.GetAlignment(factory.Target.PointerSize),
+                    new ISymbolDefinitionNode[] { this });
+
+            protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+            public override int ClassCode => -5647893;
+
+            public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+                => comparer.Compare(_type, ((WritableDataNode)other)._type);
         }
     }
 }

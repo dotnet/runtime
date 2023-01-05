@@ -1916,10 +1916,6 @@ private:
     }
 #endif // TARGET_X86
 
-#ifdef FEATURE_SIMD
-    int BuildSIMD(GenTreeSIMD* tree);
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #endif // FEATURE_HW_INTRINSICS

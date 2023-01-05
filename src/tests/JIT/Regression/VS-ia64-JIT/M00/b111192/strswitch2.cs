@@ -5,9 +5,9 @@ using System;
 
 namespace strswitch
 {
-    internal class Class1
+    public class Class1
     {
-        private static int Main()
+        public static int Main()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };
             for (int i = 0; i < s.Length; i++)

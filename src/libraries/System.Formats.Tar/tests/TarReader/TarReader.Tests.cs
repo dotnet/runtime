@@ -38,6 +38,8 @@ namespace System.Formats.Tar.Tests
                 }
             }
 
+            Assert.Throws<ObjectDisposedException>(() => ms.ReadByte());
+
             Assert.True(dataStreams.Any());
             foreach (Stream ds in dataStreams)
             {
@@ -61,6 +63,8 @@ namespace System.Formats.Tar.Tests
                     }
                 }
             }
+
+            ms.ReadByte(); // Should not throw
 
             Assert.True(dataStreams.Any());
             foreach (Stream ds in dataStreams)

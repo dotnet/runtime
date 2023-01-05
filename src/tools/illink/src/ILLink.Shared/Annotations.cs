@@ -79,9 +79,9 @@ namespace ILLink.Shared
 			}));
 		}
 
-		static readonly DynamicallyAccessedMemberTypes[] AllDynamicallyAccessedMemberTypes = GetAllDynamicallyAccessedMemberTypes ();
+		private static readonly DynamicallyAccessedMemberTypes[] AllDynamicallyAccessedMemberTypes = GetAllDynamicallyAccessedMemberTypes ();
 
-		static DynamicallyAccessedMemberTypes[] GetAllDynamicallyAccessedMemberTypes ()
+		private static DynamicallyAccessedMemberTypes[] GetAllDynamicallyAccessedMemberTypes ()
 		{
 			var values = new HashSet<DynamicallyAccessedMemberTypes> (
 								Enum.GetValues (typeof (DynamicallyAccessedMemberTypes))

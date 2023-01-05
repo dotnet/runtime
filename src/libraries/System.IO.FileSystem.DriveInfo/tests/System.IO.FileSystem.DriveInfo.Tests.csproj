@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DriveInfo.Unix.Tests.cs" Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'" />
+    <Compile Include="DriveInfo.Unix.Tests.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'" />
     <Compile Include="DriveInfo.Windows.Tests.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="VirtualDrives.Windows.Tests.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="$(CommonTestPath)System\IO\VirtualDriveHelper.Windows.cs" Link="Common\System\IO\VirtualDriveHelper.Windows.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
