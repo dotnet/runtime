@@ -32,6 +32,11 @@
         <target state="translated">로깅 메서드 매개 변수 이름은 _로 시작할 수 없음</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOut">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">로깅 메서드에는 본문을 사용할 수 없음</target>

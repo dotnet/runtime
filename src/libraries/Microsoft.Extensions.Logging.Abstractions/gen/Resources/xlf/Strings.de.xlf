@@ -32,6 +32,11 @@
         <target state="translated">Parameternamen für die Protokollierungsmethode dürfen nicht mit "_" beginnen.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOut">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">Protokollierungsmethoden dürfen keinen Text enthalten.</target>

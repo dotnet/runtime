@@ -32,6 +32,11 @@
         <target state="translated">記錄方法參數名稱的開頭不能為 _</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOut">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">記錄方法不能有主體</target>
