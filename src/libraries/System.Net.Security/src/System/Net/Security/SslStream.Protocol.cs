@@ -270,9 +270,17 @@ namespace System.Net.Security
 
             if (_sslAuthenticationOptions.CertificateContext != null)
             {
-                EnsureInitialized(ref filteredCerts).Add(_sslAuthenticationOptions.CertificateContext.Certificate);
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Log.CertificateFromCertContext(this);
+
+                //
+                // SslStreamCertificateContext can only be constructed with a cert with a
+                // private key, so we don't have to do any further processing.
+                //
+
+                _selectedClientCertificate = _sslAuthenticationOptions.CertificateContext.Certificate;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Selected cert = {_selectedClientCertificate}");
+                return _selectedClientCertificate;
             }
             else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
