@@ -340,7 +340,6 @@ set( JIT_HEADERS
   sideeffects.h
   simd.h
   simdashwintrinsic.h
-  simdintrinsiclist.h
   sm.h
   smallhash.h
   smcommon.h
