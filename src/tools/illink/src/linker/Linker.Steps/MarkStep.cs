@@ -1793,6 +1793,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.DynamicDependency:
 			case DependencyKind.DynamicallyAccessedMember:
 			case DependencyKind.InteropMethodDependency:
+			case DependencyKind.Ldtoken:
 				if (isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
 					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
 
