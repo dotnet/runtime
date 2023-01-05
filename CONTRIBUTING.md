@@ -59,7 +59,7 @@ The best way to create a minimal reproduction is gradually removing code and dep
 
 ## Contributing Changes
 
-Project maintainers will merge changes that improve the product significantly. Changes that break compatibility or take on other risk will require community feedback (in an issue) and will typlically be rejected.
+Project maintainers will merge changes that improve the product significantly.
 
 The [Pull Request Guide](docs/pr-guide.md) and [Copyright](docs/project/copyright.md) docs define additional guidance.
 
