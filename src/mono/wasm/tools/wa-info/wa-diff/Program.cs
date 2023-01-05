@@ -16,6 +16,7 @@ namespace WebAssemblyInfo
         static internal Regex? AssemblyFilter;
         static internal Regex? FunctionFilter;
         static internal long FunctionOffset = -1;
+        static internal bool ShowFunctionSize = false;
         static internal Regex? TypeFilter;
 
         public static bool AotStats;
@@ -69,6 +70,11 @@ namespace WebAssemblyInfo
                                 FunctionOffset = offset;
                             else if (v.StartsWith("0x") && long.TryParse(v[2..], NumberStyles.AllowHexSpecifier, null, out offset))
                                 FunctionOffset = offset;
+                    } },
+                { "s|function-size",
+                    "Compare function code sizes",
+                    v => {
+                        ShowFunctionSize = true;
                     } },
                 { "v|verbose",
                     "Output information about progress during the run of the tool",

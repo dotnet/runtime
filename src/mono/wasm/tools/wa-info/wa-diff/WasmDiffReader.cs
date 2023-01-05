@@ -79,12 +79,18 @@ namespace WebAssemblyInfo
 
             if (f1 != null && f2 == null)
             {
+                if (Program.ShowFunctionSize)
+                    Console.WriteLine($"Code size difference: -{funcsCode[idx].Size} bytes");
+
                 PrintFunctionWithPrefix(idx, GetFunctionName(idx), "- ");
                 return;
             }
 
             if (f1 == null && f2 != null)
             {
+                if (Program.ShowFunctionSize)
+                    Console.WriteLine($"Code size difference: +{other.funcsCode[idx].Size} bytes");
+
                 other.PrintFunctionWithPrefix(otherIdx, other.GetFunctionName(otherIdx), "+ ");
                 return;
             }
@@ -99,6 +105,9 @@ namespace WebAssemblyInfo
             var functionType2 = other.functionTypes[other.functions[otherIdx].TypeIdx];
             string sig1 = functionType1.ToString(name);
             string sig2 = functionType2.ToString(otherName);
+
+            if (Program.ShowFunctionSize && other.funcsCode[idx].Size != funcsCode[idx].Size)
+                Console.WriteLine($"Code size difference: {other.funcsCode[idx].Size - funcsCode[idx].Size} bytes"); 
 
             bool sigPrinted = false;
             if (sig1 != sig2)
