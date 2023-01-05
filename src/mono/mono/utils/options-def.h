@@ -118,6 +118,9 @@ DEFINE_INT(jiterpreter_jit_call_queue_flush_threshold, "jiterpreter-jit-call-que
 DEFINE_INT(jiterpreter_interp_entry_trampoline_hit_count, "jiterpreter-interp-entry-hit-count", 1000, "Queue specialized interp_entry wrapper for JIT after this many hits")
 // After a generic interp_entry wrapper is hit this many times without being jitted, we will flush the JIT queue
 DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-entry-queue-flush-threshold", 3000, "Flush the interp_entry JIT queue after an unJITted call site has this many hits")
+// In degenerate cases the jiterpreter could end up generating lots of WASM, so shut off jitting once it reaches this limit
+// Each wasm byte likely maps to multiple bytes of native code, so it's important for this limit not to be too high
+DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
 #endif // HOST_BROWSER
 
 /* Cleanup */

@@ -585,6 +585,7 @@ function generate_wasm (
         const buffer = builder.getArrayView();
         if (trace > 0)
             console.log(`${traceName} generated ${buffer.length} byte(s) of wasm`);
+        counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
         const imports : any = {
@@ -2936,6 +2937,8 @@ export function mono_interp_tier_prepare_jiterpreter (
     // FIXME: We shouldn't need this check
     if (!mostRecentOptions.enableTraces)
         return JITERPRETER_NOT_JITTED;
+    else if (mostRecentOptions.wasmBytesLimit <= counters.bytesGenerated)
+        return JITERPRETER_NOT_JITTED;
 
     let info = traceInfo[<any>ip];
 
@@ -2983,7 +2986,7 @@ export function jiterpreter_dump_stats (b?: boolean) {
     if (!mostRecentOptions.enableStats && (b !== undefined))
         return;
 
-    console.log(`// jiterpreter produced ${counters.tracesCompiled} traces from ${counters.traceCandidates} candidates (${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%), ${counters.jitCallsCompiled} jit_call trampolines, and ${counters.entryWrappersCompiled} interp_entry wrappers`);
+    console.log(`// generated: ${counters.bytesGenerated} wasm bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls; ${counters.entryWrappersCompiled} interp_entries`);
     console.log(`// time spent: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm`);
     if (mostRecentOptions.countBailouts) {
         for (let i = 0; i < BailoutReasonNames.length; i++) {
