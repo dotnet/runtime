@@ -23,7 +23,7 @@ namespace WebAssemblyInfo
             if (dir == null)
                 return;
 
-            var symPath = System.IO.Path.Combine(dir, "dotnet.js.symbols");
+            var symPath = System.IO.Path.Combine(dir, $"{System.IO.Path.GetFileNameWithoutExtension(Path)}.js.symbols");
             if (!File.Exists(symPath))
                 return;
 
