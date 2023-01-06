@@ -2133,26 +2133,6 @@ VarToRegMap LinearScan::setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarT
     return inVarToRegMap;
 }
 
-#ifdef TARGET_ARM64
-//------------------------------------------------------------------------
-// getNextConsecutiveRefPosition: Get the next subsequent refPosition.
-//
-// Arguments:
-//    refPosition   - The refposition for which we need to find next refposition
-//
-// Return Value:
-//    The next refPosition or nullptr if there is not one.
-//
-RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
-{
-    RefPosition* nextRefPosition;
-    assert(refPosition->needsConsecutive);
-    nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
-    assert((nextRefPosition == nullptr) || nextRefPosition->needsConsecutive);
-    return nextRefPosition;
-}
-#endif
-
 //------------------------------------------------------------------------
 // checkLastUses: Check correctness of last use flags
 //

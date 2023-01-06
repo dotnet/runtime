@@ -44,6 +44,24 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
 }
 
 //------------------------------------------------------------------------
+// getNextConsecutiveRefPosition: Get the next subsequent refPosition.
+//
+// Arguments:
+//    refPosition   - The refposition for which we need to find next refposition
+//
+// Return Value:
+//    The next refPosition or nullptr if there is not one.
+//
+RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
+{
+    RefPosition* nextRefPosition;
+    assert(refPosition->needsConsecutive);
+    nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
+    assert((nextRefPosition == nullptr) || nextRefPosition->needsConsecutive);
+    return nextRefPosition;
+}
+
+//------------------------------------------------------------------------
 // setNextConsecutiveRegisterAssignment: Set the consecutive register mask to the
 //   subsequent refpositions
 //
