@@ -406,8 +406,8 @@ get_context (void)
 		context->stack_start = (guchar*)mono_valloc (0, INTERP_STACK_SIZE, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
 		context->stack_end = context->stack_start + INTERP_STACK_SIZE - INTERP_REDZONE_SIZE;
 		context->stack_real_end = context->stack_start + INTERP_STACK_SIZE;
-		/* We reserve an object pointer slot at the top of the interp stack to make temp objects visible to GC */
-		context->stack_pointer = context->stack_start + sizeof(MonoObject*);
+		/* We reserve a stack slot at the top of the interp stack to make temp objects visible to GC */
+		context->stack_pointer = context->stack_start + MINT_STACK_SLOT_SIZE;
 
 		frame_data_allocator_init (&context->data_stack, 8192);
 		/* Make sure all data is initialized before publishing the context */
