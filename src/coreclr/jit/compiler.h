@@ -8438,6 +8438,8 @@ private:
                                                       CorInfoType simdBaseJitType,
                                                       bool        isSimdAsHWIntrinsic = false)
     {
+        assert(varTypeIsSIMD(simdType));
+
         CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
 
         if (isSimdAsHWIntrinsic)
