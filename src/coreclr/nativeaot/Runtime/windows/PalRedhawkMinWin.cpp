@@ -450,13 +450,13 @@ static PalHijackCallback g_pHijackCallback;
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 typedef BOOL (WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
-static QueueUserAPC2Proc pfnQueueUserAPC2Proc;
+
+#define QUEUE_USER_APC2_UNINITIALIZED (QueueUserAPC2Proc)-1
+static QueueUserAPC2Proc g_pfnQueueUserAPC2Proc = QUEUE_USER_APC2_UNINITIALIZED;
 
 static const QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (QUEUE_USER_APC_FLAGS)
                                     (QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
                                     QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
-
-static void NTAPI EmptyActivationHandler(ULONG_PTR parameter){}
 
 static void NTAPI ActivationHandler(ULONG_PTR parameter)
 {
@@ -473,21 +473,6 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     ASSERT(g_pHijackCallback == NULL);
     g_pHijackCallback = callback;
 
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    // Check if we have QueueUserAPC2
-    HMODULE hKernel32 = LoadKernel32dll();
-    pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
-
-    // See if QueueUserAPC2 supports the special user-mode APC with a callback that includes the interrupted CONTEXT
-    if (pfnQueueUserAPC2Proc != NULL)
-    {
-        if (!(*pfnQueueUserAPC2Proc)(EmptyActivationHandler, GetCurrentThread(), 0, SpecialUserModeApcWithContextFlags))
-        {
-            pfnQueueUserAPC2Proc = NULL;
-        }
-    }
-#endif
-
     return true;
 }
 
@@ -496,31 +481,36 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
-    if (pfnQueueUserAPC2Proc)
+    if (g_pfnQueueUserAPC2Proc == QUEUE_USER_APC2_UNINITIALIZED)
+    {
+        g_pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(LoadKernel32dll(), "QueueUserAPC2");
+    }
+
+    if (g_pfnQueueUserAPC2Proc)
     {
         Thread* pThread = (Thread*)pThreadToHijack;
 
         // An APC can be interrupted by another one, do not queue more if one is pending.
-        if (!pThread->IsActivationPending())
+        if (pThread->IsActivationPending())
         {
-            pThread->SetActivationPending(true);
-            BOOL success = pfnQueueUserAPC2Proc(
-                &ActivationHandler,
-                hThread,
-                (ULONG_PTR)pThreadToHijack,
-                SpecialUserModeApcWithContextFlags);
-
-            if (!success)
-            {
-                // Failure to send the signal is unexpected. If we see this, it is a concern.
-                // It is possible for this to fail (like OS is out of nonpaged memory when inserting the APC),
-                // but it should be extremely rare.
-                ASSERT(!"failed to queue an APC");
-                pThread->SetActivationPending(false);
-            }
+            return;
         }
 
-        return;
+        pThread->SetActivationPending(true);
+        BOOL success = g_pfnQueueUserAPC2Proc(
+            &ActivationHandler,
+            hThread,
+            (ULONG_PTR)pThreadToHijack,
+            SpecialUserModeApcWithContextFlags);
+
+        if (success)
+        {
+            return;
+        }
+
+        // queuing an APC failed. we will not try again
+        g_pfnQueueUserAPC2Proc = NULL;
+        pThread->SetActivationPending(false);
     }
 #endif
 
