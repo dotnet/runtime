@@ -12,9 +12,6 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private SafeDeleteSslContext CreateAndroidSecurityContextStub()
-            => SafeDeleteSslContext.CreateContextStub(sslStreamProxy: new JavaProxy(this));
-
         private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate()
         {
             ProtocolToken? alertToken = null;
@@ -72,6 +69,7 @@ namespace System.Net.Security
                 _handle?.Free();
                 _handle = null;
             }
+
             private static unsafe void RegisterRemoteCertificateValidationCallback()
             {
                 if (!s_initialized)

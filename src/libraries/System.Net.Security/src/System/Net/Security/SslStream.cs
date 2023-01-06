@@ -209,6 +209,10 @@ namespace System.Net.Security
             _sslAuthenticationOptions.CertValidationDelegate = userCertificateValidationCallback;
             _sslAuthenticationOptions.CertSelectionDelegate = userCertificateSelectionCallback;
 
+#if TARGET_ANDROID
+            _sslAuthenticationOptions.SslStreamProxyFactory = () => new SslStream.JavaProxy(sslStream: this);
+#endif
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
 

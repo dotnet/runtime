@@ -181,5 +181,9 @@ namespace System.Net.Security
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
+
+#if TARGET_ANDROID
+        internal Func<SslStream.JavaProxy>? SslStreamProxyFactory { get; set; }
+#endif
     }
 }

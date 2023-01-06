@@ -28,24 +28,24 @@ namespace System.Net.Security
 
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
-            ref SafeDeleteSslContext context,
+            ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials credential,
-            ref SafeDeleteSslContext context,
+            ref SafeDeleteSslContext? context,
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate? clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal Renegotiate(
@@ -122,9 +122,7 @@ namespace System.Net.Security
 
                 PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer, out int read);
                 if (ret == PAL_SSLStreamStatus.Error)
-                {
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
-                }
 
                 count = read;
 
@@ -172,20 +170,19 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
-            ref SafeDeleteSslContext context,
+            SafeFreeCredentials credential,
+            ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            ArgumentNullException.ThrowIfNull(context);
-
             try
             {
-                SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)context);
+                SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
-                if (context.IsInvalid)
+                if (context == null || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext(context.SslStreamProxy, sslAuthenticationOptions);
+                    context = new SafeDeleteSslContext(sslAuthenticationOptions);
                     sslContext = context;
                 }
 

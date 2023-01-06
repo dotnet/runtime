@@ -809,14 +809,6 @@ namespace System.Net.Security
                         }
                     }
 
-#if TARGET_ANDROID
-                    if (_securityContext is null)
-                    {
-                        _securityContext = CreateAndroidSecurityContextStub();
-                        Debug.Assert(_securityContext.IsInvalid);
-                    }
-#endif
-
                     if (_sslAuthenticationOptions.IsServer)
                     {
                         status = SslStreamPal.AcceptSecurityContext(
