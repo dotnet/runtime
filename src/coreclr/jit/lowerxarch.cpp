@@ -5211,7 +5211,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
     {
         GenTreeIntConCommon* icon = addr->AsIntConCommon();
 
+#if defined(FEATURE_SIMD)
         if (((addr->TypeGet() != TYP_SIMD12) || !icon->ImmedValNeedsReloc(comp)) && icon->FitsInAddrBase(comp))
+#else
+        if (icon->FitsInAddrBase(comp))
+#endif
         {
             // Amd64:
             // We can mark any pc-relative 32-bit addr as containable.
