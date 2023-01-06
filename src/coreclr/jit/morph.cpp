@@ -53,7 +53,7 @@ PhaseStatus Compiler::fgMorphInit()
     // Initialize the BlockSet epoch
     NewBasicBlockEpoch();
 
-    fgOutgoingArgTemps = nullptr;
+    fgAvailableOutgoingArgTemps = hashBv::Create(this);
 
     // Insert call to class constructor as the first basic block if
     // we were asked to do so.
@@ -147,11 +147,31 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
     return result;
 }
 
-/*****************************************************************************
- *
- *  Convert the given node into a call to the specified helper passing
- *  the given argument list.
- */
+class SharedTempsScope
+{
+    Compiler*             m_comp;
+    ArrayStack<unsigned>  m_usedSharedTemps;
+    ArrayStack<unsigned>* m_prevUsedSharedTemps;
+
+public:
+    SharedTempsScope(Compiler* comp)
+        : m_comp(comp)
+        , m_usedSharedTemps(comp->getAllocator(CMK_CallArgs))
+        , m_prevUsedSharedTemps(comp->fgUsedSharedTemps)
+    {
+        comp->fgUsedSharedTemps = &m_usedSharedTemps;
+    }
+
+    ~SharedTempsScope()
+    {
+        m_comp->fgUsedSharedTemps = m_prevUsedSharedTemps;
+
+        for (int i = 0; i < m_usedSharedTemps.Height(); i++)
+        {
+            m_comp->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
+        }
+    }
+};
 
 //------------------------------------------------------------------------
 // fgMorphIntoHelperCall:
@@ -236,6 +256,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
 
     if (morphArgs)
     {
+        SharedTempsScope scope(this);
         tree = fgMorphArgs(call);
     }
 
@@ -3964,11 +3985,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     JITDUMP("making an outgoing copy for struct arg\n");
 
-    if (fgOutgoingArgTemps == nullptr)
-    {
-        fgOutgoingArgTemps = hashBv::Create(this);
-    }
-
     CORINFO_CLASS_HANDLE copyBlkClass = arg->GetSignatureClassHandle();
     unsigned             tmp          = 0;
     bool                 found        = false;
@@ -3977,19 +3993,18 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     // We do not reuse within a statement.
     if (!opts.MinOpts())
     {
-        indexType lclNum;
-        FOREACH_HBV_BIT_SET(lclNum, fgOutgoingArgTemps)
-        {
-            LclVarDsc* varDsc = lvaGetDesc((unsigned)lclNum);
-            if ((varDsc->GetStructHnd() == copyBlkClass) && !fgCurrentlyInUseArgTemps->testBit(lclNum))
-            {
-                tmp   = (unsigned)lclNum;
-                found = true;
-                JITDUMP("reusing outgoing struct arg\n");
-                break;
-            }
-        }
-        NEXT_HBV_BIT_SET;
+        found = ForEachHbvBitSet(*fgAvailableOutgoingArgTemps, [&](indexType lclNum) {
+                    LclVarDsc* varDsc = lvaGetDesc((unsigned)lclNum);
+                    if ((varDsc->GetStructHnd() == copyBlkClass))
+                    {
+                        tmp = (unsigned)lclNum;
+                        JITDUMP("reusing outgoing struct arg V%02u\n", tmp);
+                        fgAvailableOutgoingArgTemps->clearBit(lclNum);
+                        return HbvWalk::Abort;
+                    }
+
+                    return HbvWalk::Continue;
+                }) == HbvWalk::Abort;
     }
 
     // Create the CopyBlk tree and insert it.
@@ -4003,11 +4018,16 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
         {
             lvaSetStructUsedAsVarArg(tmp);
         }
-
-        fgOutgoingArgTemps->setBit(tmp);
     }
 
-    fgCurrentlyInUseArgTemps->setBit(tmp);
+    if (fgUsedSharedTemps != nullptr)
+    {
+        fgUsedSharedTemps->Push(tmp);
+    }
+    else
+    {
+        assert(!fgGlobalMorph);
+    }
 
     // Copy the valuetype to the temp
     GenTree* dest    = gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet());
@@ -8051,6 +8071,10 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     }
 
     compCurBB->bbFlags |= BBF_HAS_CALL; // This block has a call
+
+    // From this point on disallow shared temps to be reused until we are done
+    // processing the call.
+    SharedTempsScope sharedTemps(this);
 
     // Process the "normal" argument list
     call = fgMorphArgs(call);
@@ -12749,16 +12773,11 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree = fgMorphCall(tree->AsCall());
             break;
 
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-#if defined(FEATURE_SIMD)
-        case GT_SIMD:
-#endif
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-#endif
             tree = fgMorphMultiOp(tree->AsMultiOp());
             break;
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_ARR_ELEM:
             tree->AsArrElem()->gtArrObj = fgMorphTree(tree->AsArrElem()->gtArrObj);
@@ -13561,8 +13580,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 {
     fgRemoveRestOfBlock = false;
 
-    fgCurrentlyInUseArgTemps = hashBv::Create(this);
-
     for (Statement* const stmt : block->Statements())
     {
         if (fgRemoveRestOfBlock)
@@ -13589,10 +13606,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         /* Morph this statement tree */
 
         GenTree* morphedTree = fgMorphTree(oldTree);
-
-        // mark any outgoing arg temps as free so we can reuse them in the next statement.
-
-        fgCurrentlyInUseArgTemps->ZeroAll();
 
         // Has fgMorphStmt been sneakily changed ?
 

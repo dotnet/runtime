@@ -285,11 +285,11 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
 #endif // TARGET_X86
 
 //-----------------------------------------------------------------------------
-// genSIMDIntrinsicUpperSave: save the upper half of a TYP_SIMD32 vector to
-//                            the given register, if any, or to memory.
+// genSimdUpperSave: save the upper half of a TYP_SIMD32 vector to
+//                   the given register, if any, or to memory.
 //
 // Arguments:
-//    simdNode - The GT_SIMD node
+//    node - The GT_INTRINSIC node
 //
 // Return Value:
 //    None.
@@ -303,26 +303,30 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
 //    (Note that if there are no caller-save registers available, the entire 32 byte
 //    value will be spilled to the stack.)
 //
-void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
+void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
 {
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicUpperSave);
+    assert(node->gtIntrinsicName == NI_SIMD_UpperSave);
 
-    GenTree* op1 = simdNode->Op(1);
-    assert(op1->IsLocal() && op1->TypeGet() == TYP_SIMD32);
-    regNumber targetReg = simdNode->GetRegNum();
-    regNumber op1Reg    = genConsumeReg(op1);
+    GenTree* op1 = node->gtGetOp1();
+    assert(op1->IsLocal() && (op1->TypeGet() == TYP_SIMD32));
+
+    regNumber tgtReg = node->GetRegNum();
+    regNumber op1Reg = genConsumeReg(op1);
     assert(op1Reg != REG_NA);
-    if (targetReg != REG_NA)
+
+    if (tgtReg != REG_NA)
     {
-        GetEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, targetReg, op1Reg, 0x01);
-        genProduceReg(simdNode);
+        GetEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tgtReg, op1Reg, 0x01);
+        genProduceReg(node);
     }
     else
     {
         // The localVar must have a stack home.
+
         unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
+
         // We want to store this to the upper 16 bytes of this localVar's home.
         int offs = 16;
 
@@ -331,29 +335,31 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 }
 
 //-----------------------------------------------------------------------------
-// genSIMDIntrinsicUpperRestore: Restore the upper half of a TYP_SIMD32 vector to
-//                               the given register, if any, or to memory.
+// genSimdUpperRestore: Restore the upper half of a TYP_SIMD32 vector to
+//                      the given register, if any, or to memory.
 //
 // Arguments:
-//    simdNode - The GT_SIMD node
+//    node - The GT_INTRINSIC node
 //
 // Return Value:
 //    None.
 //
 // Notes:
-//    For consistency with genSIMDIntrinsicUpperSave, and to ensure that lclVar nodes always
+//    For consistency with genSimdUpperSave, and to ensure that lclVar nodes always
 //    have their home register, this node has its targetReg on the lclVar child, and its source
-//    on the simdNode.
+//    on the node.
 //
-void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
+void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 {
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicUpperRestore);
+    assert(node->gtIntrinsicName == NI_SIMD_UpperRestore);
 
-    GenTree* op1 = simdNode->Op(1);
+    GenTree* op1 = node->gtGetOp1();
     assert(op1->IsLocal() && op1->TypeGet() == TYP_SIMD32);
-    regNumber srcReg    = simdNode->GetRegNum();
+
+    regNumber srcReg    = node->GetRegNum();
     regNumber lclVarReg = genConsumeReg(op1);
     assert(lclVarReg != REG_NA);
+
     if (srcReg != REG_NA)
     {
         GetEmitter()->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, lclVarReg, lclVarReg, srcReg, 0x01);
@@ -367,43 +373,6 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
         // We will load this from the upper 16 bytes of this localVar's home.
         int offs = 16;
         GetEmitter()->emitIns_R_R_S_I(INS_vinsertf128, EA_32BYTE, lclVarReg, lclVarReg, varNum, offs, 0x01);
-    }
-}
-
-//------------------------------------------------------------------------
-// genSIMDIntrinsic: Generate code for a SIMD Intrinsic.  This is the main
-// routine which in turn calls appropriate genSIMDIntrinsicXXX() routine.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    Currently, we only recognize SIMDVector<float> and SIMDVector<int>, and
-//    a limited set of methods.
-//
-void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
-{
-    // NYI for unsupported base types
-    if (!varTypeIsArithmetic(simdNode->GetSimdBaseType()))
-    {
-        noway_assert(!"SIMD intrinsic with unsupported base type.");
-    }
-
-    switch (simdNode->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicUpperSave:
-            genSIMDIntrinsicUpperSave(simdNode);
-            break;
-        case SIMDIntrinsicUpperRestore:
-            genSIMDIntrinsicUpperRestore(simdNode);
-            break;
-
-        default:
-            noway_assert(!"Unimplemented SIMD intrinsic.");
-            unreached();
     }
 }
 
