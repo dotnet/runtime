@@ -300,7 +300,7 @@ namespace System.Reflection.Tests
         public void GetRuntimeInterfaceMap()
         {
             AssertExtensions.Throws<ArgumentNullException>("typeInfo", () => default(TypeInfo).GetRuntimeInterfaceMap(typeof(ICloneable)));
-            AssertExtensions.Throws<ArgumentNullException>("ifaceType", () => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(null));
+            AssertExtensions.Throws<ArgumentNullException>("interfaceType", () => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(null));
             Assert.Throws<ArgumentException>(() => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(typeof(ICloneable)));
             Assert.Throws<ArgumentException>(() => typeof(TestType).GetTypeInfo().GetRuntimeInterfaceMap(typeof(string)));
 

@@ -81,7 +81,6 @@ extern errno_t _makepath_s( char* outDest, size_t inDestBufferSize, const char* 
 extern errno_t _wmakepath_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inDrive, const WCHAR* inDirectory, const WCHAR* inFilename, const WCHAR* inExtension );
 
 extern errno_t _splitpath_s( const char* inPath, char* outDrive, size_t inDriveSize, char* outDirectory, size_t inDirectorySize, char* outFilename, size_t inFilenameSize, char* outExtension, size_t inExtensionSize );
-extern errno_t _wsplitpath_s( const WCHAR* inPath, WCHAR* outDrive, size_t inDriveSize, WCHAR* outDirectory, size_t inDirectorySize, WCHAR* outFilename, size_t inFilenameSize, WCHAR* outExtension, size_t inExtensionSize );
 
 extern int sprintf_s( char *string, size_t sizeInBytes, const char *format, ... );
 

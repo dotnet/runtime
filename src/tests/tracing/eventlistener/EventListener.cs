@@ -70,7 +70,7 @@ namespace Tracing.Tests
         private static int messageIterations = 100;
         private static readonly DateTime ThePast = DateTime.UtcNow;
 
-        static int Main(string[] args)
+        static int Main()
         {
             bool pass = false;
             using(var listener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))

@@ -782,8 +782,10 @@ void DumpManifestResources(void* GUICookie)
             static WCHAR wzFileName[2048];
 
             WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzFileName,2048);
-            wzName = wcsrchr(wzFileName,'\\');
+            wzName = wcsrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_W);
+#ifdef HOST_WINDOWS
             if(wzName == NULL) wzName = wcsrchr(wzFileName,':');
+#endif
             if (wzName == NULL) wzName = wzFileName;
             else wzName++;
 

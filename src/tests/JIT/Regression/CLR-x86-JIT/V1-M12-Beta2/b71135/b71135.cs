@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         public byte[] Method1()
         {
@@ -26,7 +26,7 @@ namespace Test
             }
             return m_abFwd6;
         }
-        static int Main()
+        public static int Main()
         {
             new App().Method1();
             return 100;

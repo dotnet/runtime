@@ -41,7 +41,7 @@ class OSRMethodStructPromotion
         return result;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int final = 1_000_000;
         F(0, 10);

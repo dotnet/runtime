@@ -47,19 +47,20 @@ Targeting win-arm64 on a Windows x64 host machine,
 > dotnet publish -r win-arm64 -c Release
 ```
 
-To target win-arm64 on a Windows x64 host on an advanced scenario where the SDK support is not sufficient (note that these scenarios will generate warnings for using explicit package references), in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
+For using daily builds according to the instructions above, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
-<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="8.0.0-preview.2.22103.2" />
+<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="8.0.0-alpha.1.23456.7" />
 ```
 
-Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues (use the latest version from the [dotnet8](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet8/NuGet/Microsoft.DotNet.ILCompiler/)). After adding the package reference, you may publish for win-arm64 as usual:
+Replace `8.0.0-alpha.1.23456.7` with the latest version from the [dotnet8](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet8/NuGet/Microsoft.DotNet.ILCompiler/) feed.
+Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues. After adding the package reference, you may publish for win-arm64 as usual:
 ```bash
 > dotnet publish -r win-arm64 -c Release
 ```
 
 Similarly, to target linux-arm64 on a Linux x64 host, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.linux-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
-<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.linux-x64.Microsoft.DotNet.ILCompiler" Version="8.0.0-preview.2.22103.2" />
+<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.linux-x64.Microsoft.DotNet.ILCompiler" Version="8.0.0-alpha.1.23456.7" />
 ```
 
 You also need to specify the sysroot directory for Clang using the `SysRoot` property. For example, assuming you are using one of ARM64-targeting [Docker images](../../../../docs/workflow/building/coreclr/linux-instructions.md#Docker-Images) employed for cross-compilation by this repo, you may publish for linux-arm64 with the following command:

@@ -5,7 +5,7 @@
 namespace A
 {
     using System;
-    class B
+    public class B
     {
         public static int downBy1ge(int amount)
         {
@@ -161,7 +161,7 @@ namespace A
             return sum + i;
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             bool failed = false;
 

@@ -57,6 +57,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			linkedMembers.Remove ("System.Int32 System.Runtime.CompilerServices.RefSafetyRulesAttribute::Version");
 			linkedMembers.Remove ("System.Void System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(System.Int32)");
 
+			// Workaround for compiler injected attribute to describe the language version
+			verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
+			verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
+
 			var membersToAssert = originalAssembly.MainModule.Types;
 			foreach (var originalMember in membersToAssert) {
 				if (originalMember is TypeDefinition td) {
@@ -99,10 +103,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)
 		{
-			// Workaround for compiler injected attribute to describe the language version
-			verifiedGeneratedTypes.Add ("Microsoft.CodeAnalysis.EmbeddedAttribute");
-			verifiedGeneratedTypes.Add ("System.Runtime.CompilerServices.RefSafetyRulesAttribute");
-
 			if (linked != null && verifiedGeneratedTypes.Contains (linked.FullName))
 				return;
 
@@ -828,13 +828,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
 		{
-			var expectedIndicies = GetCustomAttributeCtorValues<object> (src, nameof (KeptInitializerData))
+			var expectedIndices = GetCustomAttributeCtorValues<object> (src, nameof (KeptInitializerData))
 				.Cast<int> ()
 				.ToArray ();
 
 			var expectKeptAll = src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptInitializerData) && !attr.HasConstructorArguments);
 
-			if (expectedIndicies.Length == 0 && !expectKeptAll)
+			if (expectedIndices.Length == 0 && !expectKeptAll)
 				return;
 
 			if (!src.HasBody)
@@ -856,9 +856,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					VerifyInitializerField (srcField, linkedField);
 				}
 			} else {
-				foreach (var index in expectedIndicies) {
+				foreach (var index in expectedIndices) {
 					if (index < 0 || index > possibleInitializerFields.Length)
-						Assert.Fail ($"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndicies.Length}");
+						Assert.Fail ($"Invalid expected index `{index}` in {src}.  Value must be between 0 and {expectedIndices.Length}");
 
 					var srcField = possibleInitializerFields[index];
 					var linkedField = linkedImplementationDetails.Fields.FirstOrDefault (f => f.InitialValue.SequenceEqual (srcField.InitialValue));

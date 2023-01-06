@@ -45,7 +45,6 @@
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ComparerIntrinsics.cs" Link="IL\Stubs\ComparerIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\InterlockedIntrinsics.cs" Link="IL\Stubs\InterlockedIntrinsics.cs" />
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MemoryMarshalIntrinsics.cs" Link="IL\Stubs\MemoryMarshalIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs" Link="IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs" Link="IL\Stubs\VolatileIntrinsics.cs" />
@@ -261,6 +260,7 @@
     <Compile Include="ObjectWriter\OutputInfoBuilder.cs" />
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
     <Compile Include="ObjectWriter\SymbolFileBuilder.cs" />
+    <Compile Include="ObjectWriter\TypeString.cs" />
     <Compile Include="Win32Resources\ResourceData.cs" />
     <Compile Include="Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="Win32Resources\ResourceData.ResourcesDataModel.cs" />
@@ -298,8 +298,8 @@
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\TypeString.cs">
-      <Link>JitInterface\TypeString.cs</Link>
+    <Compile Include="..\..\Common\JitInterface\JitTypeNameFormatter.cs">
+      <Link>JitInterface\JitTypeNameFormatter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoImpl_generated.cs">
       <Link>JitInterface\CorInfoImpl_generated.cs</Link>

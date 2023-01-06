@@ -127,10 +127,10 @@ namespace System.Collections.Frozen
 
         /// <summary>Gets a collection containing the values in the set.</summary>
         /// <remarks>The order of the values in the set is unspecified.</remarks>
-        public ImmutableArray<T> Items => ItemsCore;
+        public ImmutableArray<T> Items => ImmutableArrayFactory.Create(ItemsCore);
 
         /// <inheritdoc cref="Items" />
-        private protected abstract ImmutableArray<T> ItemsCore { get; }
+        private protected abstract T[] ItemsCore { get; }
 
         /// <summary>Gets the number of values contained in the set.</summary>
         public int Count => CountCore;
@@ -160,7 +160,8 @@ namespace System.Collections.Frozen
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             }
 
-            Array.Copy(Items.array!, 0, array!, index, Items.Length);
+            T[] items = ItemsCore;
+            Array.Copy(items, 0, array!, index, items.Length);
         }
 
         /// <inheritdoc />

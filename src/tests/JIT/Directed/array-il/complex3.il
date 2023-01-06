@@ -68,7 +68,7 @@
     IL_000b:  ret
   } // end of method 'Complex2_Array_Test::test'
 
-  .method public static int32 Main(string[] args) il managed
+  .method public static int32 Main() il managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

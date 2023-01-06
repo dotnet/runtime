@@ -4,6 +4,31 @@
 
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/options.
 
+## Example
+
+As of .NET 6 Preview 2, we can validate options on application startup, to help us ensure we do not face misconfiguration issues during production in our applications. For example, for an app with settings below:
+
+```cs
+services
+    .AddOptions<MyOptions>()
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+```
+
+where
+
+```cs
+using System.ComponentModel.DataAnnotations;
+
+public class MyOptions
+{
+    [Required(AllowEmptyStrings = false)]
+    public string Name { get; set; }
+}
+```
+
+upon startup we will get an error stating that the Name field is required.
+
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
 

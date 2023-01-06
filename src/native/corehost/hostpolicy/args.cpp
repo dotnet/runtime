@@ -7,52 +7,12 @@
 
 arguments_t::arguments_t()
     : host_mode(host_mode_t::invalid)
-    , host_path(_X(""))
     , app_root(_X(""))
     , deps_path(_X(""))
-    , core_servicing(_X(""))
     , managed_application(_X(""))
     , app_argc(0)
     , app_argv(nullptr)
 {
-}
-
-/**
- *
- * Setup the shared store directories.
- *
- *  o %DOTNET_SHARED_STORE% -- multiple delimited paths
- *  o dotnet.exe relative shared store\<arch>\<tfm>
- *  o Global location
- *      Windows: global default location (Program Files) or globally registered location (registry) + store\<arch>\<tfm>
- *      Linux/macOS: none (no global locations are considered)
- */
-void setup_shared_store_paths(const pal::string_t& tfm, host_mode_t host_mode,const pal::string_t& own_dir, arguments_t* args)
-{
-    if (tfm.empty())
-    {
-        // Old (MNA < 1.1.*) "runtimeconfig.json" files do not contain TFM property.
-        return;
-    }
-
-    // Environment variable DOTNET_SHARED_STORE
-    (void) get_env_shared_store_dirs(&args->env_shared_store, get_current_arch_name(), tfm);
-
-    // "dotnet.exe" relative shared store folder
-    if (host_mode == host_mode_t::muxer)
-    {
-        args->dotnet_shared_store = own_dir;
-        append_path(&args->dotnet_shared_store, RUNTIME_STORE_DIRECTORY_NAME);
-        append_path(&args->dotnet_shared_store, get_current_arch_name());
-        append_path(&args->dotnet_shared_store, tfm.c_str());
-    }
-
-    // Global shared store dir
-    bool multilevel_lookup = multilevel_lookup_enabled();
-    if (multilevel_lookup)
-    {
-        get_global_shared_store_dirs(&args->global_shared_stores, get_current_arch_name(), tfm);
-    }
 }
 
 bool parse_arguments(
@@ -92,12 +52,8 @@ bool parse_arguments(
 
     bool success = init_arguments(
         managed_application_path,
-        init.host_info,
-        init.tfm,
         init.host_mode,
-        init.additional_deps_serialized,
         init.deps_file,
-        init.probe_paths,
         /* init_from_file_system */ false,
         args);
     if (success)
@@ -156,18 +112,12 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
 
 bool init_arguments(
     const pal::string_t& managed_application_path,
-    const host_startup_info_t& host_info,
-    const pal::string_t& tfm,
     host_mode_t host_mode,
-    const pal::string_t& additional_deps_serialized,
     const pal::string_t& deps_file,
-    const std::vector<pal::string_t>& probe_paths,
     bool init_from_file_system,
     arguments_t& args)
 {
     args.host_mode = host_mode;
-    args.host_path = host_info.host_path;
-    args.additional_deps_serialized = additional_deps_serialized;
 
     // Components are never loaded from the bundle, the managed_application_path always means a file system path for a component case.
     if (!set_root_from_app(managed_application_path, /* file_system_lookup_only */ init_from_file_system, args))
@@ -182,19 +132,10 @@ bool init_arguments(
         args.app_root = get_directory(args.deps_path);
     }
 
-    for (const auto& probe : probe_paths)
-    {
-        args.probe_paths.push_back(probe);
-    }
-
     if (args.deps_path.empty())
     {
         args.deps_path = get_deps_from_app_binary(args.app_root, args.managed_application);
     }
-
-    pal::get_default_servicing_directory(&args.core_servicing);
-
-    setup_shared_store_paths(tfm, host_mode, get_directory(args.host_path), &args);
 
     return true;
 }

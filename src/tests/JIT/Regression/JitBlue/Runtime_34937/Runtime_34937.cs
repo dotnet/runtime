@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint PerformMod_1(uint i)
@@ -59,7 +59,7 @@ class Program
         return a - b * c;
     }
 
-    static int Main(string[] args)
+    public static int Main()
     {
         var result = 100;
 

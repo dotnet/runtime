@@ -249,7 +249,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(assemblyFullName, attr.AssemblyFullName);
 
             AssertExtensions.Throws<ArgumentNullException>("assemblyFullName", () => new TypeForwardedFromAttribute(null));
-            AssertExtensions.Throws<ArgumentNullException>("assemblyFullName", () => new TypeForwardedFromAttribute(""));
+            AssertExtensions.Throws<ArgumentException>("assemblyFullName", () => new TypeForwardedFromAttribute(""));
         }
 
         [Fact]

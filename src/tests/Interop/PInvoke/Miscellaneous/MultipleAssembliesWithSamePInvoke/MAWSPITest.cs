@@ -10,7 +10,7 @@ class MultipleAssembliesWithSamePInvokeTest
     [DllImport(@"MAWSPINative", CallingConvention = CallingConvention.StdCall)]
     private static extern int GetInt();
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try{
             Assert.Equal(24, GetInt());

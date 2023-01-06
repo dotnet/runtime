@@ -4012,10 +4012,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
     }
     else
     {
-        assert(!jitStaticFldIsGlobAddr(fldHnd));
-        addr = (ssize_t)emitComp->info.compCompHnd->getFieldAddress(fldHnd, NULL);
-        if (addr == NULL)
-            NO_WAY("could not obtain address of static field");
+        assert(!"Normal statics are expected to be handled in the importer");
     }
 
     // We can use reg to load the constant address,
@@ -6930,8 +6927,25 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 {
     if (isFloatReg(reg))
     {
-        const char* size = attr == EA_8BYTE ? "d" : "s";
-        printf("%s%s", size, emitFloatRegName(reg, attr) + 1);
+        if (attr == EA_8BYTE)
+        {
+            unsigned regIndex = reg - REG_F0;
+            regIndex >>= 1;
+
+            if (regIndex < 10)
+            {
+                printf("d%c", regIndex + '0');
+            }
+            else
+            {
+                assert(regIndex < 100);
+                printf("d%c%c", (regIndex / 10), (regIndex % 10));
+            }
+        }
+        else
+        {
+            printf("s%s", emitFloatRegName(reg, attr) + 1);
+        }
     }
     else
     {

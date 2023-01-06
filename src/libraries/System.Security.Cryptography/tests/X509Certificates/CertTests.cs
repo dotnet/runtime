@@ -26,6 +26,47 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void RaceDisposeAndKeyAccess()
+        {
+            using RSA rsa = RSA.Create();
+            CertificateRequest req = new CertificateRequest("CN=potato", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now);
+
+            for (int i = 0; i < 100; i++)
+            {
+                X509Certificate2 w = new X509Certificate2(cert.RawData.AsSpan());
+                X509Certificate2 y = w.CopyWithPrivateKey(rsa);
+                w.Dispose();
+
+                Thread t1 = new Thread(cert => {
+                    Thread.Sleep(Random.Shared.Next(0, 20));
+                    X509Certificate2 c = (X509Certificate2)cert!;
+                    c.Dispose();
+                    GC.Collect();
+                });
+
+                Thread t2 = new Thread(cert => {
+                    Thread.Sleep(Random.Shared.Next(0, 20));
+                    X509Certificate2 c = (X509Certificate2)cert!;
+
+                    try
+                    {
+                        c.GetRSAPrivateKey()!.ExportParameters(false);
+                    }
+                    catch
+                    {
+                        // don't care about managed exceptions.
+                    }
+                });
+
+                t1.Start(y);
+                t2.Start(y);
+                t1.Join();
+                t2.Join();
+            }
+        }
+
+        [Fact]
         public static void RaceUseAndDisposeDoesNotCrash()
         {
             X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile);

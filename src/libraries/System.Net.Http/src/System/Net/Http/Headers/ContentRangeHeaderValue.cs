@@ -55,18 +55,11 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes 12-34/5678"
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
-            if ((to < 0) || (to > length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(to));
-            }
-            if ((from < 0) || (from > to))
-            {
-                throw new ArgumentOutOfRangeException(nameof(from));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(to);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(to, length);
+            ArgumentOutOfRangeException.ThrowIfNegative(from);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(from, to);
 
             _from = from;
             _to = to;
@@ -78,10 +71,7 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes */1234"
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             _length = length;
             _unit = HeaderUtilities.BytesUnit;
@@ -91,14 +81,9 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes 12-34/*"
 
-            if (to < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(to));
-            }
-            if ((from < 0) || (from > to))
-            {
-                throw new ArgumentOutOfRangeException(nameof(from));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(to);
+            ArgumentOutOfRangeException.ThrowIfNegative(from);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(from, to);
 
             _from = from;
             _to = to;
@@ -180,7 +165,7 @@ namespace System.Net.Http.Headers
             return sb.ToString();
         }
 
-        public static ContentRangeHeaderValue Parse(string? input)
+        public static ContentRangeHeaderValue Parse(string input)
         {
             int index = 0;
             return (ContentRangeHeaderValue)GenericHeaderParser.ContentRangeParser.ParseValue(input, null, ref index);

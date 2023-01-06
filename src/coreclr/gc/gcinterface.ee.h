@@ -448,4 +448,11 @@ public:
     void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved) = 0;
 };
 
+class IGCToCLR2 : public IGCToCLR {
+public:
+
+    virtual
+    void LogErrorToHost(const char *message) = 0;
+};
+
 #endif // _GCINTERFACE_EE_H_

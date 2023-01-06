@@ -180,6 +180,9 @@
     <Compile Include="..\..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs">
       <Link>TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\Internal\Runtime\DehydratedData.cs">
+      <Link>Common\DehydratedData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
     </Compile>
@@ -332,6 +335,8 @@
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />
@@ -386,6 +391,7 @@
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributeAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
@@ -572,7 +578,6 @@
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\ExportsFileWriter.cs" />
-    <Compile Include="Compiler\ProcessXmlBase.cs" />
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
@@ -649,9 +654,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MemoryMarshalIntrinsics.cs">
-      <Link>IL\Stubs\MemoryMarshalIntrinsics.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs">
       <Link>IL\Stubs\VolatileIntrinsics.cs</Link>

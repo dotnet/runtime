@@ -122,6 +122,27 @@ namespace System.Reflection.Emit.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => method.CreateDelegate(delegateType));
             AssertExtensions.Throws<ArgumentException>(null, () => method.CreateDelegate(delegateType, new IDClass()));
         }
+
+        /// <summary>
+        /// Reproduces https://github.com/dotnet/runtime/issues/78365
+        /// </summary>
+        [Fact]
+        public void CreateDelegate_CanBeConvertedToAnotherDelegateType()
+        {
+            DynamicMethod dynamicMethod = new("GetLength", typeof(int), new[] { typeof(string) });
+            ILGenerator il = dynamicMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Callvirt, typeof(string).GetProperty(nameof(string.Length))!.GetMethod);
+            il.Emit(OpCodes.Ret);
+
+            Func<string, int> getLength = dynamicMethod.CreateDelegate<Func<string, int>>();
+            Assert.Equal(2, getLength("bb"));
+
+            Func<int> getTargetLength = getLength.Method.CreateDelegate<Func<int>>("ccc");
+            Assert.Equal(3, getTargetLength());
+
+            Assert.Equal(getLength, getTargetLength.Method.CreateDelegate<Func<string, int>>());
+        }
     }
 
     public class IDSubClass : IDClass

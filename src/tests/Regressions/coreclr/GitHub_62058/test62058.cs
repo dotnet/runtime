@@ -15,7 +15,7 @@ public class Program
         public bool IsValid { get; set; }
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         bool warmup = new Foo().IsValid;
         CatchIgnore(() =>

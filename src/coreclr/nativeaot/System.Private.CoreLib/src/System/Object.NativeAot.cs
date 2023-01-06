@@ -26,11 +26,11 @@ namespace System
         }
 
         [Intrinsic]
-        protected internal unsafe object MemberwiseClone()
+        protected internal object MemberwiseClone()
         {
-            object clone = this.GetMethodTable()->IsArray ?
-                RuntimeExports.RhNewArray(this.GetMethodTable(), Unsafe.As<Array>(this).Length) :
-                RuntimeExports.RhNewObject(this.GetMethodTable());
+            object clone = this.GetEETypePtr().IsArray ?
+                RuntimeImports.RhNewArray(this.GetEETypePtr(), Unsafe.As<Array>(this).Length) :
+                RuntimeImports.RhNewObject(this.GetEETypePtr());
 
             // copy contents of "this" to the clone
 
@@ -38,7 +38,7 @@ namespace System
             ref byte src = ref this.GetRawData();
             ref byte dst = ref clone.GetRawData();
 
-            if (this.GetMethodTable()->HasGCPointers)
+            if (this.GetEETypePtr().HasPointers)
                 Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
             else
                 Buffer.Memmove(ref dst, ref src, byteCount);

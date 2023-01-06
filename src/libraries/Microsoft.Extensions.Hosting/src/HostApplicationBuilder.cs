@@ -88,7 +88,12 @@ namespace Microsoft.Extensions.Hosting
 
             if (!settings.DisableDefaults)
             {
-                HostingHostBuilderExtensions.ApplyDefaultHostConfiguration(Configuration, settings.Args);
+                if (settings.ContentRootPath is null && Configuration[HostDefaults.ContentRootKey] is null)
+                {
+                    HostingHostBuilderExtensions.SetDefaultContentRoot(Configuration);
+                }
+
+                HostingHostBuilderExtensions.AddDefaultHostConfigurationSources(Configuration, settings.Args);
             }
 
             // HostApplicationBuilderSettings override all other config sources.

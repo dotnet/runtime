@@ -7,7 +7,7 @@ namespace Def
 
     public class jitassert2
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             int i = -1;
             Object[] array = new Object[3];

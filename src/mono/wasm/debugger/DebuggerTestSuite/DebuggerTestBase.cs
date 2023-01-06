@@ -39,6 +39,8 @@ namespace DebuggerTests
 #endif
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
 
+        public static bool RunningOnChromeAndLinux => RunningOn == WasmHost.Chrome && PlatformDetection.IsLinux;
+
         public const int FirefoxProxyPort = 6002;
 
         internal InspectorClient cli;

@@ -175,7 +175,7 @@ namespace System.Xml.Xsl.Qil
             message = SR.Format(SR.Qil_Validation, message);
 
 #if QIL_TRACE_NODE_CREATION
-            message += " ["+ n.NodeId + " (" + n.NodeType.ToString("G") + ")]";
+            message = "{message} [{n.NodeId} ({n.NodeType:G})]";
 #endif
             if (n.Annotation is string s)
             {

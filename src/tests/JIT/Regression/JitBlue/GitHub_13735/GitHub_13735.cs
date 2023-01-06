@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class GitHub_13735
+public class GitHub_13735
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int GetRandom()

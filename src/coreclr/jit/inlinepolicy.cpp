@@ -489,7 +489,7 @@ bool DefaultPolicy::BudgetCheck() const
     // so it performs the actual check.
     //
     InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
+    const bool      overBudget = strategy->BudgetCheck(EstimatedTotalILSize());
 
     if (overBudget)
     {
@@ -1438,6 +1438,41 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
     // So far, CALLSITE_PROFILE_FREQUENCY is the only "double" property.
     assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
     m_ProfileFrequency = value;
+}
+
+//------------------------------------------------------------------------
+// EstimatedTotalILSize: Estimate final IL size to import.
+//    ExtendedDefaultPolicy has a better understanding on how many branches
+//    are foldable so we can roughly predict the final IL size the JIT will
+//    have to work with (all foldable branches will be eliminated early in the
+//    importer so they won't affect the time it takes to compile the callee)
+//
+// Return value:
+//    Estimated IL size to import
+
+unsigned ExtendedDefaultPolicy::EstimatedTotalILSize() const
+{
+    INT64 codeSize = (INT64)m_CodeSize;
+
+    // We assume each foldable branch reduces total IL size by 35 bytes, it's
+    // a pretty conservative guess, e.g. the following branch:
+    //
+    //  if (typeof(TKey) == typeof(byte))
+    //      return (byte)(object)left < (byte)(object)right;
+    //
+    // is recognized as foldable and removes 52 bytes of IL if TKey is not byte.
+    //
+    codeSize -= (INT64)m_FoldableBranch * 35;
+
+    // Foldable switches are usually able to fold more than foldable branches
+    //
+    codeSize -= (INT64)m_FoldableSwitch * 70;
+
+    // Assume we can't fold more than 70% of IL
+    //
+    codeSize = codeSize < (INT64)(m_CodeSize * 0.3) ? (INT64)(m_CodeSize * 0.3) : codeSize;
+
+    return (unsigned)codeSize;
 }
 
 //------------------------------------------------------------------------

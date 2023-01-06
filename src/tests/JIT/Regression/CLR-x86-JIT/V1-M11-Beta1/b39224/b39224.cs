@@ -6,11 +6,11 @@ namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         static uint[] m_au = new uint[10];
         static void Method1(uint param1) { }
-        static int Main()
+        public static int Main()
         {
             int a = 98;
             try

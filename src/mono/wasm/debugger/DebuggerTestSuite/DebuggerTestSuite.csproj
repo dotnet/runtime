@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" InitialTargets="CreateProjectWithColonInSourceName">
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -30,7 +30,25 @@
   <ItemGroup>
     <ProjectReference Include="..\BrowserDebugHost\BrowserDebugHost.csproj" />
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
-    <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj" AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration)" ReferenceOutputAssembly="false" Private="false" />
+
+    <!--
+        - This project needs to use `$(AspNetCoreAppCurrent)` as it uses aspnetcore, and that
+          version can lag behind `$(NetCoreAppCurrent)`.
+        - `debugger-test.csproj` builds the test *apps* for `$(NetCoreAppCurrent)`, is not
+          directly referenced from the test assembly.
+          - so, the `ProjectReference` has `ReferenceOutputAssembly=false`
+          - it also has SkipGetTargetFrameworkProperties=true, which essentially
+            skips the target that would try to find a tfm for debugger-test.csproj
+            compatible with this project.
+          - But that would clash when $(AspNetCoreAppCurrent) != $(NetCoreAppCurrent), so skipping the
+            target ensures that the correct tfm is used.
+    -->
+    <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj"
+                      AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration)"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      />
 
     <PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
     <!-- needed for ConditionalFact etc -->
@@ -54,7 +72,7 @@
           BeforeTargets="CopyTestZipForHelix"
           DependsOnTargets="_GenerateRunSettingsFile">
 
-    <Exec Command="$(DotNetTool) test --no-build -s $(RunSettingsFilePath) -t --nologo -v:q" ConsoleToMSBuild="true">
+    <Exec Command="&quot;$(DotNetTool)&quot; test --no-build -s $(RunSettingsFilePath) -t --nologo -v:q" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" ItemName="_ListOfTestsLines" />
     </Exec>
 
@@ -96,6 +114,36 @@
                       Lines="$(RunSettingsFileContent)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
+  </Target>
+
+  <Target Name="CreateProjectWithColonInSourceName"
+    Condition="!$([MSBuild]::IsOSPlatform('windows'))">
+    <PropertyGroup>
+        <CsprojContent>
+            <Project Sdk="Microsoft.NET.Sdk">
+            </Project>
+        </CsprojContent>
+        <CsContent>
+            namespace DebuggerTests
+            {
+                public class CheckColonInSourceName
+                {
+                    public static void Evaluate()
+                    {
+                        var a = 123%3B
+                    }
+                }
+            }
+        </CsContent>
+    </PropertyGroup>
+    <WriteLinesToFile
+        File="../tests/debugger-test-with-colon-in-source-name/debugger-test-with-colon-in-source-name.csproj"
+        Lines="$(CsprojContent)"
+        Overwrite="true"/>
+    <WriteLinesToFile
+        File="../tests/debugger-test-with-colon-in-source-name/test:.cs"
+        Lines="$(CsContent)"
+        Overwrite="true"/>
   </Target>
 
 </Project>

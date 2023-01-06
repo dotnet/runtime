@@ -1355,10 +1355,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pszDebugName = (LPCUTF8)name;
     }
 
-    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%S\" from module \"%ws\" in domain 0x%p %s\n",
+    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%s\" from module \"%s\" in domain 0x%p %s\n",
         *pszDebugNamespace ? pszDebugNamespace : "",
         *pszDebugNamespace ? NAMESPACE_SEPARATOR_STR : "",
-        debugName.GetUnicode(),
+        debugName.GetUTF8(),
         pModule->GetDebugName(),
         pModule->GetDomain(),
         (pModule->IsSystem()) ? "System Domain" : ""
@@ -4178,18 +4178,18 @@ IS_VALUETYPE:
 
         if (!fIsStatic)
         {
-            pFD = &pFieldDescList[dwCurrentDeclaredField];
+            pFD = &pFieldDescList[dwCurrentDeclaredField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             *totalDeclaredSize += (1 << dwLog2FieldSize);
         }
         else /* (dwMemberAttrs & mdStatic) */
         {
             if (fIsThreadStatic)
             {
-                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields + dwCurrentThreadStaticField];
+                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields + dwCurrentThreadStaticField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             }
             else
             {
-                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + dwCurrentStaticField];
+                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + dwCurrentStaticField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             }
         }
 

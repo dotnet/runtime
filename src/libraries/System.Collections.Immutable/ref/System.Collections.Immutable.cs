@@ -364,6 +364,7 @@ namespace System.Collections.Immutable
             public void CopyTo(T[] destination) { throw null; }
             public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length) { throw null; }
             public void CopyTo(System.Span<T> destination) { }
+            public System.Collections.Immutable.ImmutableArray<T> DrainToImmutable() { throw null; }
             public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
             public int IndexOf(T item) { throw null; }
             public int IndexOf(T item, int startIndex) { throw null; }

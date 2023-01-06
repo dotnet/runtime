@@ -26,7 +26,7 @@ namespace System.Collections.Frozen
         }
 
         /// <inheritdoc />
-        private protected override ImmutableArray<int> ItemsCore => new ImmutableArray<int>(_hashTable.HashCodes);
+        private protected override int[] ItemsCore => _hashTable.HashCodes;
 
         /// <inheritdoc />
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_hashTable.HashCodes);

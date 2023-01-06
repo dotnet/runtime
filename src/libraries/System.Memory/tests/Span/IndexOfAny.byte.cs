@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Text;
 using Xunit;
 
@@ -35,18 +36,18 @@ namespace System.SpanTests
             char[] searchFor = search.ToCharArray();
             byte[] searchForBytes = Encoding.UTF8.GetBytes(searchFor);
 
-            var index = span.IndexOfAny(new ReadOnlySpan<byte>(searchForBytes));
+            var index = IndexOfAny(span, new ReadOnlySpan<byte>(searchForBytes));
             if (searchFor.Length == 1)
             {
-                Assert.Equal(index, span.IndexOf((byte)searchFor[0]));
+                Assert.Equal(index, IndexOf(span, (byte)searchFor[0]));
             }
             else if (searchFor.Length == 2)
             {
-                Assert.Equal(index, span.IndexOfAny((byte)searchFor[0], (byte)searchFor[1]));
+                Assert.Equal(index, IndexOfAny(span, (byte)searchFor[0], (byte)searchFor[1]));
             }
             else if (searchFor.Length == 3)
             {
-                Assert.Equal(index, span.IndexOfAny((byte)searchFor[0], (byte)searchFor[1], (byte)searchFor[2]));
+                Assert.Equal(index, IndexOfAny(span, (byte)searchFor[0], (byte)searchFor[1], (byte)searchFor[2]));
             }
 
             var found = span[index];
@@ -59,8 +60,8 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(Array.Empty<byte>());
 
-            Assert.Equal(-1, span.IndexOfAny<byte>(0, 0));
-            Assert.Equal(-1, span.IndexOfAny(new byte[2]));
+            Assert.Equal(-1, IndexOfAny(span, 0, 0));
+            Assert.Equal(-1, IndexOfAny(span, new byte[2]));
         }
 
         [Fact]
@@ -81,8 +82,8 @@ namespace System.SpanTests
                     byte target0 = targets[index];
                     byte target1 = targets[(index + 1) % 2];
 
-                    Assert.Equal(0, span.IndexOfAny(target0, target1));
-                    Assert.Equal(0, span.IndexOfAny(new[] { target0, target1 }));
+                    Assert.Equal(0, IndexOfAny(span, target0, target1));
+                    Assert.Equal(0, IndexOfAny(span, new[] { target0, target1 }));
                 }
             }
         }
@@ -104,8 +105,8 @@ namespace System.SpanTests
                     byte target0 = a[targetIndex];
                     byte target1 = 0;
 
-                    Assert.Equal(targetIndex, span.IndexOfAny(target0, target1));
-                    Assert.Equal(targetIndex, span.IndexOfAny(new[] { target0, target1 }));
+                    Assert.Equal(targetIndex, IndexOfAny(span, target0, target1));
+                    Assert.Equal(targetIndex, IndexOfAny(span, new[] { target0, target1 }));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
@@ -113,8 +114,8 @@ namespace System.SpanTests
                     byte target0 = a[targetIndex];
                     byte target1 = a[targetIndex + 1];
 
-                    Assert.Equal(targetIndex, span.IndexOfAny(target0, target1));
-                    Assert.Equal(targetIndex, span.IndexOfAny(new[] { target0, target1 }));
+                    Assert.Equal(targetIndex, IndexOfAny(span, target0, target1));
+                    Assert.Equal(targetIndex, IndexOfAny(span, new[] { target0, target1 }));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
@@ -122,8 +123,8 @@ namespace System.SpanTests
                     byte target0 = 0;
                     byte target1 = a[targetIndex + 1];
 
-                    Assert.Equal(targetIndex + 1, span.IndexOfAny(target0, target1));
-                    Assert.Equal(targetIndex + 1, span.IndexOfAny(new[] { target0, target1 }));
+                    Assert.Equal(targetIndex + 1, IndexOfAny(span, target0, target1));
+                    Assert.Equal(targetIndex + 1, IndexOfAny(span, new[] { target0, target1 }));
                 }
             }
         }
@@ -139,8 +140,8 @@ namespace System.SpanTests
                 byte target1 = (byte)rnd.Next(1, 256);
                 Span<byte> span = new Span<byte>(a);
 
-                Assert.Equal(-1, span.IndexOfAny(target0, target1));
-                Assert.Equal(-1, span.IndexOfAny(new[] { target0, target1 }));
+                Assert.Equal(-1, IndexOfAny(span, target0, target1));
+                Assert.Equal(-1, IndexOfAny(span, new[] { target0, target1 }));
             }
         }
 
@@ -162,8 +163,8 @@ namespace System.SpanTests
 
                 Span<byte> span = new Span<byte>(a);
 
-                Assert.Equal(length - 3, span.IndexOfAny<byte>(200, 200));
-                Assert.Equal(length - 3, span.IndexOfAny<byte>(new byte[] { 200, 200 }));
+                Assert.Equal(length - 3, IndexOfAny(span, 200, 200));
+                Assert.Equal(length - 3, IndexOfAny(span, new byte[] { 200, 200 }));
             }
         }
 
@@ -177,8 +178,8 @@ namespace System.SpanTests
                 a[length + 1] = 98;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
 
-                Assert.Equal(-1, span.IndexOfAny<byte>(99, 98));
-                Assert.Equal(-1, span.IndexOfAny<byte>(new byte[] { 99, 98 }));
+                Assert.Equal(-1, IndexOfAny(span, 99, 98));
+                Assert.Equal(-1, IndexOfAny(span, new byte[] { 99, 98 }));
             }
 
             for (int length = 1; length < byte.MaxValue; length++)
@@ -188,8 +189,8 @@ namespace System.SpanTests
                 a[length + 1] = 99;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
 
-                Assert.Equal(-1, span.IndexOfAny<byte>(99, 99));
-                Assert.Equal(-1, span.IndexOfAny<byte>(new byte[] { 99, 99 }));
+                Assert.Equal(-1, IndexOfAny(span, 99, 99));
+                Assert.Equal(-1, IndexOfAny(span, new byte[] { 99, 99 }));
             }
         }
 
@@ -198,8 +199,8 @@ namespace System.SpanTests
         {
             Span<byte> span = new Span<byte>(Array.Empty<byte>());
 
-            Assert.Equal(-1, span.IndexOfAny<byte>(0, 0, 0));
-            Assert.Equal(-1, span.IndexOfAny(new byte[3]));
+            Assert.Equal(-1, IndexOfAny(span, 0, 0, 0));
+            Assert.Equal(-1, IndexOfAny(span, new byte[3]));
         }
 
         [Fact]
@@ -221,8 +222,8 @@ namespace System.SpanTests
                     byte target1 = targets[(index + 1) % 2];
                     byte target2 = targets[(index + 1) % 3];
 
-                    Assert.Equal(0, span.IndexOfAny(target0, target1, target2));
-                    Assert.Equal(0, span.IndexOfAny(new[] { target0, target1, target2 }));
+                    Assert.Equal(0, IndexOfAny(span, target0, target1, target2));
+                    Assert.Equal(0, IndexOfAny(span, new[] { target0, target1, target2 }));
                 }
             }
         }
@@ -245,8 +246,8 @@ namespace System.SpanTests
                     byte target1 = 0;
                     byte target2 = 0;
 
-                    Assert.Equal(targetIndex, span.IndexOfAny(target0, target1, target2));
-                    Assert.Equal(targetIndex, span.IndexOfAny(new[] { target0, target1, target2 }));
+                    Assert.Equal(targetIndex, IndexOfAny(span, target0, target1, target2));
+                    Assert.Equal(targetIndex, IndexOfAny(span, new[] { target0, target1, target2 }));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 2; targetIndex++)
@@ -255,8 +256,8 @@ namespace System.SpanTests
                     byte target1 = a[targetIndex + 1];
                     byte target2 = a[targetIndex + 2];
 
-                    Assert.Equal(targetIndex, span.IndexOfAny(target0, target1, target2));
-                    Assert.Equal(targetIndex, span.IndexOfAny(new[] { target0, target1, target2 }));
+                    Assert.Equal(targetIndex, IndexOfAny(span, target0, target1, target2));
+                    Assert.Equal(targetIndex, IndexOfAny(span, new[] { target0, target1, target2 }));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 2; targetIndex++)
@@ -265,8 +266,8 @@ namespace System.SpanTests
                     byte target1 = 0;
                     byte target2 = a[targetIndex + 2];
 
-                    Assert.Equal(targetIndex + 2, span.IndexOfAny(target0, target1, target2));
-                    Assert.Equal(targetIndex + 2, span.IndexOfAny(new[] { target0, target1, target2 }));
+                    Assert.Equal(targetIndex + 2, IndexOfAny(span, target0, target1, target2));
+                    Assert.Equal(targetIndex + 2, IndexOfAny(span, new[] { target0, target1, target2 }));
                 }
             }
         }
@@ -283,8 +284,8 @@ namespace System.SpanTests
                 byte target2 = (byte)rnd.Next(1, 256);
                 Span<byte> span = new Span<byte>(a);
 
-                Assert.Equal(-1, span.IndexOfAny(target0, target1, target2));
-                Assert.Equal(-1, span.IndexOfAny(new[] { target0, target1, target2 }));
+                Assert.Equal(-1, IndexOfAny(span, target0, target1, target2));
+                Assert.Equal(-1, IndexOfAny(span, new[] { target0, target1, target2 }));
             }
         }
 
@@ -307,8 +308,8 @@ namespace System.SpanTests
 
                 Span<byte> span = new Span<byte>(a);
 
-                Assert.Equal(length - 4, span.IndexOfAny<byte>(200, 200, 200));
-                Assert.Equal(length - 4, span.IndexOfAny<byte>(new byte[] { 200, 200, 200 }));
+                Assert.Equal(length - 4, IndexOfAny(span, 200, 200, 200));
+                Assert.Equal(length - 4, IndexOfAny(span, new byte[] { 200, 200, 200 }));
             }
         }
 
@@ -322,8 +323,8 @@ namespace System.SpanTests
                 a[length + 1] = 98;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
 
-                Assert.Equal(-1, span.IndexOfAny<byte>(99, 98, 99));
-                Assert.Equal(-1, span.IndexOfAny<byte>(new byte[] { 99, 98, 99 }));
+                Assert.Equal(-1, IndexOfAny(span, 99, 98, 99));
+                Assert.Equal(-1, IndexOfAny(span, new byte[] { 99, 98, 99 }));
             }
 
             for (int length = 1; length < byte.MaxValue; length++)
@@ -333,21 +334,21 @@ namespace System.SpanTests
                 a[length + 1] = 99;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
 
-                Assert.Equal(-1, span.IndexOfAny<byte>(99, 99, 99));
-                Assert.Equal(-1, span.IndexOfAny<byte>(new byte[] { 99, 99, 99 }));
+                Assert.Equal(-1, IndexOfAny(span, 99, 99, 99));
+                Assert.Equal(-1, IndexOfAny(span, new byte[] { 99, 99, 99 }));
             }
         }
 
         [Fact]
         public static void ZeroLengthIndexOfMany_Byte()
         {
-            Span<byte> sp = new Span<byte>(Array.Empty<byte>());
+            Span<byte> span = new Span<byte>(Array.Empty<byte>());
             var values = new ReadOnlySpan<byte>(new byte[] { 0, 0, 0, 0 });
-            int idx = sp.IndexOfAny(values);
+            int idx = IndexOfAny(span, values);
             Assert.Equal(-1, idx);
 
             values = new ReadOnlySpan<byte>(new byte[] { });
-            idx = sp.IndexOfAny(values);
+            idx = IndexOfAny(span, values);
             Assert.Equal(-1, idx);
         }
 
@@ -363,7 +364,7 @@ namespace System.SpanTests
 
                 for (int i = 0; i < length; i++)
                 {
-                    int idx = span.IndexOfAny(values);
+                    int idx = IndexOfAny(span, values);
                     Assert.Equal(0, idx);
                 }
             }
@@ -384,21 +385,21 @@ namespace System.SpanTests
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     var values = new ReadOnlySpan<byte>(new byte[] { a[targetIndex], 0, 0, 0 });
-                    int idx = span.IndexOfAny(values);
+                    int idx = IndexOfAny(span, values);
                     Assert.Equal(targetIndex, idx);
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 3; targetIndex++)
                 {
                     var values = new ReadOnlySpan<byte>(new byte[] { a[targetIndex], a[targetIndex + 1], a[targetIndex + 2], a[targetIndex + 3] });
-                    int idx = span.IndexOfAny(values);
+                    int idx = IndexOfAny(span, values);
                     Assert.Equal(targetIndex, idx);
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 3; targetIndex++)
                 {
                     var values = new ReadOnlySpan<byte>(new byte[] { 0, 0, 0, a[targetIndex + 3] });
-                    int idx = span.IndexOfAny(values);
+                    int idx = IndexOfAny(span, values);
                     Assert.Equal(targetIndex + 3, idx);
                 }
             }
@@ -433,7 +434,7 @@ namespace System.SpanTests
                 }
 
                 var values = new ReadOnlySpan<byte>(targets);
-                int idx = span.IndexOfAny(values);
+                int idx = IndexOfAny(span, values);
                 Assert.Equal(expectedIndex, idx);
             }
         }
@@ -453,7 +454,7 @@ namespace System.SpanTests
                 Span<byte> span = new Span<byte>(a);
                 var values = new ReadOnlySpan<byte>(targets);
 
-                int idx = span.IndexOfAny(values);
+                int idx = IndexOfAny(span, values);
                 Assert.Equal(-1, idx);
             }
         }
@@ -473,7 +474,7 @@ namespace System.SpanTests
                 Span<byte> span = new Span<byte>(a);
                 var values = new ReadOnlySpan<byte>(targets);
 
-                int idx = span.IndexOfAny(values);
+                int idx = IndexOfAny(span, values);
                 Assert.Equal(-1, idx);
             }
         }
@@ -498,7 +499,7 @@ namespace System.SpanTests
 
                 Span<byte> span = new Span<byte>(a);
                 var values = new ReadOnlySpan<byte>(new byte[] { 200, 200, 200, 200, 200, 200, 200, 200, 200 });
-                int idx = span.IndexOfAny(values);
+                int idx = IndexOfAny(span, values);
                 Assert.Equal(length - 5, idx);
             }
         }
@@ -513,7 +514,7 @@ namespace System.SpanTests
                 a[length + 1] = 98;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
                 var values = new ReadOnlySpan<byte>(new byte[] { 99, 98, 99, 98, 99, 98 });
-                int index = span.IndexOfAny(values);
+                int index = IndexOfAny(span, values);
                 Assert.Equal(-1, index);
             }
 
@@ -524,9 +525,37 @@ namespace System.SpanTests
                 a[length + 1] = 99;
                 Span<byte> span = new Span<byte>(a, 1, length - 1);
                 var values = new ReadOnlySpan<byte>(new byte[] { 99, 99, 99, 99, 99, 99 });
-                int index = span.IndexOfAny(values);
+                int index = IndexOfAny(span, values);
                 Assert.Equal(-1, index);
             }
+        }
+
+        private static int IndexOf(Span<byte> span, byte value)
+        {
+            int index = span.IndexOf(value);
+            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc byte[] { value })));
+            return index;
+        }
+
+        private static int IndexOfAny(Span<byte> span, byte value0, byte value1)
+        {
+            int index = span.IndexOfAny(value0, value1);
+            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc byte[] { value0, value1 })));
+            return index;
+        }
+
+        private static int IndexOfAny(Span<byte> span, byte value0, byte value1, byte value2)
+        {
+            int index = span.IndexOfAny(value0, value1, value2);
+            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc byte[] { value0, value1, value2 })));
+            return index;
+        }
+
+        private static int IndexOfAny(Span<byte> span, ReadOnlySpan<byte> values)
+        {
+            int index = span.IndexOfAny(values);
+            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(values)));
+            return index;
         }
     }
 }

@@ -121,8 +121,8 @@
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
-    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
-    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace')">true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace')">true</FeatureWasmPerfTracing>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
@@ -208,6 +208,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
@@ -344,12 +345,4 @@
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
-
-  <!-- Import refererence assembly and ApiCompat logic -->
-  <PropertyGroup>
-    <IsSourceProject>true</IsSourceProject>
-  </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
-
 </Project>
