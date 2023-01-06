@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-namespace Microsoft.WebAssembly.Diagnostics.Webcil;
+namespace Microsoft.NET.WebAssembly.Webcil;
 
 
 public sealed class WebcilReader : IDisposable
@@ -20,10 +20,10 @@ public sealed class WebcilReader : IDisposable
     // but the memory block classes are internal to S.R.M.
 
     private readonly Stream _stream;
-    private WCHeader? _header;
-    private DirectoryEntry? _corHeaderMetadataDirectory;
-    private MetadataReaderProvider _metadataReaderProvider;
-    private ImmutableArray<CoffSectionHeaderBuilder>? _sections;
+    private WebcilHeader _header;
+    private DirectoryEntry _corHeaderMetadataDirectory;
+    private MetadataReaderProvider? _metadataReaderProvider;
+    private ImmutableArray<WebcilSectionHeader>? _sections;
 
     public WebcilReader(Stream stream)
     {
@@ -44,17 +44,17 @@ public sealed class WebcilReader : IDisposable
 
     private unsafe bool ReadHeader()
     {
-        WCHeader header;
-        var buffer = new byte[Marshal.SizeOf<WCHeader>()];
+        WebcilHeader header;
+        var buffer = new byte[Marshal.SizeOf<WebcilHeader>()];
         if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
         {
             return false;
         }
         fixed (byte* p = buffer)
         {
-            header = *(WCHeader*)p;
+            header = *(WebcilHeader*)p;
         }
-        if (header.id[0] != 'W' || header.id[1] != 'C' || header.version != Constants.WC_VERSION)
+        if (header.id[0] != 'W' || header.id[1] != 'C' || header.version != Internal.Constants.WC_VERSION)
         {
             return false;
         }
@@ -70,7 +70,7 @@ public sealed class WebcilReader : IDisposable
     {
         // we can't construct CorHeader because it's constructor is internal
         // but we don't care, really, we only want the metadata directory entry
-        var pos = TranslateRVA(_header.Value.pe_cli_header_rva);
+        var pos = TranslateRVA(_header.pe_cli_header_rva);
         if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
         {
             return false;
@@ -88,7 +88,7 @@ public sealed class WebcilReader : IDisposable
         // FIXME threading
         if (_metadataReaderProvider == null)
         {
-            long pos = TranslateRVA((uint)_corHeaderMetadataDirectory.Value.RelativeVirtualAddress);
+            long pos = TranslateRVA((uint)_corHeaderMetadataDirectory.RelativeVirtualAddress);
             if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
             {
                 throw new BadImageFormatException("Could not seek to metadata", nameof(_stream));
@@ -102,12 +102,12 @@ public sealed class WebcilReader : IDisposable
 
     public ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
     {
-        var debugRVA = _header.Value.pe_debug_rva;
+        var debugRVA = _header.pe_debug_rva;
         if (debugRVA == 0)
         {
             return ImmutableArray<DebugDirectoryEntry>.Empty;
         }
-        var debugSize = _header.Value.pe_debug_size;
+        var debugSize = _header.pe_debug_size;
         if (debugSize == 0)
         {
             return ImmutableArray<DebugDirectoryEntry>.Empty;
@@ -204,22 +204,29 @@ public sealed class WebcilReader : IDisposable
 
         Guid guid = reader.ReadGuid();
         int age = reader.ReadInt32();
-        string path = ReadUtf8NullTerminated(reader);
+        string path = ReadUtf8NullTerminated(reader)!;
 
         return MakeCodeViewDebugDirectoryData(guid, age, path);
-
     }
 
-    private static string ReadUtf8NullTerminated(BlobReader reader)
+    private static string? ReadUtf8NullTerminated(BlobReader reader)
     {
         var mi = typeof(BlobReader).GetMethod("ReadUtf8NullTerminated", BindingFlags.NonPublic | BindingFlags.Instance);
-        return (string)mi.Invoke(reader, null);
+        if (mi == null)
+        {
+            throw new InvalidOperationException("Could not find BlobReader.ReadUtf8NullTerminated");
+        }
+        return (string?)mi.Invoke(reader, null);
     }
 
     private static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path)
     {
         var types = new Type[] { typeof(Guid), typeof(int), typeof(string) };
-        var mi = typeof(CodeViewDebugDirectoryData).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, types);
+        var mi = typeof(CodeViewDebugDirectoryData).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, types, null);
+        if (mi == null)
+        {
+            throw new InvalidOperationException("Could not find CodeViewDebugDirectoryData constructor");
+        }
         return (CodeViewDebugDirectoryData)mi.Invoke(new object[] { guid, age, path });
     }
 
@@ -264,7 +271,11 @@ public sealed class WebcilReader : IDisposable
         using (var compressedStream = new MemoryStream(compressedBuffer, writable: false))
         using (var deflateStream = new System.IO.Compression.DeflateStream(compressedStream, System.IO.Compression.CompressionMode.Decompress, leaveOpen: true))
         {
+#if NETCOREAPP1_1_OR_GREATER
             decompressedBuffer = GC.AllocateUninitializedArray<byte>(decompressedSize);
+#else
+            decompressedBuffer = new byte[decompressedSize];
+#endif
             using (var decompressedStream = new MemoryStream(decompressedBuffer, writable: true))
             {
                 deflateStream.CopyTo(decompressedStream);
@@ -292,14 +303,14 @@ public sealed class WebcilReader : IDisposable
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
     }
 
-    private static long SectionDirectoryOffset => Marshal.SizeOf<WCHeader>();
+    private static long SectionDirectoryOffset => Marshal.SizeOf<WebcilHeader>();
 
-    private unsafe ImmutableArray<CoffSectionHeaderBuilder> ReadSections()
+    private unsafe ImmutableArray<WebcilSectionHeader> ReadSections()
     {
-        var sections = ImmutableArray.CreateBuilder<CoffSectionHeaderBuilder>(_header.Value.coff_sections);
-        var buffer = new byte[Marshal.SizeOf<CoffSectionHeaderBuilder>()];
+        var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
+        var buffer = new byte[Marshal.SizeOf<WebcilSectionHeader>()];
         _stream.Seek(SectionDirectoryOffset, SeekOrigin.Begin);
-        for (int i = 0; i < _header.Value.coff_sections; i++)
+        for (int i = 0; i < _header.coff_sections; i++)
         {
             if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
             {
@@ -308,7 +319,7 @@ public sealed class WebcilReader : IDisposable
             fixed (byte* p = buffer)
             {
                 // FIXME endianness
-                sections.Add(*(CoffSectionHeaderBuilder*)p);
+                sections.Add(*(WebcilSectionHeader*)p);
             }
         }
         return sections.MoveToImmutable();

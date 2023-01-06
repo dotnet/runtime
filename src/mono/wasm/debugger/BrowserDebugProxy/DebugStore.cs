@@ -21,6 +21,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.NET.WebAssembly.Webcil;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -882,7 +883,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 // This is a WebAssembly file
                 asmStream.Seek(0, SeekOrigin.Begin);
-                var webcilReader = new Webcil.WebcilReader(asmStream);
+                var webcilReader = new WebcilReader(asmStream);
                 return FromWebcilReader(monoProxy, sessionId, webcilReader, pdb, logger, token);
             }
         }
@@ -941,7 +942,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return assemblyInfo;
         }
 
-        private static AssemblyInfo FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, Webcil.WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
+        private static AssemblyInfo FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
             var entries = wcReader.ReadDebugDirectory();
             CodeViewDebugDirectoryData? codeViewData = null;
