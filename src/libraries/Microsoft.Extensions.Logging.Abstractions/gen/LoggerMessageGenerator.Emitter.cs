@@ -250,8 +250,7 @@ namespace {lc.Namespace}
                 {
                     // this is related to https://github.com/serilog/serilog-extensions-logging/issues/197
                     string name = p.CodeName;
-
-                    if (lm.TemplateMap.ContainsKey(p.Name))
+                    if (lm.TemplateMap.ContainsKey(name))
                     {
                         // take the letter casing from the template
                         name = lm.TemplateMap[name];
