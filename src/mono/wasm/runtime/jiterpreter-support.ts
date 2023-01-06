@@ -650,7 +650,8 @@ export const counters = {
     tracesCompiled: 0,
     entryWrappersCompiled: 0,
     jitCallsCompiled: 0,
-    failures: 0
+    failures: 0,
+    bytesGenerated: 0
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -906,6 +907,8 @@ export type JiterpreterOptions = {
     jitCallFlushThreshold: number;
     interpEntryHitCount: number;
     interpEntryFlushThreshold: number;
+    // Maximum total number of wasm bytes to generate
+    wasmBytesLimit: number;
 }
 
 const optionNames : { [jsName: string] : string } = {
@@ -927,6 +930,7 @@ const optionNames : { [jsName: string] : string } = {
     "jitCallFlushThreshold": "jiterpreter-jit-call-queue-flush-threshold",
     "interpEntryHitCount": "jiterpreter-interp-entry-hit-count",
     "interpEntryFlushThreshold": "jiterpreter-interp-entry-queue-flush-threshold",
+    "wasmBytesLimit": "jiterpreter-wasm-bytes-limit",
 };
 
 let optionsVersion = -1;
