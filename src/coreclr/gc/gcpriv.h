@@ -5752,7 +5752,7 @@ public:
     // swept_in_plan_p can be folded into gen_num.
     bool            swept_in_plan_p;
     int             plan_gen_num;
-    int             survived;
+    size_t          survived;
     int             old_card_survived;
     int             pinned_survived;
     // at the end of each GC, we increase each region in the region free list
@@ -6191,7 +6191,7 @@ int& heap_segment_age_in_free (heap_segment* inst)
     return inst->age_in_free;
 }
 inline
-int& heap_segment_survived (heap_segment* inst)
+size_t& heap_segment_survived (heap_segment* inst)
 {
     return inst->survived;
 }
