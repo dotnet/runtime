@@ -2,7 +2,7 @@
 
 ## Version
 
-This is version 0 of the Webcil format.
+This is version 0.0 of the Webcil format.
 
 ## Motivation
 
@@ -49,26 +49,27 @@ The Webcil headers consist of a Webcil header followed by a sequence of section 
 
 ``` c
 struct WebcilHeader {
-	uint8_t id[2]; // 'W' 'C'
-	uint8_t version;
-	uint8_t reserved0; // 0
+	uint8_t id[4]; // 'W' 'b' 'I' 'L'
 	// 4 bytes
-	uint16_t coff_sections;
-	uint16_t reserved1; // 0
+	uint16_t version_major; // 0
+	uint16_t version_minor; // 0
 	// 8 bytes
+	uint16_t coff_sections;
+	uint16_t reserved0; // 0
+	// 12 bytes
 
 	uint32_t pe_cli_header_rva;
 	uint32_t pe_cli_header_size;
-	// 16 bytes
+	// 20 bytes
 
     uint32_t pe_debug_rva;
     uint32_t pe_debug_size;
-    // 24 bytes
+    // 28 bytes
 };
 ```
 
-The Webcil header starts with the magic characters 'W' 'C' followed by the version (must be 0).
-Then a reserved byte that must be 0 followed by a count of the section headers and 2 more reserved bytes.
+The Webcil header starts with the magic characters 'W' 'b' 'I' 'L' followed by the version in major
+minor format (must be 0 and 0).  Then a count of the section headers and two reserved bytes.
 
 The next pairs of integers are a subset of the PE Header data directory specifying the RVA and size
 of the CLI header, as well as the directory entry for the PE debug directory.

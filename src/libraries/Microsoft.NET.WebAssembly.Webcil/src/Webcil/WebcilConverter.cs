@@ -92,11 +92,13 @@ public class WebcilConverter
         var sections = headers.SectionHeaders;
         WebcilHeader header;
         header.id[0] = (byte)'W';
-        header.id[1] = (byte)'C';
-        header.version = Internal.Constants.WC_VERSION;
-        header.reserved0 = 0;
+        header.id[1] = (byte)'b';
+        header.id[2] = (byte)'I';
+        header.id[3] = (byte)'L';
+        header.version_major = Internal.Constants.WC_VERSION_MAJOR;
+        header.version_minor = Internal.Constants.WC_VERSION_MINOR;
         header.coff_sections = (ushort)coffHeader.NumberOfSections;
-        header.reserved1 = 0;
+        header.reserved0 = 0;
         header.pe_cli_header_rva = (uint)peHeader.CorHeaderTableDirectory.RelativeVirtualAddress;
         header.pe_cli_header_size = (uint)peHeader.CorHeaderTableDirectory.Size;
         header.pe_debug_rva = (uint)peHeader.DebugTableDirectory.RelativeVirtualAddress;

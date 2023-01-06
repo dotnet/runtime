@@ -50,19 +50,22 @@ public sealed class WebcilReader : IDisposable
         {
             return false;
         }
-        fixed (byte* p = buffer)
-        {
-            header = *(WebcilHeader*)p;
-        }
-        if (header.id[0] != 'W' || header.id[1] != 'C' || header.version != Internal.Constants.WC_VERSION)
-        {
-            return false;
-        }
-        _header = header;
         if (!BitConverter.IsLittleEndian)
         {
             throw new NotImplementedException("TODO: implement big endian support");
         }
+        fixed (byte* p = buffer)
+        {
+            header = *(WebcilHeader*)p;
+        }
+        if (header.id[0] != 'W' || header.id[1] != 'b'
+            || header.id[1] != 'I' || header.id[1] != 'L'
+            || header.version_major != Internal.Constants.WC_VERSION_MAJOR
+            || header.version_minor != Internal.Constants.WC_VERSION_MINOR)
+        {
+            return false;
+        }
+        _header = header;
         return true;
     }
 

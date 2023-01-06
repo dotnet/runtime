@@ -11,32 +11,34 @@
 
 /* keep in sync with webcil-writer */
 enum {
-	MONO_WEBCIL_VERSION = 0,
+	MONO_WEBCIL_VERSION_MAJOR = 0,
+	MONO_WEBCIL_VERSION_MINOR = 0,
 };
 
 typedef struct MonoWebCilHeader {
-	uint8_t id[2]; // 'W' 'C'
-	uint8_t version;
-	uint8_t reserved0; // 0
+	uint8_t id[4]; // 'W' 'b' 'I' 'L'
 	// 4 bytes
-	uint16_t coff_sections;
-	uint16_t reserved1; // 0
+	uint16_t version_major; // 0
+	uint16_t version_minor; // 0
 	// 8 bytes
+	uint16_t coff_sections;
+	uint16_t reserved0; // 0
+	// 12 bytes
 
 	uint32_t pe_cli_header_rva;
 	uint32_t pe_cli_header_size;
-	// 16 bytes
+	// 20 bytes
 
 	uint32_t pe_debug_rva;
 	uint32_t pe_debug_size;
-	// 24 bytes
+	// 28 bytes
 } MonoWebCilHeader;
 
 static gboolean
 webcil_image_match (MonoImage *image)
 {
 	if (image->raw_data_len >= sizeof (MonoWebCilHeader)) {
-		return image->raw_data[0] == 'W' && image->raw_data[1] == 'C';
+		return image->raw_data[0] == 'W' && image->raw_data[1] == 'b' && image->raw_data[2] == 'I' && image->raw_data[3] == 'L';
 	}
 	return FALSE;
 }
@@ -54,7 +56,7 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 		return -1;
 	memcpy (&wcheader, raw_data + offset, sizeof (wcheader));
 
-	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'C' && wcheader.version == MONO_WEBCIL_VERSION))
+	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'b' && wcheader.id[2] == 'I' && wcheader.id[3] == 'L' && wcheader.version_major == MONO_WEBCIL_VERSION_MAJOR && wcheader.version_minor == MONO_WEBCIL_VERSION_MINOR))
 		return -1;
 
 	memset (header, 0, sizeof(MonoDotNetHeader));
