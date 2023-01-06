@@ -278,6 +278,7 @@ namespace System.Net.Security
                 // private key, so we don't have to do any further processing.
                 //
 
+                sessionRestartAttempt = _credentialsHandle == null;
                 _selectedClientCertificate = _sslAuthenticationOptions.CertificateContext.Certificate;
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Selected cert = {_selectedClientCertificate}");
                 return _sslAuthenticationOptions.CertificateContext.Certificate;
