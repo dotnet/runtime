@@ -550,36 +550,32 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     Statement* const nextStmt = stmt->GetNextStmt();
 
     ForwardSubVisitor fsv(this, lclNum, livenessBased);
-    if (fgNodeThreading == NodeThreading::AllLocals)
+    assert(fgNodeThreading == NodeThreading::AllLocals);
+    // Do a quick scan through the linked locals list to see if there is a last
+    // use.
+    bool found = false;
+    for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
     {
-        // We usually have a linked list of locals available for each
-        // statement, so do a quick scan through that to see if there is a last
-        // use.
-
-        bool found = false;
-        for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
+        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
         {
-            if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
+            if (fsv.IsLastUse(lcl->AsLclVar()))
             {
-                if (fsv.IsLastUse(lcl->AsLclVar()))
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (fsv.IsUse(lcl))
-            {
-                JITDUMP(" next stmt has non-last use\n");
-                return false;
+                found = true;
+                break;
             }
         }
 
-        if (!found)
+        if (fsv.IsUse(lcl))
         {
-            JITDUMP(" no next stmt use\n");
+            JITDUMP(" next stmt has non-last use\n");
             return false;
         }
+    }
+
+    if (!found)
+    {
+        JITDUMP(" no next stmt use\n");
+        return false;
     }
 
     // Don't fwd sub overly large trees.
@@ -882,6 +878,8 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     else
     {
         nextStmt->LocalsTreeList().Replace(useLcl, useLcl, firstLcl, lhsNode->gtPrev->AsLclVarCommon());
+
+        fgForwardSubUpdateLiveness(firstLcl, lhsNode->gtPrev);
     }
 
     if (!fwdSubNodeInvariant)
@@ -893,4 +891,67 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     DISPSTMT(nextStmt);
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubUpdateLiveness: correct liveness after performing a forward
+// substitution that added a new sub list of locals in a statement.
+//
+// Arguments:
+//    newSubListFirst - the first local in the new sub list.
+//    newSubListLast - the last local in the new sub list.
+//
+// Remarks:
+//    Forward substitution may add new uses of other locals; these may be
+//    inserted at arbitrary points in the statement, so previous last uses may
+//    be invalidated. This function will conservatively unmark last uses that
+//    may no longer be correct.
+//
+//    The function is not as precise as it could be, in particular it does not
+//    mark any of the new later uses as a last use, and it does not care about
+//    defs. However, currently the only user of last use information after
+//    forward sub is last-use copy omission, and diffs indicate that being
+//    conservative here does not have a large impact.
+//
+void Compiler::fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast)
+{
+    for (GenTree* node = newSubListFirst->gtPrev; node != nullptr; node = node->gtPrev)
+    {
+        if ((node->gtFlags & GTF_VAR_DEATH) == 0)
+        {
+            continue;
+        }
+
+        unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* dsc    = lvaGetDesc(lclNum);
+        // Last-use copy omission does not work for promoted structs today, so
+        // we can always unmark these which saves us from having to update the
+        // promoted struct death vars map.
+        if (dsc->lvPromoted)
+        {
+            node->gtFlags &= ~GTF_VAR_DEATH;
+            continue;
+        }
+
+        unsigned parentLclNum = dsc->lvIsStructField ? dsc->lvParentLcl : BAD_VAR_NUM;
+
+        GenTree* candidate = newSubListFirst;
+        // See if a new instance of this local or its parent appeared.
+        while (true)
+        {
+            unsigned newUseLclNum = candidate->AsLclVarCommon()->GetLclNum();
+            if ((newUseLclNum == lclNum) || (newUseLclNum == parentLclNum))
+            {
+                node->gtFlags &= ~GTF_VAR_DEATH;
+                break;
+            }
+
+            if (candidate == newSubListLast)
+            {
+                break;
+            }
+
+            candidate = candidate->gtNext;
+        }
+    }
 }
