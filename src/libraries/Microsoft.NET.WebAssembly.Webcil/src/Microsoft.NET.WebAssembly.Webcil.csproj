@@ -5,6 +5,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +13,15 @@
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Webcil\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="Common\IsExternalInit.cs" />
+  </ItemGroup>
+
 
 </Project>
 

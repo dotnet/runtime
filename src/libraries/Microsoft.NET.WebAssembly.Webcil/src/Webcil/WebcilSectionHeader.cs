@@ -3,7 +3,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace Microsoft.WebAssembly.Build.Tasks.WebCil;
+namespace Microsoft.NET.WebAssembly.Webcil;
 
 /// <summary>
 /// This is the Webcil analog of System.Reflection.PortableExecutable.SectionHeader, but with fewer fields
