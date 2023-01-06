@@ -1222,7 +1222,7 @@ namespace System.Numerics
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static Vector128<float> Permute(Vector128<float> value, byte control)
+                static Vector128<float> Permute(Vector128<float> value, [ConstantExpected] byte control)
                 {
                     if (Avx.IsSupported)
                     {

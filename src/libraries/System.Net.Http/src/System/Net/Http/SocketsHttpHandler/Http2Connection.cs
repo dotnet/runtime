@@ -512,9 +512,12 @@ namespace System.Net.Http
 
                     // Process the initial SETTINGS frame. This will send an ACK.
                     ProcessSettingsFrame(frameHeader, initialFrame: true);
+
+                    Debug.Assert(InitialSettingsReceived.Task.IsCompleted);
                 }
-                catch (IOException e)
+                catch (Exception e)
                 {
+                    InitialSettingsReceived.TrySetException(new IOException(SR.net_http_http2_connection_not_established, e));
                     throw new IOException(SR.net_http_http2_connection_not_established, e);
                 }
 

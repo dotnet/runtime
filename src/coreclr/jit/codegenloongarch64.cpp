@@ -4855,27 +4855,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 }
 
 #ifdef FEATURE_SIMD
-
-//------------------------------------------------------------------------
-// genSIMDIntrinsic: Generate code for a SIMD Intrinsic.  This is the main
-// routine which in turn calls appropriate genSIMDIntrinsicXXX() routine.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    Currently, we only recognize SIMDVector<float> and SIMDVector<int>, and
-//    a limited set of methods.
-//
-// TODO-CLEANUP Merge all versions of this function and move to new file simdcodegencommon.cpp.
-void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
-{
-    NYI("unimplemented on LOONGARCH64 yet");
-}
-
 insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 {
     NYI("unimplemented on LOONGARCH64 yet");
@@ -4883,11 +4862,11 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 }
 
 //-----------------------------------------------------------------------------
-// genSIMDIntrinsicUpperSave: save the upper half of a TYP_SIMD16 vector to
-//                            the given register, if any, or to memory.
+// genSimdUpperSave: save the upper half of a TYP_SIMD16 vector to
+//                   the given register, if any, or to memory.
 //
 // Arguments:
-//    simdNode - The GT_SIMD node
+//    node - The GT_INTRINSIC node
 //
 // Return Value:
 //    None.
@@ -4900,29 +4879,29 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 //    In that case, this node will be marked GTF_SPILL, which will cause this method to save
 //    the upper half to the lclVar's home location.
 //
-void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
+void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
 {
     NYI("unimplemented on LOONGARCH64 yet");
 }
 
 //-----------------------------------------------------------------------------
-// genSIMDIntrinsicUpperRestore: Restore the upper half of a TYP_SIMD16 vector to
-//                               the given register, if any, or to memory.
+// genSimdUpperRestore: Restore the upper half of a TYP_SIMD16 vector to
+//                      the given register, if any, or to memory.
 //
 // Arguments:
-//    simdNode - The GT_SIMD node
+//    node - The GT_INTRINSIC node
 //
 // Return Value:
 //    None.
 //
 // Notes:
-//    For consistency with genSIMDIntrinsicUpperSave, and to ensure that lclVar nodes always
-//    have their home register, this node has its targetReg on the lclVar child, and its source
-//    on the simdNode.
-//    Regarding spill, please see the note above on genSIMDIntrinsicUpperSave.  If we have spilled
+//    For consistency with genSimdUpperSave, and to ensure that lclVar nodes always
+//    have their home register, this node has its tgtReg on the lclVar child, and its source
+//    on the node.
+//    Regarding spill, please see the note above on genSimdUpperSave.  If we have spilled
 //    an upper-half to the lclVar's home location, this node will be marked GTF_SPILLED.
 //
-void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
+void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 {
     NYI("unimplemented on LOONGARCH64 yet");
 }
@@ -5298,12 +5277,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_INTRINSIC:
             genIntrinsic(treeNode);
             break;
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            genSIMDIntrinsic(treeNode->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:

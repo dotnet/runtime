@@ -1717,7 +1717,7 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // genConsumeOperands: Do liveness update for the operands of a multi-operand node,
-//                     currently GT_SIMD or GT_HWINTRINSIC
+//                     currently GT_HWINTRINSIC
 //
 // Arguments:
 //    tree - the GenTreeMultiOp whose operands will have their liveness updated.
@@ -1880,7 +1880,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         {
             // Need an additional integer register to extract upper 4 bytes from data.
             regNumber tmpReg = nextArgNode->GetSingleTempReg();
-            GetEmitter()->emitStoreSIMD12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
+            GetEmitter()->emitStoreSimd12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
         }
         else
 #endif // FEATURE_SIMD
