@@ -324,6 +324,7 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
                       ReferenceOutputAssembly="false"
+                      SetTargetFramework="TargetFramework=netstandard2.0"
                       OutputItemType="Analyzer" />
 
     <PackageReference Include="Moq" Version="$(MoqVersion)" />

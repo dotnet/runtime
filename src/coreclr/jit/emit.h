@@ -1745,8 +1745,11 @@ protected:
     void emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
-    void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
-    void emitDispIGlist(bool verbose = false);
+    void emitDispIG(insGroup* ig,
+                    insGroup* igPrev              = nullptr,
+                    bool      displayInstructions = false,
+                    bool      displayLocation     = true);
+    void emitDispIGlist(bool displayInstructions = false);
     void emitDispGCinfo();
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
@@ -3353,20 +3356,6 @@ inline BYTE* emitter::emitCodeWithInstructionSize(BYTE* codePtrBefore, BYTE* new
     assert(!callInstrSizeSafe.IsOverflow());
     *instrSize = callInstrSizeSafe.Value();
     return newCodePointer;
-}
-
-/*****************************************************************************
- *
- *  Add a new IG to the current list, and get it ready to receive code.
- */
-
-inline void emitter::emitNewIG()
-{
-    insGroup* ig = emitAllocAndLinkIG();
-
-    /* It's linked in. Now, set it up to accept code */
-
-    emitGenIG(ig);
 }
 
 /*****************************************************************************/
