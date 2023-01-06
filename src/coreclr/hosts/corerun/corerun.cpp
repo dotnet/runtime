@@ -230,7 +230,7 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
         pal::string_utf8_t file_utf8 = pal::convert_to_utf8(file.c_str());
         size_t len = file_utf8.size() + 1;
         if (value_buffer_size < len)
-            return len + 1;
+            return len;
 
         ::strncpy(value_buffer, file_utf8.c_str(), len - 1);
         value_buffer[len - 1] = '\0';
