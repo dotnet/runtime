@@ -515,12 +515,9 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         pThread->SetActivationPending(false);
 
         DWORD lastError = GetLastError();
-        if (lastError != STATUS_INVALID_PARAMETER)
+        if (lastError != ERROR_INVALID_PARAMETER)
         {
             // An unexpected failure has happened. It is a concern.
-#ifdef _DEBUG
-            printf("Failed to queue an APC for unusual reason. LastError: %d \n", lastError);
-#endif
             ASSERT_UNCONDITIONALLY("Failed to queue an APC for unusual reason.");
 
             // maybe it will work next time.
