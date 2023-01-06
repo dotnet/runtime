@@ -3,10 +3,8 @@
 
 using System.IO;
 using System.Reflection;
-using System.Reflection.PortableExecutable;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Xml;
-using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions.Interfaces;
 using Xunit;
 
 namespace System.Runtime.Serialization.Tests
