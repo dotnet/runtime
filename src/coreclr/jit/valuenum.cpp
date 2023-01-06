@@ -341,10 +341,6 @@ VNFunc GetVNFuncForNode(GenTree* node)
             }
             break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            return VNFunc(VNF_SIMD_FIRST + node->AsSIMD()->GetSIMDIntrinsicId());
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             return VNFunc(VNF_HWI_FIRST + (node->AsHWIntrinsic()->GetHWIntrinsicId() - NI_HW_INTRINSIC_START - 1));
@@ -9327,12 +9323,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 fgValueNumberCall(tree->AsCall());
                 break;
 
-#ifdef FEATURE_SIMD
-            case GT_SIMD:
-                fgValueNumberSimd(tree->AsSIMD());
-                break;
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
                 fgValueNumberHWIntrinsic(tree->AsHWIntrinsic());
@@ -9560,68 +9550,6 @@ void Compiler::fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr)
     ValueNumPair arrAddrVNP = ValueNumPair(arrAddrVN, arrAddrVN);
     arrAddr->gtVNPair       = vnStore->VNPWithExc(arrAddrVNP, vnStore->VNPExceptionSet(arrAddr->Addr()->gtVNPair));
 }
-
-#ifdef FEATURE_SIMD
-// Does value-numbering for a GT_SIMD node.
-void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
-{
-    VNFunc       simdFunc = GetVNFuncForNode(tree);
-    ValueNumPair excSetPair;
-    ValueNumPair normalPair;
-
-    if ((tree->GetOperandCount() > 2) || ((JitConfig.JitDisableSimdVN() & 1) == 1))
-    {
-        // We have a SIMD node with 3 or more args. To retain the
-        // previous behavior, we will generate a unique VN for this case.
-        excSetPair = ValueNumStore::VNPForEmptyExcSet();
-        for (GenTree* operand : tree->Operands())
-        {
-            excSetPair = vnStore->VNPUnionExcSet(operand->gtVNPair, excSetPair);
-        }
-        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), excSetPair);
-        return;
-    }
-
-    // There are some SIMD operations that have zero args, i.e.  NI_Vector128_Zero
-    if (tree->GetOperandCount() == 0)
-    {
-        excSetPair = ValueNumStore::VNPForEmptyExcSet();
-        normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
-    }
-    else // SIMD unary or binary operator.
-    {
-        ValueNumPair resvnp = ValueNumPair();
-        ValueNumPair op1vnp;
-        ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
-
-        ValueNum addrVN = ValueNumStore::NoVN;
-
-        if (tree->GetOperandCount() == 1)
-        {
-            // A unary SIMD node.
-            excSetPair = op1Xvnp;
-            {
-                normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc, op1vnp);
-                assert(vnStore->VNFuncArity(simdFunc) == 1);
-            }
-        }
-        else
-        {
-            ValueNumPair op2vnp;
-            ValueNumPair op2Xvnp;
-            vnStore->VNPUnpackExc(tree->Op(2)->gtVNPair, &op2vnp, &op2Xvnp);
-
-            excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-            {
-                normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc, op1vnp, op2vnp);
-                assert(vnStore->VNFuncArity(simdFunc) == 2);
-            }
-        }
-    }
-    tree->gtVNPair = vnStore->VNPWithExc(normalPair, excSetPair);
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)

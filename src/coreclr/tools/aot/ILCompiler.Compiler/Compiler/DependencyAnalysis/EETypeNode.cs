@@ -1013,15 +1013,18 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void OutputGenericInstantiationDetails(NodeFactory factory, ref ObjectDataBuilder objData)
+        protected void OutputGenericInstantiationDetails(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            if (_type.HasInstantiation && !_type.IsTypeDefinition)
+            if (_type.HasInstantiation)
             {
-                IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
-                if (factory.Target.SupportsRelativePointers)
-                    objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
-                else
-                    objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
+                if (!_type.IsTypeDefinition)
+                {
+                    IEETypeNode typeDefNode = factory.NecessaryTypeSymbol(_type.GetTypeDefinition());
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
+                    else
+                        objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
+                }
 
                 GenericCompositionDetails details;
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)

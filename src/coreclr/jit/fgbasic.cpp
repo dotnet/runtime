@@ -121,6 +121,8 @@ void Compiler::fgInit()
     /* This is set by fgComputeReachability */
     fgEnterBlks = BlockSetOps::UninitVal();
 
+    fgUsedSharedTemps = nullptr;
+
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     fgAlwaysBlks = BlockSetOps::UninitVal();
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)

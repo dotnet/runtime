@@ -2,42 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAny1Value<T> : IndexOfAnyValues<T>
-        where T : struct, INumber<T>
+    internal sealed class IndexOfAny1ByteValue : IndexOfAnyValues<byte>
     {
-        private readonly T _e0;
+        private readonly byte _e0;
 
-        public IndexOfAny1Value(ReadOnlySpan<T> values)
+        public IndexOfAny1ByteValue(ReadOnlySpan<byte> values)
         {
             Debug.Assert(values.Length == 1);
             _e0 = values[0];
         }
 
-        internal override T[] GetValues() => new[] { _e0 };
+        internal override byte[] GetValues() => new[] { _e0 };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override bool ContainsCore(T value) =>
+        internal override bool ContainsCore(byte value) =>
             value == _e0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAny(ReadOnlySpan<T> span) =>
+        internal override int IndexOfAny(ReadOnlySpan<byte> span) =>
             span.IndexOf(_e0);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAnyExcept(ReadOnlySpan<T> span) =>
+        internal override int IndexOfAnyExcept(ReadOnlySpan<byte> span) =>
             span.IndexOfAnyExcept(_e0);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAny(ReadOnlySpan<T> span) =>
+        internal override int LastIndexOfAny(ReadOnlySpan<byte> span) =>
             span.LastIndexOf(_e0);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
+        internal override int LastIndexOfAnyExcept(ReadOnlySpan<byte> span) =>
             span.LastIndexOfAnyExcept(_e0);
     }
 }

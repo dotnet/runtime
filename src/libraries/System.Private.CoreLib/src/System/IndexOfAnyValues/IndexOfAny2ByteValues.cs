@@ -2,42 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAny2Values<T> : IndexOfAnyValues<T>
-        where T : struct, INumber<T>
+    internal sealed class IndexOfAny2ByteValues : IndexOfAnyValues<byte>
     {
-        private readonly T _e0, _e1;
+        private readonly byte _e0, _e1;
 
-        public IndexOfAny2Values(ReadOnlySpan<T> values)
+        public IndexOfAny2ByteValues(ReadOnlySpan<byte> values)
         {
             Debug.Assert(values.Length == 2);
             (_e0, _e1) = (values[0], values[1]);
         }
 
-        internal override T[] GetValues() => new[] { _e0, _e1 };
+        internal override byte[] GetValues() => new[] { _e0, _e1 };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override bool ContainsCore(T value) =>
+        internal override bool ContainsCore(byte value) =>
             value == _e0 || value == _e1;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAny(ReadOnlySpan<T> span) =>
+        internal override int IndexOfAny(ReadOnlySpan<byte> span) =>
             span.IndexOfAny(_e0, _e1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAnyExcept(ReadOnlySpan<T> span) =>
+        internal override int IndexOfAnyExcept(ReadOnlySpan<byte> span) =>
             span.IndexOfAnyExcept(_e0, _e1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAny(ReadOnlySpan<T> span) =>
+        internal override int LastIndexOfAny(ReadOnlySpan<byte> span) =>
             span.LastIndexOfAny(_e0, _e1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
+        internal override int LastIndexOfAnyExcept(ReadOnlySpan<byte> span) =>
             span.LastIndexOfAnyExcept(_e0, _e1);
     }
 }

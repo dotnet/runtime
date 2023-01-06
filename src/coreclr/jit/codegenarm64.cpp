@@ -5018,46 +5018,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 }
 
 #ifdef FEATURE_SIMD
-
-//------------------------------------------------------------------------
-// genSIMDIntrinsic: Generate code for a SIMD Intrinsic.  This is the main
-// routine which in turn calls appropriate genSIMDIntrinsicXXX() routine.
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    Currently, we only recognize SIMDVector<float> and SIMDVector<int>, and
-//    a limited set of methods.
-//
-// TODO-CLEANUP Merge all versions of this function and move to new file simdcodegencommon.cpp.
-void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
-{
-    // NYI for unsupported base types
-    if (!varTypeIsArithmetic(simdNode->GetSimdBaseType()))
-    {
-        noway_assert(!"SIMD intrinsic with unsupported base type.");
-    }
-
-    switch (simdNode->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicUpperSave:
-            genSIMDIntrinsicUpperSave(simdNode);
-            break;
-
-        case SIMDIntrinsicUpperRestore:
-            genSIMDIntrinsicUpperRestore(simdNode);
-            break;
-
-        default:
-            noway_assert(!"Unimplemented SIMD intrinsic.");
-            unreached();
-    }
-}
-
 insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 {
     assert((size == EA_16BYTE) || (size == EA_8BYTE));
@@ -5092,11 +5052,11 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 }
 
 //-----------------------------------------------------------------------------
-// genSIMDIntrinsicUpperSave: save the upper half of a TYP_SIMD16 vector to
-//                            the given register, if any, or to memory.
+// genSimdUpperSave: save the upper half of a TYP_SIMD16 vector to
+//                   the given register, if any, or to memory.
 //
 // Arguments:
-//    simdNode - The GT_SIMD node
+//    node - The GT_INTRINSIC node
 //
 // Return Value:
 //    None.
@@ -5109,81 +5069,93 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 //    In that case, this node will be marked GTF_SPILL, which will cause this method to save
 //    the upper half to the lclVar's home location.
 //
-void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
+void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
 {
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicUpperSave);
+    assert(node->gtIntrinsicName == NI_SIMD_UpperSave);
 
-    GenTree*       op1     = simdNode->Op(1);
+    GenTree* op1 = node->gtGetOp1();
+    assert(op1->IsLocal());
+
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
     assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
 
-    regNumber targetReg = simdNode->GetRegNum();
-    regNumber op1Reg    = genConsumeReg(op1);
-    assert(op1Reg != REG_NA);
-    assert(targetReg != REG_NA);
-    GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_8BYTE, targetReg, op1Reg, 0, 1);
+    regNumber tgtReg = node->GetRegNum();
+    assert(tgtReg != REG_NA);
 
-    if ((simdNode->gtFlags & GTF_SPILL) != 0)
+    regNumber op1Reg = genConsumeReg(op1);
+    assert(op1Reg != REG_NA);
+
+    GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_8BYTE, tgtReg, op1Reg, 0, 1);
+
+    if ((node->gtFlags & GTF_SPILL) != 0)
     {
         // This is not a normal spill; we'll spill it to the lclVar location.
         // The localVar must have a stack home.
+
         unsigned varNum = lclNode->GetLclNum();
         assert(varDsc->lvOnFrame);
+
         // We want to store this to the upper 8 bytes of this localVar's home.
         int offset = 8;
 
         emitAttr attr = emitTypeSize(TYP_SIMD8);
-        GetEmitter()->emitIns_S_R(INS_str, attr, targetReg, varNum, offset);
+        GetEmitter()->emitIns_S_R(INS_str, attr, tgtReg, varNum, offset);
     }
     else
     {
-        genProduceReg(simdNode);
+        genProduceReg(node);
     }
 }
 
 //-----------------------------------------------------------------------------
-// genSIMDIntrinsicUpperRestore: Restore the upper half of a TYP_SIMD16 vector to
-//                               the given register, if any, or to memory.
+// genSimdUpperRestore: Restore the upper half of a TYP_SIMD16 vector to
+//                      the given register, if any, or to memory.
 //
 // Arguments:
-//    simdNode - The GT_SIMD node
+//    node - The GT_INTRINSIC node
 //
 // Return Value:
 //    None.
 //
 // Notes:
-//    For consistency with genSIMDIntrinsicUpperSave, and to ensure that lclVar nodes always
-//    have their home register, this node has its targetReg on the lclVar child, and its source
-//    on the simdNode.
-//    Regarding spill, please see the note above on genSIMDIntrinsicUpperSave.  If we have spilled
+//    For consistency with genSimdUpperSave, and to ensure that lclVar nodes always
+//    have their home register, this node has its tgtReg on the lclVar child, and its source
+//    on the node.
+//    Regarding spill, please see the note above on genSimdUpperSave.  If we have spilled
 //    an upper-half to the lclVar's home location, this node will be marked GTF_SPILLED.
 //
-void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
+void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 {
-    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicUpperRestore);
+    assert(node->gtIntrinsicName == NI_SIMD_UpperRestore);
 
-    GenTree* op1 = simdNode->Op(1);
+    GenTree* op1 = node->gtGetOp1();
     assert(op1->IsLocal());
+
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
     assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
 
-    regNumber srcReg    = simdNode->GetRegNum();
-    regNumber lclVarReg = genConsumeReg(lclNode);
-    unsigned  varNum    = lclNode->GetLclNum();
-    assert(lclVarReg != REG_NA);
+    regNumber srcReg = node->GetRegNum();
     assert(srcReg != REG_NA);
-    if (simdNode->gtFlags & GTF_SPILLED)
+
+    regNumber lclVarReg = genConsumeReg(lclNode);
+    assert(lclVarReg != REG_NA);
+
+    unsigned varNum = lclNode->GetLclNum();
+
+    if (node->gtFlags & GTF_SPILLED)
     {
         // The localVar must have a stack home.
         assert(varDsc->lvOnFrame);
+
         // We will load this from the upper 8 bytes of this localVar's home.
         int offset = 8;
 
         emitAttr attr = emitTypeSize(TYP_SIMD8);
         GetEmitter()->emitIns_R_S(INS_ldr, attr, srcReg, varNum, offset);
     }
+
     GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_8BYTE, lclVarReg, srcReg, 1, 0);
 }
 

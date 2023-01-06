@@ -2685,17 +2685,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 // Element access
                 index = indexClone;
-
-#ifdef TARGET_64BIT
-                if (index->OperGet() == GT_CNS_INT)
-                {
-                    index->gtType = TYP_I_IMPL;
-                }
-                else
-                {
-                    index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
-                }
-#endif
+                index = impImplicitIorI4Cast(index, TYP_I_IMPL, /* zeroExtend */ true);
 
                 if (elemSize != 1)
                 {
@@ -3589,10 +3579,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
                     impPopStack();
 
-                    if (op1->TypeGet() != TYP_DOUBLE)
-                    {
-                        op1 = gtNewCastNode(TYP_DOUBLE, op1, false, TYP_DOUBLE);
-                    }
+                    op1     = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
                     retNode = gtNewBitCastNode(TYP_LONG, op1);
                 }
 #endif
@@ -3652,10 +3639,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
                 else
                 {
-                    if (op1->TypeGet() != TYP_FLOAT)
-                    {
-                        op1 = gtNewCastNode(TYP_FLOAT, op1, false, TYP_FLOAT);
-                    }
+                    op1     = impImplicitR4orR8Cast(op1, TYP_FLOAT);
                     retNode = gtNewBitCastNode(TYP_INT, op1);
                 }
                 break;
@@ -4187,16 +4171,8 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         }
         else
         {
-            // insert implied casts (from float to double or double to float)
-            if ((jitSigType == TYP_DOUBLE) && argNode->TypeIs(TYP_FLOAT))
-            {
-                argNode = gtNewCastNode(TYP_DOUBLE, argNode, false, TYP_DOUBLE);
-            }
-            else if ((jitSigType == TYP_FLOAT) && argNode->TypeIs(TYP_DOUBLE))
-            {
-                argNode = gtNewCastNode(TYP_FLOAT, argNode, false, TYP_FLOAT);
-            }
-
+            // Insert implied casts (from float to double or double to float).
+            argNode = impImplicitR4orR8Cast(argNode, jitSigType);
             // insert any widening or narrowing casts for backwards compatibility
             argNode = impImplicitIorI4Cast(argNode, jitSigType);
         }
@@ -6797,50 +6773,27 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
     if (!IsIntrinsicImplementedByUserCall(intrinsicName))
 #endif
     {
-        CORINFO_CLASS_HANDLE    tmpClass;
-        CORINFO_ARG_LIST_HANDLE arg;
-        var_types               op1Type;
-        var_types               op2Type;
+        CORINFO_ARG_LIST_HANDLE arg = sig->args;
 
         switch (sig->numArgs)
         {
             case 1:
+                assert(eeGetArgType(arg, sig) == callType);
+
                 op1 = impPopStack().val;
-
-                arg     = sig->args;
-                op1Type = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &tmpClass)));
-
-                if (op1->TypeGet() != genActualType(op1Type))
-                {
-                    assert(varTypeIsFloating(op1));
-                    op1 = gtNewCastNode(callType, op1, false, callType);
-                }
-
+                op1 = impImplicitR4orR8Cast(op1, callType);
                 op1 = new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, intrinsicName, method);
                 break;
 
             case 2:
+                assert(eeGetArgType(arg, sig) == callType);
+                INDEBUG(arg = info.compCompHnd->getArgNext(arg));
+                assert(eeGetArgType(arg, sig) == callType);
+
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
-
-                arg     = sig->args;
-                op1Type = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &tmpClass)));
-
-                if (op1->TypeGet() != genActualType(op1Type))
-                {
-                    assert(varTypeIsFloating(op1));
-                    op1 = gtNewCastNode(callType, op1, false, callType);
-                }
-
-                arg     = info.compCompHnd->getArgNext(arg);
-                op2Type = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg, &tmpClass)));
-
-                if (op2->TypeGet() != genActualType(op2Type))
-                {
-                    assert(varTypeIsFloating(op2));
-                    op2 = gtNewCastNode(callType, op2, false, callType);
-                }
-
+                op1 = impImplicitR4orR8Cast(op1, callType);
+                op2 = impImplicitR4orR8Cast(op2, callType);
                 op1 =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(genActualType(callType), op1, op2, intrinsicName, method);
                 break;

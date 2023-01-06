@@ -741,7 +741,7 @@ inline double getR8LittleEndian(const BYTE* ptr)
 
 #ifdef DEBUG
 const char* genES2str(BitVecTraits* traits, EXPSET_TP set);
-const char* refCntWtd2str(weight_t refCntWtd);
+const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces = false);
 #endif
 
 /*
@@ -3986,6 +3986,11 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         return true;
     }
 
+    if (varDsc->lvHasExplicitInit)
+    {
+        return true;
+    }
+
     if (fgVarIsNeverZeroInitializedInProlog(varNum))
     {
         return true;
@@ -4125,13 +4130,8 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
 
 // Variadic nodes
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-#if defined(FEATURE_SIMD)
-        case GT_SIMD:
-#endif
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-#endif
             for (GenTree* operand : this->AsMultiOp()->Operands())
             {
                 if (visitor(operand) == VisitResult::Abort)
@@ -4140,7 +4140,7 @@ void GenTree::VisitOperands(TVisitor visitor)
                 }
             }
             return;
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#endif // defined(FEATURE_HW_INTRINSICS)
 
         // Special nodes
         case GT_PHI:
