@@ -555,30 +555,30 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void GetItems_Choices_Empty_ArgumentException()
         {
-            Assert.Throws<ArgumentException>("choices",
+            AssertExtensions.Throws<ArgumentException>("choices",
                 () => RandomNumberGenerator.GetItems(ReadOnlySpan<int>.Empty, 6));
-            Assert.Throws<ArgumentException>("choices",
+            AssertExtensions.Throws<ArgumentException>("choices",
                 () => RandomNumberGenerator.GetItems(ReadOnlySpan<int>.Empty, stackalloc int[6]));
         }
 
         [Fact]
         public static void GetString_Choices_Empty_ArgumentException()
         {
-            Assert.Throws<ArgumentException>("choices",
+            AssertExtensions.Throws<ArgumentException>("choices",
                 () => RandomNumberGenerator.GetString(ReadOnlySpan<char>.Empty, 6));
         }
 
         [Fact]
         public static void GetItems_NegativeLength_ArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("length",
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length",
                 () => RandomNumberGenerator.GetItems<int>(new int[1], -1));
         }
 
         [Fact]
         public static void GetString_NegativeLength_ArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => RandomNumberGenerator.GetString("a", -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => RandomNumberGenerator.GetString("a", -1));
         }
 
         [Fact]

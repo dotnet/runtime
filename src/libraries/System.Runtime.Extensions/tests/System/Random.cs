@@ -731,7 +731,7 @@ namespace System.Tests
         public static void Shuffle_Array_ArgValidation()
         {
             Random random = new Random(0x70636A61);
-            Assert.Throws<ArgumentNullException>("values", () => random.Shuffle((int[])null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => random.Shuffle((int[])null));
         }
 
         [Theory]
@@ -760,17 +760,17 @@ namespace System.Tests
         public static void GetItems_Span_ArgValidation()
         {
             Random random = new Random(0x70636A61);
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems<int>(stackalloc int[1], length: -1));
-            Assert.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, length: 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems<int>(stackalloc int[1], length: -1));
+            AssertHexString.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, length: 1));
         }
 
         [Fact]
         public static void GetItems_Array_Allocating_ArgValidation()
         {
             Random random = new Random(0x70636A61);
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems(new int[1], length: -1));
-            Assert.Throws<ArgumentNullException>("choices", () => random.GetItems((int[])null, length: 1));
-            Assert.Throws<ArgumentException>("choices", () => random.GetItems<int>(Array.Empty<int>(), length: 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems(new int[1], length: -1));
+            AssertExtensions.Throws<ArgumentNullException>("choices", () => random.GetItems((int[])null, length: 1));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(Array.Empty<int>(), length: 1));
         }
 
         [Fact]
@@ -778,7 +778,7 @@ namespace System.Tests
         {
             Random random = new Random(0x70636A61);
             int[] destination = new int[1];
-            Assert.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, destination));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, destination));
         }
 
         [Fact]
