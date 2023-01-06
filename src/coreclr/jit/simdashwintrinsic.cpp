@@ -546,13 +546,18 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #if defined(TARGET_XARCH)
         case NI_VectorT128_Dot:
         {
-            if (!compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
             {
-                // We need to exit early if this is Vector<T>.Dot for int or uint and SSE41 is not supported
-                // The other types should be handled via the table driven paths
-
-                assert((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT));
-                return nullptr;
+                if (!compExactlyDependsOn(InstructionSet_SSE41))
+                {
+                    // TODO-XARCH-CQ: We can support 32-bit integers if we updating multiplication
+                    // to be lowered rather than imported as the relevant operations.
+                    return nullptr;
+                }
+            }
+            else
+            {
+                assert(varTypeIsShort(simdBaseType) || varTypeIsFloating(simdBaseType));
             }
             break;
         }
