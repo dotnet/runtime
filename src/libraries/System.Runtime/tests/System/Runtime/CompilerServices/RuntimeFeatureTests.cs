@@ -80,13 +80,17 @@ namespace System.Runtime.CompilerServices.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
 
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (isDynamicCodeSupportedString) =>
+            // IsDynamicCodeCompiled on Mono interpreter always returns false
+            bool isDynamicCodeCompiled = PlatformDetection.IsMonoInterpreter ? false : isDynamicCodeSupported;
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (isDynamicCodeSupportedString, isDynamicCodeCompiledString) =>
             {
                 bool isDynamicCodeSupported = bool.Parse(isDynamicCodeSupportedString);
-
                 Assert.Equal(isDynamicCodeSupported, RuntimeFeature.IsDynamicCodeSupported);
-                Assert.Equal(isDynamicCodeSupported, RuntimeFeature.IsDynamicCodeCompiled);
-            }, isDynamicCodeSupported.ToString(), options);
+
+                bool isDynamicCodeCompiled = bool.Parse(isDynamicCodeCompiledString);
+                Assert.Equal(isDynamicCodeCompiled, RuntimeFeature.IsDynamicCodeCompiled);
+            }, isDynamicCodeSupported.ToString(), isDynamicCodeCompiled.ToString(), options);
         }
     }
 }

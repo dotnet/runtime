@@ -19,7 +19,12 @@ namespace System.Reflection.Emit.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => SignatureHelper.GetFieldSigHelper(null));
                 Assert.Throws<PlatformNotSupportedException>(() => SignatureHelper.GetLocalVarSigHelper());
                 Assert.Throws<PlatformNotSupportedException>(() => SignatureHelper.GetMethodSigHelper(CallingConventions.Any, typeof(int)));
-                Assert.Throws<PlatformNotSupportedException>(() => SignatureHelper.GetPropertySigHelper(null, typeof(string), new Type[] { typeof(string), typeof(int) }));
+
+                // Mono always throws NotImplementedException - https://github.com/dotnet/runtime/issues/37794
+                if (!PlatformDetection.IsMonoRuntime)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => SignatureHelper.GetPropertySigHelper(null, typeof(string), new Type[] { typeof(string), typeof(int) }));
+                }
             }, options);
         }
     }
