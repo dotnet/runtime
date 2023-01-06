@@ -111,7 +111,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Runtime.executionContextCreated":
                     {
-                        SendEvent(sessionId, method, args, token);
+                        await SendEvent(sessionId, method, args, token);
                         JToken ctx = args?["context"];
                         var aux_data = ctx?["auxData"] as JObject;
                         int id = ctx["id"].Value<int>();
@@ -831,7 +831,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                 return true;
             }
-            SendEvent(sessionId, "Debugger.paused", o, token);
+            await SendEvent(sessionId, "Debugger.paused", o, token);
 
             return true;
         }
@@ -940,7 +940,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     foreach (SourceFile source in asm.Sources)
                     {
                         var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                        SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+                        await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
                     }
                     return asm.GetMethodByToken(method_token);
                 }
@@ -1171,7 +1171,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
             Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
-            SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+            await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
 
             foreach (var req in context.BreakpointRequests.Values)
             {
@@ -1253,7 +1253,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             DebugStore store = await LoadStore(sessionId, token);
             context.ready.SetResult(store);
-            SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
+            await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
             SdbHelper.ResetStore(store);
             return store;
         }
@@ -1340,7 +1340,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 };
 
                 if (sendResolvedEvent)
-                    SendEvent(sessionId, "Debugger.breakpointResolved", JObject.FromObject(resolvedLocation), token);
+                    await SendEvent(sessionId, "Debugger.breakpointResolved", JObject.FromObject(resolvedLocation), token);
             }
 
             req.Locations.AddRange(breakpoints);
