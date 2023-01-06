@@ -45,12 +45,12 @@
   </ItemGroup>
 
   <!-- Samples that require a multi-threaded runtime -->
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnableThreads)' != 'true'" >
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(MonoWasmBuildVariant)' != 'multithread'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
   </ItemGroup>
 
   <!-- Samples that require a perf-tracing wasm runtime -->
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnablePerfTracing)' != 'true'" >
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(MonoWasmBuildVariant)' != 'perftrace'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
 
@@ -369,7 +369,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\wasm\System.Net.WebSockets.Client.Wasm.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnableThreads)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(MonoWasmBuildVariant)' == 'multithread' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/72101 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
     <!-- Issue: https://github.com/dotnet/runtime/issues/74411 -->
@@ -378,7 +378,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnablePerfTracing)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(MonoWasmBuildVariant)' == 'perftrace' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/74411 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <!-- Issue: https://github.com/dotnet/runtime/issues/74413 -->
@@ -424,10 +424,6 @@
 
     <!-- https://github.com/dotnet/runtime/issues/72908 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/30566 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Extensions\tests\System.Runtime.Extensions.Tests.csproj"
-                       Condition="'$(RuntimeConfiguration)' == 'checked' and '$(TargetOS)' == 'windows'" />
 
     <!-- Test needs to copy .so file: https://github.com/dotnet/runtime/issues/72987 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj"

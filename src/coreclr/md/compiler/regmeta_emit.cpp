@@ -31,7 +31,7 @@
 #define DEFINE_CUSTOM_DUPCHECK      2
 #define SET_CUSTOM                  3
 
-#if defined(_DEBUG) && defined(_TRACE_REMAPS)
+#if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
@@ -51,9 +51,6 @@ STDMETHODIMP RegMeta::SetModuleProps(   // S_OK or error.
     HRESULT     hr = S_OK;
 
     ModuleRec   *pModule;               // The module record to modify.
-
-    LOG((LOGMD, "RegMeta::SetModuleProps(%S)\n", MDSTR(szName)));
-
 
     LOCKWRITE();
 
@@ -84,7 +81,6 @@ STDMETHODIMP RegMeta::Save(                     // S_OK or error.
 {
     HRESULT     hr=S_OK;
 
-    LOG((LOGMD, "RegMeta::Save(%S, 0x%08x)\n", MDSTR(szFile), dwSaveFlags));
     LOCKWRITE();
 
     // Check reserved param..
@@ -120,8 +116,6 @@ STDMETHODIMP RegMeta::SaveToStream(     // S_OK or error.
     HRESULT     hr=S_OK;
 
     LOCKWRITE();
-
-    LOG((LOGMD, "RegMeta::SaveToStream(0x%08x, 0x%08x)\n", pIStream, dwSaveFlags));
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
 
@@ -174,9 +168,6 @@ STDMETHODIMP RegMeta::SaveToMemory(           // S_OK or error.
 
     IStream     *pStream = 0;           // Working pointer for save.
 
-    LOG((LOGMD, "MD RegMeta::SaveToMemory(0x%08x, 0x%08x)\n",
-        pbData, cbData));
-
 #ifdef _DEBUG
     ULONG       cbActual;               // Size of the real data.
     IfFailGo(GetSaveSize(cssAccurate, &cbActual));
@@ -209,7 +200,6 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
 
     FilterTable *ft = NULL;
 
-    LOG((LOGMD, "RegMeta::GetSaveSize(0x%08x, 0x%08x)\n", fSave, pdwSaveSize));
     LOCKWRITE();
 
     ft = m_pStgdb->m_MiniMd.GetFilterTable();
@@ -275,8 +265,6 @@ HRESULT RegMeta::UnmarkAll()
     CustomAttributeRec  *pCARec;
     mdToken         tkParent;
     int             iStart, iEnd;
-
-    LOG((LOGMD, "RegMeta::UnmarkAll\n"));
 
     LOCKWRITE();
 
@@ -430,7 +418,6 @@ STDMETHODIMP RegMeta::MarkToken(        // Return code.
 {
     HRESULT     hr = NOERROR;
 
-    // LOG((LOGMD, "RegMeta::MarkToken(0x%08x)\n", tk));
     LOCKWRITE();
 
     if (m_pStgdb->m_MiniMd.GetFilterTable() == NULL || m_pFilterManager == NULL)
@@ -522,7 +509,6 @@ HRESULT RegMeta::IsTokenMarked(
 
     FilterTable *pFilter = NULL;
 
-    LOG((LOGMD, "RegMeta::IsTokenMarked(0x%08x)\n", tk));
     LOCKREAD();
 
     pFilter = m_pStgdb->m_MiniMd.GetFilterTable();
@@ -599,9 +585,6 @@ STDMETHODIMP RegMeta::DefineTypeDef(                // S_OK or error.
 {
     HRESULT     hr = S_OK;              // A result.
 
-    LOG((LOGMD, "RegMeta::DefineTypeDef(%S, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            MDSTR(szTypeDef), dwTypeDefFlags, tkExtends,
-            rtkImplements, ptd));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -625,7 +608,6 @@ STDMETHODIMP RegMeta::SetHandler(       // S_OK.
 
     IMapToken *pIMap = NULL;
 
-    LOG((LOGMD, "RegMeta::SetHandler(0x%08x)\n", pUnk));
     LOCKWRITE();
 
     m_pHandler = pUnk;
@@ -854,10 +836,8 @@ HRESULT RegMeta::RefToDefOptimization()
             hr = ImportHelper::FindMember(pMiniMd, tkParent, szName, pvSig, cbSig, &mfdef);
             if (hr != S_OK)
             {
-    #if _TRACE_REMAPS
-            // Log the failure.
-            LOG((LF_METADATA, LL_INFO10, "Member %S//%S.%S not found\n", szNamespace, szTDName, rcMRName));
-    #endif
+                // Log the failure.
+                LOG((LF_METADATA, LL_INFO10, "Member %s (0x%p, %u) not found on 0x%x\n", szName, pvSig, cbSig, tkParent));
                 continue;
             }
 

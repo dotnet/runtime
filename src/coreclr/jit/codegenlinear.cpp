@@ -1717,7 +1717,7 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // genConsumeOperands: Do liveness update for the operands of a multi-operand node,
-//                     currently GT_SIMD or GT_HWINTRINSIC
+//                     currently GT_HWINTRINSIC
 //
 // Arguments:
 //    tree - the GenTreeMultiOp whose operands will have their liveness updated.

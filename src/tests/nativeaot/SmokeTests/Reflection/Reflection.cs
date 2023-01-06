@@ -81,6 +81,8 @@ internal static class ReflectionTest
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
 #endif
+        TestBaseOnlyUsedFromCode.Run();
+        TestEntryPoint.Run();
         return 100;
     }
 
@@ -1507,6 +1509,33 @@ internal static class ReflectionTest
         }
     }
 
+    class TestBaseOnlyUsedFromCode
+    {
+        class SomeReferenceType { }
+
+        class SomeGenericClass<T>
+        {
+            public static string Cookie;
+        }
+
+        class OtherGenericClass<T>
+        {
+            public override string ToString() => SomeGenericClass<T>.Cookie;
+        }
+
+        public static void Run()
+        {
+            SomeGenericClass<SomeReferenceType>.Cookie = "Hello";
+
+            var inst = Activator.CreateInstance(typeof(OtherGenericClass<>).MakeGenericType(GetSomeReferenceType()));
+
+            if (inst.ToString() != "Hello")
+                throw new Exception();
+
+            static Type GetSomeReferenceType() => typeof(SomeReferenceType);
+        }
+    }
+
     class TestRuntimeLab929Regression
     {
         static Type s_atom = typeof(Atom);
@@ -2091,6 +2120,16 @@ internal static class ReflectionTest
                 throw new Exception();
 
             static MethodInfo Grab<T>() => typeof(MyGenericType<T>).GetMethod(nameof(MyGenericType<T>.MyMethod));
+        }
+    }
+
+    class TestEntryPoint
+    {
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestEntryPoint));
+			if (Assembly.GetEntryAssembly().EntryPoint == null)
+				throw new Exception();
         }
     }
 

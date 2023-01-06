@@ -1058,7 +1058,7 @@ protected:
     void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
 #endif
     void genCodeForSelect(GenTreeOp* select);
-    void genIntrinsic(GenTree* treeNode);
+    void genIntrinsic(GenTreeIntrinsic* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
     void genPutArgReg(GenTreeOp* tree);
 #if FEATURE_ARG_SPLIT
@@ -1078,9 +1078,8 @@ protected:
 #ifdef TARGET_ARM64
     insOpts genGetSimdInsOpt(emitAttr size, var_types elementType);
 #endif
-    void genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsic(GenTreeSIMD* simdNode);
+    void genSimdUpperSave(GenTreeIntrinsic* node);
+    void genSimdUpperRestore(GenTreeIntrinsic* node);
 
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires
     // two reads/writes on 64-bit targets. These routines abstract reading/writing of Vector3
