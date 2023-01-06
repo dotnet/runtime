@@ -248,13 +248,10 @@ namespace {lc.Namespace}
                 int index = 0;
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    string name = p.Name;
-                    if(ContainsAtSymbol(p.CodeName))
-                    {
-                        // this is related to https://github.com/serilog/serilog-extensions-logging/issues/197
-                        name = p.CodeName;
-                    }
-                    if (lm.TemplateMap.ContainsKey(name))
+                    // this is related to https://github.com/serilog/serilog-extensions-logging/issues/197
+                    string name = p.CodeName;
+
+                    if (lm.TemplateMap.ContainsKey(p.Name))
                     {
                         // take the letter casing from the template
                         name = lm.TemplateMap[name];
@@ -608,17 +605,10 @@ internal static class __LoggerMessageGenerator
 
             return sb.ToString();
         }
-        private static bool ContainsAtSymbol(string value)=> value.Length > 0 && value[0] == '@';
-        private static string ProtectAtSymbol(string value)
-        {
-            if(ContainsAtSymbol(value))
-            {
-                return value;
-            }
-            else
-            {
-                return $"_{value}";
-            }
-        }
+
+        private static bool ContainsAtSymbol(string value) => value.Length > 0 && value[0] == '@';
+
+        private static string ProtectAtSymbol(string value) =>
+            ContainsAtSymbol(value) ? value : $"_{value}";
     }
 }
