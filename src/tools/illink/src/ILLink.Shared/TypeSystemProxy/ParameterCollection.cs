@@ -5,18 +5,21 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared.TypeSystemProxy
 {
 	/// <summary>
 	/// Enumerable struct used to enumerator over a method's parameters without allocating or going through IEnumerable
 	/// </summary>
-	internal struct ParameterProxyEnumerable : IEnumerable<ParameterProxy>
+	internal readonly struct ParameterProxyEnumerable : IEnumerable<ParameterProxy>
 	{
-		readonly int _start;
+		private readonly int _start;
 
-		readonly int _end;
+		private readonly int _end;
 
-		readonly MethodProxy _method;
+		private readonly MethodProxy _method;
 
 		public ParameterProxyEnumerable (int start, int end, MethodProxy method)
 		{
@@ -33,10 +36,11 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		public struct ParameterEnumerator : IEnumerator<ParameterProxy>
 		{
-			readonly int _start;
-			int _current;
-			readonly int _end;
-			readonly MethodProxy _method;
+			private readonly int _start;
+			private int _current;
+			private readonly int _end;
+			private readonly MethodProxy _method;
+
 			public ParameterEnumerator (int start, int end, MethodProxy method)
 			{
 				_start = start;

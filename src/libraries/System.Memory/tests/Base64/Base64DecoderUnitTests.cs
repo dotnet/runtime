@@ -58,6 +58,19 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
+        public void BasicDecodingInvalidInputWithSlicedSource()
+        {
+            ReadOnlySpan<byte> source = stackalloc byte[] { (byte)'A', (byte)'B', (byte)'C', (byte)'D' };
+            Span<byte> decodedBytes = stackalloc byte[128];
+
+            source = source[..3];   // now it's invalid as only 3 bytes are present
+
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(0, consumed);
+            Assert.Equal(0, decodedByteCount);
+        }
+
+        [Fact]
         public void BasicDecodingWithFinalBlockFalse()
         {
             var rnd = new Random(42);

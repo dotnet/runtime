@@ -169,10 +169,10 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// The order of the keys in the dictionary is unspecified, but it is the same order as the associated values returned by the <see cref="Values"/> property.
         /// </remarks>
-        public ImmutableArray<TKey> Keys => KeysCore;
+        public ImmutableArray<TKey> Keys => ImmutableArrayFactory.Create(KeysCore);
 
         /// <inheritdoc cref="Keys" />
-        private protected abstract ImmutableArray<TKey> KeysCore { get; }
+        private protected abstract TKey[] KeysCore { get; }
 
         /// <inheritdoc />
         ICollection<TKey> IDictionary<TKey, TValue>.Keys =>
@@ -191,10 +191,10 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// The order of the values in the dictionary is unspecified, but it is the same order as the associated keys returned by the <see cref="Keys"/> property.
         /// </remarks>
-        public ImmutableArray<TValue> Values => ValuesCore;
+        public ImmutableArray<TValue> Values => ImmutableArrayFactory.Create(ValuesCore);
 
         /// <inheritdoc cref="Values" />
-        private protected abstract ImmutableArray<TValue> ValuesCore { get; }
+        private protected abstract TValue[] ValuesCore { get; }
 
         ICollection<TValue> IDictionary<TKey, TValue>.Values =>
             Values is { Length: > 0 } values ? values : Array.Empty<TValue>();
@@ -230,8 +230,8 @@ namespace System.Collections.Frozen
                 ThrowHelper.ThrowIfDestinationTooSmall();
             }
 
-            TKey[] keys = Keys.array!;
-            TValue[] values = Values.array!;
+            TKey[] keys = KeysCore;
+            TValue[] values = ValuesCore;
             Debug.Assert(keys.Length == values.Length);
 
             for (int i = 0; i < keys.Length; i++)
@@ -283,7 +283,7 @@ namespace System.Collections.Frozen
             {
                 if (array is not object[] objects)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
 
                 try
@@ -295,7 +295,7 @@ namespace System.Collections.Frozen
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
         }

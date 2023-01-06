@@ -639,5 +639,9 @@
 
 		<!-- FIXME: only if  feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" -->
 		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
+                <type fullname="Mono.HotReload.InstanceFieldTable">
+                    <!-- hot_reload.c -->
+                    <method name="GetInstanceFieldFieldStore" />
+                </type>
 	</assembly>
 </linker>

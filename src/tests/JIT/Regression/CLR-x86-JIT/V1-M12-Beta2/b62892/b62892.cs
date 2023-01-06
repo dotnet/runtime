@@ -17,7 +17,7 @@ namespace Test
 
     public class BB
     {
-        static int Main()
+        public static int Main()
         {
             AA.Static1();
             return 100;

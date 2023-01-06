@@ -335,8 +335,10 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [InlineData("key", "value")]
-        [InlineData("key     ", "   value    ")]
-        [InlineData("      key     ", "   value    ")]
+        [InlineData("key    ", "value    ")]
+        [InlineData("    key", "    value")]
+        [InlineData("    key   ", "    value    ")]
+        [InlineData("    key spaced   ", "    value spaced    ")]
         [InlineData("many sla/s\\hes", "/////////////\\\\\\///////////")]
         public void PaxExtendedAttribute_Roundtrips(string key, string value)
         {
@@ -351,7 +353,7 @@ namespace System.Formats.Tar.Tests
             {
                 PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
                 Assert.Equal(5, entry.ExtendedAttributes.Count);
-                Assert.Contains(KeyValuePair.Create(key.TrimStart(), value), entry.ExtendedAttributes);
+                Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
             }
         }
 

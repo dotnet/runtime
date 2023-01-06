@@ -13,12 +13,16 @@ using Microsoft.Build.Utilities;
 
 internal sealed class PInvokeTableGenerator
 {
-    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
     private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
 
     private TaskLoggingHelper Log { get; set; }
+    private readonly Func<string, string> _fixupSymbolName;
 
-    public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, TaskLoggingHelper log)
+    {
+        Log = log;
+        _fixupSymbolName = fixupSymbolName;
+    }
 
     public IEnumerable<string> Generate(string[] pinvokeModules, string[] assemblies, string outputPath)
     {
@@ -210,7 +214,7 @@ internal sealed class PInvokeTableGenerator
                 string imports = string.Join(Environment.NewLine,
                                             candidates.Select(
                                                 p => $"    {p.Method} (in [{p.Method.DeclaringType?.Assembly.GetName().Name}] {p.Method.DeclaringType})"));
-                Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
+                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
                                  " Calling such functions is not supported, and will fail at runtime." +
                                 $" Managed DllImports: {Environment.NewLine}{imports}");
 
@@ -234,14 +238,14 @@ internal sealed class PInvokeTableGenerator
 
         foreach (var module in modules.Keys)
         {
-            string symbol = ModuleNameToId(module) + "_imports";
+            string symbol = _fixupSymbolName(module) + "_imports";
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
 
             var assemblies_pinvokes = pinvokes.
                 Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select(l => "{\"" + FixupSymbolName(l.Key) + "\", " + FixupSymbolName(l.Key) + "}, " +
+                Select(l => "{\"" + _fixupSymbolName(l.Key) + "\", " + _fixupSymbolName(l.Key) + "}, " +
                                 "// " + string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n)));
 
             foreach (var pinvoke in assemblies_pinvokes)
@@ -255,7 +259,7 @@ internal sealed class PInvokeTableGenerator
         w.Write("static void *pinvoke_tables[] = { ");
         foreach (var module in modules.Keys)
         {
-            string symbol = ModuleNameToId(module) + "_imports";
+            string symbol = _fixupSymbolName(module) + "_imports";
             w.Write(symbol + ",");
         }
         w.WriteLine("};");
@@ -265,18 +269,6 @@ internal sealed class PInvokeTableGenerator
             w.Write("\"" + module + "\"" + ",");
         }
         w.WriteLine("};");
-
-        static string ModuleNameToId(string name)
-        {
-            if (name.IndexOfAny(s_charsToReplace) < 0)
-                return name;
-
-            string fixedName = name;
-            foreach (char c in s_charsToReplace)
-                fixedName = fixedName.Replace(c, '_');
-
-            return fixedName;
-        }
 
         static bool ShouldTreatAsVariadic(PInvoke[] candidates)
         {
@@ -295,35 +287,7 @@ internal sealed class PInvokeTableGenerator
         }
     }
 
-    private static string FixupSymbolName(string name)
-    {
-        UTF8Encoding utf8 = new();
-        byte[] bytes = utf8.GetBytes(name);
-        StringBuilder sb = new();
-
-        foreach (byte b in bytes)
-        {
-            if ((b >= (byte)'0' && b <= (byte)'9') ||
-                (b >= (byte)'a' && b <= (byte)'z') ||
-                (b >= (byte)'A' && b <= (byte)'Z') ||
-                (b == (byte)'_'))
-            {
-                sb.Append((char)b);
-            }
-            else if (s_charsToReplace.Contains((char)b))
-            {
-                sb.Append('_');
-            }
-            else
-            {
-                sb.Append($"_{b:X}_");
-            }
-        }
-
-        return sb.ToString();
-    }
-
-    private static string SymbolNameForMethod(MethodInfo method)
+    private string SymbolNameForMethod(MethodInfo method)
     {
         StringBuilder sb = new();
         Type? type = method.DeclaringType;
@@ -331,7 +295,7 @@ internal sealed class PInvokeTableGenerator
         sb.Append($"{(type!.IsNested ? type!.FullName : type!.Name)}_");
         sb.Append(method.Name);
 
-        return FixupSymbolName(sb.ToString());
+        return _fixupSymbolName(sb.ToString());
     }
 
     private static string MapType(Type t) => t.Name switch
@@ -374,7 +338,7 @@ internal sealed class PInvokeTableGenerator
         {
             // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
             // https://github.com/dotnet/runtime/issues/43791
-            sb.Append($"int {FixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);");
+            sb.Append($"int {_fixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);");
             return sb.ToString();
         }
 
@@ -390,7 +354,7 @@ internal sealed class PInvokeTableGenerator
         }
 
         sb.Append(MapType(method.ReturnType));
-        sb.Append($" {FixupSymbolName(pinvoke.EntryPoint)} (");
+        sb.Append($" {_fixupSymbolName(pinvoke.EntryPoint)} (");
         int pindex = 0;
         var pars = method.GetParameters();
         foreach (var p in pars)
@@ -404,7 +368,7 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
-    private static void EmitNativeToInterp(StreamWriter w, ref List<PInvokeCallback> callbacks)
+    private void EmitNativeToInterp(StreamWriter w, ref List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
         // These are called by native code, so they need to obtain
@@ -450,7 +414,7 @@ internal sealed class PInvokeTableGenerator
 
             bool is_void = method.ReturnType.Name == "Void";
 
-            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
+            string module_symbol = _fixupSymbolName(method.DeclaringType!.Module!.Assembly!.GetName()!.Name!);
             uint token = (uint)method.MetadataToken;
             string class_name = method.DeclaringType.Name;
             string method_name = method.Name;
@@ -468,7 +432,7 @@ internal sealed class PInvokeTableGenerator
             {
                 if (pindex > 0)
                     sb.Append(',');
-                sb.Append(MapType(method.GetParameters()[pindex].ParameterType));
+                sb.Append(MapType(p.ParameterType));
                 sb.Append($" arg{pindex}");
                 pindex++;
             }
@@ -479,7 +443,7 @@ internal sealed class PInvokeTableGenerator
             pindex = 0;
             if (!is_void)
             {
-                sb.Append("&res");
+                sb.Append("(int*)&res");
                 pindex++;
             }
             int aindex = 0;
@@ -487,7 +451,7 @@ internal sealed class PInvokeTableGenerator
             {
                 if (pindex > 0)
                     sb.Append(", ");
-                sb.Append($"&arg{aindex}");
+                sb.Append($"(int*)&arg{aindex}");
                 pindex++;
                 aindex++;
             }
@@ -517,7 +481,7 @@ internal sealed class PInvokeTableGenerator
         foreach (var cb in callbacks)
         {
             var method = cb.Method;
-            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
+            string module_symbol = _fixupSymbolName(method.DeclaringType!.Module!.Assembly!.GetName()!.Name!);
             string class_name = method.DeclaringType.Name;
             string method_name = method.Name;
             w.WriteLine($"\"{module_symbol}_{class_name}_{method_name}\",");

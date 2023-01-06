@@ -4,7 +4,7 @@
     <WasmBuildNative>true</WasmBuildNative>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <WasmEnablePerfTracing>true</WasmEnablePerfTracing>
-    <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
+    <!-- <FeatureWasmThreads>true</FeatureWasmThreads> -->
     <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
   </PropertyGroup>
 

@@ -140,8 +140,7 @@ namespace System.Security.Cryptography
 
         public static int GetInt32(int toExclusive)
         {
-            if (toExclusive <= 0)
-                throw new ArgumentOutOfRangeException(nameof(toExclusive), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(toExclusive);
 
             return GetInt32(0, toExclusive);
         }
@@ -158,8 +157,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] GetBytes(int count)
         {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             byte[] ret = new byte[count];
             RandomNumberGeneratorImplementation.FillSpan(ret);
@@ -364,10 +362,8 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(data);
 
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > data.Length - offset)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
         }

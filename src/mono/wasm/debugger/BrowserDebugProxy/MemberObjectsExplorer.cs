@@ -457,7 +457,7 @@ namespace BrowserDebugProxy
                 {
                     try
                     {
-                        propRet = await sdbHelper.InvokeMethod(getterParamsBuffer, getMethodId, token, name: propNameWithSufix);
+                        propRet = await sdbHelper.InvokeMethod(getterParamsBuffer, getMethodId, token, name: propNameWithSufix, isPropertyStatic && !isValueType);
                     }
                     catch (Exception)
                     {

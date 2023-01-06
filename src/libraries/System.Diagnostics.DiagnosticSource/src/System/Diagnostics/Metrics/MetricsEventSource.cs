@@ -386,24 +386,19 @@ namespace System.Diagnostics.Metrics
                 {
                     return;
                 }
+
                 string[] specStrings = metricsSpecs.Split(s_instrumentSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string specString in specStrings)
                 {
-                    if (!MetricSpec.TryParse(specString, out MetricSpec spec))
+                    MetricSpec spec = MetricSpec.Parse(specString);
+                    Parent.Message($"Parsed metric: {spec}");
+                    if (spec.InstrumentName != null)
                     {
-                        Parent.Message($"Failed to parse metric spec: {specString}");
+                        _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
                     }
                     else
                     {
-                        Parent.Message($"Parsed metric: {spec}");
-                        if (spec.InstrumentName != null)
-                        {
-                            _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
-                        }
-                        else
-                        {
-                            _aggregationManager!.Include(spec.MeterName);
-                        }
+                        _aggregationManager!.Include(spec.MeterName);
                     }
                 }
             }
@@ -467,20 +462,18 @@ namespace System.Diagnostics.Metrics
                 InstrumentName = instrumentName;
             }
 
-            public static bool TryParse(string text, out MetricSpec spec)
+            public static MetricSpec Parse(string text)
             {
                 int slashIdx = text.IndexOf(MeterInstrumentSeparator);
-                if (slashIdx == -1)
+                if (slashIdx < 0)
                 {
-                    spec = new MetricSpec(text.Trim(), null);
-                    return true;
+                    return new MetricSpec(text.Trim(), null);
                 }
                 else
                 {
-                    string meterName = text.Substring(0, slashIdx).Trim();
-                    string? instrumentName = text.Substring(slashIdx + 1).Trim();
-                    spec = new MetricSpec(meterName, instrumentName);
-                    return true;
+                    string meterName = text.AsSpan(0, slashIdx).Trim().ToString();
+                    string? instrumentName = text.AsSpan(slashIdx + 1).Trim().ToString();
+                    return new MetricSpec(meterName, instrumentName);
                 }
             }
 

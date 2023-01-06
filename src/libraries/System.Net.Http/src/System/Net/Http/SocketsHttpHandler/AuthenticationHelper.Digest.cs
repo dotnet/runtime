@@ -88,7 +88,7 @@ namespace System.Net.Http
             }
             else
             {
-                if (HeaderUtilities.ContainsNonAscii(credential.UserName))
+                if (!Ascii.IsValid(credential.UserName))
                 {
                     string usernameStar = HeaderUtilities.Encode5987(credential.UserName);
                     sb.AppendKeyValue(UsernameStar, usernameStar, includeQuotes: false);

@@ -104,7 +104,7 @@ namespace ILCompiler
             //  typeSystemContext.InputFilePaths = _command.Result.GetValueForArgument(inputFilePaths);
             //
             Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
-            foreach (var inputFile in _command.Result.GetValueForArgument(_command.InputFilePaths))
+            foreach (var inputFile in _command.Result.GetValue(_command.InputFilePaths))
             {
                 try
                 {
@@ -182,14 +182,6 @@ namespace ILCompiler
                     compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
-                string[] runtimeOptions = Get(_command.RuntimeOptions);
-                if (entrypointModule != null)
-                {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
-                    compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                }
-
                 bool nativeLib = Get(_command.NativeLib);
                 if (multiFile)
                 {
@@ -219,11 +211,18 @@ namespace ILCompiler
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
+                string[] runtimeOptions = Get(_command.RuntimeOptions);
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
+                }
+                else if (entrypointModule != null)
+                {
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                 }
@@ -372,7 +371,10 @@ namespace ILCompiler
                 (_command.OptimizationMode != OptimizationMode.None && !multiFile);
             preinitStatics &= !Get(_command.NoPreinitStatics);
 
-            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitStatics);
+            TypePreinit.TypePreinitializationPolicy preinitPolicy = preinitStatics ?
+                new TypePreinit.TypeLoaderAwarePreinitializationPolicy() : new TypePreinit.DisabledPreinitializationPolicy();
+
+            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy);
             builder
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
@@ -444,6 +446,14 @@ namespace ILCompiler
                 // compilation, but before RyuJIT gets there, it might ask questions that we don't
                 // have answers for because we didn't scan the entire method.
                 builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
+
+                // If we're doing preinitialization, use a new preinitialization manager that
+                // has the whole program view.
+                if (preinitStatics)
+                {
+                    preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
+                    builder.UsePreinitializationManager(preinitManager);
+                }
             }
 
             string ilDump = Get(_command.IlDump);
@@ -652,12 +662,12 @@ namespace ILCompiler
             }
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILCompilerRootCommand(args))
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("-v")
+                .UseVersionOption("--version", "-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(ILCompilerRootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
                 .Build()

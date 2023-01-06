@@ -885,14 +885,9 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             Matrix4x4 result;
 
@@ -929,17 +924,12 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (fieldOfView <= 0.0f || fieldOfView >= MathF.PI)
-                throw new ArgumentOutOfRangeException(nameof(fieldOfView));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, MathF.PI);
 
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             float yScale = 1.0f / MathF.Tan(fieldOfView * 0.5f);
             float xScale = yScale / aspectRatio;
@@ -978,14 +968,9 @@ namespace System.Numerics
         /// <paramref name="nearPlaneDistance" /> is greater than or equal to <paramref name="farPlaneDistance" />.</exception>
         public static Matrix4x4 CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (nearPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
-
-            if (farPlaneDistance <= 0.0f)
-                throw new ArgumentOutOfRangeException(nameof(farPlaneDistance));
-
-            if (nearPlaneDistance >= farPlaneDistance)
-                throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
             Matrix4x4 result;
 
@@ -1202,10 +1187,13 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
+
             result.M11 = xScale;
             result.M22 = yScale;
             result.M33 = zScale;
+            result.M44 = 1;
+
             return result;
         }
 
@@ -1217,7 +1205,7 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float xScale, float yScale, float zScale, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
             float tx = centerPoint.X * (1 - xScale);
             float ty = centerPoint.Y * (1 - yScale);
@@ -1226,9 +1214,12 @@ namespace System.Numerics
             result.M11 = xScale;
             result.M22 = yScale;
             result.M33 = zScale;
+            result.M44 = 1;
+
             result.M41 = tx;
             result.M42 = ty;
             result.M43 = tz;
+
             return result;
         }
 
@@ -1237,10 +1228,13 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
+
             result.M11 = scales.X;
             result.M22 = scales.Y;
             result.M33 = scales.Z;
+            result.M44 = 1;
+
             return result;
         }
 
@@ -1250,18 +1244,19 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(Vector3 scales, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
-            float tx = centerPoint.X * (1 - scales.X);
-            float ty = centerPoint.Y * (1 - scales.Y);
-            float tz = centerPoint.Z * (1 - scales.Z);
+            Vector3 t = centerPoint * (Vector3.One - scales);
 
             result.M11 = scales.X;
             result.M22 = scales.Y;
             result.M33 = scales.Z;
-            result.M41 = tx;
-            result.M42 = ty;
-            result.M43 = tz;
+            result.M44 = 1;
+
+            result.M41 = t.X;
+            result.M42 = t.Y;
+            result.M43 = t.Z;
+
             return result;
         }
 
@@ -1270,11 +1265,12 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
             result.M11 = scale;
             result.M22 = scale;
             result.M33 = scale;
+            result.M44 = 1;
 
             return result;
         }
@@ -1285,19 +1281,18 @@ namespace System.Numerics
         /// <returns>The scaling matrix.</returns>
         public static Matrix4x4 CreateScale(float scale, Vector3 centerPoint)
         {
-            Matrix4x4 result = Identity;
+            Matrix4x4 result = default;
 
-            float tx = centerPoint.X * (1 - scale);
-            float ty = centerPoint.Y * (1 - scale);
-            float tz = centerPoint.Z * (1 - scale);
+            Vector3 t = centerPoint * (Vector3.One - new Vector3(scale));
 
             result.M11 = scale;
             result.M22 = scale;
             result.M33 = scale;
+            result.M44 = 1;
 
-            result.M41 = tx;
-            result.M42 = ty;
-            result.M43 = tz;
+            result.M41 = t.X;
+            result.M42 = t.Y;
+            result.M43 = t.Z;
 
             return result;
         }
@@ -1783,7 +1778,7 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<float> Permute(Vector128<float> value, byte control)
+        private static Vector128<float> Permute(Vector128<float> value, [ConstantExpected] byte control)
         {
             if (Avx.IsSupported)
             {

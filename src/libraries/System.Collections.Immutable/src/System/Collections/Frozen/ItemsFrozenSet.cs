@@ -30,7 +30,7 @@ namespace System.Collections.Frozen
         }
 
         /// <inheritdoc />
-        private protected sealed override ImmutableArray<T> ItemsCore => new ImmutableArray<T>(_items);
+        private protected sealed override T[] ItemsCore => _items;
 
         /// <inheritdoc />
         private protected sealed override Enumerator GetEnumeratorCore() => new Enumerator(_items);

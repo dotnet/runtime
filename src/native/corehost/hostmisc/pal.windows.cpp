@@ -689,6 +689,17 @@ static bool wchar_convert_helper(DWORD code_page, const char* cstr, size_t len, 
     return ::MultiByteToWideChar(code_page, 0, cstr, static_cast<uint32_t>(len), &(*out)[0], static_cast<uint32_t>(out->size())) != 0;
 }
 
+size_t pal::pal_utf8string(const pal::string_t& str, char* out_buffer, size_t len)
+{
+    // Pass -1 as we want explicit null termination in the char buffer.
+    size_t size = ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    if (size == 0 || size > len)
+        return size;
+
+    // Pass -1 as we want explicit null termination in the char buffer.
+    return ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, out_buffer, static_cast<uint32_t>(len), nullptr, nullptr);
+}
+
 bool pal::pal_utf8string(const pal::string_t& str, std::vector<char>* out)
 {
     out->clear();

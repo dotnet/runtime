@@ -10,7 +10,8 @@ import {
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions, recordFailure
+    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
+    recordFailure, shortNameBase
 } from "./jiterpreter-support";
 import cwraps from "./cwraps";
 
@@ -243,9 +244,9 @@ export function mono_interp_flush_jitcall_queue () : void {
 
     let builder = trampBuilder;
     if (!builder)
-        trampBuilder = builder = new WasmBuilder();
+        trampBuilder = builder = new WasmBuilder(0);
     else
-        builder.clear();
+        builder.clear(0);
 
     if (builder.options.enableWasmEh) {
         if (!getIsWasmEhSupported()) {
@@ -302,7 +303,7 @@ export function mono_interp_flush_jitcall_queue () : void {
         const compress = true;
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(16) : undefined;
+            const wasmName = compress ? i.toString(shortNameBase) : undefined;
             builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
         }
         builder.generateImportSection();
@@ -352,16 +353,17 @@ export function mono_interp_flush_jitcall_queue () : void {
         const traceModule = new WebAssembly.Module(buffer);
 
         const imports : any = {
-            h: (<any>Module).asm.memory
         };
         // Place our function imports into the import dictionary
         for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(16) : trampImports[i][0];
+            const wasmName = compress ? i.toString(shortNameBase) : trampImports[i][0];
             imports[wasmName] = trampImports[i][2];
         }
 
         const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: imports
+            i: imports,
+            c: <any>builder.getConstants(),
+            m: { h: (<any>Module).asm.memory },
         });
 
         for (let i = 0; i < jitQueue.length; i++) {

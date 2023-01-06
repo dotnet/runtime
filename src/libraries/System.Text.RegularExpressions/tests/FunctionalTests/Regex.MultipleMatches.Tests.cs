@@ -292,6 +292,25 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 };
 
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.ECMAScript })
+                {
+                    if (RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        continue;
+                    }
+
+                    yield return new object[]
+                    {
+                        engine,
+                        @"a?\b", "ac", options,
+                        new[]
+                        {
+                            new CaptureData("", 0, 0),
+                            new CaptureData("", 2, 0),
+                        }
+                    };
+                }
+
                 if (!PlatformDetection.IsNetFramework)
                 {
                     // .NET Framework missing fix in https://github.com/dotnet/runtime/pull/1075

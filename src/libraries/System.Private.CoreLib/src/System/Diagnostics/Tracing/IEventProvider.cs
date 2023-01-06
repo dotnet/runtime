@@ -7,18 +7,15 @@ namespace System.Diagnostics.Tracing
     internal interface IEventProvider
     {
         // Register an event provider.
-        unsafe uint EventRegister(
+        unsafe void EventRegister(
             EventSource eventSource,
-            Interop.Advapi32.EtwEnableCallback enableCallback,
-            void* callbackContext,
-            ref long registrationHandle);
+            EventEnableCallback enableCallback);
 
         // Unregister an event provider.
-        uint EventUnregister(long registrationHandle);
+        void EventUnregister();
 
         // Write an event.
         unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
-            long registrationHandle,
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,

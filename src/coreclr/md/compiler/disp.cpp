@@ -140,7 +140,6 @@ HRESULT Disp::OpenScope(                // Return code.
     IUnknown    **ppIUnk)               // [out] Return interface on success.
 {
     HRESULT     hr;
-    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScope(%S, 0x%08x, 0x%08x, 0x%08x)\n", MDSTR(szFileName), dwOpenFlags, riid, ppIUnk));
 
     IMDCommon *pMDCommon = NULL;
 
@@ -205,7 +204,6 @@ Disp::OpenRawScope(
             else
             {
                 pMeta->Release(); // Give back refcount from QI
-                LOG((LOGMD, "{%08x} Found in cache '%S'\n", pMeta, MDSTR(szFileName)));
             }
 
             goto ErrExit;
@@ -238,8 +236,6 @@ Disp::OpenRawScope(
     //  satisfied by one or the other (depending on search algorithm), and eventually,
     //  the "other" copy will be released.
     IfFailGo(pMeta->AddToCache());
-
-    LOG((LOGMD, "{%08x} Successfully opened '%S'\n", pMeta, MDSTR(szFileName)));
 
 #if defined(_DEBUG)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))

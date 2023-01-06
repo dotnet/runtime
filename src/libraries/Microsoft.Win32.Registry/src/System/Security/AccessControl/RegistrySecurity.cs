@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
@@ -96,7 +97,27 @@ namespace System.Security.AccessControl
 
         private static Exception? _HandleErrorCode(int errorCode, string? name, SafeHandle? handle, object? context)
         {
-            return _HandleErrorCodeCore(errorCode);
+            Exception? exception = null;
+
+            switch (errorCode)
+            {
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
+                    exception = new IOException(SR.Format(SR.Arg_RegKeyNotFound, errorCode));
+                    break;
+
+                case Interop.Errors.ERROR_INVALID_NAME:
+                    exception = new ArgumentException(SR.Arg_RegInvalidKeyName, nameof(name));
+                    break;
+
+                case Interop.Errors.ERROR_INVALID_HANDLE:
+                    exception = new ArgumentException(SR.AccessControl_InvalidHandle);
+                    break;
+
+                default:
+                    break;
+            }
+
+            return exception;
         }
 
         public override AccessRule AccessRuleFactory(IdentityReference identityReference, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, AccessControlType type)

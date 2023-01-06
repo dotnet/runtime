@@ -2869,14 +2869,6 @@ FreeLibrary(
     IN OUT HMODULE hLibModule);
 
 PALIMPORT
-PAL_NORETURN
-VOID
-PALAPI
-FreeLibraryAndExitThread(
-    IN HMODULE hLibModule,
-    IN DWORD dwExitCode);
-
-PALIMPORT
 BOOL
 PALAPI
 DisableThreadLibraryCalls(
@@ -3637,7 +3629,7 @@ to the variable that 'Addend' points to.
 Parameters
 
 lpAddend
-[in/out] Pointer to the variable to to added.
+[in/out] Pointer to the variable to added.
 
 Return Values
 
