@@ -481,6 +481,9 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
+    // initialize g_pfnQueueUserAPC2Proc on demand.
+    // Note that only one thread at a time may perform suspension (guaranteed by the thread store lock)
+    // so simple conditional assignment is ok.
     if (g_pfnQueueUserAPC2Proc == QUEUE_USER_APC2_UNINITIALIZED)
     {
         g_pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(LoadKernel32dll(), "QueueUserAPC2");
@@ -508,9 +511,20 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
             return;
         }
 
-        // queuing an APC failed. we will not try again
-        g_pfnQueueUserAPC2Proc = NULL;
+        // queuing an APC failed
         pThread->SetActivationPending(false);
+
+        if (GetLastError() != STATUS_INVALID_PARAMETER)
+        {
+            // An unexpected failure has happened. It is a concern.
+            ASSERT(!"failed to queue an APC for unusual reason.");
+            // maybe it will work next time.
+            return;
+        }
+
+        // the flags that we passed are not supported.
+        // we will not try again
+        g_pfnQueueUserAPC2Proc = NULL;
     }
 #endif
 
