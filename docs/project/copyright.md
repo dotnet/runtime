@@ -16,7 +16,7 @@ We use the following approach for code contributions:
 - We will typically reject the use of product code licensed with [Creative Commons](https://creativecommons.org/) and [public domain licenses](https://opensource.org/faq#public-domain) given their lack of universal acceptance.
 - The [.NET Foundation Contribution License Agreement (CLA)](https://cla.dotnetfoundation.org) is used to license contributions from contributors.
 
-References: 
+References:
 
 - https://opensource.org/faq#cc-zero
 - https://opensource.stackexchange.com/questions/1717/why-is-cc-by-sa-discouraged-for-code
