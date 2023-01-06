@@ -528,7 +528,7 @@ void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
             // If these allocations fail, we will throw
             if (pMT->Collectible())
             {
-                pDynamicStatics = new CollectibleDynamicEntry();
+                pDynamicStatics = new CollectibleDynamicEntry(pMT->GetLoaderAllocator());
             }
             else
             {
@@ -541,11 +541,6 @@ void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
             static_assert_no_msg(sizeof(NormalDynamicEntry) % MAX_PRIMITIVE_FIELD_SIZE == 0);
             _ASSERTE(IS_ALIGNED(pDynamicStatics, MAX_PRIMITIVE_FIELD_SIZE));
 #endif
-
-            if (pMT->Collectible())
-            {
-                ((CollectibleDynamicEntry*)pDynamicStatics)->m_pLoaderAllocator = pMT->GetLoaderAllocator();
-            }
 
             // Save the DynamicEntry in the DynamicClassTable
             m_pDynamicClassTable[dwID].m_pDynamicEntry = pDynamicStatics;
