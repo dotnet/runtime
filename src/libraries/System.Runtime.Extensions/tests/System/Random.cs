@@ -761,7 +761,7 @@ namespace System.Tests
         {
             Random random = new Random(0x70636A61);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems<int>(stackalloc int[1], length: -1));
-            AssertHexString.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, length: 1));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, length: 1));
         }
 
         [Fact]
