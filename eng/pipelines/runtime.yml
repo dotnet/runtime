@@ -445,7 +445,7 @@ extends:
           platforms:
             - Browser_wasm
           nameSuffix: _Threading
-          extraBuildArgs: /p:WasmEnableThreads=true
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread
           alwaysRun: ${{ variables.isRollingBuild }}
 
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -453,7 +453,7 @@ extends:
           platforms:
             - Browser_wasm
           nameSuffix: _Threading_PerfTracing
-          extraBuildArgs: /p:WasmEnablePerfTracing=true
+          extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
           alwaysRun: ${{ variables.isRollingBuild }}
 
       #

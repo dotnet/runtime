@@ -80,6 +80,13 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)_field.OwningType), "CCtor context");
                 }
+
+                // For generic types, the reflection mapping table only keeps track of information about offsets
+                // from the static bases. To locate the static base, we need the GenericStaticBaseInfo hashtable.
+                if (_field.OwningType.HasInstantiation)
+                {
+                    dependencies.Add(factory.GenericStaticBaseInfo((MetadataType)_field.OwningType), "Field on a generic type");
+                }
             }
 
             if (!_field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
