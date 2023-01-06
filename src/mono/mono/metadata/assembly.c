@@ -2719,6 +2719,9 @@ mono_assembly_load_corlib (void)
 	/* FIXME: AOT compiler comes here without an installed hook. */
 	if (!corlib) {
 		if (assemblies_path) { // Custom assemblies path set via MONO_PATH or mono_set_assemblies_path
+			for (int i = 0; assemblies_path[i]; i++){
+				printf("!!!naricc_debug!!!: assembly.c: assemblies_path[%d]: %s\n", i, assemblies_path[i]);
+			}
 			char *corlib_name = g_strdup_printf ("%s.dll", MONO_ASSEMBLY_CORLIB_NAME);
 			corlib = load_in_path (corlib_name, (const char**)assemblies_path, &req, &status);
 			g_free (corlib_name);
