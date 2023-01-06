@@ -125,7 +125,7 @@ namespace System.Net.Security.Tests
             _clientCertificateRemovedByFilter = false;
 
             if (PlatformDetection.IsWindows7 &&
-                clientCertSource != ClientCertSource.SelectionCallback &&
+                clientCertSource == ClientCertSource.ClientCertificate &&
                 !Capability.IsTrustedRootCertificateInstalled())
             {
                 // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
@@ -135,6 +135,7 @@ namespace System.Net.Security.Tests
                 // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
                 // by the server using certificates from the Trusted Root Authorities certificate store.
                 // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
+                // This filtering happens only when using the ClientCertificates collection
                 _clientCertificateRemovedByFilter = true;
             }
 
