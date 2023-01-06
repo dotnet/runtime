@@ -687,14 +687,21 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 
 		case MINT_BR:
 		case MINT_BR_S:
-			if (*inside_branch_block)
-				return TRACE_CONTINUE;
-
-			return TRACE_ABORT;
-
-		case MINT_THROW:
 		case MINT_LEAVE:
 		case MINT_LEAVE_S:
+			// Detect backwards branches
+			if (ins->info.target_bb->il_offset <= ins->il_offset) {
+				if (*inside_branch_block)
+					return TRACE_CONTINUE;
+				else
+					return TRACE_ABORT;
+			}
+
+			*inside_branch_block = TRUE;
+			return TRACE_CONTINUE;
+
+		case MINT_MONO_RETHROW:
+		case MINT_THROW:
 			if (*inside_branch_block)
 				return TRACE_CONTINUE;
 
@@ -708,7 +715,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_CALL_HANDLER_S:
 		case MINT_ENDFINALLY:
 		case MINT_RETHROW:
-		case MINT_MONO_RETHROW:
 		case MINT_PROF_EXIT:
 		case MINT_PROF_EXIT_VOID:
 		case MINT_SAFEPOINT:

@@ -1175,6 +1175,9 @@ function generate_wasm_body (
                 }
                 break;
 
+            // Unlike regular rethrow which will only appear in catch blocks,
+            //  MONO_RETHROW appears to show up in other places, so it's worth conditional bailout
+            case MintOpcode.MINT_MONO_RETHROW:
             case MintOpcode.MINT_THROW:
                 // As above, only abort if this throw happens unconditionally.
                 // Otherwise, it may be in a branch that is unlikely to execute
