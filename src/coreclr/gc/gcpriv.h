@@ -5738,6 +5738,7 @@ public:
     uint8_t*        saved_allocated;
     uint8_t*        saved_bg_allocated;
 #ifdef USE_REGIONS
+    size_t          survived;
     // These generation numbers are initialized to -1.
     // For plan_gen_num:
     // for all regions in condemned generations it needs
@@ -5752,7 +5753,6 @@ public:
     // swept_in_plan_p can be folded into gen_num.
     bool            swept_in_plan_p;
     int             plan_gen_num;
-    size_t          survived;
     int             old_card_survived;
     int             pinned_survived;
     // at the end of each GC, we increase each region in the region free list
