@@ -2687,18 +2687,19 @@ NO_MORE_LOOPS:
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
-    if (false /* pre-header stress */)
+    // Create loop pre-header for every loop.
+    bool modForPreHeader = false;
+    for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
-        // Stress mode: aggressively create loop pre-header for every loop.
-        for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
+        if (fgCreateLoopPreHeader(loopInd))
         {
-            fgCreateLoopPreHeader(loopInd);
+            modForPreHeader = true;
         }
-
-        if (fgModified)
-        {
-            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
-        }
+    }
+    if (modForPreHeader)
+    {
+        // The predecessors were maintained in fgCreateLoopPreHeader; don't rebuild them.
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
 #ifdef DEBUG
@@ -7992,6 +7993,8 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 // If there already exists a block that meets the pre-header requirements, that block is marked
 // as a pre-header, and no flow graph modification is made.
 //
+// A loop with a pre-header has the flag LPFLG_HAS_PREHEAD, and its pre-header block has the flag BBF_LOOP_PREHEADER.
+//
 // Note that the pre-header block can be in a different EH region from blocks in the loop, including the
 // entry block. Code doing hoisting is required to check the EH legality of hoisting to the pre-header
 // before doing so.
@@ -8002,10 +8005,6 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 // itself doesn't exist in any reachability/dominator sets. `fgDominate` has code to specifically
 // handle queries about the pre-header dominating other blocks, even without re-computing dominators.
 // The preds lists have been maintained.
-//
-// Currently, if you create a pre-header but don't put any code in it, any subsequent fgUpdateFlowGraph()
-// pass might choose to compact the empty pre-header with a predecessor block. That is, a pre-header
-// block might disappear if not used.
 //
 // The code does not depend on the order of the BasicBlock bbNum.
 //
@@ -8222,6 +8221,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // This is sufficient because any definition participating in SSA that flowed
     // into the phi via the loop header block will now flow through the preheader
     // block from the header block.
+    // TODO: if we always create and maintain pre-headers before SSA, can we delete this?
 
     for (Statement* const stmt : top->Statements())
     {
