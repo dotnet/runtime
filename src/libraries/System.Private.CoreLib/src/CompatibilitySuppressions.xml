@@ -18,36 +18,6 @@
     <Target>F:System.Resources.ResourceSet.Reader</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.Emit.ModuleBuilder.GetConstructorToken(System.Reflection.ConstructorInfo)</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.Emit.ModuleBuilder.GetFieldToken(System.Reflection.FieldInfo)</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.Emit.ModuleBuilder.GetSignatureToken(System.Reflection.Emit.SignatureHelper)</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.Emit.ModuleBuilder.GetStringConstant(System.String)</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.Emit.ModuleBuilder.GetTypeToken(System.Type,System.Boolean)</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0013</DiagnosticId>
     <Target>M:System.Reflection.Emit.AssemblyBuilder.DefineDynamicModule(System.String)</Target>
     <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
