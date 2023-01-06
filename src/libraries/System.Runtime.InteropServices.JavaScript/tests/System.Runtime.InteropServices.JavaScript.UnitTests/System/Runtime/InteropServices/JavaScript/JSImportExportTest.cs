@@ -36,8 +36,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task CancelableImportAsync()
         {
             var cts = new CancellationTokenSource();
-            cts.Cancel();            
-            var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", cts.Token));
+            var exTask = Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", cts.Token));
+            cts.Cancel();
+            var actualEx2 = await exTask;
+            Assert.Equal("OperationCanceledException", actualEx2.Message);
+
+            var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", new CancellationToken(true)));
             Assert.Equal("OperationCanceledException", actualEx.Message);
         }
 
