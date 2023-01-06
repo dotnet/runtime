@@ -90,7 +90,7 @@ namespace ILCompiler
             FlowAnnotations = flowAnnotations;
             Logger = logger;
 
-            _featureSwitchHashtable = new FeatureSwitchHashtable(new Dictionary<string, bool>(featureSwitchValues));
+            _featureSwitchHashtable = new FeatureSwitchHashtable(Logger, new Dictionary<string, bool>(featureSwitchValues));
             FeatureSwitches = new Dictionary<string, bool>(featureSwitchValues);
 
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
@@ -1090,9 +1090,11 @@ namespace ILCompiler
         private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             private readonly Dictionary<string, bool> _switchValues;
+            private readonly Logger _logger;
 
-            public FeatureSwitchHashtable(Dictionary<string, bool> switchValues)
+            public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
             {
+                _logger = logger;
                 _switchValues = switchValues;
             }
 
@@ -1103,7 +1105,7 @@ namespace ILCompiler
 
             protected override AssemblyFeatureInfo CreateValueFromKey(EcmaModule key)
             {
-                return new AssemblyFeatureInfo(key, _switchValues);
+                return new AssemblyFeatureInfo(key, _logger, _switchValues);
             }
         }
 
@@ -1113,7 +1115,7 @@ namespace ILCompiler
 
             public HashSet<TypeDesc> RemovedAttributes { get; }
 
-            public AssemblyFeatureInfo(EcmaModule module, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
                 Module = module;
                 RemovedAttributes = new HashSet<TypeDesc>();
@@ -1142,7 +1144,7 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        RemovedAttributes = LinkAttributesReader.GetRemovedAttributes(module.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues);
+                        RemovedAttributes = LinkAttributesReader.GetRemovedAttributes(logger, module.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues);
                     }
                 }
             }
@@ -1152,8 +1154,8 @@ namespace ILCompiler
         {
             private readonly HashSet<TypeDesc> _removedAttributes = new();
 
-            public LinkAttributesReader(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
-                : base(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
+            public LinkAttributesReader(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+                : base(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
             {
             }
 
@@ -1166,9 +1168,9 @@ namespace ILCompiler
                 }
             }
 
-            public static HashSet<TypeDesc> GetRemovedAttributes(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public static HashSet<TypeDesc> GetRemovedAttributes(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
-                var rdr = new LinkAttributesReader(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
+                var rdr = new LinkAttributesReader(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
                 rdr.ProcessXml(false);
                 return rdr._removedAttributes;
             }

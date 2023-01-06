@@ -12,6 +12,7 @@ using System.Xml.XPath;
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
 
+using ILLink.Shared;
 using Internal.TypeSystem;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
@@ -33,15 +34,15 @@ namespace ILCompiler
         private DependencyList _dependencies = new DependencyList();
         public DependencyList Dependencies { get => _dependencies; }
 
-        public DescriptorMarker(NodeFactory factory, Stream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
-            : base(factory.TypeSystemContext, documentStream, xmlDocumentLocation, featureSwitchValues)
+        public DescriptorMarker(Logger logger, NodeFactory factory, Stream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            : base(logger, factory.TypeSystemContext, documentStream, xmlDocumentLocation, featureSwitchValues)
         {
             _dependencies = new DependencyList();
             _factory = factory;
         }
 
-        public DescriptorMarker(NodeFactory factory, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
-            : base(factory.TypeSystemContext, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
+        public DescriptorMarker(Logger logger, NodeFactory factory, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            : base(logger, factory.TypeSystemContext, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
         {
             _factory = factory;
         }
@@ -85,7 +86,9 @@ namespace ILCompiler
 
                 if (!foundMatch)
                 {
-                    // LogWarning(namespaceNav, DiagnosticId.XmlCouldNotFindAnyTypeInNamespace, fullname);
+#if !READYTORUN
+                    LogWarning(namespaceNav, DiagnosticId.XmlCouldNotFindAnyTypeInNamespace, fullname);
+#endif
                 }
             }
         }
@@ -157,11 +160,15 @@ namespace ILCompiler
             switch (preserve)
             {
                 case TypePreserve.Fields when !type.GetFields().Any():
-                    //LogWarning(nav, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName());
+#endif
                     break;
 
                 case TypePreserve.Methods when !type.GetMethods().Any():
-                    //LogWarning(nav, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName());
+#if !READYTORUN
+                    LogWarning(nav, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName());
+#endif
                     break;
 
                 case TypePreserve.Fields:
@@ -207,24 +214,15 @@ namespace ILCompiler
 
         protected override void ProcessField(TypeDesc type, FieldDesc field, XPathNavigator nav)
         {
-            /*
-            if (_context.Annotations.IsMarked(field))
-            {
-                // LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
-            }*/
-
             _dependencies.Add(_factory.ReflectableField(field), "field kept due to descriptor");
         }
 
         protected override void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
         {
-            /*if (_context.Annotations.IsMarked(method))
-            {
-                // LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, method.GetDisplayName());
-            }
+#if false
             _context.Annotations.MarkIndirectlyCalledMethod(method);
-            _context.Annotations.SetAction(method, MethodAction.Parse);*/
-
+            _context.Annotations.SetAction(method, MethodAction.Parse);
+#endif
             if (customData is bool required && !required)
             {
                 //TODO: Add a conditional dependency if the type is used also mark the method
@@ -256,11 +254,6 @@ namespace ILCompiler
 
         protected override void ProcessEvent(TypeDesc type, EventPseudoDesc @event, XPathNavigator nav, object? customData)
         {
-            /*if (_context.Annotations.IsMarked(@event))
-            {
-                LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, @event.FullName);
-            }*/
-
             ProcessMethod(type, @event.AddMethod, nav, customData);
             ProcessMethod(type, @event.RemoveMethod, nav, customData);
             ProcessMethodIfNotNull(type, @event.RaiseMethod, nav, customData);
@@ -269,11 +262,6 @@ namespace ILCompiler
         protected override void ProcessProperty(TypeDesc type, PropertyPseudoDesc property, XPathNavigator nav, object? customData, bool fromSignature)
         {
             string[] accessors = fromSignature ? GetAccessors(nav) : _accessorsAll;
-
-            /*if (_context.Annotations.IsMarked(property))
-            {
-                LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, property.FullName);
-            }*/
 
             if (Array.IndexOf(accessors, "all") >= 0)
             {
@@ -286,14 +274,18 @@ namespace ILCompiler
                 ProcessMethod(type, property.GetMethod, nav, customData);
             else if (property.GetMethod == null)
             {
-                // LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccesorOfPropertyOnType, property.Name, type.FullName);
+#if !READYTORUN
+                LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccessorOfPropertyOnType, property.Name, type.ToString());
+#endif
             }
 
             if (property.SetMethod != null && Array.IndexOf(accessors, "set") >= 0)
                 ProcessMethod(type, property.SetMethod, nav, customData);
             else if (property.SetMethod == null)
             {
-                // LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccesorOfPropertyOnType, property.Name, type.FullName);
+#if !READYTORUN
+                LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccessorOfPropertyOnType, property.Name, type.ToString());
+#endif
             }
         }
 
@@ -326,9 +318,9 @@ namespace ILCompiler
             return _accessorsAll;
         }
 
-        public static DependencyList GetDependencies(NodeFactory factory, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        public static DependencyList GetDependencies(Logger logger, NodeFactory factory, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
-            var descriptor = new DescriptorMarker(factory, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
+            var descriptor = new DescriptorMarker(logger, factory, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
             descriptor.ProcessXml(false);
             return descriptor.Dependencies;
         }

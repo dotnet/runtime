@@ -432,6 +432,7 @@
     <Compile Include="Compiler\LazyGenerics\GraphBuilder.MethodCall.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
     <Compile Include="Compiler\IInliningPolicy.cs" />
+    <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\MethodImportationErrorProvider.cs" />
     <Compile Include="Compiler\MstatObjectDumper.cs" />
@@ -696,6 +697,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="tools\aot\ilcompiler.compiler\compiler\logging\" />
   </ItemGroup>
 
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
