@@ -3988,6 +3988,8 @@ bool region_allocator::allocate_large_region (int gen_num, uint8_t** start, uint
     return allocate_region (gen_num, size, start, end, direction, fn);
 }
 
+// Whenever a region is deleted, it is expected that the memory and the mark array
+// of the region is decommitted already.
 void region_allocator::delete_region (uint8_t* region_start)
 {
     enter_spin_lock();
@@ -20334,16 +20336,8 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
             get_region_start (region), heap_segment_reserved (region)));
 
         // We don't have memory to commit the mark array so we cannot use the new region.
-        int h_number =
-#ifdef MULTIPLE_HEAPS
-            heap_number;
-#else
-            0;
-#endif
-        gc_oh_num oh = gen_to_oh (gen_number);
-        size_t size = heap_segment_committed(region) - heap_segment_mem (region);
-        virtual_decommit(heap_segment_mem (region), size, oh, h_number);
-        global_region_allocator.delete_region (get_region_start (region));
+        decommit_region (region, gen_to_oh (gen_number), heap_number);
+        delete_region (region);
         return false;
     }
     if ((region->flags & heap_segment_flags_ma_committed) != 0)
@@ -41073,37 +41067,15 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
         while (global_regions_to_decommit[kind].get_num_free_regions() > 0)
         {
             heap_segment* region = global_regions_to_decommit[kind].unlink_region_front();
-
-            uint8_t* page_start = align_lower_page(get_region_start(region));
-            uint8_t* end = use_large_pages_p ? heap_segment_used(region) : heap_segment_committed(region);
-            size_t size = end - page_start;
-            bool decommit_succeeded_p = false;
-            if (!use_large_pages_p)
-            {
-                decommit_succeeded_p = virtual_decommit(page_start, size, recorded_committed_free_bucket);
+            size_t size = decommit_region (region, recorded_committed_free_bucket, -1);
 #ifdef MULTIPLE_HEAPS
-                gc_heap* hp = heap_segment_heap (region);
+            gc_heap* hp = heap_segment_heap (region);
 #else
-                gc_heap* hp = __this;
+            gc_heap* hp = pGenGCHeap;
 #endif
-                hp->decommit_mark_array_by_seg (region);
-                dprintf(REGIONS_LOG, ("decommitted region %p(%p-%p) (%zu bytes) - success: %d",
-                    region,
-                    page_start,
-                    end,
-                    size,
-                    decommit_succeeded_p));
-            }
-            if (!decommit_succeeded_p)
-            {
-                memclr(page_start, size);
-                dprintf(REGIONS_LOG, ("cleared region %p(%p-%p) (%zu bytes)",
-                    region,
-                    page_start,
-                    end,
-                    size));
-            }
-            global_region_allocator.delete_region(get_region_start(region));
+            hp->decommit_mark_array_by_seg (region);
+            region->flags &= ~(heap_segment_flags_ma_committed);
+            delete_region (region);
             decommit_size += size;
             if (decommit_size >= max_decommit_step_size)
             {
@@ -41129,6 +41101,55 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
 #endif //MULTIPLE_HEAPS
     return (decommit_size != 0);
 }
+
+#ifdef USE_REGIONS
+size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
+{
+    uint8_t* page_start = align_lower_page (get_region_start (region));
+    uint8_t* end = use_large_pages_p ? heap_segment_used (region) : heap_segment_committed (region);
+    size_t size = end - page_start;
+    bool decommit_succeeded_p = false;
+    if (!use_large_pages_p)
+    {
+        decommit_succeeded_p = virtual_decommit (page_start, size, bucket, h_number);
+    }
+    dprintf (REGIONS_LOG, ("decommitted region %p(%p-%p) (%zu bytes) - success: %d",
+        region,
+        page_start,
+        end,
+        size,
+        decommit_succeeded_p));
+    if (decommit_succeeded_p)
+    {
+        heap_segment_committed (region) = heap_segment_mem (region);
+    }
+    else
+    {
+        memclr (page_start, size);
+        heap_segment_used (region) = heap_segment_mem (region);
+        dprintf(REGIONS_LOG, ("cleared region %p(%p-%p) (%zu bytes)",
+            region,
+            page_start,
+            end,
+            size));
+    }
+    return size;
+}
+
+void gc_heap::delete_region (heap_segment* region)
+{
+    if (use_large_pages_p)
+    {
+        assert (heap_segment_used (region) == heap_segment_mem (region));
+    }
+    else
+    {
+        assert (heap_segment_committed (region) == heap_segment_mem (region));
+    }
+    assert ((region->flags & heap_segment_flags_ma_committed) == 0);
+    global_region_allocator.delete_region (get_region_start (region));
+}
+#endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
 // return the decommitted size
