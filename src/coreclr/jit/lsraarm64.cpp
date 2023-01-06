@@ -59,7 +59,7 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     assert(isSingleRegister(firstRegAssigned));
     assert(firstRefPosition->needsConsecutive && firstRefPosition->regCount > 0);
 
-    RefPosition* consecutiveRefPosition = firstRefPosition->nextConsecutiveRefPosition;
+    RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
 
      // should have at least one consecutive register requirement
     assert(consecutiveRefPosition != nullptr);
@@ -70,7 +70,7 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     {
         registerToAssign <<= 1;
         consecutiveRefPosition->registerAssignment = registerToAssign;
-        consecutiveRefPosition                     = consecutiveRefPosition->nextConsecutiveRefPosition;
+        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
 
 #ifdef DEBUG
         refPosCount++;
@@ -1184,8 +1184,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     else
                     {
-                        currRefPos->regCount = 0;  // Explicitely set it so we can identify that this is non-first refposition.
-                        lastRefPos->nextConsecutiveRefPosition = currRefPos;
+                        // Explicitely set regCount=0 so we can identify that this is non-first refposition.
+                        currRefPos->regCount = 0;
+
+                        getNextConsecutiveRefPositionsMap()->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+                        getNextConsecutiveRefPositionsMap()->Set(currRefPos, nullptr);
                     }
                     lastRefPos = currRefPos;
                 }

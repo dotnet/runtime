@@ -1361,6 +1361,21 @@ private:
 
     regNumber getTempRegForResolution(BasicBlock* fromBlock, BasicBlock* toBlock, var_types type);
 
+#ifdef TARGET_ARM64
+    typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
+    NextConsecutiveRefPositionsMap* nextConsecutiveRefPositionMap;
+    NextConsecutiveRefPositionsMap* getNextConsecutiveRefPositionsMap()
+    {
+        if (nextConsecutiveRefPositionMap == nullptr)
+        {
+            nextConsecutiveRefPositionMap =
+                new (getAllocator(compiler)) NextConsecutiveRefPositionsMap(getAllocator(compiler));
+        }
+        return nextConsecutiveRefPositionMap;
+    }
+    RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
+#endif
+
 #ifdef DEBUG
     void dumpVarToRegMap(VarToRegMap map);
     void dumpInVarToRegMap(BasicBlock* block);
@@ -2270,14 +2285,6 @@ public:
     unsigned char multiRegIdx : 2;
 
 #ifdef TARGET_ARM64
-    // This is temporary. It will be moved to LinearScan level in a map that will store
-    // the next refposition. Below table, we are storing 2 situation of consecutive registers
-    // First being 3 consecutive registers (21, 22, 23) and (41, 42).
-    // 21  ->  22
-    // 22  ->  23
-    // 41  ->  42
-    RefPosition* nextConsecutiveRefPosition;
-
     // If this refposition needs consecutive register assignment
     bool needsConsecutive;
 
@@ -2371,7 +2378,6 @@ public:
         , refType(refType)
         , multiRegIdx(0)
 #ifdef TARGET_ARM64
-        , nextConsecutiveRefPosition(nullptr)
         , needsConsecutive(false)
         , regCount(0)
 #endif
