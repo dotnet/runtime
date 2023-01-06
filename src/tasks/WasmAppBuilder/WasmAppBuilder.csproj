@@ -26,6 +26,10 @@
     <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+      <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.NET.WebAssembly.Webcil\src\Microsoft.NET.WebAssembly.Webcil.csproj" Private="true" />
+  </ItemGroup>
+
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <!-- non-net4* -->
@@ -33,6 +37,9 @@
                       TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
       <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\System.Reflection.MetadataLoadContext.dll"
                       TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\Microsoft.NET.WebAssembly.Webcil.dll"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+
 
       <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
       <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*"

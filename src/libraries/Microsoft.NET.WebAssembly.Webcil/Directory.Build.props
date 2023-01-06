@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+      <IsShipping>true</IsShipping>
+      <!-- this assembly should not produce a public package, rather it's meant to be shipped by the
+           WasmAppBuilder task and the BrowserDebugProxy -->
+      <IsShippingPackage>false</IsShippingPackage>
+  </PropertyGroup>
+</Project>
