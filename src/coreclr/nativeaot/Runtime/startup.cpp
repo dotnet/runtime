@@ -443,25 +443,25 @@ static void UninitDLL()
 #endif // PROFILE_STARTUP
 }
 
-volatile Thread* g_threadPerformingShutdown = NULL;
+#ifdef _WIN32
+// This is set to the thread that initiates and performs the shutdown and may run
+// after other threads are rudely terminated. So far this is a Windows-specific concern.
+// 
+// On POSIX OSes a process typically lives as long as any of its threads are alive or until
+// the process is terminated via `exit()` or a signal. Thus there is no such distinction
+// between threads.
+Thread* g_threadPerformingShutdown = NULL;
 
-static void DllThreadDetach()
+static void __cdecl OnProcessExit()
 {
-    // BEWARE: loader lock is held here!
-
-    // Should have already received a call to FiberDetach for this thread's "home" fiber.
-    Thread* pCurrentThread = ThreadStore::GetCurrentThreadIfAvailable();
-    if (pCurrentThread != NULL && !pCurrentThread->IsDetached())
-    {
-        // Once shutdown starts, RuntimeThreadShutdown callbacks are ignored, implying that
-        // it is no longer guaranteed that exiting threads will be detached.
-        if (g_threadPerformingShutdown != NULL)
-        {
-            ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
-            RhFailFast();
-        }
-    }
+    // The process is exiting and the current thread is performing the shutdown.
+    // When this thread exits some threads may be already rudely terminated.
+    // It would not be a good idea for this thread to wait on any locks
+    // or run managed code at shutdown, so we will not try detaching it.
+    Thread* currentThread = ThreadStore::RawGetCurrentThread();
+    g_threadPerformingShutdown = currentThread;
 }
+#endif
 
 void RuntimeThreadShutdown(void* thread)
 {
@@ -470,34 +470,37 @@ void RuntimeThreadShutdown(void* thread)
     // that is made for the single thread that runs the final stages of orderly process
     // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
     // process is being torn down via an ExitProcess call).
+    // In such case we do not detach.
 
-    UNREFERENCED_PARAMETER(thread);
+#ifdef _WIN32
+    ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
-#ifdef TARGET_UNIX
+    // Do not try detaching the thread that performs the shutdown.
+    if (g_threadPerformingShutdown == thread)
+    {
+        // At this point other threads could be terminated rudely while leaving runtime
+        // in inconsistent state, so we would be risking blocking the process from exiting.
+        return;
+    }
+#else
     // Some Linux toolset versions call thread-local destructors during shutdown on a wrong thread.
     if ((Thread*)thread != ThreadStore::GetCurrentThread())
     {
         return;
     }
-#else
-    ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
-
-    // Do not do shutdown for the thread that performs the shutdown.
-    // other threads could be terminated before it and could leave TLS locked
-    if ((Thread*)thread == g_threadPerformingShutdown)
-    {
-        return;
-    }
-
 #endif
 
-    ThreadStore::DetachCurrentThread(g_threadPerformingShutdown != NULL);
+    ThreadStore::DetachCurrentThread();
 }
 
 extern "C" bool RhInitialize()
 {
     if (!PalInit())
         return false;
+
+#ifdef _WIN32
+    atexit(&OnProcessExit);
+#endif
 
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
         return false;
@@ -507,48 +510,5 @@ extern "C" bool RhInitialize()
 
     return true;
 }
-
-//
-// Currently called only from a managed executable once Main returns, this routine does whatever is needed to
-// cleanup managed state before exiting. There's not a lot here at the moment since we're always about to let
-// the OS tear the process down anyway.
-//
-// @TODO: Eventually we'll probably have a hosting API and explicit shutdown request. When that happens we'll
-// something more sophisticated here since we won't be able to rely on the OS cleaning up after us.
-//
-COOP_PINVOKE_HELPER(void, RhpShutdown, ())
-{
-    // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
-    g_threadPerformingShutdown = ThreadStore::RawGetCurrentThread();
-}
-
-#ifdef _WIN32
-EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, uint32_t dwReason, void* pvReserved)
-{
-    switch (dwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-    {
-        STARTUP_TIMELINE_EVENT(PROCESS_ATTACH_BEGIN);
-
-        if (!InitDLL(hPalInstance))
-            return FALSE;
-
-        STARTUP_TIMELINE_EVENT(PROCESS_ATTACH_COMPLETE);
-    }
-    break;
-
-    case DLL_PROCESS_DETACH:
-        UninitDLL();
-        break;
-
-    case DLL_THREAD_DETACH:
-        DllThreadDetach();
-        break;
-    }
-
-    return TRUE;
-}
-#endif // _WIN32
 
 #endif // !DACCESS_COMPILE

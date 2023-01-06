@@ -357,7 +357,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalObjectArrayCasesThrow))]
         public unsafe void JsImportObjectArrayThrows(object[]? expected)
         {
-            Assert.Throws<NotImplementedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
+            Assert.Throws<NotSupportedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
         }
 
         [Fact]

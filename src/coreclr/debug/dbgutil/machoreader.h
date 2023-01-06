@@ -55,7 +55,7 @@ public:
     bool EnumerateModules(mach_vm_address_t dyldInfoAddress);
 
 private:
-    bool CreateModule(const struct mach_header*	imageAddress, const char* imageFilePathAddress);
+    bool TryRegisterModule(const struct mach_header* imageAddress, const char* imageFilePathAddress, bool dylinker);
     bool ReadString(const char* address, std::string& str);
     virtual void VisitModule(MachOModule& module) { };
     virtual void VisitSegment(MachOModule& module, const segment_command_64& segment) { };

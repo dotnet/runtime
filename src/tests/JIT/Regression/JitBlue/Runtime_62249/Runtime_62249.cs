@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Runtime_62249
+public class Runtime_62249
 {
     public struct CanBeReinterpretedAsDouble
     {

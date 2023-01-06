@@ -15,10 +15,10 @@ namespace System.Linq.Tests
 
         [Theory]
         [InlineData(new int[] { })]
-        [InlineData(new int[] { 1 })]
-        [InlineData(new int[] { 5 })]
-        [InlineData(new int[] { 1, 3, 5 })]
-        [InlineData(new int[] { 2, 4, 6, 8 })]
+        [InlineData(new[] { 1 })]
+        [InlineData(new[] { 5 })]
+        [InlineData(new[] { 1, 3, 5 })]
+        [InlineData(new[] { 2, 4, 6, 8 })]
         public void ReverseMatches(int[] input)
         {
             int[] expectedResults = new int[input.Length];
@@ -33,8 +33,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SomeRepeatedElements()
         {
-            int?[] source = new int?[] { -10, 0, 5, null, 0, 9, 100, null, 9 };
-            int?[] expected = new int?[] { 9, null, 100, 9, 0, null, 5, 0, -10 };
+            int?[] source = { -10, 0, 5, null, 0, 9, 100, null, 9 };
+            int?[] expected = { 9, null, 100, 9, 0, null, 5, 0, -10 };
 
             Assert.Equal(expected, source.AsQueryable().Reverse());
         }
@@ -42,7 +42,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Reverse()
         {
-            var count = (new int[] { 0, 2, 1 }).AsQueryable().Reverse().Count();
+            var count = new[] { 0, 2, 1 }.AsQueryable().Reverse().Count();
             Assert.Equal(3, count);
         }
     }

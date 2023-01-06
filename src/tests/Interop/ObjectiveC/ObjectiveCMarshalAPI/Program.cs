@@ -10,6 +10,7 @@ namespace ObjectiveCMarshalAPI
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Runtime.InteropServices.ObjectiveC;
+    using System.Threading;
 
     using Xunit;
 
@@ -73,8 +74,9 @@ namespace ObjectiveCMarshalAPI
         // the RefCountDown will be set to some non-negative number and RefCountUp
         // will remain zero. The values will be incremented and decremented respectively
         // during the "is referenced" callback. When the object enters the finalizer queue
-        // the RefCountDown will then be set to nuint.MaxValue. In the object's finalizer
-        // the RefCountUp can be checked to ensure the count down value was respected.
+        // the RefCountDown will then be set to nuint.MaxValue, see the EnteredFinalizerCb
+        // callback. In the object's finalizer the RefCountUp can be checked to ensure
+        // the count down value was respected.
         struct Contract
         {
             public nuint RefCountDown;
@@ -131,6 +133,39 @@ namespace ObjectiveCMarshalAPI
         [ObjectiveCTrackedTypeAttribute]
         class AttributedNoFinalizer { }
 
+        class HasNoHashCode : Base
+        {
+        }
+
+        class HasHashCode : Base
+        {
+            public HasHashCode()
+            {
+                // this will write a hash code into the object header.
+                RuntimeHelpers.GetHashCode(this);
+            }
+        }
+
+        class HasThinLockHeld : Base
+        {
+            public HasThinLockHeld()
+            {
+                // This will write lock information into the object header.
+                // An attempt to generate a hash code for this object will cause the lock to be
+                // upgrade to a thick lock.
+                Monitor.Enter(this);
+            }
+        }
+
+        class HasSyncBlock : Base
+        {
+            public HasSyncBlock()
+            {
+                RuntimeHelpers.GetHashCode(this);
+                Monitor.Enter(this);
+            }
+        }
+
         static void InitializeObjectiveCMarshal()
         {
             delegate* unmanaged<void> beginEndCallback;
@@ -156,6 +191,7 @@ namespace ObjectiveCMarshalAPI
             return h;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void Validate_AllocAndFreeAnotherHandle<T>(GCHandle handle) where T : Base, new()
         {
             var obj = (T)handle.Target;
@@ -167,6 +203,12 @@ namespace ObjectiveCMarshalAPI
 
             Assert.NotEqual(handle, h);
             h.Free();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void AllocUntrackedObject<T>() where T : Base, new()
+        {
+            new T();
         }
 
         static unsafe void Validate_ReferenceTracking_Scenario()
@@ -190,6 +232,14 @@ namespace ObjectiveCMarshalAPI
                 {
                     ObjectiveCMarshal.CreateReferenceTrackingHandle(new AttributedNoFinalizer(), out _);
                 });
+
+            // Ensure objects who have no tagged memory allocated are handled when they enter the
+            // finalization queue. The NativeAOT implementation looks up objects in a hash table,
+            // so we exercise the various ways a hash code can be stored.
+            AllocUntrackedObject<HasNoHashCode>();
+            AllocUntrackedObject<HasHashCode>();
+            AllocUntrackedObject<HasThinLockHeld>();
+            AllocUntrackedObject<HasSyncBlock>();
 
             // Provide the minimum number of times the reference callback should run.
             // See IsRefCb() in NativeObjCMarshalTests.cpp for usage logic.
@@ -285,6 +335,14 @@ namespace ObjectiveCMarshalAPI
         // Do not call this method from Main as it depends on a previous test for set up.
         static void _Validate_ExceptionPropagation()
         {
+            // Not yet implemented for NativeAOT.
+            // https://github.com/dotnet/runtime/issues/77472
+            if (TestLibrary.Utilities.IsNativeAot)
+            {
+                Console.WriteLine($"Skipping {nameof(_Validate_ExceptionPropagation)}, NYI");
+                return;
+            }
+
             Console.WriteLine($"Running {nameof(_Validate_ExceptionPropagation)}");
 
             var delThrowInt = new ThrowExceptionDelegate(DEL_ThrowIntException);

@@ -41,26 +41,30 @@ namespace ILCompiler
                 // are we embedding it into a more complex type.
                 for (int i = 0; i < genericTypeParameters.Length; i++)
                 {
+                    var stateList = new EmbeddingStateList(this);
+                    stateList.Push(static delegate(in EmbeddingState state, GraphBuilder builder, EcmaGenericParameter embedded, int depth)
+                    {
+                        // If we got here, we found a method with generic arity (either from itself or its declaring type or both)
+                        // that invokes a generic method. The caller is binding one of the target's generic formals to a type expression
+                        // involving one of the caller's own formals.
+                        //
+                        // e.g.
+                        //
+                        //  void Caller<G>()
+                        //  {
+                        //      Target<IList<G>>();
+                        //      return;
+                        //  }
+                        //
+                        bool isProperEmbedding = depth > 0;
+                        builder.RecordBinding(state.GenericTypeParameter, embedded, isProperEmbedding);
+                    }, (EcmaGenericParameter)genericTypeParameters[i], newDepth: 0);
+
                     ForEachEmbeddedGenericFormal(
                         genericTypeArguments[i],
                         typeContext,
                         methodContext,
-                        delegate(EcmaGenericParameter embedded, bool isProperEmbedding)
-                        {
-                            // If we got here, we found a method with generic arity (either from itself or its declaring type or both)
-                            // that invokes a generic method. The caller is binding one of the target's generic formals to a type expression
-                            // involving one of the caller's own formals.
-                            //
-                            // e.g.
-                            //
-                            //  void Caller<G>()
-                            //  {
-                            //      Target<IList<G>>();
-                            //      return;
-                            //  }
-                            //
-                            RecordBinding((EcmaGenericParameter)genericTypeParameters[i], embedded, isProperEmbedding);
-                        }
+                        ref stateList
                     );
                 }
             }

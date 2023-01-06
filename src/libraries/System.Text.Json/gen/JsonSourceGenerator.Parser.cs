@@ -100,14 +100,14 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type? _jsonDocumentType;
 
             // Unsupported types
-            private readonly Type _delegateType;
-            private readonly Type _memberInfoType;
-            private readonly Type _serializationInfoType;
-            private readonly Type _intPtrType;
-            private readonly Type _uIntPtrType;
+            private readonly Type? _delegateType;
+            private readonly Type? _memberInfoType;
+            private readonly Type? _serializationInfoType;
+            private readonly Type? _intPtrType;
+            private readonly Type? _uIntPtrType;
 
             // Needed for converter validation
-            private readonly Type _jsonConverterOfTType;
+            private readonly Type? _jsonConverterOfTType;
 
             private readonly HashSet<Type> _numberTypes = new();
             private readonly HashSet<Type> _knownTypes = new();
@@ -222,7 +222,7 @@ namespace System.Text.Json.SourceGeneration
                 _stringType = _metadataLoadContext.Resolve(SpecialType.System_String);
 
                 _dateTimeOffsetType = _metadataLoadContext.Resolve(typeof(DateTimeOffset));
-                _byteArrayType = _metadataLoadContext.Resolve(typeof(byte)).MakeArrayType();
+                _byteArrayType = _metadataLoadContext.Resolve(SpecialType.System_Byte).MakeArrayType();
                 _guidType = _metadataLoadContext.Resolve(typeof(Guid));
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
@@ -250,10 +250,10 @@ namespace System.Text.Json.SourceGeneration
             public SourceGenerationSpec? GetGenerationSpec(IEnumerable<ClassDeclarationSyntax> classDeclarationSyntaxList, CancellationToken cancellationToken)
             {
                 Compilation compilation = _compilation;
-                INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
-                INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializableAttributeFullName);
-                INamedTypeSymbol jsonSourceGenerationOptionsAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSourceGenerationOptionsAttributeFullName);
-                INamedTypeSymbol jsonConverterOfTAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonConverterOfTFullName);
+                INamedTypeSymbol? jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
+                INamedTypeSymbol? jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializableAttributeFullName);
+                INamedTypeSymbol? jsonSourceGenerationOptionsAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSourceGenerationOptionsAttributeFullName);
+                INamedTypeSymbol? jsonConverterOfTAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonConverterOfTFullName);
 
                 if (jsonSerializerContextSymbol == null ||
                     jsonSerializableAttributeSymbol == null ||
@@ -291,8 +291,7 @@ namespace System.Text.Json.SourceGeneration
                         foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
                         {
                             AttributeSyntax attributeSyntax = attributeListSyntax.Attributes.First();
-                            IMethodSymbol attributeSymbol = compilationSemanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol as IMethodSymbol;
-                            if (attributeSymbol == null)
+                            if (compilationSemanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol is not IMethodSymbol attributeSymbol)
                             {
                                 continue;
                             }
@@ -315,12 +314,12 @@ namespace System.Text.Json.SourceGeneration
                             continue;
                         }
 
-                        INamedTypeSymbol contextTypeSymbol = (INamedTypeSymbol)compilationSemanticModel.GetDeclaredSymbol(classDeclarationSyntax, cancellationToken);
+                        INamedTypeSymbol? contextTypeSymbol = compilationSemanticModel.GetDeclaredSymbol(classDeclarationSyntax, cancellationToken);
                         Debug.Assert(contextTypeSymbol != null);
 
                         Location contextLocation = contextTypeSymbol.Locations.Length > 0 ? contextTypeSymbol.Locations[0] : Location.None;
 
-                        if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string> classDeclarationList))
+                        if (!TryGetClassDeclarationList(contextTypeSymbol, out List<string>? classDeclarationList))
                         {
                             // Class or one of its containing types is not partial so we can't add to it.
                             _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(ContextClassesMustBePartial, contextLocation, new string[] { contextTypeSymbol.Name }));
@@ -357,7 +356,7 @@ namespace System.Text.Json.SourceGeneration
                         foreach ((Type Type, DiagnosticDescriptor Descriptor, string[] MessageArgs) diagnostic in _typeLevelDiagnostics)
                         {
                             Type type = diagnostic.Type;
-                            Location location = type.GetDiagnosticLocation();
+                            Location? location = type.GetDiagnosticLocation();
 
                             if (location == null)
                             {
@@ -475,7 +474,7 @@ namespace System.Text.Json.SourceGeneration
                     currentSymbol = currentSymbol.ContainingType;
                 }
 
-                Debug.Assert(classDeclarationList.Count > 0);
+                Debug.Assert(classDeclarationList?.Count > 0);
                 return true;
             }
 
@@ -543,7 +542,7 @@ namespace System.Text.Json.SourceGeneration
                         NameEqualsSyntax? propertyNameNode = childNodes.First() as NameEqualsSyntax;
                         Debug.Assert(propertyNameNode != null);
 
-                        SyntaxNode? propertyValueNode = childNodes.ElementAtOrDefault(1);
+                        SyntaxNode propertyValueNode = childNodes.ElementAt(1);
                         string optionName = propertyNameNode.Name.Identifier.ValueText;
 
                         if (optionName == nameof(JsonSerializableAttribute.TypeInfoPropertyName))
@@ -620,7 +619,7 @@ namespace System.Text.Json.SourceGeneration
                     NameEqualsSyntax? propertyNameNode = childNodes.First() as NameEqualsSyntax;
                     Debug.Assert(propertyNameNode != null);
 
-                    SyntaxNode? propertyValueNode = childNodes.ElementAtOrDefault(1);
+                    SyntaxNode propertyValueNode = childNodes.ElementAt(1);
                     string propertyValueStr = propertyValueNode.GetLastToken().ValueText;
 
                     switch (propertyNameNode.Name.Identifier.ValueText)
@@ -698,7 +697,7 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Add metadata to cache now to prevent stack overflow when the same type is found somewhere else in the object graph.
-                typeMetadata = new TypeGenerationSpec();
+                typeMetadata = new TypeGenerationSpec(type);
                 _typeGenerationSpecCache[type] = typeMetadata;
 
                 ClassType classType;
@@ -726,12 +725,12 @@ namespace System.Text.Json.SourceGeneration
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
                     Type attributeType = attributeData.AttributeType;
-                    string attributeTypeFullName = attributeType.FullName;
+                    string? attributeTypeFullName = attributeType.FullName;
 
                     if (attributeTypeFullName == JsonNumberHandlingAttributeFullName)
                     {
                         IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
-                        numberHandling = (JsonNumberHandling)ctorArgs[0].Value;
+                        numberHandling = (JsonNumberHandling)ctorArgs[0].Value!;
                         continue;
                     }
                     else if (!foundDesignTimeCustomConverter && attributeType.GetCompatibleBaseClass(JsonConverterAttributeFullName) != null)
@@ -747,14 +746,14 @@ namespace System.Text.Json.SourceGeneration
                     if (attributeTypeFullName == JsonDerivedTypeAttributeFullName)
                     {
                         Debug.Assert(attributeData.ConstructorArguments.Count > 0);
-                        ITypeSymbol derivedTypeSymbol = (ITypeSymbol)attributeData.ConstructorArguments[0].Value;
+                        ITypeSymbol derivedTypeSymbol = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
                         Type derivedType = derivedTypeSymbol.AsType(_metadataLoadContext);
                         TypeGenerationSpec derivedTypeSpec = GetOrAddTypeGenerationSpec(derivedType, generationMode);
                         _implicitlyRegisteredTypes.Add(derivedTypeSpec);
 
                         if (!isPolymorphic && generationMode == JsonSourceGenerationMode.Serialization)
                         {
-                            _typeLevelDiagnostics.Add((type, PolymorphismNotSupported, new string[] { type.FullName }));
+                            _typeLevelDiagnostics.Add((type, PolymorphismNotSupported, new string[] { type.FullName! }));
                         }
 
                         isPolymorphic = true;
@@ -801,7 +800,7 @@ namespace System.Text.Json.SourceGeneration
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                     }
 
-                    Type actualTypeToConvert;
+                    Type? actualTypeToConvert;
                     Type? keyType = null;
                     Type valueType;
                     bool needsRuntimeType = false;
@@ -812,7 +811,7 @@ namespace System.Text.Json.SourceGeneration
                             ? ClassType.TypeUnsupportedBySourceGen // Multi-dimentional arrays are not supported in STJ.
                             : ClassType.Enumerable;
                         collectionType = CollectionType.Array;
-                        valueType = type.GetElementType();
+                        valueType = type.GetElementType()!;
                     }
                     else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _listOfTType)) != null)
                     {
@@ -914,7 +913,7 @@ namespace System.Text.Json.SourceGeneration
                         collectionType = CollectionType.IEnumerableOfT;
                         valueType = actualTypeToConvert.GetGenericArguments()[0];
                     }
-                    else if (_idictionaryType.IsAssignableFrom(type))
+                    else if (_idictionaryType?.IsAssignableFrom(type) == true)
                     {
                         classType = ClassType.Dictionary;
                         collectionType = CollectionType.IDictionary;
@@ -923,19 +922,19 @@ namespace System.Text.Json.SourceGeneration
 
                         needsRuntimeType = type == actualTypeToConvert;
                     }
-                    else if (_ilistType.IsAssignableFrom(type))
+                    else if (_ilistType?.IsAssignableFrom(type) == true)
                     {
                         classType = ClassType.Enumerable;
                         collectionType = CollectionType.IList;
                         valueType = _objectType;
                     }
-                    else if (_stackType.IsAssignableFrom(type))
+                    else if (_stackType?.IsAssignableFrom(type) == true)
                     {
                         classType = ClassType.Enumerable;
                         collectionType = CollectionType.Stack;
                         valueType = _objectType;
                     }
-                    else if (_queueType.IsAssignableFrom(type))
+                    else if (_queueType?.IsAssignableFrom(type) == true)
                     {
                         classType = ClassType.Enumerable;
                         collectionType = CollectionType.Queue;
@@ -962,8 +961,8 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (
                     _knownUnsupportedTypes.Contains(type) ||
-                    _memberInfoType.IsAssignableFrom(type) ||
-                    _delegateType.IsAssignableFrom(type))
+                    _memberInfoType?.IsAssignableFrom(type) == true ||
+                    _delegateType?.IsAssignableFrom(type) == true)
                 {
                     classType = ClassType.KnownUnsupportedType;
                 }
@@ -996,7 +995,7 @@ namespace System.Text.Json.SourceGeneration
 
                                 for (int i = 0; i < paramCount; i++)
                                 {
-                                    ParameterInfo parameterInfo = parameters[i];
+                                    ParameterInfo parameterInfo = parameters![i];
                                     TypeGenerationSpec typeGenerationSpec = GetOrAddTypeGenerationSpec(parameterInfo.ParameterType, generationMode);
 
                                     paramGenSpecArray[i] = new ParameterGenerationSpec()
@@ -1047,7 +1046,7 @@ namespace System.Text.Json.SourceGeneration
                                     continue;
                                 }
 
-                                CacheMemberHelper(propertyInfo.GetDiagnosticLocation());
+                                CacheMemberHelper(propertyInfo.GetDiagnosticLocation()!);
                             }
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
@@ -1063,7 +1062,7 @@ namespace System.Text.Json.SourceGeneration
                                     continue;
                                 }
 
-                                CacheMemberHelper(fieldInfo.GetDiagnosticLocation());
+                                CacheMemberHelper(fieldInfo.GetDiagnosticLocation()!);
                             }
 
                             void CacheMemberHelper(Location memberLocation)
@@ -1115,7 +1114,6 @@ namespace System.Text.Json.SourceGeneration
 
                 typeMetadata.Initialize(
                     generationMode,
-                    type,
                     classType,
                     numberHandling,
                     propGenSpecList,
@@ -1128,12 +1126,12 @@ namespace System.Text.Json.SourceGeneration
                     runtimeTypeRef,
                     dataExtensionPropGenSpec,
                     converterInstatiationLogic,
-                    implementsIJsonOnSerialized : implementsIJsonOnSerialized,
-                    implementsIJsonOnSerializing : implementsIJsonOnSerializing,
+                    implementsIJsonOnSerialized: implementsIJsonOnSerialized,
+                    implementsIJsonOnSerializing: implementsIJsonOnSerializing,
                     canContainNullableReferenceAnnotations: canContainNullableReferenceAnnotations,
-                    hasTypeFactoryConverter : hasTypeFactoryConverter,
-                    hasPropertyFactoryConverters : hasPropertyFactoryConverters,
-                    isPolymorphic : isPolymorphic);
+                    hasTypeFactoryConverter: hasTypeFactoryConverter,
+                    hasPropertyFactoryConverters: hasPropertyFactoryConverters,
+                    isPolymorphic: isPolymorphic);
 
                 return typeMetadata;
             }
@@ -1158,13 +1156,13 @@ namespace System.Text.Json.SourceGeneration
                 return genericArguments[0] == _stringType && (genericArguments[1] == _objectType || genericArguments[1] == _jsonElementType);
             }
 
-            private static Type GetCompatibleGenericBaseClass(Type type, Type baseType)
+            private static Type? GetCompatibleGenericBaseClass(Type type, Type? baseType)
                 => type.GetCompatibleGenericBaseClass(baseType);
 
             private static void CacheMember(
                 PropertyGenerationSpec propGenSpec,
                 ref List<PropertyGenerationSpec> propGenSpecList,
-                ref Dictionary<string, PropertyGenerationSpec> ignoredMembers)
+                ref Dictionary<string, PropertyGenerationSpec>? ignoredMembers)
             {
                 propGenSpecList.Add(propGenSpec);
 
@@ -1199,6 +1197,7 @@ namespace System.Text.Json.SourceGeneration
                 bool isVirtual,
                 JsonSourceGenerationMode generationMode)
             {
+                Debug.Assert(memberInfo.DeclaringType != null);
                 Type memberCLRType = GetMemberClrType(memberInfo);
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(memberInfo);
 
@@ -1336,7 +1335,7 @@ namespace System.Text.Json.SourceGeneration
                                         namedArgs[0].MemberInfo.MemberType == MemberTypes.Property &&
                                         ((PropertyInfo)namedArgs[0].MemberInfo).PropertyType.FullName == JsonIgnoreConditionFullName)
                                     {
-                                        ignoreCondition = (JsonIgnoreCondition)namedArgs[0].TypedValue.Value;
+                                        ignoreCondition = (JsonIgnoreCondition)namedArgs[0].TypedValue.Value!;
                                     }
                                 }
                                 break;
@@ -1348,20 +1347,20 @@ namespace System.Text.Json.SourceGeneration
                             case JsonNumberHandlingAttributeFullName:
                                 {
                                     IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
-                                    numberHandling = (JsonNumberHandling)ctorArgs[0].Value;
+                                    numberHandling = (JsonNumberHandling)ctorArgs[0].Value!;
                                 }
                                 break;
                             case JsonPropertyNameAttributeFullName:
                                 {
                                     IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
-                                    jsonPropertyName = (string)ctorArgs[0].Value;
+                                    jsonPropertyName = (string)ctorArgs[0].Value!;
                                     // Null check here is done at runtime within JsonSerializer.
                                 }
                                 break;
                             case JsonPropertyOrderAttributeFullName:
                                 {
                                     IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
-                                    order = (int)ctorArgs[0].Value;
+                                    order = (int)ctorArgs[0].Value!;
                                 }
                                 break;
                             case JsonExtensionDataAttributeFullName:
@@ -1474,16 +1473,13 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                ITypeSymbol converterTypeSymbol = (ITypeSymbol)attributeData.ConstructorArguments[0].Value;
-                Type converterType = converterTypeSymbol.AsType(_metadataLoadContext);
+                ITypeSymbol converterTypeSymbol = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
+                Type? converterType = converterTypeSymbol.AsType(_metadataLoadContext);
 
                 if (converterType == null || converterType.GetConstructor(Type.EmptyTypes) == null || converterType.IsNestedPrivate)
                 {
                     return null;
                 }
-
-                // Validated when creating the source generation spec.
-                Debug.Assert(_jsonConverterOfTType != null);
 
                 if (converterType.GetCompatibleGenericBaseClass(_jsonConverterOfTType) != null)
                 {
@@ -1609,9 +1605,9 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _jsonValueType);
                 AddTypeIfNotNull(_knownTypes, _jsonDocumentType);
 
-                _knownUnsupportedTypes.Add(_serializationInfoType);
-                _knownUnsupportedTypes.Add(_intPtrType);
-                _knownUnsupportedTypes.Add(_uIntPtrType);
+                AddTypeIfNotNull(_knownUnsupportedTypes, _serializationInfoType);
+                AddTypeIfNotNull(_knownUnsupportedTypes, _intPtrType);
+                AddTypeIfNotNull(_knownUnsupportedTypes, _uIntPtrType);
 
                 static void AddTypeIfNotNull(HashSet<Type> types, Type? type)
                 {

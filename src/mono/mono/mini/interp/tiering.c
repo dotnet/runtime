@@ -209,5 +209,7 @@ mono_interp_tier_up_frame_patchpoint (InterpFrame *frame, ThreadContext *context
 	}
 	context->stack_pointer = (guchar*)frame->stack + optimized_method->alloca_size;
 	frame->imethod = optimized_method;
-	return optimized_method->code + lookup_patchpoint_data (optimized_method, bb_index);
+	int offset = lookup_patchpoint_data (optimized_method, bb_index);
+	g_assert (offset != G_MAXINT32);
+	return optimized_method->code + offset;
 }

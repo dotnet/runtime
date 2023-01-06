@@ -28,7 +28,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Skip()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().Skip(1).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().Skip(1).Count();
             Assert.Equal(2, count);
         }
     }

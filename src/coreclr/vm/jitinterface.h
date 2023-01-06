@@ -418,7 +418,6 @@ class CEEInfo : public ICorJitInfo
     MethodDesc* GetMethodFromContext(CORINFO_CONTEXT_HANDLE context);
     TypeHandle GetTypeFromContext(CORINFO_CONTEXT_HANDLE context);
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
-    BOOL ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context);
 
     void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
 public:
@@ -609,18 +608,7 @@ protected:
 
     bool                    m_allowInlining;
 
-    // Tracking of module activation dependencies. We have two flavors:
-    // - Fast one that gathers generic arguments from EE handles, but does not work inside generic context.
-    // - Slow one that operates on typespec and methodspecs from metadata.
-    void ScanForModuleDependencies(Module* pModule, SigPointer psig);
-    void ScanMethodSpec(Module * pModule, PCCOR_SIGNATURE pMethodSpec, ULONG cbMethodSpec);
-    // Returns true if it is ok to proceed with scan of parent chain
-    bool ScanTypeSpec(Module * pModule, PCCOR_SIGNATURE pTypeSpec, ULONG cbTypeSpec);
-    void ScanInstantiation(Module * pModule, Instantiation inst);
-
-    // The main entrypoints for module activation tracking
-    void ScanToken(Module * pModule, CORINFO_RESOLVED_TOKEN * pResolvedToken, TypeHandle th, MethodDesc * pMD = NULL);
-    void ScanTokenForDynamicScope(CORINFO_RESOLVED_TOKEN * pResolvedToken, TypeHandle th, MethodDesc * pMD = NULL);
+    void EnsureActive(TypeHandle th, MethodDesc * pMD = NULL);
 };
 
 
@@ -927,9 +915,6 @@ public:
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
                        void **            ppIndirection) override final;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
-
-    // Override active dependency to talk to loader
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo) override final;
 
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a
     // method desc, it calls through to CEEInfo::GetProfilingHandle and caches the

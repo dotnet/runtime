@@ -162,7 +162,8 @@ void EEClass::Destruct(MethodTable * pOwningMT)
         }
         if (pDelegateEEClass->m_pInstRetBuffCallStub)
         {
-            pDelegateEEClass->m_pInstRetBuffCallStub->DecRef();
+            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pInstRetBuffCallStub, sizeof(Stub));
+            stubWriterHolder.GetRW()->DecRef();
         }
         // While m_pMultiCastInvokeStub is also a member,
         // it is owned by the m_pMulticastStubCache, not by the class

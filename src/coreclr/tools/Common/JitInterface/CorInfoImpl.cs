@@ -1915,12 +1915,19 @@ namespace Internal.JitInterface
 
         private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
         {
-            var type = HandleToObject(cls) as MetadataType;
-            if (type != null)
+            TypeDesc type = HandleToObject(cls);
+            if (type.GetTypeDefinition() is EcmaType ecmaType)
+            {
+                var reader = ecmaType.MetadataReader;
+                if (namespaceName != null)
+                    *namespaceName = reader.GetTypeNamespacePointer(ecmaType.Handle);
+                return reader.GetTypeNamePointer(ecmaType.Handle);
+            }
+            else if (type is MetadataType mdType)
             {
                 if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(StringToUTF8(type.Namespace));
-                return (byte*)GetPin(StringToUTF8(type.Name));
+                    *namespaceName = (byte*)GetPin(StringToUTF8(mdType.Namespace));
+                return (byte*)GetPin(StringToUTF8(mdType.Name));
             }
 
             if (namespaceName != null)
@@ -3172,21 +3179,47 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
 
-            string result;
-            string classResult;
-            string namespaceResult;
-            string enclosingResult;
+            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            {
+                EcmaType owningType = (EcmaType)ecmaMethod.OwningType;
+                var reader = owningType.MetadataReader;
 
-            result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+                if (className != null)
+                    *className = reader.GetTypeNamePointer(owningType.Handle);
+                if (namespaceName != null)
+                *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
 
-            if (className != null)
-                *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
-            if (namespaceName != null)
-                *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
-            if (enclosingClassName != null)
-                *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+                // Query enclosingClassName when the method is in a nested class
+                // and get the namespace of enclosing classes (nested class's namespace is empty)
+                var containingType = owningType.ContainingType as EcmaType;
+                if (containingType != null)
+                {
+                    if (enclosingClassName != null)
+                        *enclosingClassName = reader.GetTypeNamePointer(containingType.Handle);
+                    if (namespaceName != null)
+                        *namespaceName = reader.GetTypeNamespacePointer(containingType.Handle);
+                }
 
-            return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
+                return reader.GetMethodNamePointer(ecmaMethod.Handle);
+            }
+            else
+            {
+                string result;
+                string classResult;
+                string namespaceResult;
+                string enclosingResult;
+
+                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+
+                if (className != null)
+                    *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
+                if (namespaceName != null)
+                    *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
+                if (enclosingClassName != null)
+                    *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+
+                return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
+            }
         }
 
         private uint getMethodHash(CORINFO_METHOD_STRUCT_* ftn)
@@ -3356,8 +3389,6 @@ namespace Internal.JitInterface
 
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
-        private void addActiveDependency(CORINFO_MODULE_STRUCT_* moduleFrom, CORINFO_MODULE_STRUCT_* moduleTo)
-        { throw new NotImplementedException("addActiveDependency"); }
         private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
         { throw new NotImplementedException("GetDelegateCtor"); }
         private void MethodCompileComplete(CORINFO_METHOD_STRUCT_* methHnd)

@@ -32,14 +32,16 @@ namespace ILCompiler
         private readonly MetadataType _type;
         private readonly CompilationModuleGroup _compilationGroup;
         private readonly ILProvider _ilProvider;
+        private readonly TypePreinitializationPolicy _policy;
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
 
-        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider)
+        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy)
         {
             _type = owningType;
             _compilationGroup = compilationGroup;
             _ilProvider = ilProvider;
+            _policy = policy;
 
             // Zero initialize all fields we model.
             foreach (var field in owningType.GetFields())
@@ -51,38 +53,34 @@ namespace ILCompiler
             }
         }
 
-        // Could potentially expose this as a policy class. When type loader is not present or
-        // the given type can't be constructed by the type loader, preinitialization could still
-        // happen.
-        private static bool CanPreinitializeByPolicy(TypeDesc type)
-        {
-            // If the type has a canonical form the runtime type loader could create
-            // a new type sharing code with this one. They need to agree on how
-            // initialization happens. We can't preinitialize runtime-created
-            // generic types at compile time.
-            if (type.ConvertToCanonForm(CanonicalFormKind.Specific)
-                .IsCanonicalSubtype(CanonicalFormKind.Any))
-                return false;
-
-            return true;
-        }
-
-        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, MetadataType type)
+        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
+            Debug.Assert(!type.IsRuntimeDeterminedSubtype);
 
-            if (!CanPreinitializeByPolicy(type))
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // It's an odd question to ask about canonical types. Defer to policy that might
+                // have more information.
+                // If the policy allows it, we allow it, but create invalid field values so that
+                // things still crash if someone wanted to do more with canonical types than just
+                // ask if a cctor check is necessary to access.
+                if (policy.CanPreinitializeAllConcreteFormsForCanonForm(type))
+                    return new PreinitializationInfo(type, Array.Empty<KeyValuePair<FieldDesc, ISerializableValue>>());
+
                 return new PreinitializationInfo(type, "Disallowed by policy");
+            }
 
-            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+            if (!policy.CanPreinitialize(type))
+                return new PreinitializationInfo(type, "Disallowed by policy");
 
             TypePreinit preinit = null;
 
             Status status;
             try
             {
-                preinit = new TypePreinit(type, compilationGroup, ilProvider);
+                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy);
                 int instructions = 0;
                 status = preinit.TryScanMethod(type.GetStaticConstructor(), null, null, ref instructions, out _);
             }
@@ -337,9 +335,9 @@ namespace ILCompiler
                             }
                             else if (field.IsInitOnly
                                 && field.OwningType.HasStaticConstructor
-                                && CanPreinitializeByPolicy(field.OwningType))
+                                && _policy.CanPreinitialize(field.OwningType))
                             {
-                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider);
+                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy);
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
 
@@ -2544,6 +2542,40 @@ namespace ILCompiler
                 Debug.Assert(field.IsStatic && !field.HasRva && !field.IsThreadStatic && !field.IsLiteral);
                 return _fieldValues[field];
             }
+        }
+
+        public abstract class TypePreinitializationPolicy
+        {
+            /// <summary>
+            /// Returns true if the preinitialization system may attempt to preinitialize this type.
+            /// </summary>
+            public abstract bool CanPreinitialize(DefType type);
+
+            /// <summary>
+            /// Returns true if all concrete forms of this canonical form will be preinitialized.
+            /// This can only be answered by a whole program view.
+            /// </summary>
+            public abstract bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type);
+        }
+
+        /// <summary>
+        /// Preinitialization policy that doesn't allow preinitialization.
+        /// </summary>
+        public sealed class DisabledPreinitializationPolicy : TypePreinitializationPolicy
+        {
+            public override bool CanPreinitialize(DefType type) => false;
+            public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type) => false;
+        }
+
+        /// <summary>
+        /// Preinitialization policy that assumes new canonical forms of types could be created
+        /// at runtime.
+        /// </summary>
+        public sealed class TypeLoaderAwarePreinitializationPolicy : TypePreinitializationPolicy
+        {
+            public override bool CanPreinitialize(DefType type) => true;
+
+            public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type) => false;
         }
     }
 }

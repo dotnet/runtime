@@ -61,9 +61,17 @@ namespace System.Net.Security
                     ReadOnlySpan<byte> protocol = protocols.Slice(1, length);
                     if (protocol.SequenceCompareTo<byte>(applicationProtcol.Protocol.Span) == 0)
                     {
-                        if (Interop.AppleCrypto.SslCtxSetAlpnProtocol(context.SslContext, applicationProtcol))
+                        int osStatus = Interop.AppleCrypto.SslCtxSetAlpnProtocol(context.SslContext, applicationProtcol);
+                        if (osStatus == 0)
                         {
                             context.SelectedApplicationProtocol = applicationProtcol;
+                            if (NetEventSource.Log.IsEnabled())
+                                NetEventSource.Info(context, $"Selected '{applicationProtcol}' ALPN");
+                        }
+                        else
+                        {
+                            if (NetEventSource.Log.IsEnabled())
+                                NetEventSource.Error(context, $"Failed to set ALPN: {osStatus}");
                         }
 
                         // We ignore failure and we will move on with ALPN
