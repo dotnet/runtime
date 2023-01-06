@@ -921,7 +921,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // RuntimeConfigurationOptions are not supported on .NET Framework (and neither is NativeAOT)
-        public void VerifyAotCompatibilityChecks()
+        public void VerifyDynamicCodeNotSupportedChecks()
         {
             Func<Type, ServiceCallSite> CreateAotCompatibilityCallSiteFactory()
             {
@@ -938,7 +938,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions.Add("Microsoft.Extensions.DependencyInjection.VerifyAotCompatibility", "true");
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
             {
@@ -966,7 +966,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Assert.Equal(2, ((Struct1)callSite.Value).Value);
             }, options);
 
-            // Verify the above scenarios work when VerifyAotCompatibility is not set
+            // Verify the above scenarios work when IsDynamicCodeSupported is not set
             Func<Type, ServiceCallSite> callSiteFactory = CreateAotCompatibilityCallSiteFactory();
 
             // Open Generics

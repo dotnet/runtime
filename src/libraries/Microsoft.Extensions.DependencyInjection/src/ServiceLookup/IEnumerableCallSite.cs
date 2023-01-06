@@ -22,13 +22,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "When 'Microsoft.Extensions.DependencyInjection.VerifyAotCompatibility' is set, which is set by default when PublishAot=true, " +
-            "it ensures ItemType is not a ValueType.")]
+            Justification = "When ServiceProvider.VerifyAotCompatibility is true, which it is by default when PublishAot=true, " +
+            "CallSiteFactory ensures ItemType is not a ValueType.")]
         public override Type ServiceType => typeof(IEnumerable<>).MakeGenericType(ItemType);
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "When 'Microsoft.Extensions.DependencyInjection.VerifyAotCompatibility' is set, which is set by default when PublishAot=true, " +
-            "it ensures ItemType is not a ValueType.")]
+            Justification = "When ServiceProvider.VerifyAotCompatibility is true, which it is by default when PublishAot=true, " +
+            "CallSiteFactory ensures ItemType is not a ValueType.")]
         public override Type ImplementationType => ItemType.MakeArrayType();
 
         public override CallSiteKind Kind { get; } = CallSiteKind.IEnumerable;
