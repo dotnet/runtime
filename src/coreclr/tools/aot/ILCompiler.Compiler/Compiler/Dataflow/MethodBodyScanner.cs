@@ -477,6 +477,7 @@ namespace ILCompiler.Dataflow
                         {
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
+                                HandleCallableMethodAccess(methodBody, offset, methodOperand);
                                 TrackNestedFunctionReference(methodOperand, ref interproceduralState);
                             }
 
@@ -533,6 +534,18 @@ namespace ILCompiler.Dataflow
                         ScanLdtoken(obj, currentStack);
                         break;
 
+                    case ILOpcode.ldvirtftn:
+                        {
+                            if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
+                            {
+                                HandleCallableMethodAccess(methodBody, offset, methodOperand);
+                            }
+
+                            PopUnknown(currentStack, 1, methodBody, offset);
+                            PushUnknown(currentStack);
+                        }
+                        break;
+
                     case ILOpcode.ldind_i:
                     case ILOpcode.ldind_i1:
                     case ILOpcode.ldind_i2:
@@ -544,7 +557,6 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldind_u2:
                     case ILOpcode.ldind_u4:
                     case ILOpcode.ldlen:
-                    case ILOpcode.ldvirtftn:
                     case ILOpcode.localloc:
                     case ILOpcode.refanytype:
                     case ILOpcode.refanyval:
@@ -1205,6 +1217,8 @@ namespace ILCompiler.Dataflow
                 StoreInReference(methodArguments[(int)parameter.Index], newByRefValue, callingMethodBody, offset, locals, curBasicBlock, ref ipState);
             }
         }
+
+        protected abstract void HandleCallableMethodAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod);
 
         private void HandleCall(
             MethodIL callingMethodBody,

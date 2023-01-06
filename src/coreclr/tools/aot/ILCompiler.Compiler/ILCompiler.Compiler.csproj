@@ -371,7 +371,6 @@
     <Compile Include="Compiler\Dataflow\MethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\MethodParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodReturnValue.cs" />
-    <Compile Include="Compiler\Dataflow\Origin.cs" />
     <Compile Include="Compiler\Dataflow\ParameterReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />

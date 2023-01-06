@@ -160,6 +160,12 @@ namespace ILCompiler.Dataflow
         protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, returnValue.Method.GetDisplayName());
 
+        protected override void HandleCallableMethodAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
+        {
+            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            _reflectionMarker.CheckAndWarnOnReflectionAccess(_origin, accessedMethod);
+        }
+
         public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
         {
             Debug.Assert(callingMethodBody.OwningMethod == _origin.MemberDefinition);

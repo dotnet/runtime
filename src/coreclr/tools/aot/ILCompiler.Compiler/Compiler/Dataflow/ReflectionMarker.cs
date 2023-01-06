@@ -198,7 +198,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        private void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity)
+        internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity)
         {
             if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
             {
