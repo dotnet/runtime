@@ -1281,7 +1281,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string GetHashOfString(string str)
         {
             byte[] bytes = sha256.ComputeHash(UnicodeEncoding.Unicode.GetBytes(str));
-            StringBuilder builder = new StringBuilder(bytes.Length);
+            StringBuilder builder = new StringBuilder(bytes.Length*2);
             foreach (byte b in bytes)
             {
                 builder.Append(b.ToString("x2"));
