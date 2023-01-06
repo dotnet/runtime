@@ -3772,7 +3772,7 @@ private:
     regNumberSmall     gtOtherReg[MAX_MULTIREG_COUNT - 1];
     MultiRegSpillFlags gtSpillFlags;
 #ifdef TARGET_ARM64
-    bool               isMultiRegUse;
+    bool isMultiRegUse;
 #endif
 
 public:

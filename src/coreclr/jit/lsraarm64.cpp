@@ -61,16 +61,16 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
 
-     // should have at least one consecutive register requirement
+    // should have at least one consecutive register requirement
     assert(consecutiveRefPosition != nullptr);
 
-    regMaskTP    registerToAssign       = firstRegAssigned;
-    int          refPosCount            = 1;
+    regMaskTP registerToAssign = firstRegAssigned;
+    int       refPosCount      = 1;
     while (consecutiveRefPosition != nullptr)
     {
         registerToAssign <<= 1;
         consecutiveRefPosition->registerAssignment = registerToAssign;
-        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+        consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
 
 #ifdef DEBUG
         refPosCount++;
@@ -1140,8 +1140,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            int regCount;
-            RefPosition* useRefPos1 = nullptr;
+            int          regCount;
+            RefPosition* useRefPos1    = nullptr;
             RefPosition* nextUseRefPos = nullptr;
             switch (intrin.id)
             {
@@ -1173,7 +1173,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(intrin.op1->OperIs(GT_LCL_VAR));
 
-                RefPosition* lastRefPos  = nullptr;
+                RefPosition* lastRefPos = nullptr;
                 // consecutive registers
                 for (int regIdx = 0; regIdx < regCount; regIdx++)
                 {
@@ -1187,7 +1187,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // Explicitely set regCount=0 so we can identify that this is non-first refposition.
                         currRefPos->regCount = 0;
 
-                        getNextConsecutiveRefPositionsMap()->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+                        getNextConsecutiveRefPositionsMap()->Set(lastRefPos, currRefPos,
+                                                                 LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
                         getNextConsecutiveRefPositionsMap()->Set(currRefPos, nullptr);
                     }
                     lastRefPos = currRefPos;

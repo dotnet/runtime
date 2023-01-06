@@ -1179,16 +1179,15 @@ private:
 
     void spillGCRefs(RefPosition* killRefPosition);
 
-    /*****************************************************************************
-    * Register selection
-    ****************************************************************************/
-
+/*****************************************************************************
+* Register selection
+****************************************************************************/
 
 #if defined(TARGET_ARM64)
     regMaskTP getFreeCandidates(regMaskTP candidates, RefPosition* refPosition);
-    void      setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regMaskTP firstRegAssigned);
+    void setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regMaskTP firstRegAssigned);
 #else
-    regMaskTP              getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
+    regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {
         regMaskTP result = candidates & m_AvailableRegs;
 #ifdef TARGET_ARM
@@ -1860,7 +1859,10 @@ private:
     bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
-    RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0, bool needsConsecutive = false);
+    RefPosition* BuildUse(GenTree*  operand,
+                          regMaskTP candidates       = RBM_NONE,
+                          int       multiRegIdx      = 0,
+                          bool      needsConsecutive = false);
 
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);

@@ -12153,7 +12153,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 #ifdef TARGET_ARM64
             && !operand->AsLclVar()->IsMultiRegUse()
 #endif
-            )
+                )
         {
             lvaSetVarDoNotEnregister(operand->AsLclVar()->GetLclNum()
                                          DEBUGARG(DoNotEnregisterReason::SimdUserForcesDep));

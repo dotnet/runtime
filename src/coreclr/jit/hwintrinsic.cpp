@@ -1141,11 +1141,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
                 if ((intrinsic == NI_AdvSimd_VectorTableLookup) || (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup))
                 {
-                    op1 = impPopStack().val;
-                    ClassLayout* layout      = op1->GetLayout(this);
-                    unsigned     structSize  = layout->GetSize();
-                    unsigned slotCount = layout->GetSlotCount();
-                    var_types typeOfLayout = layout->GetType();
+                    op1                       = impPopStack().val;
+                    ClassLayout* layout       = op1->GetLayout(this);
+                    unsigned     structSize   = layout->GetSize();
+                    unsigned     slotCount    = layout->GetSlotCount();
+                    var_types    typeOfLayout = layout->GetType();
                     if (typeOfLayout == TYP_STRUCT)
                     {
                         unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
@@ -1168,7 +1168,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                             offset += 16;
                         }
-                        
+
                         switch (fieldCount)
                         {
                             case 1:
@@ -1176,8 +1176,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                 // NI_AdvSimd_Arm64_VectorTableLookup
                                 break;
                             case 2:
-                                //NI_AdvSimd_VectorTableLookup_2
-                                //NI_AdvSimd_Arm64_VectorTableLookup_2
+                                // NI_AdvSimd_VectorTableLookup_2
+                                // NI_AdvSimd_Arm64_VectorTableLookup_2
                                 intrinsic = (NamedIntrinsic)(intrinsic + 1);
                                 break;
                             case 3:
@@ -1205,7 +1205,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 else
 #endif
                 {
-                    op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
+                    op1     = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
                     retNode = isScalar
                                   ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
                                   : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);

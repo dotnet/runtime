@@ -2796,7 +2796,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 //        no such ref position, no register will be allocated.
 //
 
-regNumber LinearScan::allocateReg(Interval*                currentInterval,
+regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     regMaskTP foundRegBit = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
@@ -2870,7 +2870,7 @@ regNumber LinearScan::allocateReg(Interval*                currentInterval,
         setNextConsecutiveRegisterAssignment(refPosition, foundRegBit);
     }
 #endif // TARGET_ARM64
-    
+
     return foundReg;
 }
 
@@ -5410,7 +5410,7 @@ void LinearScan::allocateRegisters()
                     // subsequent registers to the remaining position and skip the allocation for the
                     // 1st refPosition altogether.
 
-                    setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegBit);  
+                    setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegBit);
                 }
             }
             else
@@ -5424,7 +5424,8 @@ void LinearScan::allocateRegisters()
                 }
                 else
                 {
-                    // If the subsequent refPosition is not assigned to the consecutive register, then reassign the right
+                    // If the subsequent refPosition is not assigned to the consecutive register, then reassign the
+                    // right
                     // consecutive register.
                     assignedRegister = REG_NA;
                 }
