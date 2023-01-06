@@ -7,7 +7,6 @@
 		var App = {
 			static_method_table: {},
 			init: async () => {
-				console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 				const exports = await App.runtime.getAssemblyExports("debugger-test.dll");
 				App.int_add = exports.Math.IntAdd;
 				App.use_complex = exports.Math.UseComplex;
@@ -91,7 +90,7 @@
 		function load_wasm_page_without_assets () {
 			console.log("load_wasm_page_without_assets")
 			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
-			console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
+			console.debug ("#debugger-app-ready#");
 		}
 		function load_non_wasm_page_forcing_runtime_ready () {
 			console.log("load_non_wasm_page_forcing_runtime_ready")

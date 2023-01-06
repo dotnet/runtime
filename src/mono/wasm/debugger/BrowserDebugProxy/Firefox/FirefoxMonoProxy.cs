@@ -234,24 +234,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
 
     protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
     {
-        if (args["messages"] != null)
-        {
-            // FIXME: duplicate, and will miss any non-runtime-ready messages being forwarded
-            var messages = args["messages"].Value<JArray>();
-            foreach (var message in messages)
-            {
-                var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
-                if (messageArgs != null && messageArgs.Count == 2)
-                {
-                    if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
-                    {
-                        ResetCmdId();
-                        await RuntimeReady(sessionId, token);
-                    }
-                }
-            }
-            return true;
-        }
         if (args["frame"] != null && args["type"] == null)
         {
             OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["frame"]["consoleActor"].Value<string>()));
@@ -300,10 +282,10 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         }
                         if (message["resourceType"].Value<string>() != "console-message")
                             continue;
-                        var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
+                        //var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
                         var ctx = GetContextFixefox(sessionId);
                         ctx.GlobalName = args["from"].Value<string>();
-                        if (messageArgs != null && messageArgs.Count == 2)
+                        /*if (messageArgs != null && messageArgs.Count == 2)
                         {
                             if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
                             {
@@ -312,7 +294,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                                     ForwardMessageToIde(args, token),
                                     RuntimeReady(sessionId, token));
                             }
-                        }
+                        }*/
                     }
                     break;
                 }
@@ -702,6 +684,11 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     var ret = await GetMethodLocation(sessionId, args, token);
                     ret.Value["from"] = "internal";
                     await SendEvent(sessionId, "", ret.Value, token);
+                    return true;
+                }
+            case "DotnetDebugger.runTests":
+                {
+                    await RuntimeReady(sessionId, token);
                     return true;
                 }
             default:

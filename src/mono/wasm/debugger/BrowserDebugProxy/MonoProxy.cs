@@ -20,7 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private IList<string> urlSymbolServerList;
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
-        private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty" };
+        private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
         public static HttpClient HttpClient => new HttpClient();
@@ -94,7 +94,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Runtime.consoleAPICalled":
                     {
                         // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                        if (!contexts.ContainsKey(sessionId))
                             return false;
                         string type = args["type"]?.ToString();
                         if (type == "debug")
@@ -104,28 +104,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 break;
 
                             int aCount = a.Count();
-                            if (aCount >= 2 &&
-                                a[0]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY &&
-                                a[1]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY_ID)
-                            {
-                                if (aCount > 2)
-                                {
-                                    try
-                                    {
-                                        // The optional 3rd argument is the stringified assembly
-                                        // list so that we don't have to make more round trips
-                                        string loaded = a[2]?["value"]?.ToString();
-                                        if (loaded != null)
-                                            context.LoadedFiles = JToken.Parse(loaded).ToObject<string[]>();
-                                    }
-                                    catch (InvalidCastException ice)
-                                    {
-                                        Log("verbose", ice.ToString());
-                                    }
-                                }
-                                await RuntimeReady(sessionId, token);
-                            }
-                            else if (aCount > 1 && a[0]?["value"]?.ToString() == MonoConstants.EVENT_RAISED)
+                            if (aCount > 1 && a[0]?["value"]?.ToString() == MonoConstants.EVENT_RAISED)
                             {
                                 if (a.Type != JTokenType.Array)
                                 {
@@ -585,6 +564,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     $"DotnetDebugger.setEvaluationOptions got incorrect argument ({args})")),
                                 token);
                         }
+                        return true;
+                    }
+                case "DotnetDebugger.runTests":
+                    {
+                        SendResponse(id, Result.OkFromObject(new { }), token);
+                        if (await IsRuntimeAlreadyReadyAlready(id, token))
+                            await RuntimeReady(id, token);
                         return true;
                     }
             }

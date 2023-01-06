@@ -331,8 +331,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal static class MonoConstants
     {
-        public const string RUNTIME_IS_READY = "mono_wasm_runtime_ready";
-        public const string RUNTIME_IS_READY_ID = "fe00e07a-5519-4dfe-b35a-f867dbaf2e28";
         public const string EVENT_RAISED = "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae";
     }
 
