@@ -44,14 +44,14 @@
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
     </PropertyGroup>
 
-    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $CC' 2>/dev/null"
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(NativeCompiler)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="DnneCompilerCommand" />
     </Exec>
 
-    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $LDFLAGS' 2>/dev/null"
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(NativeCompiler)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $LDFLAGS' 2>/dev/null"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">

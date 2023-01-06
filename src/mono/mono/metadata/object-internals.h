@@ -440,6 +440,7 @@ TYPED_HANDLE_DECL (MonoSafeHandle);
 struct _MonoReflectionType {
 	MonoObject object;
 	MonoType  *type;
+	MonoObject *m_keepalive;
 };
 
 /* Safely access System.Type from native code */
@@ -906,10 +907,11 @@ struct _MonoReflectionMethodBody {
 /* Safely access System.Reflection.MethodBody from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 
-/* System.RuntimeAssembly */
+/* System.Reflection.RuntimeAssembly */
 struct _MonoReflectionAssembly {
 	MonoObject object;
 	MonoAssembly *assembly;
+	MonoObject *m_keepalive;
 };
 
 typedef struct {
@@ -1422,6 +1424,14 @@ typedef enum {
 	UNLOADING = 1
 } MonoManagedAssemblyLoadContextInternalState;
 
+
+typedef struct {
+	MonoObject object;
+	MonoObject *m_scout;
+	MonoArray *m_slots;
+	MonoArray *m_hashes;
+	int m_nslots;
+} MonoManagedLoaderAllocator;
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
@@ -1986,6 +1996,9 @@ mono_string_hash_internal (MonoString *s);
 
 MONO_COMPONENT_API int
 mono_object_hash_internal (MonoObject* obj);
+
+int
+mono_object_try_get_hash_internal (MonoObject* obj);
 
 ICALL_EXPORT
 void

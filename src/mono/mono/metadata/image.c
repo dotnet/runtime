@@ -2053,34 +2053,6 @@ free_hash (GHashTable *hash)
 		g_hash_table_destroy (hash);
 }
 
-void
-mono_wrapper_caches_free (MonoWrapperCaches *cache)
-{
-	free_hash (cache->delegate_invoke_cache);
-	free_hash (cache->delegate_begin_invoke_cache);
-	free_hash (cache->delegate_end_invoke_cache);
-	free_hash (cache->delegate_bound_static_invoke_cache);
-	free_hash (cache->runtime_invoke_signature_cache);
-
-	free_hash (cache->delegate_abstract_invoke_cache);
-
-	free_hash (cache->runtime_invoke_method_cache);
-	free_hash (cache->managed_wrapper_cache);
-
-	free_hash (cache->native_wrapper_cache);
-	free_hash (cache->native_wrapper_aot_cache);
-	free_hash (cache->native_wrapper_check_cache);
-	free_hash (cache->native_wrapper_aot_check_cache);
-
-	free_hash (cache->native_func_wrapper_aot_cache);
-	free_hash (cache->native_func_wrapper_indirect_cache);
-	free_hash (cache->synchronized_cache);
-	free_hash (cache->unbox_wrapper_cache);
-	free_hash (cache->cominterop_invoke_cache);
-	free_hash (cache->cominterop_wrapper_cache);
-	free_hash (cache->thunk_invoke_cache);
-}
-
 static void
 mono_image_close_except_pools_all (MonoImage**images, int image_count)
 {

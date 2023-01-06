@@ -32,14 +32,14 @@
 <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
              Targets="Restore"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
-              ;RunningPublish=true
+              ;_IsPublishing=true
               ;RuntimeIdentifier=$(PackageRID)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets" />
 
     <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
              Targets="Publish;PublishItemsOutputGroup"
-             Properties="RunningPublish=true
+             Properties="_IsPublishing=true
               ;RuntimeIdentifier=$(PackageRID)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">

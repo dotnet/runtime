@@ -1562,7 +1562,7 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
 #if !SUPPORT_JIT
-                        , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()
+                        , _methodCodeNode
 #endif
                         ));
 #pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly

@@ -2539,7 +2539,18 @@ namespace System.Text
                     // if it only implements IFormattable, we come out even: only if it implements both do we
                     // end up paying for an extra interface check.
 
-                    if (value is ISpanFormattable)
+                    if (typeof(T).IsEnum)
+                    {
+                        if (Enum.TryFormatUnconstrained(value, _stringBuilder.RemainingCurrentChunk, out int charsWritten))
+                        {
+                            _stringBuilder.m_ChunkLength += charsWritten;
+                        }
+                        else
+                        {
+                            AppendFormattedWithTempSpace(value, 0, format: null);
+                        }
+                    }
+                    else if (value is ISpanFormattable)
                     {
                         Span<char> destination = _stringBuilder.RemainingCurrentChunk;
                         if (((ISpanFormattable)value).TryFormat(destination, out int charsWritten, default, _provider)) // constrained call avoiding boxing for value types
@@ -2557,17 +2568,6 @@ namespace System.Text
                         {
                             // Not enough room in the current chunk.  Take the slow path that formats into temporary space
                             // and then copies the result into the StringBuilder.
-                            AppendFormattedWithTempSpace(value, 0, format: null);
-                        }
-                    }
-                    else if (typeof(T).IsEnum)
-                    {
-                        if (Enum.TryFormatUnconstrained(value, _stringBuilder.RemainingCurrentChunk, out int charsWritten))
-                        {
-                            _stringBuilder.m_ChunkLength += charsWritten;
-                        }
-                        else
-                        {
                             AppendFormattedWithTempSpace(value, 0, format: null);
                         }
                     }

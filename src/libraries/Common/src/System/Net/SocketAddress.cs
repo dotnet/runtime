@@ -89,7 +89,13 @@ namespace System.Net.Internals
             ArgumentOutOfRangeException.ThrowIfLessThan(size, MinSize);
 
             InternalSize = size;
-            Buffer = new byte[(size / IntPtr.Size + 2) * IntPtr.Size];
+#if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
+            // WSARecvFrom needs a pinned pointer to the 32bit socket address size: https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsarecvfrom
+            // Allocate IntPtr.Size extra bytes at the end of Buffer ensuring IntPtr.Size alignment, so we don't need to pin anything else.
+            // The following formula will extend 'size' to the alignment boundary then add IntPtr.Size more bytes.
+            size = (size + IntPtr.Size -  1) / IntPtr.Size * IntPtr.Size + IntPtr.Size;
+#endif
+            Buffer = new byte[size];
 
             SocketAddressPal.SetAddressFamily(Buffer, family);
         }
@@ -168,13 +174,15 @@ namespace System.Net.Internals
             return new IPEndPoint(GetIPAddress(), GetPort());
         }
 
+#if !SYSTEM_NET_PRIMITIVES_DLL && WINDOWS
         // For ReceiveFrom we need to pin address size, using reserved Buffer space.
         internal void CopyAddressSizeIntoBuffer()
         {
-            Buffer[Buffer.Length - IntPtr.Size] = unchecked((byte)(InternalSize));
-            Buffer[Buffer.Length - IntPtr.Size + 1] = unchecked((byte)(InternalSize >> 8));
-            Buffer[Buffer.Length - IntPtr.Size + 2] = unchecked((byte)(InternalSize >> 16));
-            Buffer[Buffer.Length - IntPtr.Size + 3] = unchecked((byte)(InternalSize >> 24));
+            int addressSizeOffset = GetAddressSizeOffset();
+            Buffer[addressSizeOffset] = unchecked((byte)(InternalSize));
+            Buffer[addressSizeOffset + 1] = unchecked((byte)(InternalSize >> 8));
+            Buffer[addressSizeOffset + 2] = unchecked((byte)(InternalSize >> 16));
+            Buffer[addressSizeOffset + 3] = unchecked((byte)(InternalSize >> 24));
         }
 
         // Can be called after the above method did work.
@@ -182,6 +190,7 @@ namespace System.Net.Internals
         {
             return Buffer.Length - IntPtr.Size;
         }
+#endif
 
         public override bool Equals(object? comparand) =>
             comparand is SocketAddress other &&

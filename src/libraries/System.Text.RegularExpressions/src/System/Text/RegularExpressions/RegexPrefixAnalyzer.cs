@@ -200,26 +200,30 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < results.Count; i++)
             {
                 RegexFindOptimizations.FixedDistanceSet result = results[i];
-                bool negated = RegexCharClass.IsNegated(result.Set);
+                result.Negated = RegexCharClass.IsNegated(result.Set);
 
-                if (!negated)
+                int count = RegexCharClass.GetSetChars(result.Set, scratch);
+
+                if (!result.Negated && count > 0)
                 {
-                    int count = RegexCharClass.GetSetChars(result.Set, scratch);
-                    if (count != 0)
+                    result.Chars = scratch.Slice(0, count).ToArray();
+                }
+
+                if (thorough)
+                {
+                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
+                    if ((result.Chars is null || count > 2) && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
                     {
-                        result.Chars = scratch.Slice(0, count).ToArray();
-                        results[i] = result;
+                        result.Chars = null;
+                        result.Range = (lowInclusive, highInclusive);
+                    }
+                    else if (result.Chars is null && !result.Negated && RegexCharClass.TryGetAsciiSetChars(result.Set, out char[]? asciiChars))
+                    {
+                        result.AsciiSet = asciiChars;
                     }
                 }
 
-                if (thorough && result.Chars is null)
-                {
-                    if (RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
-                    {
-                        result.Range = (lowInclusive, highInclusive, negated);
-                        results[i] = result;
-                    }
-                }
+                results[i] = result;
             }
 
             return results;
@@ -435,18 +439,38 @@ namespace System.Text.RegularExpressions
         public static void SortFixedDistanceSetsByQuality(List<RegexFindOptimizations.FixedDistanceSet> results) =>
             // Finally, try to move the "best" results to be earlier.  "best" here are ones we're able to search
             // for the fastest and that have the best chance of matching as few false positives as possible.
-            results.Sort((s1, s2) =>
+            results.Sort(static (s1, s2) =>
             {
+                char[]? s1Chars = s1.Chars ?? s1.AsciiSet;
+                char[]? s2Chars = s2.Chars ?? s2.AsciiSet;
+                int s1CharsLength = s1Chars?.Length ?? 0;
+                int s2CharsLength = s2Chars?.Length ?? 0;
+                bool s1Negated = s1.Negated;
+                bool s2Negated = s2.Negated;
+                int s1RangeLength = s1.Range is not null ? GetRangeLength(s1.Range.Value, s1Negated) : 0;
+                int s2RangeLength = s2.Range is not null ? GetRangeLength(s2.Range.Value, s2Negated) : 0;
+
+                Debug.Assert(!s1Negated || s1Chars is null);
+                Debug.Assert(!s2Negated || s2Chars is null);
+
                 // If both have chars, prioritize the one with the smaller frequency for those chars.
-                if (s1.Chars is not null && s2.Chars is not null)
+                if (s1Chars is not null && s2Chars is not null)
                 {
-                    // Then of the ones that are the same length, prefer those with less frequent values.  The frequency is
-                    // only an approximation, used as a tie-breaker when we'd otherwise effectively be picking randomly.  True
-                    // frequencies will vary widely based on the actual data being searched, the language of the data, etc.
-                    int c = SumFrequencies(s1.Chars).CompareTo(SumFrequencies(s2.Chars));
-                    if (c != 0)
+                    // Prefer sets with less frequent values.  The frequency is only an approximation,
+                    // used as a tie-breaker when we'd otherwise effectively be picking randomly.
+                    // True frequencies will vary widely based on the actual data being searched, the language of the data, etc.
+                    float s1Frequency = SumFrequencies(s1Chars);
+                    float s2Frequency = SumFrequencies(s2Chars);
+
+                    if (s1Frequency != s2Frequency)
                     {
-                        return c;
+                        return s1Frequency.CompareTo(s2Frequency);
+                    }
+
+                    if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                    {
+                        // Prefer the set with fewer values.
+                        return s1CharsLength.CompareTo(s2CharsLength);
                     }
 
                     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -455,45 +479,59 @@ namespace System.Text.RegularExpressions
                         float sum = 0;
                         foreach (char c in chars)
                         {
-                            // Lookup each character in the table.  For values > 255, this will end up truncating
+                            // Lookup each character in the table.  Values >= 128 are ignored
                             // and thus we'll get skew in the data.  It's already a gross approximation, though,
                             // and it is primarily meant for disambiguation of ASCII letters.
-                            sum += s_frequency[(byte)c];
+                            if (c < 128)
+                            {
+                                sum += s_frequency[c];
+                            }
                         }
                         return sum;
                     }
                 }
 
-                // If one has chars and the other doesn't, prioritize the one with chars.
-                if ((s1.Chars is not null) != (s2.Chars is not null))
+                // If one has chars and the other has a range, prefer the shorter set.
+                if ((s1CharsLength > 0 && s2RangeLength > 0) || (s1RangeLength > 0 && s2CharsLength > 0))
                 {
-                    return s1.Chars is not null ? -1 : 1;
+                    int c = Math.Max(s1CharsLength, s1RangeLength).CompareTo(Math.Max(s2CharsLength, s2RangeLength));
+                    if (c != 0)
+                    {
+                        return c;
+                    }
+
+                    // If lengths are the same, prefer the chars.
+                    return s1CharsLength > 0 ? -1 : 1;
+                }
+
+                // If one has chars and the other doesn't, prioritize the one with chars.
+                if ((s1CharsLength > 0) != (s2CharsLength > 0))
+                {
+                    return s1CharsLength > 0 ? -1 : 1;
                 }
 
                 // If one has a range and the other doesn't, prioritize the one with a range.
-                if ((s1.Range is not null) != (s2.Range is not null))
+                if ((s1RangeLength > 0) != (s2RangeLength > 0))
                 {
-                    return s1.Range is not null ? -1 : 1;
+                    return s1RangeLength > 0 ? -1 : 1;
                 }
 
                 // If both have ranges, prefer the one that includes fewer characters.
-                if (s1.Range is not null)
+                if (s1RangeLength > 0)
                 {
-                    return
-                        GetRangeLength(s1.Range.GetValueOrDefault()).CompareTo(
-                        GetRangeLength(s2.Range.GetValueOrDefault()));
-
-                    static int GetRangeLength((char LowInclusive, char HighInclusive, bool Negated) range)
-                    {
-                        int length = range.HighInclusive - range.LowInclusive + 1;
-                        return range.Negated ?
-                            char.MaxValue + 1 - length :
-                            length;
-                    }
+                    return s1RangeLength.CompareTo(s2RangeLength);
                 }
 
                 // As a tiebreaker, prioritize the earlier one.
                 return s1.Distance.CompareTo(s2.Distance);
+
+                static int GetRangeLength((char LowInclusive, char HighInclusive) range, bool negated)
+                {
+                    int length = range.HighInclusive - range.LowInclusive + 1;
+                    return negated ?
+                        char.MaxValue + 1 - length :
+                        length;
+                }
             });
 
         /// <summary>
@@ -908,22 +946,6 @@ namespace System.Text.RegularExpressions
             1.024f /* '   h' */, 3.750f /* '   i' */, 0.286f /* '   j' */, 0.439f /* '   k' */, 2.913f /* '   l' */, 1.459f /* '   m' */, 3.908f /* '   n' */, 3.230f /* '   o' */,
             1.444f /* '   p' */, 0.231f /* '   q' */, 4.220f /* '   r' */, 3.924f /* '   s' */, 5.312f /* '   t' */, 2.112f /* '   u' */, 0.737f /* '   v' */, 0.573f /* '   w' */,
             0.992f /* '   x' */, 1.067f /* '   y' */, 0.181f /* '   z' */, 0.391f /* '   {' */, 0.056f /* '   |' */, 0.391f /* '   }' */, 0.002f /* '   ~' */, 0.000f /* '\x7F' */,
-            0.000f /* '\x80' */, 0.000f /* '\x81' */, 0.000f /* '\x82' */, 0.000f /* '\x83' */, 0.000f /* '\x84' */, 0.000f /* '\x85' */, 0.000f /* '\x86' */, 0.000f /* '\x87' */,
-            0.000f /* '\x88' */, 0.000f /* '\x89' */, 0.000f /* '\x8A' */, 0.000f /* '\x8B' */, 0.000f /* '\x8C' */, 0.000f /* '\x8D' */, 0.000f /* '\x8E' */, 0.000f /* '\x8F' */,
-            0.000f /* '\x90' */, 0.000f /* '\x91' */, 0.000f /* '\x92' */, 0.000f /* '\x93' */, 0.000f /* '\x94' */, 0.000f /* '\x95' */, 0.000f /* '\x96' */, 0.000f /* '\x97' */,
-            0.000f /* '\x98' */, 0.000f /* '\x99' */, 0.000f /* '\x9A' */, 0.000f /* '\x9B' */, 0.000f /* '\x9C' */, 0.000f /* '\x9D' */, 0.000f /* '\x9E' */, 0.000f /* '\x9F' */,
-            0.000f /* '\xA0' */, 0.000f /* '\xA1' */, 0.000f /* '\xA2' */, 0.000f /* '\xA3' */, 0.000f /* '\xA4' */, 0.000f /* '\xA5' */, 0.000f /* '\xA6' */, 0.000f /* '\xA7' */,
-            0.000f /* '\xA8' */, 0.000f /* '\xA9' */, 0.000f /* '\xAA' */, 0.000f /* '\xAB' */, 0.000f /* '\xAC' */, 0.000f /* '\xAD' */, 0.000f /* '\xAE' */, 0.000f /* '\xAF' */,
-            0.000f /* '\xB0' */, 0.000f /* '\xB1' */, 0.000f /* '\xB2' */, 0.000f /* '\xB3' */, 0.000f /* '\xB4' */, 0.000f /* '\xB5' */, 0.000f /* '\xB6' */, 0.000f /* '\xB7' */,
-            0.000f /* '\xB8' */, 0.000f /* '\xB9' */, 0.000f /* '\xBA' */, 0.000f /* '\xBB' */, 0.000f /* '\xBC' */, 0.000f /* '\xBD' */, 0.000f /* '\xBE' */, 0.000f /* '\xBF' */,
-            0.000f /* '\xC0' */, 0.000f /* '\xC1' */, 0.000f /* '\xC2' */, 0.000f /* '\xC3' */, 0.000f /* '\xC4' */, 0.000f /* '\xC5' */, 0.000f /* '\xC6' */, 0.000f /* '\xC7' */,
-            0.000f /* '\xC8' */, 0.000f /* '\xC9' */, 0.000f /* '\xCA' */, 0.000f /* '\xCB' */, 0.000f /* '\xCC' */, 0.000f /* '\xCD' */, 0.000f /* '\xCE' */, 0.000f /* '\xCF' */,
-            0.000f /* '\xD0' */, 0.000f /* '\xD1' */, 0.000f /* '\xD2' */, 0.000f /* '\xD3' */, 0.000f /* '\xD4' */, 0.000f /* '\xD5' */, 0.000f /* '\xD6' */, 0.000f /* '\xD7' */,
-            0.000f /* '\xD8' */, 0.000f /* '\xD9' */, 0.000f /* '\xDA' */, 0.000f /* '\xDB' */, 0.000f /* '\xDC' */, 0.000f /* '\xDD' */, 0.000f /* '\xDE' */, 0.000f /* '\xDF' */,
-            0.000f /* '\xE0' */, 0.000f /* '\xE1' */, 0.000f /* '\xE2' */, 0.000f /* '\xE3' */, 0.000f /* '\xE4' */, 0.000f /* '\xE5' */, 0.000f /* '\xE6' */, 0.000f /* '\xE7' */,
-            0.000f /* '\xE8' */, 0.000f /* '\xE9' */, 0.000f /* '\xEA' */, 0.000f /* '\xEB' */, 0.000f /* '\xEC' */, 0.000f /* '\xED' */, 0.000f /* '\xEE' */, 0.000f /* '\xEF' */,
-            0.000f /* '\xF0' */, 0.000f /* '\xF1' */, 0.000f /* '\xF2' */, 0.000f /* '\xF3' */, 0.000f /* '\xF4' */, 0.000f /* '\xF5' */, 0.000f /* '\xF6' */, 0.000f /* '\xF7' */,
-            0.000f /* '\xF8' */, 0.000f /* '\xF9' */, 0.000f /* '\xFA' */, 0.000f /* '\xFB' */, 0.000f /* '\xFC' */, 0.000f /* '\xFD' */, 0.000f /* '\xFE' */, 0.000f /* '\xFF' */,
         };
 
         // The above table was generated programmatically with the following.  This can be augmented to incorporate additional data sources,
@@ -953,7 +975,7 @@ namespace System.Text.RegularExpressions
         // Console.WriteLine("private static readonly float[] s_frequency = new float[]");
         // Console.WriteLine("{");
         // int i = 0;
-        // for (int row = 0; row < 32; row++)
+        // for (int row = 0; row < 16; row++)
         // {
         //     Console.Write("   ");
         //     for (int col = 0; col < 8; col++)

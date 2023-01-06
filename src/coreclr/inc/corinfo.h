@@ -3258,13 +3258,6 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
-    // Adds an active dependency from the context method's module to the given module
-    // This is internal callback for the EE. JIT should not call it directly.
-    virtual void addActiveDependency(
-               CORINFO_MODULE_HANDLE       moduleFrom,
-               CORINFO_MODULE_HANDLE       moduleTo
-                ) = 0;
-
     virtual CORINFO_METHOD_HANDLE GetDelegateCtor(
             CORINFO_METHOD_HANDLE  methHnd,
             CORINFO_CLASS_HANDLE   clsHnd,

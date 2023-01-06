@@ -79,6 +79,10 @@ typedef enum {
 #define MINT_IS_LDIND(op) ((op) >= MINT_LDIND_I1 && (op) <= MINT_LDIND_R8)
 #define MINT_IS_STIND_INT(op) ((op) >= MINT_STIND_I1 && (op) <= MINT_STIND_I8)
 #define MINT_IS_STIND(op) ((op) >= MINT_STIND_I1 && (op) <= MINT_STIND_REF)
+#define MINT_IS_LDIND_OFFSET(op) ((op) >= MINT_LDIND_OFFSET_I1 && (op) <= MINT_LDIND_OFFSET_I8)
+
+// TODO Add more
+#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_MONO_LDPTR)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2

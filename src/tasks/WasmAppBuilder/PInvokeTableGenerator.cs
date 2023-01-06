@@ -432,7 +432,7 @@ internal sealed class PInvokeTableGenerator
             {
                 if (pindex > 0)
                     sb.Append(',');
-                sb.Append(MapType(method.GetParameters()[pindex].ParameterType));
+                sb.Append(MapType(p.ParameterType));
                 sb.Append($" arg{pindex}");
                 pindex++;
             }
@@ -443,7 +443,7 @@ internal sealed class PInvokeTableGenerator
             pindex = 0;
             if (!is_void)
             {
-                sb.Append("&res");
+                sb.Append("(int*)&res");
                 pindex++;
             }
             int aindex = 0;
@@ -451,7 +451,7 @@ internal sealed class PInvokeTableGenerator
             {
                 if (pindex > 0)
                     sb.Append(", ");
-                sb.Append($"&arg{aindex}");
+                sb.Append($"(int*)&arg{aindex}");
                 pindex++;
                 aindex++;
             }

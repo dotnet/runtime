@@ -89,7 +89,6 @@ function set_env_vars()
 
     export PATH=$_SDK_DIR:$PATH
     export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
-    export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
 }
 
 export TEST_LOG_PATH=${XHARNESS_OUT}/logs
