@@ -346,8 +346,8 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Equal(1, MetadataBuilder.SerializeHandle(g1));
             Assert.Equal(0, MetadataBuilder.SerializeHandle(serialized.StringMap, s0));
             Assert.Equal(1, MetadataBuilder.SerializeHandle(serialized.StringMap, s1));
-            Assert.Equal(1, MetadataBuilder.SerializeHandle(us0));
-            Assert.Equal(3, MetadataBuilder.SerializeHandle(us1));
+            Assert.Equal(0, MetadataBuilder.SerializeHandle(us0));
+            Assert.Equal(1, MetadataBuilder.SerializeHandle(us1));
             Assert.Equal(0, MetadataBuilder.SerializeHandle(b0));
             Assert.Equal(1, MetadataBuilder.SerializeHandle(b1));
 
@@ -359,12 +359,11 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 // #String
                 0x00,
                 0x66, 0x6F, 0x6F, 0x00,
-                0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, // padding
                 // #US
                 0x00,
-                0x01, 0x00,
                 0x07, 0x62, 0x00, 0x61, 0x00, 0x72, 0x00, 0x00,
-                0x00,
+                0x00, 0x00, 0x00, // padding
                 // #Guid
                 0x59, 0x35, 0x9F, 0xD3, 0x6A, 0x47, 0x1E, 0x4D, 0xB6, 0xD2, 0x88, 0xE6, 0x63, 0x95, 0x23, 0x0B,
                 // #Blob
@@ -526,10 +525,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Equal(1, s1.GetWriterVirtualIndex());
 
             var us0 = mdBuilder.GetOrAddUserString("");
-            Assert.Equal(0x11, us0.GetHeapOffset());
+            Assert.Equal(0, us0.GetHeapOffset());
 
             var us1 = mdBuilder.GetOrAddUserString("bar");
-            Assert.Equal(0x13, us1.GetHeapOffset());
+            Assert.Equal(0x11, us1.GetHeapOffset());
 
             var b0 = mdBuilder.GetOrAddBlob(new byte[0]);
             Assert.Equal(0, b0.GetHeapOffset());
@@ -542,8 +541,8 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Equal(5, MetadataBuilder.SerializeHandle(g));
             Assert.Equal(0, MetadataBuilder.SerializeHandle(serialized.StringMap, s0));
             Assert.Equal(0x21, MetadataBuilder.SerializeHandle(serialized.StringMap, s1));
-            Assert.Equal(0x11, MetadataBuilder.SerializeHandle(us0));
-            Assert.Equal(0x13, MetadataBuilder.SerializeHandle(us1));
+            Assert.Equal(0, MetadataBuilder.SerializeHandle(us0));
+            Assert.Equal(0x11, MetadataBuilder.SerializeHandle(us1));
             Assert.Equal(0, MetadataBuilder.SerializeHandle(b0));
             Assert.Equal(0x31, MetadataBuilder.SerializeHandle(b1));
 
@@ -555,12 +554,11 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 // #String
                 0x00,
                 0x66, 0x6F, 0x6F, 0x00,
-                0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, // padding
                 // #US
                 0x00,
-                0x01, 0x00,
                 0x07, 0x62, 0x00, 0x61, 0x00, 0x72, 0x00, 0x00,
-                0x00,
+                0x00, 0x00, 0x00, // padding
                 // #Guid
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
