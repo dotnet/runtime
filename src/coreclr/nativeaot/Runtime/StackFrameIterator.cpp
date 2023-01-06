@@ -1413,6 +1413,8 @@ void StackFrameIterator::NextInternal()
 {
 UnwindOutOfCurrentManagedFrame:
     ASSERT(m_dwFlags & MethodStateCalculated);
+    // Due to the lack of an ICodeManager for native code, we can't unwind from a native frame.
+    ASSERT((m_dwFlags & (SkipNativeFrames|UnwoundReversePInvoke)) != UnwoundReversePInvoke);
     m_dwFlags &= ~(ExCollide|MethodStateCalculated|UnwoundReversePInvoke|ActiveStackFrame);
     ASSERT(IsValid());
 
@@ -1432,14 +1434,29 @@ UnwindOutOfCurrentManagedFrame:
     uintptr_t DEBUG_preUnwindSP = m_RegDisplay.GetSP();
 #endif
 
+    uint32_t unwindFlags = USFF_None;
+    if ((m_dwFlags & SkipNativeFrames) != 0)
+    {
+        unwindFlags |= USFF_UsePreviousTransitionFrame;
+    }
+
+    bool foundReversePInvoke;
     PInvokeTransitionFrame* pPreviousTransitionFrame;
-    FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, &m_RegDisplay, &pPreviousTransitionFrame));
+    FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, unwindFlags, &m_RegDisplay,
+                                                            &foundReversePInvoke, &pPreviousTransitionFrame));
+
+    if (foundReversePInvoke)
+    {
+        ASSERT(pPreviousTransitionFrame != nullptr || (unwindFlags & USFF_UsePreviousTransitionFrame) == 0);
+        m_dwFlags |= UnwoundReversePInvoke;
+    }
 
     bool doingFuncletUnwind = GetCodeManager()->IsFunclet(&m_methodInfo);
 
     if (pPreviousTransitionFrame != NULL)
     {
         ASSERT(!doingFuncletUnwind);
+        ASSERT(foundReversePInvoke);
 
         if (pPreviousTransitionFrame == TOP_OF_STACK_MARKER)
         {
@@ -1458,7 +1475,6 @@ UnwindOutOfCurrentManagedFrame:
             InternalInit(m_pThread, pPreviousTransitionFrame, GcStackWalkFlags);
             ASSERT(m_pInstance->IsManaged(m_ControlPC));
         }
-        m_dwFlags |= UnwoundReversePInvoke;
     }
     else
     {
@@ -1579,11 +1595,12 @@ UnwindOutOfCurrentManagedFrame:
         }
 
         // Now that all assembly thunks and ExInfo collisions have been processed, it is guaranteed
-        // that the next managed frame has been located.  The located frame must now be yielded
+        // that the next managed frame has been located. Or the next native frame
+        // if we are not skipping them. The located frame must now be yielded
         // from the iterator with the one and only exception being cases where a managed frame must
         // be skipped due to funclet collapsing.
 
-        ASSERT(m_pInstance->IsManaged(m_ControlPC));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC) || (foundReversePInvoke && (m_dwFlags & SkipNativeFrames) == 0));
 
         if (collapsingTargetFrame != NULL)
         {
@@ -1692,7 +1709,8 @@ void StackFrameIterator::PrepareToYieldFrame()
     if (!IsValid())
         return;
 
-    ASSERT(m_pInstance->IsManaged(m_ControlPC));
+    ASSERT(m_pInstance->IsManaged(m_ControlPC) ||
+         ((m_dwFlags & SkipNativeFrames) == 0 && (m_dwFlags & UnwoundReversePInvoke) != 0));
 
     if (m_dwFlags & ApplyReturnAddressAdjustment)
     {
@@ -1748,6 +1766,7 @@ REGDISPLAY * StackFrameIterator::GetRegisterSet()
 PTR_VOID StackFrameIterator::GetEffectiveSafePointAddress()
 {
     ASSERT(IsValid());
+    ASSERT(m_effectiveSafePointAddress);
     return m_effectiveSafePointAddress;
 }
 
@@ -1779,6 +1798,17 @@ void StackFrameIterator::CalculateCurrentMethodState()
 {
     if (m_dwFlags & MethodStateCalculated)
         return;
+
+    // Check if we are on a native frame.
+    if ((m_dwFlags & (SkipNativeFrames|UnwoundReversePInvoke)) == UnwoundReversePInvoke)
+    {
+        // There is no implementation of ICodeManager for native code.
+        m_pCodeManager = nullptr;
+        m_effectiveSafePointAddress = nullptr;
+        m_FramePointer = nullptr;
+        m_dwFlags |= MethodStateCalculated;
+        return;
+    }
 
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))

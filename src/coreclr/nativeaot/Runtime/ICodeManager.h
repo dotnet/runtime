@@ -157,12 +157,21 @@ enum class ClasslibFunctionId
     ObjectiveCMarshalTryGetTaggedMemory = 10,
     ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
     ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
+    ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 13,
 };
 
 enum class AssociatedDataFlags : unsigned char
 {
     None = 0,
     HasUnboxingStubTarget = 1,
+};
+
+enum UnwindStackFrameFlags
+{
+    USFF_None = 0,
+    // If this is a reverse P/Invoke frame, return the P/Invoke transition frame rather than doing a
+    // normal unwind.
+    USFF_UsePreviousTransitionFrame = 1,
 };
 
 class ICodeManager
@@ -185,7 +194,9 @@ public:
                             bool            isActiveStackFrame) PURE_VIRTUAL
 
     virtual bool UnwindStackFrame(MethodInfo *    pMethodInfo,
+                                  uint32_t        flags,
                                   REGDISPLAY *    pRegisterSet,                     // in/out
+                                  bool * pFoundReversePInvoke,                      // out
                                   PInvokeTransitionFrame**      ppPreviousTransitionFrame) PURE_VIRTUAL   // out
 
     virtual uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,

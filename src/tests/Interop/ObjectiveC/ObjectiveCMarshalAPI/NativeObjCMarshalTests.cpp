@@ -1,5 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+// Always enable asserts.
+#undef NDEBUG
+
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
@@ -131,6 +135,8 @@ extern "C" DLL_EXPORT int CallAndCatch(fptr_t fptr, int a)
     }
     catch (int e)
     {
+        // check that a was not clobbered.
+        assert(a == e);
         return e;
     }
     catch (const std::exception &e)
