@@ -549,11 +549,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (urls == null)
                             return true;
                         var shouldUpdateSymbolStore = false;
-                        foreach (var url in urls)
+                        foreach (var url in urls.Values<string>())
                         {
-                            if (!string.IsNullOrEmpty(url.Value<string>()) && !UrlSymbolServerList.Contains(url.Value<string>()))
+                            if (!string.IsNullOrEmpty(url) && !UrlSymbolServerList.Contains(url))
                             {
-                                UrlSymbolServerList.Add(url.Value<string>());
+                                UrlSymbolServerList.Add(url);
                                 shouldUpdateSymbolStore = true;
                             }
                         }
@@ -587,16 +587,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<bool> LoadSymbolsFromSymbolServer(MessageId id, ExecutionContext context, CancellationToken token)
         {
-            if (await IsRuntimeAlreadyReadyAlready(id, token))
+            if (!await IsRuntimeAlreadyReadyAlready(id, token))
+                return true;
+            DebugStore store = await RuntimeReady(id, token);
+            store.CreateSymbolServer();
+            var asmList = await store.LoadPDBFromSymbolServer(token);
+            foreach (var asm in asmList)
             {
-                DebugStore store = await RuntimeReady(id, token);
-                store.CreateSymbolServer();
-                var asmList = await store.LoadPDBFromSymbolServer(token);
-                foreach (var asm in asmList)
-                {
-                    foreach (var source in asm.Sources)
-                        await OnSourceFileAdded(id, source, context, token);
-                }
+                foreach (var source in asm.Sources)
+                    await OnSourceFileAdded(id, source, context, token);
             }
             return true;
         }

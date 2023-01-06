@@ -1262,7 +1262,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string key = sourceLinkDocument.Key;
 
-                if (!key.EndsWith("*"))
+                if (!key.EndsWith("*", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -1280,8 +1280,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private static string GetHashOfString(string str)
         {
-            byte[] bytes = sha256.ComputeHash(System.Text.UnicodeEncoding.Unicode.GetBytes(str));
-            System.Text.StringBuilder builder = new System.Text.StringBuilder();
+            byte[] bytes = sha256.ComputeHash(UnicodeEncoding.Unicode.GetBytes(str));
+            StringBuilder builder = new StringBuilder(bytes.Length);
             foreach (byte b in bytes)
             {
                 builder.Append(b.ToString("x2"));
@@ -1795,50 +1795,23 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             public void WriteLine(string message) => logger.LogTrace(message);
 
-            public void WriteLine(string format, params object[] arguments)
-            {
-                logger.LogTrace(format, arguments);
-            }
+            public void WriteLine(string format, params object[] arguments) => logger.LogTrace(format, arguments);
 
-            public void Information(string message)
-            {
-                logger.LogInformation(message);
-            }
+            public void Information(string message) => logger.LogInformation(message);
 
-            public void Information(string format, params object[] arguments)
-            {
-                logger.LogInformation(format, arguments);
-            }
+            public void Information(string format, params object[] arguments) => logger.LogInformation(format, arguments);
 
-            public void Warning(string message)
-            {
-                logger.LogWarning(message);
-            }
+            public void Warning(string message) => logger.LogWarning(message);
 
-            public void Warning(string format, params object[] arguments)
-            {
-                logger.LogWarning(format, arguments);
-            }
+            public void Warning(string format, params object[] arguments) => logger.LogWarning(format, arguments);
 
-            public void Error(string message)
-            {
-                logger.LogError(message);
-            }
+            public void Error(string message) => logger.LogError(message);
 
-            public void Error(string format, params object[] arguments)
-            {
-                logger.LogError(format, arguments);
-            }
+            public void Error(string format, params object[] arguments) => logger.LogError(format, arguments);
 
-            public void Verbose(string message)
-            {
-                logger.LogDebug(message);
-            }
+            public void Verbose(string message) => logger.LogDebug(message);
 
-            public void Verbose(string format, params object[] arguments)
-            {
-                logger.LogDebug(format, arguments);
-            }
+            public void Verbose(string format, params object[] arguments) => logger.LogDebug(format, arguments);
         }
     }
 }
