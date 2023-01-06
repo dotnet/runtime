@@ -499,6 +499,7 @@ namespace R2RDump
         public static int Main(string[] args) =>
             new CommandLineBuilder(new R2RDumpRootCommand())
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
+                .UseVersionOption("--version", "-v")
                 .UseHelp()
                 .UseParseErrorReporting()
                 .Build()

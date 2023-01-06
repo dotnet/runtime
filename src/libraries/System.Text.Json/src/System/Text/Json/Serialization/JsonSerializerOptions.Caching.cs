@@ -106,6 +106,21 @@ namespace System.Text.Json
             return jsonTypeInfo;
         }
 
+        internal bool TryGetPolymorphicTypeInfoForRootType(object rootValue, [NotNullWhen(true)] out JsonTypeInfo? polymorphicTypeInfo)
+        {
+            Debug.Assert(rootValue != null);
+
+            Type runtimeType = rootValue.GetType();
+            if (runtimeType != JsonTypeInfo.ObjectType)
+            {
+                polymorphicTypeInfo = GetTypeInfoForRootType(runtimeType);
+                return true;
+            }
+
+            polymorphicTypeInfo = null;
+            return false;
+        }
+
         // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
         internal JsonTypeInfo ObjectTypeInfo
         {

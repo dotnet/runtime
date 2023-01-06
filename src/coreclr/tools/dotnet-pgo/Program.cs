@@ -162,7 +162,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private static int Main(string[] args) =>
             new CommandLineBuilder(new PgoRootCommand(args))
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("-v")
+                .UseVersionOption("--version", "-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(PgoRootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
                 .Build()

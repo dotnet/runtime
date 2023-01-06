@@ -563,6 +563,7 @@ namespace ComWrappersTests
                 // Use the base type
                 IntPtr testWrapper = cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
                 int id = derived.AddObjectRef(testWrapper);
+                Marshal.Release(testWrapper);
 
                 // Tell the tracker runtime to release its hold on the base instance.
                 MockReferenceTrackerRuntime.ReleaseAllTrackerObjects();

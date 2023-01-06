@@ -50,7 +50,6 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
-    stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
 
     ${{ if eq(parameters.runOnlyIfDependenciesSucceeded, true) }}:

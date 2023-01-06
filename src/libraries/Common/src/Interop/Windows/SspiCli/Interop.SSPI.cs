@@ -38,10 +38,7 @@ internal static partial class Interop
                 dwUpper = IntPtr.Zero;
             }
 
-            public override string ToString()
-            {
-                { return dwLower.ToString("x") + ":" + dwUpper.ToString("x"); }
-            }
+            public override string ToString() => $"{dwLower:x}:{dwUpper:x}";
         }
 
         internal enum ContextAttribute

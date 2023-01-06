@@ -106,7 +106,7 @@ namespace ILLink.Shared.TrimAnalysis
 			=> _reflectionMarker.MarkPropertiesOnTypeHierarchy (_diagnosticContext.Origin, type.Type, p => p.Name == name, bindingFlags);
 
 		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
-			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, m => m.IsPublic && m.GetMetadataParametersCount () == 0);
+			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, m => m.IsPublic && !m.HasMetadataParameters ());
 
 		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags, int? parameterCount)
 			=> _reflectionMarker.MarkConstructorsOnType (_diagnosticContext.Origin, type.Type, (parameterCount == null) ? null : m => m.GetMetadataParametersCount () == parameterCount, bindingFlags);

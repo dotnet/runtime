@@ -39,10 +39,10 @@ jobs:
   parameters:
     ${{ if eq(parameters.hostedOs, '') }}:  
       name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
-      displayName: ${{ format('Build {0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
+      displayName: ${{ format('{0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
     ${{ if ne(parameters.hostedOs, '') }}:
       name: ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
-      displayName: ${{ format('Build {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
+      displayName: ${{ format('{0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})

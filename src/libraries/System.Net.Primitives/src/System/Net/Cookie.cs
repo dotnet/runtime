@@ -44,6 +44,9 @@ namespace System.Net
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
         private static readonly IndexOfAnyValues<char> s_reservedToNameChars = IndexOfAnyValues.Create("\t\r\n=;,");
 
+        private static readonly IndexOfAnyValues<char> s_domainChars =
+            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
         private CookieVariant m_cookieVariant = CookieVariant.Plain; // Do not rename (binary serialization)
@@ -560,22 +563,9 @@ namespace System.Net
 
         // Very primitive test to make sure that the name does not have illegal characters
         // as per RFC 952 (relaxed on first char could be a digit and string can have '_').
-        private static bool DomainCharsTest(string name)
-        {
-            if (name == null || name.Length == 0)
-            {
-                return false;
-            }
-            for (int i = 0; i < name.Length; ++i)
-            {
-                char ch = name[i];
-                if (!(char.IsAsciiLetterOrDigit(ch) || ch == '.' || ch == '-' || ch == '_'))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+        private static bool DomainCharsTest(string name) =>
+            !string.IsNullOrEmpty(name) &&
+            name.AsSpan().IndexOfAnyExcept(s_domainChars) < 0;
 
         [AllowNull]
         public string Port
@@ -698,10 +688,7 @@ namespace System.Net
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 m_version = value;
                 if (value > 0 && m_cookieVariant < CookieVariant.Rfc2109)
                 {

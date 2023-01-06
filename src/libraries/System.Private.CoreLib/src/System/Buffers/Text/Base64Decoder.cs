@@ -195,7 +195,7 @@ namespace System.Buffers.Text
                 }
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
-                srcMax = srcBytes + (uint)maxSrcLength;
+                srcMax = srcBytes + maxSrcLength;
 
                 while (src < srcMax)
                 {

@@ -18,6 +18,7 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Playwright;
 
 #nullable enable
 
@@ -27,8 +28,8 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net7.0";
-        public const string DefaultTargetFrameworkForBlazor = "net7.0";
+        public const string DefaultTargetFramework = "net8.0";
+        public const string DefaultTargetFrameworkForBlazor = "net8.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -503,6 +504,9 @@ namespace Wasm.Build.Tests
 
         protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
         {
+            if (options.WarnAsError)
+                extraArgs = extraArgs.Append("/warnaserror").ToArray();
+
             var res = BuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
             _testOutput.WriteLine($"BlazorBuild, options.tfm: {options.TargetFramework}");
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: false, targetFramework: options.TargetFramework);
@@ -671,7 +675,8 @@ namespace Wasm.Build.Tests
         protected static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist=true)
         {
             string prefix = label != null ? $"{label}: " : string.Empty;
-            Assert.True(Directory.Exists(dir), $"[{label}] {dir} not found");
+            if (!Directory.Exists(dir))
+                throw new XunitException($"[{label}] {dir} not found");
             foreach (string filename in filenames)
             {
                 string path = Path.Combine(dir, filename);
@@ -791,16 +796,64 @@ namespace Wasm.Build.Tests
             CreateBlazorWasmTemplateProject(id);
 
             string extraItems = @$"
-                <PackageReference Include=""SkiaSharp"" Version=""2.88.1-preview.63"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.1-preview.63"" />
-
-                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.7\*.a"" />
+                {GetSkiaSharpReferenceItems()}
                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
             ";
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
             AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
 
             return projectFile;
+        }
+
+        public void BlazorAddRazorButton(string buttonText, string customCode, string methodName="test", string razorPage="Pages/Counter.razor")
+        {
+            string additionalCode = $$"""
+                <p role="{{methodName}}">Output: @outputText</p>
+                <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
+
+                @code {
+                    private string outputText = string.Empty;
+                    public void {{methodName}}()
+                    {
+                        {{customCode}}
+                    }
+                }
+            """;
+
+            // find blazor's Counter.razor
+            string counterRazorPath = Path.Combine(_projectDir!, razorPage);
+            if (!File.Exists(counterRazorPath))
+                throw new FileNotFoundException($"Could not find {counterRazorPath}");
+
+            string oldContent = File.ReadAllText(counterRazorPath);
+            File.WriteAllText(counterRazorPath, oldContent + additionalCode);
+        }
+
+        public async Task BlazorRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+        {
+            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!);
+
+            await using var runner = new BrowserRunner(_testOutput);
+            var page = await runner.RunAsync(runCommand, $"run -c {config} {extraArgs}", onConsoleMessage: OnConsoleMessage);
+
+            await page.Locator("text=Counter").ClickAsync();
+            var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.Equal("Current count: 0", txt);
+
+            await page.Locator("text=\"Click me\"").ClickAsync();
+            txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.Equal("Current count: 1", txt);
+
+            if (test is not null)
+                await test(page);
+
+            void OnConsoleMessage(IConsoleMessage msg)
+            {
+                if (EnvironmentVariables.ShowBuildOutput)
+                    Console.WriteLine($"[{msg.Type}] {msg.Text}");
+                _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+            }
         }
 
         public static (int exitCode, string buildOutput) RunProcess(string path,
@@ -1005,6 +1058,11 @@ namespace Wasm.Build.Tests
             return table;
         }
 
+        protected static string GetSkiaSharpReferenceItems()
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.3"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.3"" />
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.12\st\*.a"" />";
+
         protected static string s_mainReturns42 = @"
             public class TestClass {
                 public static int Main()
@@ -1047,7 +1105,8 @@ namespace Wasm.Build.Tests
         string Id,
         string Config,
         NativeFilesType ExpectedFileType,
-        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor
+        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
+        bool WarnAsError = true
     );
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };

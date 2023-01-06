@@ -10,6 +10,36 @@ namespace ILLink.RoslynAnalyzer.Tests
 		protected override string TestSuiteName => "Attributes";
 
 		[Fact]
+		public Task AssemblyAttributeIsRemovedIfOnlyTypesUsedInAssembly ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task AssemblyAttributeKeptInComplexCase ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task AttributeOnAssemblyIsKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task AttributeOnAssemblyIsKeptIfDeclarationIsSkipped ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task AttributeOnParameterInUsedMethodIsKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task AttributeOnPreservedTypeIsKept ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -64,6 +94,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task BoxedValues ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task CoreLibraryAssemblyAttributesAreKept ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -76,7 +112,43 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task GenericAttributes ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task IVTUnused ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task IVTUsed ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task MarshalAsCustomMarshaler ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task MarshalAsCustomMarshalerInterface ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task SecurityAttributesOnUsedMethodAreKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task SecurityAttributesOnUsedTypeAreKept ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

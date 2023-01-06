@@ -7,7 +7,6 @@ parameters:
   testGroup: ''
   displayNameArgs: ''
   condition: true
-  stagedBuild: false
   variables: {}
   pool: ''
   runtimeFlavor: 'coreclr'
@@ -35,7 +34,6 @@ jobs:
     container: ${{ parameters.container }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 

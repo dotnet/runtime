@@ -328,6 +328,7 @@ set(VM_SOURCES_WKS
     genanalysis.cpp
     genmeth.cpp
     hosting.cpp
+    hostinformation.cpp
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp

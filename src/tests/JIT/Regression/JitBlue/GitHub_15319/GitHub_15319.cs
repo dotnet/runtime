@@ -7,9 +7,9 @@ using System.Linq;
 // Bug where interacting CSEs of N - Old.Length and Old.Length
 // were not handled properly in optCSE
 
-class P
+public class P
 {
-    private static int Main()
+    public static int Main()
     {
         var ar = new double[]
         {

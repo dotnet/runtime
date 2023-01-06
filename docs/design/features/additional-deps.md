@@ -102,7 +102,7 @@ The proposed ordering change for 2.1 is:
 
 In addition, the additional-deps will always look for assembly and file version information present in the deps files in order to support "upgrade" scenarios where the additional-deps brings a newer version of a given assembly. Note that these version checks only occur for managed assemblies, not native files nor resource assemblies.
 
-## 2.1 proposal (add runtimeconfig knob to to disable `%DOTNET_ADDITIONAL_DEPS%`)
+## 2.1 proposal (add runtimeconfig knob to disable `%DOTNET_ADDITIONAL_DEPS%`)
 <strike>
 Add an `additionalDepsLookup` option to the runtimeconfig with these values:
 

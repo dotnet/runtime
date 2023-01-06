@@ -390,6 +390,8 @@ extern DummyGlobalContract ___contract;
 #undef FPO_ON
 #endif
 
+void LogErrorToHost(const char* format, ...);
+
 #endif // !_common_h_
 
 

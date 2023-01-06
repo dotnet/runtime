@@ -1390,7 +1390,9 @@ public:
 
         pSig += CorSigUncompressData(pSig, &data);
 
-        while (pSig < pEnd && CorIsModifierElementType((CorElementType) data))
+        while (pSig < pEnd
+            && (CorIsModifierElementType((CorElementType) data)
+                || data == ELEMENT_TYPE_GENERICINST))
         {
             pSig += CorSigUncompressData(pSig, &data);
         }
