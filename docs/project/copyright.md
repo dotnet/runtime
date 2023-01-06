@@ -13,7 +13,7 @@ We use the following approach for code contributions:
 - New code is licensed as MIT, per [repo license](/LICENSE.TXT) and via [file headers](/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs).
 - Contributions (like ports) can be based on existing code or algorithms that are licensed with a permissive [OSI-approved licenses](https://opensource.org/licenses) (for example, [MIT](https://opensource.org/licenses/MIT), [Apache 2](https://opensource.org/licenses/Apache-2.0), and [BSD](https://opensource.org/licenses/BSD-3-Clause)) and should be ackowledged in the [repo THIRD-PARTY-NOTICE](/THIRD-PARTY-NOTICES.TXT) file.
 - Non-product contributions (like tests) can be based on existing code or algorithms that are licensed with any OSI-approved license (including [GPL](https://opensource.org/licenses/GPL-2.0)) and should be acknowleged in a local THIRD-PARTY-NOTICE file (for example, [SciMark/THIRD-PARTY-NOTICES](/src/tests/JIT/Performance/CodeQuality/SciMark/THIRD-PARTY-NOTICES)).
-- We will typically reject the use of product code licensed with [Creative Commons](https://creativecommons.org/) and [public domain licenses](https://en.wikipedia.org/wiki/Public-domain-equivalent_license) given their lack of universal acceptance.
+- We will typically reject the use of product code licensed with [Creative Commons](https://creativecommons.org/) or [public domain licenses](https://en.wikipedia.org/wiki/Public-domain-equivalent_license) given their lack of universal acceptance.
 - The [.NET Foundation Contribution License Agreement (CLA)](https://cla.dotnetfoundation.org) is used to license contributions from contributors.
 
 References:
