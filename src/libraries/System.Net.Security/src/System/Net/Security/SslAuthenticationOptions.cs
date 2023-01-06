@@ -183,7 +183,7 @@ namespace System.Net.Security
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
 
 #if TARGET_ANDROID
-        internal Func<SslStream.JavaProxy>? SslStreamProxyFactory { get; set; }
+        internal SslStream.JavaProxy? SslStreamProxy { get; set; }
 #endif
     }
 }

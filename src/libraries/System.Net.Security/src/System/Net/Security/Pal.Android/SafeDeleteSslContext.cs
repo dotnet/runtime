@@ -41,8 +41,8 @@ namespace System.Net
         public SafeDeleteSslContext(SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
-            SslStreamProxy = authOptions.SslStreamProxyFactory?.Invoke()
-                ?? throw new ArgumentNullException(nameof(authOptions.SslStreamProxyFactory));
+            SslStreamProxy = authOptions.SslStreamProxy
+                ?? throw new ArgumentNullException(nameof(authOptions.SslStreamProxy));
 
             try
             {
@@ -69,8 +69,6 @@ namespace System.Net
                     _outputBuffer.Dispose();
                     sslContext.Dispose();
                 }
-
-                SslStreamProxy?.Dispose();
             }
 
             base.Dispose(disposing);
