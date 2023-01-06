@@ -503,6 +503,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return false;
                     }
 
+                case "Runtime.callFunctionOn":
+                    {
+                        try {
+                            return await CallOnFunction(id, args, token);
+                        }
+                        catch (Exception ex) {
+                            logger.LogDebug($"Runtime.callFunctionOn failed for {id} with args {args}: {ex}");
+                            SendResponse(id,
+                                Result.Exception(new ArgumentException(
+                                    $"Runtime.callFunctionOn not supported with ({args["objectId"]}).")),
+                                token);
+                            return true;
+                        }
+                    }
+
                 // Protocol extensions
                 case "DotnetDebugger.setDebuggerProperty":
                     {
@@ -552,19 +567,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                         SendResponse(id, await GetMethodLocation(id, args, token), token);
                         return true;
                     }
-                case "Runtime.callFunctionOn":
+                case "DotnetDebugger.setEvaluationOptions":
                     {
+                        //receive the available options from DAP to variables, stack and evaluate commands.
                         try {
-                            return await CallOnFunction(id, args, token);
+                            if (args["options"]?["noFuncEval"]?.Value<bool>() == true)
+                                context.AutoEvaluateProperties = false;
+                            else
+                                context.AutoEvaluateProperties = true;
+                            SendResponse(id, Result.OkFromObject(new { }), token);
                         }
-                        catch (Exception ex) {
-                            logger.LogDebug($"Runtime.callFunctionOn failed for {id} with args {args}: {ex}");
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug($"DotnetDebugger.setEvaluationOptions failed for {id} with args {args}: {ex}");
                             SendResponse(id,
                                 Result.Exception(new ArgumentException(
-                                    $"Runtime.callFunctionOn not supported with ({args["objectId"]}).")),
+                                    $"DotnetDebugger.setEvaluationOptions got incorrect argument ({args})")),
                                 token);
-                            return true;
                         }
+                        return true;
                     }
             }
             // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
@@ -737,6 +758,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
+            if (context.AutoEvaluateProperties)
+                getObjectOptions |= GetObjectCommandOptions.AutoExpandable;
             if (JustMyCode)
                 getObjectOptions |= GetObjectCommandOptions.JustMyCode;
             try

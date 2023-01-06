@@ -620,11 +620,23 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 
     regNumber op1Reg = op1->GetRegNum();
 
-    if ((ins == INS_insertps) && (op1Reg == REG_NA))
+    if (ins == INS_insertps)
     {
-        // insertps is special and can contain op1 when it is zero
-        assert(op1->isContained() && op1->IsVectorZero());
-        op1Reg = targetReg;
+        if (op1Reg == REG_NA)
+        {
+            // insertps is special and can contain op1 when it is zero
+            assert(op1->isContained() && op1->IsVectorZero());
+            op1Reg = targetReg;
+        }
+
+        if (op2->isContained() && op2->IsVectorZero())
+        {
+            // insertps can also contain op2 when it is zero in which case
+            // we just reuse op1Reg since ival specifies the entry to zero
+
+            emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, ival);
+            return;
+        }
     }
 
     assert(targetReg != REG_NA);

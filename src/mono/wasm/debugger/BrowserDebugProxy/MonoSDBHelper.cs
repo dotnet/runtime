@@ -1821,11 +1821,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return $"{returnType} {methodName} {parameters}";
         }
 
-        public async Task<JObject> InvokeMethod(ArraySegment<byte> argsBuffer, int methodId, CancellationToken token, string name = null)
+        public async Task<JObject> InvokeMethod(ArraySegment<byte> argsBuffer, int methodId, CancellationToken token, string name = null, bool isMethodStatic = false)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(methodId);
-            commandParamsWriter.Write(argsBuffer);
+            if (!isMethodStatic)
+                commandParamsWriter.Write(argsBuffer);
             commandParamsWriter.Write(0);
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.InvokeMethod, commandParamsWriter, token);
             retDebuggerCmdReader.ReadByte(); //number of objects returned.

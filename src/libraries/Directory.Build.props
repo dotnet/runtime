@@ -8,7 +8,6 @@
 
   <PropertyGroup>
     <BeforeTargetFrameworkInferenceTargets>$(RepositoryEngineeringDir)BeforeTargetFrameworkInference.targets</BeforeTargetFrameworkInferenceTargets>
-    <RuntimeGraph>$(LibrariesProjectRoot)OSGroups.json</RuntimeGraph>
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>

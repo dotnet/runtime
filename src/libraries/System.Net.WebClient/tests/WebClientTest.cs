@@ -697,7 +697,6 @@ namespace System.Net.Tests
         [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79731")]
         public async Task UploadValues_Success(Uri echoServer)
         {
             var wc = new WebClient();

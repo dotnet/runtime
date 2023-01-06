@@ -1423,6 +1423,8 @@ namespace System.Net.Http.Functional.Tests
             from lineFolds in BoolValues
             select new object[] { trailing, async, lineFolds };
 
+        private delegate int StreamReadSpanDelegate(Span<byte> buffer);
+
         [Theory]
         [MemberData(nameof(TripleBoolValues))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/77474", TestPlatforms.Android)]
@@ -1437,7 +1439,7 @@ namespace System.Net.Http.Functional.Tests
             int readCount = 0;
             int fastFillLength = 64 * 1024 * 1024; // 64 MB
 
-            Func<Memory<byte>, int> readFunc = memory =>
+            StreamReadSpanDelegate readFunc = buffer =>
             {
                 if (streamDisposed)
                 {
@@ -1448,8 +1450,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     return 0;
                 }
-
-                Span<byte> buffer = memory.Span;
 
                 if (!responsePrefix.IsEmpty)
                 {
@@ -1501,15 +1501,9 @@ namespace System.Net.Http.Functional.Tests
 
             var responseStream = new DelegateDelegatingStream(Stream.Null)
             {
-                ReadAsyncMemoryFunc = (memory, _) => new ValueTask<int>(readFunc(memory)),
-                ReadFunc = (array, offset, length) => readFunc(array.AsMemory(offset, length)),
-                ReadSpanFunc = buffer =>
-                {
-                    byte[] arrayBuffer = new byte[buffer.Length];
-                    int read = readFunc(arrayBuffer);
-                    arrayBuffer.AsSpan(0, read).CopyTo(buffer);
-                    return read;
-                },
+                ReadAsyncMemoryFunc = (memory, _) => new ValueTask<int>(readFunc(memory.Span)),
+                ReadFunc = (array, offset, length) => readFunc(array.AsSpan(offset, length)),
+                ReadSpanFunc = buffer => readFunc(buffer),
                 DisposeFunc = _ => streamDisposed = true
             };
 

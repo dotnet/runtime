@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>$(MSBuildProjectDirectory)\..\src\Resources\Strings.resx</StringResourcesPath>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
