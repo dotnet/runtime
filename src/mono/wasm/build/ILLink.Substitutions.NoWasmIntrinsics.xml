@@ -9,14 +9,5 @@
     <type fullname="System.Runtime.Intrinsics.Wasm.PackedSimd">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
-    <type fullname="System.Runtime.Intrinsics.X86.X86Base">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
-    </type>
-    <type fullname="System.Runtime.Intrinsics.X86.Sse">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
-    </type>
-    <type fullname="System.Runtime.Intrinsics.X86.Sse2">
-      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
-    </type>
   </assembly>
 </linker>
